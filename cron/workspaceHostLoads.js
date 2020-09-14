@@ -52,8 +52,12 @@ const cloudwatch_definitions = {
         'name': 'HostsTerminating',
         'unit': 'Count',
     },
-    'workspace_hosts_stopped_count': {
-        'name': 'HostsStopped',
+    'workspace_hosts_terminated_count': {
+        'name': 'HostsTerminated',
+        'unit': 'Count',
+    },
+    'workspace_hosts_active_count': {
+        'name': 'HostsActive',
         'unit': 'Count',
     },
     'workspace_hosts_longest_launching_sec': {
@@ -61,7 +65,7 @@ const cloudwatch_definitions = {
         'unit': 'Seconds',
     },
     'workspace_hosts_longest_ready_sec': {
-        'name': 'MaxRunningHostAge',
+        'name': 'MaxReadyHostAge',
         'unit': 'Seconds',
     },
     'workspace_hosts_longest_draining_sec': {
@@ -90,6 +94,10 @@ const cloudwatch_definitions = {
     },
     'workspace_running_count': {
         'name': 'WorkspacesRunning',
+        'unit': 'Count',
+    },
+    'workspace_active_count': {
+        'name': 'WorkspacesActive',
         'unit': 'Count',
     },
     'workspace_longest_launching_sec': {

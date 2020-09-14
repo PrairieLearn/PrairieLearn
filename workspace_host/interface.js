@@ -29,6 +29,23 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
+let lastAutoUpdateTime = Date.now();
+let lastPushAllTime = Date.now();
+
+setInterval(() => {
+    const elapsedSec = (Date.now() - lastAutoUpdateTime) / 1000;
+    if (elapsedSec > 30) {
+        logger.error(`_autoUpdateJobManager() has not run for ${elapsedSec} seconds, update_queue: ${JSON.stringify(update_queue)}`);
+    }
+}, 1000);
+
+setInterval(() => {
+    const elapsedSec = (Date.now() - lastPushAllTime) / 1000;
+    if (elapsedSec > 900) {
+        logger.error(`_pushAllRunningContainersToS3() has not run for ${elapsedSec} seconds`);
+    }
+}, 1000);
+
 const aws = require('../lib/aws.js');
 const config = require('../lib/config');
 let configFilename = 'config.json';
@@ -207,6 +224,7 @@ async.series([
         });
         watcher.on('add', filename => {
             // Handle new files
+            logger.info(`Watching file add ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -216,6 +234,7 @@ async.series([
         });
         watcher.on('addDir', filename => {
             // Handle new directory
+            logger.info(`Watching directory add ${filename}`);
             var key = [filename, true];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -225,6 +244,7 @@ async.series([
         });
         watcher.on('change', filename => {
             // Handle file changes
+            logger.info(`Watching file change ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -242,8 +262,26 @@ async.series([
             var key = [filename, true];
             update_queue[key] = {action: 'delete'};
         });
+        watcher.on('error', err => {
+            // Handle errors
+            markSelfUnhealthy((err2) => {
+                if (err2) {
+                    logger.error(`Error while handling watcher error: ${err2}`);
+                }
+                logger.error(`Watcher error: ${err}`);
+            });
+        });
         async function autoUpdateJobManagerTimeout() {
-            await _autoUpdateJobManager();
+            const timeout_id = setTimeout(() => {
+                logger.info(`_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`);
+            }, config.workspaceHostFileWatchIntervalSec * 1000);
+            try {
+                await _autoUpdateJobManager();
+            } catch (err) {
+                logger.error(`Error from _autoUpdateJobManager(): ${err}`);
+                logger.error(`PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`);
+            }
+            clearTimeout(timeout_id);
             setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
         }
         setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
@@ -323,10 +361,10 @@ async.series([
  */
 async function pushContainerContentsToS3(workspace) {
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
-    const s3Path = path.join(config.workspaceS3Bucket, `workspace-${workspace.id}-${workspace.version}`);
+    const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
     const settings = _getWorkspaceSettingsAsync(workspace.id);
     try {
-        await workspaceHelper.uploadDirectoryToS3Async(workspacePath, s3Path, settings.workspace_sync_ignore);
+        await awsHelper.uploadDirectoryToS3Async(config.workspaceS3Bucket, s3Path, workspacePath, settings.workspace_sync_ignore);
     } catch (err) {
         /* Ignore any errors that may occur when the directory doesn't exist */
         logger.error(`Error uploading directory: ${err}`);
@@ -338,10 +376,13 @@ async function pushContainerContentsToS3(workspace) {
  * serially instead of in parallel.
  */
 async function pushAllRunningContainersToS3() {
+    lastPushAllTime = Date.now();
     const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
     await async.eachSeries(result.rows, async (ws) => {
         if (ws.state == 'running') {
+            logger.info(`Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
             await pushContainerContentsToS3(ws);
+            logger.info(`Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
         }
     });
 }
@@ -558,7 +599,13 @@ function _checkServer(workspace, callback) {
             } else {
                 const endTime = (new Date()).getTime();
                 if (endTime - startTime > maxMilliseconds) {
-                    callback(new Error(`Max startup time exceeded for workspace_id=${workspace.id}`));
+                    workspace.container.logs({
+                        stdout: true,
+                        stderr: true,
+                    }, (err, logs) => {
+                        if (ERR(err, callback)) return;
+                        callback(new Error(`Max startup time exceeded for workspace_id=${workspace.id} (launch uuid ${workspace.launch_uuid})\n${logs}`));
+                    });
                 } else {
                     setTimeout(checkWorkspace, checkMilliseconds);
                 }
@@ -598,6 +645,7 @@ function _getSettingsWrapper(workspace, callback) {
 }
 
 function _workspaceFileChangeOwner(filepath, callback) {
+    debug(`Enforcing file ownership for ${filepath}`);
     if (config.workspaceJobsDirectoryOwnerUid == 0 ||
         config.workspaceJobsDirectoryOwnerGid == 0) {
         /* No-op if there's nothing to do */
@@ -681,11 +729,14 @@ async function _getRunningWorkspaceByPath(path) {
 }
 
 async function _autoUpdateJobManager() {
+    lastAutoUpdateTime = Date.now();
     var jobs = [];
     for (const key in update_queue) {
+        logger.info(`_autoUpdateJobManager: key=${key}`);
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
         const {workspace_id, local_path} = await _getRunningWorkspaceByPath(path);
+        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
         if (workspace_id == null) continue;
 
         debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
@@ -696,24 +747,51 @@ async function _autoUpdateJobManager() {
         debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         debug(`watch: localPath=${local_path}`);
         debug(`watch: syncIgnore=${sync_ignore}`);
+        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
+        logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
 
         let s3_path = null;
         if (local_path === '') {
             // skip root localPath as it produces new S3 dir with empty name
+            logger.info(`_autoUpdateJobManager: skip root`);
             continue;
         } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
+            logger.info(`_autoUpdateJobManager: skip ignored`);
             continue;
         } else {
             s3_path = `${s3_name}/current/${local_path}`;
+            logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
         }
 
+        logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
         if (update_queue[key].action == 'update') {
+            logger.info(`_autoUpdateJobManager: adding update job`);
             jobs.push((callback) => {
-                awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, callback);
+                logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
+                awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
+                    if (err) {
+                        logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
+                        logger.error(`PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
+                    } else {
+                        logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
+                    }
+                    callback(null); // always return success to keep going
+                });
             });
         } else if (update_queue[key].action == 'delete') {
+            logger.info(`_autoUpdateJobManager: adding delete job`);
             jobs.push((callback) => {
-                awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, callback);
+                logger.info(`Removing file from S3: ${s3_path}`);
+                awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
+                    if (err) {
+                        logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
+                        logger.error(`PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`);
+                    } else {
+                        logger.info(`Successfully removed file from S3: ${s3_path}`);
+                    }
+                    callback(null); // always return success to keep going
+                });
             });
         }
     }
@@ -723,9 +801,9 @@ async function _autoUpdateJobManager() {
     } catch (err) {
         markSelfUnhealthy((err2) => {
             if (err2) {
-                logger.err(`Error while handling error: ${err2}`);
+                logger.error(`Error while handling error: ${err2}`);
             }
-            logger.err(`Error uploading files to S3:\n${err}`);
+            logger.error(`Error uploading files to S3:\n${err}`);
         });
     }
 }
@@ -764,8 +842,23 @@ async function _getInitialZipAsync(workspace) {
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
     await _downloadFromS3Async(zipPath, s3Path);
 
+    debug(`Making directory ${localPath}`);
+    await fsPromises.mkdir(localPath, { recursive: true });
+    await _workspaceFileChangeOwnerAsync(localPath);
+
     debug(`Unzipping ${zipPath} to ${localPath}`);
-    fs.createReadStream(zipPath).pipe(unzipper.Extract({ path: localPath }));
+    const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
+    for await (const entry of zip) {
+        const entryPath = path.join(localPath, entry.path);
+        if (entry.type == 'Directory') {
+            debug(`Making directory ${entryPath}`);
+            await fsPromises.mkdir(entryPath, { recursive: true });
+        } else {
+            debug(`Extracting file ${entryPath}`);
+            entry.pipe(fs.createWriteStream(entryPath));
+        }
+        await _workspaceFileChangeOwnerAsync(entryPath);
+    }
 
     return workspace;
 }
@@ -803,21 +896,70 @@ function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
 }
 
 function _pullImage(workspace, callback) {
-    workspaceHelper.updateMessage(workspace.id, 'Pulling image');
+    workspaceHelper.updateMessage(workspace.id, 'Checking image');
     const workspace_image = workspace.settings.workspace_image;
     if (config.workspacePullImagesFromDockerHub) {
         logger.info(`Pulling docker image: ${workspace_image}`);
+        let percentDisplayed = false;
         docker.pull(workspace_image, (err, stream) => {
             if (err) {
                 logger.error(`Error pulling "${workspace_image}" image; attempting to fall back to cached version.`, err);
                 return callback(null);
             }
+            /*
+             * We monitor the pull progress to calculate the
+             * percentage complete. This is roughly "current / total",
+             * but as docker pulls new layers the "total" can
+             * increase, which would cause the percentage to
+             * decrease. To avoid this, we track a "base" value for
+             * both "current" and "total" and compute the percentage
+             * as an increment above these values. This ensures that
+             * our percentage starts at 0, ends at 100, and never
+             * decreases. It has the disadvantage that the percentage
+             * will tend to go faster at the start (when we only know
+             * about a few layers) and slow down at the end (when we
+             * know about all layers).
+             */
 
+            let progressDetails = {};
+            let current, total = 0, fraction = 0;
+            let currentBase, fractionBase;
+            let outputCount = 0;
             docker.modem.followProgress(stream, (err) => {
                 if (ERR(err, callback)) return;
+                if (percentDisplayed) {
+                    const toDatabase = false;
+                    workspaceHelper.updateMessage(workspace.id, `Pulling image (100%)`, toDatabase);
+                }
                 callback(null, workspace);
             }, (output) => {
                 debug('Docker pull output: ', output);
+                if ('progressDetail' in output && output.progressDetail.total) {
+                    // track different states (Download/Extract)
+                    // separately by making them separate keys
+                    const key = `${output.id}/${output.status}`;
+                    progressDetails[key] = output.progressDetail;
+                }
+                current = Object.values(progressDetails).reduce((current, detail) => detail.current + current, 0);
+                const newTotal = Object.values(progressDetails).reduce((total, detail) => detail.total + total, 0);
+                if (outputCount <= 200) {
+                    // limit progress initially to wait for most layers to be seen
+                    current = Math.min(current, (outputCount/200)*newTotal);
+                }
+                if (newTotal > total) {
+                    total = newTotal;
+                    currentBase = current;
+                    fractionBase = fraction;
+                }
+                if (total > 0) {
+                    outputCount++;
+                    const fractionIncrement = (total > currentBase) ? ((current - currentBase) / (total - currentBase)) : 0;
+                    fraction = fractionBase + (1 - fractionBase) * fractionIncrement;
+                    const percent = Math.floor(fraction * 100);
+                    const toDatabase = false;
+                    percentDisplayed = true;
+                    workspaceHelper.updateMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase);
+                }
             });
         });
     } else {
@@ -978,6 +1120,7 @@ function initSequence(workspace_id, useInitialZip, res) {
         _checkServer,
     ], function(err) {
         if (err) {
+            workspaceHelper.updateState(workspace_id, 'stopped', `Error! Click "Reboot" to try again. Detail: ${err}`);
             markSelfUnhealthy((err2) => {
                 if (err2) {
                     logger.error(`Error while capturing error: ${err2}`);
@@ -1016,7 +1159,7 @@ function gradeSequence(workspace_id, res) {
             const workspace = await _getWorkspaceAsync(workspace_id);
             const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
             const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
-            const zipName = `workspace-${workspace_id}-${timestamp}.zip`;
+            const zipName = `${workspace.s3_name}-${timestamp}.zip`;
             zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
 
             return {

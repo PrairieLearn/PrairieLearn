@@ -748,7 +748,6 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
                     }
                     _.assign(infoFiles, subInfoFiles);
                 } catch (e) {
-                    console.log('error', path.join(relativeDir, dir), e.code);
                     if (e.code === 'ENOTDIR') {
                         // This wasn't a directory; ignore it.
                     } else if (e.code === 'ENOENT') {

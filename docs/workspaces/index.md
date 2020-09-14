@@ -14,7 +14,7 @@ Workspaces allow students to work in persistent remote containers via in-browser
 
 ## Directory structure
 
-Workspace questions must include an additional `workspace/` subdirectory but otherwise follow the regular [PrairieLearn question directory structure](../question.md#directory-structure). The contents of the `workspace/` subdirectory will be copied into the home directory of the student's workspace container.
+Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container.
 
 ```text
 questions
@@ -27,7 +27,7 @@ questions
 |   +-- clientFilesQuestion   # files accessible to the client web browser (optional)
 |   |   `-- fig1.png
 |   |
-|   `-- workspace             # copied into the student's workspace container home dir
+|   `-- workspace             # copied into the student's workspace container home dir (optional)
 |       +-- .bashrc
 |       +-- starter_code.h
 |       `-- starter_code.c
@@ -44,7 +44,7 @@ questions
     |   +-- correct_answer.c
     |   `-- test_run.py
     |
-    `-- workspace             # copied into the student's workspace container home dir
+    `-- workspace             # copied into the student's workspace container home dir (optional)
         +-- .bashrc
         +-- starter_code.h
         `-- starter_code.c
@@ -54,15 +54,18 @@ questions
 
 ### `info.json`
 
-The question's `info.json` should contain a `workspaceOptions` dictionary:
+The question's `info.json` should set the `singleVariant` and `workspaceOptions` properties:
 
-* `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
-* `port`: port number used by the workspace app inside the Docker image
-* `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
-* `gradedFiles` (optional, default none): list of files or directories that will be copied out of the workspace container for grading
-* `args` (optional, default none): command line arguments to pass to the Docker image
-* `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
-* `urlRewrite` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
+* `"singleVariant": true` will prevent student workspaces from resetting due to new variants being generated
+    * Note that new variants will still be generated in `Instructor view`
+* `workspaceOptions` contains the following properties:
+    * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
+    * `port`: port number used by the workspace app inside the Docker image
+    * `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
+    * `gradedFiles` (optional, default none): list of files or directories that will be copied out of the workspace container for grading
+    * `args` (optional, default none): command line arguments to pass to the Docker image
+    * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
+    * `urlRewrite` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
 #### `info.json` for ungraded workspace
 
@@ -75,6 +78,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
     "topic": "...",
     "tags": [...],
     "type": "v3",
+    "singleVariant": true,
     "workspaceOptions": {
         "image": "prairielearn/workspace-vscode",
         "port": 8080,
@@ -98,6 +102,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
     "topic": "...",
     "tags": [...],
     "type": "v3",
+    "singleVariant": true,
     "workspaceOptions": {
         "image": "prairielearn/workspace-vscode",
         "port": 8080,
@@ -111,7 +116,6 @@ For an externally graded workspace, a full `info.json` file should look somethin
             ".local/share/code-server/"
         ]
     },
-    "singleVariant": true,
     "gradingMethod": "External",
     "externalGradingOptions": {
         "enabled": true,

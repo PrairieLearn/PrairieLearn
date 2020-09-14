@@ -13,6 +13,7 @@ columns
 indexes
     workspace_hosts_pkey: PRIMARY KEY (id) USING btree (id)
     workspace_hosts_instance_id_key: UNIQUE (instance_id) USING btree (instance_id)
+    workspace_hosts_state_terminated_at_key: USING btree (state, terminated_at)
 
 referenced by
     workspaces: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE
