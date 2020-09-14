@@ -9,6 +9,7 @@ const logPageView = require('../../middlewares/logPageView')('studentInstanceQue
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const config = require('../../lib/config.js');
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
@@ -92,6 +93,7 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
+    res.locals.show_attached_files = config.attachedFilesDialogEnabled;
     question.getAndRenderVariant(req.query.variant_id, null, res.locals, function(err) {
         if (ERR(err, next)) return;
         logPageView(req, res, (err) => {

@@ -10,6 +10,7 @@ const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('@prairielearn/prairielib/sql-db');
+const config = require('../../lib/config.js');
 
 function processSubmission(req, res, callback) {
     if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessment_instance is closed'));
@@ -108,6 +109,7 @@ router.post('/', function(req, res, next) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     const variant_id = null;
+    res.locals.show_attached_files = config.attachedFilesDialogEnabled;
     question.getAndRenderVariant(variant_id, null, res.locals, function(err) {
         if (ERR(err, next)) return;
         logPageView(req, res, (err) => {

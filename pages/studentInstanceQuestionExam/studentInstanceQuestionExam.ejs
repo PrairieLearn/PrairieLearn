@@ -75,7 +75,9 @@
             <% } %>
           </p>
 
-          <%- include('../partials/attachFilePanel') %>
+          <% if (show_attached_files) { %>
+              <%- include('../partials/attachFilePanel') %>
+          <% } %>
 
           <% if (video) { %>
           <div class="modal" id="youtubemodal">
