@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION
         IN instance_question_id bigint,
         IN user_id bigint,
         IN authn_user_id bigint,
-        IN storage_type text,
+        IN storage_type enum_file_storage,
         OUT file_id bigint
     )
 AS $$
