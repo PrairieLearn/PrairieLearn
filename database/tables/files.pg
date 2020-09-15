@@ -10,6 +10,7 @@ columns
     instance_question_id: bigint
     storage_filename: text not null
     type: text not null
+    storage_type: enum_file_storage default 'FileSystem'::enum_file_storage
     user_id: bigint
 
 indexes
