@@ -412,6 +412,8 @@ function readEdit(fileEdit, callback) {
 function readEditContents(fileEdit, callback) {
     callbackify(async () => {
         const result = await fileStore.get(fileEdit.fileID);
+        console.log(result);
+        console.log(result.toString('utf8'));
         result.toString('utf8');
     })(callback);
 }
@@ -518,6 +520,7 @@ function writeEdit(fileEdit, callback) {
             null,
             fileEdit.userID,    // TODO: could distinguish between user_id and authn_user_id,
             fileEdit.userID,    //       although I don't think there's any need to do so
+            fileStore.storageTypes.FileSystem, // should be changed to S3 once we understand why logic fails
         );
         debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
         return fileID;
