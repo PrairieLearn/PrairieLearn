@@ -424,16 +424,6 @@
         <% } %>
       </div>
       <script>
-        if (<%- config_info.student_authz_join %>) {
-          document.getElementById("joincheck").checked = true;
-        }
-        if (<%- config_info.student_authz_create %>) {
-          document.getElementById("createcheck").checked = true;
-        }
-
-        if (<%- config_info.student_authz_leave %>) {
-          document.getElementById("leavecheck").checked = true;
-        }
         $(function () {
           $("#usersTable").tablesorter({
             theme: "bootstrap",
