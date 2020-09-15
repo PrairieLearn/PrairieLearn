@@ -12,7 +12,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
     return sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course)
-        + ((locals.assessment.group_work) ? (locals.group_info.name) : (sanitizeName.sanitizeString(locals.instance_user.uid)))
+        + sanitizeName.sanitizeString(locals.assessment.group_work ? locals.group_info.name : locals.instance_user.uid)
         + '_'
         + locals.assessment_instance.number
         + '_'
