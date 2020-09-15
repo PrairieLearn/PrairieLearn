@@ -1,2 +1,4 @@
+CREATE TYPE enum_file_storage AS ENUM ('FileSystem', 'S3');
+
 ALTER TABLE files 
-    ADD COLUMN storage_type text DEFAULT 'FileSystem';
+    ADD COLUMN storage_type enum_file_storage DEFAULT 'FileSystem'::enum_file_storage;
