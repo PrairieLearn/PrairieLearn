@@ -12,7 +12,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
     return sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course)
-        + sanitizeName.sanitizeString(locals.assessment.group_work ? locals.group_info.name : locals.instance_user.uid)
+        + sanitizeName.sanitizeString(locals.assessment.group_work ? locals.group.name : locals.instance_user.uid)
         + '_'
         + locals.assessment_instance.number
         + '_'
@@ -44,7 +44,7 @@ router.get('/', (req, res, next) => {
                         const params = {assessment_instance_id: res.locals.assessment_instance.id};
                         sqlDb.query(sql.select_group_info, params, (err, result) => {
                             if (ERR(err, next)) return;
-                            res.locals.group_info = result.rows[0];
+                            res.locals.group = result.rows[0];
                             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                         });
                     } else {
