@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION
         IN instance_question_id bigint,
         IN user_id bigint,
         IN authn_user_id bigint,
-        IN storage_type enum_file_storage,
+        IN storage_type text,
         OUT file_id bigint
     )
 AS $$
@@ -32,7 +32,7 @@ BEGIN
 
     INSERT INTO files
            (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, created_by, storage_type)
-    VALUES (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, authn_user_id, storage_type)
+    VALUES (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, authn_user_id, storage_type::enum_file_storage)
     RETURNING id
     INTO file_id;
 
