@@ -89,7 +89,7 @@ app.get('/status', asyncHandler(async (req, res) => {
 }));
 
 // TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
-app.post('/', function(req, res) {
+app.post('/', asyncHandler(async (req, res) => {
     const workspace_id = req.body.workspace_id;
     const action = req.body.action;
     const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
@@ -98,7 +98,7 @@ app.post('/', function(req, res) {
     } else if (action == null) {
         res.status(500).send('Missing action');
     } else if (action == 'init') {
-        initSequence(workspace_id, useInitialZip, res);
+        await initSequenceAsync(workspace_id, useInitialZip, res);
     } else if (action == 'reset') {
         resetSequence(workspace_id, res);
     } else if (action == 'getGradedFiles') {
@@ -106,7 +106,7 @@ app.post('/', function(req, res) {
     } else {
         res.status(500).send(`Action '${action}' undefined`);
     }
-});
+}));
 
 let server;
 let workspace_server_settings = {};
@@ -614,6 +614,7 @@ function _checkServer(workspace, callback) {
     }
     setTimeout(checkWorkspace, checkMilliseconds);
 }
+const _checkServerAsync = util.promisify(_checkServer);
 
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
@@ -630,18 +631,6 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
         workspace_args: result.rows[0].workspace_args || '',
         workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
     };
-}
-
-function _getSettingsWrapper(workspace, callback) {
-    async.parallel({
-        port: async () => { return await _allocateContainerPort(workspace); },
-        settings: async () => { return await _getWorkspaceSettingsAsync(workspace.id); },
-    }, (err, results) => {
-        if (ERR(err, (err) => logger.error('Error acquiring workspace container settings', err))) return;
-        workspace.launch_port = results.port;
-        workspace.settings = results.settings;
-        callback(null, workspace);
-    });
 }
 
 function _workspaceFileChangeOwner(filepath, callback) {
@@ -708,7 +697,7 @@ async function _downloadFromS3Async(filePath, S3FilePath) {
 const _downloadFromS3 = util.callbackify(_downloadFromS3Async);
 
 // Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
-async function _getRunningWorkspaceByPath(path) {
+async function _getRunningWorkspaceByPathAsync(path) {
     let localPath = path.replace(`${workspacePrefix}/`, '').split('/');
     const localName = localPath.shift();
     const launch_uuid = localName.replace('workspace-', '');
@@ -735,7 +724,7 @@ async function _autoUpdateJobManager() {
         logger.info(`_autoUpdateJobManager: key=${key}`);
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
-        const {workspace_id, local_path} = await _getRunningWorkspaceByPath(path);
+        const {workspace_id, local_path} = await _getRunningWorkspaceByPathAsync(path);
         logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
         if (workspace_id == null) continue;
 
@@ -862,7 +851,6 @@ async function _getInitialZipAsync(workspace) {
 
     return workspace;
 }
-const _getInitialZip = util.callbackify(_getInitialZipAsync);
 
 function _getInitialFiles(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Loading files');
@@ -886,6 +874,7 @@ function _getInitialFiles(workspace, callback) {
         });
     });
 }
+const _getInitialFilesAsync = util.promisify(_getInitialFiles);
 
 function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
     const hostname = `${workspace_server_settings.server_to_container_hostname}:${port}`;
@@ -894,6 +883,7 @@ function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
         callback(null);
     });
 }
+const _queryUpdateWorkspaceHostnameAsync = util.promisify(_queryUpdateWorkspaceHostname);
 
 function _pullImage(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Checking image');
@@ -967,6 +957,7 @@ function _pullImage(workspace, callback) {
         callback(null, workspace);
     }
 }
+const _pullImageAsync = util.promisify(_pullImage);
 
 function _createContainer(workspace, callback) {
     const localName = workspace.local_name;
@@ -1050,18 +1041,7 @@ function _createContainer(workspace, callback) {
             callback(null, container);
         });
 }
-
-function _createContainerWrapper(workspace, callback) {
-    workspaceHelper.updateMessage(workspace.id, 'Creating container');
-    async.parallel({
-        query: (callback) => {_queryUpdateWorkspaceHostname(workspace.id, workspace.launch_port, callback);},
-        container: (callback) => {_createContainer(workspace, callback);},
-    }, (err, results) => {
-        if (ERR(err, callback)) return;
-        workspace.container = results.container;
-        callback(null, workspace);
-    });
-}
+const _createContainerAsync = util.promisify(_createContainer);
 
 function _startContainer(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Starting container');
@@ -1070,71 +1050,78 @@ function _startContainer(workspace, callback) {
         callback(null, workspace);
     });
 }
+const _startContainerAsync = util.promisify(_startContainer);
 
 // Called by the main server the first time a workspace is used by a user
-function initSequence(workspace_id, useInitialZip, res) {
+async function initSequenceAsync(workspace_id, useInitialZip, res) {
     // send 200 immediately to prevent socket hang up from _pullImage()
     res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
-    async.waterfall([
-        async () => {
-            const uuid = uuidv4();
-            const params = {
-                workspace_id,
-                launch_uuid: uuid,
-                instance_id: workspace_server_settings.instance_id,
-            };
-            await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
+    const uuid = uuidv4();
+    const params = {
+        workspace_id,
+        launch_uuid: uuid,
+        instance_id: workspace_server_settings.instance_id,
+    };
+    await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
 
-            const result = await sqldb.queryOneRowAsync(sql.select_workspace_version, {workspace_id});
-            const { workspace_version } = result.rows[0];
+    const result = await sqldb.queryOneRowAsync(sql.select_workspace_version, {workspace_id});
+    const { workspace_version } = result.rows[0];
+    const workspace = {
+        'id': workspace_id,
+        'launch_uuid': uuid,
+        'local_name': `workspace-${uuid}`,
+        's3_name': `workspace-${workspace_id}-${workspace_version}`,
+    };
 
-            logger.info(`Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`);
-            const workspace = {
-                'id': workspace_id,
-                'launch_uuid': uuid,
-                'local_name': `workspace-${uuid}`,
-                's3_name': `workspace-${workspace_id}-${workspace_version}`,
-            };
-            return workspace;
-        },
-        (workspace, callback) => {
-            if (useInitialZip) {
-                debug(`Bootstrapping workspace with initial.zip`);
-                _getInitialZip(workspace, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, workspace);
-                });
-            } else {
-                debug(`Syncing workspace from S3`);
-                _getInitialFiles(workspace, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, workspace);
-                });
-            }
-        },
-        _getSettingsWrapper,
-        _pullImage,
-        _createContainerWrapper,
-        _startContainer,
-        _checkServer,
-    ], function(err) {
-        if (err) {
-            workspaceHelper.updateState(workspace_id, 'stopped', `Error! Click "Reboot" to try again. Detail: ${err}`);
-            markSelfUnhealthy((err2) => {
-                if (err2) {
-                    logger.error(`Error while capturing error: ${err2}`);
-                }
-                logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
-            });
+    logger.info(`Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`);
+    try { // only errors at this level will set host to unhealthy
+        if (useInitialZip) {
+            debug(`init: bootstrapping workspace with initial.zip`);
+            await _getInitialZipAsync(workspace);
         } else {
-            sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
-                if (ERR(err)) return;
-                debug(`Container initialized for workspace_id=${workspace_id}`);
-                workspaceHelper.updateState(workspace_id, 'running', null);
-            });
+            debug(`init: syncing workspace from S3`);
+            await _getInitialFilesAsync(workspace);
         }
-    });
+
+        try {
+            debug(`init: configuring workspace`);
+            workspace.launch_port = await _allocateContainerPort(workspace);
+            workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
+        } catch (err) {
+            workspaceHelper.updateState(workspace_id, 'stopped', `Error configuring workspace. Click "Reboot" to try again.`);
+            return; // don't set host to unhealthy
+        }
+
+        try {
+            await _pullImageAsync(workspace);
+        } catch (err) {
+            workspaceHelper.updateState(workspace_id, 'stopped', `Error pulling image. Click "Reboot" to try again.`);
+            return; // don't set host to unhealthy
+        }
+
+        try {
+            workspaceHelper.updateMessage(workspace.id, 'Creating container');
+            await _queryUpdateWorkspaceHostnameAsync (workspace.id, workspace.launch_port);
+            workspace.container = await _createContainerAsync(workspace);
+        } catch (err) {
+            workspaceHelper.updateState(workspace_id, 'stopped', `Error creating container. Click "Reboot" to try again.`);
+            return; // don't set host to unhealthy
+        }
+
+        try {
+            await _startContainerAsync(workspace);
+            await _checkServerAsync(workspace);
+            debug(`init: container initialized for workspace_id=${workspace_id}`);
+            await sqldb.queryAsync(sql.update_workspace_launched_at_now, {workspace_id});
+            workspaceHelper.updateState(workspace_id, 'running', null);
+        } catch (err) {
+            workspaceHelper.updateState(workspace_id, 'stopped', `Error starting container. Click "Reboot" to try again.`);
+            return; // don't set host to unhealthy
+        }
+    } catch (err) {
+        markSelfUnhealthyAsync();
+    }
 }
 
 // Called by the main server when the user want to reset the file to default
