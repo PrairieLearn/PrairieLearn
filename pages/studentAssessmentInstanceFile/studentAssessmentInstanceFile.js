@@ -10,9 +10,10 @@ router.get('/:file_id/:display_filename', async function(req, res) {
         display_filename: req.params.display_filename,
     };
 
-    const buffer = await fileStore.get(options.file_id);
+    const file = await fileStore.get(options.file_id);
     res.set('Content-Type', 'application/octet-stream');
-    res.send(buffer);
+    res.set('Content-disposition', `attachment; filename=${options.display_filename}`);
+    res.send(file.contents);
 });
 
 module.exports = router;
