@@ -11,8 +11,6 @@ router.get('/:file_id/:display_filename', async function(req, res) {
     };
 
     const file = await fileStore.get(options.file_id);
-    res.set('Content-Type', 'application/octet-stream');
-    res.set('Content-disposition', `attachment; filename=${options.display_filename}`);
     res.send(file.contents);
 });
 
