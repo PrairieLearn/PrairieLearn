@@ -10,10 +10,12 @@ router.get('/:file_id/:display_filename', async function(req, res, next) {
         display_filename: req.params.display_filename,
     };
 
-    const stream = await fileStore.get(options.file_id, options.assessment_instance_id, options.display_filename);
-    stream
-        .on('error', (err) => {return ERR(err, next);})
-        .pipe(res);
+    const buffer = await fileStore.get(options.file_id);
+    res.set('Content-Type', 'application/octet-stream');
+    res.send(buffer);
+    // stream
+    //     .on('error', (err) => {return ERR(err, next);})
+    //     .pipe(res);
 });
 
 module.exports = router;
