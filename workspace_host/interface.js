@@ -22,6 +22,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
+const stream = require('stream');
 const LocalLock = require('../lib/local-lock');
 const asyncHandler = require('express-async-handler');
 
@@ -847,18 +848,28 @@ async function _getInitialZipAsync(workspace) {
     await _workspaceFileChangeOwnerAsync(localPath);
 
     debug(`Unzipping ${zipPath} to ${localPath}`);
-    const zip = fs.createReadStream(zipPath).pipe(unzipper.Parse({ forceStream: true }));
-    for await (const entry of zip) {
-        const entryPath = path.join(localPath, entry.path);
-        if (entry.type == 'Directory') {
-            debug(`Making directory ${entryPath}`);
-            await fsPromises.mkdir(entryPath, { recursive: true });
-        } else {
-            debug(`Extracting file ${entryPath}`);
-            entry.pipe(fs.createWriteStream(entryPath));
-        }
-        await _workspaceFileChangeOwnerAsync(entryPath);
-    }
+    fs.createReadStream(zipPath).pipe(unzipper.Parse({
+        forceStream: true,
+    })).pipe(stream.Transform({
+        objectMode: true,
+        transform: (entry, encoding, callback) => {
+            const entryPath = path.join(localPath, entry.path);
+            if (entry.type === 'Directory') {
+                debug(`Making directory ${entryPath}`);
+                util.callbackify(async () => {
+                    await fs.promises.mkdir(entryPath, { recursive: true });
+                    await _workspaceFileChangeOwnerAsync(entryPath);
+                })(callback);
+            } else {
+                debug(`Extracting file ${entryPath}`);
+                entry.pipe(fs.createWriteStream(entryPath)).on('finish', () => {
+                    util.callbackify(async () => {
+                        await _workspaceFileChangeOwnerAsync(entryPath);
+                    })(callback);
+                });
+            }
+        },
+    }));
 
     return workspace;
 }
