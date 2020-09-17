@@ -4,26 +4,12 @@ import json
 import numpy as np
 import numpy.random
 import random
+import io
+import pl_helpers
 from os.path import join
 from os.path import splitext
 from types import ModuleType, FunctionType
 from copy import deepcopy
-
-import io
-from IPython import get_ipython
-from nbformat import read
-from IPython.core.interactiveshell import InteractiveShell
-
-def extract_cell_content(f, ipynb_key):
-    nb = read(f, 4)
-    shell = InteractiveShell.instance()
-    content = ''
-    for cell in nb.cells:
-        if cell['cell_type'] == 'code':
-            code = shell.input_transformer_manager.transform_cell(cell.source)
-            if code.strip().startswith(ipynb_key):
-                content += code
-    return content
 
 class UserCodeFailed(Exception):
     def __init__(self, err, *args):
@@ -73,7 +59,7 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     with open(fname_student, 'r', encoding='utf-8') as f:
         filename, extension = splitext(fname_student)
         if extension == '.ipynb':
-            str_student = str_leading + extract_cell_content(f, ipynb_key)
+            str_student = str_leading + pl_helpers.extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
     with open(join(filenames_dir, 'test.py'), encoding='utf-8') as f:

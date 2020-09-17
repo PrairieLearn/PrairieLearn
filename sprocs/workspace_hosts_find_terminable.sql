@@ -1,8 +1,10 @@
+DROP FUNCTION IF EXISTS workspace_hosts_find_terminable(integer, integer);
+
 CREATE OR REPLACE FUNCTION
     workspace_hosts_find_terminable(
         IN unhealthy_timeout_sec integer,
         IN launch_timeout_sec integer,
-        OUT terminating_hosts text[]
+        OUT terminable_hosts text[]
     )
 AS $$
 BEGIN
@@ -10,7 +12,7 @@ BEGIN
     --  draining/unhealthy hosts
     --  unhealthy hosts that have been unhealthy for a while
     --  hosts that have been stuck in launching for a while
-    CREATE TEMPORARY TABLE terminable_hosts ON COMMIT DROP AS (
+    CREATE TEMPORARY TABLE tmp_terminable_hosts ON COMMIT DROP AS (
         SELECT
             wh.*
         FROM
@@ -25,12 +27,12 @@ BEGIN
     UPDATE workspace_hosts AS wh
     SET state = 'terminating',
         state_changed_at = NOW()
-    FROM terminable_hosts AS th
+    FROM tmp_terminable_hosts AS th
     WHERE wh.id = th.id;
 
     -- Save our terminating hosts
     SELECT array_agg(th.instance_id)
-    INTO terminating_hosts
-    FROM terminable_hosts AS th;
+    INTO terminable_hosts
+    FROM tmp_terminable_hosts AS th;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
