@@ -1,4 +1,3 @@
-// const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const fileStore = require('../../lib/file-store');
