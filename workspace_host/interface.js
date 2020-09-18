@@ -925,7 +925,7 @@ function _pullImage(workspace, callback) {
             let current, total = 0, fraction = 0;
             let currentBase, fractionBase;
             let outputCount = 0;
-            let percentCache = 0, dateCache = Date.now();
+            let percentCache = -1, dateCache = Date.now() - 1e6;
             docker.modem.followProgress(stream, (err) => {
                 if (ERR(err, callback)) return;
                 if (percentDisplayed) {
