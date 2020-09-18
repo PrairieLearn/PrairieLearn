@@ -645,69 +645,6 @@ function _getSettingsWrapper(workspace, callback) {
     });
 }
 
-function _workspaceFileChangeOwner(filepath, callback) {
-    debug(`Enforcing file ownership for ${filepath}`);
-    if (config.workspaceJobsDirectoryOwnerUid == 0 ||
-        config.workspaceJobsDirectoryOwnerGid == 0) {
-        /* No-op if there's nothing to do */
-        return callback(null);
-    }
-
-    fs.chown(filepath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
-const _workspaceFileChangeOwnerAsync = util.promisify(_workspaceFileChangeOwner);
-
-async function _downloadFromS3Async(filePath, S3FilePath) {
-    if (filePath.slice(-1) == '/') {
-        // this is a directory
-        filePath = filePath.slice(0, -1);
-        try {
-            await fsPromises.lstat(filePath);
-        } catch(err) {
-            await fsPromises.mkdir(filePath, { recursive: true });
-            await _workspaceFileChangeOwnerAsync(filePath);
-        }
-        update_queue[[filePath, true]] = {action: 'skip'};
-        return;
-    } else {
-        // this is a file
-        try {
-            await fsPromises.lstat(path.dirname(filePath));
-        } catch(err) {
-            await fsPromises.mkdir(path.dirname(filePath), { recursive: true });
-        }
-    }
-
-    const s3 = new AWS.S3();
-    const downloadParams = {
-        Bucket: config.workspaceS3Bucket,
-        Key: S3FilePath,
-    };
-    const fileStream = fs.createWriteStream(filePath);
-    const s3Stream = s3.getObject(downloadParams).createReadStream();
-
-    return new Promise((resolve, reject) => {
-        s3Stream.on('error', function(err) {
-            // This is for errors like no such file on S3, etc
-            reject(err);
-        });
-        s3Stream.pipe(fileStream).on('error', function(err) {
-            // This is for errors like the connection is lost, etc
-            reject(err);
-        }).on('close', function() {
-            update_queue[[filePath, false]] = {action: 'skip'};
-            _workspaceFileChangeOwner(filePath, (err) => {
-                if (err) return reject(err);
-                resolve();
-            });
-        });
-    });
-}
-const _downloadFromS3 = util.callbackify(_downloadFromS3Async);
-
 // Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
 async function _getRunningWorkspaceByPath(path) {
     let localPath = path.replace(`${workspacePrefix}/`, '').split('/');
@@ -841,12 +778,21 @@ async function _getInitialZipAsync(workspace) {
     const s3Path = `${s3Name}/initial.zip`;
 
     debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
-    await _downloadFromS3Async(zipPath, s3Path);
+    const options = {
+        owner: config.workspaceJobsDirectoryOwnerUid,
+        group: config.workspaceJobsDirectoryOwnerGid,
+    };
+    const isDirectory = false;
+    update_queue[[zipPath, isDirectory]] = { action: 'skip' };
+    await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, options);
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
-    await _workspaceFileChangeOwnerAsync(localPath);
+    await fsPromises.chown(localPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
 
+    // FIXME: This unzipper was hotfixed to support workspaces with many/large/nested initial files.
+    // There's probably a better way to do this if someone has more time/knowhow.
+    // See #3146 for gotchas: https://github.com/PrairieLearn/PrairieLearn/pull/3146
     debug(`Unzipping ${zipPath} to ${localPath}`);
     fs.createReadStream(zipPath).pipe(unzipper.Parse({
         forceStream: true,
@@ -857,14 +803,14 @@ async function _getInitialZipAsync(workspace) {
             if (entry.type === 'Directory') {
                 debug(`Making directory ${entryPath}`);
                 util.callbackify(async () => {
-                    await fs.promises.mkdir(entryPath, { recursive: true });
-                    await _workspaceFileChangeOwnerAsync(entryPath);
+                    await fsPromises.mkdir(entryPath, { recursive: true });
+                    await fsPromises.chown(entryPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
                 })(callback);
             } else {
                 debug(`Extracting file ${entryPath}`);
                 entry.pipe(fs.createWriteStream(entryPath)).on('finish', () => {
                     util.callbackify(async () => {
-                        await _workspaceFileChangeOwnerAsync(entryPath);
+                        await fsPromises.chown(entryPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
                     })(callback);
                 });
             }
@@ -882,9 +828,15 @@ function _getInitialFiles(workspace, callback) {
     _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
         if (ERR(err, callback)) return;
         var jobs = [];
-        jobs_params.forEach(([filePath, S3filePath]) => {
+        jobs_params.forEach(([localPath, s3Path]) => {
             jobs.push( ((callback) => {
-                _downloadFromS3(filePath, S3filePath, (err) => {
+                const options = {
+                    owner: config.workspaceJobsDirectoryOwnerUid,
+                    group: config.workspaceJobsDirectoryOwnerGid,
+                };
+                const isDirectory = localPath.endsWith('/');
+                update_queue[[localPath, isDirectory]] = { action: 'skip' };
+                awsHelper.downloadFromS3(config.workspaceS3Bucket, s3Path, localPath, options, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -1012,7 +964,7 @@ function _createContainer(workspace, callback) {
             });
         },
         (callback) => {
-            _workspaceFileChangeOwner(workspaceJobPath, (err) => {
+            fs.chown(workspaceJobPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
