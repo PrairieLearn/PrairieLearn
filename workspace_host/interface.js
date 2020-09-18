@@ -838,15 +838,6 @@ function _getInitialFiles(workspace, callback) {
 }
 const _getInitialFilesAsync = util.promisify(_getInitialFiles);
 
-function _queryUpdateWorkspaceHostname(workspace_id, port, callback) {
-    const hostname = `${workspace_server_settings.server_to_container_hostname}:${port}`;
-    sqldb.query(sql.update_workspace_hostname, {workspace_id, hostname}, function(err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
-const _queryUpdateWorkspaceHostnameAsync = util.promisify(_queryUpdateWorkspaceHostname);
-
 function _pullImage(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Checking image');
     const workspace_image = workspace.settings.workspace_image;
@@ -1064,7 +1055,8 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
         try {
             workspaceHelper.updateMessage(workspace.id, 'Creating container');
-            await _queryUpdateWorkspaceHostnameAsync (workspace.id, workspace.launch_port);
+            const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
+            await sqldb.queryAsync(sql.update_workspace_hostname, { workspace_id, hostname });
             workspace.container = await _createContainerAsync(workspace);
         } catch (err) {
             workspaceHelper.updateState(workspace_id, 'stopped', `Error creating container. Click "Reboot" to try again.`);
