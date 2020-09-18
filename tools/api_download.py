@@ -42,8 +42,16 @@ def get_and_save_json(path, filename, args, logfile):
     log(logfile, f'downloading {url} ...')
     start_time = time.time()
     r = requests.get(url, headers=headers)
-    if r.status_code != 200:
-        raise Exception(f'Invalid status returned for {url}: {r.status_code}')
+    while True:
+        r = requests.get(url, headers=headers)
+        if r.status_code == 200:
+            break
+        elif r.status_code == 502:
+            log(logfile, f'Bad Gateway Error encountered for {url}, retrying in 1 second, please check your network if it persists.')
+            time.sleep(1)
+            continue
+        else:
+            raise Exception(f'Invalid status returned for {url}: {r.status_code}')
     end_time = time.time()
     log(logfile, f'successfully downloaded {r.headers["content-length"]} bytes in {end_time - start_time} seconds')
 
