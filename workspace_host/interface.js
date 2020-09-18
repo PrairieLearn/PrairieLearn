@@ -790,6 +790,9 @@ async function _getInitialZipAsync(workspace) {
     await fsPromises.mkdir(localPath, { recursive: true });
     await fsPromises.chown(localPath, config.workspaceJobsDirectoryOwnerUid, config.workspaceJobsDirectoryOwnerGid);
 
+    // FIXME: This unzipper was hotfixed to support workspaces with many/large/nested initial files.
+    // There's probably a better way to do this if someone has more time/knowhow.
+    // See #3146 for gotchas: https://github.com/PrairieLearn/PrairieLearn/pull/3146
     debug(`Unzipping ${zipPath} to ${localPath}`);
     fs.createReadStream(zipPath).pipe(unzipper.Parse({
         forceStream: true,
