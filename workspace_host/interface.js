@@ -1075,7 +1075,6 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
             await _startContainerAsync(workspace);
             await _checkServerAsync(workspace);
             debug(`init: container initialized for workspace_id=${workspace_id}`);
-            await sqldb.queryAsync(sql.update_workspace_launched_at_now, {workspace_id});
             workspaceHelper.updateState(workspace_id, 'running', null);
         } catch (err) {
             workspaceHelper.updateState(workspace_id, 'stopped', `Error starting container. Click "Reboot" to try again.`);
