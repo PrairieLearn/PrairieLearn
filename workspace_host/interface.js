@@ -887,6 +887,7 @@ function _pullImage(workspace, callback) {
             let current, total = 0, fraction = 0;
             let currentBase, fractionBase;
             let outputCount = 0;
+            let percentCache = -1, dateCache = Date.now() - 1e6;
             docker.modem.followProgress(stream, (err) => {
                 if (ERR(err, callback)) return;
                 if (percentDisplayed) {
@@ -918,9 +919,16 @@ function _pullImage(workspace, callback) {
                     const fractionIncrement = (total > currentBase) ? ((current - currentBase) / (total - currentBase)) : 0;
                     fraction = fractionBase + (1 - fractionBase) * fractionIncrement;
                     const percent = Math.floor(fraction * 100);
-                    const toDatabase = false;
-                    percentDisplayed = true;
-                    workspaceHelper.updateMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase);
+                    const date = Date.now();
+                    const percentDelta = percent - percentCache;
+                    const dateDeltaSec = (date - dateCache) / 1000;
+                    if ((percentDelta > 0) && (dateDeltaSec >= config.workspacePercentMessageRateLimitSec)) {
+                        percentCache = percent;
+                        dateCache = date;
+                        percentDisplayed = true;
+                        const toDatabase = false;
+                        workspaceHelper.updateMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase);
+                    }
                 }
             });
         });
