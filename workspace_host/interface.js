@@ -509,6 +509,7 @@ async function dockerAttemptKillAndRemove(input) {
 async function markSelfUnhealthyAsync() {
     try {
         await sqldb.queryAsync(sql.mark_host_unhealthy, { instance_id: workspace_server_settings.instance_id });
+        logger.warn(`Marked self as unhealthy`);
     } catch (err) {
         /* This could error if we don't even have a DB connection, in that case we should let the main server
            mark us as unhealthy. */
