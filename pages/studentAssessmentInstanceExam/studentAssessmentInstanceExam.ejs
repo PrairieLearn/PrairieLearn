@@ -27,7 +27,7 @@
             <% if (assessment_instance.all_questions_answered) { %>
             <div class="alert alert-warning">There are still unanswered questions.</div>
             <% } %>
-            <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
+            <p class="text-danger"><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
             <p>Are you sure you want to finish, complete, and close out the assessment?</p>
           </div>
           <div class="modal-footer">
@@ -74,7 +74,7 @@
         <div class="card-body">
           <% if (!assessment.allow_real_time_grading) { %>
             <div class="alert alert-warning">
-              This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later.
+              This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later. You can use the <span class="badge badge-outline badge-light">Finish assessment</span> button below to finish and calculate your final grade.
             </div>
           <% } %>
           <div class="row align-items-center">
@@ -180,16 +180,16 @@
               <th colspan="5">
                 <%= instance_question.zone_title %>
                 <% if (instance_question.zone_has_max_points) { %>
-                 &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
-                    data-toggle="popover" data-trigger="focus" data-container="body"
-                    data-html="true"
-                    data-content="Of the points that you are awarded for answering these questions, at most <%= instance_question.zone_max_points %> will count toward your total points."><span class="badge badge-secondary align-top">maximum <%= instance_question.zone_max_points %> points &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+                  <%- include('../partials/zoneInfoBadge', { zoneInfo: {
+                    popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
+                    mainContent: `Maximum ${instance_question.zone_max_points} points`
+                  }}); %>
                 <% } %>
                 <% if (instance_question.zone_has_best_questions) { %>
-                 &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
-                    data-toggle="popover" data-trigger="focus" data-container="body"
-                    data-html="true"
-                    data-content="Of these questions, only the <%= instance_question.zone_best_questions %> with the highest number of awarded points will count toward your total points."><span class="badge badge-secondary align-top">best <%= instance_question.zone_best_questions %> questions &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+                  <%- include('../partials/zoneInfoBadge', { zoneInfo: {
+                    popoverContent: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                    mainContent: `Best ${instance_question.zone_best_questions} questions`
+                  }}); %>
                 <% } %>
               </th>
             </tr>
@@ -237,7 +237,7 @@
             <ul class="my-1">
               <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
               <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
-              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
+              <% if (authz_result.mode == 'SEB' || authz_result.password != null || authz_result.show_closed_assessment == false) { %>
                 <li>
                   After you have answered all the questions completely, click here:
                   <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
@@ -249,14 +249,10 @@
           <% } else { %>
             <ul class="my-1">
               <li>Submit your answer to each question with the <strong>Save</strong> button on the question page.</li>
-              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
-                <li>
-                  After you have answered all the questions completely, click here:
-                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
-                </li>
-              <% } else { %>
-                <li>When you are done, please logout and close your browser; there is no need to do anything else. Your saved answers will be automatically graded when your final score is computed.</li>
-              <% } %>
+              <li>
+                After you have answered all the questions completely, click here:
+                <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+              </li>
             </ul>
           <% } %>
         </div>

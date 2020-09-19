@@ -8,9 +8,10 @@ const serverJobs = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const requireFrontend = require('../../lib/require-frontend');
 const courseUtil = require('../../lib/courseUtil');
+const util = require('util');
+const chunks = require('../../lib/chunks');
 const dockerUtil = require('../../lib/dockerUtil');
 const debug = require('debug')('prairielearn:syncHelpers');
-
 
 module.exports.pullAndUpdate = function(locals, callback) {
     const options = {
@@ -28,6 +29,9 @@ module.exports.pullAndUpdate = function(locals, callback) {
         if (config.gitSshCommand != null) {
             gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
         }
+
+        let startGitHash = null;
+        let endGitHash = null;
 
         // We've now triggered the callback to our caller, but we
         // continue executing below to launch the jobs themselves.
@@ -53,7 +57,15 @@ module.exports.pullAndUpdate = function(locals, callback) {
             serverJobs.spawnJob(jobOptions);
         };
 
-        const syncStage1B = function() {
+        const syncStage1B = () => {
+            courseUtil.getOrUpdateCourseCommitHash(locals.course, (err, hash) => {
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
+                startGitHash = hash;
+                syncStage1B2();
+            });
+        };
+
+        const syncStage1B2 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -65,12 +77,12 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 arguments: ['fetch'],
                 working_directory: locals.course.path,
                 env: gitEnv,
-                on_success: syncStage1B2,
+                on_success: syncStage1B3,
             };
             serverJobs.spawnJob(jobOptions);
         };
 
-        const syncStage1B2 = function() {
+        const syncStage1B3 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -82,12 +94,12 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 arguments: ['clean', '-fdx'],
                 working_directory: locals.course.path,
                 env: gitEnv,
-                on_success: syncStage1B3,
+                on_success: syncStage1B4,
             };
             serverJobs.spawnJob(jobOptions);
         };
 
-        const syncStage1B3 = function() {
+        const syncStage1B4 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -107,8 +119,9 @@ module.exports.pullAndUpdate = function(locals, callback) {
         // After either cloning or fetching and resetting from Git, we'll need
         // to load and store the current commit hash in the database
         const syncStage2 = () => {
-            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+            courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
                 ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
+                endGitHash = hash;
                 syncStage3();
             });
         };
@@ -136,7 +149,23 @@ module.exports.pullAndUpdate = function(locals, callback) {
                     } else if (result.hadJsonErrors) {
                         job.fail('One or more JSON files contained errors and were unable to be synced');
                     } else {
-                        job.succeed();
+                        if (config.chunksGenerator) {
+                             util.callbackify(chunks.updateChunksForCourse)({
+                                 coursePath: locals.course.path,
+                                 courseId: locals.course.id,
+                                 courseData: result.courseData,
+                                 oldHash: startGitHash,
+                                 newHash: endGitHash,
+                             }, (err) => {
+                                 if (err) {
+                                     job.fail(err);
+                                     return;
+                                 }
+                                 job.succeed();
+                             });
+                        } else {
+                            job.succeed();
+                        }
                     }
                 });
             });

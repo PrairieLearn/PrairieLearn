@@ -4,7 +4,7 @@ import json
 from os.path import join
 from types import FunctionType
 from collections import namedtuple
-from pl_helpers import (points, name, save_plot, print_student_code, not_repeated)
+from pl_helpers import (points, name, save_plot, not_repeated)
 from pl_execute import execute_code
 from code_feedback import Feedback
 
