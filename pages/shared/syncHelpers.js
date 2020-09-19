@@ -295,7 +295,7 @@ module.exports.ecrUpdate = function(locals, callback) {
                 var jobOptions = {
                     course_id: locals.course ? locals.course.id : null,
                     type: 'image_sync',
-                    description: 'Pull image from Docker Hub and push to PL registry',
+                    description: `Pull image from Docker Hub and push to PL registry: ${image.external_grading_image}`,
                     job_sequence_id,
                 };
 
@@ -304,12 +304,20 @@ module.exports.ecrUpdate = function(locals, callback) {
                 }
 
                 serverJobs.createJob(jobOptions, (err, job) => {
-                    if (ERR(err, callback)) return;
+                    if (err) {
+                        logger.error('Error in createJob()', err);
+                        serverJobs.failJobSequence(job_sequence_id);
+                        return callback(err);
+                    }
                     debug('successfully created job ', {job_sequence_id});
 
                     // continue executing here to launch the actual job
                     dockerUtil.pullAndPushToECR(image.external_grading_image, auth, job, (err) => {
-                        if (ERR(err, callback)) return;
+                        if (err) {
+                            job.fail(`Error syncing ${image.external_grading_image}`, err);
+                            return callback(err);
+                        }
+
                         job.succeed();
                         callback(null);
                     });
