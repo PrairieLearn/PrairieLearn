@@ -19,14 +19,6 @@ SET
 WHERE
     w.id = $workspace_id;
 
--- BLOCK update_workspace_launched_at_now
-UPDATE workspaces AS w
-SET
-    launched_at = now(),
-    heartbeat_at = now()
-WHERE
-    w.id = $workspace_id;
-
 -- BLOCK insert_workspace_hosts
 INSERT INTO workspace_hosts
         (instance_id,  hostname, state, state_changed_at, ready_at)

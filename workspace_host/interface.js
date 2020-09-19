@@ -1098,11 +1098,8 @@ function initSequence(workspace_id, useInitialZip, res) {
                 logger.error(`Error for workspace_id=${workspace_id}: ${err}\n${err.stack}`);
             });
         } else {
-            sqldb.query(sql.update_workspace_launched_at_now, {workspace_id}, (err) => {
-                if (ERR(err)) return;
-                debug(`Container initialized for workspace_id=${workspace_id}`);
-                workspaceHelper.updateState(workspace_id, 'running', null);
-            });
+            debug(`Container initialized for workspace_id=${workspace_id}`);
+            workspaceHelper.updateState(workspace_id, 'running', null);
         }
     });
 }
