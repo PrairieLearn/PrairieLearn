@@ -68,6 +68,7 @@ router.get('/', function(req, res, next) {
                     if (ERR(err, next)) return;
                     const params = {
                         pushed_at_array: _.map(res.locals.images, 'pushed_at'),
+                        course_id: res.locals.course.id,
                     };
                     sqldb.query(sql.format_pushed_at, params, (err, result) => {
                         if (ERR(err, next)) return;
