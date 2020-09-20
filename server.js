@@ -389,7 +389,7 @@ app.use(/^\/pl\/course_instance\/[0-9]+\/instructor\/effectiveUser(\/?.*)$/, fun
     }
 });
 
-// Redirect Instruct question page to Student Version if we don't have Instructor authz.
+// Redirect Instructor question page to Student Version if we don't have Instructor authz.
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/questions', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_view) {
         res.redirect(`/pl/course_instance/${req.params.course_instance_id}/assessment/${req.params.assessment_id}/`);
