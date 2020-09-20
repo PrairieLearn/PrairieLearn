@@ -1,6 +1,6 @@
 function confirmOnUnload() {
     const form = $('form.question-form');
-    const getForm = () => form.serialize();
+    const getForm = () => form.serialize().split('&')[0];
 
     // Set form state on load and submit
     var initialForm = getForm();
