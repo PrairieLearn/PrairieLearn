@@ -89,7 +89,7 @@
               <tr>
                 <td><%= image.external_grading_image %></td>
                 <td><%= image.tag %></td>
-                <td><pre title="<%= image.digest_full %>"><%= image.digest %></pre></td>
+                <td><pre class="mb-0" title="<%= image.digest_full %>"><%= image.digest %></pre></td>
                 <td><%= image.size ? image.size.toFixed(2) + ' MB' : ''; %></td>
                 <td>
                   <% if (image.imageSyncNeeded) { %>
