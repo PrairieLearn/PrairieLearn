@@ -34,9 +34,9 @@ module.exports = {
             newErr = new Error(String(err));
         }
         newErr.data = newErr.data || {};
-        newErr.prevMessages = newErr.prevMsgs || [];
-        newErr.prevMessages.splice(0, 0, newErr.message);
-        newErr.message = newMsg;
+        newErr.data._previousMessages = newErr.data._previousMessages || [];
+        newErr.data._previousMessages.splice(0, 0, newErr.message);
+        newErr.message = `${newMsg}: ${newErr.message}`;
         return newErr;
     },
 };
