@@ -1,7 +1,6 @@
 const ERR = require('async-stacktrace');
 const fs = require('fs');
 const async = require('async');
-const AWS = require('aws-sdk');
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
@@ -12,6 +11,8 @@ const util = require('util');
 const chunks = require('../../lib/chunks');
 const dockerUtil = require('../../lib/dockerUtil');
 const debug = require('debug')('prairielearn:syncHelpers');
+
+const error = require('@prairielearn/prairielib/error');
 
 module.exports.pullAndUpdate = function(locals, callback) {
     const options = {
@@ -310,7 +311,7 @@ module.exports.ecrUpdate = function(locals, callback) {
                     // continue executing here to launch the actual job
                     dockerUtil.pullAndPushToECR(image.external_grading_image, auth, job, (err) => {
                         if (err) {
-                            job.fail(`Error syncing ${image.external_grading_image}`, err);
+                            job.fail(error.newMessage(err, `Error syncing ${image.external_grading_image}`));
                             return callback(err);
                         }
 
