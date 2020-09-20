@@ -270,10 +270,6 @@ module.exports.ecrUpdate = function(locals, callback) {
         return callback(new Error('externalGradingImageRepository not defined'));
     }
 
-    if (!AWS.config.credentials) {
-        return callback(new Error('AWS credentials not defined'));
-    }
-
     dockerUtil.setupDockerAuth((err, auth) => {
         if (ERR(err, callback)) return;
 
