@@ -10,6 +10,7 @@ const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
+const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspaceHelper = require('../lib/workspace');
@@ -624,7 +625,7 @@ const _checkServerAsync = util.promisify(_checkServer);
  */
 async function _getWorkspaceSettingsAsync(workspace_id) {
     const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, { workspace_id });
-    return {
+    const settings = {
         workspace_image: result.rows[0].workspace_image,
         workspace_port: result.rows[0].workspace_port,
         workspace_home: result.rows[0].workspace_home,
@@ -632,6 +633,16 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
         workspace_args: result.rows[0].workspace_args || '',
         workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
     };
+
+    if (config.externalGradingImageRepository) {
+        var repository = new dockerUtil.DockerName(settings.workspace_image);
+        repository.registry = config.externalGradingImageRepository;
+        const newImage = repository.getCombined();
+        logger.info(`Using ${newImage} for ${settings.workspace_image}`);
+        settings.workspace_image = newImage;
+    }
+
+    return settings;
 }
 
 // Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
