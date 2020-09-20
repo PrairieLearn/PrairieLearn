@@ -24,6 +24,14 @@ properties:
     default: true
     envVar: USE_HEALTH_CHECK
 
+  # Docker config
+  forcedRegistry:
+    default: NULL
+    envVar: FORCED_REGISTRY
+  parallelInitPulls:
+    default: 5
+    envVar: PARALLEL_INIT_PULLS
+
   # AWS AutoScaling lifecycle
   lifecycleHeartbeatIntervalMS:
     default: 300000

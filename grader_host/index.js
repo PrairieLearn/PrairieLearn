@@ -25,7 +25,7 @@ const load = require('./lib/load');
 
 // catch SIGTERM and exit after waiting for all current jobs to finish
 let processTerminating = false;
-process.on('SIGTERM', () => { 
+process.on('SIGTERM', () => {
     globalLogger.info('caught SIGTERM, draining jobs to exit...');
     processTerminating = true;
     (function tryToExit() {
@@ -220,6 +220,7 @@ function initDocker(info, callback) {
             }
         }
     } = info;
+    let dockerAuth = {};
 
     async.series([
         (callback) => {
@@ -230,17 +231,33 @@ function initDocker(info, callback) {
             });
         },
         (callback) => {
+            if (config.forcedRegistry) {
+                logger.info('Authenticating to docker');
+                dockerUtil.setupDockerAuth((err, auth) => {
+                    if (ERR(err, callback)) return;
+                    dockerAuth = auth;
+                    callback(null);
+                });
+            } else {
+                callback(null);
+            }
+        },
+        (callback) => {
             logger.info(`Pulling latest version of "${image}" image`);
-            const repository = dockerUtil.parseRepositoryTag(image);
+            var repository = new dockerUtil.DockerName(image);
+            if (config.forcedRegistry) {
+                repository.registry = config.forcedRegistry;
+            }
             const params = {
-                fromImage: repository.repository,
-                tag: repository.tag || 'latest'
+                fromImage: repository.getRegistryRepo(),
+                tag: repository.getTag() || 'latest'
             };
-
-            docker.createImage(params, (err, stream) => {
+            logger.info(`Pulling image: ${JSON.stringify(params)}`);
+            docker.createImage(dockerAuth, params, (err, stream) => {
                 if (err) {
                     logger.warn(`Error pulling "${image}" image; attempting to fall back to cached version`);
                     logger.warn('createImage error:', err);
+                    return ERR(err, callback);
                 }
 
                 docker.modem.followProgress(stream, (err) => {
@@ -366,10 +383,17 @@ function runJob(info, callback) {
 
     logger.info('Launching Docker container to run grading job');
 
+    var repository = new dockerUtil.DockerName(image);
+    if (config.forcedRegistry) {
+        repository.registry = config.forcedRegistry;
+    }
+    const runImage = repository.getCombined();
+    logger.info(`Run image: ${runImage}`);
+
     async.waterfall([
         (callback) => {
             docker.createContainer({
-                Image: image,
+                Image: runImage,
                 AttachStdout: true,
                 AttachStderr: true,
                 Tty: true,
