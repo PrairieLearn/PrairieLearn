@@ -60,6 +60,7 @@ BEGIN
                     ELSE ai.user_id = assessment_instances_insert.user_id
                  END);
     END IF;
+
     -- if a.multiple_instance is FALSE then we use
     -- number = 1 so we will error on INSERT if there
     -- are existing assessment_instances
@@ -88,8 +89,6 @@ BEGIN
 
     -- ######################################################################
     -- start a record of the last access time
-
-    -- (Just a question that I tried the CASE WHEN in ON CONFLICT but it does not work so I do the else if in that part)
     -- After code review I will delete those two lines of comment
     IF group_work THEN 
         INSERT INTO last_accesses
