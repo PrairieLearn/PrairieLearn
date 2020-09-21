@@ -24,7 +24,7 @@ SELECT
 FROM
     groups gr
     JOIN group_configs AS gc ON gr.group_config_id = gc.id
-    LEFT JOIN group_users gu ON gu.group_id = gr.id
+    LEFT JOIN group_users AS gu ON gu.group_id = gr.id
 WHERE
     gr.name = $group_name
     AND gr.join_code = $join_code
@@ -67,7 +67,7 @@ INSERT INTO group_logs
 SELECT $user_id, $user_id, id, 'create'
 FROM log;
 
--- BLOCK join_justcreated_group
+-- BLOCK join_just_created_group
 WITH log AS (
     INSERT INTO group_users
         (group_id, user_id)

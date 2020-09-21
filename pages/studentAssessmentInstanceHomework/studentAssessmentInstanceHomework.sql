@@ -45,7 +45,7 @@ FROM
     JOIN groups AS gr ON gr.group_config_id = gc.id
     JOIN group_users AS gu ON gu.group_id = gr.id
     JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
-    JOIN users us ON us.user_id = gu2.user_id
+    JOIN users AS us ON us.user_id = gu2.user_id
 WHERE 
     ai.id = $assessment_instance_id 
     AND gu.user_id = $user_id 
