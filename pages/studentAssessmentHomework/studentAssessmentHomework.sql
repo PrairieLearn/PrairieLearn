@@ -46,7 +46,7 @@ WITH log AS (
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, group_id, 'join'
+SELECT $authn_user, $user_id, group_id, 'join'
 FROM log;
 
 
@@ -64,7 +64,7 @@ WITH log AS (
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, id, 'create'
+SELECT $authn_user, $user_id, id, 'create'
 FROM log;
 
 -- BLOCK join_just_created_group
@@ -80,7 +80,7 @@ WITH log AS (
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, group_id, 'join'
+SELECT $authn_user, $user_id, group_id, 'join'
 FROM log;
 
 -- BLOCK get_group_info
@@ -116,5 +116,5 @@ WITH log AS (
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, group_id, 'leave'
+SELECT $authn_user, $user_id, group_id, 'leave'
 FROM log;

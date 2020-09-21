@@ -69,5 +69,5 @@ WITH log AS (
 ) 
 INSERT INTO group_logs 
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, group_id, 'leave'
+SELECT $authn_user, $user_id, group_id, 'leave'
 FROM log;
