@@ -201,29 +201,27 @@
               </div>
               <form name="config-group-form" method="POST">
                 <div class="modal-body">
-                  <span class="badge badge-secondary">minimum size</span> <%= config_info.minimum %><br>
-                  <span class="badge badge-secondary">maximum size</span> <%= config_info.maximum %><br>
-                  <span class="badge badge-secondary">Student Permissions</span> <%= config_info.permission %><br>
-                  <br>
                   <div class="form-min">
                     <label for="formmin">Minimum group size</label>
-                    <input type="text" value=<%= config_info.defaultMin %> class="form-control" id="formmin" name="minsize">
+                    <input type="number" value=<%= config_info.defaultMin %> class="form-control" id="formmin" name="minsize">
                   </div>
+                  <br>
                   <div class="form-max">
                     <label for="formman">Maximum group size</label>
-                    <input type="text" value=<%= config_info.defaultMax %> class="form-control" id="formmax" name="maxsize">
+                    <input type="number" value=<%= config_info.defaultMax %> class="form-control" id="formmax" name="maxsize">
                   </div>
+                  <br>
                   <label for="formman">Student Permissions</label> <br>
                   <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="joincheck" value="true">
+                    <input class="form-check-input" type="checkbox" name="joincheck" <%= config_info.student_authz_join ? "checked" : "" %>>
                     <label class="form-check-label" for="inlineCheckbox1">Join Groups</label>
                   </div>
                   <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="createcheck" value="true">
+                    <input class="form-check-input" type="checkbox" name="createcheck" <%= config_info.student_authz_create ? "checked" : "" %>>
                     <label class="form-check-label" for="inlineCheckbox2">Create Groups</label>
                   </div>
                   <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="leavecheck" value="true">
+                    <input class="form-check-input" type="checkbox" name="leavecheck" <%= config_info.student_authz_leave ? "checked" : "" %>>
                     <label class="form-check-label" for="inlineCheckbox3">Leave Groups</label>
                   </div>                   
                 </div>
