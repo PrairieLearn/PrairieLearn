@@ -255,12 +255,12 @@ describe('Group based homework assess control on student side', function() {
     describe('8. the group information after 1 user join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.isTrue(elemList.text().includes(locals.team_name));
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
             locals.joinCode = elemList.text();
-            assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
+            assert.isTrue(elemList.text().includes(locals.$('#group-name').text()));
         });
         it('should not be able to start assessment', function() {
             elemList = locals.$('#start-assessment');
@@ -323,11 +323,11 @@ describe('Group based homework assess control on student side', function() {
     describe('10. the group information after 2 users join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.isTrue(elemList.text().includes(locals.team_name));
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
-            assert.equal(locals.joinCode, elemList.text());
+            assert.isTrue(elemList.text().includes(locals.$('#group-name').text()));
         });
         it('should not be able to start assessment', function() {
             elemList = locals.$('#start-assessment');
@@ -397,11 +397,11 @@ describe('Group based homework assess control on student side', function() {
     describe('12. the group information after 3 users join the group', function() {
         it('should contain the correct team name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.isTrue(elemList.text().includes(locals.team_name));
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
-            assert.equal(locals.joinCode, elemList.text());
+            assert.isTrue(elemList.text().includes(locals.$('#group-name').text()));
         });
     });
     describe('13. the fourth user can not join the already full group', function() {
