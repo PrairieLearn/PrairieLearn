@@ -105,7 +105,8 @@ router.post('/', function(req, res, next) {
             sqldb.query(sql.check_group_size, params, function(err, result) {
                 let joinError = true;
                 //students may have invalid input here, no need to log the error information
-                if (!ERR(err, next) && typeof result.rows[0] != 'undefined'){
+                if (ERR(err, next)) return;
+                if (typeof result.rows[0] != 'undefined'){
                     if (parseInt(result.rows[0].cur_size) < parseInt(result.rows[0].maximum)) {
                         //sucessfully find a exist and not full group
                         joinError = false;
