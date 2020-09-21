@@ -92,7 +92,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'addGroup') {
+    } else if (req.body.__action == 'add_group') {
         const assessment_id = res.locals.assessment.id;
         const groupname = req.body.groupname;
         if (String(groupname).length < 1) {
@@ -127,7 +127,7 @@ router.post('/', function(req, res, next) {
             }
             obtainInfo(req, res, next);
         });
-    } else if (req.body.__action == 'configGroup') {
+    } else if (req.body.__action == 'config_group') {
         res.locals.errormsg = '';
         const params = {
             assessment_id: res.locals.assessment.id,
@@ -146,7 +146,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'addmember') {
+    } else if (req.body.__action == 'add_member') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
         const uids = req.body.addmemberuids;
@@ -172,7 +172,7 @@ router.post('/', function(req, res, next) {
             }
             obtainInfo(req, res, next);
         })();
-    } else if (req.body.__action == 'deletemember') {
+    } else if (req.body.__action == 'delete_member') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
         const uids = req.body.deletememberuids;
@@ -198,7 +198,7 @@ router.post('/', function(req, res, next) {
             }
             obtainInfo(req, res, next);
         })();
-    } else if (req.body.__action == 'deletegroup') {
+    } else if (req.body.__action == 'delete_group') {
         const params = [
             res.locals.assessment.id,
             req.body.gid,

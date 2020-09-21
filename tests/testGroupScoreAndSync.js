@@ -80,7 +80,7 @@ describe('assessment instance group synchronization test', function () {
         });
         it('put 3 users in a group',  function(callback) {
             var form = {
-                __action: 'addGroup',
+                __action: 'add_group',
                 __csrf_token: locals.__csrf_token,
                 groupname: 'test_group',
                 uids: locals.studentUsers[0].uid+','+ locals.studentUsers[1].uid+',' + locals.studentUsers[2].uid,

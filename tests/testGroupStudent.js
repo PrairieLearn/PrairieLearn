@@ -90,7 +90,7 @@ describe('Group based homework assess control on student side', function() {
     describe('3. POST to instructor assessments URL to set MIN/MAX for group', function() {
         it('should load successfully', function(callback) {
             var form = {
-                __action: 'configGroup',
+                __action: 'config_group',
                 __csrf_token: locals.__csrf_token,
                 minsize: '3',
                 maxsize: '3',
@@ -153,7 +153,7 @@ describe('Group based homework assess control on student side', function() {
     describe('5. POST to instructor assessments URL to set MIN/MAX for group', function() {
         it('should load successfully', function(callback) {
             var form = {
-                __action: 'configGroup',
+                __action: 'config_group',
                 __csrf_token: locals.__csrf_token,
                 minsize: '3',
                 maxsize: '3',
