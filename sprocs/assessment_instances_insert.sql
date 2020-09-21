@@ -60,9 +60,9 @@ BEGIN
                     ELSE ai.user_id = assessment_instances_insert.user_id
                  END);
     END IF;
-        -- if a.multiple_instance is FALSE then we use
-        -- number = 1 so we will error on INSERT if there
-        -- are existing assessment_instances
+    -- if a.multiple_instance is FALSE then we use
+    -- number = 1 so we will error on INSERT if there
+    -- are existing assessment_instances
         
     -- ######################################################################
     -- determine other properties
