@@ -1,0 +1,70 @@
+CREATE OR REPLACE FUNCTION
+    check_join_group (
+        arg_assessment_id bigint,
+        arg_user_id bigint,
+        arg_authn_user bigint,
+        arg_group_name text,
+        arg_join_code text
+    ) RETURNS void
+AS $$
+DECLARE
+    arg_group_id bigint;
+    arg_cur_size bigint;
+    arg_max_size bigint;
+BEGIN
+    -- find group id
+    SELECT 
+        g.id
+    INTO 
+        arg_group_id
+    FROM 
+        groups AS g
+        JOIN group_configs AS gc ON g.group_config_id = gc.id
+    WHERE 
+        g.name = check_join_group.arg_group_name 
+        AND g.join_code = check_join_group.arg_join_code
+        AND gc.assessment_id = check_join_group.arg_assessment_id
+        AND g.deleted_at IS NULL
+        AND gc.deleted_at IS NULL;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Cannot find the group by provided join code';
+    END IF;
+
+    -- lock the group_users
+    PERFORM gu.group_id
+    FROM group_users AS gu
+    WHERE gu.group_id = arg_group_id
+    FOR UPDATE OF gu;
+
+    -- count the group size and compare with the max size
+    SELECT
+        COUNT(gu) AS cur_size, AVG(gc.maximum) AS maximum
+    INTO
+        arg_cur_size, arg_max_size
+    FROM
+        groups g
+        JOIN group_configs AS gc ON g.group_config_id = gc.id
+        LEFT JOIN group_users AS gu ON gu.group_id = g.id
+    WHERE
+        g.id = arg_group_id
+    GROUP BY
+        g.id;
+
+    IF arg_cur_size >= arg_max_size THEN
+        RAISE EXCEPTION 'The group is full';
+    END IF;
+
+    -- join the group
+    INSERT INTO group_users
+        (user_id, group_id)
+    VALUES
+        (check_join_group.arg_user_id, arg_group_id);
+
+    INSERT INTO group_logs
+        (authn_user_id, user_id, group_id, action)
+    VALUES
+        (check_join_group.arg_authn_user, check_join_group.arg_user_id, arg_group_id, 'join');
+
+END;
+$$ LANGUAGE plpgsql VOLATILE;
