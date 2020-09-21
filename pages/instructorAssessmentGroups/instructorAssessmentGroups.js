@@ -161,7 +161,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'add_member') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
-        const uids = req.body.addmemberuids;
+        const uids = req.body.add_member_uids;
         const uidlist = uids.split(/[ ,]+/);
         let failedUids = '';
         res.locals.errormsg = '';
@@ -187,7 +187,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'delete_member') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
-        const uids = req.body.deletememberuids;
+        const uids = req.body.delete_member_uids;
         const uidlist = uids.split(/[ ,]+/);
         let failedUids = '';
         res.locals.errormsg = '';

@@ -43,7 +43,7 @@ router.get('/', function(req, res, next) {
                         res.locals.needsize = res.locals.minsize - res.locals.groupsize;
                         if (res.locals.groupsize > 0) {
                             res.locals.groupinfo = result.rows;
-                            res.locals.joincode = res.locals.groupinfo[0].name + '-' + res.locals.groupinfo[0].join_code;
+                            res.locals.join_code = res.locals.groupinfo[0].name + '-' + res.locals.groupinfo[0].join_code;
                             res.locals.start = false;
                             if (res.locals.needsize <= 0) {
                                 res.locals.start = true;
@@ -90,8 +90,8 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'join_group') {
         try{
-            const group_name = req.body.joincode.split('-')[0];
-            const join_code = req.body.joincode.split('-')[1].toUpperCase();
+            const group_name = req.body.join_code.split('-')[0];
+            const join_code = req.body.join_code.split('-')[1].toUpperCase();
             if (join_code.length != 4) {
                 throw 'invalid length of join code';
             }
@@ -120,7 +120,7 @@ router.post('/', function(req, res, next) {
                         res.locals.permissions = result.rows[0];            
                         res.locals.groupsize = 0;
                         //display the error on frontend
-                        res.locals.usedjoincode = req.body.joincode;
+                        res.locals.used_join_code = req.body.join_code;
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 }
@@ -135,7 +135,7 @@ router.post('/', function(req, res, next) {
                 res.locals.permissions = result.rows[0];            
                 res.locals.groupsize = 0;
                 //display the error on frontend
-                res.locals.usedjoincode = req.body.joincode;
+                res.locals.used_join_code = req.body.join_code;
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         }

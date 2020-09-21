@@ -24,9 +24,9 @@
           <p class="text-center">
              This is a group homework.
           </p>
-          <% if (typeof usedjoincode !== 'undefined') { %>
+          <% if (typeof used_join_code !== 'undefined') { %>
             <div class="alert alert-danger" role="alert">
-              Failed to join the group with joincode <span class="badge badge-secondary"><%= usedjoincode %></span>. It is already full or does not exist. Please try to join another one.
+              Failed to join the group with join code <span class="badge badge-secondary"><%= used_join_code %></span>. It is already full or does not exist. Please try to join another one.
             </div>
           <% } %>
           <% if (typeof invalidGroupName !== 'undefined') { %>
@@ -59,7 +59,7 @@
                 <% if (permissions.student_authz_join) { %>
                 <div class="col-sm bg-light py-4 px-4 border">
                   <form id="joingroup-form" name="joingroup-form" method="POST">
-                    <input type="text" class="form-control" name="joincode" placeholder="Join Code">
+                    <input type="text" class="form-control" name="join_code" placeholder="Join Code">
                     <div class="mt-4 d-flex justify-content-center">
                       <div class="form-group mb-0">
                         <input type="hidden" name="__action" value="join_group">
@@ -82,7 +82,7 @@
                     <span class="badge badge-secondary">Group Name</span> 
                     <span id="group-name"><%= groupinfo[0].name %></span><br>
                     <span class="badge badge-secondary">join Code</span> 
-                    <span id='join-code'><%= joincode %></span><br>
+                    <span id='join-code'><%= join_code %></span><br>
                   </div>
                   <% } %>
                   <div class="col-sm bg-light py-4 px-4 border">

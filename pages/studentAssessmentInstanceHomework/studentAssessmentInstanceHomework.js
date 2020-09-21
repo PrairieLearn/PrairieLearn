@@ -62,7 +62,7 @@ router.get('/', function(req, res, next) {
                         if (ERR(err, next)) return;
                         res.locals.groupinfo = result.rows;
                         if (res.locals.groupinfo[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));
-                        res.locals.joincode = res.locals.groupinfo[0].name + '-' + res.locals.groupinfo[0].join_code;
+                        res.locals.join_code = res.locals.groupinfo[0].name + '-' + res.locals.groupinfo[0].join_code;
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 } else {
