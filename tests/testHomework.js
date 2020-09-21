@@ -329,13 +329,12 @@ describe('Homework assessment', function() {
         helperAttachFiles.checkNoAttachedFiles(locals);
     });
 
-    describe('6. assessment_instance: download deprecated filesystem file', function() {
+    describe('6. assessment_instance: download deprecated text file from filesystem ', function() {
         const filepath = 'testpath/';
         const filename = 'test.zyx';
 
         before('should insert deprecated file', async function() {
             const content = 'This is the test text';
-            console.log(config.filesRoot);
             fs.mkdirSync(path.join(config.filesRoot, filepath));
             const params = {
                 filename,
@@ -346,10 +345,10 @@ describe('Homework assessment', function() {
             fs.writeFileSync(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
             await sqldb.queryOneRowAsync(sql.insert_test_file_fs, params);
         });
-
-        after('should remove deprecated file', function() {
+        after('should remove deprecated file', async function() {
             fs.unlinkSync(path.join(config.filesRoot, filepath, filename));
             fs.rmdirSync(path.join(config.filesRoot, filepath));
+            sqldb.queryOneRowAsync(sql.delete_test_file_fs, {filename});
         });
 
         helperAttachFiles.downloadAttachedFile(locals);
