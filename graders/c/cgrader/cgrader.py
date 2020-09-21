@@ -25,6 +25,7 @@ class CGrader:
                                     encoding='utf-8')
         except:
             return ''
+        out = None
         try:
             out, err = proc.communicate(input=input)
         finally:

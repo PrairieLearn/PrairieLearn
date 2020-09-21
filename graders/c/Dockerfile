@@ -12,10 +12,7 @@ RUN ln -sf /usr/bin/python3.8 /usr/bin/python3
 
 RUN pip3 install sympy
 
-COPY cgrader /cgrader
-
 ENV LANG=en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
 ENV LC_LANG=en_US.UTF-8
 
 ENV PYTHONIOENCODING=UTF-8
@@ -23,3 +20,6 @@ ENV PYTHONPATH=/cgrader/
 
 RUN groupadd sbuser
 RUN useradd -g sbuser sbuser
+
+COPY cgrader /cgrader
+
