@@ -12,7 +12,7 @@ WHERE
 
 -- BLOCK get_config_info
 SELECT
-    gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave, gc.maximum, gc.minimum
+    gc.*
 FROM
     group_configs gc
 WHERE
