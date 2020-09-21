@@ -58,13 +58,16 @@ WITH log AS (
         group_users
     WHERE 
         user_id = $user_id 
-        AND group_id IN (SELECT gr.id
-                        FROM assessment_instances ai
-                        JOIN group_configs AS gc ON gc.assessment_id = ai.assessment_id
-                        JOIN groups AS gr ON gr.group_config_id = gc.id
-                        WHERE ai.id = $assessment_instance_id
-                        AND gr.deleted_at IS NULL
-                        AND gc.deleted_at IS NULL)
+        AND group_id IN (SELECT 
+                            gr.id
+                        FROM 
+                            assessment_instances ai
+                            JOIN group_configs AS gc ON gc.assessment_id = ai.assessment_id
+                            JOIN groups AS gr ON gr.group_config_id = gc.id
+                        WHERE 
+                            ai.id = $assessment_instance_id
+                            AND gr.deleted_at IS NULL
+                            AND gc.deleted_at IS NULL)
     RETURNING group_id
 ) 
 INSERT INTO group_logs 
