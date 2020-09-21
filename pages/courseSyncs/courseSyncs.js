@@ -27,7 +27,7 @@ router.get('/', function(req, res, next) {
             if (config.externalGradingImageRepository) {
                 const ecr = new AWS.ECR();
                 async.each(res.locals.images, (image, callback) => {
-                    var repository = new dockerUtil.DockerName(image.external_grading_image);
+                    var repository = new dockerUtil.DockerName(image.image);
                     image.tag = repository.getTag() || 'latest (implied)';
                     // Default to get overwritten later
                     image.pushed_at = null;
@@ -108,7 +108,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.locals.images = result.rows;
             if ('single_image' in req.body) {
-                res.locals.images = _.filter(result.rows, ['external_grading_image', req.body.single_image]);
+                res.locals.images = _.filter(result.rows, ['image', req.body.single_image]);
             }
             syncHelpers.ecrUpdate(res.locals, function(err, job_sequence_id) {
                 if (ERR(err, next)) return;
