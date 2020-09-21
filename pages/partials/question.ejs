@@ -186,6 +186,6 @@
   <%- include('externalGradingLiveUpdate'); %>
 
   <% if (isGroupWork) { %>
-  <%-      include('chatbox', {channel_id: assessment_instance_id}); %>
+  <%-      include('chatbox', {channel_id: assessment_instance_id, channel_token: channelToken}); %>
   <%}   %>
 </div>

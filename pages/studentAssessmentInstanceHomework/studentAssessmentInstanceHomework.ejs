@@ -135,7 +135,7 @@
       <%- include('../partials/attachFilePanel') %>
       <%- include('../partials/instructorInfoPanel') %>
       <%  if (assessment.group_work) { %>
-      <%-    include('../partials/chatbox', {channel_id: assessment_instance.id}); %>
+      <%-    include('../partials/chatbox', {channel_id: assessment_instance.id, channel_token: channelToken}); %>
       <%  } %>  
     </div>
   </body>

@@ -13,6 +13,9 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
+const config = require('../../lib/config');
+const csrf = require('../../lib/csrf');
+
 const ensureUpToDate = (locals, callback) => {
     debug('ensureUpToDate()');
     assessment.update(locals.assessment_instance.id, locals.authn_user.user_id, (err, updated) => {
@@ -41,6 +44,9 @@ router.get('/', function(req, res, next) {
 
     ensureUpToDate(res.locals, (err) => {
         if (ERR(err, next)) return;
+
+        // create the channelToken
+        res.locals.channelToken = csrf.generateToken({channel_id: '' + res.locals.assessment_instance.id}, config.secretKey);
 
         debug('selecting questions');
         var params = {

@@ -1,3 +1,6 @@
+const config = require('../../lib/config');
+const csrf = require('../../lib/csrf');
+
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
@@ -28,6 +31,10 @@ router.get('/', function(req, res, next) {
 
     sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
         if (ERR(err, next)) return;
+
+        // create the channelToken
+        res.locals.channelToken = csrf.generateToken({channel_id: 'public' + res.locals.assessment.id}, config.secretKey);
+
         if (result.rowCount == 0) {
             debug('no assessment instance');
             //if it is a group_work with no instance, jump to a confirm page.

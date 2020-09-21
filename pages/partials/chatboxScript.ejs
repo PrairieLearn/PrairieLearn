@@ -1,13 +1,14 @@
 <script>
   $(function () {
     const channel_id = "<%= channel_id%>";
+    const channel_token = "<%= channel_token%>";
     const expand_button = document.getElementById("expand-button");
     const submit_button = document.getElementById("submit-button");
     const reaction_selector = document.getElementById("reaction-selector");
     const reactions_options = ["👌", "👍", "👎", "😟", "😂", "🔥", "🎉"];
     const name = document.getElementById("navbarDropdown").text;
     const socket = io("/chat", {
-      query: "name=" + name + "&id=" + channel_id.toString(),
+      query: "name=" + name + "&id=" + channel_id.toString() + "&channel_token=" + channel_token,
     });
     const chatbox = document.getElementById("float-chatbox");
 
