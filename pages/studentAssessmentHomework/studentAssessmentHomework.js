@@ -69,7 +69,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    if (req.body.__action == 'newInstance') {
+    if (req.body.__action == 'new_instance') {
         var params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
