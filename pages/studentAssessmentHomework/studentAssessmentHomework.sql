@@ -87,14 +87,14 @@ FROM log;
 SELECT
     gu.group_id, gr.name, gr.join_code, us.uid, gc.minimum, gc.maximum
 FROM
-    assessments ass
-    JOIN group_configs gc ON gc.assessment_id = ass.id
+    assessments a
+    JOIN group_configs gc ON gc.assessment_id = a.id
     JOIN groups gr ON gr.group_config_id = gc.id
     JOIN group_users gu ON gu.group_id = gr.id
     JOIN group_users gu2 ON gu2.group_id = gu.group_id
     JOIN users us ON us.user_id = gu2.user_id
 WHERE
-    ass.id = $assessment_id
+    a.id = $assessment_id
     AND gu.user_id = $user_id
     AND gr.deleted_at IS NULL
     AND gc.deleted_at IS NULL;
@@ -106,10 +106,10 @@ WITH log AS (
     WHERE
         user_id = $user_id
         AND group_id IN (SELECT gr.id
-                        FROM assessments ass
-                        JOIN group_configs gc ON gc.assessment_id = ass.id
+                        FROM assessments a
+                        JOIN group_configs gc ON gc.assessment_id = a.id
                         JOIN groups gr ON gr.group_config_id = gc.id
-                        WHERE ass.id = $assessment_id
+                        WHERE a.id = $assessment_id
                         AND gr.deleted_at IS NULL
                         AND gc.deleted_at IS NULL)
     RETURNING group_id
