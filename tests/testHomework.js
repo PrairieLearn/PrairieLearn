@@ -343,7 +343,7 @@ describe('Homework assessment', function() {
                 assessment_instance_id: 1,
             };
             fs.writeFileSync(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
-            await sqldb.queryOneRowAsync(sql.insert_test_file_fs, params);
+            await sqldb.queryOneRowAsync(sql.insert_file_fs_ai, params);
         });
         after('should remove deprecated file', async function() {
             fs.unlinkSync(path.join(config.filesRoot, filepath, filename));
@@ -389,6 +389,30 @@ describe('Homework assessment', function() {
     describe('11. instance_question: delete attached uploaded file', function() {
         helperAttachFiles.deleteAttachedFile(locals);
         helperAttachFiles.checkNoAttachedFiles(locals);
+    });
+
+    describe('12. instance_question: download deprecated filesystem', function() {
+        const filepath = 'testpath/';
+        const filename = 'test.zyx';
+
+        before('should insert deprecated file', async function() {
+            const content = 'This is the test text';
+            fs.mkdirSync(path.join(config.filesRoot, filepath));
+            const params = {
+                filename,
+                filepath,
+                instance_question_id: locals.question.id,
+            };
+            fs.writeFileSync(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
+            await sqldb.queryOneRowAsync(sql.insert_file_fs_iq, params);
+        });
+        after('should remove deprecated file', async function() {
+            fs.unlinkSync(path.join(config.filesRoot, filepath, filename));
+            fs.rmdirSync(path.join(config.filesRoot, filepath));
+            sqldb.queryOneRowAsync(sql.delete_test_file_fs, {filename});
+        });
+
+        helperAttachFiles.downloadAttachedFile(locals);
     });
 
     describe('12. submit correct answer to question addVectors', function() {
