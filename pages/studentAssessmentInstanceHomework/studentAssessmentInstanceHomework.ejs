@@ -63,7 +63,7 @@
               <div class="col-sm bg-light py-4 px-4 border">
                 <% if (groupinfo[0].student_authz_leave) { %>
                 <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
-                  <input type="hidden" name="__action" value="leaveGroup">
+                  <input type="hidden" name="__action" value="leave_group">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                   <button id="leave-group" type="submit" class="btn btn-danger">Leave the Group</button>
                 </form>

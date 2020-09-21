@@ -48,7 +48,7 @@
                     <small id="groupNameHelp" class="form-text text-muted">*Alpha and numeric characters only</small>
                     <div class="mt-4 d-flex justify-content-center">
                       <div class="form-group mb-0">
-                        <input type="hidden" name="__action" value="createGroup">
+                        <input type="hidden" name="__action" value="create_group">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <button type="submit" class="btn btn-primary">Create a New Group</button>
                       </div>
@@ -62,7 +62,7 @@
                     <input type="text" class="form-control" name="joincode" placeholder="Join Code">
                     <div class="mt-4 d-flex justify-content-center">
                       <div class="form-group mb-0">
-                        <input type="hidden" name="__action" value="joinGroup">
+                        <input type="hidden" name="__action" value="join_group">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <button type="submit" class="btn btn-primary">Join Group via Join Code</button>
                       </div>
@@ -88,7 +88,7 @@
                   <div class="col-sm bg-light py-4 px-4 border">
                     <% if (permissions.student_authz_leave) { %>
                     <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
-                      <input type="hidden" name="__action" value="leaveGroup">
+                      <input type="hidden" name="__action" value="leave_group">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                       <button id="leave-group" type="submit" class="btn btn-danger">Leave the Group</button>
                     </form>

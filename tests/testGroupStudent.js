@@ -234,7 +234,7 @@ describe('Group based homework assess control on student side', function() {
         it('should be able to create a group', function(callback) {
             locals.team_name = 'TeamBB';
             var form = {
-                __action: 'createGroup',
+                __action: 'create_group',
                 __csrf_token: locals.__csrf_token,
                 groupName: locals.team_name,
             };
@@ -302,7 +302,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to join group', function(callback) {
             var form = {
-                __action: 'joinGroup',
+                __action: 'join_group',
                 __csrf_token: locals.__csrf_token,
                 joincode: locals.joinCode,
             };
@@ -369,7 +369,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to join group', function(callback) {
             var form = {
-                __action: 'joinGroup',
+                __action: 'join_group',
                 __csrf_token: locals.__csrf_token,
                 joincode: locals.joinCode,
             };
@@ -434,7 +434,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should NOT be able to join group', function(callback) {
             var form = {
-                __action: 'joinGroup',
+                __action: 'join_group',
                 __csrf_token: locals.__csrf_token,
                 joincode: locals.joinCode,
             };
@@ -591,7 +591,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to Leave the group', function(callback) {
             var form = {
-                __action: 'leaveGroup',
+                __action: 'leave_group',
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentInstanceURL, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -628,7 +628,7 @@ describe('Group based homework assess control on student side', function() {
         it('should be able to create a group', function(callback) {
             locals.team_name_alternative1 = 'TeamCC';
             var form = {
-                __action: 'createGroup',
+                __action: 'create_group',
                 __csrf_token: locals.__csrf_token,
                 groupName: locals.team_name_alternative1,
             };
@@ -704,7 +704,7 @@ describe('Group based homework assess control on student side', function() {
         it('should be able to create a group', function(callback) {
             locals.team_name_alternative2 = 'TeamBBCC';
             var form = {
-                __action: 'createGroup',
+                __action: 'create_group',
                 __csrf_token: locals.__csrf_token,
                 groupName: locals.team_name_alternative2,
             };
@@ -760,7 +760,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should NOT be able to join group using the join code from a different assessment', function(callback) {
             var form = {
-                __action: 'joinGroup',
+                __action: 'join_group',
                 __csrf_token: locals.__csrf_token,
                 joincode: locals.joinCode,
             };

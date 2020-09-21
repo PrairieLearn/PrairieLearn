@@ -88,7 +88,7 @@ router.post('/', function(req, res, next) {
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
             }
         });
-    } else if (req.body.__action == 'joinGroup') {
+    } else if (req.body.__action == 'join_group') {
         try{
             const group_name = req.body.joincode.split('-')[0];
             const join_code = req.body.joincode.split('-')[1].toUpperCase();
@@ -139,7 +139,7 @@ router.post('/', function(req, res, next) {
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         }
-    } else if (req.body.__action == 'createGroup') {
+    } else if (req.body.__action == 'create_group') {
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
@@ -177,7 +177,7 @@ router.post('/', function(req, res, next) {
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         }
-    } else if (req.body.__action == 'leaveGroup') {
+    } else if (req.body.__action == 'leave_group') {
         var params2 = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
