@@ -23,7 +23,7 @@ SELECT
     COUNT(gu) AS cur_size, AVG(gc.maximum) AS maximum
 FROM
     groups gr
-    JOIN group_configs gc ON gr.group_config_id = gc.id
+    JOIN group_configs AS gc ON gr.group_config_id = gc.id
     LEFT JOIN group_users gu ON gu.group_id = gr.id
 WHERE
     gr.name = $group_name
@@ -87,12 +87,12 @@ FROM log;
 SELECT
     gu.group_id, gr.name, gr.join_code, us.uid, gc.minimum, gc.maximum
 FROM
-    assessments a
-    JOIN group_configs gc ON gc.assessment_id = a.id
-    JOIN groups gr ON gr.group_config_id = gc.id
-    JOIN group_users gu ON gu.group_id = gr.id
-    JOIN group_users gu2 ON gu2.group_id = gu.group_id
-    JOIN users us ON us.user_id = gu2.user_id
+    assessments AS a
+    JOIN group_configs AS gc ON gc.assessment_id = a.id
+    JOIN groups AS gr ON gr.group_config_id = gc.id
+    JOIN group_users AS gu ON gu.group_id = gr.id
+    JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
+    JOIN users AS us ON us.user_id = gu2.user_id
 WHERE
     a.id = $assessment_id
     AND gu.user_id = $user_id
@@ -106,9 +106,9 @@ WITH log AS (
     WHERE
         user_id = $user_id
         AND group_id IN (SELECT gr.id
-                        FROM assessments a
-                        JOIN group_configs gc ON gc.assessment_id = a.id
-                        JOIN groups gr ON gr.group_config_id = gc.id
+                        FROM assessments AS a
+                        JOIN group_configs AS gc ON gc.assessment_id = a.id
+                        JOIN groups AS gr ON gr.group_config_id = gc.id
                         WHERE a.id = $assessment_id
                         AND gr.deleted_at IS NULL
                         AND gc.deleted_at IS NULL)

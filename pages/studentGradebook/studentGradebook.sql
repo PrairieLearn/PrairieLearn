@@ -33,7 +33,7 @@ WHERE
     ci.id = $course_instance_id
     AND (ai.user_id = $user_id OR ai.group_id IN (SELECT gr.id
                                                   FROM groups gr
-                                                  JOIN group_users gu ON gr.id = gu.group_id 
+                                                  JOIN group_users AS gu ON gr.id = gu.group_id 
                                                   WHERE gr.deleted_at IS NULL AND gu.user_id = $user_id))
     AND a.deleted_at IS NULL
 ORDER BY
