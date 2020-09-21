@@ -43,9 +43,10 @@ BEGIN
             AND gc.assessment_id = assessment_instances_insert.assessment_id
             AND gc.deleted_at IS NULL
             AND g.deleted_at IS NULL;
-            IF NOT FOUND THEN
-                RAISE EXCEPTION 'no matched group_id with user_id: %', assessment_instances_insert.user_id;
-            END IF;
+        
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'no matched group_id with user_id: %', assessment_instances_insert.user_id;
+        END IF;
     END IF;    
 
     IF assessment.multiple_instance THEN
