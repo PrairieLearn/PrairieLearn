@@ -102,7 +102,7 @@
             </div>
             <% if (start) { %>
             <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
-              <input type="hidden" name="__action" value="newInstance">
+              <input type="hidden" name="__action" value="new_instance">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
             </form>

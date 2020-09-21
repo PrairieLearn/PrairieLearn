@@ -136,7 +136,7 @@ describe('assessment instance group synchronization test', function () {
        
         it('should be able to start the assessment', function(callback) {
             var form = {
-                __action: 'newInstance',
+                __action: 'new_instance',
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
