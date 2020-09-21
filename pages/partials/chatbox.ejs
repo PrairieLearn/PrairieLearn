@@ -13,7 +13,7 @@
             <div style="font-size: 150%;">PrairieChat</div>
           </div>
           <div class="float-container">
-            <div id="user-count">Holder</div>
+            <div id="user-count">Offline</div>
             <ul id="users" class="dropdown-menu"></ul>
           </div>
         </div>
@@ -43,7 +43,6 @@
     <script>
       var channel_id = null;
       var user_count = 0;
-      var message_read = 0;
       var chat_open = false;
       var local_message_count = 0;
       var expand_button = document.getElementById("expand-button");
@@ -51,8 +50,6 @@
       var reaction_selector = document.getElementById("reaction-selector");
       var offline = true;
       var reactions_options = ["👌", "👍", "👎", "😟", "😂", "🔥", "🎉"];
-      var message_reactions = {};
-      var message_reactions_voted = {};
       var cache = null;
 
       for (var i = 0; i < reactions_options.length; i++) {
@@ -74,21 +71,18 @@
         cache = localStorage.getItem(channel_id);
         if (cache) {
           cache = $.parseJSON(cache);
-          message_reactions = cache.reactions;
-          message_reactions_voted = cache.reactions_voted;
-          message_read = cache.message_read;
           for (let id in cache.msgs) {
             var msg = cache.msgs[id];
             displayMessage(id, msg);
-            if (message_reactions[id]) {
+            if (cache.reactions[id]) {
               displayReactionSet(id);
             }
           }
         } else {
           cache = {};
           cache.msgs = {};
-          cache.reactions = message_reactions = {};
-          cache.reactions_voted = message_reactions_voted = {};
+          cache.reactions = {};
+          cache.reactions_voted = {};
           cache.message_read = 0;
         }
 
@@ -99,18 +93,19 @@
         socket.on("connect", function () {
           offline = false;
           expand_button.style.backgroundColor = "#007bff";
-          if (message_read == $("#messages li").length) {
+          if (cache.message_read == $("#messages .message").length) {
             expand_button.style.backgroundColor = "#007bff";
             expand_button.innerText = "Chat (" + user_count + " Online)";
           } else {
             expand_button.innerText =
               "You have " +
-              ($("#messages li").length - message_read) +
+              ($("#messages .message").length - cache.message_read) +
               " unread messages";
             expand_button.style.backgroundColor = "#E84A27";
           }
           submit_button.style.backgroundColor = "#4caf50";
           submit_button.innerText = "Send";
+          submit_button.disabled = false;
         });
 
         $(".form-container").submit(function (e) {
@@ -120,27 +115,17 @@
         });
 
         socket.on("boardcast", function (msg) {
-          if (
-            last_message_sender == "" ||
-            last_message_sender != msg.username
-          ) {
-            var full_msg = msg.username + ": " + msg.message;
-            last_message_sender = msg.username;
-          } else {
-            var full_msg = msg.message;
-            local_message_count += 1;
-          }
 
           var div_id = msg.id.toString();
-          displayMessage(div_id, full_msg);
+          displayMessage(div_id, msg);
           if (!chat_open) {
             expand_button.innerText =
               "You have " +
-              ($("#messages li").length - message_read) +
+              ($("#messages .message").length - cache.message_read) +
               " unread messages";
             expand_button.style.backgroundColor = "#E84A27";
           } else {
-            cache.message_read = message_read = $("#messages li").length;
+            cache.message_read = $("#messages .message").length;
             localStorage.setItem(channel_id, JSON.stringify(cache));
           }
         });
@@ -159,7 +144,8 @@
 
         socket.on("update", function (update) {
           user_count = update.count;
-          if (message_read == $("#messages li").length) {
+          document.getElementById("users").style.visibility = "visible";
+          if (cache.message_read == $("#messages .message").length) {
             expand_button.style.backgroundColor = "#007bff";
             expand_button.innerText = "Chat (" + user_count + " Online)";
           }
@@ -175,14 +161,25 @@
           offline = true;
           document.getElementById("user-count").innerText = "Offline";
           document.getElementById("users").innerHTML = "";
+          document.getElementById("users").style.visibility = "hidden";
           expand_button.style.backgroundColor = "grey";
           expand_button.innerText = "Chat Offline";
           submit_button.style.backgroundColor = "grey";
-          submit_button.innerText =
-            "Message will be sent once the network is back on";
+          submit_button.innerText = "Chat Offline";
+          submit_button.disabled = true;
         });
 
         function displayMessage(msg_id, msg) {
+          if (
+            last_message_sender == "" ||
+            last_message_sender != msg.username
+          ) {
+            var full_msg = msg.username + ": " + msg.message;
+            last_message_sender = msg.username;
+          } else {
+            var full_msg = msg.message;
+            local_message_count += 1;
+          }
           $("#messages").append($("<div id=" + msg_id + ">"));
           cache.msgs[msg_id] = msg;
           localStorage.setItem(channel_id, JSON.stringify(cache));
@@ -190,7 +187,7 @@
             $("#" + msg_id).append(
               $(
                 "<li class=\"message\" style='background: #eee;' onclick='reactionSelector()'>"
-              ).text(msg)
+              ).text(full_msg)
             );
             $("#" + msg_id).append(
               $(
@@ -199,7 +196,7 @@
             );
           } else {
             $("#" + msg_id).append(
-              $("<li class=\"message\" onclick='reactionSelector()'>").text(msg)
+              $("<li class=\"message\" onclick='reactionSelector()'>").text(full_msg)
             );
             $("#" + msg_id).append($('<ul class="reaction-display">').text(""));
           }
@@ -223,11 +220,11 @@
             var reaction_display_li = reaction_display.getElementsByClassName(
               reaction
             );
-            if (message_reactions[id][reaction] !== 0) {
+            if (cache.reactions[id][reaction] !== 0) {
               var block = document.createElement("li");
               block.appendChild(document.createElement("span"));
               block.childNodes[0].innerText =
-                reaction + " " + message_reactions[id][reaction];
+                reaction + " " + cache.reactions[id][reaction];
               block.onclick = function () {
                 reactionShortcut();
               };
@@ -235,7 +232,7 @@
               block.className = reaction;
               reaction_display.appendChild(block);
 
-              if (message_reactions_voted[id][reaction] == true) {
+              if (cache.reactions_voted[id][reaction] == true) {
                 reaction_display_li[0].childNodes[0].style.backgroundColor =
                   "#007bff";
               } else {
@@ -256,13 +253,13 @@
           } else {
             return;
           }
-          if (!(id in message_reactions)) {
-            message_reactions[id] = {};
+          if (!(id in cache.reactions)) {
+            cache.reactions[id] = {};
             for (var i = 0; i < reactions_options.length; i++) {
-              message_reactions[id][reactions_options[i]] = 0;
+              cache.reactions[id][reactions_options[i]] = 0;
             }
           }
-          message_reactions[id][reaction] += 1;
+          cache.reactions[id][reaction] += 1;
           var reaction_display_li = reaction_display.getElementsByClassName(
             reaction
           );
@@ -270,7 +267,7 @@
             var block = document.createElement("li");
             block.appendChild(document.createElement("span"));
             block.childNodes[0].innerText =
-              reaction + " " + message_reactions[id][reaction];
+              reaction + " " + cache.reactions[id][reaction];
             block.onclick = function () {
               reactionShortcut();
             };
@@ -279,15 +276,15 @@
             reaction_display.appendChild(block);
           } else {
             reaction_display_li[0].childNodes[0].innerText =
-              reaction + " " + message_reactions[id][reaction];
+              reaction + " " + cache.reactions[id][reaction];
           }
-          if (!(id in message_reactions_voted)) {
-            message_reactions_voted[id] = {};
+          if (!(id in cache.reactions_voted)) {
+            cache.reactions_voted[id] = {};
             for (var i = 0; i < reactions_options.length; i++) {
-              message_reactions_voted[id][reactions_options[i]] = false;
+              cache.reactions_voted[id][reactions_options[i]] = false;
             }
           }
-          if (message_reactions_voted[id][reaction] == true) {
+          if (cache.reactions_voted[id][reaction] == true) {
             reaction_display_li[0].childNodes[0].style.backgroundColor =
               "#007bff";
           } else {
@@ -307,15 +304,15 @@
           } else {
             return;
           }
-          message_reactions[id][reaction] -= 1;
+          cache.reactions[id][reaction] -= 1;
           var reaction_display_li = reaction_display.getElementsByClassName(
             reaction
           );
-          if (message_reactions[id][reaction] <= 0) {
+          if (cache.reactions[id][reaction] <= 0) {
             reaction_display_li[0].remove();
           } else {
             reaction_display_li[0].childNodes[0].innerText =
-              reaction + " " + message_reactions[id][reaction];
+              reaction + " " + cache.reactions[id][reaction];
           }
           localStorage.setItem(channel_id, JSON.stringify(cache));
         }
@@ -335,7 +332,7 @@
         expand_button.style.visibility = "hidden";
         chat_open = true;
 
-        cache.message_read = message_read = $("#messages li").length;
+        cache.message_read = $("#messages .message").length;
         localStorage.setItem(channel_id, JSON.stringify(cache));
       }
 
@@ -445,20 +442,21 @@
           message_div.onmouseleave = "unset";
           reaction_selector.style.display = "none";
           var reaction = event.srcElement.innerText;
-          if (!(id in message_reactions_voted)) {
-            message_reactions_voted[id] = {};
+          if (!(id in cache.reactions_voted)) {
+            cache.reactions_voted[id] = {};
             for (var i = 0; i < reactions_options.length; i++) {
-              message_reactions_voted[id][reactions_options[i]] = false;
+              cache.reactions_voted[id][reactions_options[i]] = false;
             }
-            message_reactions_voted[id][reaction] = true;
+            cache.reactions_voted[id][reaction] = true;
           } else {
-            if (message_reactions_voted[id][reaction] == true) {
+            if (cache.reactions_voted[id][reaction] == true) {
               return;
             } else {
-              message_reactions_voted[id][reaction] = true;
+              cache.reactions_voted[id][reaction] = true;
             }
           }
           socket.emit("send reaction", { id: id, reaction: reaction });
+          localStorage.setItem(channel_id, JSON.stringify(cache));
         });
       }
       function reactionShortcut() {
@@ -468,15 +466,16 @@
         var elemt = event.srcElement;
         var reaction = elemt.innerText.slice(0, 2);
         var id = elemt.parentNode.parentNode.parentNode.id;
-        if (message_reactions_voted[id][reaction] == true) {
+        if (cache.reactions_voted[id][reaction] == true) {
           elemt.style.backgroundColor = "#6c757d";
-          message_reactions_voted[id][reaction] = false;
+          cache.reactions_voted[id][reaction] = false;
           socket.emit("send reaction recall", { id: id, reaction: reaction });
         } else {
           elemt.style.backgroundColor = "#007bff";
-          message_reactions_voted[id][reaction] = true;
+          cache.reactions_voted[id][reaction] = true;
           socket.emit("send reaction", { id: id, reaction: reaction });
         }
+        localStorage.setItem(channel_id, JSON.stringify(cache));
       }
     </script>
   </body>
