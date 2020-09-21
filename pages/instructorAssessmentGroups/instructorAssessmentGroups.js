@@ -170,7 +170,7 @@ router.post('/', function(req, res, next) {
         let params = {
             assessment_id,
             gid,
-        }
+        };
         sqldb.query(sql.verify_group, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount < 1) {
@@ -212,7 +212,7 @@ router.post('/', function(req, res, next) {
         let params = {
             assessment_id,
             gid,
-        }
+        };
         sqldb.query(sql.verify_group, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount < 1) {
@@ -245,9 +245,9 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'delete_group') {
         //verify the group belong to the assessment first
         let params = {
-            assessment_id,
-            gid,
-        }
+            assessment_id: res.locals.assessment.id,
+            gid: req.body.gid,
+        };
         sqldb.query(sql.verify_group, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount < 1) {
