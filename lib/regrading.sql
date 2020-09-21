@@ -5,6 +5,7 @@ SELECT
     a.id AS assessment_id,
     u.uid AS user_uid,
     gr.id AS group_id,
+    gr.name AS group_name,
     ci.id AS course_instance_id,
     c.id AS course_id
 FROM
