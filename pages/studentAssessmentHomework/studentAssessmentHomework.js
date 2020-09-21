@@ -42,8 +42,8 @@ router.get('/', function(req, res, next) {
                         res.locals.groupsize = result.rowCount;
                         res.locals.needsize = res.locals.minsize - res.locals.groupsize;
                         if (res.locals.groupsize > 0) {
-                            res.locals.groupinfo = result.rows;
-                            res.locals.join_code = res.locals.groupinfo[0].name + '-' + res.locals.groupinfo[0].join_code;
+                            res.locals.group_info = result.rows;
+                            res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
                             res.locals.start = false;
                             if (res.locals.needsize <= 0) {
                                 res.locals.start = true;
@@ -153,7 +153,7 @@ router.post('/', function(req, res, next) {
             //try to create a group
             sqldb.query(sql.create_group, params, function(err, _result) {
                 if (!err) {
-                    sqldb.query(sql.join_justcreated_group, params, function(err, _result) {
+                    sqldb.query(sql.join_just_created_group, params, function(err, _result) {
                         if (ERR(err, next)) return;
                         res.redirect(req.originalUrl);
                     });

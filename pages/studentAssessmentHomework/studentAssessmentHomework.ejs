@@ -80,7 +80,7 @@
                   <div class="col-sm bg-light py-4 px-4 border">
                     <p>This is a group homework. Use your join code to invite others to join the group.</p>
                     <span class="badge badge-secondary">Group Name</span> 
-                    <span id="group-name"><%= groupinfo[0].name %></span><br>
+                    <span id="group-name"><%= group_info[0].name %></span><br>
                     <span class="badge badge-secondary">join Code</span> 
                     <span id='join-code'><%= join_code %></span><br>
                   </div>
@@ -94,7 +94,7 @@
                     </form>
                     <% } %>
                     <span class="badge badge-secondary">Group Members</span> 
-                    <% groupinfo.forEach(function(row) {%>
+                    <% group_info.forEach(function(row) {%>
                       <li><%= row.uid %></li>
                     <% }); %>
                   </div>
