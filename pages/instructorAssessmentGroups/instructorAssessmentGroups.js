@@ -165,25 +165,41 @@ router.post('/', function(req, res, next) {
         const uidlist = uids.split(/[ ,]+/);
         let failedUids = '';
         res.locals.errormsg = '';
-        (async () => {
-            for (const uid of uidlist) {
-                const params = [
-                    assessment_id,
-                    gid,
-                    uid,
-                    res.locals.authn_user.user_id,
-                ];
-                try {
-                    await sqldb.callAsync('assessment_groups_add_member', params);
-                } catch (err) {
-                    failedUids += '[' + uid + '] ';
+
+        //verify the group belong to the assessment first
+        let params = {
+            assessment_id,
+            gid,
+        }
+        sqldb.query(sql.verify_group, params, function(err, result) {
+            if (ERR(err, next)) return;
+            if (result.rowCount < 1) {
+                res.locals.errormsg += 'The selected group does not belong to this assessment.';
+                obtainInfo(req, res, next);
+                return;    
+            }
+            const groupName = result.rows[0].name;
+            //start processing
+            (async () => {
+                for (const uid of uidlist) {
+                    let params = [
+                        assessment_id,
+                        gid,
+                        uid,
+                        res.locals.authn_user.user_id,
+                    ];
+                    try {
+                        await sqldb.callAsync('assessment_groups_add_member', params);
+                    } catch (err) {
+                        failedUids += '[' + uid + '] ';
+                    }
                 }
-            }
-            if (failedUids.length > 0) {
-                res.locals.errormsg += 'Failed to add ' + failedUids + 'to Group No.' + gid + '. Please check if the uid exist.\n';
-            }
-            obtainInfo(req, res, next);
-        })();
+                if (failedUids.length > 0) {
+                    res.locals.errormsg += 'Failed to add ' + failedUids + 'to ' + groupName + '. Please check if the uid exist.\n';
+                }
+                obtainInfo(req, res, next);
+            })();    
+        });
     } else if (req.body.__action == 'delete_member') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
@@ -191,34 +207,63 @@ router.post('/', function(req, res, next) {
         const uidlist = uids.split(/[ ,]+/);
         let failedUids = '';
         res.locals.errormsg = '';
-        (async () => {
-            for (const uid of uidlist) {
-                const params = [
-                    assessment_id,
-                    gid,
-                    uid,
-                    res.locals.authn_user.user_id,
-                ];
-                try {
-                    await sqldb.callAsync('assessment_groups_delete_member', params);
-                } catch (err) {
-                    failedUids += '[' + uid + '] ';
-                }
-            }
-            if (failedUids.length > 0) {
-                res.locals.errormsg += 'Failed to delete ' + failedUids + 'from Group No.' + gid + ']. Please check if the uid exist.\n';
-            }
-            obtainInfo(req, res, next);
-        })();
-    } else if (req.body.__action == 'delete_group') {
-        const params = [
-            res.locals.assessment.id,
-            req.body.gid,
-            res.locals.authn_user.user_id,
-        ];
-        sqldb.call('assessment_groups_delete_group', params, function(err, _result) {
+
+        //verify the group belong to the assessment first
+        let params = {
+            assessment_id,
+            gid,
+        }
+        sqldb.query(sql.verify_group, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            if (result.rowCount < 1) {
+                res.locals.errormsg += 'The selected group does not belong to this assessment.';
+                obtainInfo(req, res, next);
+                return;    
+            }
+            const groupName = result.rows[0].name;
+            //start processing        
+            (async () => {
+                for (const uid of uidlist) {
+                    let params = [
+                        assessment_id,
+                        gid,
+                        uid,
+                        res.locals.authn_user.user_id,
+                    ];
+                    try {
+                        await sqldb.callAsync('assessment_groups_delete_member', params);
+                    } catch (err) {
+                        failedUids += '[' + uid + '] ';
+                    }
+                }
+                if (failedUids.length > 0) {
+                    res.locals.errormsg += 'Failed to remove ' + failedUids + 'from ' + groupName + '. Please check if the uid exist.\n';
+                }
+                obtainInfo(req, res, next);
+            })();
+        });
+    } else if (req.body.__action == 'delete_group') {
+        //verify the group belong to the assessment first
+        let params = {
+            assessment_id,
+            gid,
+        }
+        sqldb.query(sql.verify_group, params, function(err, result) {
+            if (ERR(err, next)) return;
+            if (result.rowCount < 1) {
+                res.locals.errormsg += 'The selected group does not belong to this assessment.';
+                obtainInfo(req, res, next);
+                return;    
+            }
+            let params = [
+                res.locals.assessment.id,
+                req.body.gid,
+                res.locals.authn_user.user_id,
+            ];    
+            sqldb.call('assessment_groups_delete_group', params, function(err, _result) {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

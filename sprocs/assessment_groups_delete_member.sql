@@ -10,11 +10,18 @@ DECLARE
     arg_user_id bigint;
 BEGIN
     -- ##################################################################
-    -- get user_id from uid
-    SELECT user_id
+    -- get user_id from uid and make sure the user enrolled in this assessment
+    SELECT u.user_id
     INTO arg_user_id
-    FROM users
-    WHERE uid = arg_uid;
+    FROM 
+        users AS u
+        JOIN enrollments AS e ON e.user_id = u.user_id
+        JOIN assessments AS a ON a.course_instance_id = e.course_instance_id AND a.id = assessment_groups_delete_member.assessment_id
+    WHERE u.uid = arg_uid;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'This user does not exist or is not enrolled in this assessment';
+    END IF;
 
     -- ##################################################################
     -- remove group_user

@@ -60,3 +60,13 @@ SET
     student_authz_leave = $leavecheck
 WHERE
     assessment_id = $assessment_id AND deleted_at IS NULL;
+
+--BLOCK verify_group
+SELECT g.name
+FROM
+    group_configs AS gc
+    JOIN groups AS g ON gc.id = g.group_config_id
+WHERE
+    gc.assessment_id = $assessment_id
+    AND g.id = $gid
+    AND g.deleted_at IS NULL;
