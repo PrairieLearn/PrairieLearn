@@ -26,10 +26,13 @@ BEGIN
     FOREACH group_user SLICE 1 IN ARRAY update_list LOOP
         BEGIN
         -- get user_id from uid
-        SELECT user_id
+        -- make sure this user enrolled in the course
+        SELECT u.user_id
         INTO arg_user_id
-        FROM users
-        WHERE uid = group_user[2];
+        FROM users AS u
+        JOIN enrollments AS e ON e.user_id = u.user_id
+        JOIN assessments AS a ON a.course_instance_id = e.course_instance_id AND a.id = arg_assessment_id
+        WHERE u.uid = group_user[2];
         -- make sure this user does not belong to another group in the same assessment
         IF EXISTS (
                     SELECT 1

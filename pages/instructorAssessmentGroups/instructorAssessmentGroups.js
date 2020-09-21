@@ -106,8 +106,8 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'add_group') {
         const assessment_id = res.locals.assessment.id;
-        const groupname = req.body.groupname;
-        if (String(groupname).length < 1) {
+        const group_name = req.body.group_name;
+        if (String(group_name).length < 1) {
             res.locals.errormsg = 'Please enter a group name when adding a group';
             obtainInfo(req, res, next);
             return;
@@ -117,24 +117,24 @@ router.post('/', function(req, res, next) {
         res.locals.errormsg = '';
         let updateList = new Array();
         uidlist.forEach(uid => {
-            updateList.push([groupname, uid]);
+            updateList.push([group_name, uid]);
         });
-        const params2 = [
+        const params = [
             assessment_id,
             updateList,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_groups_update', params2, (err, result) => {
+        sqldb.call('assessment_groups_update', params, (err, result) => {
             if (err) {
-                res.locals.errormsg = 'ERROR when adding group ' + groupname + ' - Internal ' + String(err);
+                res.locals.errormsg = 'ERROR when adding group ' + group_name + ' - Internal ' + String(err);
             } else {
                 const notExist = result.rows[0].not_exist_user;
                 if (notExist) {
-                    res.locals.errormsg += 'ERROR when adding group ' + groupname + ' - [' + notExist.toString() + ']. Please check if the group name is unique and whether their uids are correct.';
+                    res.locals.errormsg += 'ERROR when adding group ' + group_name + ' - [' + notExist.toString() + ']. Please check if the group name is unique and whether their uids are correct.';
                 }
                 const inGroup = result.rows[0].already_in_group;
                 if (inGroup) {
-                    res.locals.errormsg += 'ERROR when adding group ' + groupname + ' - [' + inGroup.toString() + '] are already in another group.';
+                    res.locals.errormsg += 'ERROR when adding group ' + group_name + ' - [' + inGroup.toString() + '] are already in another group.';
                 }
             }
             obtainInfo(req, res, next);

@@ -34,7 +34,7 @@ WHERE
     gc.assessment_id = $assessment_id 
     AND gc.deleted_at IS NULL 
     AND gr.deleted_at IS NULL
-    AND gr.name = $groupname;
+    AND gr.name = $group_name;
 
 -- BLOCK select_all_assessment_instance
 SELECT

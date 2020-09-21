@@ -82,7 +82,7 @@ describe('assessment instance group synchronization test', function () {
             var form = {
                 __action: 'add_group',
                 __csrf_token: locals.__csrf_token,
-                groupname: 'test_group',
+                group_name: 'test_group',
                 uids: locals.studentUsers[0].uid+','+ locals.studentUsers[1].uid+',' + locals.studentUsers[2].uid,
             };
             request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (err, response) {
@@ -96,7 +96,7 @@ describe('assessment instance group synchronization test', function () {
         it('should create the correct group configuration', function(callback) {
             var params = {
                 assessment_id: locals.assessment_id,
-                groupname: 'test_group',
+                group_name: 'test_group',
             };
             sqldb.query(sql.select_group_users, params, function(err, result) {
                 if (ERR(err, callback)) return;
