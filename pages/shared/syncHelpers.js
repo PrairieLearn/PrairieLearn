@@ -1,12 +1,18 @@
 const ERR = require('async-stacktrace');
 const fs = require('fs');
+const async = require('async');
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const requireFrontend = require('../../lib/require-frontend');
 const courseUtil = require('../../lib/courseUtil');
+const util = require('util');
+const chunks = require('../../lib/chunks');
+const dockerUtil = require('../../lib/dockerUtil');
+const debug = require('debug')('prairielearn:syncHelpers');
 
+const error = require('@prairielearn/prairielib/error');
 
 module.exports.pullAndUpdate = function(locals, callback) {
     const options = {
@@ -24,6 +30,9 @@ module.exports.pullAndUpdate = function(locals, callback) {
         if (config.gitSshCommand != null) {
             gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
         }
+
+        let startGitHash = null;
+        let endGitHash = null;
 
         // We've now triggered the callback to our caller, but we
         // continue executing below to launch the jobs themselves.
@@ -49,7 +58,15 @@ module.exports.pullAndUpdate = function(locals, callback) {
             serverJobs.spawnJob(jobOptions);
         };
 
-        const syncStage1B = function() {
+        const syncStage1B = () => {
+            courseUtil.getOrUpdateCourseCommitHash(locals.course, (err, hash) => {
+                ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
+                startGitHash = hash;
+                syncStage1B2();
+            });
+        };
+
+        const syncStage1B2 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -61,12 +78,12 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 arguments: ['fetch'],
                 working_directory: locals.course.path,
                 env: gitEnv,
-                on_success: syncStage1B2,
+                on_success: syncStage1B3,
             };
             serverJobs.spawnJob(jobOptions);
         };
 
-        const syncStage1B2 = function() {
+        const syncStage1B3 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -78,12 +95,12 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 arguments: ['clean', '-fdx'],
                 working_directory: locals.course.path,
                 env: gitEnv,
-                on_success: syncStage1B3,
+                on_success: syncStage1B4,
             };
             serverJobs.spawnJob(jobOptions);
         };
 
-        const syncStage1B3 = function() {
+        const syncStage1B4 = function() {
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -103,8 +120,9 @@ module.exports.pullAndUpdate = function(locals, callback) {
         // After either cloning or fetching and resetting from Git, we'll need
         // to load and store the current commit hash in the database
         const syncStage2 = () => {
-            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+            courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
                 ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
+                endGitHash = hash;
                 syncStage3();
             });
         };
@@ -132,7 +150,23 @@ module.exports.pullAndUpdate = function(locals, callback) {
                     } else if (result.hadJsonErrors) {
                         job.fail('One or more JSON files contained errors and were unable to be synced');
                     } else {
-                        job.succeed();
+                        if (config.chunksGenerator) {
+                             util.callbackify(chunks.updateChunksForCourse)({
+                                 coursePath: locals.course.path,
+                                 courseId: locals.course.id,
+                                 courseData: result.courseData,
+                                 oldHash: startGitHash,
+                                 newHash: endGitHash,
+                             }, (err) => {
+                                 if (err) {
+                                     job.fail(err);
+                                     return;
+                                 }
+                                 job.succeed();
+                             });
+                        } else {
+                            job.succeed();
+                        }
                     }
                 });
             });
@@ -229,5 +263,63 @@ module.exports.gitStatus = function(locals, callback) {
 
         // Start the first job.
         statusStage1();
+    });
+};
+
+module.exports.ecrUpdate = function(locals, callback) {
+    if (!config.externalGradingImageRepository) {
+        return callback(new Error('externalGradingImageRepository not defined'));
+    }
+
+    dockerUtil.setupDockerAuth((err, auth) => {
+        if (ERR(err, callback)) return;
+
+        const options = {
+            course_id: locals.course.id,
+            user_id: locals.user.user_id,
+            authn_user_id: locals.authz_data.authn_user.user_id,
+            type: 'images_sync',
+            description: 'Sync Docker images from Docker Hub to PL registry',
+        };
+        serverJobs.createJobSequence(options, function(err, job_sequence_id) {
+            if (ERR(err, callback)) return;
+            callback(null, job_sequence_id);
+
+            var lastIndex = locals.images.length - 1;
+            async.eachOfSeries(locals.images || [], (image, index, callback) => {
+                if (ERR(err, callback)) return;
+
+                var jobOptions = {
+                    course_id: locals.course ? locals.course.id : null,
+                    type: 'image_sync',
+                    description: `Pull image from Docker Hub and push to PL registry: ${image.external_grading_image}`,
+                    job_sequence_id,
+                };
+
+                if (index == lastIndex) {
+                    jobOptions.last_in_sequence = true;
+                }
+
+                serverJobs.createJob(jobOptions, (err, job) => {
+                    if (err) {
+                        logger.error('Error in createJob()', err);
+                        serverJobs.failJobSequence(job_sequence_id);
+                        return callback(err);
+                    }
+                    debug('successfully created job ', {job_sequence_id});
+
+                    // continue executing here to launch the actual job
+                    dockerUtil.pullAndPushToECR(image.external_grading_image, auth, job, (err) => {
+                        if (err) {
+                            job.fail(error.newMessage(err, `Error syncing ${image.external_grading_image}`));
+                            return callback(err);
+                        }
+
+                        job.succeed();
+                        callback(null);
+                    });
+                });
+            });
+        });
     });
 };

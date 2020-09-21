@@ -176,6 +176,7 @@ module.exports = {
             'workspace_hosts_drain_extra.sql',
             'workspace_hosts_find_terminable.sql',
             'select_log.sql',
+            'chunks_insert.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
