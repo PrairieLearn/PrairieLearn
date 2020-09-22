@@ -267,8 +267,8 @@ module.exports.gitStatus = function(locals, callback) {
 };
 
 module.exports.ecrUpdate = function(locals, callback) {
-    if (!config.cacheImageRepository) {
-        return callback(new Error('cacheImageRepository not defined'));
+    if (!config.cacheImageRegistry) {
+        return callback(new Error('cacheImageRegistry not defined'));
     }
 
     dockerUtil.setupDockerAuth((err, auth) => {

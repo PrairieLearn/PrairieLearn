@@ -24,7 +24,7 @@ router.get('/', function(req, res, next) {
             res.locals.images = result.rows;
             res.locals.imageSyncNeeded = false;
 
-            if (config.cacheImageRepository) {
+            if (config.cacheImageRegistry) {
                 const ecr = new AWS.ECR();
                 async.each(res.locals.images, (image, callback) => {
                     var repository = new dockerUtil.DockerName(image.image);
@@ -83,7 +83,7 @@ router.get('/', function(req, res, next) {
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 });
-            } else { //  no config.cacheImageRepository
+            } else { //  no config.cacheImageRegistry
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             }
         });
