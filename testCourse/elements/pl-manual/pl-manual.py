@@ -46,14 +46,6 @@ def render(element_html, data):
 
 
 def grade(element_html, data):
-    # TODO: move this to the pre grading hook instead
-    # TODO: see how the submitted answers workflow works.
-    #       check if adding in a "manuals" partial breaks things.
-    #       else, check if we need to have a seperate data field for manual
-    #           and just check how we populate it
-    #       modify the partials as appropriate, & cough them up
-    #       make sure this isn't exploitable by students (we should have a workflow already)
-    #
-    #       should any of this logic here be pulled out into the pl python library so we can
-    #       work on more "modular" grading features moving forwards?
+    # TODO: do we even have a grade step? we should be relying upon the form submission for this element,
+    #       and the rendering should be purely structural
     return
