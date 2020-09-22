@@ -5,6 +5,7 @@ const tmp = require('tmp-promise');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const awsHelper = require('../lib/aws');
 const config = require('../lib/config');
 const load = require('../lib/load');
 const cron = require('../cron');
@@ -90,6 +91,12 @@ module.exports = {
                 function(callback) {
                     debug('before(): initialize socket server');
                     socketServer.init(server, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                },
+                function(callback) {
+                    util.callbackify(awsHelper.init)(err => {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
