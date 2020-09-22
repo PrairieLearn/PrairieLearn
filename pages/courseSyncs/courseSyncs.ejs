@@ -112,7 +112,7 @@
                 </td>
                 <td>
                   <% if (image.questions.length > 0) { %>
-                  <%= image.questions.length %> questions
+                  <%= image.questions.length %> question<% if (image.questions.length > 1) { %>s<% } %>
 
                   <a class="btn btn-xs btn-secondary" role="button"
                    tabindex="0" data-toggle="popover" data-html="true"
