@@ -21,7 +21,7 @@ module.exports = function(callback) {
             });
         },
         (callback) => {
-            if (config.forcedRegistry) {
+            if (config.cacheImageRegistry) {
                 logger.info('Authenticating to docker');
                 dockerUtil.setupDockerAuth((err, auth) => {
                     if (ERR(err, callback)) return;
@@ -45,10 +45,10 @@ module.exports = function(callback) {
             async.eachLimit(images, config.parallelInitPulls, (image, callback) => {
                 (callback => {
                     var ourAuth = {};
-                    logger.info(`Pulling latest version of "${image}" image from ${config.forcedRegistry || 'default registry'}`);
+                    logger.info(`Pulling latest version of "${image}" image from ${config.cacheImageRegistry || 'default registry'}`);
                     var repository = new dockerUtil.DockerName(image);
-                    if (config.forcedRegistry) {
-                        repository.registry = config.forcedRegistry;
+                    if (config.cacheImageRegistry) {
+                        repository.registry = config.cacheImageRegistry;
                         ourAuth = dockerAuth;
                     }
                     const params = {

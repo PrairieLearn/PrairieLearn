@@ -25,9 +25,9 @@ properties:
     envVar: USE_HEALTH_CHECK
 
   # Docker config
-  forcedRegistry:
+  cacheImageRegistry:
     default: NULL
-    envVar: FORCED_REGISTRY
+    envVar: CACHE_IMAGE_REGISTRY
   parallelInitPulls:
     default: 5
     envVar: PARALLEL_INIT_PULLS

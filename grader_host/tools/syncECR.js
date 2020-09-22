@@ -189,7 +189,7 @@ var pullAndPushToECR = function(image, dockerAuth, callback) {
 				if (ERR(err, callback)) return;
 
 				// Tag the image to add the new registry
-				repository.registry = config.forcedRegistry;
+				repository.registry = config.cacheImageRegistry;
 
 				var options = {
 					repo: repository.getCombined(),

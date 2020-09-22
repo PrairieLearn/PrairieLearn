@@ -231,7 +231,7 @@ function initDocker(info, callback) {
             });
         },
         (callback) => {
-            if (config.forcedRegistry) {
+            if (config.cacheImageRegistry) {
                 logger.info('Authenticating to docker');
                 dockerUtil.setupDockerAuth((err, auth) => {
                     if (ERR(err, callback)) return;
@@ -245,8 +245,8 @@ function initDocker(info, callback) {
         (callback) => {
             logger.info(`Pulling latest version of "${image}" image`);
             var repository = new dockerUtil.DockerName(image);
-            if (config.forcedRegistry) {
-                repository.registry = config.forcedRegistry;
+            if (config.cacheImageRegistry) {
+                repository.registry = config.cacheImageRegistry;
             }
             const params = {
                 fromImage: repository.getRegistryRepo(),
@@ -384,8 +384,8 @@ function runJob(info, callback) {
     logger.info('Launching Docker container to run grading job');
 
     var repository = new dockerUtil.DockerName(image);
-    if (config.forcedRegistry) {
-        repository.registry = config.forcedRegistry;
+    if (config.cacheImageRegistry) {
+        repository.registry = config.cacheImageRegistry;
     }
     const runImage = repository.getCombined();
     logger.info(`Run image: ${runImage}`);
