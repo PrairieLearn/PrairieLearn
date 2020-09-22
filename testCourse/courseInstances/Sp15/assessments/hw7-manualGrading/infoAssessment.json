@@ -1,0 +1,23 @@
+{
+  "uuid": "ffc6cb45-5d86-4b97-ab73-8b28050deec9",
+  "type": "Homework",
+  "title": "Homework to test manual grading",
+  "set": "Homework",
+  "number": "3",
+  "constantQuestionValue": true,
+  "allowAccess": [
+    {
+      "mode": "Public",
+      "credit": 120,
+      "startDate": "2014-04-07T00:00:01",
+      "endDate": "2014-07-10T23:59:59"
+    }
+  ],
+  "zones": [
+    {
+      "questions": [
+        { "id": "manualGrading/stringDemo", "points": 1, "maxPoints": 5 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "controller": "pl-manual.py",
+  "dependencies": {
+    "elementStyles": ["pl-manual.css"],
+    "elementScripts": ["pl-element.js"]
+  }
+}
