@@ -99,7 +99,7 @@
                   <% } %>
                 </td>
                 <td>
-                  <% if (config.externalGradingImageRepository) { %>
+                  <% if (config.cacheImageRepository) { %>
                     <form method="POST">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <input type="hidden" name="__action" value="syncImages">
@@ -133,7 +133,7 @@
                 <td colspan=10>
                   <% if (images.length == 0) { %>
                     <em>No questions are using docker images.</em>
-                  <% } else if (config.externalGradingImageRepository) { %>
+                  <% } else if (config.cacheImageRepository) { %>
                     <form name="confirm-form" method="POST">
                       <input type="hidden" name="__action" value="syncImages">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

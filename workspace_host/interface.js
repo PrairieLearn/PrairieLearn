@@ -634,9 +634,9 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
         workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
     };
 
-    if (config.externalGradingImageRepository) {
+    if (config.cacheImageRepository) {
         const repository = new dockerUtil.DockerName(settings.workspace_image);
-        repository.registry = config.externalGradingImageRepository;
+        repository.registry = config.cacheImageRepository;
         const newImage = repository.getCombined();
         logger.info(`Using ${newImage} for ${settings.workspace_image}`);
         settings.workspace_image = newImage;

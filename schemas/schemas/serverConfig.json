@@ -124,7 +124,7 @@
             "description": "The endpoint that should be hit when a grading result is updated. Should be null when running locally.",
             "type": "string"
         },
-        "externalGradingImageRepository": {
+        "cacheImageRepository": {
             "description": "The ECR repository name to use. Should be null when running locally.",
             "type": "string"
         },
