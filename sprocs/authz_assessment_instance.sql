@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION
         IN authz_data JSONB,
         IN req_date timestamptz,
         IN display_timezone text,
+        IN group_work boolean,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
@@ -58,6 +59,16 @@ BEGIN
         IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
             authorized := TRUE;
             authorized_edit := TRUE;
+        END IF;
+    END IF;
+
+    -- give access if we are a member of the group this assessment belongs to and we aren't emulating
+    IF (group_work) THEN
+        IF EXISTS (SELECT * FROM group_users AS gu WHERE gu.group_id = assessment_instance.group_id AND gu.user_id = (authz_data->'user'->>'user_id')::bigint) THEN
+            IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
+                authorized := TRUE;
+                authorized_edit := TRUE;
+            END IF;
         END IF;
     END IF;
 

@@ -3,6 +3,7 @@ const async = require('async');
 const _ = require('lodash');
 const fs = require('fs-extra');
 const path = require('path');
+const util = require('util');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
@@ -18,6 +19,7 @@ const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
+const chunks = require('../lib/chunks');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -133,20 +135,25 @@ module.exports = {
         if (courseElementsCache[course.id] !== undefined) {
             return callback(null, courseElementsCache[course.id]);
         }
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        chunks.ensureChunksForCourse(course.id, {'type': 'elements'}, (err) => {
             if (ERR(err, callback)) return;
-            courseElementsCache[course.id] = elements;
-            callback(null, courseElementsCache[course.id]);
+            module.exports.loadElements(path.join(coursePath, 'elements'), 'course', (err, elements) => {
+                if (ERR(err, callback)) return;
+                courseElementsCache[course.id] = elements;
+                callback(null, courseElementsCache[course.id]);
+            });
         });
     },
 
-    // Skips the cache; used when syncing course from GitHub/disk
-    reloadElementsForCourse(course, callback) {
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
-            if (ERR(err, callback)) return;
-            courseElementsCache[course.courseId] = elements;
-            callback(null, courseElementsCache[course.courseId]);
-        });
+    /**
+     * Reloads all element files from a course.
+     * @param {string} courseDir
+     * @param {any} courseId
+     */
+    reloadElementsForCourse: async function(courseDir, courseId) {
+        const elements = await util.promisify(module.exports.loadElements)(path.join(courseDir, 'elements'), 'course');
+        courseElementsCache[courseId] = elements;
     },
 
     resolveElement: function(elementName, context) {
@@ -1264,17 +1271,30 @@ module.exports = {
     },
 
     getContext: function(question, course, callback) {
-        const context = {
-            question,
-            course,
-            course_dir: course.path,
-            question_dir: path.join(course.path, 'questions', question.directory),
-            course_elements_dir: path.join(course.path, 'elements'),
-        };
-        module.exports.loadElementsForCourse(course, (err, elements) => {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        const chunksToLoad = [
+            {
+                'type': 'question',
+                'questionId': question.id,
+            },
+            {
+                'type': 'serverFilesCourse',
+            },
+        ];
+        chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
             if (ERR(err, callback)) return;
-            context.course_elements = elements;
-            callback(null, context);
+            const context = {
+                question,
+                course,
+                course_dir: coursePath,
+                question_dir: path.join(coursePath, 'questions', question.directory),
+                course_elements_dir: path.join(coursePath, 'elements'),
+            };
+            module.exports.loadElementsForCourse(course, (err, elements) => {
+                if (ERR(err, callback)) return;
+                context.course_elements = elements;
+                callback(null, context);
+            });
         });
     },
 
