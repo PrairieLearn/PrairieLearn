@@ -91,6 +91,11 @@ module.exports = {
                 intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalStopStaleWorkspacesSec,
             },
             {
+                name: 'warnStaleWorkspaces',
+                module: require('./warnStaleWorkspaces'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWarnStaleWorkspacesSec,
+            },
+            {
                 name: 'workspaceHostLoads',
                 module: require('./workspaceHostLoads'),
                 intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
