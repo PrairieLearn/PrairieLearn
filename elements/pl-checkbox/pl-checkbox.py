@@ -123,7 +123,7 @@ def render(element_html, data):
     if (partial_credit and editable) or hide_score_badge:
         show_answer_feedback = False
 
-    display_answers = data['params'].get(name, [[]])[0]
+    display_answers = data['params'].get(name, {'display_answers': []})['display_answers']
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
     submitted_keys = data['submitted_answers'].get(name, [])
 
