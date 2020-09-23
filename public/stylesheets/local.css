@@ -295,7 +295,7 @@ table td > .badge {
 
 .table-sticky-header {
     overflow-y: auto;
-    height: 100vh; /* Consider another height */
+    height: calc(100vh - 240px); /* Consider another height */
 }
 
 .table-sticky-header table th {
