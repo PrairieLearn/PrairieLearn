@@ -292,3 +292,15 @@ table td > .badge {
     margin-left: 5px;
     background: #fff;
 }
+
+.table-sticky-header {
+    overflow-y: auto;
+    height: 100vh; /* Consider another height */
+}
+
+.table-sticky-header table th {
+    position: sticky;
+    top: 0;
+    background: white;
+}
+
