@@ -265,7 +265,7 @@ async.series([
         });
         watcher.on('error', err => {
             // Handle errors
-            markSelfUnhealthy((err2) => {
+            markSelfUnhealthy(err, (err2) => {
                 if (err2) {
                     logger.error(`Error while handling watcher error: ${err2}`);
                 }
@@ -348,7 +348,7 @@ async.series([
 ], function(err, data) {
     if (err) {
         logger.error('Error initializing workspace host:', err, data);
-        markSelfUnhealthyAsync();
+        markSelfUnhealthyAsync(err);
     } else {
         logger.info('Successfully initialized workspace host');
     }
@@ -507,10 +507,14 @@ async function dockerAttemptKillAndRemove(input) {
  * Marks the host as "unhealthy", we typically want to do this when we hit some unrecoverable error.
  * This will also set the "unhealthy__at" field if applicable.
  */
-async function markSelfUnhealthyAsync() {
+async function markSelfUnhealthyAsync(reason) {
     try {
-        await sqldb.queryAsync(sql.mark_host_unhealthy, { instance_id: workspace_server_settings.instance_id });
-        logger.warn(`Marked self as unhealthy`);
+        const params = {
+            instance_id: workspace_server_settings.instance_id,
+            unhealthy_reason: reason,
+        };
+        await sqldb.queryAsync(sql.mark_host_unhealthy, params);
+        logger.warn(`Marked self as unhealthy: ${reason}`);
     } catch (err) {
         /* This could error if we don't even have a DB connection, in that case we should let the main server
            mark us as unhealthy. */
@@ -737,7 +741,7 @@ async function _autoUpdateJobManager() {
     try {
         await async.parallel(jobs);
     } catch (err) {
-        markSelfUnhealthy((err2) => {
+        markSelfUnhealthy(err, (err2) => {
             if (err2) {
                 logger.error(`Error while handling error: ${err2}`);
             }
@@ -1097,7 +1101,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
             return; // don't set host to unhealthy
         }
     } catch (err) {
-        markSelfUnhealthyAsync();
+        markSelfUnhealthyAsync(err);
     }
 }
 
