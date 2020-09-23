@@ -299,6 +299,7 @@ table td > .badge {
 }
 
 .table-sticky-header table th {
+    position: -webkit-sticky; /* Apparently needed for Safari/iOS */
     position: sticky;
     top: 0;
     background: white;
