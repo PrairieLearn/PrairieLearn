@@ -415,7 +415,7 @@ describe('Homework assessment', function() {
         helperAttachFiles.downloadAttachedFile(locals);
     });
 
-    describe('12. submit correct answer to question addVectors', function() {
+    describe('13. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -443,7 +443,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('13. submit correct answer to question fossilFuelsRadio', function() {
+    describe('14. submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -470,7 +470,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('14. submit incorrect answer to question addVectors', function() {
+    describe('15. submit incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -498,7 +498,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('15. submit correct answer to question addVectors', function() {
+    describe('16. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -526,7 +526,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('16. save incorrect answer to question addVectors', function() {
+    describe('17. save incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -554,7 +554,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('17. submit correct answer to question addVectors', function() {
+    describe('18. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -567,34 +567,6 @@ describe('Homework assessment', function() {
                     instance_question_score_perc: 8/11 * 100,
                     assessment_instance_points: 11,
                     assessment_instance_score_perc: 11/assessmentMaxPoints * 100,
-                };
-                locals.getSubmittedAnswer = function(variant) {
-                    return {
-                        wx: variant.true_answer.wx,
-                        wy: variant.true_answer.wy,
-                    };
-                };
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        helperQuestion.postInstanceQuestion(locals);
-        helperQuestion.checkQuestionScore(locals);
-        helperQuestion.checkAssessmentScore(locals);
-    });
-
-    describe('18. submit correct answer to question addVectors', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals.shouldHaveButtons = ['grade', 'save'];
-                locals.postAction = 'grade';
-                locals.question = questions.addVectors;
-                locals.expectedResult = {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 11,
-                    instance_question_score_perc: 11/11 * 100,
-                    assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -638,7 +610,35 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('20. load question addNumbers page and save data for later submission', function() {
+    describe('20. submit correct answer to question addVectors', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save'];
+                locals.postAction = 'grade';
+                locals.question = questions.addVectors;
+                locals.expectedResult = {
+                    submission_score: 1,
+                    submission_correct: true,
+                    instance_question_points: 11,
+                    instance_question_score_perc: 11/11 * 100,
+                    assessment_instance_points: 14,
+                    assessment_instance_score_perc: 14/assessmentMaxPoints * 100,
+                };
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        wx: variant.true_answer.wx,
+                        wy: variant.true_answer.wy,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
+    });
+
+    describe('21. load question addNumbers page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -655,7 +655,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('21. submit incorrect answer to question addNumbers', function() {
+    describe('22. submit incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -682,7 +682,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('22. submit correct answer to saved question addNumbers page', function() {
+    describe('23. submit correct answer to saved question addNumbers page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -704,7 +704,7 @@ describe('Homework assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('23. submit correct answer to question addNumbers', function() {
+    describe('24. submit correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -731,7 +731,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('24. submit invalid answer to question addNumbers', function() {
+    describe('25. submit invalid answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -774,7 +774,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('25. submit correct answer to question addNumbers', function() {
+    describe('26. submit correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -801,7 +801,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('26. save incorrect answer to question addNumbers', function() {
+    describe('27. save incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -828,7 +828,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('27. submit correct answer to question fossilFuelsRadio', function() {
+    describe('28. submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -855,7 +855,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('28. submit incorrect answer to question fossilFuelsRadio', function() {
+    describe('29. submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -882,7 +882,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('29. submit correct answer to question fossilFuelsRadio', function() {
+    describe('30. submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -909,7 +909,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('30. submit incorrect answer to question fossilFuelsRadio', function() {
+    describe('31. submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -936,7 +936,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('31. submit incorrect answers to question partialCredit6_no_partial', function() {
+    describe('32. submit incorrect answers to question partialCredit6_no_partial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -964,7 +964,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('32. submit first partially correct answers to question partialCredit6_no_partial', function() {
+    describe('33. submit first partially correct answers to question partialCredit6_no_partial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -992,7 +992,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('33. submit second partially correct answers to question partialCredit6_no_partial', function() {
+    describe('34. submit second partially correct answers to question partialCredit6_no_partial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -1020,7 +1020,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('34. submit correct answers to question partialCredit6_no_partial', function() {
+    describe('35. submit correct answers to question partialCredit6_no_partial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -1048,7 +1048,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('35. test downloading files', function() {
+    describe('36. test downloading files', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -1167,7 +1167,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('36. regrading', function() {
+    describe('37. regrading', function() {
         describe('change max_points', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_max_points, [], function(err, _result) {
@@ -1226,7 +1226,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('37. student gradebook page', function() {
+    describe('38. student gradebook page', function() {
         it('should load successfully', function(callback) {
             const gradebookUrl = locals.courseInstanceBaseUrl + '/gradebook';
             request(gradebookUrl, function (error, response, body) {
