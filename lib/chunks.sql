@@ -30,9 +30,9 @@ FROM
 WHERE
     chunks.course_id = ($course_id)::bigint
     AND chunks.type = (chunks_arr->>'type')::enum_chunk_type
-    AND ((chunks_arr->>'course_instance_id' IS NULL) OR (chunks.course_instance_id = (chunks_arr->>'course_instance_id')::bigint))
-    AND ((chunks_arr->>'assessment_id' IS NULL) OR (chunks.assessment_id = (chunks_arr->>'assessment_id')::bigint))
-    AND ((chunks_arr->>'question_id' IS NULL) OR (chunks.question_id = (chunks_arr->>'question_id')::bigint));
+    AND ((chunks_arr->>'courseInstanceId' IS NULL AND chunks.course_instance_id IS NULL) OR (chunks.course_instance_id = (chunks_arr->>'courseInstanceId')::bigint))
+    AND ((chunks_arr->>'assessmentId' IS NULL AND chunks.assessment_id IS NULL) OR (chunks.assessment_id = (chunks_arr->>'assessmentId')::bigint))
+    AND ((chunks_arr->>'questionId' IS NULL AND chunks.question_id IS NULL) OR (chunks.question_id = (chunks_arr->>'questionId')::bigint));
 
 -- BLOCK select_course_dir
 SELECT c.path
