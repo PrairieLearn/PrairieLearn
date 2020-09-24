@@ -42,7 +42,7 @@ def get_and_save_json(path, filename, args, logfile):
     log(logfile, f'downloading {url} ...')
     start_time = time.time()
     r = requests.get(url, headers=headers)
-    retry_502_max = 300
+    retry_502_max = 30
     retry_502_i = 0
     while True:
         r = requests.get(url, headers=headers)
