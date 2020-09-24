@@ -1,0 +1,12 @@
+<div>
+    <div class="form-group">
+        <input type="number" min="0" max="100" 
+                class="form-control" name="points" 
+                value="{{ partial_score }}">
+        <input type="text" class="form-control" name="feedback"
+                value="{{ partial_feedback }}"/>
+        <p><small>This will adjust the total percentage earned for this question part (i.e. partial).
+                Future changes to the student's score will override this value.</small></p>
+        </div>
+    </div>
+</div>
