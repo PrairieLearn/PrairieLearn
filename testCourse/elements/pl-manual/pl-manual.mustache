@@ -14,11 +14,11 @@
                 data-toggle="popover" data-trigger="manual" onclick="$(this).popover('show')">
                 <svg class="svg-inline--fa fa-edit fa-w-18" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="edit" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" data-fa-i2svg=""><path fill="currentColor" d="M402.6 83.2l90.2 90.2c3.8 3.8 3.8 10 0 13.8L274.4 405.6l-92.8 10.3c-12.4 1.4-22.9-9.1-21.5-21.5l10.3-92.8L388.8 83.2c3.8-3.8 10-3.8 13.8 0zm162-22.9l-48.8-48.8c-15.2-15.2-39.9-15.2-55.2 0l-35.4 35.4c-3.8 3.8-3.8 10 0 13.8l90.2 90.2c3.8 3.8 10 3.8 13.8 0l35.4-35.4c15.2-15.3 15.2-40 0-55.2zM384 346.2V448H64V128h229.8c3.2 0 6.2-1.3 8.5-3.5l40-40c7.6-7.6 2.2-20.5-8.5-20.5H48C21.5 64 0 85.5 0 112v352c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48V306.2c0-10.7-12.9-16-20.5-8.5l-40 40c-2.2 2.3-3.5 5.3-3.5 8.5z"></path></svg><!-- <i class="fa fa-edit" aria-hidden="true"></i> -->
         </button>
-        <div id="pl-manual-popover-content-{{ uuid }}" class="popup-content">
+        <div id="pl-manual-popover-content-{{ uuid }}" class="hide">
             {{#popover_body}}
-                {{ html }}
+                {{{ html }}}
             {{/popover_body}}
-            {{ close_button }}
+            {{{ close_button }}}
         </div>
         <input type="hidden" name="{{ answer_name }}-points" 
                 id="pl-manual-points-{{ uuid }}" value="{{ partial_score }}">
@@ -31,14 +31,51 @@
 </div>
 <script>
 $(() => {
-    console.log('hello there.')
-    new ManualGradingElement('{{ uuid }}');
-    $('#pl-manual-regrade-button-{{uuid}}').popover({ 
+      $('#pl-manual-regrade-button-{{uuid}}').popover({ 
         html : true,
         title: "Change Partial Scores",
         content: function() {
+
         return $("#pl-manual-popover-content-{{ uuid }}").html();
         }
+    });
+
+    $(`#pl-manual-{{uuid}}`)
+    .closest('form')
+    .on('submit', () => {
+      // This should be a sum out of 100 (percentage)
+      let points = 0;
+      let feedback = [];
+
+      // Iterate over children and grab out appropriate values
+      // TODO: Augment so we can persist the state of certain children instead of only
+      //        passing on a single point/feedback value
+      // SPIKE: Figure out what anchors to give to children and validate uniqueness in pl-manual.py
+      $(`#pl-manual-${uuid}`)
+        .children('input')
+        .toArray()
+        .forEach((child) => {
+          const val = child.getAttribute('value');
+          const field = child.getAttribute('name');
+          switch (field) {
+            case 'points':
+              points += parseInt(val);
+            case 'feedback':
+              feedback.push(val);
+              break;
+            default:
+              throw new Error(
+                `Unable to attribute field "${field}" to a score.`
+              );
+          }
+        });
+
+      // FIXME: Remove demo logging
+      console.log(uuid, points, feedback);
+
+      // These are the actual fields that the form submission will take a look at
+      $(`#pl-manual-points-${uuid}`).attr('value', points / 100);
+      $(`#pl-manual-feedback-${uuid}`).attr('value', JSON.stringify(feedback));
     });
 });
 </script>
