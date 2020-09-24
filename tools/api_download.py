@@ -50,7 +50,7 @@ def get_and_save_json(path, filename, args, logfile):
             break
         elif r.status_code == 502:
             retry_502_i += 1
-            if retry_502_i == retry_502_max:
+            if retry_502_i >= retry_502_max:
                 raise Exception(f'Maximum number of retries reached on 502 Bad Gateway Error for {url})
             else:
                 log(logfile, f'Bad Gateway Error encountered for {url}, retrying in 1 second')
