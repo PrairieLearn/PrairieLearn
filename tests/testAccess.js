@@ -292,44 +292,51 @@ describe('Access control', function() {
 
     /**********************************************************************/
 
-    var getAssessmentInstance = function(cookies, callback) {
+    var getAssessmentInstance = function(cookies, expectedStatusCode, callback) {
         request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
             if (error) {
                 return callback(error);
             }
+            if (response.statusCode != expectedStatusCode) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
             page = body;
-            callback(null, response, body);
+            callback(null);
+        });
+    };
+
+    const getAssessmentInstanceCountdown = function(cookies, expectedStatusCode, callback) {
+        request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != expectedStatusCode) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            page = body;
+            try {
+                $ = cheerio.load(page);
+                elemList = $('#countdownDisplay');
+                assert.lengthOf(elemList, 0);
+            } catch (err) {
+                return callback(err);
+            }
+            callback(null);
         });
     };
 
     describe('9. GET to assessment_instance URL', function() {
         it('as student should return 403', function(callback) {
-            getAssessmentInstance(cookiesStudent(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudent(), 403, callback);
         });
         it('as student in Exam mode before time period should return 403', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeAssessment(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 403, callback);
         });
         it('as student in Exam mode after time period should return 403', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterAssessment(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamAfterAssessment(), 403, callback);
         });
         it('as student in Exam mode should load successfully', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 200) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
         it('should parse', function() {
             $ = cheerio.load(page);
@@ -458,11 +465,7 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
     });
 
@@ -475,25 +478,13 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeReservation(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });
         it('should block access to the assessment_instance after the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterReservation(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
         });
     });
 
@@ -505,25 +496,13 @@ describe('Access control', function() {
             });
         });
         it('should enable access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 200) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeReservation(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });
         it('should block access to the assessment_instance after the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterReservation(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
         });
     });
 
@@ -537,11 +516,7 @@ describe('Access control', function() {
             });
         });
         it('should enable access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 200) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
     });
 
@@ -553,11 +528,7 @@ describe('Access control', function() {
             });
         });
         it('should enable access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 200) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
     });
 
@@ -569,11 +540,7 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
     });
 
@@ -585,11 +552,7 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
     });
 
@@ -602,25 +565,13 @@ describe('Access control', function() {
             });
         });
         it('should block access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 403, callback);
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeReservation(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });
         it('should block access to the assessment_instance after the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterReservation(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
         });
     });
 
@@ -632,39 +583,16 @@ describe('Access control', function() {
             });
         });
         it('should enable access to the assessment_instance', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 200) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
         it('should not contain countdown timer', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), function(err, response, body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 200) return callback(new Error(`bad status: ${response.statusCode}`));
-                try {
-                    $ = cheerio.load(body);
-                    elemList = $('#countdownDisplay');
-                    assert.lengthOf(elemList, 0);
-                } catch (err) {
-                    return callback(err);
-                }
-                callback(null);
-            });
+            getAssessmentInstanceCountdown(cookiesStudentExam(), 200, callback);
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamBeforeReservation(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });
         it('should block access to the assessment_instance after the reservation', function(callback) {
-            getAssessmentInstance(cookiesStudentExamAfterReservation(), function(err, response, _body) {
-                if (ERR(err, callback)) return;
-                if (response.statusCode != 403) return callback(new Error(`bad status: ${response.statusCode}`));
-                callback(null);
-            });
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
         });
     });
 
