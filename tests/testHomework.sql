@@ -51,8 +51,3 @@ VALUES(1, $assessment_id, $assessment_instance_id, current_timestamp, 1, $filena
 -- BLOCK delete_test_file_fs
 DELETE FROM files 
 WHERE $filename = display_filename;
-
--- BLOCK select_first_ai
-SELECT *
-FROM assessment_instances
-LIMIT 1;
