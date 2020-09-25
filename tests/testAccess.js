@@ -305,26 +305,6 @@ describe('Access control', function() {
         });
     };
 
-    const getAssessmentInstanceCountdown = function(cookies, expectedStatusCode, callback) {
-        request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
-            if (error) {
-                return callback(error);
-            }
-            if (response.statusCode != expectedStatusCode) {
-                return callback(new Error('bad status: ' + response.statusCode));
-            }
-            page = body;
-            try {
-                $ = cheerio.load(page);
-                elemList = $('#countdownDisplay');
-                assert.lengthOf(elemList, 0);
-            } catch (err) {
-                return callback(err);
-            }
-            callback(null);
-        });
-    };
-
     describe('9. GET to assessment_instance URL', function() {
         it('as student should return 403', function(callback) {
             getAssessmentInstance(cookiesStudent(), 403, callback);
@@ -586,7 +566,16 @@ describe('Access control', function() {
             getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
         it('should not contain countdown timer', function(callback) {
-            getAssessmentInstanceCountdown(cookiesStudentExam(), 200, callback);
+            getAssessmentInstance(cookiesStudentExam(), 200, function() {
+                try {
+                    $ = cheerio.load(page);
+                    elemList = $('#countdownDisplay');
+                    assert.lengthOf(elemList, 0);
+                } catch (err) {
+                    return callback(err);
+                }
+                callback(null);
+            });
         });
         it('should block access to the assessment_instance before the reservation', function(callback) {
             getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
