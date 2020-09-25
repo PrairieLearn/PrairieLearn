@@ -48,10 +48,9 @@ async function stopInLaunchingTimeoutWorkspaces() {
     }
 }
 
-module.exports.run = function(callback) {
-    util.callbackify(async () => {
-        await stopLaunchedTimeoutWorkspaces();
-        await stopHeartbeatTimeoutWorkspaces();
-        await stopInLaunchingTimeoutWorkspaces();
-    })(callback);
+module.exports.runAsync = async () => {
+    await stopLaunchedTimeoutWorkspaces();
+    await stopHeartbeatTimeoutWorkspaces();
+    await stopInLaunchingTimeoutWorkspaces();
 };
+module.exports.run = util.callbackify(module.exports.runAsync);
