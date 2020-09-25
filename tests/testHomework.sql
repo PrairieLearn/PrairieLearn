@@ -47,7 +47,6 @@ VALUES(1, $instance_question_id, current_timestamp, 1, $filename, $filepath, 'st
 INSERT INTO files (user_id, assessment_id, assessment_instance_id, created_at, created_by, display_filename, storage_filename, type, storage_type)
 VALUES(1, $assessment_id, $assessment_instance_id, current_timestamp, 1, $filename, $filepath, 'student_upload', 'FileSystem');
 
-
 -- BLOCK delete_test_file_fs
 DELETE FROM files 
 WHERE $filename = display_filename;
