@@ -27,7 +27,7 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res, next) {
     // TODO: require variant seed for a question in the route -- don't allow people to render a null callback
-    const variant_id = '';
+    const variant_id = res.locals.variant ? res.locals.variant.id : null;
     const variant_seed = req.query.variant_seed;
     debug(`variant_seed ${variant_seed}`);
     // TODO: for manual mode, check for variant id--look into doing it as a route param
