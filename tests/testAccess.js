@@ -566,7 +566,8 @@ describe('Access control', function() {
             getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
         it('should not contain countdown timer', function(callback) {
-            getAssessmentInstance(cookiesStudentExam(), 200, function() {
+            getAssessmentInstance(cookiesStudentExam(), 200, function(err) {
+                if (ERR(err, callback)) return;
                 try {
                     $ = cheerio.load(page);
                     elemList = $('#countdownDisplay');
