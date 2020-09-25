@@ -1,4 +1,4 @@
--- BLOCK select_almost_stale_workspaces
+-- BLOCK select_almost_launched_timeout_workspaces
 SELECT *
 FROM workspaces AS w
 WHERE
