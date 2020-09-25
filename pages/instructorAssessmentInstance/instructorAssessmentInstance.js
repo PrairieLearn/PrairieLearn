@@ -36,8 +36,8 @@ router.get('/', (req, res, next) => {
                 if (ERR(err, next)) return;
                 res.locals.instance_questions = result.rows;
 
-                const params = {assessment_instance_id: res.locals.assessment_instance.id};
-                sqlDb.query(sql.select_log, params, (err, result) => {
+                const params = [res.locals.assessment_instance.id];
+                sqlDb.call('assessment_instances_select_log', params, (err, result) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
                     if (res.locals.assessment.group_work) {
@@ -58,8 +58,8 @@ router.get('/', (req, res, next) => {
 
 router.get('/:filename', (req, res, next) => {
     if (req.params.filename == logCsvFilename(res.locals)) {
-        const params = {assessment_instance_id: res.locals.assessment_instance.id};
-        sqlDb.query(sql.select_log, params, (err, result) => {
+        const params = [res.locals.assessment_instance.id];
+        sqlDb.call('assessment_instances_select_log', params, (err, result) => {
             if (ERR(err, next)) return;
             const log = result.rows;
             const csvHeaders = ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'];
