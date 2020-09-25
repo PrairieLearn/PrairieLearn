@@ -55,7 +55,7 @@ router.get('/:assessment_instance_id/submissions', (req, res, next) => {
 
 router.get('/:assessment_instance_id/log', (req, res, next) => {
     const params = [req.params.assessment_instance_id];
-    sqldb.call('select_log', params, (err, result) => {
+    sqldb.call('assessment_instances_select_log', params, (err, result) => {
         if (ERR(err, next)) return;
         res.status(200).send(result.rows);
     });

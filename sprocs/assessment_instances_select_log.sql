@@ -1,7 +1,7 @@
-DROP FUNCTION IF EXISTS select_log(bigint);
+DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint);
 
 CREATE OR REPLACE FUNCTION
-    select_log ( 
+    assessment_instances_select_log ( 
         ai_id bigint
     ) 
     RETURNS TABLE(
