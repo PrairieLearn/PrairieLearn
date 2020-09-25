@@ -14,22 +14,34 @@ ORDER BY
     js.start_date DESC, js.id;
 
 -- BLOCK question_images
+WITH
+questions_list AS (
+    SELECT *
+    FROM questions
+    WHERE
+        course_id = $course_id
+        AND deleted_at IS NULL
+),
+questions_and_images AS (
+    SELECT id, qid, external_grading_image AS image
+    FROM questions_list
+    WHERE external_grading_image IS NOT NULL
+
+    UNION
+
+    SELECT id, qid, workspace_image AS image
+    FROM questions_list
+    WHERE workspace_image IS NOT NULL
+)
 SELECT
-    external_grading_image,
+    image,
     coalesce(jsonb_agg(jsonb_build_object(
-        'id', q.id,
-        'qid', q.qid
-    ) ORDER BY q.qid), '[]'::jsonb) AS questions
-FROM
-    questions AS q
-WHERE
-    q.course_id = $course_id
-    AND q.deleted_at IS NULL
-    AND external_grading_image IS NOT NULL
-GROUP BY
-    external_grading_image
-ORDER BY
-    external_grading_image
+        'id', id,
+        'qid', qid
+    ) ORDER BY qid), '[]'::jsonb) AS questions
+FROM questions_and_images
+GROUP BY image
+ORDER BY image;
 
 -- BLOCK format_pushed_at
 SELECT

@@ -30,39 +30,33 @@ def download_course_instance(args, logfile):
 
     for assessment in assessments:
 
-        assessment_dir = f'assessment_{assessment["assessment_id"]}/' 
-        os.makedirs(os.path.join(args.output_dir, assessment_dir), exist_ok=True)
-
         assessment_instances = get_and_save_json(
                 f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_instances', 
-                os.path.join(assessment_dir, f'assessment_{assessment["assessment_id"]}_instances'), 
+                f'assessment_{assessment["assessment_id"]}_instances', 
                 args, logfile)
 
         assessment_access_rules = get_and_save_json(
                 f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_access_rules', 
-                os.path.join(assessment_dir, f'assessment_{assessment["assessment_id"]}_access_rules'), 
+                f'assessment_{assessment["assessment_id"]}_access_rules', 
                 args, logfile)
 
 
 
         for assessment_instance in assessment_instances:
 
-            assessment_instance_dir = os.path.join(assessment_dir, f'assessment_{assessment_instance["assessment_instance_id"]}_instance')
-            os.makedirs(os.path.join(args.output_dir, assessment_instance_dir), exist_ok=True)
-
             instance_questions = get_and_save_json(
                     f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/instance_questions', 
-                    os.path.join(assessment_instance_dir ,f'assessment_instance_{assessment_instance["assessment_instance_id"]}_instance_questions'), 
+                    f'assessment_instance_{assessment_instance["assessment_instance_id"]}_instance_questions', 
                     args, logfile)
 
             submissions = get_and_save_json(
                     f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/submissions', 
-                    os.path.join(assessment_instance_dir, f'assessment_instance_{assessment_instance["assessment_instance_id"]}_submissions'), 
+                    f'assessment_instance_{assessment_instance["assessment_instance_id"]}_submissions', 
                     args, logfile)
 
             submission_log = get_and_save_json(
                     f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/log', 
-                    os.path.join(assessment_instance_dir, f'assessment_instance_{assessment_instance["assessment_instance_id"]}_log'), 
+                    f'assessment_instance_{assessment_instance["assessment_instance_id"]}_log', 
                     args, logfile)
 
     end_time = time.time()
@@ -76,10 +70,22 @@ def get_and_save_json(endpoint, filename, args, logfile):
     log(logfile, f'downloading {url} ...')
     start_time = time.time()
     r = requests.get(url, headers=headers)
-
-    if r.status_code != 200:
-        raise Exception(f'Invalid status returned for {url}: {r.status_code}')
-
+    retry_502_max = 30
+    retry_502_i = 0
+    while True:
+        r = requests.get(url, headers=headers)
+        if r.status_code == 200:
+            break
+        elif r.status_code == 502:
+            retry_502_i += 1
+            if retry_502_i >= retry_502_max:
+                raise Exception(f'Maximum number of retries reached on 502 Bad Gateway Error for {url}')
+            else:
+                log(logfile, f'Bad Gateway Error encountered for {url}, retrying in 10 seconds')
+                time.sleep(10)
+                continue
+        else:
+            raise Exception(f'Invalid status returned for {url}: {r.status_code}')
     end_time = time.time()
     log(logfile, f'successfully downloaded {r.headers["content-length"]} bytes in {end_time - start_time} seconds')
 
