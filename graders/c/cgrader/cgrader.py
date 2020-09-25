@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-import os, json, subprocess, shlex, threading, re
+import os, json, subprocess, shlex, threading, re, sys
 
 CODEBASE = '/grade/student'
 DATAFILE = '/grade/data/data.json'
@@ -35,7 +35,7 @@ class CGrader:
             finally:
                 return '' if out is None else out
 
-    def test_compile_file(self, c_file, exec_file, main_file=None, points=1):
+    def test_compile_file(self, c_file, exec_file, main_file=None, points=1, field=None, name='Compilation'):
         obj_file = re.sub('\.c$', '', c_file) + '.o'
         out = self.run_command(['gcc', '-c', c_file, '-o', obj_file])
         # TODO Separate main file
@@ -55,9 +55,9 @@ class CGrader:
                                          '-o', exec_file, '-lm'])
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, '755')
-        self.add_test_result('Compilation',
+        self.add_test_result(name,
                              points=os.path.isfile(exec_file),
-                             output=out, max_points=points)
+                             output=out, max_points=points, field=field)
 
     def change_mode(self, file, mode='744'):
         file = os.path.abspath(file)
@@ -67,8 +67,9 @@ class CGrader:
             self.change_mode(parent, '711')
 
     def test_send_in_check_out(self, command, input=None, exp_output=None,
-                               re_output=None, must_match_all_outputs=False,
-                               reject_output=None,
+                               must_match_all_outputs=False,
+                               reject_output=None, field=None,
+                               ignore_case=True,
                                args=None, name=None, msg=None, max_points=1):
         
         if args is not None and not isinstance(args, list): args = [args] 
@@ -88,23 +89,30 @@ class CGrader:
                   (' but not "%s"' % '"/"'.join([str(t) for t in reject_output]) if reject_output else '')
 
         out = self.run_command(command if args is None else ([command] + args), input, sandboxed=True)
+        outcmp = out
+
+        if ignore_case:
+            outcmp = out.lower()
+            exp_output = [str(t).lower() for t in exp_output]
+            if reject_output:
+                reject_output = [str(t).lower() for t in reject_output]
 
         points = True
         if exp_output is not None and must_match_all_outputs \
-           and [t for t in exp_output if str(t) not in out]:
+           and [t for t in exp_output if str(t) not in outcmp]:
             points = False
         if exp_output is not None and not must_match_all_outputs \
-           and not [t for t in exp_output if str(t) in out]:
+           and not [t for t in exp_output if str(t) in outcmp]:
             points = False
         if reject_output is not None \
-           and [t for t in reject_output if str(t) in out]:
+           and [t for t in reject_output if str(t) in outcmp]:
             points = False
 
         self.add_test_result(name, points=points, msg=msg,
-                             output=out, max_points=max_points)
+                             output=out, max_points=max_points, field=field)
     
     def add_test_result(self, name, description='', points=True,
-                        msg='', output='', max_points=1):
+                        msg='', output='', max_points=1, field=None):
         if not isinstance(points, (int, float)):
             points = max_points if points else 0.0
         test = {
@@ -116,11 +124,25 @@ class CGrader:
         self.result['tests'].append(test)
         self.result['points'] += points
         self.result['max_points'] += max_points
+        if field is not None:
+            if 'partial_scores' not in self.result:
+                self.result['partial_scores'] = {}
+            if field not in self.result['partial_scores']:
+                self.result['partial_scores'][field] = {
+                    'points': points,
+                    'max_points': max_points}
+            else:
+                self.result['partial_scores'][field]['points'] += points
+                self.result['partial_scores'][field]['max_points'] += max_points
+                
 
     def save_results(self):
         if self.result['max_points'] > 0:
             self.result['score'] = self.result['points'] / \
                                    self.result['max_points']
+        if 'partial_scores' in self.result:
+            for field, ps in self.result['partial_scores'].items():
+                ps['score'] = ps['points'] / ps['max_points']
         
         if not os.path.exists('/grade/results'):
             os.makedirs('/grade/results')
