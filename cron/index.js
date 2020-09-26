@@ -86,9 +86,14 @@ module.exports = {
                 intervalSec: 'daily',
             },
             {
-                name: 'stopStaleWorkspaces',
-                module: require('./stopStaleWorkspaces'),
-                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalStopStaleWorkspacesSec,
+                name: 'workspaceTimeoutStop',
+                module: require('./workspaceTimeoutStop'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutStopSec,
+            },
+            {
+                name: 'workspaceTimeoutWarn',
+                module: require('./workspaceTimeoutWarn'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutWarnSec,
             },
             {
                 name: 'workspaceHostLoads',

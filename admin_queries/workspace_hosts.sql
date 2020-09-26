@@ -4,7 +4,8 @@ SELECT
     wh.instance_id,
     wh.load_count,
     wh.launched_at,
-    wh.state_changed_at
+    wh.state_changed_at,
+    wh.unhealthy_reason
 FROM workspace_hosts AS wh
 WHERE
     wh.state != 'terminated'

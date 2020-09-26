@@ -565,6 +565,19 @@ describe('Access control', function() {
         it('should enable access to the assessment_instance', function(callback) {
             getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
+        it('should not contain countdown timer', function(callback) {
+            getAssessmentInstance(cookiesStudentExam(), 200, function(err) {
+                if (ERR(err, callback)) return;
+                try {
+                    $ = cheerio.load(page);
+                    elemList = $('#countdownDisplay');
+                    assert.lengthOf(elemList, 0);
+                } catch (err) {
+                    return callback(err);
+                }
+                callback(null);
+            });
+        });
         it('should block access to the assessment_instance before the reservation', function(callback) {
             getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
         });

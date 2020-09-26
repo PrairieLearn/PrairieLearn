@@ -49,34 +49,8 @@
             </div>
           </div>
           <% if (assessment.group_work) { %>
-          <div class="container-fluid">
-            <div class="row">
-              <% if (group_info[0].student_authz_join) { %>
-              <div class="col-sm bg-light py-4 px-4 border">
-                <p>This is a group homework. Use your join code to invite others to join the group.</p>
-                <span class="badge badge-secondary">Group Name</span>
-                <%= group_info[0].name %><br>
-                <span class="badge badge-secondary">Join Code</span>
-                <%= join_code %><br>
-              </div>
-              <% } %>
-              <div class="col-sm bg-light py-4 px-4 border">
-                <% if (group_info[0].student_authz_leave) { %>
-                <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
-                  <input type="hidden" name="__action" value="leave_group">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <button id="leave-group" type="submit" class="btn btn-danger">Leave the Group</button>
-                </form>
-                <% } %>
-                <span class="badge badge-secondary">Group Members</span>
-                <% group_info.forEach(function(row) {%>
-                <li><%= row.uid %></li>
-                <% }); %>
-              </div>
-            </div>
-          </div>
+            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: groupinfo[0], groupinfo: groupinfo}); %>
           <% } %>
-
           <% if (assessment_text_templated) { %>
           <div class="alert alert-secondary mb-0">
               <%- assessment_text_templated %>
