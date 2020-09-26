@@ -18,7 +18,7 @@ async function stopLaunchedTimeoutWorkspaces() {
     const workspaces = result.rows;
     for (const workspace of workspaces) {
         logger.verbose(`workspaceTimeoutStop: launched timeout for workspace_id = ${workspace.id}`);
-        await workspaceHelper.updateState(workspace.id, 'stopped', `Maximum run time of ${config.workspaceLaunchedTimeoutSec / 3600} hours exceeded`);
+        await workspaceHelper.updateState(workspace.id, 'stopped', `Maximum run time of ${Math.round(config.workspaceLaunchedTimeoutSec / 3600)} hours exceeded. Click "Reboot" to keep working.`);
     }
 }
 
@@ -30,7 +30,7 @@ async function stopHeartbeatTimeoutWorkspaces() {
     const workspaces = result.rows;
     for (const workspace of workspaces) {
         logger.verbose(`workspaceTimeoutStop: heartbeat timeout for workspace_id = ${workspace.id}`);
-        await workspaceHelper.updateState(workspace.id, 'stopped', `Connection was lost for more than ${config.workspaceHeartbeatTimeoutSec / 60} minutes`);
+        await workspaceHelper.updateState(workspace.id, 'stopped', `Connection was lost for more than ${Math.round(config.workspaceHeartbeatTimeoutSec / 60)} min. Click "Reboot" to keep working.`);
     }
 }
 
@@ -44,7 +44,7 @@ async function stopInLaunchingTimeoutWorkspaces() {
         // these are errors because timeouts should have been enforced
         // by the workspace hosts
         logger.error(`workspaceTimeoutStop: in-launching timeout for workspace_id = ${workspace.id}`);
-        await workspaceHelper.updateState(workspace.id, 'stopped', `Maximum launching time of ${config.workspaceInLaunchingTimeoutSec / 60} minutes exceeded`);
+        await workspaceHelper.updateState(workspace.id, 'stopped', `Maximum launching time of ${Math.round(config.workspaceInLaunchingTimeoutSec / 60)} min exceeded. Click "Reboot" to keep working.`);
     }
 }
 
