@@ -10,7 +10,7 @@ DECLARE
     arg_user_id bigint;
 BEGIN
     -- ##################################################################
-    -- get user_id from uid and make sure the user enrolled in this assessment
+    -- get user_id from uid and make sure the user is enrolled in this course instance
     SELECT u.user_id
     INTO arg_user_id
     FROM 
@@ -20,7 +20,7 @@ BEGIN
     WHERE u.uid = arg_uid;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'This user does not exist or is not enrolled in this assessment';
+        RAISE EXCEPTION 'User does not exist or is not enrolled in this course instance: %', arg_uid;
     END IF;
 
     -- ##################################################################

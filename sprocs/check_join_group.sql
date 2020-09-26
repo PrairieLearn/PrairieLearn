@@ -28,7 +28,7 @@ BEGIN
         AND gc.deleted_at IS NULL;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'Cannot find the group by provided join code';
+        RAISE EXCEPTION 'Cannot find the group by provided join code: %', arg_join_code;
     END IF;
 
     -- lock the group_users
@@ -39,7 +39,7 @@ BEGIN
 
     -- count the group size and compare with the max size
     SELECT
-        COUNT(gu) AS cur_size, AVG(gc.maximum) AS maximum
+        COUNT(gu), AVG(gc.maximum)
     INTO
         arg_cur_size, arg_max_size
     FROM
@@ -52,7 +52,7 @@ BEGIN
         g.id;
 
     IF arg_cur_size >= arg_max_size THEN
-        RAISE EXCEPTION 'The group is full';
+        RAISE EXCEPTION 'The group is full for join code: %', arg_join_code;
     END IF;
 
     -- join the group

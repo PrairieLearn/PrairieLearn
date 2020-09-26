@@ -26,7 +26,7 @@ BEGIN
     FOREACH group_user SLICE 1 IN ARRAY update_list LOOP
         BEGIN
         -- get user_id from uid
-        -- make sure this user enrolled in the course
+        -- make sure this user is enrolled in the course instance
         SELECT u.user_id
         INTO arg_user_id
         FROM users AS u
