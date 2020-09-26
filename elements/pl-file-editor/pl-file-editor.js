@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax */
+/* global ace, showdown, MathJax, xss */
 
 window.PLFileEditor = function(uuid, options) {
     var elementId = '#file-editor-' + uuid;
@@ -75,14 +75,16 @@ window.PLFileEditor = function(uuid, options) {
 window.PLFileEditor.prototype.updatePreview = function(html_contents) {
     const default_preview_text = '<p>Begin typing above to preview</p>';
     let preview = this.element.find('.preview')[0];
-
+    //let xss = require('xss');
+    
     if (html_contents.trim().length == 0) {
         preview.innerHTML = default_preview_text;
     } else {
-        preview.innerHTML = html_contents;
-        if (html_contents.includes('$') ||
-            html_contents.includes('\\(') || html_contents.includes('\\)') ||
-            html_contents.includes('\\[') || html_contents.includes('\\]')) {
+	let sanitized_contents = filterXSS(html_contents);
+        preview.innerHTML = sanitized_contents;
+        if (sanitized_contents.includes('$') ||
+            sanitized_contents.includes('\\(') || sanitized_contents.includes('\\)') ||
+            sanitized_contents.includes('\\[') || sanitized_contents.includes('\\]')) {
             MathJax.typesetPromise();
         }
     }
