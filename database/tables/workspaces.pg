@@ -15,6 +15,7 @@ columns
 
 indexes
     workspaces_pkey: PRIMARY KEY (id) USING btree (id)
+    workspaces_state_launched_at_key: USING btree (state, launched_at)
     workspaces_workspace_host_id_state_key: USING btree (workspace_host_id, state)
 
 foreign-key constraints
