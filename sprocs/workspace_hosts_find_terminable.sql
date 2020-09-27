@@ -29,7 +29,7 @@ BEGIN
     -- Set state_changed_at if they weren't already 'terminating'
     UPDATE workspace_hosts AS wh
     SET state = 'terminating',
-        state_changed_at = CASE WHEN wh.state_changed_at = 'terminating' THEN wh.state_changed_at ELSE NOW() END
+        state_changed_at = CASE WHEN wh.state = 'terminating' THEN wh.state_changed_at ELSE NOW() END
     FROM tmp_terminable_hosts AS th
     WHERE wh.id = th.id;
 
