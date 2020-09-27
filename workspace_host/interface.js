@@ -231,7 +231,7 @@ async.series([
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
             } else {
-                update_queue[key] = {action: 'update'};
+                update_queue[key] = {action: 'update', retry: 3};
             }
         });
         watcher.on('addDir', filename => {
@@ -241,7 +241,7 @@ async.series([
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
             } else {
-                update_queue[key] = {action: 'update'};
+                update_queue[key] = {action: 'update', retry: 3};
             }
         });
         watcher.on('change', filename => {
@@ -251,18 +251,18 @@ async.series([
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
             } else {
-                update_queue[key] = {action: 'update'};
+                update_queue[key] = {action: 'update', retry: 3};
             }
         });
         watcher.on('unlink', filename => {
             // Handle removed files
             var key = JSON.stringify(([filename, false]));
-            update_queue[key] = {action: 'delete'};
+            update_queue[key] = {action: 'delete', retry: 3};
         });
         watcher.on('unlinkDir', filename => {
             // Handle removed directory
             var key = JSON.stringify(([filename, true]));
-            update_queue[key] = {action: 'delete'};
+            update_queue[key] = {action: 'delete', retry: 3};
         });
         watcher.on('error', err => {
             // Handle errors
@@ -679,6 +679,7 @@ async function _autoUpdateJobManager() {
         logger.info(`_autoUpdateJobManager: key=${key}`);
 
         const action = update_queue[key].action;
+        const numOfRetry = update_queue[key].retry;
         if (currently_updating_queue.has(key)) {
             logger.info(`_autoUpdateJobManager: skip and keep ${key} in update queue because it's still updating`);
             continue;
@@ -723,12 +724,13 @@ async function _autoUpdateJobManager() {
             jobs.push((callback) => {
                 logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
                 awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
+                    currently_updating_queue.delete(key);
                     if (err) {
                         logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
                         logger.error(`PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
+                        if (!(key in update_queue) && numOfRetry > 0) update_queue[key] = {action: 'update', retry: numOfRetry - 1};
                     } else {
                         logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
-                        currently_updating_queue.delete(key);
                     }
                     callback(null); // always return success to keep going
                 });
@@ -739,12 +741,13 @@ async function _autoUpdateJobManager() {
             jobs.push((callback) => {
                 logger.info(`Removing file from S3: ${s3_path}`);
                 awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
+                    currently_updating_queue.delete(key);
                     if (err) {
                         logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
                         logger.error(`PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`);
+                        if (!(key in update_queue) && numOfRetry > 0) update_queue[key] = {action: 'delete', retry: numOfRetry - 1};
                     } else {
                         logger.info(`Successfully removed file from S3: ${s3_path}`);
-                        currently_updating_queue.delete(key);
                     }
                     callback(null); // always return success to keep going
                 });
