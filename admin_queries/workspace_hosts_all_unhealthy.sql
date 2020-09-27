@@ -6,8 +6,7 @@ SET
     unhealthy_at = NOW(),
     unhealthy_reason = $unhealthy_reason
 WHERE
-    $confirm = 'yes'
-    AND wh.state IN ('launching', 'ready', 'draining')
+    wh.state IN ('launching', 'ready', 'draining')
 RETURNING
     wh.id AS workspace_host_id,
     wh.instance_id,
