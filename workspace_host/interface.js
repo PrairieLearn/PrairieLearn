@@ -226,7 +226,7 @@ async.series([
         watcher.on('add', filename => {
             // Handle new files
             logger.info(`Watching file add ${filename}`);
-            var key = [filename, false];
+            var key = JSON.stringify([filename, false]);
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
             } else {
@@ -236,7 +236,7 @@ async.series([
         watcher.on('addDir', filename => {
             // Handle new directory
             logger.info(`Watching directory add ${filename}`);
-            var key = [filename, true];
+            var key = JSON.stringify([filename, true]);
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
             } else {
@@ -246,7 +246,7 @@ async.series([
         watcher.on('change', filename => {
             // Handle file changes
             logger.info(`Watching file change ${filename}`);
-            var key = [filename, false];
+            var key = JSON.stringify([filename, false]);
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
             } else {
@@ -255,12 +255,12 @@ async.series([
         });
         watcher.on('unlink', filename => {
             // Handle removed files
-            var key = [filename, false];
+            var key = JSON.stringify(([filename, false]));
             update_queue[key] = {action: 'delete'};
         });
         watcher.on('unlinkDir', filename => {
             // Handle removed directory
-            var key = [filename, true];
+            var key = JSON.stringify(([filename, true]));
             update_queue[key] = {action: 'delete'};
         });
         watcher.on('error', err => {
@@ -675,8 +675,7 @@ async function _autoUpdateJobManager() {
     var jobs = [];
     for (const key in update_queue) {
         logger.info(`_autoUpdateJobManager: key=${key}`);
-        const [path, isDirectory_str] = key.split(',');
-        const isDirectory = isDirectory_str == 'true';
+        const [path, isDirectory] = JSON.parse(key);
         const {workspace_id, local_path} = await _getRunningWorkspaceByPathAsync(path);
         logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
         if (workspace_id == null) continue;
@@ -686,10 +685,10 @@ async function _autoUpdateJobManager() {
         const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
         const s3_name = workspace.s3_name;
         const sync_ignore = workspaceSettings.workspace_sync_ignore;
-        debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        debug(`watch: workspace_id=${workspace_id}, isDirectory=${isDirectory}`);
         debug(`watch: localPath=${local_path}`);
         debug(`watch: syncIgnore=${sync_ignore}`);
-        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
+        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory=${isDirectory}`);
         logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
         logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
 
@@ -787,7 +786,7 @@ async function _getInitialZipAsync(workspace) {
         group: config.workspaceJobsDirectoryOwnerGid,
     };
     const isDirectory = false;
-    update_queue[[zipPath, isDirectory]] = { action: 'skip' };
+    update_queue[JSON.stringify([zipPath, isDirectory])] = { action: 'skip' };
     await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, options);
 
     debug(`Making directory ${localPath}`);
@@ -838,7 +837,7 @@ function _getInitialFiles(workspace, callback) {
                     group: config.workspaceJobsDirectoryOwnerGid,
                 };
                 const isDirectory = localPath.endsWith('/');
-                update_queue[[localPath, isDirectory]] = { action: 'skip' };
+                update_queue[JSON.stringify([localPath, isDirectory])] = { action: 'skip' };
                 awsHelper.downloadFromS3(config.workspaceS3Bucket, s3Path, localPath, options, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
