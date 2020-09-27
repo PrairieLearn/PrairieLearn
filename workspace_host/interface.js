@@ -179,15 +179,15 @@ async.series([
             max: 100,
             idleTimeoutMillis: 30000,
         };
-        logger.verbose(`Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+        logger.verbose(`Workspace host connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
         const idleErrorHandler = function(err) {
-            logger.error('idle client error', err);
+            logger.error(`Workspace host idle client error: ${err}`);
             // https://github.com/PrairieLearn/PrairieLearn/issues/2396
             process.exit(1);
         };
         sqldb.init(pgConfig, idleErrorHandler, function(err) {
             if (ERR(err, callback)) return;
-            logger.verbose('Successfully connected to database');
+            logger.verbose('Workspace host successfully connected to database');
             callback(null);
         });
     },
@@ -212,7 +212,7 @@ async.series([
     (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
-        logger.info(`Listening on port ${workspace_server_settings.port}`);
+        logger.info(`Workspace host listening on port ${workspace_server_settings.port}`);
         callback(null);
     },
     async () => {
@@ -225,7 +225,7 @@ async.series([
         });
         watcher.on('add', filename => {
             // Handle new files
-            logger.info(`Watching file add ${filename}`);
+            logger.verbose(`Watching file add ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -235,7 +235,7 @@ async.series([
         });
         watcher.on('addDir', filename => {
             // Handle new directory
-            logger.info(`Watching directory add ${filename}`);
+            logger.verbose(`Watching directory add ${filename}`);
             var key = [filename, true];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -245,7 +245,7 @@ async.series([
         });
         watcher.on('change', filename => {
             // Handle file changes
-            logger.info(`Watching file change ${filename}`);
+            logger.verbose(`Watching file change ${filename}`);
             var key = [filename, false];
             if (key in update_queue && update_queue[key].action == 'skip') {
                 delete update_queue[key];
@@ -274,13 +274,12 @@ async.series([
         });
         async function autoUpdateJobManagerTimeout() {
             const timeout_id = setTimeout(() => {
-                logger.info(`_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`);
+                logger.verbose(`_autoUpdateJobManager() timed out, update queue: ${JSON.stringify(update_queue)}`);
             }, config.workspaceHostFileWatchIntervalSec * 1000);
             try {
                 await _autoUpdateJobManager();
             } catch (err) {
                 logger.error(`Error from _autoUpdateJobManager(): ${err}`);
-                logger.error(`PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`);
             }
             clearTimeout(timeout_id);
             setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
@@ -327,19 +326,21 @@ async.series([
             if (ws.state == 'launching') {
                 /* We don't know what state the container is in, kill it and let the user
                    retry initializing it */
-                await workspaceHelper.updateState(ws.id, 'stopped', 'Status unknown');
+                logger.info(`Shutting down recovered workspace-${ws.id}-${ws.version} (from launching)`);
+                await workspaceHelper.updateState(ws.id, 'stopped', 'Shutting down. Click "Reboot" to keep working.');
                 await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
                 try {
                     const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
                     await dockerAttemptKillAndRemove(container);
                 } catch (err) {
-                    debug(`Couldn't find container: ${err}`);
+                    logger.error(`Couldn't kill recovered container: ${err}`);
                 }
             } else if (ws.state == 'running') {
                 if (ws.launch_uuid) {
                     await pushContainerContentsToS3(ws);
                 } else {
-                    await workspaceHelper.updateState(ws.id, 'stopped', 'Shutting down');
+                    logger.info(`Shutting down recovered workspace-${ws.id}-${ws.version} (from running)`);
+                    await workspaceHelper.updateState(ws.id, 'stopped', 'Shutting down. Click "Reboot" to keep working.');
                     await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
                 }
             }
@@ -347,10 +348,10 @@ async.series([
     },
 ], function(err, data) {
     if (err) {
-        logger.error('Error initializing workspace host:', err, data);
+        logger.error('Workspace host could not be initialized:', err, data);
         markSelfUnhealthyAsync(err);
     } else {
-        logger.info('Successfully initialized workspace host');
+        logger.info('Workspace host successfully initialized');
     }
 });
 
@@ -361,6 +362,7 @@ async.series([
  * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
  */
 async function pushContainerContentsToS3(workspace) {
+    logger.info(`Backing up workspace-${workspace.id}-${workspace.id} (launch_uuid=${workspace.launch_uuid})`);
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
     const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
     const settings = _getWorkspaceSettingsAsync(workspace.id);
@@ -381,9 +383,9 @@ async function pushAllRunningContainersToS3() {
     const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
     await async.eachSeries(result.rows, async (ws) => {
         if (ws.state == 'running') {
-            logger.info(`Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
             await pushContainerContentsToS3(ws);
-            logger.info(`Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
+        } else {
+            logger.info(`Not backing up ${ws.state} workspace-${ws.id}-${ws.version} (launch_uuid=${ws.launch_uuid})`);
         }
     });
 }
@@ -398,12 +400,14 @@ async function pruneStoppedContainers() {
     const instance_id = workspace_server_settings.instance_id;
     const recently_stopped = await sqldb.queryAsync(sql.get_stopped_workspaces, { instance_id });
     await async.each(recently_stopped.rows, async (ws) => {
+        logger.info(`Pruning stopped workspace-${ws.id}-${ws.version}`);
         let container;
         try {
             /* Try to grab the container, but don't care if it doesn't exist */
             container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
         } catch (_err) {
             /* No container */
+            logger.info(`Couldn't find container for stopped workspace-${ws.id}-${ws.version}`);
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, { workspace_id: ws.id, instance_id: workspace_server_settings.instance_id });
             return;
         }
@@ -432,6 +436,7 @@ async function pruneRunawayContainers() {
         if (container_info.Names.length != 1) return;
         const name = container_info.Names[0].substring(1); /* Remove the preceding forward slash */
         if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
+        logger.warn(`Pruning runaway container ${name}`);
         await dockerAttemptKillAndRemove(container_info.Id);
     });
 }
@@ -450,7 +455,7 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
         });
         return docker.getContainer(containers[0].Id);
     } catch (err) {
-        throw new Error(`Could not find unique container by launch UUID: ${launch_uuid}`);
+        throw new Error(`Could not find unique container by launch_uuid=${launch_uuid}`);
     }
 }
 
@@ -466,8 +471,8 @@ async function dockerAttemptKillAndRemove(input) {
     if (typeof input === 'string') {
         try {
             container = await docker.getContainer(input);
-        } catch (_err) {
-            /* Docker failed to get the container, oh well. */
+        } catch (err) {
+            logger.error(`Couldn't obtain container ${input}`);
             return;
         }
     } else {
@@ -478,27 +483,30 @@ async function dockerAttemptKillAndRemove(input) {
     try {
         name = (await container.inspect()).Name.substring(1);
     } catch (err) {
-        debug(`Couldn't obtain container name: ${err}`);
+        logger.error(`Couldn't obtain container name: ${err}`);
     }
 
     try {
+        logger.info(`Killing container ${name == null ? JSON.stringify(container) : name}`);
         await container.kill();
     } catch (err) {
-        debug(`Couldn't kill container: ${err}`);
+        logger.error(`Couldn't kill container: ${err}`);
     }
 
     try {
+        logger.info(`Removing container ${name == null ? JSON.stringify(container) : name}`);
         await container.remove();
     } catch (err) {
-        debug(`Couldn't remove stopped container: ${err}`);
+        logger.error(`Couldn't remove stopped container: ${err}`);
     }
 
     if (name) {
         const workspaceJobPath = path.join(workspacePrefix, name);
         try {
+            logger.info(`Removing directory "${workspaceJobPath}"`);
             await fsPromises.rmdir(workspaceJobPath, { recursive: true });
         } catch (err) {
-            debug(`Couldn't remove directory "${workspaceJobPath}": ${err}`);
+            logger.error(`Couldn't remove directory "${workspaceJobPath}": ${err}`);
         }
     }
 }
@@ -584,7 +592,7 @@ async function _allocateContainerPort(workspace) {
         done = true;
     }
     if (!done) {
-        throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
+        throw new Error(`Failed to allocate port within ${max_attempts} attempts`);
     }
     await sqldb.queryAsync(sql.set_workspace_launch_port, { workspace_id: workspace.id, launch_port: port, instance_id: workspace_server_settings.instance_id });
     _allocateContainerPortLock.unlock();
@@ -660,11 +668,13 @@ async function _getRunningWorkspaceByPathAsync(path) {
         const result = await sqldb.queryOneRowAsync(sql.get_running_workspace_id_by_uuid, { launch_uuid, instance_id: workspace_server_settings.instance_id });
         return {
             workspace_id: result.rows[0].id,
+            workspace_version: result.rows[0].version,
             local_path: localPath,
         };
     } catch (_err) {
         return {
             workspace_id: null,
+            workspace_version: null,
             local_path: null,
         };
     }
@@ -674,63 +684,57 @@ async function _autoUpdateJobManager() {
     lastAutoUpdateTime = Date.now();
     var jobs = [];
     for (const key in update_queue) {
-        logger.info(`_autoUpdateJobManager: key=${key}`);
+        logger.verbose(`_autoUpdateJobManager: key=${key}`);
         const [path, isDirectory_str] = key.split(',');
         const isDirectory = isDirectory_str == 'true';
-        const {workspace_id, local_path} = await _getRunningWorkspaceByPathAsync(path);
-        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
+        const {workspace_id, workspace_version, local_path} = await _getRunningWorkspaceByPathAsync(path);
         if (workspace_id == null) continue;
 
-        debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
         const workspace = await _getWorkspaceAsync(workspace_id);
         const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
         const s3_name = workspace.s3_name;
         const sync_ignore = workspaceSettings.workspace_sync_ignore;
-        debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
-        debug(`watch: localPath=${local_path}`);
-        debug(`watch: syncIgnore=${sync_ignore}`);
-        logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
-        logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
-        logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
+        logger.verbose(`_autoUpdateJobManager: workspace-${workspace_id}-${workspace_version}`);
+        logger.verbose(`_autoUpdateJobManager: local_path=${local_path} (workspace-${workspace_id}-${workspace_version})`);
+        logger.verbose(`_autoUpdateJobManager: isDirectory_str=${isDirectory_str} (workspace-${workspace_id}-${workspace_version})`);
+        logger.verbose(`_autoUpdateJobManager: sync_ignore=${sync_ignore} (workspace-${workspace_id}-${workspace_version})`);
 
         let s3_path = null;
         if (local_path === '') {
             // skip root localPath as it produces new S3 dir with empty name
-            logger.info(`_autoUpdateJobManager: skip root`);
+            logger.verbose(`_autoUpdateJobManager: skip root`);
             continue;
         } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
-            logger.info(`_autoUpdateJobManager: skip ignored`);
+            logger.verbose(`_autoUpdateJobManager: skip ignored`);
             continue;
         } else {
             s3_path = `${s3_name}/current/${local_path}`;
-            logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
+            logger.verbose(`_autoUpdateJobManager: s3_path=${s3_path}`);
         }
 
-        logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
+        logger.verbose(`_autoUpdateJobManager: action=${update_queue[key].action}`);
         if (update_queue[key].action == 'update') {
-            logger.info(`_autoUpdateJobManager: adding update job`);
+            logger.verbose(`_autoUpdateJobManager: adding update job`);
             jobs.push((callback) => {
-                logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
+                logger.verbose(`Uploading file to S3: ${s3_path}, ${path}`);
                 awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
                     if (err) {
                         logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
-                        logger.error(`PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
                     } else {
-                        logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
+                        logger.verbose(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
                     }
                     callback(null); // always return success to keep going
                 });
             });
         } else if (update_queue[key].action == 'delete') {
-            logger.info(`_autoUpdateJobManager: adding delete job`);
+            logger.verbose(`_autoUpdateJobManager: adding delete job`);
             jobs.push((callback) => {
-                logger.info(`Removing file from S3: ${s3_path}`);
+                logger.verbose(`Removing file from S3: ${s3_path}`);
                 awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
                     if (err) {
                         logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
-                        logger.error(`PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`);
                     } else {
-                        logger.info(`Successfully removed file from S3: ${s3_path}`);
+                        logger.verbose(`Successfully removed file from S3: ${s3_path}`);
                     }
                     callback(null); // always return success to keep going
                 });
@@ -745,7 +749,7 @@ async function _autoUpdateJobManager() {
             if (err2) {
                 logger.error(`Error while handling error: ${err2}`);
             }
-            logger.error(`Error uploading files to S3:\n${err}`);
+            logger.error(`Error uploading files to S3: ${err}`);
         });
     }
 }
