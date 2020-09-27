@@ -110,6 +110,13 @@ class CGrader:
 
         self.add_test_result(name, points=points, msg=msg,
                              output=out, max_points=max_points, field=field)
+
+    def add_manual_grading(self, points=1, name=None, description=None):
+        if not name:
+            name = 'Manual Grading - to be reviewed by a human grader'
+        if not description:
+            description = 'This code will be manually reviewed by a human grader. The points associated to this component will be added based on evaluation of code style, programming practices and other manully checked criteria.'
+        self.add_test_result(name, description, points=0, max_points=points)
     
     def add_test_result(self, name, description='', points=True,
                         msg='', output='', max_points=1, field=None):
