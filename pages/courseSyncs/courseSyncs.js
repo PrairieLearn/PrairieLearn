@@ -42,9 +42,11 @@ router.get('/', function(req, res, next) {
                         } else if (ERR(err, callback)) return;
                         res.locals.ecrInfo = {};
                         data.imageDetails.forEach((imageDetails) => {
-                            imageDetails.imageTags.forEach((tag) => {
-                                res.locals.ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
-                            });
+                            if (imageDetails.imageTags) {
+                                imageDetails.imageTags.forEach((tag) => {
+                                    res.locals.ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
+                                });
+                            }
                         });
 
                         // Put info from ECR into image for EJS

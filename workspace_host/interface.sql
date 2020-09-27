@@ -145,7 +145,8 @@ UPDATE
 SET
     state = 'unhealthy',
     state_changed_at = NOW(),
-    unhealthy_at = NOW()
+    unhealthy_at = NOW(),
+    unhealthy_reason = $unhealthy_reason
 WHERE
     wh.instance_id = $instance_id
     AND wh.state IN ('launching', 'ready', 'draining');
