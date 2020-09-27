@@ -113,7 +113,8 @@ let server;
 let workspace_server_settings = {};
 
 /* Globals for detecting file changes */
-let update_queue = {};  // key: path of file on local, value: action ('update' or 'remove').
+let update_queue = {};  // key: JSON string of [path, isDirectory], value: action ('skip', 'update' or 'remove').
+let currently_updating_queue = new Set();  // value: JSON string of [path, isDirectory]
 let workspacePrefix; /* Jobs directory */
 let watcher;
 
@@ -275,6 +276,7 @@ async.series([
         async function autoUpdateJobManagerTimeout() {
             const timeout_id = setTimeout(() => {
                 logger.info(`_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`);
+                logger.info(`_autoUpdateJobManager() timed out, current updating queue:\n${JSON.stringify(currently_updating_queue)}`);
             }, config.workspaceHostFileWatchIntervalSec * 1000);
             try {
                 await _autoUpdateJobManager();
@@ -675,6 +677,15 @@ async function _autoUpdateJobManager() {
     var jobs = [];
     for (const key in update_queue) {
         logger.info(`_autoUpdateJobManager: key=${key}`);
+
+        const action = update_queue[key].action;
+        if (currently_updating_queue.has(key)) {
+            logger.info(`_autoUpdateJobManager: skip and keep ${key} in update queue because it's still updating`);
+            continue;
+        } else {
+            delete update_queue[key];
+        }
+
         const [path, isDirectory] = JSON.parse(key);
         const {workspace_id, local_path} = await _getRunningWorkspaceByPathAsync(path);
         logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
@@ -705,9 +716,10 @@ async function _autoUpdateJobManager() {
             logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
         }
 
-        logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
-        if (update_queue[key].action == 'update') {
+        logger.info(`_autoUpdateJobManager: action=${action}`);
+        if (action == 'update') {
             logger.info(`_autoUpdateJobManager: adding update job`);
+            currently_updating_queue.add(key);
             jobs.push((callback) => {
                 logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
                 awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
@@ -716,12 +728,14 @@ async function _autoUpdateJobManager() {
                         logger.error(`PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
                     } else {
                         logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
+                        currently_updating_queue.delete(key);
                     }
                     callback(null); // always return success to keep going
                 });
             });
-        } else if (update_queue[key].action == 'delete') {
+        } else if (action == 'delete') {
             logger.info(`_autoUpdateJobManager: adding delete job`);
+            currently_updating_queue.add(key);
             jobs.push((callback) => {
                 logger.info(`Removing file from S3: ${s3_path}`);
                 awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
@@ -730,13 +744,13 @@ async function _autoUpdateJobManager() {
                         logger.error(`PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`);
                     } else {
                         logger.info(`Successfully removed file from S3: ${s3_path}`);
+                        currently_updating_queue.delete(key);
                     }
                     callback(null); // always return success to keep going
                 });
             });
         }
     }
-    update_queue = {};
     try {
         await async.parallel(jobs);
     } catch (err) {
