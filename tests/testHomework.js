@@ -335,19 +335,19 @@ describe('Homework assessment', function() {
 
         before('should insert deprecated file', async function() {
             const content = 'This is the test text';
-            await fs.mkdir(path.join(config.filesRoot, filepath));
+            await fs.promises.mkdir(path.join(config.filesRoot, filepath));
             const params = {
                 filename,
                 filepath,
                 assessment_id: locals.assessment_id,
                 assessment_instance_id: 1,
             };
-            await fs.writeFile(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
+            await fs.promises.writeFile(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
             await sqldb.queryOneRowAsync(sql.insert_file_fs_ai, params);
         });
         after('should remove deprecated file', async function() {
-            await fs.unlink(path.join(config.filesRoot, filepath, filename));
-            await fs.rmdir(path.join(config.filesRoot, filepath));
+            await fs.promises.unlink(path.join(config.filesRoot, filepath, filename));
+            await fs.promises.rmdir(path.join(config.filesRoot, filepath));
             sqldb.queryOneRowAsync(sql.delete_test_file_fs, {filename});
         });
 
@@ -397,18 +397,18 @@ describe('Homework assessment', function() {
 
         before('should insert deprecated file', async function() {
             const content = 'This is the test text';
-            await fs.mkdir(path.join(config.filesRoot, filepath));
+            await fs.promises.mkdir(path.join(config.filesRoot, filepath));
             const params = {
                 filename,
                 filepath,
                 instance_question_id: locals.question.id,
             };
-            await fs.writeFile(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
+            await fs.promises.writeFile(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
             await sqldb.queryOneRowAsync(sql.insert_file_fs_iq, params);
         });
         after('should remove deprecated file', async function() {
-            await fs.unlink(path.join(config.filesRoot, filepath, filename));
-            await fs.rmdir(path.join(config.filesRoot, filepath));
+            await fs.promises.unlink(path.join(config.filesRoot, filepath, filename));
+            await fs.promises.rmdir(path.join(config.filesRoot, filepath));
             sqldb.queryOneRowAsync(sql.delete_test_file_fs, {filename});
         });
 
