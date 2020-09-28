@@ -335,7 +335,7 @@ describe('Homework assessment', function() {
 
         before('should insert deprecated file', async function() {
             const content = 'This is the test text';
-            fs.mkdirSync(path.join(config.filesRoot, filepath));
+            await fs.mkdir(path.join(config.filesRoot, filepath));
             const params = {
                 filename,
                 filepath,
