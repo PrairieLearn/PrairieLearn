@@ -20,6 +20,7 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const deasync = require('deasync');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -77,6 +78,16 @@ if (config.startServer) {
     if (config.logFilename) {
         logger.addFileLogging(config.logFilename);
         logger.verbose('activated file logging: ' + config.logFilename);
+    }
+
+    /* This synchronous code may seem gross, but we really do want to block
+       the below from running until we are able to grab config values from
+       AWS. */
+    try {
+        deasync(util.callbackify(awsHelper.init));
+        deasync(util.callbackify(awsHelper.loadConfigSecrets));
+    } catch (err) {
+        logger.error('Failed to load configuration from AWS', err);
     }
 }
 
@@ -1068,12 +1079,6 @@ if (config.startServer) {
         },
         (callback) => {
             cache.init((err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            util.callbackify(awsHelper.init)(err => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
