@@ -84,8 +84,8 @@ if (config.startServer) {
        the below from running until we are able to grab config values from
        AWS. */
     try {
-        deasync(util.callbackify(awsHelper.init));
-        deasync(util.callbackify(awsHelper.loadConfigSecrets));
+        deasync(util.callbackify(awsHelper.init))();
+        deasync(util.callbackify(awsHelper.loadConfigSecrets))();
     } catch (err) {
         logger.error('Failed to load configuration from AWS', err);
     }
