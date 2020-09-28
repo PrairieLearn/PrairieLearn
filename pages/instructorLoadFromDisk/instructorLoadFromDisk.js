@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var async = require('async');
 var fs = require('fs');
 var path = require('path');
+var util = require('util');
 var express = require('express');
 var router = express.Router();
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -9,6 +10,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 var config = require('../../lib/config');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
+var chunks = require('../../lib/chunks');
 const { chalk, chalkDim } = require('../../lib/chalk');
 
 var update = function(locals, callback) {
@@ -53,7 +55,24 @@ var update = function(locals, callback) {
                             if (ERR(err, callback)) return;
                             if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
                             debug('successfully loaded course', {courseDir});
-                            callback(null);
+                            if (config.chunksGenerator) {
+                                util.callbackify(chunks.createChunksSymlinks)({ coursePath: courseDir, courseId: result.courseId, courseData: result.courseData }, (err) => {
+                                    if (ERR(err, callback)) return;
+                                    // NOTE: Just for testing
+                                    util.callbackify(chunks.updateChunksForCourse)({
+                                        coursePath: courseDir,
+                                        courseId: result.courseId,
+                                        courseData: result.courseData,
+                                        oldHash: 'HEAD~1',
+                                        newHash: 'HEAD',
+                                    }, (err) => {
+                                        if (ERR(err, callback)) return;
+                                        callback(null);
+                                    });
+                                });
+                            } else {
+                                callback(null);
+                            }
                         });
                     }
                 });

@@ -20,6 +20,7 @@ const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
+const chunks = require('../lib/chunks');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -123,16 +124,23 @@ module.exports = {
         });
     },
 
+    async loadElementsAsync(sourceDir, elementType) {
+        return promisify(module.exports.loadElements)(sourceDir, elementType);
+    },
+
     loadElementsForCourse(course, callback) {
         if (courseElementsCache[course.id] !== undefined &&
             courseElementsCache[course.id].commit_hash === course.commit_hash) {
             return callback(null, courseElementsCache[course.id].data);
         }
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
-            if (ERR(err, callback)) return;
+        callbackify(async () => {
+            const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+            await chunks.ensureChunksForCourse(course.id, {'type': 'elements'});
+
+            const elements = await module.exports.loadElementsAsync(path.join(coursePath, 'elements'), 'course');
             courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};
-            callback(null, courseElementsCache[course.id].data);
-        });
+            return elements;
+        })(callback);
     },
 
     async loadElementsForCourseAsync(course) {
@@ -1427,12 +1435,30 @@ module.exports = {
 
     getContext: function(question, course, callback) {
         callbackify(async () => {
+            const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+            const chunksToLoad = [
+                {
+                    'type': 'question',
+                    'questionId': question.id,
+                },
+                {
+                    'type': 'serverFilesCourse',
+                },
+                {
+                    'type': 'elements',
+                },
+                {
+                    'type': 'elementExtensions',
+                },
+            ];
+            await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
             const context = {
                 question,
                 course,
                 course_dir: course.path,
-                question_dir: path.join(course.path, 'questions', question.directory),
-                course_elements_dir: path.join(course.path, 'elements'),
+                question_dir: path.join(coursePath, 'questions', question.directory),
+                course_elements_dir: path.join(coursePath, 'elements'),
             };
 
             /* Load elements and any extensions */

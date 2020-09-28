@@ -124,6 +124,10 @@
             "description": "The endpoint that should be hit when a grading result is updated. Should be null when running locally.",
             "type": "string"
         },
+        "cacheImageRegistry": {
+            "description": "The ECR registry name to use. Like 'aws_account_id.dkr.ecr.region.amazonaws.com'. Should be null when running locally.",
+            "type": "string"
+        },
         "externalGradingDefaultTimeout": {
             "description": "The default timeout to use for external grading if none is specified by a question.",
             "type": "integer"

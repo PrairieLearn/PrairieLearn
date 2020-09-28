@@ -24,7 +24,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const logger = require('./lib/logger');
 const config = require('./lib/config');
 const load = require('./lib/load');
-const aws = require('./lib/aws.js');
+const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
@@ -1078,7 +1078,7 @@ if (config.startServer) {
             });
         },
         (callback) => {
-            aws.init((err) => {
+            util.callbackify(awsHelper.init)(err => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -1090,6 +1090,7 @@ if (config.startServer) {
             });
         },
         (callback) => {
+            if (!config.externalGradingEnableResults) return callback(null);
             externalGraderResults.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);

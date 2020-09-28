@@ -42,6 +42,7 @@ BEGIN
         -- Resolve race condition by subtracting 31 sec from end_date.
         -- Use 31 instead of 30 to force rounding (time_limit_min is in minutes).
         CASE WHEN aar.time_limit_min IS NULL THEN NULL
+             WHEN aar.mode = 'Exam' THEN NULL
              ELSE LEAST(aar.time_limit_min, EXTRACT(EPOCH FROM aar.end_date - now() - INTERVAL '31 seconds') / 60)::integer
         END AS time_limit_min,
         aar.password,
