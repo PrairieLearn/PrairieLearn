@@ -2,7 +2,7 @@
 
 ## Summary
 
-This RFC is to address the "Question Reset" feature mentioned in various places around the repo, with most references linked from #1041. 
+This RFC is to address the "Question Reset" feature mentioned in various places around the repo, with most references linked from #1041.
 
 ## Background
 
@@ -22,27 +22,57 @@ This RFC is to address the "Question Reset" feature mentioned in various places 
 
 #### Instructors
 
-- Should be able to reset for an entire class or an individual student
-- 
+When a question with issues is published and already being used by students, instructors might need to invalidate past attempts and redirect students to a working question. This action would be done once per question, if the problem lies inside the question itself, or once per student, if the student encountered an issue with the question that doesn't invalidate other students' responses.
 
 #### Students
 
-- Shouldn't lose credit for a reset question, when appropriate
-- Running the grader on a reset question should still work, if the page was loaded before the question was reset
-- Access shouldn't be revoked to a reset instance question. 
-  - If they still have the URL, they can be met with an alert telling them that the question has been reset, their past attempts have been 
+Credit shouldn't be lost for a reset question, when appropriate. Access shouldn't be revoked to a reset instance question, so that students can access their own past responses.
 
 ## Feature Description
 
-On the instructor assessment interface, there should be an option to "hard-reset" a question. 
+Instructors can "hard reset" a question for the entire class, or for an individual student. Choosing to do this invalidates the students' instance questions and automatically generates a new instance question in place of them. Students who haven't yet generated an instance of that question (i.e. if they haven't opened the assessment yet) shouldn't get a new instance question.
 
-- For entire class: In the "questions" tab, let there be a button on each question's row labeled "Regenerate". When clicked, a dialog appears: "Regenerate question for every student? All current progress and submissions will be discarded. Only use if question is being fixed or replaced," followed by form A. 
-- For particular student(s): In the
+### Database changes 
 
-Layout of Form A:
-- "Award credit for completed work"
-  a) Full (100%)
-  b) Partial (same as already awarded)
-  c) None
+("iq" is short for "instance question", and "aq" is short for "assessment question")
 
-Instructors should be given the option to keep partial, full, or no credit for students who previously attempted a question that's being reset. 
+#### New table: `assessment_question_resets`
+Fields:
+- `id`: unique identifier.
+- `assessment_question_id`: the ID of the aq that this reset applies to.
+- `by`: the uid of the user who performed the reset.
+- `at`: the time that the reset took place.
+- `percentage_score_override`: `NULL` if instructor kept scores of previous attempts, `0` through `100` otherwise.
+
+#### New table: `instance_question_resets`
+
+- `iq`: unique identifier.
+- `assessment_question_reset_id`: the ID of the reset that affected these iqs.
+- `old_iq_id`: the ID of the iq that was replaced in the reset.
+- `new_iq_id`: the ID of the iq that was generated in the reset.
+
+### User Interface
+
+#### Instructors
+
+Let there be a button labeled `Reset` that appears on the each row in the "questions" tab of an assessment, as well as in each question row under "details" in the "students" tab. When clicked, a dialog appears: 
+- Title: `Reset question`
+- Body: `This will hard reset this question for [all students / uid of student]. All current progress and submissions will be discarded. Designed for cases where a question is being fixed or replaced.`
+- Credit radio select:
+  - Label: `Award credit for previously completed work`
+  - Options:
+    - Default: `Partial (same as already awarded)`
+    - `Custom amount [number input 0-100, default: 100]`
+- Submit options:
+  - `Regenerate`
+  - `Cancel`
+
+If a reset has happened, then in both areas where the Regenerate button can appear, there should be some indicator of this.
+  
+#### Students
+
+On the assessment instance page, next to a question that's been reset, there will be a badge labeled "Reset". Focusing on it gives a popover that reads `This question has been reset by the instructor.`, followed by a link to the reset question and a description of the grading strategy used for their previous attempts: (?)
+- `Credit up to the highest score earned on previous attempts has been awarded.`
+- `{percentage chosen by instructor}% credit was automatically given, but can still be increased by new attempts.` (exclude last part if percentage == 100)
+
+On a reset instance question's page, there will be an alert containing the same info as the "Reset" popover on the assessment instance page, but with a link to the new question instead of the old one. Assessment navigation buttons ("previous"/"next") don't render in this case, since the instance question no longer exists inside the question order.
