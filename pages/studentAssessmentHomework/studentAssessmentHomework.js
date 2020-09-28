@@ -90,8 +90,8 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'joinGroup') {
         try{
-            const group_name = req.body.joincode.split('-')[0];
-            const join_code = req.body.joincode.split('-')[1].toUpperCase();
+            const group_name = req.body.joinCode.split('-')[0];
+            const join_code = req.body.joinCode.split('-')[1].toUpperCase();
             if (join_code.length != 4) {
                 throw 'invalid length of join code';
             }
@@ -120,7 +120,7 @@ router.post('/', function(req, res, next) {
                         res.locals.permissions = result.rows[0];            
                         res.locals.groupsize = 0;
                         //display the error on frontend
-                        res.locals.usedjoincode = req.body.joincode;
+                        res.locals.usedjoincode = req.body.joinCode;
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 }
@@ -135,7 +135,7 @@ router.post('/', function(req, res, next) {
                 res.locals.permissions = result.rows[0];            
                 res.locals.groupsize = 0;
                 //display the error on frontend
-                res.locals.usedjoincode = req.body.joincode;
+                res.locals.usedjoincode = req.body.joinCode;
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         }
