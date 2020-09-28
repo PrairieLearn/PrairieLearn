@@ -342,12 +342,12 @@ describe('Homework assessment', function() {
                 assessment_id: locals.assessment_id,
                 assessment_instance_id: 1,
             };
-            fs.writeFileSync(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
+            await fs.writeFile(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
             await sqldb.queryOneRowAsync(sql.insert_file_fs_ai, params);
         });
         after('should remove deprecated file', async function() {
-            fs.unlinkSync(path.join(config.filesRoot, filepath, filename));
-            fs.rmdirSync(path.join(config.filesRoot, filepath));
+            await fs.unlink(path.join(config.filesRoot, filepath, filename));
+            await fs.rmdir(path.join(config.filesRoot, filepath));
             sqldb.queryOneRowAsync(sql.delete_test_file_fs, {filename});
         });
 
@@ -397,18 +397,18 @@ describe('Homework assessment', function() {
 
         before('should insert deprecated file', async function() {
             const content = 'This is the test text';
-            fs.mkdirSync(path.join(config.filesRoot, filepath));
+            await fs.mkdir(path.join(config.filesRoot, filepath));
             const params = {
                 filename,
                 filepath,
                 instance_question_id: locals.question.id,
             };
-            fs.writeFileSync(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
+            await fs.writeFile(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
             await sqldb.queryOneRowAsync(sql.insert_file_fs_iq, params);
         });
         after('should remove deprecated file', async function() {
-            fs.unlinkSync(path.join(config.filesRoot, filepath, filename));
-            fs.rmdirSync(path.join(config.filesRoot, filepath));
+            await fs.unlink(path.join(config.filesRoot, filepath, filename));
+            await fs.rmdir(path.join(config.filesRoot, filepath));
             sqldb.queryOneRowAsync(sql.delete_test_file_fs, {filename});
         });
 
