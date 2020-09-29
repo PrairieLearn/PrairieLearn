@@ -12,7 +12,7 @@ class CGrader:
         with open(DATAFILE) as file:
             self.data = json.load(file)
 
-    def run_command(self, command, input=None, sandboxed=False):
+    def run_command(self, command, input=None, sandboxed=False, timeout=None):
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
@@ -25,15 +25,23 @@ class CGrader:
                                     encoding='utf-8')
         except:
             return ''
-        out = None
+        out1 = out2 = None
+        tostr = ''
         try:
-            out, err = proc.communicate(input=input)
+            out1, err = proc.communicate(input=input, timeout=timeout)
         finally:
             proc.kill()
             try:
-                out, err = proc.communicate()
+                out2, err = proc.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                tostr = '\n\nTIMEOUT! Typically this means the program took too long,' + \
+                        '\nrequested more inputs than provided, or an infinite loop was found.' + \
+                        '\nIf your program is reading data using scanf inside a loop, this ' + \
+                        '\ncould also mean that scanf does not support the input provided ' + \
+                        '\n(e.g., reading an int if the input is a double).'
             finally:
-                return '' if out is None else out
+                out = (out1 if out1 else '') + (out2 if out2 else '') + tostr
+                return out
 
     def test_compile_file(self, c_file, exec_file, main_file=None, points=1, field=None, name='Compilation'):
         obj_file = re.sub('\.c$', '', c_file) + '.o'
@@ -69,7 +77,7 @@ class CGrader:
     def test_send_in_check_out(self, command, input=None, exp_output=None,
                                must_match_all_outputs=False,
                                reject_output=None, field=None,
-                               ignore_case=True,
+                               ignore_case=True, timeout=1,
                                args=None, name=None, msg=None, max_points=1):
         
         if args is not None and not isinstance(args, list): args = [args] 
@@ -82,13 +90,13 @@ class CGrader:
         if exp_output is not None and not isinstance(exp_output, list):
             exp_output = [exp_output] 
         if reject_output is not None and not isinstance(reject_output, list):
-            reject_output = [reject_output] 
+            reject_output = [reject_output]
         if msg is None and exp_output is not None:
             msg = 'Expected "%s"' % ('" AND "' if must_match_all_outputs \
                                      else '" OR "').join([str(t) for t in exp_output]) + \
                   (' but not "%s"' % '"/"'.join([str(t) for t in reject_output]) if reject_output else '')
 
-        out = self.run_command(command if args is None else ([command] + args), input, sandboxed=True)
+        out = self.run_command(command if args is None else ([command] + args), input, sandboxed=True, timeout=timeout)
         outcmp = out
 
         if ignore_case:
@@ -106,6 +114,8 @@ class CGrader:
             points = False
         if reject_output is not None \
            and [t for t in reject_output if str(t) in outcmp]:
+            points = False
+        if timeout and 'TIMEOUT' in out:
             points = False
 
         self.add_test_result(name, points=points, msg=msg,
