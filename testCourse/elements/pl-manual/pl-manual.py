@@ -1,6 +1,7 @@
 import prairielearn as pl
 import lxml.html
 import chevron
+import json
 
 
 def prepare(element_html, data):
@@ -24,6 +25,7 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    print(json.dumps(data))
     if data['panel'] == 'submission' and data['options'].get('overlay_grading_interface', False):
         answers_name = pl.get_string_attrib(element, 'answers-name', None)
         show_default = pl.get_string_attrib(element, 'show-default', True)

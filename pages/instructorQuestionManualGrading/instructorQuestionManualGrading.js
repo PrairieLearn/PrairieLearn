@@ -31,7 +31,7 @@ router.get('/', function(req, res, next) {
     var variant_id = req.query.variant_id;
     debug(`manually grading variant_id ${variant_id}`);
     if (variant_id) {
-        res.locals.overlay_grading_interface = true;
+        res.locals.overlayGradingInterface = true;
         async.series([
             (callback) => {
                 question.getAndRenderVariant(variant_id, null, res.locals, function(err) {
