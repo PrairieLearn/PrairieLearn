@@ -97,6 +97,31 @@
             "description": "Whether the assessment will support group work.",
             "type": "boolean",
             "default": false
+        },
+        "groupMaxSize": {
+            "description": "Maximum size of a group.",
+            "type": "number",
+            "default": 5
+        },
+        "groupMinSize": {
+            "description": "Minimum size of a group.",
+            "type": "number",
+            "default": 2
+        },
+        "groupCreate": {
+            "description": "Whether students can create groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "groupJoin": {
+            "description": "Whether students can join groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "groupLeave": {
+            "description": "Whether students can leave groups.",
+            "type": "boolean",
+            "default": false
         }
     },
     "definitions": {

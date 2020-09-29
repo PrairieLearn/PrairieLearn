@@ -65,6 +65,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         text: assessment.text,
         constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         group_work: !!assessment.groupWork,
+        group_max_size: assessment.groupMaxSize || null,
+        group_min_size: assessment.groupMinSize || null,
+        group_create: !!assessment.groupCreate,
+        group_join: !!assessment.groupJoin,
+        group_leave: !!assessment.groupLeave,
     };
 
     const allowAccess = assessment.allowAccess || [];
