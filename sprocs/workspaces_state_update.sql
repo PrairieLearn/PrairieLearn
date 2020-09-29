@@ -1,4 +1,5 @@
-DROP FUNCTION IF EXISTS workspaces_state_update(bigint, text, text);
+DROP FUNCTION IF EXISTS workspaces_state_update(bigint, text);
+DROP FUNCTION IF EXISTS workspaces_state_update(bigint, enum_workspace_state, text);
 
 CREATE OR REPLACE FUNCTION
     workspaces_state_update(
@@ -16,7 +17,10 @@ BEGIN
         state = workspace_state,
         state_updated_at = now(),
         message = workspace_message,
-        message_updated_at = now()
+        message_updated_at = now(),
+        launched_at = CASE WHEN workspace_state = 'launching' THEN now() ELSE launched_at END,
+        running_at = CASE WHEN workspace_state = 'running' THEN now() ELSE running_at END,
+        stopped_at = CASE WHEN workspace_state = 'stopped' THEN now() ELSE stopped_at END
     WHERE
         w.id = workspace_id
     RETURNING

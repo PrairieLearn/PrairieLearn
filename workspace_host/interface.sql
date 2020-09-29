@@ -19,14 +19,6 @@ SET
 WHERE
     w.id = $workspace_id;
 
--- BLOCK update_workspace_launched_at_now
-UPDATE workspaces AS w
-SET
-    launched_at = now(),
-    heartbeat_at = now()
-WHERE
-    w.id = $workspace_id;
-
 -- BLOCK insert_workspace_hosts
 INSERT INTO workspace_hosts
         (instance_id,  hostname, state, state_changed_at, ready_at)
@@ -153,7 +145,8 @@ UPDATE
 SET
     state = 'unhealthy',
     state_changed_at = NOW(),
-    unhealthy_at = NOW()
+    unhealthy_at = NOW(),
+    unhealthy_reason = $unhealthy_reason
 WHERE
     wh.instance_id = $instance_id
     AND wh.state IN ('launching', 'ready', 'draining');

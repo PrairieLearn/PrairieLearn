@@ -17,8 +17,8 @@ async function stopLaunchedTimeoutWorkspaces() {
     const result = await sqldb.queryAsync(sql.select_launched_timeout_workspaces, params);
     const workspaces = result.rows;
     for (const workspace of workspaces) {
-        logger.verbose(`stopStaleWorkspaces: launched timeout for workspace_id = ${workspace.id}`);
-        await workspaceHelper.updateState(workspace.id, 'stopped', `Maximum run time of ${config.workspaceLaunchedTimeoutSec / 3600} hours exceeded`);
+        logger.verbose(`workspaceTimeoutStop: launched timeout for workspace_id = ${workspace.id}`);
+        await workspaceHelper.updateState(workspace.id, 'stopped', `Maximum run time of ${Math.round(config.workspaceLaunchedTimeoutSec / 3600)} hours exceeded. Click "Reboot" to keep working.`);
     }
 }
 
@@ -29,8 +29,8 @@ async function stopHeartbeatTimeoutWorkspaces() {
     const result = await sqldb.queryAsync(sql.select_heartbeat_timeout_workspaces, params);
     const workspaces = result.rows;
     for (const workspace of workspaces) {
-        logger.verbose(`stopStaleWorkspaces: heartbeat timeout for workspace_id = ${workspace.id}`);
-        await workspaceHelper.updateState(workspace.id, 'stopped', `Connection was lost for more than ${config.workspaceHeartbeatTimeoutSec / 60} minutes`);
+        logger.verbose(`workspaceTimeoutStop: heartbeat timeout for workspace_id = ${workspace.id}`);
+        await workspaceHelper.updateState(workspace.id, 'stopped', `Connection was lost for more than ${Math.round(config.workspaceHeartbeatTimeoutSec / 60)} min. Click "Reboot" to keep working.`);
     }
 }
 
@@ -43,15 +43,14 @@ async function stopInLaunchingTimeoutWorkspaces() {
     for (const workspace of workspaces) {
         // these are errors because timeouts should have been enforced
         // by the workspace hosts
-        logger.error(`stopStaleWorkspaces: in-launching timeout for workspace_id = ${workspace.id}`);
-        await workspaceHelper.updateState(workspace.id, 'stopped', `Maximum launching time of ${config.workspaceInLaunchingTimeoutSec / 60} minutes exceeded`);
+        logger.error(`workspaceTimeoutStop: in-launching timeout for workspace_id = ${workspace.id}`);
+        await workspaceHelper.updateState(workspace.id, 'stopped', `Maximum launching time of ${Math.round(config.workspaceInLaunchingTimeoutSec / 60)} min exceeded. Click "Reboot" to keep working.`);
     }
 }
 
-module.exports.run = function(callback) {
-    util.callbackify(async () => {
-        await stopLaunchedTimeoutWorkspaces();
-        await stopHeartbeatTimeoutWorkspaces();
-        await stopInLaunchingTimeoutWorkspaces();
-    })(callback);
+module.exports.runAsync = async () => {
+    await stopLaunchedTimeoutWorkspaces();
+    await stopHeartbeatTimeoutWorkspaces();
+    await stopInLaunchingTimeoutWorkspaces();
 };
+module.exports.run = util.callbackify(module.exports.runAsync);

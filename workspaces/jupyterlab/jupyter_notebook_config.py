@@ -11,3 +11,4 @@ c.NotebookApp.port = 8080
 c.NotebookApp.token = ''
 c.NotebookApp.allow_origin = '*'
 c.FileContentsManager.delete_to_trash = False
+c.FileCheckpoints.checkpoint_dir = '/tmp/ipynb_checkpoints'

@@ -52,8 +52,12 @@ const cloudwatch_definitions = {
         'name': 'HostsTerminating',
         'unit': 'Count',
     },
-    'workspace_hosts_stopped_count': {
-        'name': 'HostsStopped',
+    'workspace_hosts_terminated_count': {
+        'name': 'HostsTerminated',
+        'unit': 'Count',
+    },
+    'workspace_hosts_active_count': {
+        'name': 'HostsActive',
         'unit': 'Count',
     },
     'workspace_hosts_longest_launching_sec': {
@@ -86,6 +90,10 @@ const cloudwatch_definitions = {
     },
     'workspace_launching_count': {
         'name': 'WorkspacesLaunching',
+        'unit': 'Count',
+    },
+    'workspace_relaunching_count': {
+        'name': 'WorkspacesRelaunching',
         'unit': 'Count',
     },
     'workspace_running_count': {
