@@ -1092,13 +1092,6 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            if (!config.devMode) return callback(null);
-            module.exports.insertDevUser(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
             load.initEstimator('request', 1);
             load.initEstimator('authed_request', 1);
             load.initEstimator('python', 1, false);
@@ -1114,6 +1107,13 @@ if (config.startServer) {
         async () => {
             logger.verbose('Starting server...');
             await module.exports.startServerAsync();
+        },
+        function(callback) {
+            if (!config.devMode) return callback(null);
+            module.exports.insertDevUser(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
         function(callback) {
             socketServer.init(server, function(err) {
