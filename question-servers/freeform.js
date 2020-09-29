@@ -856,7 +856,7 @@ module.exports = {
             data.options.workspace_url = locals.workspaceUrl || null;
 
             // Put grading view flag into data.options 
-            data.overlay_grading_interface = !!locals.overlayGradingInterface;
+            data.options.overlay_grading_interface = !!locals.overlayGradingInterface;
 
             // Put key paths in data.options
             _.extend(data.options, module.exports.getContextOptions(context));
