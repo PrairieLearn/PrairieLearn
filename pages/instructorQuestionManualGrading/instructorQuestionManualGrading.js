@@ -12,7 +12,9 @@ const logPageView = require('../../middlewares/logPageView')(path.basename(__fil
 
 router.post('/', function(req, res, next) {
     // TODO: Look into adding manual grading action here--check what string we need
-    if (req.body.__action == 'save') {
+    // TODO: Add endpoint to mark this entire question as grade/ungraded/per variant
+    //  and check if this dupluciates any logic in the instructor ui
+    if (req.body.__action == 'grade') {
         // TODO: Hook this up to the manual grading "regrading" step
         // TODO: "pretty package" our partials for use by the backend pipleline
         // TODO: Add query string logic to set question state, i.e. graded or ungraded
@@ -26,28 +28,30 @@ router.post('/', function(req, res, next) {
 });
 
 router.get('/', function(req, res, next) {
-    // TODO: require variant seed for a question in the route -- don't allow people to render a null callback
-    const variant_id = res.locals.variant ? res.locals.variant.id : null;
-    const variant_seed = req.query.variant_seed;
-    debug(`variant_seed ${variant_seed}`);
-    // TODO: for manual mode, check for variant id--look into doing it as a route param
-    async.series([
-        (callback) => {
-            question.getAndRenderVariant(variant_id, variant_seed, res.locals, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            logPageView(req, res, (err) => {
-                if (ERR(err, next)) return;
-                callback(null);
-            });
-        },
-    ], (err) => {
-        if (ERR(err, next)) return;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
+    var variant_id = req.query.variant_id;
+    debug(`manually grading variant_id ${variant_id}`);
+    if (variant_id) {
+        res.locals.overlay_grading_interface = true;
+        async.series([
+            (callback) => {
+                question.getAndRenderVariant(variant_id, null, res.locals, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                logPageView(req, res, (err) => {
+                    if (ERR(err, next)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            if (ERR(err, next)) return;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
+    } else {
+        return next(error.make(400, 'no variant provided', {locals: res.locals, body: req.body}));
+    }
 });
 
 module.exports = router;

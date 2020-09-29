@@ -523,8 +523,8 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     function(req, res, next) {res.locals.navSubPage = 'preview'; next();},
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
-]);instructor/assessment/
-app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/manual_grading/variant_id/:variant_id', [
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/manual_grading', [
     function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
     require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
 ]);

@@ -29,6 +29,7 @@
         {{{ html }}}
     {{/html}}
 </div>
+{{#show_grading}}
 <script>
 $(() => {
       $('#pl-manual-regrade-button-{{uuid}}').popover({ 
@@ -79,3 +80,4 @@ $(() => {
     });
 });
 </script>
+{{/show_grading}}

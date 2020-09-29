@@ -23,75 +23,63 @@ def prepare(element_html, data):
 
 
 def render(element_html, data):
-    # TODO: vacously return the rendered html if not in right view
-
     element = lxml.html.fragment_fromstring(element_html)
-    # FIXME: get rid of debug line here
-    answers_name = pl.get_string_attrib(element, 'answers-name', None) or 'ans'
-    show_default = pl.get_string_attrib(element, 'show-default', True)
-    uuid = pl.get_uuid()
+    if data['panel'] == 'submission' and data['options'].get('overlay_grading_interface', False):
+        answers_name = pl.get_string_attrib(element, 'answers-name', None)
+        show_default = pl.get_string_attrib(element, 'show-default', True)
+        uuid = pl.get_uuid()
 
-    # TODO: Check for correct view & load with nonstatic data
-    # 'partial_feedback': data['partial_scores'][answers_name]['feedback']
-    # 'partial_score': data['partial_scores'][answers_name]['score']
-    partial_score = 0
-    partial_feedback = 'this assignment was really great!'
-    finished_grading = 'graded'
+        partial_score = data['partial_scores'][answers_name]['score']
+        partial_feedback = data['partial_scores'][answers_name]['feedback']
+        finished_grading = 'graded'
 
-    popover_body = []
-    html = []
-    print(show_default)
-    if show_default:
-        params = {
-            'partial_score': partial_score,
-            'partial_feedback': partial_feedback
-        }
-        with open('pl-manual-default.mustache', 'r', encoding='utf-8') as f:
-            obj = {
-                'html': chevron.render(f, params).strip()
+        popover_body = []
+        html = []
+        print(show_default)
+        if show_default:
+            params = {
+                'partial_score': partial_score,
+                'partial_feedback': partial_feedback
             }
-            popover_body.append(obj)
+            with open('pl-manual-default.mustache', 'r', encoding='utf-8') as f:
+                obj = {
+                    'html': chevron.render(f, params).strip()
+                }
+                popover_body.append(obj)
 
-    # Move anything with the pl-manual-* prefix into the popover body
-    #       Append "score" and "feedback" values to the outer element
-    # TODO: Unsure how to build this super extensibly, look @js file for how we build scores rn
-    for child in element:
-        if child.tag and child.tag.startswith('pl-manual-'):
-            child.set('score', partial_score)
-            child.set('feedback', partial_feedback)
-            child.set('index', len(popover_body))
-            popover_body.append(child)
-        else:
-            html.append({'html': pl.inner_html(child)})
+        # Move anything with the pl-manual-* prefix into the popover body
+        #       Append "score" and "feedback" values to the outer element
+        # TODO: Unsure how to build this super extensibly, look @js file for how we build scores rn
+        for child in element:
+            if child.tag and child.tag.startswith('pl-manual-'):
+                child.set('score', partial_score)
+                child.set('feedback', partial_feedback)
+                child.set('index', len(popover_body))
+                popover_body.append(child)
+            else:
+                html.append({'html': pl.inner_html(child)})
 
-    close_button = None
-    with open('pl-manual-close.mustache', 'r', encoding='utf-8') as f:
-        params = {
-            'uuid': uuid
+        close_button = None
+        with open('pl-manual-close.mustache', 'r', encoding='utf-8') as f:
+            params = {
+                'uuid': uuid
+            }
+            close_button = chevron.render(f, params).strip()
+
+        html_params = {
+            'answers_name': answers_name,
+            'html': html,
+            'popover_body': popover_body,
+            'close_button': close_button,
+            'uuid': uuid,
+            'partial_score': partial_score,
+            'partial_feedback': partial_feedback,
+            'finished_grading': finished_grading,
+            'show_grading': True
         }
-        close_button = chevron.render(f, params).strip()
 
-    html_params = {
-        'answers_name': answers_name,
-        'html': html,
-        'popover_body': popover_body,
-        'close_button': close_button,
-        'uuid': uuid,
-        'partial_score': partial_score,
-        'partial_feedback': partial_feedback,
-        'finished_grading': finished_grading,
-        'show_grading': True
-    }
-
-    with open('pl-manual.mustache', 'r', encoding='utf-8') as f:
-        html = chevron.render(f, html_params).strip()
-
+        with open('pl-manual.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params).strip()
+    else:
+        html = pl.inner_html(element)
     return html
-
-
-def grade(element_html, data):
-    # TODO: do we even have a grade step? we should be relying upon the form submission for this element,
-    #       and the rendering should be purely structural
-    #       if we stick to the form, and allow an instructor ID or a student ID through, then we could even
-    #       enable peer grading... (manual grading is student/instructor view of a pre-loaded variant)
-    return
