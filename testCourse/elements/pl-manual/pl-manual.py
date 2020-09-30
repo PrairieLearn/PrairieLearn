@@ -25,28 +25,35 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    answers_name = pl.get_string_attrib(element, 'answers-name', None)
+    # TODO: Status logic -- is this question graded or not yet?
+    partial = data['partial_scores'].get(answers_name, {'score': 0, 'feedback': ''})
+    partial_score = partial.get('score', 0)
+    partial_feedback = partial.get('feedback', '')
+
+    html_params = {
+        # Grader v. student view
+        'grader': False,
+
+        # Common UUID & answer name params
+        'uuid': pl.get_uuid(),
+        'answers_name': answers_name,
+        # Grab partials, feedback, and grading status, with defaults of 0 and empty string
+        'score': partial_score,
+        'feedback': partial_feedback,
+        'needs_grading': True,
+
+        # Inner html (grader view popover & html children)
+        'html': None,
+        'popover_html': None,
+
+        # Config options on the manaul grading element
+        'use_default_popover_body': pl.get_string_attrib(element, 'show-default', True)
+    }
+
     if data['options']['overlay_grading_interface']:
-        answers_name = pl.get_string_attrib(element, 'answers-name', None)
-        show_default = pl.get_string_attrib(element, 'show-default', True)
-        uuid = pl.get_uuid()
-
-        partial_score = data['partial_scores'][answers_name]['score']
-        partial_feedback = data['partial_scores'][answers_name].get('feedback', '')
-        finished_grading = 'graded'
-
-        popover_body = []
-        html = []
-        if show_default:
-            params = {
-                'partial_score': partial_score,
-                'partial_feedback': partial_feedback
-            }
-            with open('pl-manual-default.mustache', 'r', encoding='utf-8') as f:
-                obj = {
-                    'html': chevron.render(f, params).strip()
-                }
-                popover_body.append(obj)
-
+        popover_inner_html = []
+        children = []
         # Move anything with the pl-manual-* prefix into the popover body
         #       Append "score" and "feedback" values to the outer element
         # TODO: Unsure how to build this super extensibly, look @js file for how we build scores rn
@@ -54,32 +61,26 @@ def render(element_html, data):
             if child.tag and child.tag.startswith('pl-manual-'):
                 child.set('score', partial_score)
                 child.set('feedback', partial_feedback)
-                child.set('index', len(popover_body))
-                popover_body.append(child)
+                popover_inner_html.append({'html': pl.inner_html(child)})
             else:
-                html.append({'html': pl.inner_html(child)})
+                children.append({'html': pl.inner_html(child)})
 
-        close_button = None
-        with open('pl-manual-close.mustache', 'r', encoding='utf-8') as f:
-            params = {
-                'uuid': uuid
-            }
-            close_button = chevron.render(f, params).strip()
-
-        html_params = {
-            'answers_name': answers_name,
-            'html': html,
-            'popover_body': popover_body,
-            'close_button': close_button,
-            'uuid': uuid,
-            'partial_score': partial_score,
-            'partial_feedback': partial_feedback,
-            'finished_grading': finished_grading,
-            'show_grading': True
-        }
+        html_params['popover_contents'] = popover_inner_html
+        html_params['popover'] = True
 
         with open('pl-manual.mustache', 'r', encoding='utf-8') as f:
-            html = chevron.render(f, html_params).strip()
+            html_params['popover_html'] = chevron.render(f, html_params).strip()
+
+        html_params['popover'] = False
+        html_params['children'] = children
+        html_params['grader'] = True
+
     else:
-        html = pl.inner_html(element)
+        html_params['popover'] = False
+        html_params['student'] = True
+        html_params['html'] = pl.inner_html(element)
+
+    with open('pl-manual.mustache', 'r', encoding='utf-8') as f:
+        html = chevron.render(f, html_params).strip()
+
     return html
