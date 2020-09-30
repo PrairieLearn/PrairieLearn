@@ -78,6 +78,7 @@ class CGrader:
                                must_match_all_outputs=False,
                                reject_output=None, field=None,
                                ignore_case=True, timeout=1,
+                               ignore_consec_spaces=True,
                                args=None, name=None, msg=None, max_points=1):
         
         if args is not None and not isinstance(args, list): args = [args] 
@@ -101,9 +102,18 @@ class CGrader:
 
         if ignore_case:
             outcmp = out.lower()
-            exp_output = [str(t).lower() for t in exp_output]
+            if exp_output:
+                exp_output = [str(t).lower() for t in exp_output]
             if reject_output:
                 reject_output = [str(t).lower() for t in reject_output]
+
+        if ignore_consec_spaces:
+            # Replace all space-like characters with single space
+            outcmp = re.sub(r'\s+', ' ', outcmp)
+            if exp_output:
+                exp_output = [re.sub(r'\s+', ' ', str(t)) for t in exp_output]
+            if reject_output:
+                reject_output = [re.sub(r'\s+', ' ', str(t)) for t in reject_output]
 
         points = True
         if exp_output is not None and must_match_all_outputs \
