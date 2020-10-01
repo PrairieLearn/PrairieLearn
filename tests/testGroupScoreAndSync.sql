@@ -28,7 +28,7 @@ SELECT
     *
 FROM 
     group_configs AS gc
-    LEFT JOIN groups AS g ON (gr.group_config_id = gc.id)
+    LEFT JOIN groups AS g ON (g.group_config_id = gc.id)
     LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
 WHERE 
     gc.assessment_id = $assessment_id 

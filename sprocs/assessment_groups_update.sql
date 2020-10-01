@@ -37,7 +37,7 @@ BEGIN
         IF EXISTS (
                     SELECT 1
                     FROM group_users AS gu
-                    JOIN groups AS g ON gu.group_id = gr.id
+                    JOIN groups AS g ON gu.group_id = g.id
                     WHERE gu.user_id = arg_user_id
                     AND g.group_config_id = arg_group_config_id
                     AND g.deleted_at IS NULL
