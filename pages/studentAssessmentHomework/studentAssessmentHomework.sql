@@ -57,11 +57,11 @@ create_group AS (
         (name, group_config_id, course_instance_id)
     (
         SELECT 
-            $group_name, id, course_instance_id
+            $group_name, gc.id, gc.course_instance_id
         FROM 
-            group_configs
+            group_configs AS gc
         WHERE
-            assessment_id = $assessment_id
+            gc.assessment_id = $assessment_id
             AND deleted_at IS NULL
     )
     RETURNING id
@@ -69,16 +69,16 @@ create_group AS (
 create_log AS (
     INSERT INTO group_logs
         (authn_user_id, user_id, group_id, action)
-    SELECT $authn_user_id, $user_id, id, 'create' FROM create_group
+    SELECT $authn_user_id, $user_id, cg.id, 'create' FROM create_group AS cg
 ),
 join_group AS (
     INSERT INTO group_users
         (user_id, group_id)
-    SELECT $user_id, id FROM create_group
+    SELECT $user_id, cg.id FROM create_group AS cg
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $authn_user_id, $user_id, id, 'create' FROM create_group;
+SELECT $authn_user_id, $user_id, cg.id, 'create' FROM create_group AS cg;
 
 -- BLOCK get_group_info
 SELECT
