@@ -244,7 +244,6 @@ describe('Group based homework assess control on student side', function() {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
-                console.log(page)
                 callback(null);
             });
         });
