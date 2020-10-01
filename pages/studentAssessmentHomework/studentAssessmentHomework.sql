@@ -62,7 +62,7 @@ create_group AS (
             group_configs AS gc
         WHERE
             gc.assessment_id = $assessment_id
-            AND deleted_at IS NULL
+            AND gc.deleted_at IS NULL
     )
     RETURNING id
 ),
