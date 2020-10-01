@@ -46,42 +46,39 @@ WITH log AS (
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, group_id, 'join'
+SELECT $authn_user_id, $user_id, group_id, 'join'
 FROM log;
 
 
 -- BLOCK create_group
-WITH log AS (
+WITH
+create_group AS (
     INSERT INTO groups
         (name, group_config_id, course_instance_id)
-    VALUES
-        (
-            $group_name,
-            (SELECT id FROM group_configs WHERE assessment_id = $assessment_id AND deleted_at IS NULL),
-            (SELECT course_instance_id FROM group_configs WHERE assessment_id = $assessment_id AND deleted_at IS NULL)
-        )
+    (
+        SELECT 
+            $group_name, id, course_instance_id
+        FROM 
+            group_configs
+        WHERE
+            assessment_id = $assessment_id
+            AND deleted_at IS NULL
+    )
     RETURNING id
-)
-INSERT INTO group_logs
-    (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, id, 'create'
-FROM log;
-
--- BLOCK join_justcreated_group
-WITH log AS (
+),
+create_log AS (
+    INSERT INTO group_logs
+        (authn_user_id, user_id, group_id, action)
+    SELECT $authn_user_id, $user_id, id, 'create' FROM create_group
+),
+join_group AS (
     INSERT INTO group_users
-        (group_id, user_id)
-    VALUES
-        (
-            (SELECT id FROM groups WHERE name = $group_name AND deleted_at IS NULL),
-            $user_id
-        )
-    RETURNING group_id
+        (user_id, group_id)
+    SELECT $user_id, id FROM create_group
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, group_id, 'join'
-FROM log;
+SELECT $authn_user_id, $user_id, id, 'create' FROM create_group;
 
 -- BLOCK get_group_info
 SELECT
@@ -116,5 +113,5 @@ WITH log AS (
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, group_id, 'leave'
+SELECT $authn_user_id, $user_id, group_id, 'leave'
 FROM log;
