@@ -53,14 +53,14 @@ FROM log;
 
 -- BLOCK get_group_info
 SELECT
-    gu.group_id, gr.name, gr.join_code, us.uid, gc.minimum, gc.maximum
+    gu.group_id, gr.name, gr.join_code, u.uid, gc.minimum, gc.maximum
 FROM
     assessments AS a
     JOIN group_configs AS gc ON gc.assessment_id = a.id
     JOIN groups AS gr ON gr.group_config_id = gc.id
     JOIN group_users AS gu ON gu.group_id = gr.id
     JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
-    JOIN users AS us ON us.user_id = gu2.user_id
+    JOIN users AS u ON u.user_id = gu2.user_id
 WHERE
     a.id = $assessment_id
     AND gu.user_id = $user_id
