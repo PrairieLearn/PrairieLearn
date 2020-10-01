@@ -31,7 +31,7 @@ FROM
 WHERE
     ci.id = $course_instance_id
     AND (ai.user_id = $user_id OR ai.group_id IN (SELECT g.id
-                                                  FROM groups gr
+                                                  FROM groups g
                                                   JOIN group_users AS gu ON g.id = gu.group_id 
                                                   WHERE g.deleted_at IS NULL AND gu.user_id = $user_id))
     AND a.deleted_at IS NULL

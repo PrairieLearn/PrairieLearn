@@ -25,7 +25,7 @@ BEGIN
     RETURNING id INTO temp_old_group_config_id;
 
     -- soft delete the old groups
-    UPDATE groups gr
+    UPDATE groups g
     SET deleted_at = NOW()
     WHERE g.group_config_id = temp_old_group_config_id;
 
@@ -43,11 +43,11 @@ BEGIN
 
     -- ##################################################################
     -- for loop to traverse all groups in copying_assessment_id and copy rows in groups and group_users
-    FOR temp_copy_group_id IN (SELECT id FROM groups gr where g.group_config_id = temp_copy_group_config_id AND g.deleted_at IS NULL) LOOP
+    FOR temp_copy_group_id IN (SELECT id FROM groups g where g.group_config_id = temp_copy_group_config_id AND g.deleted_at IS NULL) LOOP
         -- insert a group
         INSERT INTO groups(group_config_id, course_instance_id, name)
         SELECT temp_new_group_config_id, course_instance_id, name
-        FROM groups gr
+        FROM groups g
         WHERE g.id = temp_copy_group_id AND g.deleted_at IS NULL
         RETURNING id INTO temp_new_group_id;
         
