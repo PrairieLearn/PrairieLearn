@@ -19,7 +19,7 @@ ORDER BY tid;
 
 -- BLOCK select_group_users
 SELECT
-    gr.id AS gid,
+    gr.id AS group_id,
     gr.name AS name,
     COUNT(u.uid) AS size,
     array_agg(u.uid) AS uid_list
@@ -68,5 +68,5 @@ FROM
     JOIN groups AS g ON gc.id = g.group_config_id
 WHERE
     gc.assessment_id = $assessment_id
-    AND g.id = $gid
+    AND g.id = $group_id
     AND g.deleted_at IS NULL;

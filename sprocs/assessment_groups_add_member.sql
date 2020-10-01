@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION
     assessment_groups_add_member(
         assessment_id bigint,
-        arg_gid bigint,
+        arg_group_id bigint,
         arg_uid text,
         authn_user_id bigint
     ) RETURNS void
@@ -27,7 +27,7 @@ BEGIN
     -- insert group_user
     WITH log AS (
         INSERT INTO group_users (group_id, user_id)
-        VALUES (arg_gid, arg_user_id)
+        VALUES (arg_group_id, arg_user_id)
         RETURNING group_id
     )
     INSERT INTO group_logs 

@@ -80,7 +80,7 @@ ORDER BY qo.row_order;
 
 -- BLOCK select_group_info
 SELECT
-    gr.name, gr.id AS gid, gr.deleted_at,
+    gr.name, gr.id AS group_id, gr.deleted_at,
     array_agg(u.uid) AS uid_list
 FROM
     assessment_instances AS ai

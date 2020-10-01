@@ -160,7 +160,7 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'add_member') {
         const assessment_id = res.locals.assessment.id;
-        const gid = req.body.gid;
+        const group_id = req.body.group_id;
         const uids = req.body.add_member_uids;
         const uidlist = uids.split(/[ ,]+/);
         let failedUids = '';
@@ -169,7 +169,7 @@ router.post('/', function(req, res, next) {
         //verify the group belong to the assessment first
         let params = {
             assessment_id,
-            gid,
+            group_id,
         };
         sqldb.query(sql.verify_group, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -184,7 +184,7 @@ router.post('/', function(req, res, next) {
                 for (const uid of uidlist) {
                     let params = [
                         assessment_id,
-                        gid,
+                        group_id,
                         uid,
                         res.locals.authn_user.user_id,
                     ];
@@ -202,7 +202,7 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'delete_member') {
         const assessment_id = res.locals.assessment.id;
-        const gid = req.body.gid;
+        const group_id = req.body.group_id;
         const uids = req.body.delete_member_uids;
         const uidlist = uids.split(/[ ,]+/);
         let failedUids = '';
@@ -211,7 +211,7 @@ router.post('/', function(req, res, next) {
         //verify the group belong to the assessment first
         let params = {
             assessment_id,
-            gid,
+            group_id,
         };
         sqldb.query(sql.verify_group, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -226,7 +226,7 @@ router.post('/', function(req, res, next) {
                 for (const uid of uidlist) {
                     let params = [
                         assessment_id,
-                        gid,
+                        group_id,
                         uid,
                         res.locals.authn_user.user_id,
                     ];
@@ -246,7 +246,7 @@ router.post('/', function(req, res, next) {
         //verify the group belong to the assessment first
         let params = {
             assessment_id: res.locals.assessment.id,
-            gid: req.body.gid,
+            group_id: req.body.group_id,
         };
         sqldb.query(sql.verify_group, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -257,7 +257,7 @@ router.post('/', function(req, res, next) {
             }
             let params = [
                 res.locals.assessment.id,
-                req.body.gid,
+                req.body.group_id,
                 res.locals.authn_user.user_id,
             ];    
             sqldb.call('assessment_groups_delete_group', params, function(err, _result) {
