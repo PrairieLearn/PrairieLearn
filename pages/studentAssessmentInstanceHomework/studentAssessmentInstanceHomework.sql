@@ -38,14 +38,14 @@ ORDER BY qo.row_order;
 
 -- BLOCK get_group_info
 SELECT 
-    gu.group_id, gr.name, gr.join_code, us.uid, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
+    gu.group_id, gr.name, gr.join_code, u.uid, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
 FROM
     assessment_instances ai
     JOIN group_configs gc ON ai.assessment_id = gc.assessment_id
     JOIN groups gr ON gr.group_config_id = gc.id
     JOIN group_users gu ON gu.group_id = gr.id
     JOIN group_users gu2 ON gu2.group_id = gu.group_id
-    JOIN users us ON us.user_id = gu2.user_id
+    JOIN users AS u ON u.user_id = gu2.user_id
 WHERE 
     ai.id = $assessment_instance_id 
     AND gu.user_id = $user_id 

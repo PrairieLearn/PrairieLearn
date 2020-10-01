@@ -20,14 +20,14 @@ WHERE
 
 -- BLOCK get_group_info
 SELECT 
-    gu.group_id, gr.name, gr.join_code, us.uid, gc.minimum, gc.maximum
+    gu.group_id, gr.name, gr.join_code, u.uid, gc.minimum, gc.maximum
 FROM 
     assessments ass
     JOIN group_configs gc ON gc.assessment_id = ass.id
     JOIN groups gr ON gr.group_config_id = gc.id
     JOIN group_users gu ON gu.group_id = gr.id
     JOIN group_users gu2 ON gu2.group_id = gu.group_id
-    JOIN users us ON us.user_id = gu2.user_id
+    JOIN users AS u ON u.user_id = gu2.user_id
 WHERE 
     ass.id = $assessment_id 
     AND gu.user_id = $user_id 
