@@ -102,7 +102,7 @@ router.post('/', function(req, res, next) {
                 group_name,
                 join_code,
             ];
-            sqldb.call('check_join_group', params, function(err, _result) {
+            sqldb.call('group_users_insert', params, function(err, _result) {
                 if (err) {
                     let params = {
                         assessment_id: res.locals.assessment.id,

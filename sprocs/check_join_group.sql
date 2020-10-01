@@ -1,6 +1,6 @@
-DROP FUNCTION IF EXISTS check_join_group(bigint,bigint,bigint,text,text);
+DROP FUNCTION IF EXISTS group_users_insert(bigint,bigint,bigint,text,text);
 CREATE OR REPLACE FUNCTION
-    check_join_group (
+    group_users_insert (
         arg_assessment_id bigint,
         arg_user_id bigint,
         arg_authn_user_id bigint,
