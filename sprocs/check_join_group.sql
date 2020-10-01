@@ -1,4 +1,4 @@
-DROP FUNCTION IF EXISTS check_join_group(bigint,bigint,bigint,text,text)
+DROP FUNCTION IF EXISTS check_join_group(bigint,bigint,bigint,text,text);
 CREATE OR REPLACE FUNCTION
     check_join_group (
         arg_assessment_id bigint,
