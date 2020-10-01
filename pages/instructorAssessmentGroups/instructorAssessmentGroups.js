@@ -107,7 +107,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'add_group') {
         const assessment_id = res.locals.assessment.id;
         const group_name = req.body.group_name;
-        if (String(group_name).length < 1) {
+        if (!group_name && String(group_name).length < 1) {
             res.locals.errormsg = 'Please enter a group name when adding a group';
             obtainInfo(req, res, next);
             return;
