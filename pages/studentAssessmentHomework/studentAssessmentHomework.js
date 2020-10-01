@@ -95,7 +95,7 @@ router.post('/', function(req, res, next) {
             if (join_code.length != 4) {
                 throw 'invalid length of join code';
             }
-            const params = [
+            let params = [
                 res.locals.assessment.id,
                 res.locals.user.user_id,
                 res.locals.authn_user.user_id,
@@ -104,10 +104,10 @@ router.post('/', function(req, res, next) {
             ];
             sqldb.call('check_join_group', params, function(err, _result) {
                 if (err) {
-                    const params2 = {
+                    let params = {
                         assessment_id: res.locals.assessment.id,
                     };        
-                    sqldb.query(sql.get_config_info, params2, function(err, result) {
+                    sqldb.query(sql.get_config_info, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.permissions = result.rows[0];            
                         res.locals.groupsize = 0;
@@ -122,10 +122,10 @@ router.post('/', function(req, res, next) {
             });
         } catch (err) {
             // the join code input by user is not valid (not in format of groupname+4-character)
-            const params3 = {
+            let params = {
                 assessment_id: res.locals.assessment.id,
             };
-            sqldb.query(sql.get_config_info, params3, function(err, result) {
+            sqldb.query(sql.get_config_info, params, function(err, result) {
                 if (ERR(err, next)) return;
                 res.locals.permissions = result.rows[0];            
                 res.locals.groupsize = 0;
