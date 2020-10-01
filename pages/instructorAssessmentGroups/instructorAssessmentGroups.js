@@ -127,25 +127,6 @@ router.post('/', function(req, res, next) {
             }
             obtainInfo(req, res, next);
         });
-    } else if (req.body.__action == 'configGroup') {
-        res.locals.errormsg = '';
-        const params = {
-            assessment_id: res.locals.assessment.id,
-            minsize: req.body.minsize,
-            maxsize: req.body.maxsize,
-            joincheck: req.body.joincheck || false,
-            createcheck: req.body.createcheck || false,
-            leavecheck: req.body.leavecheck || false,
-        };
-        if (req.body.maxsize.length < 1 || req.body.minsize.length < 1) {
-            res.locals.errormsg += 'Please enter group max size and min size';
-            obtainInfo(req, res, next);
-            return;
-        }
-        sqldb.query(sql.config_group, params, function(err, _result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
     } else if (req.body.__action == 'addmember') {
         const assessment_id = res.locals.assessment.id;
         const gid = req.body.gid;
