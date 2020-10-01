@@ -38,7 +38,7 @@ class CGrader:
                         '\nrequested more inputs than provided, or an infinite loop was found.' + \
                         '\nIf your program is reading data using scanf inside a loop, this ' + \
                         '\ncould also mean that scanf does not support the input provided ' + \
-                        '\n(e.g., reading an int if the input is a double).'
+                        '\n(e.g., reading an int if the input is a double).\n'
             finally:
                 out = (out1 if out1 else '') + (out2 if out2 else '') + tostr
                 return out
@@ -99,9 +99,10 @@ class CGrader:
 
         out = self.run_command(command if args is None else ([command] + args), input, sandboxed=True, timeout=timeout)
         outcmp = out
+        if not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
 
         if ignore_case:
-            outcmp = out.lower()
+            outcmp = outcmp.lower()
             if exp_output:
                 exp_output = [str(t).lower() for t in exp_output]
             if reject_output:
