@@ -26,7 +26,8 @@ SELECT
     CASE
         WHEN s.grading_requested_at IS NOT NULL THEN format_interval($req_date - s.grading_requested_at)
         ELSE NULL
-    END AS elapsed_grading_time
+    END AS elapsed_grading_time,
+    u.uid AS uid
 FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
@@ -43,6 +44,7 @@ FROM
         ORDER BY id DESC
         LIMIT 1
     ) AS gj ON TRUE
+    JOIN users u ON (s.auth_user_id = u.user_id)
 WHERE
     v.id = $variant_id
 ORDER BY

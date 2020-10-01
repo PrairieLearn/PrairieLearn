@@ -11,7 +11,14 @@
         </span>
         <span><%- include('submissionStatus', {submission: submission}); %></span>
       </div>
-      <small>Submitted at <%- submission.formatted_date %></small>
+      <small>
+        <% if (auth_user_id = submission.uid) { %>
+          You submitted 
+        <% } else { %>
+          Submitted by <%= submission.uid %>
+        <% } %>
+        at <span class="pl-submission-time"><%- submission.formatted_date %></span>
+      </small>
     </div>
     <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
       <i class="fa fa-info-circle fa-fw"></i>
