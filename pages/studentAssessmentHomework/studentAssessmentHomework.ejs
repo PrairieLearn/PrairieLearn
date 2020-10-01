@@ -42,7 +42,7 @@
           <%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
           <% } %>
           <% } else {%>
-            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, groupinfo: groupinfo}); %>
+            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
             <% if (start) { %>
             <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
               <input type="hidden" name="__action" value="new_instance">
