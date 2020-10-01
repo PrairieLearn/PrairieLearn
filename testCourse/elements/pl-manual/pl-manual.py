@@ -38,8 +38,9 @@ def render(element_html, data):
         # Common UUID & answer name params
         'uuid': pl.get_uuid(),
         'answers_name': answers_name,
-        # Grab partials, feedback, and grading status, with defaults of 0 and empty string
-        'score': partial_score,
+
+        # We display the score as out of 100, since it's easier to think of than out of 1
+        'score': partial_score * 100,
         'feedback': partial_feedback,
         'needs_grading': True,
 
@@ -63,7 +64,7 @@ def render(element_html, data):
                 child.set('feedback', partial_feedback)
                 popover_inner_html.append({'html': pl.inner_html(child)})
             else:
-                children.append({'html': pl.inner_html(child)})
+                children.append({'html': lxml.html.tostring(child, method='html').decode('utf-8')})
 
         html_params['popover_contents'] = popover_inner_html
         html_params['popover'] = True

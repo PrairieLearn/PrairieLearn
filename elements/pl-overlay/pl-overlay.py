@@ -105,7 +105,7 @@ def render(element_html, data):
 
         style = f'top: {y}px; left: {x}px; transform: {transform}; z-index: {z_index}'
         obj = {
-            'html': pl.inner_html(child),
+            'html': child.html,
             'outer_style': style,
         }
         locations.append(obj)
