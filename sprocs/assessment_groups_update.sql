@@ -37,10 +37,10 @@ BEGIN
         IF EXISTS (
                     SELECT 1
                     FROM group_users AS gu
-                    JOIN groups AS gr ON gu.group_id = gr.id
+                    JOIN groups AS g ON gu.group_id = gr.id
                     WHERE gu.user_id = arg_user_id
-                    AND gr.group_config_id = arg_group_config_id
-                    AND gr.deleted_at IS NULL
+                    AND g.group_config_id = arg_group_config_id
+                    AND g.deleted_at IS NULL
                   ) THEN
             SELECT array_append(already_in_group, group_user[2])
             INTO already_in_group;

@@ -53,18 +53,18 @@ FROM log;
 
 -- BLOCK get_group_info
 SELECT
-    gu.group_id, gr.name, gr.join_code, u.uid, gc.minimum, gc.maximum
+    gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum
 FROM
     assessments AS a
     JOIN group_configs AS gc ON gc.assessment_id = a.id
-    JOIN groups AS gr ON gr.group_config_id = gc.id
-    JOIN group_users AS gu ON gu.group_id = gr.id
+    JOIN groups AS g ON g.group_config_id = gc.id
+    JOIN group_users AS gu ON gu.group_id = g.id
     JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
     JOIN users AS u ON u.user_id = gu2.user_id
 WHERE
     a.id = $assessment_id
     AND gu.user_id = $user_id
-    AND gr.deleted_at IS NULL
+    AND g.deleted_at IS NULL
     AND gc.deleted_at IS NULL;
 
 -- BLOCK leave_group
@@ -73,12 +73,12 @@ WITH log AS (
         group_users
     WHERE
         user_id = $user_id
-        AND group_id IN (SELECT gr.id
+        AND group_id IN (SELECT g.id
                         FROM assessments AS a
                         JOIN group_configs AS gc ON gc.assessment_id = a.id
-                        JOIN groups AS gr ON gr.group_config_id = gc.id
+                        JOIN groups AS g ON g.group_config_id = gc.id
                         WHERE a.id = $assessment_id
-                        AND gr.deleted_at IS NULL
+                        AND g.deleted_at IS NULL
                         AND gc.deleted_at IS NULL)
     RETURNING group_id
 )
