@@ -5,10 +5,6 @@
             "name": "unhealthy_reason",
             "description": "Reason for setting all workspace hosts to unhealthy.",
             "default": "admin query"
-        },
-        {
-            "name": "confirm",
-            "description": "Type 'yes' to confirm."
         }
     ]
 }

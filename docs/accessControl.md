@@ -1,7 +1,7 @@
 
 # Access control to course instances and assessments
 
-By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file.
+By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file. The differences between Instructor, TA, and Student roles are further explained in the documentation about [course instance configuration](courseInstance.md#user-roles).
 
 The `allowAccess` rules in course instances and assessments do not grant authorization to sync course content from GitHub. This is controlled by [course admin permissions](sync.md#course-admin-permissions) on the server, not in the
 course JSON files.
@@ -58,6 +58,8 @@ If multiple access rules are satisfied then the highest `credit` value is taken 
 ## Roles
 
 Restricting access to `"role": "Student"` is equivalent to not including a role restriction at all, because every user is equal to or higher than `Student` role.
+
+For more information about the differences between Instructor, TA, and Student roles, refer to the documentation about [course instance configuration](courseInstance.md#user-roles).
 
 ## Dates
 
