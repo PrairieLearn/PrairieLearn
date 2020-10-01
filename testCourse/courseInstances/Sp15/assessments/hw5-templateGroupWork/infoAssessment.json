@@ -6,7 +6,7 @@
     "number": "5",
     "groupWork": true,
     "groupMaxSize": 3,
-    "groupMinSize": 2,
+    "groupMinSize": 3,
     "groupCreate": true,
     "groupJoin": true,
     "groupLeave": true,
