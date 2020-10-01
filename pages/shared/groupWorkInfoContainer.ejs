@@ -2,7 +2,7 @@
   <div class="row">
     <div class="col-sm bg-light py-4 px-4 border">
       <h6 style="display:inline"><b>Group name: </b></h6>
-      <h6 style="display:inline" id="group-name"><%= groupinfo[0].name %></h6><br>
+      <p style="display:inline" id="group-name"><%= groupinfo[0].name %></p><br>
     <% if (permissions.student_authz_join) { %>
       <h6 style="display:inline"><b>Join code: </b></h6>
       <p style="display:inline" id='join-code'><%= joincode %></p><br><br>

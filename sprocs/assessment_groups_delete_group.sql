@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS assessment_groups_delete_group(bigint,bigint,bigint);
 CREATE OR REPLACE FUNCTION
     assessment_groups_delete_group(
         assessment_id bigint,

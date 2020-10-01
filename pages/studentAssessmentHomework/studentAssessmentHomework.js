@@ -138,7 +138,7 @@ router.post('/', function(req, res, next) {
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
-            authn_user: res.locals.authn_user.user_id,
+            authn_user_id: res.locals.authn_user.user_id,
             group_name: req.body.groupName,
         };
         //alpha and numeric characters only
@@ -177,7 +177,7 @@ router.post('/', function(req, res, next) {
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
-            authn_user: res.locals.authn_user.user_id,
+            authn_user_id: res.locals.authn_user.user_id,
         };
         sqldb.query(sql.leave_group, params, function(err, _result) {
             if (ERR(err, next)) return;
