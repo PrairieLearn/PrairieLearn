@@ -24,7 +24,7 @@ SELECT
     COUNT(u.uid) AS size,
     array_agg(u.uid) AS uid_list
 FROM
-    groups AS gr
+    groups AS g
     LEFT JOIN group_users AS gu ON gu.group_id = g.id
     LEFT JOIN users AS u ON u.user_id = gu.user_id
 WHERE
@@ -39,7 +39,7 @@ ORDER BY
 SELECT
     u.uid
 FROM
-    groups AS gr
+    groups AS g
     JOIN group_users AS gu ON gu.group_id = g.id AND g.group_config_id = $group_config_id AND g.deleted_at IS NULL
     RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id
     JOIN users AS u ON u.user_id = e.user_id
