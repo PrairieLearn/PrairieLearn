@@ -239,7 +239,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 // path does not exist, start with 'git clone'
                 syncStage1A();
             } else {
-                // path exists, check that remote origin up to date, then 'git fetch' and reset to latest with 'git reset'
+                // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
                 syncStage1B();
             }
         });
