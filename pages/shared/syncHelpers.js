@@ -73,9 +73,9 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
                 type: 'fetch_from_git',
-                description: 'Fetch from remote git repository',
+                description: 'Removing remote origin address',
                 command: 'git',
-                arguments: ['fetch'],
+                arguments: ['remote', 'rm', 'origin'],
                 working_directory: locals.course.path,
                 env: gitEnv,
                 on_success: syncStage1B3,
@@ -89,10 +89,10 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
-                type: 'clean_git_repo',
-                description: 'Clean local files not in remote git repository',
+                type: 'fetch_from_git',
+                description: 'Setting latest remote origin address',
                 command: 'git',
-                arguments: ['clean', '-fdx'],
+                arguments: ['remote', 'add', 'origin', locals.course.repository],
                 working_directory: locals.course.path,
                 env: gitEnv,
                 on_success: syncStage1B4,
@@ -106,13 +106,47 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
+                type: 'fetch_from_git',
+                description: 'Fetch from remote git repository',
+                command: 'git',
+                arguments: ['fetch'],
+                working_directory: locals.course.path,
+                env: gitEnv,
+                on_success: syncStage1B5,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const syncStage1B5 = function() {
+            const jobOptions = {
+                course_id: locals.course.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
+                job_sequence_id: job_sequence_id,
+                type: 'clean_git_repo',
+                description: 'Clean local files not in remote git repository',
+                command: 'git',
+                arguments: ['clean', '-fdx'],
+                working_directory: locals.course.path,
+                env: gitEnv,
+                on_success: syncStage1B6,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        const syncStage1B6 = function() {
+            const jobOptions = {
+                course_id: locals.course.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
+                job_sequence_id: job_sequence_id,
                 type: 'reset_from_git',
                 description: 'Reset state to remote git repository',
                 command: 'git',
                 arguments: ['reset', '--hard', 'origin/master'],
                 working_directory: locals.course.path,
                 env: gitEnv,
-                on_success: syncStage2,
+                on_success: syncStage4,
             };
             serverJobs.spawnJob(jobOptions);
         };
@@ -205,7 +239,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 // path does not exist, start with 'git clone'
                 syncStage1A();
             } else {
-                // path exists, start with 'git fetch' and reset to latest with 'git reset'
+                // path exists, check that remote origin up to date, then 'git fetch' and reset to latest with 'git reset'
                 syncStage1B();
             }
         });
