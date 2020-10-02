@@ -32,11 +32,12 @@ BEGIN
         RAISE EXCEPTION 'Cannot find the group by provided join code: %', arg_join_code;
     END IF;
 
-    -- lock the group_users
-    PERFORM gu.group_id
-    FROM group_users AS gu
-    WHERE gu.group_id = arg_group_id
-    FOR UPDATE OF gu;
+    -- lock the group
+    -- to prevent many students join a group together breaking max size of the group
+    PERFORM g.id
+    FROM groups AS g
+    WHERE g.id = arg_group_id
+    FOR UPDATE OF g;
 
     -- count the group size and compare with the max size
     SELECT
