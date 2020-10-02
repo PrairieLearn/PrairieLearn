@@ -188,13 +188,13 @@ def prepare(element_html, data):
     for (i, (index, correct, html)) in enumerate(sampled_answers):
         if i >= 26:
             n = i
-            base_26_str = ""
+            base_26_str = ''
             while not n < 26:
-                base_26_str = "{:02d}".format(n % 26) + base_26_str
+                base_26_str = '{:02d}'.format(n % 26) + base_26_str
                 n = n // 26 - 1
-            base_26_str = "{:02d}".format(n) + base_26_str
-            base_26_int = [int(base_26_str[i : i + 2]) for i in range(0, len(base_26_str), 2)]
-            letter = "".join([chr(ord('a') + i) for i in base_26_int])
+            base_26_str = '{:02d}'.format(n) + base_26_str
+            base_26_int = [int(base_26_str[i:i + 2]) for i in range(0, len(base_26_str), 2)]
+            letter = ''.join([chr(ord('a') + i) for i in base_26_int])
         else:
             letter = chr(ord('a') + i)
 
