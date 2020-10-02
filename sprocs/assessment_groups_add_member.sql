@@ -11,6 +11,22 @@ DECLARE
     arg_user_id bigint;
 BEGIN
     -- ##################################################################
+    -- verify the updating group is belonged to the selected assessment
+    -- then lock the group row
+    PERFORM 1
+    FROM
+        group_configs AS gc
+        JOIN groups AS g ON gc.id = g.group_config_id
+    WHERE
+        gc.assessment_id = assessment_groups_add_member.assessment_id
+        AND g.id = arg_group_id
+        AND g.deleted_at IS NULL
+        FOR UPDATE of g;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'The user does not belong to the assessment';
+    END IF;
+
+    -- ##################################################################
     -- get user_id from uid and make sure the user is enrolled in this course instance
     SELECT u.user_id
     INTO arg_user_id
