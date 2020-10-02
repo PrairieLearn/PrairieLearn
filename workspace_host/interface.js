@@ -26,6 +26,8 @@ const unzipper = require('unzipper');
 const stream = require('stream');
 const LocalLock = require('../lib/local-lock');
 const asyncHandler = require('express-async-handler');
+const minimatch = require('minimatch');
+const glob = require('fast-glob');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -103,7 +105,7 @@ app.post('/', asyncHandler(async (req, res) => {
     } else if (action == 'reset') {
         resetSequence(workspace_id, res);
     } else if (action == 'getGradedFiles') {
-        gradeSequence(workspace_id, res);
+        getGradedFilesSequence(workspace_id, res);
     } else {
         res.status(500).send(`Action '${action}' undefined`);
     }
@@ -698,7 +700,7 @@ async function _autoUpdateJobManager() {
             // skip root localPath as it produces new S3 dir with empty name
             logger.info(`_autoUpdateJobManager: skip root`);
             continue;
-        } else if (sync_ignore.filter(ignored => local_path.startsWith(ignored)).length > 0) {
+        } else if (sync_ignore.filter(pattern => minimatch(local_path, pattern, { matchBase: true })).length > 0) {
             logger.info(`_autoUpdateJobManager: skip ignored`);
             continue;
         } else {
@@ -1119,7 +1121,7 @@ function resetSequence(workspace_id, res) {
     });
 }
 
-function gradeSequence(workspace_id, res) {
+function getGradedFilesSequence(workspace_id, res) {
     /* Define this outside so we can still use it in case of errors */
     let zipPath;
     async.waterfall([
@@ -1140,17 +1142,24 @@ function gradeSequence(workspace_id, res) {
         async (locals) => {
             const archive = archiver('zip');
             locals.archive = archive;
-            for (const file of locals.workspaceSettings.workspace_graded_files) {
+            const options = {
+                cwd: locals.workspaceDir,
+                baseNameMatch: true, // if glob has no slashes, match at every tree level
+            };
+            const required_file_names = await glob(locals.workspaceSettings.workspace_graded_files, options);
+            debug(`getGradedFiles(): workspace_graded_files=${JSON.stringify(locals.workspaceSettings.workspace_graded_files)}`);
+            await sqldb.queryAsync(sql.update_question_workspace_required_file_names, {workspace_id, required_file_names});
+            debug(`getGradedFiles(): workspace_required_file_names=${required_file_names}`);
+            await async.eachLimit(required_file_names, config.workspaceJobsParallelLimit, async (name) => {
                 try {
-                    const file_path = path.join(locals.workspaceDir, file);
-                    await fsPromises.lstat(file_path);
-                    archive.file(file_path, { name: file });
-                    debug(`Sending ${file}`);
+                    const file = path.join(locals.workspaceDir, name);
+                    await fsPromises.lstat(file);
+                    archive.file(file, { name });
+                    debug(`getGradedFiles(): zipping ${name}`);
                 } catch (err) {
-                    logger.warn(`Graded file ${file} does not exist.`);
-                    continue;
+                    logger.warn(`Graded file ${name} does not exist.`);
                 }
-            }
+            });
             return locals;
         },
         (locals, callback) => {
@@ -1171,7 +1180,7 @@ function gradeSequence(workspace_id, res) {
         },
     ], (err, locals) => {
         if (err) {
-            logger.error(`Error in gradeSequence: ${err}`);
+            logger.error(`Error in getGradedFilesSequence: ${err}`);
             res.status(500).send(err);
             try {
                 fsPromises.unlink(zipPath);
