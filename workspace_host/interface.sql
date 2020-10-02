@@ -37,9 +37,19 @@ SET hostname = EXCLUDED.hostname,
     state_changed_at = EXCLUDED.state_changed_at,
     ready_at = EXCLUDED.ready_at;
 
+-- BLOCK update_question_workspace_required_file_names
+UPDATE questions
+SET
+    workspace_required_file_names = $required_file_names
+FROM
+    questions AS q
+    JOIN variants AS v ON (v.question_id = q.id)
+WHERE
+    v.workspace_id = $workspace_id;
+
 
 -- BLOCK update_load_count
-UPDATE workspace_hosts as wh
+UPDATE workspace_hosts AS wh
 SET
     load_count = (
         SELECT count(*)
