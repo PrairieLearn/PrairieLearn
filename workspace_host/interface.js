@@ -1098,7 +1098,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
         try {
             await _startContainerAsync(workspace);
             await _checkServerAsync(workspace);
-            debug(`init: container initialized for workspace_id=${workspace_id}`);
+            debug(`init: container initialized for workspace-${workspace_id}-${workspace_version}`);
             workspaceHelper.updateState(workspace_id, 'running', null);
         } catch (err) {
             workspaceHelper.updateState(workspace_id, 'stopped', `Error starting container. Click "Reboot" to try again.`);
