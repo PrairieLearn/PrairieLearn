@@ -362,7 +362,7 @@ async.series([
  * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
  */
 async function pushContainerContentsToS3(workspace) {
-    logger.info(`Backing up workspace-${workspace.id}-${workspace.id} (launch_uuid=${workspace.launch_uuid})`);
+    logger.info(`Backing up workspace-${workspace.id}-${workspace.version} (launch_uuid=${workspace.launch_uuid})`);
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
     const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
     const settings = _getWorkspaceSettingsAsync(workspace.id);
