@@ -146,7 +146,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 arguments: ['reset', '--hard', 'origin/master'],
                 working_directory: locals.course.path,
                 env: gitEnv,
-                on_success: syncStage4,
+                on_success: syncStage2,
             };
             serverJobs.spawnJob(jobOptions);
         };
