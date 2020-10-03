@@ -92,12 +92,17 @@ class CGrader:
         if parent and not os.path.samefile(file, parent):
             self.change_mode(parent, '711')
     
-    def test_send_in_check_out(self, command, input=None, exp_output=None,
-                               must_match_all_outputs=False,
-                               reject_output=None, field=None,
-                               ignore_case=True, timeout=1,
-                               ignore_consec_spaces=True,
-                               args=None, name=None, msg=None, max_points=1):
+    def test_send_in_check_out(self, *args, **kwargs):
+        '''Old deprecated function name,
+        retained for compatibility reasons.'''
+        self.test_run(*args, **kwargs)
+        
+    def test_run(self, command, input=None, exp_output=None,
+                 must_match_all_outputs=False,
+                 reject_output=None, field=None,
+                 ignore_case=True, timeout=1,
+                 ignore_consec_spaces=True,
+                 args=None, name=None, msg=None, max_points=1):
         
         if args is not None and not isinstance(args, list): args = [args] 
         
