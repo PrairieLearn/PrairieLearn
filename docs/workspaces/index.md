@@ -1,6 +1,4 @@
-# Workspaces (Alpha release: NOT suitable for student use)
-
-**WARNING**: As of Aug 14, 2020, workspaces are available on the live PrairieLearn server at https://prairielearn.engr.illinois.edu/. However, workspaces are **NOT** yet suitable for student use due to limited backend capacity and unimplemented security checks. It is planned that workspaces will be ready for full student use by Aug 24, 2020 (the first day of classes in Fall semester).
+# Workspaces
 
 Workspaces allow students to work in persistent remote containers via in-browser frontends such as VS Code and JupyterLab. The remote containers are configured by instructors to provide custom, uniform environments per question. Workspace questions are integrated with the standard PrairieLearn autograding pipeline.
 
@@ -56,15 +54,15 @@ questions
 
 The question's `info.json` should set the `singleVariant` and `workspaceOptions` properties:
 
-* `"singleVariant": true` will prevent student workspaces from resetting due to new variants being generated
+* `"singleVariant": true` prevents student workspaces from resetting due to new variants being generated
     * Note that new variants will still be generated in `Instructor view`
 * `workspaceOptions` contains the following properties:
     * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
     * `port`: port number used by the workspace app inside the Docker image
     * `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
-    * `gradedFiles` (optional, default none): list of files or directories that will be copied out of the workspace container for grading
+    * `gradedFiles` (optional, default none): list of globs specifying files or directories that will be copied out of the workspace container for grading
     * `args` (optional, default none): command line arguments to pass to the Docker image
-    * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
+    * `syncIgnore` (optional, default none): list of globs specifying files or directories that will be excluded from sync
     * `urlRewrite` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
 #### `info.json` for ungraded workspace
@@ -109,8 +107,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
         "home": "/home/coder",
         "args": "--auth none",
         "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c"
+            "starter_code.*"
         ],
         "syncIgnore": [
             ".local/share/code-server/"
@@ -193,7 +190,7 @@ docker run -it --rm -p 3000:3000 \
   -v "$HOME/pl_ag_jobs:/jobs" \
   -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  --add-host=host.docker.internal:172.17.0.1 \ # this line is new vs MacOS
+  --add-host=host.docker.internal:172.17.0.1 \
   prairielearn/prairielearn
 ```
 
