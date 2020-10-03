@@ -6,6 +6,13 @@ CODEBASE = '/grade/student'
 DATAFILE = '/grade/data/data.json'
 SB_USER = 'sbuser'
 
+TIMEOUT_MESSAGE = \
+    '\n\nTIMEOUT! Typically this means the program took too long,' + \
+    '\nrequested more inputs than provided, or an infinite loop was found.' + \
+    '\nIf your program is reading data using scanf inside a loop, this ' + \
+    '\ncould also mean that scanf does not support the input provided ' + \
+    '\n(e.g., reading an int if the input is a double).\n'
+
 class CGrader:
 
     def __init__(self):
@@ -17,31 +24,33 @@ class CGrader:
             command = shlex.split(command)
         if sandboxed:
             command = ['su', SB_USER, '-s', '/bin/bash', '-c', shlex.join(['PATH=' + self.path] + command)]
+
         try:
             proc = subprocess.Popen(command,
                                     stdin=subprocess.PIPE,
                                     stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT,
-                                    encoding='utf-8')
+                                    stderr=subprocess.STDOUT)
         except:
             return ''
         out1 = out2 = None
         tostr = ''
+        if input is not None and not isinstance(input, (bytes, bytearray)):
+            input = str(input).encode('utf-8')
         try:
-            out1, err = proc.communicate(input=input, timeout=timeout)
+            out1 = proc.communicate(input=input, timeout=timeout)[0]
         finally:
             proc.kill()
             try:
-                out2, err = proc.communicate(timeout=timeout)
+                out2 = proc.communicate(timeout=timeout)
             except subprocess.TimeoutExpired:
-                tostr = '\n\nTIMEOUT! Typically this means the program took too long,' + \
-                        '\nrequested more inputs than provided, or an infinite loop was found.' + \
-                        '\nIf your program is reading data using scanf inside a loop, this ' + \
-                        '\ncould also mean that scanf does not support the input provided ' + \
-                        '\n(e.g., reading an int if the input is a double).\n'
+                tostr = TIMEOUT_MESSAGE
             finally:
-                out = (out1 if out1 else '') + (out2 if out2 else '') + tostr
-                return out
+                out = ''
+                if out1:
+                    out += out1.decode('utf-8', 'backslashreplace')
+                if out2:
+                    out += out2.decode('utf-8', 'backslashreplace')
+                return out + tostr
 
     def test_compile_file(self, c_file, exec_file, main_file=None, points=1, field=None, name='Compilation'):
         obj_file = re.sub('\.c$', '', c_file) + '.o'
