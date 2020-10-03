@@ -13,6 +13,10 @@ TIMEOUT_MESSAGE = \
     '\ncould also mean that scanf does not support the input provided ' + \
     '\n(e.g., reading an int if the input is a double).\n'
 
+class UngradableException(Exception):
+    def __init__(self):
+        pass
+
 class CGrader:
 
     def __init__(self):
@@ -52,7 +56,9 @@ class CGrader:
                     out += out2.decode('utf-8', 'backslashreplace')
                 return out + tostr
 
-    def test_compile_file(self, c_file, exec_file, main_file=None, points=1, field=None, name='Compilation'):
+    def test_compile_file(self, c_file, exec_file, main_file=None, points=1, field=None,
+                          name='Compilation',
+                          ungradable_if_failed=True):
         obj_file = re.sub('\.c$', '', c_file) + '.o'
         out = self.run_command(['gcc', '-c', c_file, '-o', obj_file])
         # TODO Separate main file
@@ -72,6 +78,9 @@ class CGrader:
                                          '-o', exec_file, '-lm'])
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, '755')
+        elif ungradable_if_failed:
+            self.result['message'] = 'Compilation errors, please fix and try again.\n\n' + out
+            raise UngradableException()
         self.add_test_result(name,
                              points=os.path.isfile(exec_file),
                              output=out, max_points=points, field=field)
@@ -82,7 +91,7 @@ class CGrader:
         parent = os.path.dirname(file)
         if parent and not os.path.samefile(file, parent):
             self.change_mode(parent, '711')
-
+    
     def test_send_in_check_out(self, command, input=None, exp_output=None,
                                must_match_all_outputs=False,
                                reject_output=None, field=None,
@@ -215,11 +224,14 @@ class CGrader:
         self.run_command(['ln', '-s', '/cgrader/PAUSE',
                           '/cgrader/Pause'])
 
-        self.tests()
-        
-        if self.result['gradable']:
-            self.result['message'] = 'Tests completed'
-        self.save_results()
+        try:
+            self.tests()
+        except UngradableException:
+            self.result['gradable'] = False
+        finally:
+            if self.result['gradable']:
+                self.result['message'] = 'Tests completed'
+            self.save_results()
 
     def tests(self):
         pass
