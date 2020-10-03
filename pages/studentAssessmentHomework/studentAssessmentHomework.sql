@@ -19,37 +19,34 @@ WHERE
     gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL;
 
 -- BLOCK create_group
-WITH log AS (
+WITH
+create_group AS (
     INSERT INTO groups
         (name, group_config_id, course_instance_id)
-    VALUES
-        (
-            $group_name,
-            (SELECT id FROM group_configs WHERE assessment_id = $assessment_id AND deleted_at IS NULL),
-            (SELECT course_instance_id FROM group_configs WHERE assessment_id = $assessment_id AND deleted_at IS NULL)
-        )
+    (
+        SELECT 
+            $group_name, gc.id, gc.course_instance_id
+        FROM 
+            group_configs AS gc
+        WHERE
+            gc.assessment_id = $assessment_id
+            AND gc.deleted_at IS NULL
+    )
     RETURNING id
-)
-INSERT INTO group_logs
-    (authn_user_id, user_id, group_id, action)
-SELECT $authn_user_id, $user_id, id, 'create'
-FROM log;
-
--- BLOCK join_just_created_group
-WITH log AS (
+),
+create_log AS (
+    INSERT INTO group_logs
+        (authn_user_id, user_id, group_id, action)
+    SELECT $authn_user_id, $user_id, cg.id, 'create' FROM create_group AS cg
+),
+join_group AS (
     INSERT INTO group_users
-        (group_id, user_id)
-    VALUES
-        (
-            (SELECT id FROM groups WHERE name = $group_name AND deleted_at IS NULL),
-            $user_id
-        )
-    RETURNING group_id
+        (user_id, group_id)
+    SELECT $user_id, cg.id FROM create_group AS cg
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $authn_user_id, $user_id, group_id, 'join'
-FROM log;
+SELECT $authn_user_id, $user_id, cg.id, 'join' FROM create_group AS cg;
 
 -- BLOCK get_group_info
 SELECT

@@ -189,7 +189,10 @@ module.exports.initExpress = function() {
     app.use(bodyParser.urlencoded({extended: false, limit: 5 * 1536 * 1024}));
     app.use(cookieParser());
     app.use(passport.initialize());
-    app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+    if (config.devMode)
+        app.use(favicon(path.join(__dirname, 'public', 'favicon-dev.ico')));
+    else
+        app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
     if ('localRootFilesDir' in config) {
         logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);

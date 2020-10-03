@@ -149,10 +149,7 @@ router.post('/', function(req, res, next) {
             //try to create a group
             sqldb.query(sql.create_group, params, function(err, _result) {
                 if (!err) {
-                    sqldb.query(sql.join_just_created_group, params, function(err, _result) {
-                        if (ERR(err, next)) return;
-                        res.redirect(req.originalUrl);
-                    });
+                    res.redirect(req.originalUrl);
                 } else {
                     sqldb.query(sql.get_config_info, params, function(err, result) {
                         if (ERR(err, next)) return;
