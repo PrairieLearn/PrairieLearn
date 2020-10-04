@@ -10,7 +10,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
 
-describe('Exam assessment with showClosedAssessment AND showClosedAssessmentGrade access rules', function() {
+describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScore access rules', function() {
     this.timeout(60000);
 
     const context = {};
@@ -109,7 +109,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentGrad
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.equal(response.status, 200);
 
-        assert.lengthOf(response.$('td:contains("Score withheld.")'), 1); // score withheld message should show
+        assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
         assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
     });
 
@@ -117,7 +117,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentGrad
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.equal(response.status, 200);
 
-        assert.lengthOf(response.$('td:contains("Score withheld.")'), 1); // score withheld message should show
+        assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
         assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
     });
 

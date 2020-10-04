@@ -11,7 +11,7 @@
             "credit": 100,
             "timeLimitMin": 50,
             "showClosedAssessment": false,
-            "showClosedAssessmentGrade": false
+            "showClosedAssessmentScore": false
         }
     ],
     "zones": [

@@ -22,7 +22,7 @@ SELECT
     ai.number AS assessment_instance_number,
     ai.score_perc AS assessment_instance_score_perc,
     ai.open AS assessment_instance_open,
-    aa.show_closed_assessment_grade,
+    aa.show_closed_assessment_score,
     (lag(assessment_set_id) OVER (PARTITION BY aset.id ORDER BY a.order_by, a.id, ai.number) IS NULL) AS start_new_set
 FROM
     assessment_instances AS ai

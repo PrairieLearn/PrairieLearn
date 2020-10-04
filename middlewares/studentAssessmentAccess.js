@@ -61,7 +61,7 @@ router.all('/', function(req, res, next) {
         !_.get(res.locals, 'assessment_instance.open', true)
     ) {
         // This assessment instance is closed and can no longer be viewed
-        if (!_.get(res.locals, 'authz_result.show_closed_assessment_grade', true)){
+        if (!_.get(res.locals, 'authz_result.show_closed_assessment_score', true)){
             closedAssessmentNotViewableHiddenGrade(res);
         } else {
             closedAssessmentNotViewable(res);
