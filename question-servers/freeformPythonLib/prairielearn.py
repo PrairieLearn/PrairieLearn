@@ -1085,6 +1085,7 @@ def escape_invalid_string(string):
     """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
 
+
 def index2key(i):
     """
     index2key(i)
@@ -1104,5 +1105,5 @@ def index2key(i):
         key = ''.join([chr(ord('a') + i) for i in base_26_int])
     else:
         key = chr(ord('a') + i)
-    
+
     return key
