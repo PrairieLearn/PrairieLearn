@@ -4,6 +4,14 @@ Have a question or issue that wasn't listed here but you think it should be?
 
 Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/docs/faq.md)** to the FAQ.
 
+## How can I view student answers to all variants of a Homework question?
+
+The PrairieLearn interface only shows the most recent `variant` (a particular randomized instance) of a question to students, along with any submissions to that specific variant.
+
+Instructors can see all past variants for students by going to the "Log" table on the view of a student's assessment instance (go to an assessment, then "Students" tab, then "Details" for a student, the scroll down to "Log"). In the Log table there is a column called "Student question" that shows a numbered list of the student views of the question, like `S-1#1`, `S-1#2`, `S-1#3`, etc. These are the first, second, third variants of that question that the student was given. Clicking those numbered links will show the specific variants, along with student answers to them.
+
+The raw history of student answers can also be accessed in the "Data" column of the Log table, from the "XXX_all_submissions.csv" file on the "Downloads" tab, and via the [PrairieLearn API](api).
+
 ## How do I give a student access to homeworks or an exam after the semester is over?
 
 You need to give the student access to both the course instance itself for the completed semester as well as the specific assessments within that course instance.
