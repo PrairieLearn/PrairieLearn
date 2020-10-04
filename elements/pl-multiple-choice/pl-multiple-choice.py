@@ -186,19 +186,7 @@ def prepare(element_html, data):
     display_answers = []
     correct_answer = None
     for (i, (index, correct, html)) in enumerate(sampled_answers):
-        if i >= 26:
-            n = i
-            base_26_str = ''
-            while not n < 26:
-                base_26_str = '{:02d}'.format(n % 26) + base_26_str
-                n = n // 26 - 1
-            base_26_str = '{:02d}'.format(n) + base_26_str
-            base_26_int = [int(base_26_str[i:i + 2]) for i in range(0, len(base_26_str), 2)]
-            letter = ''.join([chr(ord('a') + i) for i in base_26_int])
-        else:
-            letter = chr(ord('a') + i)
-
-        keyed_answer = {'key': letter, 'html': html}
+        keyed_answer = {'key': pl.index2key(i), 'html': html}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer = keyed_answer
@@ -359,7 +347,7 @@ def test(element_html, data):
     if correct_key is None:
         raise Exception('could not determine correct_key')
     number_answers = len(data['params'][name])
-    all_keys = [chr(ord('a') + i) for i in range(number_answers)]
+    all_keys = [pl.index2key(i) for i in range(number_answers)]
     incorrect_keys = list(set(all_keys) - set([correct_key]))
 
     result = data['test_type']
