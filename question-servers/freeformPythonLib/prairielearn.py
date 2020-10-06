@@ -1090,7 +1090,7 @@ def index2key(i):
     """
     index2key(i)
 
-    Used when generating alphabet ordered lists.
+    Used when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
 
     Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
     """
