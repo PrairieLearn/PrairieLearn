@@ -10,7 +10,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 
 <img src="pl-origin-canvas.png" width=70%>
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing answers-name="fbd">
@@ -76,7 +76,7 @@ The child element `pl-drawing-answer` is explained below in the [Grading](#eleme
 
 A `pl-coordinates` element adds a 2D system of coordinates.
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -109,7 +109,7 @@ Attribute | Type | Default | Description
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/inclinedPlan]: Example that uses a system of coordinates
 
@@ -118,7 +118,7 @@ Attribute | Type | Default | Description
 
 ## `pl-line` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -143,7 +143,7 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 2 | Set the width of the stroke.
 `dashed-size` | float | _ | Creates a dashed line with equally spaced `dashed-size`px fills.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that uses lines
 
@@ -151,7 +151,7 @@ Attribute | Type | Default | Description
 
 ## `pl-arc` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -177,14 +177,14 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 2 | Set the width of the stroke.
 `dashed-size` | float | _ | Creates a dashed line with equally spaced `dashed-size`px fills.
 
-#### Example Implementations
+#### Example implementations
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
 ## `pl-point` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -208,7 +208,7 @@ Attribute | Type | Default | Description
 `offsety` | float | 5 | Vertical distance of `label` from the point.
 `color` | string | black | Set the fill color of the point ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/pulley]: Example that includes a point in the canvas
 
@@ -217,7 +217,7 @@ Attribute | Type | Default | Description
 
 ## `pl-triangle` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -242,7 +242,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the triangle.
 `stroke-width` | float | 1 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/pulley]: Example that includes a triangle
 
@@ -250,7 +250,7 @@ Attribute | Type | Default | Description
 
 ## `pl-rectangle` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -275,7 +275,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rectangle.
 `stroke-width` | float | 1 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/pulley]: Example that includes a rectangle
 
@@ -283,7 +283,7 @@ Attribute | Type | Default | Description
 
 ## `pl-circle` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -310,7 +310,7 @@ Attribute | Type | Default | Description
 `offsetx` | float | 5 | Horizontal distance of `label` from the center of the circle.
 `offsety` | float | 5 | Vertical distance of `label1` from the center of the circle
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that uses circles
 
@@ -318,7 +318,7 @@ Attribute | Type | Default | Description
 
 ## `pl-polygon` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -345,13 +345,13 @@ To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the st
 
  For an example that uses `server.py` to generate `plist` refer to QID: `Example-pl-drawing-beam-cross-section`
 
-#### Example Implementations
+#### Example implementations
 
  - [element/drawingGallery]: Image gallery with drawing objects
 
 ## `pl-rod` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -382,7 +382,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/vMDiagrams]: Example that includes a rod
 
@@ -390,7 +390,7 @@ Attribute | Type | Default | Description
 
 ## `pl-3pointrod` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -426,7 +426,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/inclinedPlane]: Example that includes a 3-point rod
 
@@ -434,7 +434,7 @@ Attribute | Type | Default | Description
 
 ## `pl-4pointrod` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -475,7 +475,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that uses 4-point rods
 
@@ -484,7 +484,7 @@ Attribute | Type | Default | Description
 
 ## `pl-collar-rod` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -521,7 +521,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/collarRod]: Example that uses a collar rod
 
@@ -530,7 +530,7 @@ Attribute | Type | Default | Description
 
 ## `pl-fixed-pin` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -559,7 +559,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the pin support.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/vMDiagrams]: Example that uses a fixed pin as boundary condition
 
@@ -568,7 +568,7 @@ Attribute | Type | Default | Description
 
 ## `pl-roller` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -598,7 +598,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the roller.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/vMDiagrams]: Example that uses a roller as boundary condition
 
@@ -606,7 +606,7 @@ Attribute | Type | Default | Description
 
 ## `pl-clamped` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -634,7 +634,7 @@ Attribute | Type | Default | Description
 `color` | string | black | Fill color for the clamped support using a gradient from white to `color` ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/collarRod]: Example that uses a clamped end as boundary condition
 
@@ -642,7 +642,7 @@ Attribute | Type | Default | Description
 
 ## `pl-spring` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200" grid-size="20">
@@ -671,13 +671,13 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 2 | Set the width of the stroke.
 `draw-pin` | boolean | false | Draw points at the spring ends.
 
-#### Example Implementations
+#### Example implementations
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 ## `pl-pulley` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -708,7 +708,7 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the pulley.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/pulley]: Example that includes a pulley system
 
@@ -717,7 +717,7 @@ Attribute | Type | Default | Description
 
 ## `pl-dimensions` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -757,7 +757,7 @@ Attribute | Type | Default | Description
 `arrow-head-width` | float | 1.5 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1.5 | Scale factor for the length of the arrow head.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that includes dimensions
 
@@ -799,7 +799,7 @@ Attribute | Type | Default | Description
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that includes arc dimensions
 
@@ -810,7 +810,7 @@ Attribute | Type | Default | Description
 
 ## `pl-vector` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -848,7 +848,7 @@ Attribute | Type | Default | Description
 
 More information about the grading attributes in the Grading section below.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Tutorial example that includes arrows (vectors)
 
@@ -861,7 +861,7 @@ More information about the grading attributes in the Grading section below.
 
 ## `pl-double-headed-vector` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -894,7 +894,7 @@ Attribute | Type | Default | Description
 `offset-backward` | float | width | Length of the bounding box measured from the anchor point in the opposite orientation of the vector.
 `optional-grading` | boolean | false | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Tutorial example that includes double arrows (vectors)
 
@@ -908,7 +908,7 @@ Attribute | Type | Default | Description
 
 ## `pl-arc-vector` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -940,7 +940,7 @@ Attribute | Type | Default | Description
 `disregard-sense` | boolean| false | When `disregard-sense=true`, the correctness of the arc vector only considers the position of the anchor point.
 `draw-error-box` | boolean | - | Draw the error bounding box, where the location of the anchor point is accepted as correct.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Tutorial example that includes arc vectors 
 
@@ -951,7 +951,7 @@ Attribute | Type | Default | Description
 
 ## `pl-distributed-load` element
 
-#### Sample Element
+#### Sample element
 
 ```html
   <pl-drawing  width="200" height="200">
@@ -991,7 +991,7 @@ Attribute | Type | Default | Description
 `offset-forward` | float | 0 | Length of the bounding box measured from the anchor point in the same orientation of the distributed load.
 `offset-backward` | float | max(w1,w2) | Length of the bounding box measured from the anchor point in the opposite orientation of the distributed load.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Tutorial example that includes distributed loads 
 
@@ -1000,7 +1000,7 @@ Attribute | Type | Default | Description
 
 ## `pl-controlled-line` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing  width="200" height="200">
@@ -1027,7 +1027,7 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 4 | Set the width of the stroke.
 `handle-radius` | float | 6 | Set the radius of the circle handles that define the end and control points.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/graphs]: Example that includes controlled lines for graph sketching 
 
@@ -1037,7 +1037,7 @@ Attribute | Type | Default | Description
 
 ## `pl-controlled-curved-line` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing  width="200" height="200">
@@ -1067,7 +1067,7 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 4 | Set the width of the stroke.
 `handle-radius` | float | 6 | Set the radius of the circle handles that define the end and control points.
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/graphs]: Example that includes controlled curved lines for graph sketching 
 
@@ -1077,7 +1077,7 @@ Attribute | Type | Default | Description
 
 ## `pl-text` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing  width="200" height="200" grid-size="0">
@@ -1101,7 +1101,7 @@ Attribute | Type | Default | Description
 `offsetx` | float | 0 | Offset in x direction from `x1`
 `offsety` | float | 0 | Offset in y direction from `y1`
 
-#### Example Implementations
+#### Example implementations
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1124,7 +1124,7 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 </pl-drawing>
 ```
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Example where the attribute `visible` is set in server.py
 
@@ -1133,7 +1133,7 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 
 The element `pl-drawing-answer` is required when setting a drawing canvas for grading, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing grid-size="20" gradable="true" answers-name="box" width="320">
@@ -1202,7 +1202,7 @@ The element `pl-controls` will add the buttons that allows students to place obj
 </pl-controls>
 ```
 
-#### Example Implementations
+#### Example implementations
 
 The example [demo/drawing/gradeVector] illustrates all the `pl-drawing-button`
 that are currently implemented.
@@ -1313,7 +1313,7 @@ This button deletes objects that were previously placed on the canvas.
 </pl-drawing-initial>
 ```
 
-#### Example Implementations
+#### Example implementations
 
 - [demo/drawing/graphs]: Example that highlights graph sketching 
 
