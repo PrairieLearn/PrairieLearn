@@ -4,6 +4,36 @@ Have a question or issue that wasn't listed here but you think it should be?
 
 Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/docs/faq.md)** to the FAQ.
 
+## How can question pool development be managed over semesters?
+
+Writing and maintaining a large pool of questions is a lot of work. There are many strategies for managing this process. The approach taken by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois is:
+
+1. Homework questions are always re-used semester-to-semester. It is assumed that solutions to these will be posted by students on the internet, so they are strictly for practice. Students do get credit for homeworks, but it assumed that any student who puts in the effort will get 100%.
+2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#question-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in the [Computer-Based Testing Facility (CBTF)](https://cbtf.engr.illinois.edu).
+3. Every semester a small number of secret questions are written and some of the older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
+4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
+5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
+
+As an exception to the above strategy, during the COVID-19 semesters all exams were given remotely under conditions that were not as secure as the in-person CBTF. For this reason, all secret questions used on these exams are considered to be immediately "burned" and and moved to the homework pool.
+
+## Should students be able to review their exams after they are over?
+
+Different instructors have different opinions regarding post-exam access to questions by students. Anecdotally, it is clear that students generally want access to questions after exams. However, there are also significant downsides ([Royal et al., 2015](https://doi.org/10.1007/s40670-015-0140-8)), including the effort to write and test new exam questions every semester, and it seems that there may be limited post-exam learning without structured reflection activities ([Henderson and Harper, 2009](https://doi.org/10.1119/1.3264589)).
+
+Three strategies that courses adopt are:
+
+1. No access post-exam. This allows exam questions to be re-used semester-to-semester, but is unpopular with some students. This is the approach that was used by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois for many years.
+2. Complete open access post-exam. This is popular with students and easy to implement, but requires a large effort by instructors to write new exam questions every semester.
+3. Limited access post-exam under controlled conditions. The TAM 2XX courses at Illinois allow students to review their exams inside the secure [Computer-Based Testing Facility (CBTF)](https://cbtf.engr.illinois.edu) during special review sessions with TAs. This is popular with students ([Chang et al., 2020](https://doi.org/10.18260/1-2--34321)) and still allows exam questions to be reused. A modified form of this method is to have TAs review exams with students during office hours, on the TAs' computers. Unfortunately this strategy was not possible during the COVID-19 semesters.
+
+## How can I view student answers to all variants of a Homework question?
+
+The PrairieLearn interface only shows the most recent `variant` (a particular randomized instance) of a question to students, along with any submissions to that specific variant.
+
+Instructors can see all past variants for students by going to the "Log" table on the view of a student's assessment instance (go to an assessment, then "Students" tab, then "Details" for a student, the scroll down to "Log"). In the Log table there is a column called "Student question" that shows a numbered list of the student views of the question, like `S-1#1`, `S-1#2`, `S-1#3`, etc. These are the first, second, third variants of that question that the student was given. Clicking those numbered links will show the specific variants, along with student answers to them.
+
+The raw history of student answers can also be accessed in the "Data" column of the Log table, from the "XXX_all_submissions.csv" file on the "Downloads" tab, and via the [PrairieLearn API](api).
+
 ## How do I give a student access to homeworks or an exam after the semester is over?
 
 You need to give the student access to both the course instance itself for the completed semester as well as the specific assessments within that course instance.

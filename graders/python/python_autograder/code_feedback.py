@@ -101,14 +101,14 @@ class Feedback:
         raise GradingComplete()
 
     @staticmethod
-    def not_allowed():
+    def not_allowed(*args, **kwargs):
         """
         library_function = Feedback.not_allowed
 
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
         """
-        raise RuntimeError("Calling this function is not allowed")
+        raise RuntimeError(f'The use of this function is not allowed.')
 
     @classmethod
     def check_numpy_array_sanity(cls, name, num_axes, data):
@@ -283,7 +283,7 @@ class Feedback:
         """
         Feedback.check_tuple(name, ref, data)
 
-        Check that a student tuple has correct length with respect to a reference tuple, and same values. 
+        Check that a student tuple has correct length with respect to a reference tuple, and same values.
 
         - ``name``: Name of the tuple that is being checked.  This will be used to give feedback.
         - ``ref``: Reference tuple.
@@ -342,7 +342,7 @@ class Feedback:
         - ``abs(ref - data) < ref(ref) * rtol``
         - ``abs(ref - data) < atol``
 
-        One of rtol or atol can be omitted (set to None) if that check is unwanted. 
+        One of rtol or atol can be omitted (set to None) if that check is unwanted.
         Or both, but then nothing would be graded :)
 
         - ``name``: Name of the scalar that is being checked.  This will be used to give feedback.
@@ -401,7 +401,7 @@ class Feedback:
 
         Attempts to call a student defined function, with any arbitrary arguments specified in ``*args`` and ``**kwargs``.  If the student code raises an exception, this will be caught and user feedback will be given.
 
-        If the function call succeeds, the user return value will be returned from this function. 
+        If the function call succeeds, the user return value will be returned from this function.
         """
 
         try:

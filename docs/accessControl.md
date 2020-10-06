@@ -1,7 +1,7 @@
 
 # Access control to course instances and assessments
 
-By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file.
+By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file. The differences between Instructor, TA, and Student roles are further explained in the documentation about [course instance configuration](courseInstance.md#user-roles).
 
 The `allowAccess` rules in course instances and assessments do not grant authorization to sync course content from GitHub. This is controlled by [course admin permissions](sync.md#course-admin-permissions) on the server, not in the
 course JSON files.
@@ -59,6 +59,8 @@ If multiple access rules are satisfied then the highest `credit` value is taken 
 
 Restricting access to `"role": "Student"` is equivalent to not including a role restriction at all, because every user is equal to or higher than `Student` role.
 
+For more information about the differences between Instructor, TA, and Student roles, refer to the documentation about [course instance configuration](courseInstance.md#user-roles).
+
 ## Dates
 
 All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in the [timezone of the course instance](courseInstance.md#timezone).
@@ -103,7 +105,7 @@ The above example will give students 90 minutes for this exam, and they must sta
 
 ![Time limit illustrations](exam_timer.svg)
 
-**Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"` and the time limits will be enforced by the CBTF scheduling software.**
+**Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"`, in which case `timeLimitMin` will have no effect and the time limits will be enforced by the CBTF scheduling software.**
 
 ## Passwords
 
