@@ -18,13 +18,15 @@ As an exception to the above strategy, during the COVID-19 semesters all exams w
 
 ## Should students be able to review their exams after they are over?
 
-Different instructors have different opinions regarding post-exam access to questions by students. Anecdotally, it is clear that students generally want access to questions after exams. However, there are also significant downsides ([Royal et al., 2015](https://doi.org/10.1007/s40670-015-0140-8)), including the effort to write and test new exam questions every semester, and it seems that there may be limited post-exam learning without structured reflection activities ([Henderson and Harper, 2009](https://doi.org/10.1119/1.3264589)).
+Different instructors have different opinions regarding post-exam student access to questions because of the tradeoffs involved. For example, post-exam review allows students to ensure their work is graded correctly and learn from their specific mistakes. On the other hand, releasing questions publicly generally means that new exams need to be written and validated every semester, which takes resources away from other course activities and can lead instructors to use fewer, higher-stakes exams and to avoid the use of strategies such as second-chance exams.
 
-Three strategies that courses adopt are:
+Three strategies that courses adopt in practice are:
 
-1. No access post-exam. This allows exam questions to be re-used semester-to-semester, but is unpopular with some students. This is the approach that was used by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois for many years.
-2. Complete open access post-exam. This is popular with students and easy to implement, but requires a large effort by instructors to write new exam questions every semester.
-3. Limited access post-exam under controlled conditions. The TAM 2XX courses at Illinois allow students to review their exams inside the secure [Computer-Based Testing Facility (CBTF)](https://cbtf.engr.illinois.edu) during special review sessions with TAs. This is popular with students ([Chang et al., 2020](https://doi.org/10.18260/1-2--34321)) and still allows exam questions to be reused. A modified form of this method is to have TAs review exams with students during office hours, on the TAs' computers. Unfortunately this strategy was not possible during the COVID-19 semesters.
+1. No access post-exam. This allows exam questions to be re-used semester-to-semester, but is unpopular with students and hinders them from conducting a detailed post-exam analysis of the questions and their performance.
+2. Complete open access post-exam. This is popular with students and easy to implement, but requires a large effort by instructors to write and test new exam questions every semester.
+3. Limited access post-exam under controlled conditions. For example, the TAM 2XX courses (Introductory Mechanics sequence) at Illinois allow students to review their exams inside the secure [Computer-Based Testing Facility (CBTF)](https://cbtf.engr.illinois.edu) during exam review sessions with TAs. This is moderately popular with students ([Chang et al., 2020](https://doi.org/10.18260/1-2--34321)) and still allows exam questions to be reused. A modified form of this method is to have TAs review exams with students during office hours, on the TAs' computers. This is the approach that was used by the TAM 2XX courses prior to the CBTF-based review system.
+
+Note that if exams are taken online, such as during the COVID-19 semesters, then we should assume that the questions are publicly available and so there is little reason not to have open access post-exam.
 
 ## How can I view student answers to all variants of a Homework question?
 
