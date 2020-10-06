@@ -42,10 +42,12 @@ class CGrader:
             input = str(input).encode('utf-8')
         try:
             out1 = proc.communicate(input=input, timeout=timeout)[0]
+        except subprocess.TimeoutExpired:
+            tostr = TIMEOUT_MESSAGE
         finally:
             proc.kill()
             try:
-                out2 = proc.communicate(timeout=timeout)
+                out2 = proc.communicate(timeout=timeout)[0]
             except subprocess.TimeoutExpired:
                 tostr = TIMEOUT_MESSAGE
             finally:
