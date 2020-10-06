@@ -1,8 +1,10 @@
 
 
-# Element for drawing
+# Elements for drawing
 
-## `pl-drawing` element
+## Elements to create drawing canvas
+
+### `pl-drawing` element
 
 A `pl-drawing` element displays a canvas, which can be used to display initial drawing objects or expect drawing objects for grading.
 
@@ -37,7 +39,7 @@ Attribute | Type | Default | Description
 `hide-answer-panel` | boolean | true | If true, the correct answer is not displayed in the answer panel. 
 
 
-## `pl-drawing-initial` element
+### `pl-drawing-initial` element
 
 A `pl-drawing-initial` will group objects that will be displayed in the canvas defined by `pl-drawing`.
 
@@ -72,7 +74,7 @@ The child element `pl-drawing-answer` is explained below in the [Grading](#eleme
 
 ## Elements to create drawing objects
 
-## `pl-coordinates` element
+### `pl-coordinates` element
 
 A `pl-coordinates` element adds a 2D system of coordinates.
 
@@ -116,7 +118,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-line` element
+### `pl-line` element
 
 #### Sample element
 
@@ -149,7 +151,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-arc` element
+### `pl-arc` element
 
 #### Sample element
 
@@ -182,7 +184,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-point` element
+### `pl-point` element
 
 #### Sample element
 
@@ -215,7 +217,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-triangle` element
+### `pl-triangle` element
 
 #### Sample element
 
@@ -248,7 +250,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-rectangle` element
+### `pl-rectangle` element
 
 #### Sample element
 
@@ -281,7 +283,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-circle` element
+### `pl-circle` element
 
 #### Sample element
 
@@ -316,7 +318,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-polygon` element
+### `pl-polygon` element
 
 #### Sample element
 
@@ -349,7 +351,7 @@ To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the st
 
  - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-rod` element
+### `pl-rod` element
 
 #### Sample element
 
@@ -388,7 +390,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-3pointrod` element
+### `pl-3pointrod` element
 
 #### Sample element
 
@@ -432,7 +434,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-4pointrod` element
+### `pl-4pointrod` element
 
 #### Sample element
 
@@ -482,7 +484,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-collar-rod` element
+### `pl-collar-rod` element
 
 #### Sample element
 
@@ -528,7 +530,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-fixed-pin` element
+### `pl-fixed-pin` element
 
 #### Sample element
 
@@ -566,7 +568,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-roller` element
+### `pl-roller` element
 
 #### Sample element
 
@@ -604,7 +606,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-clamped` element
+### `pl-clamped` element
 
 #### Sample element
 
@@ -640,7 +642,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-spring` element
+### `pl-spring` element
 
 #### Sample element
 
@@ -675,7 +677,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-pulley` element
+### `pl-pulley` element
 
 #### Sample element
 
@@ -715,7 +717,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-dimensions` element
+### `pl-dimensions` element
 
 #### Sample element
 
@@ -764,7 +766,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-arc-dimensions` element
+### `pl-arc-dimensions` element
 ```html
 <pl-drawing width="200" height="200">
     <pl-drawing-initial>
@@ -808,7 +810,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-vector` element
+### `pl-vector` element
 
 #### Sample element
 
@@ -859,7 +861,7 @@ More information about the grading attributes in the Grading section below.
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-double-headed-vector` element
+### `pl-double-headed-vector` element
 
 #### Sample element
 
@@ -906,7 +908,7 @@ Attribute | Type | Default | Description
 
 
 
-## `pl-arc-vector` element
+### `pl-arc-vector` element
 
 #### Sample element
 
@@ -949,7 +951,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-distributed-load` element
+### `pl-distributed-load` element
 
 #### Sample element
 
@@ -998,7 +1000,7 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-controlled-line` element
+### `pl-controlled-line` element
 
 #### Sample element
 
@@ -1035,7 +1037,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-controlled-curved-line` element
+### `pl-controlled-curved-line` element
 
 #### Sample element
 
@@ -1075,7 +1077,7 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-text` element
+### `pl-text` element
 
 #### Sample element
 
@@ -1108,6 +1110,8 @@ Attribute | Type | Default | Description
 
 ## Creating group of elements
 
+### `pl-drawing-group` element
+
 The element `pl-drawing-group` combines several elements as a group, to allow groups of elements to be turned visible or not.
 
 ```html
@@ -1130,6 +1134,8 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 
 
 ## Elements to set up a grading canvas
+
+### `pl-drawing-group` element
 
 The element `pl-drawing-answer` is required when setting a drawing canvas for grading, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
 
@@ -1160,7 +1166,7 @@ The element `pl-drawing-answer` is required when setting a drawing canvas for gr
 <img src="pl-vector-grading-canvas-example.png" width=70%>
 
 
-## `pl-drawing-answer` element
+### `pl-drawing-answer` element
 
 This element will wrap all the elements that will be graded (checked for correctness).
 
@@ -1174,7 +1180,7 @@ In the example above, `pl-vector` is the only object that is graded. The corresp
 
 <img src="pl-vector-correct-answer.png" width=50%>
 
-## `pl-drawing-initial` element
+### `pl-drawing-initial` element
 
 This element will wrap all the elements included in the grading canvas that will not be graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
 
@@ -1187,7 +1193,7 @@ Attribute | Type | Default | Description
 The final version of a question should not have the attribute `draw-error-box`. However this attribute can be helpful during the process of creating a question. Authors have the option of starting the grading canvas including all the objects in `pl-drawing-initial` with
 `draw-error-box=true`, to see how the graded objects are placed in the canvas, and if the default tolerances are reasonable for the specific question, or if adjustments are needed. Once the question is completed, the objects that are expected to be graded can be removed from `pl-drawing-initial` and added to `pl-drawing-answer`. The author can decide if the students should see the error box when the correct answer is displayed. By default, `draw-error-box="false"`.
 
-## `pl-controls` element
+### `pl-controls` element
 
 The element `pl-controls` will add the buttons that allows students to place objects in the canvas. The element `pl-controls-group` can be used to group buttons that have similar properties, for example, graded and non-graded objects.
 
@@ -1209,7 +1215,7 @@ that are currently implemented.
 
 <img src="pl-all-buttons.png" width=70%>
 
-## `pl-drawing-buttons` element
+### `pl-drawing-buttons` element
 
 #### To insert a point:
 
@@ -1268,7 +1274,7 @@ The error box for `pl-distributed-load` is  defined in the same way as `pl-vecto
 ```
 This button will add a line to the canvas that is not graded, but can be used by students to facilitate the placement of other objects.
 
-#### To delete any object previously placed in the canvas
+#### To delete any object previously placed in the canvas:
 
 ```html
 <pl-drawing-button type="delete"></pl-drawing-button>
@@ -1317,7 +1323,7 @@ This button deletes objects that were previously placed on the canvas.
 
 - [demo/drawing/graphs]: Example that highlights graph sketching 
 
-## `pl-axes` element
+### `pl-axes` element
 
 A `pl-axes` element adds two axes to define the coordinate plane for sketching plots.
 
@@ -1341,7 +1347,7 @@ Attribute | Type | Default | Description
 `color` | string | black | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-## `pl-graph-line` element
+### `pl-graph-line` element
 
 A `pl-graph-line` element adds straight or quadratic lines to plots. It wraps the elements `pl-controlled-line` and `pl-controlled-curved-line` so that the end and control points can be defined with respect to the origin of the plot, instead of the origin of the canvas. When only two points are given, it draws straight lines. If three points are given, it draws a quadratic curve. It also provides an option to create quadratic curves using the gradient information of the end points, instead of giving the position of the control point.
 

@@ -87,7 +87,7 @@ compatibility, but they should not be used in new questions.
 
 -----
 
-## `pl-multiple-choice` element
+### `pl-multiple-choice` element
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
@@ -136,7 +136,7 @@ Attribute | Type | Default | Description
 
 - [`pl-checkbox` for allowing **one or more** choices](#pl-checkbox-element)
 
-## `pl-checkbox` element
+### `pl-checkbox` element
 
 A `pl-checkbox` element displays a subset of the answers in a random order
 as checkboxes.
@@ -202,7 +202,7 @@ Two grading methods are available when using `partial-credit="true"`:
 -----
 
 
-## `pl-number-input` element
+### `pl-number-input` element
 
 Fill in the blank field that allows for **numeric** value input within specific
 tolerances.
@@ -287,7 +287,7 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-dropdown` element
+### `pl-dropdown` element
 
 Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
 
@@ -347,7 +347,7 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-integer-input` element
+### `pl-integer-input` element
 
 Fill in the blank field that requires an **integer** input.
 
@@ -398,7 +398,7 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-symbolic-input` element
+### `pl-symbolic-input` element
 
 Fill in the blank field that allows for mathematical symbol input.
 
@@ -463,7 +463,7 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 -----
 
-## `pl-string-input` element
+### `pl-string-input` element
 
 Fill in the blank field that allows for **string** value input.
 
@@ -514,7 +514,7 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-matrix-component-input` element
+### `pl-matrix-component-input` element
 
 A `pl-matrix-component-input` element displays a grid of input fields with
 the same shape of the variable stored in `answers-name`
@@ -575,7 +575,7 @@ The question will only be graded when all matrix components are entered.
 
 -----
 
-## `pl-matrix-input` element
+### `pl-matrix-input` element
 
 A `pl-matrix-input` element displays an input field that accepts a matrix
 (i.e., a 2-D array) expressed in a supported programming language
@@ -650,7 +650,7 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 -----
 
-## `pl-file-editor` element
+### `pl-file-editor` element
 
 Provides an in-browser file editor that's compatible with the other file elements
 and external grading system.
@@ -705,7 +705,7 @@ The `focus` attribute defaults to `"false"`. Setting this to true will cause the
 
 -----
 
-## `pl-file-upload` element
+### `pl-file-upload` element
 
 Provides a way to accept file uploads as part of an answer. They will be stored
 in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
@@ -740,7 +740,7 @@ Attribute | Type | Default | description
 
 -----
 
-## `pl-threejs` element
+### `pl-threejs` element
 
 
 This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
@@ -819,7 +819,7 @@ that if there are many submitted answers, the page will load slowly.
 
 -----
 
-## `pl-code` element
+### `pl-code` element
 
 Display an embedded or file-based block of code with syntax highlighting and
 line callouts.
@@ -864,7 +864,7 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 -----
 
-## `pl-python-variable` element
+### `pl-python-variable` element
 
 Displays the value of a Python variable, with formatted display of Pandas DataFrames.
 
@@ -937,7 +937,7 @@ As of right now, the element supports displaying either Pandas DataFrames as an 
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
 
-## `pl-figure` element
+### `pl-figure` element
 
 Display a statically or dynamically generated image.
 
@@ -992,7 +992,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 ----
 
-## `pl-file-download` element
+### `pl-file-download` element
 
 Provide a download link to a static or dynamically generated file.
 
@@ -1044,7 +1044,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 -----
 
-## `pl-variable-output` element
+### `pl-variable-output` element
 
 Displays a list of variables that are formatted for import into the
 supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
@@ -1154,7 +1154,7 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 -----
 
-## `pl-matrix-latex` element
+### `pl-matrix-latex` element
 
 Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
@@ -1233,7 +1233,7 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 -----
 
-## `pl-graph` element
+### `pl-graph` element
 
 Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
 Graphviz DOT visualizations.
@@ -1296,7 +1296,7 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-drawing` element
+### `pl-drawing` element
 
 Creates a canvas (drawing space) that can display images from a collection of pre-defined drawing objects.
 Users can also add drawing objects to the canvas for grading.
@@ -1305,7 +1305,7 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 
-## `pl-overlay` element
+### `pl-overlay` element
 
 The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions.
 
@@ -1366,7 +1366,7 @@ An overlay is pre-defined as a "overlay area" with a static size.  By default, e
 - [element/overlay]
 
 ----
-## `pl-external-grader-variables` element
+### `pl-external-grader-variables` element
 
 Displays variables that are given to the student, or expected for the student to define in externally-graded questions.  The list of variables should be stored in `data['params']` and has the following format:
 
@@ -1424,7 +1424,7 @@ Attribute | Type | Default | Description
 
 ## Conditional Elements
 
-## `pl-question-panel` element
+### `pl-question-panel` element
 
 Displays the contents of question directions.
 
@@ -1455,7 +1455,7 @@ then it will be displayed alongside or answer.
 
 -----
 
-## `pl-submission-panel` element
+### `pl-submission-panel` element
 
 Customizes how information entered by a user is displayed before grading.
 
@@ -1467,7 +1467,7 @@ Customizes how information entered by a user is displayed before grading.
 </pl-submission-panel>
 ```
 
-### Details
+#### Details
 
 Contents are only shown after the student has submitted an answer. This answer
 may be correct, incorrect, or invalid.
@@ -1488,7 +1488,7 @@ may be correct, incorrect, or invalid.
 -----
 
 
-## `pl-answer-panel` element
+### `pl-answer-panel` element
 
 Provide information regarding the question answer after the student is unable to
 receive further answers for grading.
@@ -1501,7 +1501,7 @@ receive further answers for grading.
 </pl-answer-panel>
 ```
 
-### Details
+#### Details
 
 Contents are only displayed when the answer panel is requested.
 Common reasons that trigger the display of this element are:
@@ -1525,7 +1525,7 @@ Common reasons that trigger the display of this element are:
 -----
 
 
-## `pl-hide-in-panel` element
+### `pl-hide-in-panel` element
 
 Hide the contents so that it is **not** displayed in specific panels ("question", "submission", or "answer").
 
@@ -1545,7 +1545,7 @@ Attribute | Type | Default | Description
 `submission` | boolean | false | Whether to hide the element contents in the submission panel.
 `answer` | boolean | false | Whether to hide the element contents in the answer panel.
 
-### Details
+#### Details
 
 Hide the element contents in those panels for which the corresponding
 attribute is `true`. This is the reverse of
@@ -1569,7 +1569,7 @@ element contents only in a specific panel.
 -----
 
 
-## `pl-external-grader-results` element
+### `pl-external-grader-results` element
 
 Displays results from externally-graded questions.
 
@@ -1579,16 +1579,16 @@ Displays results from externally-graded questions.
 <pl-external-grader-results></pl-external-grader-results>
 ```
 
-### Details
+#### Details
 
 It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-result).
 
-### Example implementations
+#### Example Implementations
 
 - [demo/autograder/codeUpload]
 - [demo/autograder/codeEditor]
 
-### See also
+#### See also
 
 - [External Grading Reference Schema](externalGrading.md#grading-result)
 
@@ -1600,7 +1600,7 @@ Note: The following PrairieLearn Elements have been
 **deprecated**. These elements are still supported for backwards
 compatibility, but they should not be used in new questions.
 
-## `pl-variable-score` element
+### `pl-variable-score` element
 
 Display the partial score for a specific answer variable.
 
@@ -1621,7 +1621,7 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-prairiedraw-figure` element
+### `pl-prairiedraw-figure` element
 
 Create and display a prairiedraw image.
 
