@@ -1366,8 +1366,6 @@ Attribute | Type | Default | Description
 `color` | string | red | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 4 | Set the width of the stroke.
 
-## Example drawing questions
-
 <!-- Reference links -->
 [demo/drawing/liftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/liftingMechanism
 [demo/drawing/pulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/pulley
@@ -1377,4 +1375,3 @@ Attribute | Type | Default | Description
 [demo/drawing/simpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/simpleTutorial
 [demo/drawing/graphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/graphs
 [demo/drawing/gradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/gradeVector 
-
