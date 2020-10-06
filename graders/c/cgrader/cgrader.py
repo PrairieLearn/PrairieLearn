@@ -163,7 +163,8 @@ class CGrader:
         self.add_test_result(name, description, points=0, max_points=points)
     
     def add_test_result(self, name, description='', points=True,
-                        msg='', output='', max_points=1, field=None):
+                        msg='', output='', max_points=1, field=None,
+                        images=None):
         if not isinstance(points, (int, float)):
             points = max_points if points else 0.0
         test = {
@@ -172,6 +173,10 @@ class CGrader:
             'max_points': max_points,
             'output': output, 'message': msg
         }
+        if images and isinstance(images, list):
+            test['images'] = images
+        elif images:
+            test['images'] = [images]
         self.result['tests'].append(test)
         self.result['points'] += points
         self.result['max_points'] += max_points
