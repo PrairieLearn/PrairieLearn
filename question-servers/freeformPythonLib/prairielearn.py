@@ -1092,7 +1092,7 @@ def index2key(i):
 
     Used when generating alphabet ordered lists.
 
-    Returns alphabetic key in the form [a-z]* from given integer (i) representing alphabet index (base-0).
+    Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
     """
     if i >= 26:
         n = i
