@@ -54,15 +54,15 @@ questions
 
 The question's `info.json` should set the `singleVariant` and `workspaceOptions` properties:
 
-* `"singleVariant": true` will prevent student workspaces from resetting due to new variants being generated
+* `"singleVariant": true` prevents student workspaces from resetting due to new variants being generated
     * Note that new variants will still be generated in `Instructor view`
 * `workspaceOptions` contains the following properties:
     * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
     * `port`: port number used by the workspace app inside the Docker image
     * `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
-    * `gradedFiles` (optional, default none): list of files or directories that will be copied out of the workspace container for grading
+    * `gradedFiles` (optional, default none): list of globs specifying files or directories that will be copied out of the workspace container for grading
     * `args` (optional, default none): command line arguments to pass to the Docker image
-    * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
+    * `syncIgnore` (optional, default none): list of globs specifying files or directories that will be excluded from sync
     * `urlRewrite` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
 #### `info.json` for ungraded workspace
@@ -78,12 +78,12 @@ For an ungraded workspace, a full `info.json` file should look something like:
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode",
+        "image": "codercom/code-server:4.5.1",
         "port": 8080,
         "home": "/home/coder",
         "args": "--auth none",
         "syncIgnore": [
-            ".local/share/code-server/"
+            ".local/share/code-server/**"
         ]
     }
 }
@@ -102,16 +102,16 @@ For an externally graded workspace, a full `info.json` file should look somethin
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode",
+        "image": "codercom/code-server:4.5.1",
         "port": 8080,
         "home": "/home/coder",
         "args": "--auth none",
         "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c"
+            "*.c",
+            "*.h"
         ],
         "syncIgnore": [
-            ".local/share/code-server/"
+            ".local/share/code-server/**"
         ]
     },
     "gradingMethod": "External",
