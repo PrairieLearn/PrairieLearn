@@ -621,7 +621,7 @@ module.exports = {
 
             processFunction(...args, (courseIssues, data, questionHtml, fileData, renderedElementNames) => {
                 if (phase == 'grade' || phase == 'test') {
-                    data.score = this.calcScore(data.partial_scores, context.question.partial_credit);
+                    data.score = formulas.calcQuestionScore(data.partial_scores, context.question.partial_credit);
                 }
 
                 callback(null, courseIssues, data, questionHtml, fileData, renderedElementNames);
