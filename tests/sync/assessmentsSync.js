@@ -504,7 +504,7 @@ describe('Assessment syncing', () => {
     }];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['points_array_size_one'] = assessment;
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('points_array_size_one');
+    const syncedAssessment = await getSyncedAssessmentData('points_array_size_one');
     const firstAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
     assert.deepEqual(firstAssessmentQuestion.points_list, [5]);
 
@@ -552,7 +552,7 @@ describe('Assessment syncing', () => {
     }];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['points_array_size_one'] = assessment;
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('points_array_size_one');
+    const syncedAssessment = await getSyncedAssessmentData('points_array_size_one');
 
     const firstAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
