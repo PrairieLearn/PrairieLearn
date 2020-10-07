@@ -895,8 +895,8 @@ async function validateAssessment(assessment, questions) {
     };
     (assessment.zones || []).forEach(zone => {
         (zone.questions || []).map(zoneQuestion => {
-            if (!allowRealTimeGrading && Array.isArray(zoneQuestion.points)) {
-                errors.push(`Cannot specify an array of points for a question if real-time grading is disabled`);
+            if (!allowRealTimeGrading && Array.isArray(zoneQuestion.points) && zoneQuestion.points.length > 1) {
+                errors.push(`Cannot specify more than 1 point value for a question if real-time grading is disabled`);
             }
             // We'll normalize either single questions or alternative groups
             // to make validation easier
@@ -907,8 +907,8 @@ async function validateAssessment(assessment, questions) {
             } else if ('alternatives' in zoneQuestion) {
                 zoneQuestion.alternatives.forEach(alternative => checkAndRecordQid(alternative.id));
                 alternatives = zoneQuestion.alternatives.map(alternative => {
-                    if (!allowRealTimeGrading && Array.isArray(alternative.points)) {
-                        errors.push(`Cannot specify an array of points for an alternative if real-time grading is disabled`);
+                    if (!allowRealTimeGrading && Array.isArray(alternative.points) && alternative.points.length > 1) {
+                        errors.push(`Cannot specify more than 1 point value for an alternative if real-time grading is disabled`);
                     }
                     return {
                         points: alternative.points || zoneQuestion.points,
