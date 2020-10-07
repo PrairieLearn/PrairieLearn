@@ -508,7 +508,7 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
     assert.deepEqual(firstAssessmentQuestion.points_list, [5]);
 
-    const secondAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
+    const secondAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
     assert.deepEqual(secondAssessmentQuestion.points_list, [10]);
   });
 
@@ -554,10 +554,10 @@ describe('Assessment syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('points_array_size_one');
 
-    const firstAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    const firstAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
 
-    const secondAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
+    const secondAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
   });
 
