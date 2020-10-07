@@ -10,6 +10,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const formulas = require('../lib/formulas');
 const schemas = require('../schemas');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
@@ -620,24 +621,7 @@ module.exports = {
 
             processFunction(...args, (courseIssues, data, questionHtml, fileData, renderedElementNames) => {
                 if (phase == 'grade' || phase == 'test') {
-                    if (context.question.partial_credit) {
-                        let total_weight = 0, total_weight_score = 0;
-                        _.each(data.partial_scores, value => {
-                            const score = _.get(value, 'score', 0);
-                            const weight = _.get(value, 'weight', 1);
-                            total_weight += weight;
-                            total_weight_score += weight * score;
-                        });
-                        data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
-                        data.feedback = {};
-                    } else {
-                        let score = 0;
-                        if (_.size(data.partial_scores) > 0 && _.every(data.partial_scores, value => _.get(value, 'score', 0) >= 1)) {
-                            score = 1;
-                        }
-                        data.score = score;
-                        data.feedback = {};
-                    }
+                    data.score = this.calcScore(data.partial_scores, context.question.partial_credit);
                 }
 
                 callback(null, courseIssues, data, questionHtml, fileData, renderedElementNames);
@@ -840,7 +824,8 @@ module.exports = {
                 format_errors: submission ? _.get(submission, 'format_errors', {}) : {},
                 partial_scores: (!submission || submission.partial_scores == null) ? {} : submission.partial_scores,
                 score: (!submission || submission.score == null) ? 0 : submission.score,
-                feedback: (!submission || submission.feedback == null) ? {} : submission.feedback,
+                feedback: (!submission || submission.feedback == null) ? {} : submission.feedback, // correct me if I am wrong, but feedback is always an empty object
+                // from this module because the partial and total score calculation always sets it as a new empty object.
                 variant_seed: parseInt(variant.variant_seed, 36),
                 options: _.get(variant, 'options', {}),
                 raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
