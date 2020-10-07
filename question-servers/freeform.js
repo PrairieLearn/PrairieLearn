@@ -620,7 +620,7 @@ module.exports = {
             }
 
             processFunction(...args, (courseIssues, data, questionHtml, fileData, renderedElementNames) => {
-                if (phase == 'grade' || phase == 'test') {
+                if (phase == 'grade') {
                     data.score = formulas.calcQuestionScore(data.partial_scores, context.question.partial_credit);
                 }
 
