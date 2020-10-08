@@ -896,7 +896,7 @@ async function validateAssessment(assessment, questions) {
     (assessment.zones || []).forEach(zone => {
         (zone.questions || []).map(zoneQuestion => {
             if (!allowRealTimeGrading && Array.isArray(zoneQuestion.points) && zoneQuestion.points.length > 1) {
-                errors.push(`Cannot specify an an array of multiple point values for a question if real-time grading is disabled`);
+                errors.push(`Cannot specify an array of multiple point values for a question if real-time grading is disabled`);
             }
             // We'll normalize either single questions or alternative groups
             // to make validation easier
