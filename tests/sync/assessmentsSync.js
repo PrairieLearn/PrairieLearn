@@ -485,7 +485,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
-    assert.match(syncedAssessment.sync_errors, /Cannot specify more than 1 point value for a question/);
+    assert.match(syncedAssessment.sync_errors, /Cannot specify an array of multiple point values for a question/);
   });
 
   it('accepts one-element points array being specified for a question when real-time grading is disallowed', async () => {
@@ -504,12 +504,16 @@ describe('Assessment syncing', () => {
     }];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['points_array_size_one'] = assessment;
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await getSyncedAssessmentData('points_array_size_one');
-    const firstAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    const syncedData = await getSyncedAssessmentData('points_array_size_one');
+    
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
     assert.deepEqual(firstAssessmentQuestion.points_list, [5]);
 
-    const secondAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
     assert.deepEqual(secondAssessmentQuestion.points_list, [10]);
+
+    const syncedAssessment = await findSyncedAssessment('points_array_size_one');
+    assert.equal(syncedAssessment.sync_errors, null);
   });
 
   it('records an error if multiple-element points array is specified for an alternative when real-time grading is disallowed', async () => {
@@ -531,7 +535,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
-    assert.match(syncedAssessment.sync_errors, /Cannot specify more than 1 point value for an alternative/);
+    assert.match(syncedAssessment.sync_errors, /Cannot specify an array of multiple point values for an alternative/);
   });
 
   it('accepts one-element points array being specified for an alternative when real-time grading is disallowed', async () => {
@@ -552,13 +556,16 @@ describe('Assessment syncing', () => {
     }];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['points_array_size_one'] = assessment;
     await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await getSyncedAssessmentData('points_array_size_one');
+    const syncedData = await getSyncedAssessmentData('points_array_size_one');
 
-    const firstAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.QUESTION_ID);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
 
-    const secondAssessmentQuestion = syncedAssessment.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(aq => aq.question.qid === util.ALTERNATIVE_QUESTION_ID);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
+
+    const syncedAssessment = await findSyncedAssessment('points_array_size_one');
+    assert.equal(syncedAssessment.sync_errors, null);
   });
 
   it('records a warning if the same UUID is used multiple times in one course instance', async () => {
