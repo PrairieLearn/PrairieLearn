@@ -488,7 +488,7 @@ describe('Assessment syncing', () => {
     assert.match(syncedAssessment.sync_errors, /Cannot specify an array of multiple point values for a question/);
   });
 
-  it('accepts a points array of size 1 being specified for a question when real-time grading is disallowed', async () => {
+  it('accepts a single-element points array being specified for a question when real-time grading is disallowed', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.allowRealTimeGrading = false;
@@ -538,7 +538,7 @@ describe('Assessment syncing', () => {
     assert.match(syncedAssessment.sync_errors, /Cannot specify an array of multiple point values for an alternative/);
   });
 
-  it('accepts a points array of size 1 being specified for an alternative when real-time grading is disallowed', async () => {
+  it('accepts a single-element points array being specified for an alternative when real-time grading is disallowed', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.allowRealTimeGrading = false;
