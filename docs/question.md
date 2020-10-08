@@ -417,3 +417,16 @@ Example of valid HTML:
 <p>This is a picture of a bird</p>
 <pl-figure file-name="bird.html"></pl-figure>
 ```
+
+## Options for grading student answers
+
+For most [elements] there are three different ways of grading the student answer. This applies to elements like [`pl-number-input`](elements/#pl-number-input-element) and [`pl-string-input`](elements/#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/#pl-multiple-choice-element) or [`pl-checkbox`](elements/#pl-checkbox-element) that are much more constrained. The three ways are:
+
+1. Set the correct answer using the correct-answer attribute in `question.html`. This is for hard-coded, fixed answers. We normally want some degree of randomization of the question, so this is the least-used method.
+
+2. Set `data["correct_answers"][VAR_NAME]` in server.py. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
+
+3. Write a custom grade() function in server.py that checks data["submitted_answers"][VAR_NAME] and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, etc.
+
+If a question has more than one of the above options, each of them overrides the one before it. Even if option 3 is used (custom grade function) then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements/#pl-answer-panel-element) that any correct answer would be accepted and this displayed answer is only an example.
+
