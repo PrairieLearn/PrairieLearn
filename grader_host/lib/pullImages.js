@@ -53,7 +53,7 @@ module.exports = function(callback) {
                     }
                     const params = {
                         fromImage: repository.getRegistryRepo(),
-                        tag: repository.getTag() || 'latest'
+                        tag: repository.getTag() || 'latest',
                     };
 
                     docker.createImage(ourAuth, params, (err, stream) => {
@@ -75,7 +75,7 @@ module.exports = function(callback) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        }
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
