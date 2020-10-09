@@ -13,7 +13,7 @@
 !docker/
 !elements/
 !exampleCourse/
-!testCourse/
+!grader_host/
 !lib/
 !middlewares/
 !migrations/
@@ -30,6 +30,7 @@
 !schemas/
 !sprocs/
 !sync/
+!testCourse/
 !tests/
 !tools/
 !webhooks/
