@@ -181,7 +181,16 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
    "score": 0.25,
    "message": "Tests completed successfully.",
    "output": "Running tests...\nTest 1 passed\nTest 2 failed!\n...",
-   "images": ["data:image/png;base64,...", "data:image/jpeg;base64,..."],
+   "images": [
+      {
+         "label": "First Image",
+         "url": "data:image/png;base64,..."
+      },
+      {
+         "label": "Second Image",
+         "url": "data:image/jpeg;base64,..."
+      }
+   ],
    "tests": [
       {
          "name": "Test 1",
@@ -198,7 +207,14 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
          "max_points": 3,
          "message": "Make sure that your code is doing the thing correctly.",
          "output": "Running test...\nYour output did not match the expected output.",
-         "images": ["data:image/gif;base64,...", "data:image/png;base64,..."],
+         "images": [{
+               "label": "First Image",
+               "url": "data:image/gif;base64,..."
+            },
+            {
+               "label": "First Image",
+               "url": "data:image/png;base64,..."
+            }],
       }
    ]
 }

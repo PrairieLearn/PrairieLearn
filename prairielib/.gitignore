@@ -1,0 +1,18 @@
+# JetBrains IDE files
+/.idea/
+
+# OS X Finder files
+**/.DS_Store
+
+# Dependencies
+/node_modules/
+
+# Swap files
+**/*.swp
+**/*.swo
+
+# Backup Files
+**/*~
+
+# NPM log file
+npm-debug.log

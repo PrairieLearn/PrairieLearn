@@ -34,9 +34,12 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
 
+    file_name = pl.get_string_attrib(element, 'file-name')
     if '_required_file_names' not in data['params']:
         data['params']['_required_file_names'] = []
-    data['params']['_required_file_names'].append(pl.get_string_attrib(element, 'file-name'))
+    elif file_name in data['params']['_required_file_names']:
+        raise Exception('There is more than one file editor with the same file name.')
+    data['params']['_required_file_names'].append(file_name)
 
     if source_file_name is not None:
         if element.text is not None and not str(element.text).isspace():

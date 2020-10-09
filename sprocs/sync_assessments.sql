@@ -424,6 +424,7 @@ BEGIN
     FROM assessments AS a
     WHERE
         a.deleted_at IS NULL
+        AND a.course_instance_id = syncing_course_instance_id
         AND (
             a.assessment_set_id IS NULL
             OR a.number IS NULL

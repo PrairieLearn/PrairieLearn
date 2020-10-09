@@ -27,7 +27,7 @@
       </tbody>
     </table>
 
-    <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
+    <% if (devMode || authz_data.has_instructor_view || authz_data.has_course_permission_view || is_administrator) { %>
     <div class="card-body border border-bottom-0 border-left-0 border-right-0">
       <% if (issue.system_data.courseErrData) { %>
         <p><strong>Console log:</strong>
