@@ -82,8 +82,8 @@ config.loadConfig = function(callback) {
 
             const params = {
                 Filters: [
-                    {Name: 'resource-id', Values: [exportedConfig.instanceId]}
-                ]
+                    {Name: 'resource-id', Values: [exportedConfig.instanceId]},
+                ],
             };
             ec2.describeTags(params, function(err, data) {
                 if (ERR(err, callback)) return;
