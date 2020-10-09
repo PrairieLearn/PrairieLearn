@@ -216,6 +216,21 @@ docker run -it --rm -p 3000:3000 `
     * Click "Settings"
     * Ensure `C:` is checked
 
+If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v "$PWD":/course \
+    -v $HOME/pl_ag_jobs:/jobs \
+    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    --add-host=host.docker.internal:172.17.0.1 \
+    prairielearn/prairielearn
+```
+
+Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
+
+
 #### Developing with workspaces
 
 For development, run the docker command with a final extra argument of `/PrairieLearn/docker/start_workspace.sh` to load PL and the workspace host interface in separate tmux panes.
