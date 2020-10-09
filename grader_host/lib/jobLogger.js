@@ -7,20 +7,20 @@ const config = require('./config').config;
 module.exports = function(options) {
     const {
         bucket,
-        rootKey
+        rootKey,
     } = options;
 
     const s3LoggerStream = new S3StreamLogger({
         bucket,
         folder: rootKey,
         name_format: 'output.log', // No need to rotate, all logs go to same file
-        upload_every: 1000 // Most jobs are short-lived, so push every 1s
+        upload_every: 1000, // Most jobs are short-lived, so push every 1s
     });
 
     const transports = [
         new (winston.transports.Stream)({
             stream: s3LoggerStream,
-        })
+        }),
     ];
 
     if (config.useConsoleLoggingForJobs) {

@@ -168,7 +168,7 @@ var pullAndPushToECR = function(image, dockerAuth, callback) {
     var repository = new dockerUtil.DockerName(image);
     const params = {
         fromImage: repository.getRepository(),
-        tag: repository.getTag() || 'latest'
+        tag: repository.getTag() || 'latest',
     };
     logger.info(`Pulling ${repository.getCombined()}`);
     docker.createImage({}, params, (err, stream) => {
