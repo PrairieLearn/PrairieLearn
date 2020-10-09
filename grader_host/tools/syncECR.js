@@ -124,100 +124,100 @@ async.series([
 
 
 function locateImage(image, callback) {
-	debug('locateImage');
-	docker.listImages(function(err, list) {
-	if (ERR(err, callback)) return;
-		debug(list);
-	for (var i = 0, len = list.length; i < len; i++) {
+    debug('locateImage');
+    docker.listImages(function(err, list) {
+        if (ERR(err, callback)) return;
+        debug(list);
+        for (var i = 0, len = list.length; i < len; i++) {
 
-	if (list[i].RepoTags && list[i].RepoTags.indexOf(image) !== -1) {
-	return callback(null, docker.getImage(list[i].Id));
-	}
-	}
+            if (list[i].RepoTags && list[i].RepoTags.indexOf(image) !== -1) {
+                return callback(null, docker.getImage(list[i].Id));
+            }
+        }
 
-	return callback();
-	});
+        return callback();
+    });
 }
 
 function confirmOrCreateECRRepo(repo, callback) {
-	const ecr = new AWS.ECR();
-	ecr.describeRepositories({}, (err, data) => {
-	if (ERR(err, callback)) return;
+    const ecr = new AWS.ECR();
+    ecr.describeRepositories({}, (err, data) => {
+        if (ERR(err, callback)) return;
 
-		var repository_found = _.find(data.repositories, ['repositoryName', repo]);
-		if (!repository_found) {
+        var repository_found = _.find(data.repositories, ['repositoryName', repo]);
+        if (!repository_found) {
 
-			var params = {
-				repositoryName: repo,
-			};
-			logger.info('ECR: Creating repo ' + repo);
-			ecr.createRepository(params, (err) => {
-				if (ERR(err, callback)) return;
-				callback(null);
-			});
-		} else {
-			// Already exists, nothing to do
-			callback(null);
-		}
-	});
+            var params = {
+                repositoryName: repo,
+            };
+            logger.info('ECR: Creating repo ' + repo);
+            ecr.createRepository(params, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        } else {
+            // Already exists, nothing to do
+            callback(null);
+        }
+    });
 }
 
 var pullAndPushToECR = function(image, dockerAuth, callback) {
-	logger.info(`pullAndPushtoECR for ${image}`);
+    logger.info(`pullAndPushtoECR for ${image}`);
 
-	var repository = new dockerUtil.DockerName(image);
-	const params = {
-		fromImage: repository.getRepository(),
-		tag: repository.getTag() || 'latest'
-	};
-	logger.info(`Pulling ${repository.getCombined()}`);
-	docker.createImage({}, params, (err, stream) => {
+    var repository = new dockerUtil.DockerName(image);
+    const params = {
+        fromImage: repository.getRepository(),
+        tag: repository.getTag() || 'latest'
+    };
+    logger.info(`Pulling ${repository.getCombined()}`);
+    docker.createImage({}, params, (err, stream) => {
         if (err) {
             logger.error(err);
             logger.error('Aborting this image download attempt');
             return callback();
         }
-		if (ERR(err, callback)) return;
+        if (ERR(err, callback)) return;
 
-	//stream.pipe(process.stdout);
-	stream.resume();
-	stream.on('end', () => {
-			logger.info('Pull complete');
+        //stream.pipe(process.stdout);
+        stream.resume();
+        stream.on('end', () => {
+            logger.info('Pull complete');
 
-			// Find the image we just downloaded
-			locateImage(repository.getCombined(true), (err, localImage) => {
-				if (ERR(err, callback)) return;
+            // Find the image we just downloaded
+            locateImage(repository.getCombined(true), (err, localImage) => {
+                if (ERR(err, callback)) return;
 
-				// Tag the image to add the new registry
-				repository.registry = config.cacheImageRegistry;
+                // Tag the image to add the new registry
+                repository.registry = config.cacheImageRegistry;
 
-				var options = {
-					repo: repository.getCombined(),
-				};
+                var options = {
+                    repo: repository.getCombined(),
+                };
 
-				localImage.tag(options, (err) => {
-					if (ERR(err, callback)) return;
+                localImage.tag(options, (err) => {
+                    if (ERR(err, callback)) return;
 
-					confirmOrCreateECRRepo(repository.getRepository(), (err) => {
-						if (ERR(err, callback)) return;
+                    confirmOrCreateECRRepo(repository.getRepository(), (err) => {
+                        if (ERR(err, callback)) return;
 
-						// Create a new docker image instance with the new registry name
-						// localImage isn't specific enough to the ECR repo
-						var pushImage = new Docker.Image(docker.modem, repository.getCombined());
+                        // Create a new docker image instance with the new registry name
+                        // localImage isn't specific enough to the ECR repo
+                        var pushImage = new Docker.Image(docker.modem, repository.getCombined());
 
-						logger.info(`Pushing ${repository.getCombined()}`);
-						pushImage.push({}, (err, stream) => {
-							if (ERR(err, callback)) return;
-							//stream.pipe(process.stdout);
-							stream.resume();
-							stream.on('end', () => {
-								logger.info('Push complete\n');
-								callback(null);
-							});
-						}, dockerAuth);
-					});
-				});
-			});
-		});
-	});
+                        logger.info(`Pushing ${repository.getCombined()}`);
+                        pushImage.push({}, (err, stream) => {
+                            if (ERR(err, callback)) return;
+                            //stream.pipe(process.stdout);
+                            stream.resume();
+                            stream.on('end', () => {
+                                logger.info('Push complete\n');
+                                callback(null);
+                            });
+                        }, dockerAuth);
+                    });
+                });
+            });
+        });
+    });
 };
