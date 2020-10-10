@@ -58,37 +58,43 @@ class CGrader:
                     out += out2.decode('utf-8', 'backslashreplace')
                 return out + tostr
 
-    def test_compile_file(self, c_file, exec_file, main_file=None,
-                          add_c_file=None, strip_function=None,
-                          points=1, field=None,
-                          name='Compilation',
+    def test_compile_file(self, c_file, exec_file, main_file=None, add_c_file=None,
+                          points=1, field=None, flags=None, name='Compilation',
                           ungradable_if_failed=True):
+
+        if flags and not isinstance(flags, list):
+            flags = shlex.split(flags)
+        elif not flags:
+            flags = []
+        
         obj_file = re.sub('\.c$', '', c_file) + '.o'
-        out = self.run_command(['gcc', '-c', c_file, '-o', obj_file])
+        out = self.run_command(['gcc', '-c', c_file, '-o', obj_file] + flags)
         if os.path.isfile(obj_file):
-            if strip_function:
-                new_obj_file = 'nofn_' + obj_file
-                out += self.run_command(['objcopy', '-N', strip_function,
-                                         obj_file, new_obj_file])
-                obj_file = new_obj_file
+
             objs = []
+            
             if add_c_file:
+                # Add new C file that maybe overwrites some existing functions.
                 add_obj_file = re.sub('\.c$', '', add_c_file) + '.o'
-                out += self.run_command(['gcc', '-c', add_c_file, '-o', add_obj_file])
-                objs = [add_obj_file]
+                out += self.run_command(['gcc', '-c', add_c_file,
+                                         '-o', add_obj_file] + flags)
+                objs.append(add_obj_file)
+                flags.append('-Wl,--allow-multiple-definition')
+
             if main_file:
                 main_obj_file = re.sub('\.c$', '', main_file) + '.o'
-                stripped_obj_file = 'nomain_' + obj_file
-                out += self.run_command(['objcopy', '-N', 'main',
-                                         obj_file, stripped_obj_file])
+                out += self.run_command(['strip', '-N', 'main', obj_file])
                 out += self.run_command(['gcc', '-c', main_file,
-                                         '-o', main_obj_file])
-                out += self.run_command(['gcc', stripped_obj_file,
-                                         main_obj_file] + objs +
-                                        ['-o', exec_file, '-lm'])
-            else:
-                out += self.run_command(['gcc', obj_file] + objs +
-                                        ['-o', exec_file, '-lm'])
+                                         '-o', main_obj_file] + flags)
+                objs.append(main_obj_file)
+
+            # The main C file must be the last so its functions can be
+            # overwritten
+            objs.append(obj_file)
+            
+            out += self.run_command(['gcc'] + objs +
+                                    ['-o', exec_file, '-lm'] + flags)
+        
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, '755')
         elif ungradable_if_failed:
