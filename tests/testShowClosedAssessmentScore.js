@@ -10,13 +10,15 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
 
-describe('Exam assessment with showCloseAssessment access rule', function() {
+describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScore access rules', function() {
     this.timeout(60000);
 
     const context = {};
     context.siteUrl = `http://localhost:${config.serverPort}`;
     context.baseUrl = `${context.siteUrl}/pl`;
     context.courseInstanceBaseUrl= `${context.baseUrl}/course_instance/1`;
+    context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
+    context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
 
     const headers = {
         cookie: 'pl_test_user=test_student', // need student mode to get a timed exam (instructor override bypasses this)
@@ -24,7 +26,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
 
     before('set up testing server', async function() {
         await util.promisify(helperServer.before().bind(this))();
-        const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
+        const results = await sqldb.queryOneRowAsync(sql.select_exam9, []);
         context.assessmentId = results.rows[0].id;
         context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
     });
@@ -100,6 +102,23 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         assert.equal(response.status, 403);
 
         assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
-        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+        assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
     });
+
+    step('check that accessing assessment list shows score as withheld', async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+        assert.equal(response.status, 200);
+
+        assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
+        assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+    });
+
+    step('check that accessing gradebook shows score as withheld', async () => {
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+        assert.equal(response.status, 200);
+
+        assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
+        assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+    });
+
 });
