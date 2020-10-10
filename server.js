@@ -75,6 +75,7 @@ module.exports.initExpress = function() {
     app.set('trust proxy', 'loopback');
     config.devMode = (app.get('env') == 'development');
 
+    app.use(function(req, res, next) {res.locals.config = config; next();});
     app.use(function(req, res, next) {config.setLocals(res.locals); next();});
 
     // special parsing of file upload paths -- this is inelegant having it
@@ -209,7 +210,6 @@ module.exports.initExpress = function() {
     // Middleware for all requests
     // response_id is logged on request, response, and error to link them together
     app.use(function(req, res, next) {res.locals.response_id = uuidv4(); next();});
-    app.use(function(req, res, next) {res.locals.config = config; next();});
 
     // load accounting for requests
     app.use(function(req, res, next) {load.startJob('request', res.locals.response_id); next();});
