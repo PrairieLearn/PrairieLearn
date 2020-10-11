@@ -232,8 +232,8 @@ BEGIN
         ('desired_instances_by_history_jobs', desired_instances_by_history_jobs),
         ('desired_instances_by_current_users', desired_instances_by_current_users),
         ('desired_instances_by_history_users', desired_instances_by_history_users),
-        ('desired_instances_current', desired_instances_current);
-        ('desired_instances_history', desired_instances_history);
+        ('desired_instances_current', desired_instances_current),
+        ('desired_instances_history', desired_instances_history),
         ('desired_instances', desired_instances);
 
     -- ######################################################################
