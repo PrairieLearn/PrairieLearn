@@ -37,15 +37,15 @@ function fakeSqs(options = {}) {
                 Messages: [
                     {
                         Body: JSON.stringify(message),
-                        ReceiptHandle: receiptHandle
-                    }
-                ]
+                        ReceiptHandle: receiptHandle,
+                    },
+                ],
             });
         }),
         deleteMessage: jest.fn((params, callback) => callback(null)),
         changeMessageVisibility: jest.fn((params, callback) => callback(null)),
         message,
-        receiptHandle
+        receiptHandle,
     };
 }
 
@@ -62,7 +62,7 @@ describe('queueReceiver', () => {
 
     it('tries to fetch a message again if none is delivered', (done) => {
         const sqs = fakeSqs({
-            timeoutCount: 1
+            timeoutCount: 1,
         });
 
         queueReceiver(sqs, 'helloworld', (message, errCb, successCb) => successCb(), (err) => {
@@ -74,7 +74,7 @@ describe('queueReceiver', () => {
 
     it('rejects messages that aren\'t contain a valid json string', (done) => {
         const sqs = fakeSqs({
-            message: '{"oops, this is invalid json"'
+            message: '{"oops, this is invalid json"',
         });
 
         queueReceiver(sqs, '', (message, errCb, successCb) => successCb(), (err) => {
@@ -88,8 +88,8 @@ describe('queueReceiver', () => {
         const sqs = fakeSqs({
             message: {
                 timeout: 'abc',
-                s3Bucket: 123
-            }
+                s3Bucket: 123,
+            },
         });
 
         queueReceiver(sqs, '', (message, errCb, successCb) => successCb(), (err) => {
@@ -103,7 +103,7 @@ describe('queueReceiver', () => {
         const sqs = fakeSqs({
             mergeMessage: {
                 timeout: 10,
-            }
+            },
         });
 
         queueReceiver(sqs, '', (message, errCb, successCb) => successCb(), (err) => {

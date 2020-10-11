@@ -20,7 +20,7 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
                 const params = {
                     MaxNumberOfMessages: 1,
                     QueueUrl: queueUrl,
-                    WaitTimeSeconds: 20
+                    WaitTimeSeconds: 20,
                 };
                 sqs.receiveMessage(params, (err, data) => {
                     if (ERR(err, done)) return;
@@ -115,13 +115,13 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
         (callback) => {
             const deleteParams = {
                 QueueUrl: queueUrl,
-                ReceiptHandle: receiptHandle
+                ReceiptHandle: receiptHandle,
             };
             sqs.deleteMessage(deleteParams, (err) => {
                 if (ERR(err, callback)) return;
                 return callback(null);
             });
-        }
+        },
     ], (err) => {
         if (ERR(err, doneCallback)) return;
         doneCallback(null);
