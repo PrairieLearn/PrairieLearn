@@ -240,8 +240,6 @@ class CGrader:
 
         self.path = '/cgrader:' + os.environ['PATH']
         
-        #self.run_command(['groupadd', SB_USER])
-        #self.run_command(['useradd', '-g', SB_USER, SB_USER])
         self.run_command('chmod -R 700 /grade')
 
         # Create a fake "pause" command so students with 'system("PAUSE")' don't get an error
