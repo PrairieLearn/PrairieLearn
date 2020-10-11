@@ -43,6 +43,7 @@ Access restriction                                          | courseInstance | a
 [`password`](#passwords)                                    |   | ✓ | Password required to start an assessment (only for Exams). | `"password": "mysecret"`
 [`examUuid`](#exam-uuids)                                   |   | ✓ | Exam scheduler UUID that students must register for. | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
 [`showClosedAssessment`](#showinghiding-closed-assessments) |   | ✓ | Whether to allow viewing of assessment contents when closed (default `true`). | `"showClosedAssessment": false`
+[`showClosedAssessmentScore`](#showinghiding-all-score-information) |   | ✓ | Whether to allow viewing of the score of a closed assessment  (default `true`). | `"showClosedAssessmentScore": false`
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -160,6 +161,29 @@ To block students from viewing closed assessment details, set `"showClosedAssess
 ```
 
 The `showClosedAssessment` access rule restriction is only really useful in conjuction with [time limits](#time-limits). It is common to pair `"showClosedAssessment": false` with [disabled real-time grading](assessment.md#disabling-real-time-grading).
+
+## Showing/hiding all score information
+
+When setting `showClosedAssessment` to `false` students will still by default still be able to see their assessment score immediately after submitting the exam.
+
+To block students from viewing closed assessment scores, set `"showClosedAssessmentScore": false` in the `allowAccess` rule, like this:
+
+```json
+"allowAccess": [
+    {
+        "startDate": "2015-01-19T00:00:01",
+        "endDate": "2015-05-13T23:59:59",
+        "timeLimitMin": 50,
+        "showClosedAssessment": false,
+        "showClosedAssessmentScore": false,
+        "credit": 100
+    }
+]
+```
+
+The `showClosedAssessment` access rule restriction is only useful in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`.
+
+
 
 ## Course instance example
 

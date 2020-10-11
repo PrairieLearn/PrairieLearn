@@ -109,7 +109,7 @@ async.series([
               });
           });
         }
-    }
+    },
 ], (err) => {
     globalLogger.error('Error in main loop:', err);
     util.callbackify(lifecycle.abandonLaunch)((err) => {
@@ -124,7 +124,7 @@ function handleJob(job, done) {
 
     const loggerOptions = {
         bucket: job.s3Bucket,
-        rootKey: job.s3RootKey
+        rootKey: job.s3RootKey,
     };
 
     const logger = jobLogger(loggerOptions);
@@ -153,7 +153,7 @@ function handleJob(job, done) {
             results.initFiles.tempDirCleanup();
             logger.info('Successfully removed temporary directories');
             callback(null);
-        }]
+        }],
     }, (err) => {
         logger.info(`Reducing load average, err=${err}`);
         load.endJob();
@@ -187,7 +187,7 @@ function reportReceived(info, callback) {
             job,
             receivedTime,
             logger,
-        }
+        },
     } = info;
     logger.info('Sending job acknowledgement to PrairieLearn');
 
@@ -196,7 +196,7 @@ function reportReceived(info, callback) {
         jobId: job.jobId,
         event: 'job_received',
         data: {
-            receivedTime: receivedTime
+            receivedTime: receivedTime,
         },
     };
     const params = {
@@ -216,9 +216,9 @@ function initDocker(info, callback) {
             logger,
             docker,
             job: {
-                image
-            }
-        }
+                image,
+            },
+        },
     } = info;
     let dockerAuth = {};
 
@@ -250,7 +250,7 @@ function initDocker(info, callback) {
             }
             const params = {
                 fromImage: repository.getRegistryRepo(),
-                tag: repository.getTag() || 'latest'
+                tag: repository.getTag() || 'latest',
             };
             logger.info(`Pulling image: ${JSON.stringify(params)}`);
             docker.createImage(dockerAuth, params, (err, stream) => {
@@ -283,9 +283,9 @@ function initFiles(info, callback) {
                 jobId,
                 s3Bucket,
                 s3RootKey,
-                entrypoint
-            }
-        }
+                entrypoint,
+            },
+        },
     } = info;
 
     let jobArchiveFile, jobArchiveFileCleanup;
@@ -317,7 +317,7 @@ function initFiles(info, callback) {
             logger.info('Loading job files');
             const params = {
                 Bucket: s3Bucket,
-                Key: `${s3RootKey}/job.tar.gz`
+                Key: `${s3RootKey}/job.tar.gz`,
             };
             s3.getObject(params).createReadStream()
             .on('error', (err) => {
@@ -342,7 +342,7 @@ function initFiles(info, callback) {
                 }
                 callback(null);
             });
-        }
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null, files);
@@ -361,11 +361,11 @@ function runJob(info, callback) {
                 entrypoint,
                 timeout,
                 enableNetworking,
-            }
+            },
         },
         initFiles: {
-            tempDir
-        }
+            tempDir,
+        },
     } = info;
 
     let results = {};
@@ -400,7 +400,7 @@ function runJob(info, callback) {
                 NetworkDisabled: !jobEnableNetworking,
                 HostConfig: {
                     Binds: [
-                        `${tempDir}:/grade`
+                        `${tempDir}:/grade`,
                     ],
                     Memory: 1 << 30, // 1 GiB
                     MemorySwap: 1 << 30, // same as Memory, so no access to swap
@@ -411,7 +411,7 @@ function runJob(info, callback) {
                     CpuQuota: 90000, // portion of the CpuPeriod for this container
                     PidsLimit: 1024,
                 },
-                Entrypoint: entrypoint.split(' ')
+                Entrypoint: entrypoint.split(' '),
             }, (err, container) => {
                 if (ERR(err, callback)) return;
                 callback(null, container);
@@ -528,7 +528,7 @@ function runJob(info, callback) {
                 results.results = null;
                 callback(null);
             }
-        }
+        },
     ], (err) => {
         if (ERR(err, (err) => logger.error('runJob error:', err)));
 
@@ -567,9 +567,9 @@ function uploadResults(info, callback) {
                 jobId,
                 s3Bucket,
                 s3RootKey,
-            }
+            },
         },
-        runJob: results
+        runJob: results,
     } = info;
 
     async.series([
@@ -579,7 +579,7 @@ function uploadResults(info, callback) {
             const params = {
                 Bucket: s3Bucket,
                 Key: `${s3RootKey}/results.json`,
-                Body: Buffer.from(JSON.stringify(results, null, '  '), 'binary')
+                Body: Buffer.from(JSON.stringify(results, null, '  '), 'binary'),
             };
             s3.putObject(params, (err) => {
                 if (ERR(err, callback)) return;
@@ -611,7 +611,7 @@ function uploadResults(info, callback) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        }
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
@@ -625,12 +625,12 @@ function uploadArchive(results, callback) {
             s3,
             job: {
                 s3Bucket,
-                s3RootKey
-            }
+                s3RootKey,
+            },
         },
         initFiles: {
-            tempDir
-        }
+            tempDir,
+        },
     } = results;
 
     let tempArchive, tempArchiveCleanup;
@@ -657,7 +657,7 @@ function uploadArchive(results, callback) {
             const params = {
                 Bucket: s3Bucket,
                 Key: `${s3RootKey}/archive.tar.gz`,
-                Body: fs.createReadStream(tempArchive)
+                Body: fs.createReadStream(tempArchive),
             };
             s3.upload(params, (err) => {
                 if (ERR(err, callback)) return;
