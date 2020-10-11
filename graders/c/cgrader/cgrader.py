@@ -23,11 +23,12 @@ class CGrader:
         with open(DATAFILE) as file:
             self.data = json.load(file)
 
-    def run_command(self, command, input=None, sandboxed=False, timeout=None):
+    def run_command(self, command, input=None, sandboxed=True, timeout=None):
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
-            command = ['su', SB_USER, '-s', '/bin/bash', '-c', shlex.join(['PATH=' + self.path] + command)]
+            command = ['su', SB_USER, '-s', '/bin/bash', '-c',
+                       shlex.join(['PATH=' + self.path] + command)]
 
         try:
             proc = subprocess.Popen(command,
@@ -68,7 +69,7 @@ class CGrader:
             flags = []
         
         obj_file = re.sub('\.c$', '', c_file) + '.o'
-        out = self.run_command(['gcc', '-c', c_file, '-o', obj_file] + flags)
+        out = self.run_command(['gcc', '-c', c_file, '-o', obj_file] + flags, sandboxed=False)
         if os.path.isfile(obj_file):
 
             objs = []
@@ -77,15 +78,15 @@ class CGrader:
                 # Add new C file that maybe overwrites some existing functions.
                 add_obj_file = re.sub('\.c$', '', add_c_file) + '.o'
                 out += self.run_command(['gcc', '-c', add_c_file,
-                                         '-o', add_obj_file] + flags)
+                                         '-o', add_obj_file] + flags, sandboxed=False)
                 objs.append(add_obj_file)
                 flags.append('-Wl,--allow-multiple-definition')
 
             if main_file:
                 main_obj_file = re.sub('\.c$', '', main_file) + '.o'
-                out += self.run_command(['strip', '-N', 'main', obj_file])
+                out += self.run_command(['strip', '-N', 'main', obj_file], sandboxed=False)
                 out += self.run_command(['gcc', '-c', main_file,
-                                         '-o', main_obj_file] + flags)
+                                         '-o', main_obj_file] + flags, sandboxed=False)
                 objs.append(main_obj_file)
 
             # The main C file must be the last so its functions can be
@@ -93,7 +94,7 @@ class CGrader:
             objs.append(obj_file)
             
             out += self.run_command(['gcc'] + objs +
-                                    ['-o', exec_file, '-lm'] + flags)
+                                    ['-o', exec_file, '-lm'] + flags, sandboxed=False)
         
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, '755')
@@ -106,7 +107,7 @@ class CGrader:
 
     def change_mode(self, file, mode='744'):
         file = os.path.abspath(file)
-        self.run_command(['chmod', mode, file])
+        self.run_command(['chmod', mode, file], sandboxed=False)
         parent = os.path.dirname(file)
         if parent and not os.path.samefile(file, parent):
             self.change_mode(parent, '711')
@@ -139,7 +140,8 @@ class CGrader:
                                      else '" OR "').join([str(t) for t in exp_output]) + \
                   (' but not "%s"' % '"/"'.join([str(t) for t in reject_output]) if reject_output else '')
 
-        out = self.run_command(command if args is None else ([command] + args), input, sandboxed=True, timeout=timeout)
+        out = self.run_command(command if args is None else ([command] + args),
+                               input, sandboxed=True, timeout=timeout)
         outcmp = out
         if not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
 
@@ -240,16 +242,16 @@ class CGrader:
 
         self.path = '/cgrader:' + os.environ['PATH']
         
-        self.run_command('chmod -R 700 /grade')
+        self.run_command('chmod -R 700 /grade', sandboxed=False)
 
         # Create a fake "pause" command so students with 'system("PAUSE")' don't get an error
         with open('/cgrader/PAUSE', 'w') as f:
             f.write('#! /bin/sh\n')
         self.change_mode('/cgrader/PAUSE', '755')
         self.run_command(['ln', '-s', '/cgrader/PAUSE',
-                          '/cgrader/pause'])
+                          '/cgrader/pause'], sandboxed=False)
         self.run_command(['ln', '-s', '/cgrader/PAUSE',
-                          '/cgrader/Pause'])
+                          '/cgrader/Pause'], sandboxed=False)
 
         try:
             self.tests()

@@ -201,10 +201,10 @@ files = self.run_command('ls -alR /grade')
 files = self.run_command(['ls', '-alR', '/grade'])
 ```
 
-The command by default will run as `root` in the container. To run it as a [sandboxed user](#sandbox-execution), you may use the argument `sandboxed` (recommended for any program provided by a student):
+The command by default will run as a [sandboxed user](#sandbox-execution). If you need to run the command as the container's `root` (the same user running the test script itself) you may set the argument `sandboxed` to `False` (not recommended for any program provided by a student):
 
 ```python
-result = self.run_command('./square', sandboxed=True)
+result = self.run_command('rm -rf testfile.txt', sandboxed=False)
 ```
 
 To provide a string to be used as standard input for the program, use the `input` argument:
@@ -216,7 +216,7 @@ result = self.run_command('./square', input='3\n')
 To ensure the program does not run forever, you may set a `timeout` option, which provides a timeout in seconds. If the program doesn't complete within this timeout, the method will return a standard timeout message. It is highly recommended that student-provided code run with a timeout setting.
 
 ```python
-result = self.run_command('./square', sandboxed=True, timeout=1)
+result = self.run_command('./square', timeout=1)
 ```
 
 ### Manually adding test results
