@@ -10,7 +10,7 @@ RUN apt install -y python3.8
 
 RUN ln -sf /usr/bin/python3.8 /usr/bin/python3
 
-RUN pip3 install sympy
+RUN pip3 install sympy matplotlib
 
 ENV LANG=en_US.UTF-8
 ENV LC_LANG=en_US.UTF-8

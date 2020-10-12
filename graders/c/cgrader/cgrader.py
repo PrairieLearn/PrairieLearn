@@ -88,6 +88,7 @@ class CGrader:
                 out += self.run_command(['gcc', '-c', main_file,
                                          '-o', main_obj_file] + flags, sandboxed=False)
                 objs.append(main_obj_file)
+                flags.append('-Wl,--allow-multiple-definition')
 
             # The main C file must be the last so its functions can be
             # overwritten
@@ -101,9 +102,9 @@ class CGrader:
         elif ungradable_if_failed:
             self.result['message'] = 'Compilation errors, please fix and try again.\n\n' + out
             raise UngradableException()
-        self.add_test_result(name,
-                             points=os.path.isfile(exec_file),
-                             output=out, max_points=points, field=field)
+        return self.add_test_result(name, output=out,
+                                    points=os.path.isfile(exec_file),
+                                    max_points=points, field=field)
 
     def change_mode(self, file, mode='744'):
         file = os.path.abspath(file)
@@ -115,7 +116,7 @@ class CGrader:
     def test_send_in_check_out(self, *args, **kwargs):
         '''Old deprecated function name,
         retained for compatibility reasons.'''
-        self.test_run(*args, **kwargs)
+        return self.test_run(*args, **kwargs)
         
     def test_run(self, command, input=None, exp_output=None,
                  must_match_all_outputs=False,
@@ -173,15 +174,17 @@ class CGrader:
         if timeout and 'TIMEOUT' in out:
             points = False
 
-        self.add_test_result(name, points=points, msg=msg,
-                             output=out, max_points=max_points, field=field)
+        return self.add_test_result(name, points=points, msg=msg,
+                                    output=out, max_points=max_points,
+                                    field=field)
 
     def add_manual_grading(self, points=1, name=None, description=None):
         if not name:
             name = 'Manual Grading - to be reviewed by a human grader'
         if not description:
             description = 'This code will be manually reviewed by a human grader. The points associated to this component will be added based on evaluation of code style, programming practices and other manully checked criteria.'
-        self.add_test_result(name, description, points=0, max_points=points)
+        return self.add_test_result(name, description, points=0,
+                                    max_points=points)
     
     def add_test_result(self, name, description='', points=True,
                         msg='', output='', max_points=1, field=None,
@@ -211,6 +214,7 @@ class CGrader:
             else:
                 self.result['partial_scores'][field]['points'] += points
                 self.result['partial_scores'][field]['max_points'] += max_points
+        return test
                 
 
     def save_results(self):
