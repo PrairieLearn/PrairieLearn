@@ -56,6 +56,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     perf.end('syncAssessments');
     await freeformServer.reloadElementsForCourse(courseDir, courseId);
     const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
+    const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
     if (courseDataHasErrors) {
         logger.info(chalk.yellow('⚠ Some JSON files contained errors and were unable to be synced'));
     } else {
@@ -64,6 +65,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     perf.end('sync');
     return {
         hadJsonErrors: courseDataHasErrors,
+        hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
         courseId,
         courseData,
     };

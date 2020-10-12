@@ -427,6 +427,20 @@ module.exports.courseDataHasErrors = function(courseData) {
 };
 
 /**
+ * @param {CourseData} courseData
+ * @returns {boolean}
+ */
+module.exports.courseDataHasErrorsOrWarnings = function(courseData) {
+    if (infofile.hasErrorsOrWarnings(courseData.course)) return true;
+    if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings)) return true;
+    if (Object.values(courseData.courseInstances).some(courseInstance => {
+        if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
+        return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
+    })) return true;
+    return false;
+};
+
+/**
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
