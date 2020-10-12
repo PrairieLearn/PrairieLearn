@@ -189,7 +189,7 @@ BEGIN
     INTO desired_instances_history
     FROM time_series
     WHERE
-        name = 'desired_instances'
+        name = 'desired_instances_current'
         AND date > now() - history_interval;
 
     desired_instances := greatest(desired_instances_current, desired_instances_history);
