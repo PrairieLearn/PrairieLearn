@@ -3,8 +3,7 @@
     "title": "Draw a Triangle",
     "topic": "Functions",
     "tags": [
-        "autograder", "jonatan"
-        "muchen", "c"
+        "autograder", "jonatan", "muchen", "c"
     ],
     "type": "v3",
     "singleVariant": true,
