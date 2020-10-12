@@ -37,4 +37,4 @@ WHERE
 -- BLOCK select_course_dir
 SELECT c.path
 FROM pl_courses AS c
-WHERE c.id = ${course_id};
+WHERE c.id = $course_id;
