@@ -1,7 +1,7 @@
 {
     "uuid": "6e2f0457-5809-4f44-bc25-243f742e09c9",
-    "title": "Draw a Triangle",
-    "topic": "Functions",
+    "title": "Autograder demo: Draw a triangle in C",
+    "topic": "Autograder",
     "tags": [
         "autograder", "jonatan", "muchen", "c"
     ],
