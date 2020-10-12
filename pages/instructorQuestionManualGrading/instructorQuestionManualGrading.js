@@ -18,7 +18,15 @@ router.post('/', function(req, res, next) {
         // TODO: Hook this up to the manual grading "regrading" step
         // TODO: "pretty package" our partials for use by the backend pipleline
         // TODO: Add query string logic to set question state, i.e. graded or ungraded
-        console.log("Recieved request");
+        let variant_id, submitted_partials;
+        if (res.locals.question.type == 'Freeform') {
+            variant_id = req.body.__variant_id;
+            submitted_partials = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
+            console.log(JSON.stringify(req));
+        } else {
+            return callback(error.make(400, 'Manual grading is only supported for freeform (V3) questions', {locals: res.locals, body: req.body}));
+        }
+        console.log(submitted_partials, JSON.stringify(submitted_partials));
     } else {
         next(error.make(400, 'unknown __action: ' + req.body.__action, {
             locals: res.locals,

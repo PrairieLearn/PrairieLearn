@@ -46,7 +46,7 @@ def render(element_html, data):
 
         # Inner html (grader view popover & html children)
         'html': None,
-        'popover_html': None,
+        'popover_children': None,
 
         # Config options on the manaul grading element
         'use_default_popover_body': pl.get_string_attrib(element, 'show-default', True)
@@ -66,18 +66,11 @@ def render(element_html, data):
             else:
                 children.append({'html': lxml.html.tostring(child, method='html').decode('utf-8')})
 
-        html_params['popover_contents'] = popover_inner_html
-        html_params['popover'] = True
-
-        with open('pl-manual.mustache', 'r', encoding='utf-8') as f:
-            html_params['popover_html'] = chevron.render(f, html_params).strip()
-
-        html_params['popover'] = False
+        html_params['popover_children'] = popover_inner_html
         html_params['children'] = children
         html_params['grader'] = True
 
     else:
-        html_params['popover'] = False
         html_params['student'] = True
         html_params['html'] = pl.inner_html(element)
 

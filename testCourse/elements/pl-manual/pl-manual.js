@@ -1,39 +1,37 @@
-function ManualGradingElement(uuid) {
-  $(`#pl-manual-${uuid}`)
+function PLManual(uuid) {
+  const hideClass = 'd-none';
+  const plManualId = `#pl-manual-${uuid}`;
+  const popoverBtnId = `#pl-manual-regrade-button-${uuid}`;
+  const popoverBodyId = `#pl-manual-regrade-popover-body-${uuid}`;
+  const popoverTempBodyIdName = `pl-manual-regrade-popover-temp-body-${uuid}`;
+  const popoverTempBodyId = `#${popoverTempBodyIdName}`;
+
+  // Set up our popover (content body, santization so we can have inputs, ect.)
+  $(popoverBtnId)
+    .popover({
+      sanitize: false,
+      container: 'body',
+      content: () => `<div id='${popoverTempBodyIdName}'></div>`,
+    })
+    .on('hide.bs.popover', () =>
+      $(popoverBodyId).clone().addClass(hideClass).appendTo(plManualId)
+    )
+    .on('inserted.bs.popover', () =>
+      $(popoverBodyId)
+        .removeClass(hideClass)
+        .detach()
+        .appendTo(popoverTempBodyId)
+    );
+
+  // Just change over our points to be scaled out of 1 before form submit
+  $(plManualId)
     .closest('form')
-    .on('submit', () => {
-      // This should be a sum out of 100 (percentage)
-      let points = 0;
-      let feedback = [];
-
-      // Iterate over children and grab out appropriate values
-      // TODO: Augment so we can persist the state of certain children instead of only
-      //        passing on a single point/feedback value
-      // SPIKE: Figure out what anchors to give to children and validate uniqueness in pl-manual.py
-      $(`#pl-manual-${uuid}`)
-        .children('input')
-        .toArray()
-        .forEach((child) => {
-          const val = child.getAttribute('value');
-          const field = child.getAttribute('name');
-          switch (field) {
-            case 'points':
-              points += parseInt(val);
-            case 'feedback':
-              feedback.push(val);
-              break;
-            default:
-              throw new Error(
-                `Unable to attribute field "${field}" to a score.`
-              );
-          }
-        });
-
-      // FIXME: Remove demo logging
-      console.log(uuid, points, feedback);
-
-      // These are the actual fields that the form submission will take a look at
-      $(`#pl-manual-points-${uuid}`).attr('value', points / 100);
-      $(`#pl-manual-feedback-${uuid}`).attr('value', JSON.stringify(feedback));
+    .on('submit', function () {
+      () => {
+        const points = $(`input[name='pl-manual-points-${uuid}']`).getAttribute(
+          'value'
+        );
+        $(`input[name='pl-manual-points-${uuid}']`).attr('value', points / 100);
+      };
     });
 }
