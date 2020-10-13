@@ -12,7 +12,7 @@ WHERE id = $workspace_id;
 
 -- BLOCK select_workspace_paths
 SELECT
-    c.path AS course_path,
+    c.id AS course_id,
     q.qid
 FROM
     pl_courses AS c
