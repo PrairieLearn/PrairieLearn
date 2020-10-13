@@ -971,7 +971,7 @@ function saveAndSync(fileEdit, locals, callback) {
                                 job.fail(err);
                                 return;
                             }
-                            job.succeed();
+                            checkJsonErrors();
                         });
                     } else {
                         checkJsonErrors();
