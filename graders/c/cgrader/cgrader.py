@@ -61,6 +61,7 @@ class CGrader:
 
     def test_compile_file(self, c_file, exec_file, main_file=None, add_c_file=None,
                           points=1, field=None, flags=None, name='Compilation',
+                          add_warning_result_msg=True,
                           ungradable_if_failed=True):
 
         if flags and not isinstance(flags, list):
@@ -100,8 +101,10 @@ class CGrader:
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, '755')
         elif ungradable_if_failed:
-            self.result['message'] = 'Compilation errors, please fix and try again.\n\n' + out
+            self.result['message'] += f'Compilation errors, please fix and try again.\n\n{out}\n'
             raise UngradableException()
+        if out and add_warning_result_msg:
+            self.result['message'] += f'Compilation warnings:\n\n{out}\n'
         return self.add_test_result(name, output=out,
                                     points=os.path.isfile(exec_file),
                                     max_points=points, field=field)
@@ -262,8 +265,6 @@ class CGrader:
         except UngradableException:
             self.result['gradable'] = False
         finally:
-            if self.result['gradable']:
-                self.result['message'] = 'Tests completed'
             self.save_results()
 
     def tests(self):

@@ -45,8 +45,6 @@ Most questions using this autograder will contain a `pl-file-editor` or `pl-file
 </pl-submission-panel>
 ```
 
-Any file submitted using a `pl-file-editor` or `pl-file-upload` will be available for use by the C grader. Other elements can also be accessed using the same `data` structure used in functions in `server.py`, as described below.
-
 ### `tests/test.py`
 
 The `test.py` file will contain the basic tests that must be executed by the C grader. A simple `test.py` will look like this:
@@ -67,7 +65,13 @@ g.start()
 
 The `tests` method above will contain the basis for user tests, and will have access to some regular functions provided by the C grader. Some methods that can be called are listed below.
 
-To create tests based on parameters defined by `server.py`, or to have access to submitted data from other elements such as `pl-string-input` elements, you can access the `self.data` dictionary. This dictionary contains the similar keys to those found in the `grade()` function in `server.py`, such as `self.data["params"]` or `self.data["submitted_answers"]`.
+Any file submitted using a `pl-file-editor` or `pl-file-upload` will
+be available for use by the C grader. To create tests based on
+parameters defined by `server.py`, or to have access to submitted data
+from other elements such as `pl-string-input` elements, you can access
+the `self.data` dictionary. This dictionary contains the similar keys
+to those found in the `grade()` function in `server.py`, such as
+`self.data["params"]` or `self.data["submitted_answers"]`.
 
 ## Available test options
 
@@ -83,6 +87,12 @@ By default, if the compilation fails, it will stop all tests and return the subm
 
 ```python
 self.test_compile_file('square.c', 'square', ungradable_if_failed=False)
+```
+
+By default, if the compilation succeeds but gives a warning, a message with the warning will be listed in the main results message, above the test results. If you would like the warnings to be listed only inside the results of the specific test, you can call the function with:
+
+```python
+self.test_compile_file('square.c', 'square', add_warning_result_msg=False)
 ```
 
 The results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
@@ -272,5 +282,5 @@ By default, the sandbox user will not have access to any files inside the `/grad
 self.change_mode('/grade/student/myfile.txt', '744')
 ```
 
-Any program compiled with `test_compile_file()` will be granted executable permissions (mode `755`, so these programs don't need to be explicitly allowed by your tests.
+Any program compiled with `test_compile_file()` will be granted executable permissions (mode `755`), so these programs don't need to be explicitly allowed by your tests.
 
