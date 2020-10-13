@@ -969,9 +969,9 @@ function saveAndSync(fileEdit, locals, callback) {
                         }, (err) => {
                             if (err) {
                                 job.fail(err);
-                                return;
+                            } else {
+                                checkJsonErrors();
                             }
-                            checkJsonErrors();
                         });
                     } else {
                         checkJsonErrors();
