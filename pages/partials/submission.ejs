@@ -11,7 +11,7 @@
         </span>
         <span><%- include('submissionStatus', {submission: submission}); %></span>
       </div>
-      <small>
+      <small class="pl-submission-attribution">
         <% if (auth_user_id = submission.uid) { %>
           You submitted 
         <% } else { %>
