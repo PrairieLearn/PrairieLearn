@@ -4,6 +4,22 @@ Have a question or issue that wasn't listed here but you think it should be?
 
 Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/docs/faq.md)** to the FAQ.
 
+## How do I give students access to view their exams after they are over?
+
+To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl) like this:
+
+```json
+"allowAccess": [
+    ... all other access rules ...
+    {
+        "startDate": "2015-01-19T00:00:01"
+        "mode": "Public"
+    }
+]
+```
+
+This will give all students public access to their exams after the `startDate` until the end of the course instance. The will not be able to answer questions for further credit (there is no `"credit": 100` line), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing (limited access post-exam under controlled conditions)[#should-students-be-able-to-review-their-exams-after-they-are-over] (although this requires in-person access by students and doesn't work online).
+
 ## How can question pool development be managed over semesters?
 
 Writing and maintaining a large pool of questions is a lot of work. There are many strategies for managing this process. The approach taken by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois is:
