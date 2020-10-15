@@ -78,8 +78,8 @@ router.get('/', function(req, res, next) {
                         user_spec_rules.push({set: inter.join(', '),
                                               uids: inter,
                                               rules: []});
-                        old.uids = old.uids.filter(uid => !new_array.includes(uid));
-                        new_array = new_array.filter(uid => !new_array.includes(inter))
+                        old.uids = old.uids.filter(uid => !inter.includes(uid));
+                        new_array = new_array.filter(uid => !inter.includes(uid));
                     }
                 });
                 if (new_array)
