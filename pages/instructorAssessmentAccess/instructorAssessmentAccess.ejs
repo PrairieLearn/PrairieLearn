@@ -9,42 +9,82 @@
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          <%= assessment_set.name %> <%= assessment.number %>: Access rules
-        </div>
-
-        <div class="table-responsive">
-          <table class="table table-sm table-hover">
-            <thead>
-              <tr>
-                <th>Mode</th>
-                <th>Role</th>
-                <th>UIDs</th>
-                <th>Start date</th>
-                <th>End date</th>
-                <th>Credit</th>
-                <th>Time limit</th>
-                <th>Password</th>
-                <th>CBTF exam</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% access_rules.forEach(function(access_rule) { %>
-              <tr>
-                <td><%= access_rule.mode %></td>
-                <td><%= access_rule.role %></td>
-                <td><%= access_rule.uids %></td>
-                <td><%= access_rule.start_date %></td>
-                <td><%= access_rule.end_date %></td>
-                <td><%= access_rule.credit %></td>
-                <td><%= access_rule.time_limit %></td>
-                <td><%= access_rule.password %></td>
-                <td><%- access_rule.exam %></td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div>
+        <details>
+          <summary class="card-header bg-primary text-white d-flex align-items-center">
+            <%= assessment_set.name %> <%= assessment.number %>: Defined Access rules
+          </summary>
+          
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Mode</th>
+                  <th>Role</th>
+                  <th>UIDs</th>
+                  <th>Start date</th>
+                  <th>End date</th>
+                  <th>Credit</th>
+                  <th>Time limit</th>
+                  <th>Password</th>
+                  <th>CBTF exam</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% access_rules.forEach(function(access_rule) { %>
+                <tr>
+                  <td><%= access_rule.mode %></td>
+                  <td><%= access_rule.role %></td>
+                  <td><%= access_rule.uids %></td>
+                  <td><%= access_rule.start_date %></td>
+                  <td><%= access_rule.end_date %></td>
+                  <td><%= access_rule.credit %></td>
+                  <td><%= access_rule.time_limit %></td>
+                  <td><%= access_rule.password %></td>
+                  <td><%- access_rule.exam %></td>
+                </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+      
+      <div class="card mb-4">
+        <details open>
+          <summary class="card-header bg-primary text-white d-flex align-items-center">
+            <%= assessment_set.name %> <%= assessment.number %>: Interpreted Access rules
+          </summary>
+          
+          <div class="card-body">
+            <% explained_sets.forEach(function(set) { %>
+            <div>Access for <%= set.set %>: </div>
+            <div class="table-responsive">
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr>
+                    <th>Start date</th>
+                    <th>End date</th>
+                    <th>Credit</th>
+                    <th>Time limit</th>
+                    <th>Password</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% set.rules.forEach(function(access_rule) { %>
+                  <tr>
+                    <td><%= access_rule.start_date %></td>
+                    <td><%= access_rule.end_date %></td>
+                    <td><%= access_rule.credit %></td>
+                    <td><%= access_rule.time_limit %></td>
+                    <td><%= access_rule.password %></td>
+                  </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+            </div>
+            <% }); %>
+          </div>
+        </details>
       </div>
 
     </div>

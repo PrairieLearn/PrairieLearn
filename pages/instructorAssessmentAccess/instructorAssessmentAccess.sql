@@ -39,7 +39,18 @@ SELECT
         ELSE '<a href="https://cbtf.engr.illinois.edu/sched/course/'
             || ps_c.course_id || '/exam/' || e.exam_id || '">'
             || ps_c.rubric || ': ' || e.exam_string || '</a>'
-    END AS exam
+    END AS exam,
+    aar.mode AS mode_raw,
+    aar.role AS role_raw,
+    CASE
+        WHEN aar.uids IS NULL THEN NULL
+        ELSE array_to_string(aar.uids, ',')
+    END AS uids_raw,
+    aar.start_date AS start_date_raw,
+    aar.end_date AS end_date_raw,
+    aar.credit AS credit_raw,
+    aar.time_limit_min AS time_limit_raw,
+    aar.password AS password_raw
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)
