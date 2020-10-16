@@ -20,3 +20,15 @@ FROM
     LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
     gj.id = $grading_job_id;
+
+-- BLOCK select_question_for_grading_job
+SELECT 
+    q.*
+FROM 
+    grading_jobs AS gj
+    JOIN submissions as s ON (s.id = gj.submission_id)
+    JOIN variants AS v ON (v.id = s.variant_id)
+    LEFT JOIN questions as q ON (q.id = v.question_id)
+WHERE
+    gj.id = $grading_job_id;
+
