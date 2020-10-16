@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head', {pageNote: question.qid}); %>
     <script>
@@ -21,6 +21,7 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+      <%- include('../partials/questionSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           Question <%= question.qid %>

@@ -14,13 +14,14 @@ HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
 HIDE_LETTER_KEYS_DEFAULT = False
+HIDE_SCORE_BADGE_DEFAULT = False
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -90,7 +91,7 @@ def prepare(element_html, data):
     display_answers = []
     correct_answer_list = []
     for (i, (index, correct, html)) in enumerate(sampled_answers):
-        keyed_answer = {'key': chr(ord('a') + i), 'html': html}
+        keyed_answer = {'key': pl.index2key(i), 'html': html}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer_list.append(keyed_answer)
@@ -108,12 +109,13 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
+    hide_score_badge = pl.get_boolean_attrib(element, 'hide-score-badge', HIDE_SCORE_BADGE_DEFAULT)
 
     editable = data['editable']
     # answer feedback is not displayed when partial credit is True
     # (unless the question is disabled)
     show_answer_feedback = True
-    if partial_credit and editable:
+    if (partial_credit and editable) or hide_score_badge:
         show_answer_feedback = False
 
     display_answers = data['params'].get(name, [])
@@ -367,7 +369,7 @@ def test(element_html, data):
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
     number_answers = len(data['params'][name])
-    all_keys = [chr(ord('a') + i) for i in range(number_answers)]
+    all_keys = [pl.index2key(i) for i in range(number_answers)]
 
     result = data['test_type']
 

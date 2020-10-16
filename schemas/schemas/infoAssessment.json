@@ -92,6 +92,11 @@
             "description": "Requires the student to accept an honor code before starting exam assessments.",
             "type": "boolean",
             "default": true
+        },
+        "groupWork": {
+            "description": "Whether the assessment will support group work.",
+            "type": "boolean",
+            "default": false
         }
     },
     "definitions": {
@@ -174,6 +179,11 @@
                 },
                 "showClosedAssessment": {
                     "description": "Whether the student can view the assessment after it has been closed",
+                    "type": "boolean",
+                    "default": true
+                },
+                "showClosedAssessmentScore": {
+                    "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
                     "type": "boolean",
                     "default": true
                 }

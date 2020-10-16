@@ -13,6 +13,7 @@ const serverJobs = require('../lib/server-jobs');
 const syncFromDisk = require('../sync/syncFromDisk');
 const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
+const localCache = require('../lib/local-cache');
 const workers = require('../lib/workers');
 
 config.startServer = false;
@@ -62,8 +63,12 @@ module.exports = {
                 },
                 function(callback) {
                     debug('before(): sync from disk');
-                    syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function(err) {
+                    syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function(err, result) {
                         if (ERR(err, callback)) return;
+                        if (result.hadJsonErrorsOrWarnings) {
+                            console.log(logger.getOutput());
+                            return callback(new Error(`Errors or warnings found during sync of ${courseDir} (output printed to console)`));
+                        }
                         callback(null);
                     });
                 },
@@ -162,11 +167,23 @@ module.exports = {
                 });
             },
             function(callback) {
-                debug('after(): reset cache');
-                cache.reset(function(err) {
-                  if (ERR(err, callback)) return;
+                debug('after(): close socket server');
+                socketServer.close(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                debug('after(): close cache');
+                cache.close(function(err) {
+                    if (ERR(err, callback)) return;
                   callback(null);
                 });
+            },
+            function(callback) {
+                debug('after(): close local cache');
+                localCache.close();
+                callback(null);
             },
             function(callback) {
                 debug('after(): finish DB');

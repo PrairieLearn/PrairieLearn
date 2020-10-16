@@ -49,9 +49,7 @@ images, files, and code display. The following **decorative** elements are avail
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
-  figure.
-- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python 
+- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python
   variables and pandas data frames.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
   or with an adjacency matrix.
@@ -74,23 +72,27 @@ The following **Conditional** elements are available:
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
-Note: PrairieLearn Elements listed next have been **deprecated**. These elements
-will be removed at a future date.
+Note: PrairieLearn Elements listed next have been
+**deprecated**. These elements are still supported for backwards
+compatibility, but they should not be used in new questions.
 
 - [`pl-variable-score`](#pl-variable-score-element): Displays a partial score
   for a submitted element.
     - **Deprecated** as submission elements in `v3` all have score display options.
+- [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
+  figure.
+    - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
 
 ## Submission Elements
 
 -----
 
-## `pl-multiple-choice` element
+### `pl-multiple-choice` element
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-multiple-choice.png)
 
@@ -112,6 +114,11 @@ Attribute | Type | Default | Description
 `number-answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
+`all-of-the-above` | boolean | false | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`.
+`none-of-the-above` | boolean | false | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.
+`external-json` | string | special | Optional path to a JSON file to load external answer choices from.  Answer choices are stored as lists under "correct" and "incorrect" key names.
+`external-json-correct-key` | string | special | Optionally override default json "correct" attribute name when using `external-json` file.
+`external-json-incorrect-key` | string | special | Optionally override default json "incorrect" attribute name when using `external-json` file.
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -129,12 +136,12 @@ Attribute | Type | Default | Description
 
 - [`pl-checkbox` for allowing **one or more** choices](#pl-checkbox-element)
 
-## `pl-checkbox` element
+### `pl-checkbox` element
 
 A `pl-checkbox` element displays a subset of the answers in a random order
 as checkboxes.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-checkbox.png)
 
@@ -166,6 +173,7 @@ Attribute | Type | Default | Description
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
+`hide-score-badge` | boolean | false | Hide badges next to selected answers.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -194,12 +202,12 @@ Two grading methods are available when using `partial-credit="true"`:
 -----
 
 
-## `pl-number-input` element
+### `pl-number-input` element
 
 Fill in the blank field that allows for **numeric** value input within specific
 tolerances.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-number-input-rtol.png)
 
@@ -211,7 +219,7 @@ tolerances.
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -222,7 +230,7 @@ def generate(data):
   data["correct_answers"]["ans_rtol"] = x
 ```
 
----- 
+----
 
 ![](elements/pl-number-input-sigfig.png)
 
@@ -234,7 +242,7 @@ def generate(data):
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -279,11 +287,11 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-dropdown` element
+### `pl-dropdown` element
 
 Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-dropdown.png)
 
@@ -291,14 +299,14 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 
 ```html
 <p> Select the correct word in the following quotes:</p>
-The 
+The
 <pl-dropdown answers-name="aristotle" blank="true">
 
     {{#params.aristotle}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
     {{/params.aristotle}}
 
-</pl-dropdown> 
+</pl-dropdown>
 is more than the sum of its parts. <p></p>
 
 A <pl-dropdown sort="ascend" answers-name="hume">
@@ -339,11 +347,11 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-integer-input` element
+### `pl-integer-input` element
 
 Fill in the blank field that requires an **integer** input.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-integer-input.png)
 
@@ -354,7 +362,7 @@ Fill in the blank field that requires an **integer** input.
 
 **server.py**
 ```python
-import random 
+import random
 
 def generate(data):
 
@@ -390,11 +398,11 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-symbolic-input` element
+### `pl-symbolic-input` element
 
 Fill in the blank field that allows for mathematical symbol input.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-symbolic-input.png)
 
@@ -409,7 +417,7 @@ import prairielearn as pl
 import sympy
 
 def generate(data):
-  
+
   # Declare math symbols
   x, y = sympy.symbols('x y')
 
@@ -455,11 +463,11 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 -----
 
-## `pl-string-input` element
+### `pl-string-input` element
 
 Fill in the blank field that allows for **string** value input.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-string-input.png)
 
@@ -506,13 +514,13 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-matrix-component-input` element
+### `pl-matrix-component-input` element
 
 A `pl-matrix-component-input` element displays a grid of input fields with
 the same shape of the variable stored in `answers-name`
 (only 2D arrays of real numbers can be stored in `answers-name`).
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-matrix-component-input.png)
 
@@ -567,13 +575,13 @@ The question will only be graded when all matrix components are entered.
 
 -----
 
-## `pl-matrix-input` element
+### `pl-matrix-input` element
 
 A `pl-matrix-input` element displays an input field that accepts a matrix
 (i.e., a 2-D array) expressed in a supported programming language
 format (either MATLAB or Python's numpy).
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-matrix-input.png)
 
@@ -611,8 +619,8 @@ Attribute | Type | Default | Description
 
 #### Details
 
-`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats. 
-The following are valid input format options: 
+`pl-matrix-input` parses a matrix entered in either `MATLAB` or `Python` formats.
+The following are valid input format options:
 
 **MATLAB format:**
 ```
@@ -642,12 +650,12 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 -----
 
-## `pl-file-editor` element
+### `pl-file-editor` element
 
 Provides an in-browser file editor that's compatible with the other file elements
 and external grading system.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-file-editor.png)
 
@@ -697,12 +705,12 @@ The `focus` attribute defaults to `"false"`. Setting this to true will cause the
 
 -----
 
-## `pl-file-upload` element
+### `pl-file-upload` element
 
 Provides a way to accept file uploads as part of an answer. They will be stored
 in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-file-upload.png)
 
@@ -732,12 +740,12 @@ Attribute | Type | Default | description
 
 -----
 
-## `pl-threejs` element
+### `pl-threejs` element
 
 
 This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-threejs.png)
 
@@ -811,12 +819,12 @@ that if there are many submitted answers, the page will load slowly.
 
 -----
 
-## `pl-code` element
+### `pl-code` element
 
 Display an embedded or file-based block of code with syntax highlighting and
 line callouts.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-code.png)
 
@@ -856,11 +864,11 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 -----
 
-## `pl-python-variable` element
+### `pl-python-variable` element
 
 Displays the value of a Python variable, with formatted display of Pandas DataFrames.
 
-#### Sample Elements
+#### Sample elements
 
 **Display Python variable value**
 
@@ -929,11 +937,11 @@ As of right now, the element supports displaying either Pandas DataFrames as an 
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
 
-## `pl-figure` element
+### `pl-figure` element
 
 Display a statically or dynamically generated image.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-figure.png)
 
@@ -953,6 +961,7 @@ Attribute | Type | Default | Description
 `type` | text | 'static' | Type of file, either 'static' (an existing file) or 'dynamic' (a file generated by element or server code).
 `directory` | text | "clientFilesQuestion" | The directory that contains the file, either 'clientFilesQuestion' or 'clientFilesCourse' (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type='dynamic'`.
 `width` | number | `None` | Width of image (e.g., '250px').
+`inline` | boolean | false | Display figure inline with text (true) or on a separate line (false).
 
 #### Dynamically generated figures
 
@@ -974,6 +983,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 - [demo/randomPlot]
 - [demo/fixedCheckbox]
 - [demo/studentNames]
+- [element/figure]
 
 #### See also
 
@@ -982,11 +992,11 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 ----
 
-## `pl-file-download` element
+### `pl-file-download` element
 
 Provide a download link to a static or dynamically generated file.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-file-download.png)
 
@@ -1034,12 +1044,12 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 -----
 
-## `pl-variable-output` element
+### `pl-variable-output` element
 
 Displays a list of variables that are formatted for import into the
 supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-variable-output.png)
 
@@ -1063,7 +1073,7 @@ def generate(data):
   matrixD = np.matrix('-1 4; 3 2')
   # Random matrices can be generated with:
   # mat = np.random.random((2, 2))
-  
+
   # Export each matrix as a JSON object for the question view.
   data['params']['matrixC'] = pl.to_json(matrixC)
   data['params']['matrixD'] = pl.to_json(matrixD)
@@ -1144,11 +1154,11 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 -----
 
-## `pl-matrix-latex` element
+### `pl-matrix-latex` element
 
 Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-matrix-latex.png)
 
@@ -1163,10 +1173,10 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  
+
   # Construct a matrix
   mat = np.matrix('1 2; 3 4')
-  
+
   # Export matrix to be displayed in question.html
   data['params']['matrixC'] = pl.to_json(mat)
 ```
@@ -1183,14 +1193,14 @@ Attribute | Type | Default | Description
 #### Details
 
 Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
-one of the following will be returned. 
+one of the following will be returned.
 
 - **scalar**
     - a string containing the scalar not wrapped in brackets.
 - **numpy 2D array**
     - a string formatted using the `bmatrix` LaTeX style.
 
-Sample LaTeX formatting: 
+Sample LaTeX formatting:
 
 ```latex
 \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}
@@ -1223,45 +1233,12 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 -----
 
-## `pl-prairiedraw-figure` element
+### `pl-graph` element
 
-Create and display a prairiedraw image.
-
-#### Sample Element
-
-```html
-<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
-```
-
-#### Customizations
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`script-name` | string | - | Name of PrairieDraw script.
-`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
-`width` | integer | 500 | Width of the drawing element.
-`height` | integer | 300 | Height of the drawing element.
-
-#### Details
-
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
-
-#### Example implementations
-
-- [element/prairieDrawFigure]
-
-#### See also
-
-- [PrairieDraw graphics documentation](PrairieDraw.md)
-
------
-
-## `pl-graph` element
-
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create 
+Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
 Graphviz DOT visualizations.
 
-#### Sample Elements
+#### Sample elements
 
 ![](elements/pl-graph1.png)
 
@@ -1319,7 +1296,7 @@ Attribute | Type | Default | Description
 
 -----
 
-## `pl-drawing` element
+### `pl-drawing` element
 
 Creates a canvas (drawing space) that can display images from a collection of pre-defined drawing objects.
 Users can also add drawing objects to the canvas for grading.
@@ -1328,11 +1305,11 @@ See the [`pl-drawing` documentation](pl-drawing/index.md) for details.
 
 -----
 
-## `pl-overlay` element
+### `pl-overlay` element
 
 The overlay element allows existing PrairieLearn and HTML elements to be layered on top of one another in arbitrary positions.
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-overlay.png)
 
@@ -1384,12 +1361,12 @@ The `pl-background` child tag does not have any extra attributes that need to be
 
 An overlay is pre-defined as a "overlay area" with a static size.  By default, elements that exceed these boundaries will get partially or totally cut off.  A background can be specified by wrapping HTML in a `<pl-background>` tag, in this case the overlay will automatically size itself to fit the background and a `width` and `height` do not need to be specified.   Floating child elements are wrapped with a `<pl-location>` tag that specifies the position relative to some defined edge of the overlay area using `left`, `right`, `top`, and `bottom`.  Anything inside the location tag will be displayed at that position.  Children are layered in the order they are specified, with later child elements being displayed on top of those defined earlier.
 
-#### Example Implementations
+#### Example implementations
 
 - [element/overlay]
 
 ----
-## `pl-external-grader-variables` element
+### `pl-external-grader-variables` element
 
 Displays variables that are given to the student, or expected for the student to define in externally-graded questions.  The list of variables should be stored in `data['params']` and has the following format:
 
@@ -1403,7 +1380,7 @@ data["params"]["names_from_user"] = [
 ]
 ```
 
-#### Sample Element
+#### Sample element
 
 ![](elements/pl-external-grader-variables.png)
 
@@ -1447,11 +1424,11 @@ Attribute | Type | Default | Description
 
 ## Conditional Elements
 
-## `pl-question-panel` element
+### `pl-question-panel` element
 
 Displays the contents of question directions.
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-question-panel>
@@ -1478,11 +1455,11 @@ then it will be displayed alongside or answer.
 
 -----
 
-## `pl-submission-panel` element
+### `pl-submission-panel` element
 
 Customizes how information entered by a user is displayed before grading.
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-submission-panel>
@@ -1490,7 +1467,7 @@ Customizes how information entered by a user is displayed before grading.
 </pl-submission-panel>
 ```
 
-### Details
+#### Details
 
 Contents are only shown after the student has submitted an answer. This answer
 may be correct, incorrect, or invalid.
@@ -1511,12 +1488,12 @@ may be correct, incorrect, or invalid.
 -----
 
 
-## `pl-answer-panel` element
+### `pl-answer-panel` element
 
 Provide information regarding the question answer after the student is unable to
 receive further answers for grading.
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-answer-panel>
@@ -1524,7 +1501,7 @@ receive further answers for grading.
 </pl-answer-panel>
 ```
 
-### Details
+#### Details
 
 Contents are only displayed when the answer panel is requested.
 Common reasons that trigger the display of this element are:
@@ -1548,11 +1525,11 @@ Common reasons that trigger the display of this element are:
 -----
 
 
-## `pl-hide-in-panel` element
+### `pl-hide-in-panel` element
 
 Hide the contents so that it is **not** displayed in specific panels ("question", "submission", or "answer").
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-hide-in-panel submission="true" answer="true">
@@ -1568,7 +1545,7 @@ Attribute | Type | Default | Description
 `submission` | boolean | false | Whether to hide the element contents in the submission panel.
 `answer` | boolean | false | Whether to hide the element contents in the answer panel.
 
-### Details
+#### Details
 
 Hide the element contents in those panels for which the corresponding
 attribute is `true`. This is the reverse of
@@ -1592,26 +1569,26 @@ element contents only in a specific panel.
 -----
 
 
-## `pl-external-grader-results` element
+### `pl-external-grader-results` element
 
 Displays results from externally-graded questions.
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-external-grader-results></pl-external-grader-results>
 ```
 
-### Details
+#### Details
 
 It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-result).
 
-### Example Implementations
+#### Example Implementations
 
 - [demo/autograder/codeUpload]
 - [demo/autograder/codeEditor]
 
-### See also
+#### See also
 
 - [External Grading Reference Schema](externalGrading.md#grading-result)
 
@@ -1619,11 +1596,18 @@ It expects results to follow [the reference schema for external grading results]
 
 ## Deprecated Elements
 
-## `pl-variable-score` element
+Note: The following PrairieLearn Elements have been
+**deprecated**. These elements are still supported for backwards
+compatibility, but they should not be used in new questions.
+
+### `pl-variable-score` element
 
 Display the partial score for a specific answer variable.
 
-#### Sample Element
+**WARNING**: This element is **deprecated** and should not be used in
+  new questions.
+
+#### Sample element
 
 ```html
 <pl-variable-score answers-name="v_avg"></pl-variable-score>
@@ -1634,6 +1618,46 @@ Display the partial score for a specific answer variable.
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to display score for.
+
+-----
+
+### `pl-prairiedraw-figure` element
+
+Create and display a prairiedraw image.
+
+**WARNING**: This element is **deprecated** and should not be used in
+  new questions.
+
+#### Sample element
+
+```html
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`script-name` | string | - | Name of PrairieDraw script.
+`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
+`width` | integer | 500 | Width of the drawing element.
+`height` | integer | 300 | Height of the drawing element.
+
+#### Details
+
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+
+#### Example implementations
+
+- [element/prairieDrawFigure]
+
+#### See also
+
+- [PrairieDraw graphics documentation](PrairieDraw.md)
+
+
+
+
 
 <!-- Switch to using reference style links for elements -->
 [demo/autograder/ansiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/ansiOutput
@@ -1654,7 +1678,7 @@ Attribute | Type | Default | Description
 [demo/fixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/fixedCheckbox
 [demo/matrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixAlgebra
 [demo/matrixComplexAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixComplexAlgebra
-[demo/overlayDropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayDropdown)
+[demo/overlayDropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/overlayDropdown
 [demo/randomCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomCheckbox
 [demo/randomDataFrame]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomDataFrame
 [demo/randomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
@@ -1668,7 +1692,8 @@ Attribute | Type | Default | Description
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codeDocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
-[element/dropdown]: (https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown)
+[element/dropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown
+[element/figure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/figure
 [element/fileDownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph

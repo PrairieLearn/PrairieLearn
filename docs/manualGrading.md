@@ -3,7 +3,7 @@
 PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is not currently an online web interface for manual grading.
 
 
-## Configuring a question for maual grading
+## Configuring a question for manual grading
 
 The [`info.json` file](question.md#question-infojson) in the question should set `"gradingMethod": "Manual"`, like this:
 ```json
@@ -46,6 +46,19 @@ This CSV file has two blank columns at the end, ready for the percentage score (
 
 If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the "Downloads" tab. The scores and feedback should still be entered into the CSV file.
 
+### Workspaces
+
+To include files copied out of the workspace into the `<assessment>_files_for_manual_grading.zip`, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`
+```json
+"workspaceOptions": {
+        "gradedFiles": [
+            "starter_code.h",
+            "starter_code.c"
+        ],
+        ...
+}
+...
+```
 
 ## Uploading the scores and feedback
 

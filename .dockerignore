@@ -4,6 +4,7 @@
 # whitelist things to copy
 !.eslintignore
 !.eslintrc.json
+!tsconfig.json
 !admin_queries/
 !api/
 !cron/
@@ -12,7 +13,7 @@
 !docker/
 !elements/
 !exampleCourse/
-!testCourse/
+!grader_host/
 !lib/
 !middlewares/
 !migrations/
@@ -21,6 +22,7 @@
 !package.json
 !package-lock.json
 !pages/
+!prairielib/
 !public/
 !question-servers/
 !requirements.txt
@@ -29,6 +31,8 @@
 !schemas/
 !sprocs/
 !sync/
+!testCourse/
 !tests/
 !tools/
 !webhooks/
+!workspace_host/

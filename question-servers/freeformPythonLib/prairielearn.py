@@ -134,7 +134,7 @@ def inner_html(element):
         inner = ''
     inner = html.escape(str(inner))
     for child in element:
-        inner += lxml.html.tostring(child, method='html', pretty_print=True).decode('utf-8')
+        inner += lxml.html.tostring(child, method='html').decode('utf-8')
     return inner
 
 
@@ -1084,3 +1084,26 @@ def escape_invalid_string(string):
     Wraps and escapes string in <code> tags.
     """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
+
+
+def index2key(i):
+    """
+    index2key(i)
+
+    Used when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
+
+    Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
+    """
+    if i >= 26:
+        n = i
+        base_26_str = ''
+        while not n < 26:
+            base_26_str = '{:02d}'.format(n % 26) + base_26_str
+            n = n // 26 - 1
+        base_26_str = '{:02d}'.format(n) + base_26_str
+        base_26_int = [int(base_26_str[i:i + 2]) for i in range(0, len(base_26_str), 2)]
+        key = ''.join([chr(ord('a') + i) for i in base_26_int])
+    else:
+        key = chr(ord('a') + i)
+
+    return key

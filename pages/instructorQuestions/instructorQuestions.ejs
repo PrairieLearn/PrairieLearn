@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <%- include('../partials/head'); %>
@@ -18,6 +18,7 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+        <%- include('../partials/courseSyncErrorsAndWarnings'); %>
         <div class="card mb-4">
             <div class="card-header bg-primary">
                 <div class="row align-items-center justify-content-between">
@@ -55,8 +56,12 @@
                         <% questions.forEach(function(question) { %>
                         <tr>
                             <td class="align-middle">
-                                <a href="<%= urlPrefix %>/question/<%= question.id %>/">
-                                    <%= question.title %></a>
+                                <% if (question.sync_errors) { %>
+                                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                                <% } else if (question.sync_warnings) { %>
+                                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                                <% } %>
+                                <a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a>
                                 <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
                             </td>
                             <td class="align-middle">

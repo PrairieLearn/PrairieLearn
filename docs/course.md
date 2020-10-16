@@ -95,6 +95,7 @@ abbreviation | name | purpose
 `E` | Exam | Long-form midterm or final exams.
 `PE` | Practice Exam | Practice exams.
 `P` | Prep | Temporary assessments used while writing new questions.
+`WS` | Worksheet | Guided activity, often completed in groups.
 
 ## Adding your own assessment sets
 
@@ -104,6 +105,21 @@ You can add more assessment sets by listing them in the `infoCourse.json` file a
     "assessmentSets": [
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"}
+    ],
+```
+
+The assessment set order in `infoCourse.json` is the order in which the assessments will be shown within PrairieLearn (for both instructors and students). If you want to change the order of standardized assessment sets then you can re-list them in whatever order you like. For example, to put Exams and Quizzes first, you could use:
+
+```json
+    "assessmentSets": [
+        {'abbreviation': 'E', 'name': 'Exam', 'heading': 'Exams', 'color': 'brown1'},
+        {'abbreviation': 'Q', 'name': 'Quiz', 'heading': 'Quizzes', 'color': 'red1'},
+        {'abbreviation': 'PE', 'name': 'Practice Exam', 'heading': 'Practice Exams', 'color': 'yellow1'},
+        {'abbreviation': 'PQ', 'name': 'Practice Quiz', 'heading': 'Practice Quizzes', 'color': 'pink1'},
+        {'abbreviation': 'HW', 'name': 'Homework', 'heading': 'Homeworks', 'color': 'green1'},
+        {'abbreviation': 'P', 'name': 'Prep', 'heading': 'Question Preparation', 'color': 'gray1'},
+        {'abbreviation': 'MP', 'name': 'Machine Problem', 'heading': 'Machine Problems', 'color': 'turquoise1'},
+        {'abbreviation': 'WS', 'name': 'Worksheet', 'heading': 'Worksheets', 'color': 'purple1'}
     ],
 ```
 
@@ -180,6 +196,8 @@ You can add more tags to your course by listing them in the `infoCourse.json` fi
         {"name": "mwest", "color": "gray1", "description": "This question was written by Matthew West (mwest@illinois.edu)."}
     ]
 ```
+
+The tag order in `infoCourse.json` is the order in which the tags will be listed within PrairieLearn. If you want to change the order of your tags or standardized tags then you can re-list them in whatever order you like.
 
 ## Colors
 
