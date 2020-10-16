@@ -232,11 +232,11 @@ describe('Group based homework assess control on student side', function() {
             assert.isString(locals.__csrf_token);
         });
         it('should be able to create a group', function(callback) {
-            locals.team_name = 'TeamBB';
+            locals.group_name = 'groupBB';
             var form = {
                 __action: 'createGroup',
                 __csrf_token: locals.__csrf_token,
-                groupName: locals.team_name,
+                groupName: locals.group_name,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -253,9 +253,9 @@ describe('Group based homework assess control on student side', function() {
     });
 
     describe('8. the group information after 1 user join the group', function() {
-        it('should contain the correct team name', function() {
+        it('should contain the correct group name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.equal(elemList.text(), locals.group_name);
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
@@ -304,7 +304,7 @@ describe('Group based homework assess control on student side', function() {
             var form = {
                 __action: 'joinGroup',
                 __csrf_token: locals.__csrf_token,
-                joincode: locals.joinCode,
+                joinCode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -321,9 +321,9 @@ describe('Group based homework assess control on student side', function() {
     });
 
     describe('10. the group information after 2 users join the group', function() {
-        it('should contain the correct team name', function() {
+        it('should contain the correct group name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.equal(elemList.text(), locals.group_name);
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
@@ -371,7 +371,7 @@ describe('Group based homework assess control on student side', function() {
             var form = {
                 __action: 'joinGroup',
                 __csrf_token: locals.__csrf_token,
-                joincode: locals.joinCode,
+                joinCode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -395,9 +395,9 @@ describe('Group based homework assess control on student side', function() {
     });
 
     describe('12. the group information after 3 users join the group', function() {
-        it('should contain the correct team name', function() {
+        it('should contain the correct group name', function() {
             elemList = locals.$('#group-name');
-            assert.equal(elemList.text(), locals.team_name);
+            assert.equal(elemList.text(), locals.group_name);
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
@@ -436,7 +436,7 @@ describe('Group based homework assess control on student side', function() {
             var form = {
                 __action: 'joinGroup',
                 __csrf_token: locals.__csrf_token,
-                joincode: locals.joinCode,
+                joinCode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -626,11 +626,11 @@ describe('Group based homework assess control on student side', function() {
             assert.isString(locals.__csrf_token);
         });
         it('should be able to create a group', function(callback) {
-            locals.team_name_alternative1 = 'TeamCC';
+            locals.group_name_alternative1 = 'groupCC';
             var form = {
                 __action: 'createGroup',
                 __csrf_token: locals.__csrf_token,
-                groupName: locals.team_name_alternative1,
+                groupName: locals.group_name_alternative1,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -702,11 +702,11 @@ describe('Group based homework assess control on student side', function() {
             assert.isString(locals.__csrf_token);
         });
         it('should be able to create a group', function(callback) {
-            locals.team_name_alternative2 = 'TeamBBCC';
+            locals.group_name_alternative2 = 'groupBBCC';
             var form = {
                 __action: 'createGroup',
                 __csrf_token: locals.__csrf_token,
-                groupName: locals.team_name_alternative2,
+                groupName: locals.group_name_alternative2,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -762,7 +762,7 @@ describe('Group based homework assess control on student side', function() {
             var form = {
                 __action: 'joinGroup',
                 __csrf_token: locals.__csrf_token,
-                joincode: locals.joinCode,
+                joinCode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl_2, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;

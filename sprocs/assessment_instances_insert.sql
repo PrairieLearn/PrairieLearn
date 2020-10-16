@@ -63,17 +63,6 @@ BEGIN
         -- number = 1 so we will error on INSERT if there
         -- are existing assessment_instances
         
-        -- ######################################################################
-        -- do the actual insert
-
-    INSERT INTO assessment_instances
-            ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close, date_limit, number)
-    VALUES  (authn_user_id, assessment_id, 
-            CASE WHEN group_work THEN NULL      ELSE user_id END,
-            CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close, date_limit, number)
-    RETURNING id
-    INTO assessment_instance_id;
-
     -- ######################################################################
     -- determine other properties
 
@@ -84,6 +73,17 @@ BEGIN
     IF assessment.auto_close AND assessment.type = 'Exam' THEN
         auto_close := TRUE;
     END IF;
+
+    -- ######################################################################
+    -- do the actual insert
+
+    INSERT INTO assessment_instances
+            ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close, date_limit, number)
+    VALUES  (authn_user_id, assessment_id, 
+            CASE WHEN group_work THEN NULL      ELSE user_id END,
+            CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close, date_limit, number)
+    RETURNING id
+    INTO assessment_instance_id;
 
     -- ######################################################################
     -- start a record of the last access time

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
     <%- include('../partials/mathjax'); %>
@@ -75,7 +75,9 @@
             <% } %>
           </p>
 
-          <%- include('../partials/attachFilePanel') %>
+          <% if (config.attachedFilesDialogEnabled) { %>
+              <%- include('../partials/attachFilePanel') %>
+          <% } %>
 
           <% if (video) { %>
           <div class="modal" id="youtubemodal">
