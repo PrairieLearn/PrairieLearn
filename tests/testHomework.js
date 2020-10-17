@@ -301,60 +301,35 @@ describe('Homework assessment', function() {
 
     startAssessment();
 
-    describe('1. assessment_instance: set attach files page URL', function() {
+    describe('assessment_instance: set attach files page URL', function() {
         it('should succeed', function() {
             locals.attachFilesUrl = locals.assessmentInstanceUrl;
         });
     });
 
-    describe('2. assessment_instance: attach text file', function() {
+    describe('assessment_instance: attach text file', function() {
         const textFile = true;
         helperAttachFiles.attachFile(locals, textFile);
         helperAttachFiles.downloadAttachedFile(locals);
     });
 
-    describe('3. assessment_instance: delete attached text file', function() {
+    describe('assessment_instance: delete attached text file', function() {
         helperAttachFiles.deleteAttachedFile(locals);
         helperAttachFiles.checkNoAttachedFiles(locals);
     });
 
-    describe('4. assessment_instance: attach uploaded file', function() {
+    describe('assessment_instance: attach uploaded file', function() {
         const textFile = false;
         helperAttachFiles.attachFile(locals, textFile);
         helperAttachFiles.downloadAttachedFile(locals);
     });
 
-    describe('5. assessment_instance: delete attached uploaded file', function() {
+    describe('assessment_instance: delete attached uploaded file', function() {
         helperAttachFiles.deleteAttachedFile(locals);
         helperAttachFiles.checkNoAttachedFiles(locals);
     });
 
-    describe('6. assessment_instance: download deprecated text file from filesystem ', function() {
-        const filepath = 'testpath/';
-        const filename = 'test.zyx';
-
-        before('should insert deprecated file', async function() {
-            const content = 'This is the test text';
-            await fs.promises.mkdir(path.join(config.filesRoot, filepath));
-            const params = {
-                filename,
-                filepath,
-                assessment_id: locals.assessment_id,
-                assessment_instance_id: 1,
-            };
-            await fs.promises.writeFile(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
-            await sqldb.queryOneRowAsync(sql.insert_file_fs_ai, params);
-        });
-        after('should remove deprecated file', async function() {
-            await fs.promises.unlink(path.join(config.filesRoot, filepath, filename));
-            await fs.promises.rmdir(path.join(config.filesRoot, filepath));
-            sqldb.queryOneRowAsync(sql.delete_test_file_fs, {filename});
-        });
-
-        helperAttachFiles.downloadAttachedFile(locals);
-    });
-
-    describe('7. instance_question: attach files setup', function() {
+    describe('instance_question: attach files setup', function() {
         describe('setting up the question data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -369,53 +344,73 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('8. instance_question: attach text file', function() {
+    describe('instance_question: attach text file', function() {
         const textFile = true;
         helperAttachFiles.attachFile(locals, textFile);
         helperAttachFiles.downloadAttachedFile(locals);
     });
 
-    describe('9. instance_question: delete attached text file', function() {
+    describe('instance_question: delete attached text file', function() {
         helperAttachFiles.deleteAttachedFile(locals);
         helperAttachFiles.checkNoAttachedFiles(locals);
     });
 
-    describe('10. instance_question: attach uploaded file', function() {
+    describe('instance_question: attach text file using file storage', function() {
+        it('should set storage type to FileSystem', () => {
+            config.fileStoreStorageTypeDefault = 'FileSystem';
+        });
+        const textFile = true;
+        helperAttachFiles.attachFile(locals, textFile);
+        helperAttachFiles.downloadAttachedFile(locals);
+    });
+
+    describe('instance_question: get file storage attached file while using S3 as default', function() {
+        it('should set storage type to S3', () => {
+            config.fileStoreStorageTypeDefault = 'S3';
+        });
+        const textFile = true;
+        helperAttachFiles.downloadAttachedFile(locals);
+    });
+
+    describe('instance_question: delete attached text file using file storage', function() {
+        helperAttachFiles.deleteAttachedFile(locals);
+        helperAttachFiles.checkNoAttachedFiles(locals);
+    });
+
+    describe('instance_question: attach uploaded file', function() {
         const textFile = false;
         helperAttachFiles.attachFile(locals, textFile);
         helperAttachFiles.downloadAttachedFile(locals);
     });
 
-    describe('11. instance_question: delete attached uploaded file', function() {
+    describe('instance_question: delete attached uploaded file', function() {
         helperAttachFiles.deleteAttachedFile(locals);
         helperAttachFiles.checkNoAttachedFiles(locals);
     });
 
-    describe('12. instance_question: download deprecated filesystem', function() {
-        const filepath = 'testpath/';
-        const filename = 'test.zyx';
-
-        before('should insert deprecated file', async function() {
-            const content = 'This is the test text';
-            await fs.promises.mkdir(path.join(config.filesRoot, filepath));
-            const params = {
-                filename,
-                filepath,
-                instance_question_id: locals.question.id,
-            };
-            await fs.promises.writeFile(path.join(config.filesRoot, filepath) + filename, content, 'utf8');
-            await sqldb.queryOneRowAsync(sql.insert_file_fs_iq, params);
+    describe('instance_question: attach uploaded file using file storage', function() {
+        it('should set storage type to FileSystem', () => {
+            config.fileStoreStorageTypeDefault = 'FileSystem';
         });
-        after('should remove deprecated file', async function() {
-            await fs.promises.unlink(path.join(config.filesRoot, filepath, filename));
-            await fs.promises.rmdir(path.join(config.filesRoot, filepath));
-            sqldb.queryOneRowAsync(sql.delete_test_file_fs, {filename});
-        });
-
+        const textFile = false;
+        helperAttachFiles.attachFile(locals, textFile);
         helperAttachFiles.downloadAttachedFile(locals);
     });
 
-    describe('13. submit correct answer to question addVectors', function() {
+    describe('instance_question: get file storage uploaded file while using S3 as default', function() {
+        it('should set storage type to S3', () => {
+            config.fileStoreStorageTypeDefault = 'S3';
+        });
+        const textFile = false;
+        helperAttachFiles.downloadAttachedFile(locals);
+    });
+
+    describe('instance_question: delete attached uploaded file', function() {
+        helperAttachFiles.deleteAttachedFile(locals);
+        helperAttachFiles.checkNoAttachedFiles(locals);
+    });
+
+    describe('submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -443,7 +438,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('14. submit correct answer to question fossilFuelsRadio', function() {
+    describe('submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -470,7 +465,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('15. submit incorrect answer to question addVectors', function() {
+    describe('submit incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -498,7 +493,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('16. submit correct answer to question addVectors', function() {
+    describe('submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -526,7 +521,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('17. save incorrect answer to question addVectors', function() {
+    describe('save incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -554,7 +549,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('18. submit correct answer to question addVectors', function() {
+    describe('submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -582,7 +577,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('19. submit correct answer to question addVectors', function() {
+    describe('submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -610,7 +605,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('20. submit correct answer to question addVectors', function() {
+    describe('submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -638,7 +633,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('21. load question addNumbers page and save data for later submission', function() {
+    describe('load question addNumbers page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -655,7 +650,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('22. submit incorrect answer to question addNumbers', function() {
+    describe('submit incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -682,7 +677,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('23. submit correct answer to saved question addNumbers page', function() {
+    describe('submit correct answer to saved question addNumbers page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -704,7 +699,7 @@ describe('Homework assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('24. submit correct answer to question addNumbers', function() {
+    describe('submit correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -731,7 +726,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('25. submit invalid answer to question addNumbers', function() {
+    describe('submit invalid answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -774,7 +769,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('26. submit correct answer to question addNumbers', function() {
+    describe('submit correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -801,7 +796,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('27. save incorrect answer to question addNumbers', function() {
+    describe('save incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -828,7 +823,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('28. submit correct answer to question fossilFuelsRadio', function() {
+    describe('submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -855,7 +850,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('29. submit incorrect answer to question fossilFuelsRadio', function() {
+    describe('submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -882,7 +877,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('30. submit correct answer to question fossilFuelsRadio', function() {
+    describe('submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -909,7 +904,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('31. submit incorrect answer to question fossilFuelsRadio', function() {
+    describe('submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -936,7 +931,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('32. submit incorrect answers to question partialCredit6_no_partial', function() {
+    describe('submit incorrect answers to question partialCredit6_no_partial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -964,7 +959,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('33. submit first partially correct answers to question partialCredit6_no_partial', function() {
+    describe('submit first partially correct answers to question partialCredit6_no_partial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -992,7 +987,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('34. submit second partially correct answers to question partialCredit6_no_partial', function() {
+    describe('submit second partially correct answers to question partialCredit6_no_partial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -1020,7 +1015,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('35. submit correct answers to question partialCredit6_no_partial', function() {
+    describe('submit correct answers to question partialCredit6_no_partial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -1048,7 +1043,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('36. test downloading files', function() {
+    describe('test downloading files', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -1167,7 +1162,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('37. regrading', function() {
+    describe('regrading', function() {
         describe('change max_points', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_max_points, [], function(err, _result) {
@@ -1226,7 +1221,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('38. student gradebook page', function() {
+    describe('student gradebook page', function() {
         it('should load successfully', function(callback) {
             const gradebookUrl = locals.courseInstanceBaseUrl + '/gradebook';
             request(gradebookUrl, function (error, response, body) {

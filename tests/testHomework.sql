@@ -38,15 +38,3 @@ SET
     max_points = 13
 WHERE
     tid = 'hw1-automaticTestSuite';
-
--- BLOCK insert_file_fs_iq
-INSERT INTO files (user_id, instance_question_id, created_at, created_by, display_filename, storage_filename, type, storage_type)
-VALUES(1, $instance_question_id, current_timestamp, 1, $filename, $filepath, 'student_upload', 'FileSystem');
-
--- BLOCK insert_file_fs_ai
-INSERT INTO files (user_id, assessment_id, assessment_instance_id, created_at, created_by, display_filename, storage_filename, type, storage_type)
-VALUES(1, $assessment_id, $assessment_instance_id, current_timestamp, 1, $filename, $filepath, 'student_upload', 'FileSystem');
-
--- BLOCK delete_test_file_fs
-DELETE FROM files 
-WHERE $filename = display_filename;
