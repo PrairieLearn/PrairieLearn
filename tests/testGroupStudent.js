@@ -304,7 +304,7 @@ describe('Group based homework assess control on student side', function() {
             var form = {
                 __action: 'joinGroup',
                 __csrf_token: locals.__csrf_token,
-                joincode: locals.joinCode,
+                joinCode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -371,7 +371,7 @@ describe('Group based homework assess control on student side', function() {
             var form = {
                 __action: 'joinGroup',
                 __csrf_token: locals.__csrf_token,
-                joincode: locals.joinCode,
+                joinCode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -436,7 +436,7 @@ describe('Group based homework assess control on student side', function() {
             var form = {
                 __action: 'joinGroup',
                 __csrf_token: locals.__csrf_token,
-                joincode: locals.joinCode,
+                joinCode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -762,7 +762,7 @@ describe('Group based homework assess control on student side', function() {
             var form = {
                 __action: 'joinGroup',
                 __csrf_token: locals.__csrf_token,
-                joincode: locals.joinCode,
+                joinCode: locals.joinCode,
             };
             request.post({url: locals.assessmentUrl_2, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;

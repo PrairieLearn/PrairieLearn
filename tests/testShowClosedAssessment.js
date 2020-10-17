@@ -100,5 +100,6 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         assert.equal(response.status, 403);
 
         assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     });
 });

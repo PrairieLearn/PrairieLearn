@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <%- include('../pages/partials/head'); %>
     <% if (prompt == 'SEB') { %>
@@ -22,7 +22,7 @@
 
             <div class="card-body">
 
-                <% if (typeof assessment_instance !== 'undefined' && assessment_instance.open === false) { %>
+                <% if (typeof assessment_instance !== 'undefined' && assessment_instance.open === false && prompt !== 'closedAssessmentNotViewableHiddenGrade') { %>
 
                     <div class="row align-items-center">
                       <div class="col-md-3 col-sm-6">

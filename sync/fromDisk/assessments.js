@@ -82,6 +82,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
             exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
             show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
+            show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
         };
     });
 
