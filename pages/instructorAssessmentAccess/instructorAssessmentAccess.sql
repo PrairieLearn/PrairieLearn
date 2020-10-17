@@ -42,10 +42,7 @@ SELECT
     END AS exam,
     aar.mode AS mode_raw,
     aar.role AS role_raw,
-    CASE
-        WHEN aar.uids IS NULL THEN NULL
-        ELSE array_to_string(aar.uids, ',')
-    END AS uids_raw,
+    aar.uids AS uids_raw,
     aar.start_date AS start_date_raw,
     aar.end_date AS end_date_raw,
     aar.credit AS credit_raw,
@@ -61,3 +58,13 @@ WHERE
     a.id = $assessment_id
 ORDER BY
     aar.number;
+
+-- BLOCK course_roles
+SELECT
+    u.uid AS user_uid,
+    e.role AS course_role
+FROM
+    enrollments as e
+    JOIN users AS u ON (u.user_id = e.user_id)
+WHERE
+    e.course_instance_id = $course_instance_id;
