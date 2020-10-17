@@ -31,12 +31,12 @@ function apply_rule(list, formal_rule) {
             if (new_rule.mode_raw !== null) {
                 // New rule is NULL, old rule is not NULL, so split new rule.
                 let new_rule_public = Object.assign({}, new_rule);
-                new_rule_public.mode_raw = "Public";
-                new_rule_public.mode = "Public";
+                new_rule_public.mode_raw = 'Public';
+                new_rule_public.mode = 'Public';
                 apply_rule(new_rule_public);
                 let new_rule_exam = Object.assign({}, new_rule);
-                new_rule_exam.mode_raw = "Exam";
-                new_rule_exam.mode = "Exam";
+                new_rule_exam.mode_raw = 'Exam';
+                new_rule_exam.mode = 'Exam';
                 apply_rule(new_rule_exam);
                 valid = false;
             }
