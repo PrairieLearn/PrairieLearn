@@ -25,26 +25,26 @@ function apply_rule(list, formal_rule) {
     let valid = true;
     list.forEach(old_rule => {
 
-	if (!valid) return;
-	
-	if (old_rule.mode_raw !== null && old_rule.mode_raw !== new_rule.mode_raw) {
-	    if (new_rule.mode_raw !== null) {
-		// New rule is NULL, old rule is not NULL, so split new rule.
-		let new_rule_public = Object.assign({}, new_rule);
-		new_rule_public.mode_raw = "Public";
-		new_rule_public.mode = "Public";
-		apply_rule(new_rule_public);
-		let new_rule_exam = Object.assign({}, new_rule);
-		new_rule_exam.mode_raw = "Exam";
-		new_rule_exam.mode = "Exam";
-		apply_rule(new_rule_exam);
-		valid = false;
-	    }
-	    return;
-	}
+        if (!valid) return;
+        
+        if (old_rule.mode_raw !== null && old_rule.mode_raw !== new_rule.mode_raw) {
+            if (new_rule.mode_raw !== null) {
+                // New rule is NULL, old rule is not NULL, so split new rule.
+                let new_rule_public = Object.assign({}, new_rule);
+                new_rule_public.mode_raw = "Public";
+                new_rule_public.mode = "Public";
+                apply_rule(new_rule_public);
+                let new_rule_exam = Object.assign({}, new_rule);
+                new_rule_exam.mode_raw = "Exam";
+                new_rule_exam.mode = "Exam";
+                apply_rule(new_rule_exam);
+                valid = false;
+            }
+            return;
+        }
 
-	// TODO Exam UUID
-	
+        // TODO Exam UUID
+        
         if (compare_date(new_rule.start_date_raw, old_rule.start_date_raw, -1, +1, 0) >= 0 &&
             compare_date(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) <= 0)
             valid = false;
@@ -78,7 +78,7 @@ router.get('/', function(req, res, next) {
     debug('GET /');
     var course_roles = {};
     var params = {
-        course_instance_id: res.locals.course_instance.id
+        course_instance_id: res.locals.course_instance.id,
     };
     console.log('Course ID', res.locals.course_instance.id);
     sqldb.query(sql.course_roles, params, function(err, result) {
@@ -89,7 +89,7 @@ router.get('/', function(req, res, next) {
             course_roles[row.user_uid] = row.course_role;
         });
     });
-    var params = {
+    params = {
         assessment_id: res.locals.assessment.id,
         link_exam_id: config.syncExamIdAccessRules,
     };
@@ -160,7 +160,7 @@ router.get('/', function(req, res, next) {
             user_spec_rules.push(
                 {set: 'TAs without a user-specific rule',
                  rules: ta_rules});
-	
+        
         res.locals.explained_sets = user_spec_rules;
         
         debug('render page');
