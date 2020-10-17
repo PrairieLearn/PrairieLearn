@@ -140,8 +140,8 @@ class CGrader:
         if reject_output is not None and not isinstance(reject_output, list):
             reject_output = [reject_output]
         if msg is None and exp_output is not None:
-            msg = 'Expected "%s"' % ('" AND "' if must_match_all_outputs \
-                                     else '" OR "').join([str(t) for t in exp_output]) + \
+            msg = 'Expected: %s' % (' AND ' if must_match_all_outputs \
+                                     else ' OR ').join([f'\n{t}\n' if '\n' in t else f'"{t}"' for t in exp_output]) + \
                   (' but not "%s"' % '"/"'.join([str(t) for t in reject_output]) if reject_output else '')
 
         out = self.run_command(command if args is None else ([command] + args),
