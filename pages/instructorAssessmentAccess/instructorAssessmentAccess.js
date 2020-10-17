@@ -10,16 +10,21 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-function compare_date(old_date, new_date, old_is_null, new_is_null, both_are_null) {
+let compare_date = function(old_date, new_date, old_is_null, new_is_null, both_are_null) {
     if (old_date === null)
         return new_date === null ? both_are_null : old_is_null;
     else if (new_date === null)
         return new_is_null;
     else
         return old_date - new_date;
-}
+};
 
-function apply_rule(list, formal_rule) {
+let compare_role = function(role1, role2) {
+    let role_order = ['Student', 'TA', 'Instructor'];
+    return Math.max(role_order.indexOf(role1), 0) - Math.max(role_order.indexOf(role2), 0);
+};
+
+let apply_rule = function(list, formal_rule) {
 
     let new_rule = Object.assign({}, formal_rule);
     let valid = true;
@@ -72,43 +77,52 @@ function apply_rule(list, formal_rule) {
     if (valid) {
         list.push(new_rule);
     }
-}
+};
 
 router.get('/', function(req, res, next) {
     debug('GET /');
     var course_roles = {};
     var params = {
         course_instance_id: res.locals.course_instance.id,
-    };
-    console.log('Course ID', res.locals.course_instance.id);
-    sqldb.query(sql.course_roles, params, function(err, result) {
-        console.log('Inside query', err, result);
-        if (ERR(err, next)) return;
-        result.rows.forEach(row => {
-            console.log(row.user_uid, row.course_role);
-            course_roles[row.user_uid] = row.course_role;
-        });
-    });
-    params = {
         assessment_id: res.locals.assessment.id,
         link_exam_id: config.syncExamIdAccessRules,
     };
+    sqldb.query(sql.course_roles, params, function(err, result) {
+        if (ERR(err, next)) return;
+        result.rows.forEach(row => {
+            course_roles[row.user_uid] = row.course_role;
+        });
+    });
+    sqldb.query(sql.assessment_settings, params, function(err, result) {
+        if (ERR(err, next)) return;
+        result.rows.forEach(row => {
+            res.locals.assessment_settings = row;
+        });
+    });
     sqldb.query(sql.assessment_access_rules, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.access_rules = result.rows;
         debug('building user-friendly description');
-        let ta_rules = null;
+        let ta_rules = [];
         let student_rules = [];
         let user_spec_rules = [];
 
         // Creates sets of unique user lists
-        result.rows.forEach(function(formal) {
+        result.rows.forEach(formal => {
             if (formal.uids_raw) {
                 let uids = formal.uids_raw;
                 (new Set(uids.map(uid => course_roles[uid] || 'Student'))).forEach(role => {
-                    let new_array = uids.filter(uid => role == (course_roles[uid] || 'Student'));
+                    
+                    // If the role and uids are both set, and the uids
+                    // have lower role, ignore uids (e.g., if role is
+                    // TA and uids includes students.
+                    if (compare_role(formal.role, role) > 0) return;
+
+                    let role_uids = uids.filter(uid => role == (course_roles[uid] || 'Student'));
+
+                    // Check if any existing user list has an intersection with current list.
                     user_spec_rules.forEach(old => {
-                        let inter = old.uids.filter(uid => new_array.includes(uid));
+                        let inter = old.uids.filter(uid => role_uids.includes(uid));
                         if (inter.length) {
                             user_spec_rules.push({set: role + 's: ' + inter.join(', '),
                                                   role: role,
@@ -116,18 +130,18 @@ router.get('/', function(req, res, next) {
                                                   rules: []});
                             old.uids = old.uids.filter(uid => !inter.includes(uid));
                             old.set = old.role + 's: ' + old.uids.join(', ');
-                            new_array = new_array.filter(uid => !inter.includes(uid));
+                            role_uids = role_uids.filter(uid => !inter.includes(uid));
                         }
                     });
-                    if (new_array)
-                        user_spec_rules.push({set: role + 's: ' + new_array.join(', '),
-                                              uids: new_array,
+                    if (role_uids)
+                        user_spec_rules.push({set: role + 's: ' + role_uids.join(', '),
+                                              role: role,
+                                              uids: role_uids,
                                               rules: []});
                 });
             }
             if (formal.role == 'TA')
                 ta_rules = [];
-            // TODO Distinguish TA roles with specific UIDs
         });
         // Remove lists without UIDs remaining
         user_spec_rules = user_spec_rules.filter(set => set.uids.length);
@@ -142,23 +156,22 @@ router.get('/', function(req, res, next) {
                     apply_rule(student_rules, formal);
             }
 
-            // TODO Consider cases where uuid list includes TAs
-            
-            if (formal.role != 'TA')
-                user_spec_rules.forEach(set => {
-                    if (formal.uids_raw === null ||
-                        set.uids.filter(uid => formal.uids_raw.includes(uid)).length) {
-                        apply_rule(set.rules, formal);
-                    }
-                });
+            user_spec_rules.forEach(set => {
+                if ((formal.uids_raw === null ||
+                     set.uids.filter(uid => formal.uids_raw.includes(uid)).length) &&
+                    compare_role(formal.role, set.role) <= 0) {
+                    apply_rule(set.rules, formal);
+                }
+            });
         });
 
-        user_spec_rules.push(
-            {set: 'Students without a user-specific rule',
-             rules: student_rules});
-        if (ta_rules)
+        if (student_rules && student_rules.length)
             user_spec_rules.push(
-                {set: 'TAs without a user-specific rule',
+                {set: 'Students in general',
+                 rules: student_rules});
+        if (ta_rules && ta_rules.length)
+            user_spec_rules.push(
+                {set: 'TAs in general',
                  rules: ta_rules});
         
         res.locals.explained_sets = user_spec_rules;

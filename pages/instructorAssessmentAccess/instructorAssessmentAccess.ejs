@@ -8,85 +8,115 @@
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
-      <div class="card mb-4">
-        <details>
-          <summary class="card-header bg-primary text-white d-flex align-items-center">
-            <%= assessment_set.name %> <%= assessment.number %>: Defined Access rules
-          </summary>
-          
-          <div class="table-responsive">
-            <table class="table table-sm table-hover">
-              <thead>
-                <tr>
-                  <th>Mode</th>
-                  <th>Role</th>
-                  <th>UIDs</th>
-                  <th>Start date</th>
-                  <th>End date</th>
-                  <th>Credit</th>
-                  <th>Time limit</th>
-                  <th>Password</th>
-                  <th>CBTF exam</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% access_rules.forEach(function(access_rule) { %>
-                <tr>
-                  <td><%= access_rule.mode %></td>
-                  <td><%= access_rule.role %></td>
-                  <td><%= access_rule.uids %></td>
-                  <td><%= access_rule.start_date %></td>
-                  <td><%= access_rule.end_date %></td>
-                  <td><%= access_rule.credit %></td>
-                  <td><%= access_rule.time_limit %></td>
-                  <td><%= access_rule.password %></td>
-                  <td><%- access_rule.exam %></td>
-                </tr>
-                <% }); %>
-              </tbody>
-            </table>
-          </div>
-        </details>
-      </div>
+      <details open class="card mb-4">
+        <summary class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Defined Access rules
+        </summary>
+        
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Mode</th>
+                <th>Role</th>
+                <th>UIDs</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Credit</th>
+                <th>Time limit</th>
+                <th>Password</th>
+                <th>CBTF exam</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% access_rules.forEach(function(access_rule) { %>
+              <tr>
+                <td><%= access_rule.mode %></td>
+                <td><%= access_rule.role %></td>
+                <td><%= access_rule.uids %></td>
+                <td><%= access_rule.start_date %></td>
+                <td><%= access_rule.end_date %></td>
+                <td><%= access_rule.credit %></td>
+                <td><%= access_rule.time_limit %></td>
+                <td><%= access_rule.password %></td>
+                <td><%- access_rule.exam %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </details>
       
-      <div class="card mb-4">
-        <details open>
-          <summary class="card-header bg-primary text-white d-flex align-items-center">
-            <%= assessment_set.name %> <%= assessment.number %>: Interpreted Access rules
-          </summary>
-          
-          <div class="card-body">
-            <% explained_sets.forEach(function(set) { %>
-            <div>Access for <%= set.set %>: </div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover">
-                <thead>
-                  <tr>
-                    <th>Start date</th>
-                    <th>End date</th>
-                    <th>Credit</th>
-                    <th>Time limit</th>
-                    <th>Password</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <% set.rules.forEach(function(access_rule) { %>
-                  <tr>
-                    <td><%= access_rule.start_date %></td>
-                    <td><%= access_rule.end_date %></td>
-                    <td><%= access_rule.credit %></td>
-                    <td><%= access_rule.time_limit %></td>
-                    <td><%= access_rule.password %></td>
-                  </tr>
-                  <% }); %>
-                </tbody>
-              </table>
-            </div>
-            <% }); %>
-          </div>
-        </details>
-      </div>
+      <details class="card mb-4">
+        <summary class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Interpreted Access rules
+        </summary>
+        
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Population</th>
+                <th>Mode</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Credit</th>
+                <th>Time limit</th>
+                <th>Password</th>
+                <th>After Assessment is Closed:</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% explained_sets.forEach(function(set) { %>
+              <tr><td colspan=8><em><%= set.set %></em></td></tr>
+              <% set.rules.forEach(function(access_rule) { %>
+              <tr>
+                <td></td>
+                <td><%= access_rule.mode %></td>
+                <td><%= access_rule.start_date %></td>
+                <td><%= access_rule.end_date %></td>
+                <td><%= access_rule.credit %></td>
+                <td><%= access_rule.time_limit %></td>
+                <td><%= access_rule.password %></td>
+                <td><%= access_rule.show_closed_assessment ?
+                        'User can see the Assessment score and answers' :
+                        access_rule.show_closed_assessment_score ?
+                        'User can only see the Assessment score, but not the answers' :
+                        'User cannot see the Assessment score or the answers'%></td>
+              </tr>
+              <% }); %>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </details>
 
+      <details open class="card mb-4">
+        <summary class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Other Access-related Settings
+        </summary>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover two-column-description">
+            <tbody>
+              <tr>
+                <th>Assessment Type</th>
+                <td><%= assessment_settings.type %></td>
+              </tr>
+              <tr>
+                <th>Real-Time Grading</th>
+                <td><%= assessment_settings.allow_real_time_grading ? 'Enabled' : 'Disabled' %></td>
+              </tr>
+              <tr>
+                <th>Automatic Closing</th>
+                <td><%= assessment_settings.type == 'Exam' && assessment_settings.auto_close ?
+                        'Assessment will close after a period of inactivity' :
+                        'Assessment will not close automatically' %></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
     </div>
   </body>
 </html>

@@ -40,14 +40,13 @@ SELECT
             || ps_c.course_id || '/exam/' || e.exam_id || '">'
             || ps_c.rubric || ': ' || e.exam_string || '</a>'
     END AS exam,
+    aar.show_closed_assessment AS show_closed_assessment,
+    aar.show_closed_assessment_score AS show_closed_assessment_score,
     aar.mode AS mode_raw,
     aar.role AS role_raw,
     aar.uids AS uids_raw,
     aar.start_date AS start_date_raw,
-    aar.end_date AS end_date_raw,
-    aar.credit AS credit_raw,
-    aar.time_limit_min AS time_limit_raw,
-    aar.password AS password_raw
+    aar.end_date AS end_date_raw
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)
@@ -67,4 +66,17 @@ FROM
     enrollments as e
     JOIN users AS u ON (u.user_id = e.user_id)
 WHERE
-    e.course_instance_id = $course_instance_id;
+    e.course_instance_id = $course_instance_id
+    AND e.role <> 'Student';
+
+-- BLOCK assessment_settings
+SELECT
+    a.type AS type,
+    a.auto_close AS auto_close,
+    a.allow_real_time_grading AS allow_real_time_grading,
+    a.multiple_instance AS multiple_instance
+FROM
+    assessments AS a
+WHERE
+    a.id = $assessment_id
+LIMIT 1;
