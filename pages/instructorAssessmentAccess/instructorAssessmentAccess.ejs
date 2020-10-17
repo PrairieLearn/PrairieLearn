@@ -63,12 +63,13 @@
                 <th>Credit</th>
                 <th>Time limit</th>
                 <th>Password</th>
+                <th>CBTF Exam</th>
                 <th>After Assessment is Closed:</th>
               </tr>
             </thead>
             <tbody>
               <% explained_sets.forEach(function(set) { %>
-              <tr><td colspan=8><em><%= set.set %></em></td></tr>
+              <tr><td colspan=9><em><%= set.set %></em></td></tr>
               <% set.rules.forEach(function(access_rule) { %>
               <tr>
                 <td></td>
@@ -78,6 +79,7 @@
                 <td><%= access_rule.credit %></td>
                 <td><%= access_rule.time_limit %></td>
                 <td><%= access_rule.password %></td>
+                <td><%- access_rule.exam %></td>
                 <td><%= access_rule.show_closed_assessment ?
                         'User can see the Assessment score and answers' :
                         access_rule.show_closed_assessment_score ?

@@ -31,7 +31,7 @@ let apply_rule = function(list, formal_rule) {
     list.forEach(old_rule => {
 
         if (!valid) return;
-        
+
         if (old_rule.mode_raw !== null && old_rule.mode_raw !== new_rule.mode_raw) {
             if (new_rule.mode_raw !== null) {
                 // New rule is NULL, old rule is not NULL, so split new rule.
@@ -48,7 +48,11 @@ let apply_rule = function(list, formal_rule) {
             return;
         }
 
-        // TODO Exam UUID
+        // Simplification: if there are multiple rules with different
+        // CBTF exam UUIDs, they are not considered a conflict, and may all
+        // be valid simultaneously.
+        if (old_rule.exam !== new_rule.exam)
+            return;
         
         if (compare_date(new_rule.start_date_raw, old_rule.start_date_raw, -1, +1, 0) >= 0 &&
             compare_date(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) <= 0)
