@@ -589,6 +589,16 @@ FROM
 
 * Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
 
+## Using async route handlers with ExpressJS
+
+* Express can't directly use async route handlers. Instead we use [express-async-handler](https://www.npmjs.com/package/express-async-handler) like this:
+
+```javascript
+const asyncHandler = require('express-async-handler');
+router.get('/', asyncHandler(async (req, res, next) => {
+    // can use "await" here
+}));
+```
 
 ## Interfacing between callback-style and async/await-style functions
 
