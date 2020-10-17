@@ -1,10 +1,8 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const assert = require('chai').assert;
-const cheerio = require('cheerio');
-const fs = require('fs');
-const path = require('path');
 const request = require('request');
+const cheerio = require('cheerio');
 
 const config = require('../lib/config');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -368,7 +366,6 @@ describe('Homework assessment', function() {
         it('should set storage type to S3', () => {
             config.fileStoreStorageTypeDefault = 'S3';
         });
-        const textFile = true;
         helperAttachFiles.downloadAttachedFile(locals);
     });
 
@@ -401,7 +398,6 @@ describe('Homework assessment', function() {
         it('should set storage type to S3', () => {
             config.fileStoreStorageTypeDefault = 'S3';
         });
-        const textFile = false;
         helperAttachFiles.downloadAttachedFile(locals);
     });
 
