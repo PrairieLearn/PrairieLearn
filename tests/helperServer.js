@@ -7,7 +7,6 @@ const delay = require('delay');
 const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const awsHelper = require('../lib/aws');
 const config = require('../lib/config');
 const load = require('../lib/load');
 const aws = require('../lib/aws');
@@ -104,12 +103,6 @@ module.exports = {
                 function(callback) {
                     debug('before(): initialize socket server');
                     socketServer.init(server, function(err) {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                },
-                function(callback) {
-                    util.callbackify(awsHelper.init)(err => {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
