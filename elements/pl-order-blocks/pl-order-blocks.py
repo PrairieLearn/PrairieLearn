@@ -55,6 +55,55 @@ def get_lead_answer(submitted_blocks, block_indents, leading_code):
     answer = leading_code + '\n' + answer
     return answer
 
+def prepare(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    
+    pl.check_attribs(element,
+                 required_attribs=['answers-name'],
+                 optional_attribs=['shuffle-options',
+                                   'permutation-mode',
+                                   'check-indentation',
+                                   'header-left-column',
+                                   'header-right-column',
+                                   'external-grader',
+                                   'file-name',
+                                   'leading-code',
+                                   'trailing-code',
+                                   'dropzone-layout'])
+
+    answer_name = pl.get_string_attrib(element, 'answers-name')
+
+    mcq_options = []
+    correct_answers = []
+    correct_answers_indent = []
+
+    is_shuffle = pl.get_string_attrib(element, 'shuffle-options', 'false')  # default to FALSE, no shuffling unless otherwise specified
+
+    for html_tags in element:
+        if html_tags.tag == 'pl-answer':
+            # correct attribute is not strictly required, as the attribute is irrelevant for autograded questions
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
+            mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
+
+    if is_shuffle == 'true':
+        random.shuffle(mcq_options)
+
+    for html_tags in element:
+        if html_tags.tag == 'pl-answer':
+            isCorrect = pl.get_string_attrib(html_tags, 'correct', 'false')  # default correctness to false
+            answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1')  # get answer indent, and default to -1 (indent level ignored)
+            if isCorrect.lower() == 'true':
+                # add option to the correct answer array, along with the correct required indent
+                correct_answers.append(str.strip(html_tags.text))
+                correct_answers_indent.append(answerIndent)
+
+    if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
+        raise Exception('There are no correct answers specified for this question!')
+
+    data['params'][answer_name] = mcq_options
+    data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
+                                            'correct_answers_indent': correct_answers_indent}
+
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -65,22 +114,8 @@ def render(element_html, data):
         student_previous_submission = []
         submission_indent = []
 
-        pl.check_attribs(element,
-                         required_attribs=['answers-name'],
-                         optional_attribs=['shuffle-options',
-                                           'permutation-mode',
-                                           'check-indentation',
-                                           'header-left-column',
-                                           'header-right-column',
-                                           'external-grader',
-                                           'file-name',
-                                           'leading-code',
-                                           'trailing-code',
-                                           'dropzone-layout'])
-
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
-                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
                 mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
         answer_name = pl.get_string_attrib(element, 'answers-name')
@@ -196,40 +231,6 @@ def prettyPrint(array):
     return prettyPrintAnswer
 
 
-def prepare(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, 'answers-name')
-
-    mcq_options = []
-    correct_answers = []
-    correct_answers_indent = []
-
-    is_shuffle = pl.get_string_attrib(element, 'shuffle-options', 'false')  # default to FALSE, no shuffling unless otherwise specified
-
-    for html_tags in element:
-        if html_tags.tag == 'pl-answer':
-            # correct attribute is not strictly required, as the attribute is irrelevant for autograded questions
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
-            mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
-
-    if is_shuffle == 'true':
-        random.shuffle(mcq_options)
-
-    for html_tags in element:
-        if html_tags.tag == 'pl-answer':
-            isCorrect = pl.get_string_attrib(html_tags, 'correct', 'false')  # default correctness to false
-            answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1')  # get answer indent, and default to -1 (indent level ignored)
-            if isCorrect.lower() == 'true':
-                # add option to the correct answer array, along with the correct required indent
-                correct_answers.append(str.strip(html_tags.text))
-                correct_answers_indent.append(answerIndent)
-
-    if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
-        raise Exception('There are no correct answers specified for this question!')
-
-    data['params'][answer_name] = mcq_options
-    data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
-                                            'correct_answers_indent': correct_answers_indent}
 
 
 def parse(element_html, data):
