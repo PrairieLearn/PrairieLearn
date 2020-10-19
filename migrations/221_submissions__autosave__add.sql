@@ -1,1 +1,1 @@
-ALTER TABLE submissions ADD COLUMN autosave boolean NOT NULL DEFAULT true;
+ALTER TABLE submissions ADD COLUMN autosave boolean NOT NULL DEFAULT FALSE;
