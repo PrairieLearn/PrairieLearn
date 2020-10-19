@@ -77,7 +77,7 @@ def prepare(element_html, data):
     correct_answers = []
     correct_answers_indent = []
 
-    is_shuffle = pl.get_string_attrib(element, 'shuffle-options', 'false')  # default to FALSE, no shuffling unless otherwise specified
+    is_shuffle = pl.get_boolean_attrib(element, 'shuffle-options', False)  # default to FALSE, no shuffling unless otherwise specified
 
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
@@ -85,14 +85,14 @@ def prepare(element_html, data):
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
             mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
 
-    if is_shuffle == 'true':
+    if is_shuffle == True:
         random.shuffle(mcq_options)
 
     for html_tags in element:
         if html_tags.tag == 'pl-answer':
-            isCorrect = pl.get_string_attrib(html_tags, 'correct', 'false')  # default correctness to false
+            isCorrect = pl.get_boolean_attrib(html_tags, 'correct', True)  # default correctness to True
             answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1')  # get answer indent, and default to -1 (indent level ignored)
-            if isCorrect.lower() == 'true':
+            if isCorrect == True:
                 # add option to the correct answer array, along with the correct required indent
                 correct_answers.append(str.strip(html_tags.text))
                 correct_answers_indent.append(answerIndent)
@@ -200,16 +200,15 @@ def render(element_html, data):
         permutation_mode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
         permutation_mode = 'in any order' if permutation_mode == 'any' else 'in the specified order'
 
+        check_indentation = pl.get_boolean_attrib(element, 'check-indentation', False)
+        check_indentation = ', with correct indentation' if check_indentation == True else ''
+
         if answer_name in data['correct_answers']:
-            # html_params = {
-            #     'true_answer': True,
-            #     'question_solution': str(data['correct_answers'][answer_name]['correct_answers']),
-            #     'permutation_mode': permutation_mode
-            # }
             html_params = {
                 'true_answer': True,
                 'question_solution': prettyPrint(data['correct_answers'][answer_name]['correct_answers']),
-                'permutation_mode': permutation_mode
+                'permutation_mode': permutation_mode,
+                'check_indentation': check_indentation
             }
             with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
@@ -278,7 +277,7 @@ def parse(element_html, data):
             student_answer_ranking.append(ranking)
 
     if pl.get_boolean_attrib(element, 'external-grader', False):
-        file_name = pl.get_string_attrib(element, 'file-name', None)
+        file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
         leading_code = pl.get_string_attrib(element, 'leading-code', None)
         trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
         base_path = data['options']['question_path']
@@ -348,9 +347,9 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
 
-    check_indentation = pl.get_string_attrib(element, 'check-indentation', 'false')
+    check_indentation = pl.get_boolean_attrib(element, 'check-indentation', False)
     # check indents, and apply penalty if applicable
-    if true_answer_indent.count('-1') != len(true_answer_indent) or check_indentation == 'true':
+    if check_indentation == True:
         for i, indent in enumerate(student_answer_indent):
             if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
                 indent_score += 1
