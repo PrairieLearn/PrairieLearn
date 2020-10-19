@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -74,7 +74,11 @@
                 <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-sm" role="button">New instance</a>
                 <% } else { // multiple_instance_header %>
                 <% if (row.assessment_instance_id) { %>
+                <% if(row.show_closed_assessment_score) { %>
                 <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                <% } else { %>
+                Score not shown
+                <% } %>
                 <% } else { %>
                 Not started
                 <% } %>
