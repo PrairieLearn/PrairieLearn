@@ -169,7 +169,7 @@ router.post('/', (req, res, next) => {
         }
         util.callbackify(chunks.generateAllChunksForCourseList)(course_ids, authn_user_id, (err, job_sequence_id) => {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+            res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + job_sequence_id);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

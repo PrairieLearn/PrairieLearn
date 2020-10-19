@@ -61,7 +61,11 @@ router.all('/', function(req, res, next) {
         !_.get(res.locals, 'assessment_instance.open', true)
     ) {
         // This assessment instance is closed and can no longer be viewed
-        closedAssessmentNotViewable(res);
+        if (!_.get(res.locals, 'authz_result.show_closed_assessment_score', true)){
+            closedAssessmentNotViewableHiddenGrade(res);
+        } else {
+            closedAssessmentNotViewable(res);
+        }
         return;
     }
 
@@ -122,5 +126,10 @@ function checkUserAgent(res, userAgent) {
 
 function closedAssessmentNotViewable(res) {
     res.locals.prompt = 'closedAssessmentNotViewable';
+    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+}
+
+function closedAssessmentNotViewableHiddenGrade(res) {
+    res.locals.prompt = 'closedAssessmentNotViewableHiddenGrade';
     res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }

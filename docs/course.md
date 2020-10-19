@@ -197,6 +197,8 @@ You can add more tags to your course by listing them in the `infoCourse.json` fi
     ]
 ```
 
+The tag order in `infoCourse.json` is the order in which the tags will be listed within PrairieLearn. If you want to change the order of your tags or standardized tags then you can re-list them in whatever order you like.
+
 ## Colors
 
 The possible colors for assessment sets, topic, and tags are:
