@@ -1,5 +1,6 @@
 columns
     auth_user_id: bigint
+    autosave: boolean default false
     broken: boolean default false
     correct: boolean
     credit: integer

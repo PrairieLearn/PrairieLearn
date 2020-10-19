@@ -32,6 +32,7 @@
           <% if (showManualGradingMsg) { %>
           <span class="order-3 ml-2">This question will be manually graded.</span>
           <% } %>
+          <span class="autosave-status text-secondary order-3 ml-2"></span>
         </span>
         <span class="d-flex">
           <input type="hidden" name="__variant_id" value="<%= variant.id %>">
@@ -78,6 +79,7 @@
               <% if (showManualGradingMsg) { %>
               <span class="order-3 ml-2">This question will be manually graded.</span>
               <% } %>
+              <span class="autosave-status text-secondary order-3 ml-2"></span>
           </span>
           <span class="d-flex">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

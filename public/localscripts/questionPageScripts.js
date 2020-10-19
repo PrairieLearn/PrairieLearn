@@ -1,9 +1,11 @@
+const form = $('form.question-form');
+const getForm = () => form.find(':not([name="__variant_id"]):not([name="__csrf_token"])').serialize();
+var initialForm;
+
 function confirmOnUnload() {
-    const form = $('form.question-form');
-    const getForm = () => form.find(':not([name="__variant_id"]):not([name="__csrf_token"])').serialize();
 
     // Set form state on load and submit
-    var initialForm = getForm();
+    initialForm = getForm();
     form.submit(() => {
         initialForm = getForm();
     });
@@ -45,7 +47,26 @@ function disableOnSubmit() {
     });
 }
 
+function autoSave() {
+
+    const currentForm = getForm();
+
+    if (currentForm !== initialForm) {
+        $('.autosave-status').text('Saving answer...');
+        $.post(window.location.href, form.serialize() + '&__action=autosave', (data, textStatus, jqXHR) => {
+            if (data.variant_id)
+                form.find('[name=__variant_id]').text(data.variant_id);
+            $('.autosave-status').text('Answer saved.');
+            initialForm = currentForm;
+        }, 'json');
+    } else {
+        $('.autosave-status').text('');
+    }
+}
+
 $(document).ready(() => {
     confirmOnUnload();
     disableOnSubmit();
+    // TODO Include option to enable/disable autosave.
+    setInterval(autoSave, 2000);
 });

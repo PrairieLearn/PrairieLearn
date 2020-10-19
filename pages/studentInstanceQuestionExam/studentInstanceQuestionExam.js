@@ -45,7 +45,12 @@ function processSubmission(req, res, callback) {
                 callback(null, submission.variant_id);
             });
         } else if (req.body.__action == 'save') {
-            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, false, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, submission.variant_id);
+            });
+        } else if (req.body.__action == 'autosave') {
+            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, true, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
@@ -58,7 +63,7 @@ function processSubmission(req, res, callback) {
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-    if (req.body.__action == 'grade' || req.body.__action == 'save') {
+    if (req.body.__action == 'grade' || req.body.__action == 'save' || req.body.__action == 'autosave') {
         if (res.locals.authz_result.time_limit_expired) {
             return next(new Error('time limit is expired, please go back and finish your assessment'));
         }
@@ -68,7 +73,10 @@ router.post('/', function(req, res, next) {
         }
         processSubmission(req, res, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            if (req.body.__action == 'autosave')
+                res.send('{}');
+            else
+                res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'timeLimitFinish') {
         const closeExam = true;

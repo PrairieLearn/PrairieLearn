@@ -40,7 +40,12 @@ function processSubmission(req, res, callback) {
                 callback(null, submission.variant_id);
             });
         } else if (req.body.__action == 'save') {
-            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, false, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, submission.variant_id);
+            });
+        } else if (req.body.__action == 'autosave') {
+            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, true, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
@@ -84,6 +89,12 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
                          + '/preview/?variant_id=' + variant_id);
+        });
+    } else if (req.body.__action == 'autosave') {
+        processSubmission(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            let retval = {variant_id: variant_id};
+            res.send(JSON.stringify(retval));
         });
     } else if (req.body.__action == 'report_issue') {
         processIssue(req, res, function(err, variant_id) {
