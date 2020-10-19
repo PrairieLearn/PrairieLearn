@@ -1,3 +1,4 @@
+
 # PrairieLearn Elements for use in `question.html`
 
 When writing questions, there exists a core pool of elements that provides
@@ -17,7 +18,7 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
-- [`pl-order-blocks`](#pl-order-blocks-element): Drag and drop to order answer tiles into a list from a pool of choices
+- [`pl-order-blocks`](#pl-order-blocks-element): Element to arrange given blocks of code/text
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
@@ -350,42 +351,43 @@ Attribute | Type | Default | Description
 
 ### `pl-order-blocks` element
 
-Drag and drop to order answer tiles to form a (potentially ordered) list of answers.
+Element to arrange given blocks of code/text
 
 #### Sample Element
-
-![](elements/pl-order-blocks.png)
-
-**question.html**
-```html
-<p>
-Drag all the prime numbers below to the yellow box. Note that the ordering of the answer does not matter, any permutation of prime numbers are accepted. Remember 1 is not a prime number.
-</p>
-<drag-drop-elements answers-name="prime-numbers-unordered" shuffle-options="true" permutation-mode="any">
-  <pl-answer correct="false">1</pl-answer>
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="true">3</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
-  <pl-answer correct="false">6</pl-answer>
-  <pl-answer correct="true">7</pl-answer>
-</drag-drop-elements>
+```
+<pl-order-blocks answers-name="result" shuffle-options="true">
+      <pl-answer correct="false">This tile should not be moved</pl-answer>
+      <pl-answer correct="true">This tile should be moved</pl-answer>
+      <pl-answer correct="true" indent=1>This tile should be moved with one indentation</pl-answer>
+</pl-order-blocks>
 ```
 #### Customizations
+
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
-`shuffle-options` | boolean | — | Specify whether the ordering of options on the left-hand-side should be shuffled. If false, the ordering in the HTML file will be used.
-`permutation-mode` | string | - | One of the following: `any`, `html-order`, `ranking`. See details below for description.
+`shuffle-options` | boolean | false | Specify whether the ordering of options on the left-hand-side should be shuffled. If false, the ordering in the HTML file will be used.
+`permutation-mode` | string | "html-order" | One of the following: `any`, `html-order`, `ranking`. See details below for description.
+`max-incorrect` | integer | 2 | Sets the maximum number of incorrect answers (`correct=false` html attribute) to display.
+`min-incorrect` | integer | 1 | Sets the minimum number of incorrect answers (`correct=false` html attribute) to display.
+`check-indentation` | boolean | false | Whether indentation is checked while marking.
+`header-left-column` | string | "Drag from here" | The text to display for the header of the left column.
+`header-right-column` | string| "Construct your solution here" |  The text to display for the header of the right column.
+`external-grader` | boolean | false | Whether an external grader is used to determine the correct answers.
+`file-name` | string | user_code.py  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
+`leading-code` | string | — | The file name of the leading code.
+`trailing-code` | string | — | The file name of the trailing code.
+`dropzone-layout` | string | "horizontalLayout" | "horizontalLayout" shows the given boxes and empty area aligned side-by-side. "verticalLayout" shows the given boxes on the top, and the empty area on the bottom.
 
 Within the `pl-order-blocks` element, each answer tile must be specified with
 a `pl-answer` that has the following attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`correct` | boolean | - | Specifies whether the answer tile is a correct answer to the question
-`ranking` | positive integer | - | Specifies the correct ranking of this answer tile when `permutation-mode` is set to `ranking`. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
+`correct` | boolean | true | Specifies whether the answer tile is a correct answer to the question. 
+`ranking` | positive integer | — | Specifies the correct ranking of this answer tile. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
+`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the answer tile. For example, a value of `2` means the tile should be indented twice. A value of `-1` means the indention for this answer does not matter.
 
 #### Details
 
@@ -398,6 +400,8 @@ Three different `permutation-mode` are available:
 #### Example implementations
 
 - [element/dragDropBlocks]
+- [element/dragDropCode]
+- [element/dragDropLatex]
 
 -----
 
