@@ -17,7 +17,7 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
-- [`pl-drag-drop-blocks`](#pl-drag-drop-blocks-element): Drag and drop to order answer tiles into a list from a pool of choices
+- [`pl-order-blocks`](#pl-order-blocks-element): Drag and drop to order answer tiles into a list from a pool of choices
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
@@ -348,13 +348,13 @@ Attribute | Type | Default | Description
 
 -----
 
-### `pl-drag-drop-blocks` element
+### `pl-order-blocks` element
 
 Drag and drop to order answer tiles to form a (potentially ordered) list of answers.
 
 #### Sample Element
 
-![](elements/pl-drag-drop-blocks.png)
+![](elements/pl-order-blocks.png)
 
 **question.html**
 ```html
@@ -379,7 +379,7 @@ Attribute | Type | Default | Description
 `shuffle-options` | boolean | — | Specify whether the ordering of options on the left-hand-side should be shuffled. If false, the ordering in the HTML file will be used.
 `permutation-mode` | string | - | One of the following: `any`, `html-order`, `ranking`. See details below for description.
 
-Within the `pl-drag-drop-blocks` element, each answer tile must be specified with
+Within the `pl-order-blocks` element, each answer tile must be specified with
 a `pl-answer` that has the following attributes:
 
 Attribute | Type | Default | Description

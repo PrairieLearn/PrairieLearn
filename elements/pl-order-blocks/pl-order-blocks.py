@@ -114,7 +114,7 @@ def render(element_html, data):
             'dropzone_layout': 'verticalLayout' if dropzone_layout == 'verticalLayout' else 'horizontalLayout'
         }
 
-        with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
         return html
 
@@ -147,7 +147,7 @@ def render(element_html, data):
         }
 
         # Finally, render the HTML
-        with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
         return html
 
@@ -176,7 +176,7 @@ def render(element_html, data):
                 'question_solution': prettyPrint(data['correct_answers'][answer_name]['correct_answers']),
                 'permutation_mode': permutation_mode
             }
-            with open('pl-drag-drop-element.mustache', 'r', encoding='utf-8') as f:
+            with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
             return html
         else:
