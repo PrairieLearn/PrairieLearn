@@ -8,6 +8,10 @@
         "trueStatements",
         "falseStatements"
     ],
+    "comments": {
+        "description": "Add the comments",
+        "type": "string"
+    },
     "properties": {
         "text": {
             "description": "Text to precede the set of statements being given.",

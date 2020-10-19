@@ -3,6 +3,10 @@
     "title": "Backend Config",
     "description": "A configuration file for the PrairieLearn server.",
     "type": "object",
+    "comments": {
+        "description": "Add the comments",
+        "type": "string"
+    },
     "properties": {
         "courseDirs": {
             "description": "Paths of the course directories.",

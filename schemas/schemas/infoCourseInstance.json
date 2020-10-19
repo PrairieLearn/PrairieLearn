@@ -7,6 +7,10 @@
         "uuid",
         "longName"
     ],
+    "comments": {
+        "description": "Add the comments",
+        "type": "string"
+    },
     "properties": {
         "uuid": {
             "description": "Unique identifier (UUID v4).",

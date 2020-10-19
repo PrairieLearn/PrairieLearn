@@ -3,5 +3,9 @@
     "title": "Calculation question options",
     "description": "Options for a Calculation question.",
     "type": "object",
+    "comments": {
+        "description": "Add the comments",
+        "type": "string"
+    },
     "properties": {}
 }

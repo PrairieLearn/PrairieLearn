@@ -10,10 +10,4 @@ the Type of `comments` will looks like the following:
 "comments": {
   "type": "string",
   "description": "Add the comments for json",
-  "properties": {
-    "comments": {
-      "description": "The child comments",
-      "type": "string",
-      }
-    }
 }

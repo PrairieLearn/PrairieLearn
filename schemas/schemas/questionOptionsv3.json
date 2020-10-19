@@ -3,5 +3,9 @@
     "title": "v3 question options",
     "description": "Options for a v3 question.",
     "type": "object",
+    "comments": {
+        "description": "Add the comments",
+        "type": "string"
+    },
     "properties": {}
 }

@@ -7,6 +7,10 @@
     "required": [
         "description"
     ],
+    "comments": {
+        "description": "Add the comments",
+        "type": "string"
+    },
     "properties": {
         "description": {
             "description": "Brief one-line description of the query.",

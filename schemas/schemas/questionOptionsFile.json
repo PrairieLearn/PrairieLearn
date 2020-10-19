@@ -4,6 +4,10 @@
     "description": "Options for a File question.",
     "type": "object",
     "additionalProperties": false,
+    "comments": {
+        "description": "Add the comments",
+        "type": "string"
+    },
     "properties": {
         "fileName": {
             "description": "Filename of the file to download",
