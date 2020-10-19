@@ -43,6 +43,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
         // update the content.
 
         const syncStage1A = function() {
+            const branch = locals.course.branch || config.courseCloneBranchDefault;
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -51,7 +52,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 type: 'clone_from_git',
                 description: 'Clone from remote git repository',
                 command: 'git',
-                arguments: ['clone', locals.course.repository, locals.course.path],
+                arguments: ['clone', '-b', branch, locals.course.repository, locals.course.path],
                 env: gitEnv,
                 on_success: syncStage2,
             };
@@ -135,6 +136,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
         };
 
         const syncStage1B6 = function() {
+            const branch = 'origin/' + (locals.course.branch || config.courseCloneBranchDefault);
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -143,7 +145,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 type: 'reset_from_git',
                 description: 'Reset state to remote git repository',
                 command: 'git',
-                arguments: ['reset', '--hard', 'origin/master'],
+                arguments: ['reset', '--hard', branch],
                 working_directory: locals.course.path,
                 env: gitEnv,
                 on_success: syncStage2,
