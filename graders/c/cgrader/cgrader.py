@@ -124,7 +124,7 @@ class CGrader:
     def test_run(self, command, input=None, exp_output=None,
                  must_match_all_outputs=False,
                  reject_output=None, field=None,
-                 ignore_case=True, timeout=1,
+                 ignore_case=True, timeout=1, size_limit=10240,
                  ignore_consec_spaces=True,
                  args=None, name=None, msg=None, max_points=1):
         
@@ -171,16 +171,19 @@ class CGrader:
                 reject_output = [re.sub(r'\s+', ' ', str(t)) for t in reject_output]
 
         points = True
-        if exp_output is not None and must_match_all_outputs \
+        if timeout and 'TIMEOUT' in out:
+            points = False
+        elif size_limit and len(out) > size_limit:
+            out = out[0:size_limit] + '\nTRUNCATED: Output too long.'
+            points = False
+        elif exp_output is not None and must_match_all_outputs \
            and [t for t in exp_output if str(t) not in outcmp]:
             points = False
-        if exp_output is not None and not must_match_all_outputs \
+        elif exp_output is not None and not must_match_all_outputs \
            and not [t for t in exp_output if str(t) in outcmp]:
             points = False
-        if reject_output is not None \
+        elif reject_output is not None \
            and [t for t in reject_output if str(t) in outcmp]:
-            points = False
-        if timeout and 'TIMEOUT' in out:
             points = False
 
         return self.add_test_result(name, points=points, msg=msg,
