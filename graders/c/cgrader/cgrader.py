@@ -132,8 +132,12 @@ class CGrader:
         
         if name is None and input is not None:
             name = 'Test with input "%s"' % ' '.join(input.splitlines())
-        if name is None and args is not None:
+        elif name is None and args is not None:
             name = 'Test with arguments "%s"' % ' '.join(args)
+        elif name is None and isinstance(command, list):
+            name = 'Test command: %s' % command[0]
+        elif name is None:
+            name = 'Test command: %s' % command
         
         if exp_output is not None and not isinstance(exp_output, list):
             exp_output = [exp_output] 
@@ -143,6 +147,8 @@ class CGrader:
             msg = 'Expected: %s' % (' AND ' if must_match_all_outputs \
                                      else ' OR ').join([f'\n{t}\n' if '\n' in t else f'"{t}"' for t in exp_output]) + \
                   (' but not "%s"' % '"/"'.join([str(t) for t in reject_output]) if reject_output else '')
+        elif msg is None:
+            msg = ''
 
         out = self.run_command(command if args is None else ([command] + args),
                                input, sandboxed=True, timeout=timeout)
@@ -198,7 +204,7 @@ class CGrader:
             'name': name, 'description': description,
             'points': points,
             'max_points': max_points,
-            'output': output, 'message': msg
+            'output': output, 'message': msg if msg else ''
         }
         if images and isinstance(images, list):
             test['images'] = images
