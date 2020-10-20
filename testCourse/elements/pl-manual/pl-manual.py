@@ -27,9 +27,10 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answers_name = pl.get_string_attrib(element, 'answers-name', None)
     # TODO: Status logic -- is this question graded or not yet?
-    partial = data['partial_scores'].get(answers_name, {'score': 0, 'feedback': ''})
+    partial = data['partial_scores'].get(answers_name, {'score': 0, 'feedback': '', 'status': 'ungraded'})
     partial_score = partial.get('score', 0)
     partial_feedback = partial.get('feedback', '')
+    partial_status = partial.get('status', 'ungraded')
 
     html_params = {
         # Grader v. student view
@@ -42,7 +43,7 @@ def render(element_html, data):
         # We display the score as out of 100, since it's easier to think of than out of 1
         'score': partial_score * 100,
         'feedback': partial_feedback,
-        'needs_grading': True,
+        'needs_grading': partial_status == 'graded',
 
         # Inner html (grader view popover & html children)
         'html': None,
