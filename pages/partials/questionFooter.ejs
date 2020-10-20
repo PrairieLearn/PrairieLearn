@@ -29,9 +29,8 @@
                   <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade</button>
               <% } %>
           <% } %>
-          <!-- TODO: Manual grading--look into using this flag? How do we use this alongside external grading? -->
-          <% if (showManualGradingMsg) { %>
-          <span class="order-3 ml-2">This question will be manually graded.</span>
+          <% if (showManualGradingButton) { %>
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Submit Grades</button>
           <% } %>
         </span>
         <span class="d-flex">

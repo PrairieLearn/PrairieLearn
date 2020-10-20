@@ -16,14 +16,14 @@
                 <span class="input-group-prepend">
                   <span class="input-group-text">Score %:</span>
                 </span>
-                <input type="number" min="0" max="100" 
-                        class="form-control" name="pl-manual-points-{{ uuid }}" 
+                <input type="number" min="0"
+                        class="form-control" name="{{ answers_name }}.points" 
                         value="{{ score }}">
                 <span class="input-group-prepend">
                   <span class="input-group-text">Feedback:</span>
                 </span>
                 <input type="text" 
-                        class="form-control" name="pl-manual-feedback-{{ uuid }}" 
+                        class="form-control" name="{{ answers_name }}.feedback" 
                         value="{{ feedback }}"/>
                 <p><small>This will adjust the total percentage earned for this question part (i.e. partial).
                         Future changes to the student's score will override this value.</small></p>
@@ -57,6 +57,6 @@
 
 {{#grader}}
 <script>
-  $(() => PLManual("{{uuid}}"));
+  $(() => PLManual("{{uuid}}", "{{answers_name}}"));
 </script>
 {{/grader}}

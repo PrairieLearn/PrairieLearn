@@ -844,7 +844,8 @@ module.exports = {
                 variant_seed: parseInt(variant.variant_seed, 36),
                 options: _.get(variant, 'options', {}),
                 raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
-                editable: !!locals.allowAnswerEditing,
+                // TODO: Check if we can thread these locals through the buildLocals hook
+                editable: !!locals.overlayGradingInterface ? false : !!locals.allowAnswerEditing,
                 panel: panel,
             };
 
