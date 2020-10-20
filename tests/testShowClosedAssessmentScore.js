@@ -57,7 +57,6 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
             __csrf_token: context.__csrf_token,
         };
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form , headers});
-        console.log(response)
         assert.isTrue(response.ok);
 
         // We should have been redirected to the assessment instance
