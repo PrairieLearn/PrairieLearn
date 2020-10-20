@@ -67,9 +67,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         group_work: !!assessment.groupWork,
         group_max_size: assessment.groupMaxSize || null,
         group_min_size: assessment.groupMinSize || null,
-        group_create: !!assessment.studentGroupCreate,
-        group_join: !!assessment.studentGroupJoin,
-        group_leave: !!assessment.studentGroupLeave,
+        student_group_create: !!assessment.studentGroupCreate,
+        student_group_join: !!assessment.studentGroupJoin,
+        student_group_leave: !!assessment.studentGroupLeave,
     };
 
     const allowAccess = assessment.allowAccess || [];

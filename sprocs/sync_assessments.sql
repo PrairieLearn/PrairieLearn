@@ -170,21 +170,21 @@ BEGIN
         IF (valid_assessment.data->>'group_work')::boolean THEN
             INSERT INTO group_configs
                 (course_instance_id,
-                assessment_id
+                assessment_id,
+                maximum,
+                minimum,
+                student_authz_create,
+                student_authz_join,
+                student_authz_leave
             ) VALUES (
                 syncing_course_instance_id,
-                new_assessment_id
+                new_assessment_id,
+                (valid_assessment.data->>'group_max_size')::bigint,
+                (valid_assessment.data->>'group_min_size')::bigint,
+                (valid_assessment.data->>'student_group_create')::boolean,
+                (valid_assessment.data->>'student_group_join')::boolean,
+                (valid_assessment.data->>'student_group_leave')::boolean
             ) ON CONFLICT DO NOTHING;
-            UPDATE group_configs
-            SET 
-                maximum = (valid_assessment.data->>'group_max_size')::bigint,
-                minimum = (valid_assessment.data->>'group_min_size')::bigint,
-                student_authz_create = (valid_assessment.data->>'group_create')::boolean,
-                student_authz_join = (valid_assessment.data->>'group_join')::boolean,
-                student_authz_leave = (valid_assessment.data->>'group_leave')::boolean
-            WHERE
-                course_instance_id = syncing_course_instance_id
-                AND assessment_id = new_assessment_id;
         END IF;
 
         -- Now process all access rules for this assessment
