@@ -43,6 +43,7 @@
         "csvtojson": "^2.0.10",
         "date-fns": "^2.16.1",
         "debug": "^4.1.1",
+        "delay": "^4.4.0",
         "detect-mocha": "^0.1.0",
         "diff": "^4.0.2",
         "dockerode": "^3.2.1",
@@ -112,6 +113,7 @@
         "uuid": "^8.3.0",
         "viz.js": "^2.1.2",
         "winston": "^3.3.3",
+        "xss": "^1.0.8",
         "yargs": "^15.4.1",
         "yargs-parser": "^19.0.4"
     },

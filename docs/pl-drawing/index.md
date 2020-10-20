@@ -1,8 +1,10 @@
 
 
-# Elements to setup canvas (drawing space)
+# Elements for drawing
 
-## `pl-drawing` element
+## Elements to create drawing canvas
+
+### `pl-drawing` element
 
 A `pl-drawing` element displays a canvas, which can be used to display initial drawing objects or expect drawing objects for grading.
 
@@ -10,7 +12,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 
 <img src="pl-origin-canvas.png" width=70%>
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing answers-name="fbd">
@@ -37,7 +39,7 @@ Attribute | Type | Default | Description
 `hide-answer-panel` | boolean | true | If true, the correct answer is not displayed in the answer panel. 
 
 
-## `pl-drawing-initial` element
+### `pl-drawing-initial` element
 
 A `pl-drawing-initial` will group objects that will be displayed in the canvas defined by `pl-drawing`.
 
@@ -68,15 +70,15 @@ And `pl-drawing-initial` can also be used to display initial objects in a canvas
 </pl-drawing>
 ```
 
-The child element `pl-drawing-answer` will be explained in the Grading section.
+The child element `pl-drawing-answer` is explained below in the [Grading](#elements-to-set-up-a-grading-canvas) section.
 
-# Elements to create drawing objects
+## Elements to create drawing objects
 
-## `pl-coordinates` element
+### `pl-coordinates` element
 
 A `pl-coordinates` element adds a 2D system of coordinates.
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -109,16 +111,16 @@ Attribute | Type | Default | Description
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/inclinedPlan]: Example that uses a system of coordinates
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-line` element
+### `pl-line` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -143,15 +145,15 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 2 | Set the width of the stroke.
 `dashed-size` | float | _ | Creates a dashed line with equally spaced `dashed-size`px fills.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that uses lines
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-arc` element
+### `pl-arc` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -177,14 +179,14 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 2 | Set the width of the stroke.
 `dashed-size` | float | _ | Creates a dashed line with equally spaced `dashed-size`px fills.
 
-### Example Implementations
+#### Example implementations
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-point` element
+### `pl-point` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -208,16 +210,16 @@ Attribute | Type | Default | Description
 `offsety` | float | 5 | Vertical distance of `label` from the point.
 `color` | string | black | Set the fill color of the point ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/pulley]: Example that includes a point in the canvas
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-triangle` element
+### `pl-triangle` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -242,15 +244,15 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the triangle.
 `stroke-width` | float | 1 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/pulley]: Example that includes a triangle
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-rectangle` element
+### `pl-rectangle` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -275,15 +277,15 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rectangle.
 `stroke-width` | float | 1 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/pulley]: Example that includes a rectangle
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-circle` element
+### `pl-circle` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -310,15 +312,15 @@ Attribute | Type | Default | Description
 `offsetx` | float | 5 | Horizontal distance of `label` from the center of the circle.
 `offsety` | float | 5 | Vertical distance of `label1` from the center of the circle
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that uses circles
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-polygon` element
+### `pl-polygon` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -345,13 +347,13 @@ To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the st
 
  For an example that uses `server.py` to generate `plist` refer to QID: `Example-pl-drawing-beam-cross-section`
 
-### Example Implementations
+#### Example implementations
 
  - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-rod` element
+### `pl-rod` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -382,15 +384,15 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/vMDiagrams]: Example that includes a rod
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-3pointrod` element
+### `pl-3pointrod` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -426,15 +428,15 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/inclinedPlane]: Example that includes a 3-point rod
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-4pointrod` element
+### `pl-4pointrod` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -475,16 +477,16 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that uses 4-point rods
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-collar-rod` element
+### `pl-collar-rod` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -521,16 +523,16 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the rod.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/collarRod]: Example that uses a collar rod
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-fixed-pin` element
+### `pl-fixed-pin` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -559,16 +561,16 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the pin support.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/vMDiagrams]: Example that uses a fixed pin as boundary condition
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-roller` element
+### `pl-roller` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -598,15 +600,15 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the roller.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/vMDiagrams]: Example that uses a roller as boundary condition
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-clamped` element
+### `pl-clamped` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -634,15 +636,15 @@ Attribute | Type | Default | Description
 `color` | string | black | Fill color for the clamped support using a gradient from white to `color` ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/collarRod]: Example that uses a clamped end as boundary condition
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-spring` element
+### `pl-spring` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200" grid-size="20">
@@ -671,13 +673,13 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 2 | Set the width of the stroke.
 `draw-pin` | boolean | false | Draw points at the spring ends.
 
-### Example Implementations
+#### Example implementations
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-pulley` element
+### `pl-pulley` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -708,16 +710,16 @@ Attribute | Type | Default | Description
 `stroke-color` | string | black | Set the stroke color of the pulley.
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/pulley]: Example that includes a pulley system
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-dimensions` element
+### `pl-dimensions` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -757,14 +759,14 @@ Attribute | Type | Default | Description
 `arrow-head-width` | float | 1.5 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1.5 | Scale factor for the length of the arrow head.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that includes dimensions
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-arc-dimensions` element
+### `pl-arc-dimensions` element
 ```html
 <pl-drawing width="200" height="200">
     <pl-drawing-initial>
@@ -799,7 +801,7 @@ Attribute | Type | Default | Description
 `arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
 `arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/liftingMechanism]: Example that includes arc dimensions
 
@@ -808,9 +810,9 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-vector` element
+### `pl-vector` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -848,7 +850,7 @@ Attribute | Type | Default | Description
 
 More information about the grading attributes in the Grading section below.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Tutorial example that includes arrows (vectors)
 
@@ -859,9 +861,9 @@ More information about the grading attributes in the Grading section below.
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-double-headed-vector` element
+### `pl-double-headed-vector` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -894,7 +896,7 @@ Attribute | Type | Default | Description
 `offset-backward` | float | width | Length of the bounding box measured from the anchor point in the opposite orientation of the vector.
 `optional-grading` | boolean | false | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Tutorial example that includes double arrows (vectors)
 
@@ -906,9 +908,9 @@ Attribute | Type | Default | Description
 
 
 
-## `pl-arc-vector` element
+### `pl-arc-vector` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing width="200" height="200">
@@ -940,7 +942,7 @@ Attribute | Type | Default | Description
 `disregard-sense` | boolean| false | When `disregard-sense=true`, the correctness of the arc vector only considers the position of the anchor point.
 `draw-error-box` | boolean | - | Draw the error bounding box, where the location of the anchor point is accepted as correct.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Tutorial example that includes arc vectors 
 
@@ -949,9 +951,9 @@ Attribute | Type | Default | Description
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-distributed-load` element
+### `pl-distributed-load` element
 
-#### Sample Element
+#### Sample element
 
 ```html
   <pl-drawing  width="200" height="200">
@@ -991,16 +993,16 @@ Attribute | Type | Default | Description
 `offset-forward` | float | 0 | Length of the bounding box measured from the anchor point in the same orientation of the distributed load.
 `offset-backward` | float | max(w1,w2) | Length of the bounding box measured from the anchor point in the opposite orientation of the distributed load.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Tutorial example that includes distributed loads 
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-## `pl-controlled-line` element
+### `pl-controlled-line` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing  width="200" height="200">
@@ -1027,7 +1029,7 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 4 | Set the width of the stroke.
 `handle-radius` | float | 6 | Set the radius of the circle handles that define the end and control points.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/graphs]: Example that includes controlled lines for graph sketching 
 
@@ -1035,9 +1037,9 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-controlled-curved-line` element
+### `pl-controlled-curved-line` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing  width="200" height="200">
@@ -1067,7 +1069,7 @@ Attribute | Type | Default | Description
 `stroke-width` | float | 4 | Set the width of the stroke.
 `handle-radius` | float | 6 | Set the radius of the circle handles that define the end and control points.
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/graphs]: Example that includes controlled curved lines for graph sketching 
 
@@ -1075,9 +1077,9 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
-## `pl-text` element
+### `pl-text` element
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing  width="200" height="200" grid-size="0">
@@ -1101,12 +1103,14 @@ Attribute | Type | Default | Description
 `offsetx` | float | 0 | Offset in x direction from `x1`
 `offsety` | float | 0 | Offset in y direction from `y1`
 
-### Example Implementations
+#### Example implementations
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
 
-# Creating group of elements
+## Creating group of elements
+
+### `pl-drawing-group` element
 
 The element `pl-drawing-group` combines several elements as a group, to allow groups of elements to be turned visible or not.
 
@@ -1124,16 +1128,18 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
 </pl-drawing>
 ```
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/simpleTutorial]: Example where the attribute `visible` is set in server.py
 
 
-# Elements to set up a grading canvas
+## Elements to set up a grading canvas
+
+### `pl-drawing-group` element
 
 The element `pl-drawing-answer` is required when setting a drawing canvas for grading, but there are other elements as well that can be helpful. The example below illustrates typical parts of a grading canvas.
 
-#### Sample Element
+#### Sample element
 
 ```html
 <pl-drawing grid-size="20" gradable="true" answers-name="box" width="320">
@@ -1160,7 +1166,7 @@ The element `pl-drawing-answer` is required when setting a drawing canvas for gr
 <img src="pl-vector-grading-canvas-example.png" width=70%>
 
 
-## `pl-drawing-answer` element
+### `pl-drawing-answer` element
 
 This element will wrap all the elements that will be graded (checked for correctness).
 
@@ -1174,7 +1180,7 @@ In the example above, `pl-vector` is the only object that is graded. The corresp
 
 <img src="pl-vector-correct-answer.png" width=50%>
 
-## `pl-drawing-initial` element
+### `pl-drawing-initial` element
 
 This element will wrap all the elements included in the grading canvas that will not be graded. The objects from `pl-drawing-initial` and `pl-drawing-answer` are combined when showing the correct answer in the correct panel.
 
@@ -1187,7 +1193,7 @@ Attribute | Type | Default | Description
 The final version of a question should not have the attribute `draw-error-box`. However this attribute can be helpful during the process of creating a question. Authors have the option of starting the grading canvas including all the objects in `pl-drawing-initial` with
 `draw-error-box=true`, to see how the graded objects are placed in the canvas, and if the default tolerances are reasonable for the specific question, or if adjustments are needed. Once the question is completed, the objects that are expected to be graded can be removed from `pl-drawing-initial` and added to `pl-drawing-answer`. The author can decide if the students should see the error box when the correct answer is displayed. By default, `draw-error-box="false"`.
 
-## `pl-controls` element
+### `pl-controls` element
 
 The element `pl-controls` will add the buttons that allows students to place objects in the canvas. The element `pl-controls-group` can be used to group buttons that have similar properties, for example, graded and non-graded objects.
 
@@ -1202,14 +1208,14 @@ The element `pl-controls` will add the buttons that allows students to place obj
 </pl-controls>
 ```
 
-### Example Implementations
+#### Example implementations
 
 The example [demo/drawing/gradeVector] illustrates all the `pl-drawing-button`
 that are currently implemented.
 
 <img src="pl-all-buttons.png" width=70%>
 
-## `pl-drawing-buttons` element
+### `pl-drawing-buttons` element
 
 #### To insert a point:
 
@@ -1268,7 +1274,7 @@ The error box for `pl-distributed-load` is  defined in the same way as `pl-vecto
 ```
 This button will add a line to the canvas that is not graded, but can be used by students to facilitate the placement of other objects.
 
-#### To delete any object previously placed in the canvas
+#### To delete any object previously placed in the canvas:
 
 ```html
 <pl-drawing-button type="delete"></pl-drawing-button>
@@ -1277,7 +1283,7 @@ This button will add a line to the canvas that is not graded, but can be used by
 This button deletes objects that were previously placed on the canvas.
 
 
-# Elements for sketching plots
+## Elements for sketching plots
 
 <img src="pl-graph.png" width=50%>
 
@@ -1313,11 +1319,11 @@ This button deletes objects that were previously placed on the canvas.
 </pl-drawing-initial>
 ```
 
-### Example Implementations
+#### Example implementations
 
 - [demo/drawing/graphs]: Example that highlights graph sketching 
 
-## `pl-axes` element
+### `pl-axes` element
 
 A `pl-axes` element adds two axes to define the coordinate plane for sketching plots.
 
@@ -1341,7 +1347,7 @@ Attribute | Type | Default | Description
 `color` | string | black | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 2 | Set the width of the stroke.
 
-## `pl-graph-line` element
+### `pl-graph-line` element
 
 A `pl-graph-line` element adds straight or quadratic lines to plots. It wraps the elements `pl-controlled-line` and `pl-controlled-curved-line` so that the end and control points can be defined with respect to the origin of the plot, instead of the origin of the canvas. When only two points are given, it draws straight lines. If three points are given, it draws a quadratic curve. It also provides an option to create quadratic curves using the gradient information of the end points, instead of giving the position of the control point.
 
@@ -1369,4 +1375,3 @@ Attribute | Type | Default | Description
 [demo/drawing/simpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/simpleTutorial
 [demo/drawing/graphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/graphs
 [demo/drawing/gradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/gradeVector 
-

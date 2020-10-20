@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -68,7 +68,7 @@
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          Docker images for externally graded questions
+          Docker images
         </div>
 
         <div class="table-responsive">
@@ -87,7 +87,7 @@
             <tbody>
             <% images.forEach((image) => { %>
               <tr>
-                <td><%= image.external_grading_image %></td>
+                <td><%= image.image %></td>
                 <td><%= image.tag %></td>
                 <td><pre class="mb-0" title="<%= image.digest_full %>"><%= image.digest %></pre></td>
                 <td><%= image.size ? image.size.toFixed(2) + ' MB' : ''; %></td>
@@ -99,11 +99,11 @@
                   <% } %>
                 </td>
                 <td>
-                  <% if (config.externalGradingImageRepository) { %>
+                  <% if (config.cacheImageRegistry) { %>
                     <form method="POST">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         <input type="hidden" name="__action" value="syncImages">
-                        <input type="hidden" name="single_image" value="<%= image.external_grading_image %>">
+                        <input type="hidden" name="single_image" value="<%= image.image %>">
                         <button type="submit" class="btn btn-xs btn-primary">
                           <i class="fa fa-sync" aria-hidden="true"></i> Sync
                         </button>
@@ -112,11 +112,11 @@
                 </td>
                 <td>
                   <% if (image.questions.length > 0) { %>
-                  <%= image.questions.length %> questions
+                  <%= image.questions.length %> question<% if (image.questions.length > 1) { %>s<% } %>
 
                   <a class="btn btn-xs btn-secondary" role="button"
                    tabindex="0" data-toggle="popover" data-html="true"
-                   title="Questions using <%= image.external_grading_image %>"
+                   title="Questions using <%= image.image %>"
                    data-content="<%= include('listQuestionsPopover', {image}); %>"
                    data-trigger="focus">
                     Show
@@ -132,8 +132,8 @@
               <tr>
                 <td colspan=10>
                   <% if (images.length == 0) { %>
-                    <em>No questions are using external grading images.</em>
-                  <% } else if (config.externalGradingImageRepository) { %>
+                    <em>No questions are using docker images.</em>
+                  <% } else if (config.cacheImageRegistry) { %>
                     <form name="confirm-form" method="POST">
                       <input type="hidden" name="__action" value="syncImages">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -143,7 +143,7 @@
                       </button>
                     </form>
                   <% } else { %>
-                      External grading image repository not configured
+                      Local image repository not configured
                   <% } %>
                 </td>
               </tr>

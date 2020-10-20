@@ -16,6 +16,11 @@
               <p class="file-status">uploaded</p>
             </div>
             <div class="file-status-container-right">
+              <a download="{{name}}" class="btn btn-outline-secondary btn-sm"
+                 onclick="event.stopPropagation();"
+                 href="data:application/octet-stream;base64,{{contentsb64}}">
+                 Download
+              </a>
               <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button">
                 <i class="file-preview-icon fa fa-angle-down"></i>
               </button>

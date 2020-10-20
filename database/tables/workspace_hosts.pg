@@ -9,6 +9,7 @@ columns
     state_changed_at: timestamp with time zone
     terminated_at: timestamp with time zone
     unhealthy_at: timestamp with time zone
+    unhealthy_reason: text
 
 indexes
     workspace_hosts_pkey: PRIMARY KEY (id) USING btree (id)
