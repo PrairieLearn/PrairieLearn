@@ -7,9 +7,9 @@
     "groupWork": true,
     "groupMaxSize": 3,
     "groupMinSize": 3,
-    "groupCreate": true,
-    "groupJoin": true,
-    "groupLeave": true,
+    "studentGroupCreate": true,
+    "studentGroupJoin": true,
+    "studentGroupLeave": true,
     "allowAccess": [
         {
             "role": "TA",

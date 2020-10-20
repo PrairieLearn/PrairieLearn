@@ -139,9 +139,9 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} groupWork
  * @property {number} groupMaxSize
  * @property {number} groupMinSize
- * @property {boolean} groupCreate
- * @property {boolean} groupJoin
- * @property {boolean} groupLeave
+ * @property {boolean} studentGroupCreate
+ * @property {boolean} studentGroupJoin
+ * @property {boolean} studentGroupLeave
  */
 
 /**

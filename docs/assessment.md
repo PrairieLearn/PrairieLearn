@@ -112,9 +112,9 @@ Instructor should also set information about group size constraints and student 
         "groupWork": true,
         "groupMaxSize": 6,
         "groupMinSize": 2,
-        "groupCreate": true,
-        "groupJoin": true,
-        "groupLeave": true,
+        "studentGroupCreate": true,
+        "studentGroupJoin": true,
+        "studentGroupLeave": true,
 }
 ```
 

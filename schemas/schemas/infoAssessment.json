@@ -101,24 +101,24 @@
         "groupMaxSize": {
             "description": "Maximum size of a group.",
             "type": "number",
-            "default": 5
+            "default": null
         },
         "groupMinSize": {
             "description": "Minimum size of a group.",
             "type": "number",
-            "default": 2
+            "default": null
         },
-        "groupCreate": {
+        "studentGroupCreate": {
             "description": "Whether students can create groups.",
             "type": "boolean",
             "default": false
         },
-        "groupJoin": {
+        "studentGroupJoin": {
             "description": "Whether students can join groups.",
             "type": "boolean",
             "default": false
         },
-        "groupLeave": {
+        "studentGroupLeave": {
             "description": "Whether students can leave groups.",
             "type": "boolean",
             "default": false
