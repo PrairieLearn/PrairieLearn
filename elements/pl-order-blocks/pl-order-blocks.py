@@ -20,40 +20,15 @@ def render_html_colour(score):
     else:
         return 'badge-warning'
 
-# courtesy of https://github.com/PrairieLearn/PrairieLearn/pull/2625
-
-
 def get_all_answer(submitted_blocks, block_indents, leading_code, trailing_code):
     if len(submitted_blocks) == 0:
         return ''
-    answer = ''
+    answer_code = ''
     for index, answer in enumerate(submitted_blocks):
         indent = int(block_indents[index])
-        answer += ('    ' * indent) + submitted_blocks[index] + '\n'
-    answer = leading_code + '\n' + answer + trailing_code + '\n'
-    return answer
-
-
-def get_trail_answer(submitted_blocks, block_indents, trailing_code):
-    if len(submitted_blocks) == 0:
-        return ''
-    answer = ''
-    for index, answer in enumerate(submitted_blocks):
-        indent = int(block_indents[index])
-        answer += ('    ' * indent) + submitted_blocks[index] + '\n'
-    answer = answer + trailing_code + '\n'
-    return answer
-
-
-def get_lead_answer(submitted_blocks, block_indents, leading_code):
-    if len(submitted_blocks) == 0:
-        return ''
-    answer = ''
-    for index, answer_indent in enumerate(block_indents):
-        indent = int(answer_indent)
-        answer += ('    ' * indent) + submitted_blocks[index] + '\n'
-    answer = leading_code + '\n' + answer
-    return answer
+        answer_code += ('    ' * indent) + answer + '\n'
+    answer_code = leading_code + '\n' + answer_code + trailing_code + '\n'
+    return answer_code
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -295,9 +270,9 @@ def parse(element_html, data):
             if leading_code is not None and trailing_code is not None:
                 file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, trailnewx_code)
             if leading_code is None and trailing_code is not None:
-                file_data = get_trail_answer(student_answer, student_answer_indent, trailnewx_code)
+                file_data = get_all_answer(student_answer, student_answer_indent, '', trailnewx_code)
             if leading_code is not None and trailing_code is None:
-                file_data = get_lead_answer(student_answer, student_answer_indent, leadingnew_code)
+                file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, '')
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
 
     data['submitted_answers'][answer_name] = {'student_submission_ordering': student_answer_ranking,
