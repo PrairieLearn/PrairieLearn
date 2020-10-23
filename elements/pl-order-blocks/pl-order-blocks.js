@@ -6,6 +6,18 @@ const INDENT_OFFSET = 10;  // For aesthetic, all answer blocks are offseted to t
                           // 5px, so the answer tiles are not directly touching the dropzone margins
 const MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
 
+function check_block(event, ui) {
+    var block_parent_name = $(ui.item.parent()[0]).attr('name');
+    var block_destination_name = event.target.getAttribute('name');
+    console.log(ui.item[0]);
+    if (block_parent_name !== block_destination_name) {
+        console.log("bad!");
+        return false;
+    }
+    console.log("ok");
+    return true;
+}
+
 function set_answer(event) {
     // We only care about when this function is fired
     // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds 
@@ -89,6 +101,11 @@ $( document ).ready(function() {
             // when the sortable is created, we need to put the two functions here
             // to restore progress when the user refresh/submits an answer
             set_answer(event);
+        },
+        beforeStop: function(event, ui){
+            if (!check_block(event, ui)) {
+                $(this).sortable('cancel');
+            }
         },
         stop: function(event, ui){
             // when the user stops interacting with the list
