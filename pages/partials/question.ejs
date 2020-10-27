@@ -113,13 +113,7 @@
     <div class="card-body question-body">
       <%- questionHtml %>
     </div>
-    <% if (question_overlay == 'grading') { %>
-      <!-- TODO: Grading question footer -->
       <%- include('questionFooter'); %>
-    <% } else { %>
-      <%- include('questionFooter'); %>
-    <% } %>
-
   </div>
   <% } %>
 

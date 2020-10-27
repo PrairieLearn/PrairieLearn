@@ -30,7 +30,8 @@
               <% } %>
           <% } %>
           <% if (showManualGradingButton) { %>
-            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Submit Grades</button>
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Submit Grade</button>
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="next">Next Variant</button>
           <% } %>
         </span>
         <span class="d-flex">
@@ -74,10 +75,6 @@
                   <% } else { %>
                       <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade</button>
                   <% } %>
-              <% } %>
-              <!-- TODO: Take this out and move it into the partials wrapper to alert students -->
-              <% if (showManualGradingMsg) { %>
-              <span class="order-3 ml-2">This question will be manually graded.</span>
               <% } %>
           </span>
           <span class="d-flex">
