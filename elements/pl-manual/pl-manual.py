@@ -1,7 +1,6 @@
 import prairielearn as pl
 import lxml.html
 import chevron
-import json
 
 GRADED = 'graded'
 UNGRADED = 'ungraded'
@@ -16,8 +15,7 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     answers_name = pl.get_string_attrib(element, 'answers-name', None)
-    partial_child = list(filter(lambda child: not isinstance(child, lxml.html.HtmlComment)
-                                and pl.get_string_attrib(child, 'answers-name', '') == answers_name, element))
+    partial_child = list(filter(lambda child: not isinstance(child, lxml.html.HtmlComment) and pl.get_string_attrib(child, 'answers-name', '') == answers_name, element))
 
     if len(partial_child) == 0:
         raise Exception(f'No direct children have {answers_name} as an answers-name attribute.')
