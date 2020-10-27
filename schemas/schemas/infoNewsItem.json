@@ -9,11 +9,11 @@
         "title",
         "visible_to_students"
     ],
-    "comments": {
-        "description": "Add the comments",
-        "type": "string"
-    },
     "properties": {
+        "comments": {
+            "description": "Add the comments",
+            "type": "string"
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",

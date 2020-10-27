@@ -10,11 +10,11 @@
         "title",
         "topics"
     ],
-    "comments": {
-        "description": "Add the comments",
-        "type": "string"
-    },
     "properties": {
+        "comments": {
+            "description": "Add the comments",
+            "type": "string"
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
@@ -58,6 +58,10 @@
                     "color"
                 ],
                 "properties": {
+                    "comments": {
+                        "description": "Add the comments",
+                        "type": "string"
+                    },
                     "abbreviation": {
                         "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
                         "type": "string"
@@ -87,6 +91,10 @@
                     "color"
                 ],
                 "properties": {
+                    "comments": {
+                        "description": "Add the comments",
+                        "type": "string"
+                    },
                     "shortName": {
                         "description": "Short name (preferably 2 to 7 characters).",
                         "type": "string"
@@ -116,6 +124,10 @@
                     "color"
                 ],
                 "properties": {
+                    "comments": {
+                        "description": "Add the comments",
+                        "type": "string"
+                    },
                     "shortName": {
                         "description": "Short name (preferably 2 to 7 characters).",
                         "type": "string"

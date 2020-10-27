@@ -9,11 +9,11 @@
         "correctAnswers",
         "incorrectAnswers"
     ],
-    "comments": {
-        "description": "Add the comments",
-        "type": "string"
-    },
     "properties": {
+        "comments": {
+            "description": "Add the comments",
+            "type": "string"
+        },
         "text": {
             "description": "The question HTML text that comes before the options.",
             "type": "string"

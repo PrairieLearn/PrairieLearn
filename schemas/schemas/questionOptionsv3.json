@@ -7,5 +7,10 @@
         "description": "Add the comments",
         "type": "string"
     },
-    "properties": {}
+    "properties": {
+        "comments": {
+            "description": "Add the comments",
+            "type": "string"
+        }
+    }
 }

@@ -53,10 +53,12 @@ This file specifies basic information about the course:
     "name": "TAM 212",
     "title": "Introductory Dynamics",
     "assessmentSets": [
+        {"comments": "The assessment set order used here will be the one shown within PrairieLearn"},
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
     ],
     "topics": [
+        {"comments": "Topics should be thought of as chapters or sections in a textbook"},
         {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D"},
         {"name": "Center of mass", "color": "green3", "description": "Finding and using the center of mass of irregular bodies."}
     ],

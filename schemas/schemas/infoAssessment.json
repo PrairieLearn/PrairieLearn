@@ -11,11 +11,11 @@
         "set",
         "number"
     ],
-    "comments": {
-        "description": "Add the comments",
-        "type": "string"
-    },
     "properties": {
+        "comments": {
+            "description": "Add the comments",
+            "type": "string"
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
@@ -200,6 +200,10 @@
                     "description": "Zone title, displayed to the students at the top of the question list for the zone.",
                     "type": "string"
                 },
+                "comments": {
+                    "description": "Add the comments",
+                    "type": "string"
+                },
                 "maxPoints": {
                     "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
                     "type": "number"
@@ -224,12 +228,17 @@
                 }
             },
             "required": [
-                "questions"
+                "questions",
+                "comments"
             ]
         },
         "zoneQuestion": {
             "type": "object",
             "properties": {
+                "comments": {
+                    "description": "Add the comments",
+                    "type": "string"
+                },
                 "points": {
                     "$ref": "#/definitions/points"
                 },

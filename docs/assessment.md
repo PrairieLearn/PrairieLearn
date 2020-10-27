@@ -57,6 +57,7 @@ An assessment is broken down in to a list of zones, like this:
     {
         "title": "Easy questions",
         "questions": [
+            {"comments": "These are new questions created for this exam"},
             {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
             {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
         ]
@@ -64,6 +65,7 @@ An assessment is broken down in to a list of zones, like this:
     {
         "title": "Hard questions",
         "questions": [
+            {"comments": "These are new questions created for this exam"},
             {"id": "hardQV1", "points": 10},
             {"id": "reallyHardQ", "points": [10, 10, 10]},
             {
