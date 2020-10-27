@@ -79,6 +79,7 @@ Each assessment belongs to an *assessment set*. Each assessment set must have th
 
 Property | Description
 --- | ---
+`comments` | The comments for each property.
 `abbreviation` | Abbreviation that is joined with the assessment `number` to form the label, so `"abbreviation": "HW"` produces `HW1`, `HW2`, etc. This should be one or two uppercase letters (e.g., `HW` for homework, `E` for exam, `Q` for quiz).
 `name` | Full name that is joined with the assessment `number` to describe the assessment, so `"name": "Homework"` produces `Homework 1`, etc. This should be a singular noun.
 `heading` | Title that is listed above all the assessments in the set. Should be the plural version of the `name`.
