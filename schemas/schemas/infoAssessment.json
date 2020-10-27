@@ -228,8 +228,7 @@
                 }
             },
             "required": [
-                "questions",
-                "comments"
+                "questions"
             ]
         },
         "zoneQuestion": {
