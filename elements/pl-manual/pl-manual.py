@@ -3,6 +3,10 @@ import lxml.html
 import chevron
 import json
 
+GRADED = 'graded'
+UNGRADED = 'ungraded'
+STATUS_KEY = 'status'
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -30,7 +34,7 @@ def render(element_html, data):
     partial = data['partial_scores'].get(answers_name, {'score': 0, 'feedback': '', 'status': 'ungraded'})
     partial_score = partial.get('score', 0)
     partial_feedback = partial.get('feedback', '')
-    partial_status = partial.get('status', 'ungraded')
+    partial_status = partial.get(STATUS_KEY, UNGRADED)
 
     html_params = {
         # Grader v. student view
@@ -43,7 +47,7 @@ def render(element_html, data):
         # We display the score as out of 100, since it's easier to think of than out of 1
         'score': partial_score * 100,
         'feedback': partial_feedback,
-        'needs_grading': partial_status == 'graded',
+        'needs_grading': partial_status != GRADED,
 
         # Inner html (grader view popover & html children)
         'html': None,
@@ -79,3 +83,14 @@ def render(element_html, data):
         html = chevron.render(f, html_params).strip()
 
     return html
+
+# TODO: Look into grading hooks to do this status stuff--post grade like hook?
+# Partials aren't always set, and people manually set the partials object :/
+# def grade(element_html, data):
+#     element = lxml.html.fragment_fromstring(element_html)
+#     answers_name = pl.get_string_attrib(element, 'answers-name')
+#     print(data['partial_scores'])
+#     if data['partial_scores'][answers_name]['score'] == 1:
+#         data['partial_scores'][answers_name][STATUS] = GRADED
+#     else:
+#         data['partial_scores'][answers_name][STATUS] = UNGRADED

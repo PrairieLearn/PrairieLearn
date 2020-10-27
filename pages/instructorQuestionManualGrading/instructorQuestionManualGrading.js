@@ -5,59 +5,80 @@ const router = express.Router();
 const async = require('async');
 const error = require('@prairielearn/prairielib/error');
 const question = require('../../lib/question');
-const sqldb = require('@prairielearn/prairielib/sql-db');
 const path = require('path');
 const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js')
+  'prairielearn:' + path.basename(__filename, '.js'),
 );
 const logPageView = require('../../middlewares/logPageView')(
-  path.basename(__filename, '.js')
+  path.basename(__filename, '.js'),
 );
 
-router.post('/', function (req, res, next) {
-  // TODO: Look into adding manual grading action here--check what string we need
-  // TODO: Add endpoint to mark this entire question as grade/ungraded/per variant
-  //  and check if this dupluciates any logic in the instructor ui
-  if (req.body.__action == 'grade') {
-    // TODO: Hook this up to the manual grading "regrading" step
-    // TODO: "pretty package" our partials for use by the backend pipleline
-    // TODO: Add query string logic to set question state, i.e. graded or ungraded
-    // TODO: Check if we need to pass on old partials to override, or if we need to augment old scores
-    let variant_id, submitted_partials;
-    if (res.locals.question.type == 'Freeform') {
-      variant_id = req.body.__variant_id;
-      submitted_partials = _.omit(req.body, [
-        '__action',
-        '__csrf_token',
-        '__variant_id',
-      ]);
-    } else {
-      return callback(
-        error.make(
-          400,
-          'Manual grading is only supported for freeform (V3) questions',
-          { locals: res.locals, body: req.body }
-        )
-      );
-    }
+/**
+ * Submits the regraded partials to the regrading workflow.
+ * Returns the variant ID of the current question.
+ */
+function submitPartials(req, res, callback) {
+  const variant_id = req.body.__variant_id;
+  const submitted_partials = _.omit(req.body, [
+    '__action',
+    '__csrf_token',
+    '__variant_id',
+  ]);
 
-    const status = 'graded';
-    const partials = {};
-    for (const key in submitted_partials) {
-      _.set(partials, key, submitted_partials[key]);
+  const status = 'graded';
+  const partials = {};
+  for (const key in submitted_partials) {
+    _.set(partials, key, submitted_partials[key]);
+  }
+  for (const key in partials) {
+    partials[key].status = status;
+  }
+
+  // TODO: Send these partials off to the backend
+  console.log(partials);
+  callback(null, variant_id);
+}
+
+/**
+ * Grabs the next question from the current assignment to grade.
+ */
+function getNextToGrade(req, res, callback) {
+  // TODO: Implement.
+  const variant_id = req.body.__variant_id;
+  callback(error.make(501, 'Not implemented.'), variant_id);
+}
+
+router.post('/', function (req, res, next) {
+  if (res.locals.question.type == 'Freeform') {
+    const redirectToVariant = function (err, variant_id) {
+      if (ERR(err, next)) return;
+      res.redirect(
+        `${res.locals.urlPrefix}/question/${res.locals.question.id}/manual_grading/?variant_id=${variant_id}`,
+      );
+    };
+
+    switch (req.body.__action) {
+      case 'grade':
+        submitPartials(req, res, redirectToVariant);
+        break;
+      case 'next':
+        getNextToGrade(req, res, redirectToVariant);
+        break;
+      default:
+        next(
+          error.make(400, 'unknown __action: ' + req.body.__action, {
+            locals: res.locals,
+            body: req.body,
+          }),
+        );
     }
-    for (const key in partials) {
-      partials[key].status = status;
-    }
-    console.log(partials);
-    // TODO: Submit partials to backend
-    callback(null);
   } else {
-    next(
-      error.make(400, 'unknown __action: ' + req.body.__action, {
-        locals: res.locals,
-        body: req.body,
-      })
+    return next(
+      error.make(
+        400,
+        'Manual grading is only supported for freeform (V3) questions',
+        { locals: res.locals, body: req.body },
+      ),
     );
   }
 });
@@ -65,7 +86,7 @@ router.post('/', function (req, res, next) {
 router.get('/', function (req, res, next) {
   var variant_id = req.query.variant_id;
   debug(`manually grading variant_id ${variant_id}`);
-  // TODO: Handle statuses for views on grading
+
   if (variant_id) {
     res.locals.overlayGradingInterface = true;
     res.locals.allowAnswerEditing = false;
@@ -73,7 +94,7 @@ router.get('/', function (req, res, next) {
       [
         (callback) => {
           question.getAndRenderVariant(variant_id, null, res.locals, function (
-            err
+            err,
           ) {
             if (ERR(err, callback)) return;
             callback(null);
@@ -89,14 +110,14 @@ router.get('/', function (req, res, next) {
       (err) => {
         if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      }
+      },
     );
   } else {
     return next(
       error.make(400, 'no variant provided', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });

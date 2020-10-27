@@ -5,11 +5,9 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const error = require('@prairielearn/prairielib/error');
 
+// eslint-disable-next-line no-unused-vars
 router.get('/', function(req, res, next) {
     debug('GET /');
-    var params = {
-        assessment_id: res.locals.assessment.id,
-    };
     // TODO: Implement logic to:
     //       - Display all questions from the assignment, and list percentage graded
     //       - Hotlink to question statistics (so it's easy to bounce over and see current scores)

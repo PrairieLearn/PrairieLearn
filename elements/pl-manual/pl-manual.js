@@ -1,3 +1,5 @@
+/* eslint-disable no-undef */
+// eslint-disable-next-line no-unused-vars
 function PLManual(uuid, ansName) {
   const hideClass = 'd-none';
   const plManualId = `#pl-manual-${uuid}`;
@@ -21,7 +23,7 @@ function PLManual(uuid, ansName) {
       $(popoverBodyId)
         .removeClass(hideClass)
         .detach()
-        .appendTo(popoverTempBodyId)
+        .appendTo(popoverTempBodyId),
     );
 
   // Just change over our points to be scaled out of 1 before form submit

@@ -16,7 +16,8 @@
   "zones": [
     {
       "questions": [
-        { "id": "manualGrading/stringDemo", "points": 1, "maxPoints": 5 }
+        { "id": "manualGrading/stringDemo", "points": 1, "maxPoints": 5 },
+        { "id": "manualGrading/matrixDemo", "points": 1, "maxPoints": 5 }
       ]
     }
   ]

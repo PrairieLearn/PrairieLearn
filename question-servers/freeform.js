@@ -588,7 +588,6 @@ module.exports = {
     processQuestionHtml: function(phase, pc, data, context, callback) {
         const courseIssues = [];
         const origData = JSON.parse(JSON.stringify(data));
-
         const checkErr = module.exports.checkData(data, origData, phase);
         if (checkErr) {
             const courseIssue = new Error('Invalid state before ' + phase + ': ' + checkErr);

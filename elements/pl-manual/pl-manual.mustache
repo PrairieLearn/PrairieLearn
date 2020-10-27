@@ -45,13 +45,13 @@
   {{/grader}}
 
   {{#student}}
-  <div>
+  <span>
     {{{html}}}
     <p>
       {{#needs_grading}}This part of the question may be manually graded by an instructor.{{/needs_grading}}
       {{^needs_grading}}This part of the question has already been manually graded by an instructor.{{/needs_grading}}
     </p>
-  </div>
+  </span>
   {{/student}}
 </div>
 
