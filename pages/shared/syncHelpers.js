@@ -43,7 +43,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
         // update the content.
 
         const syncStage1A = function() {
-            const branch = locals.course.branch || config.courseCloneBranchDefault;
+            const branch = locals.course.branch || config.cloneCourseDefaultBranch;
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -73,10 +73,10 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
-                type: 'remove_git_remote_origin',
-                description: 'Removing remote origin address',
+                type: 'add_git_remote_origin',
+                description: 'Setting latest remote origin address',
                 command: 'git',
-                arguments: ['remote', 'rm', 'origin'],
+                arguments: ['remote', 'set-url', 'origin', locals.course.repository],
                 working_directory: locals.course.path,
                 env: gitEnv,
                 on_success: syncStage1B3,
@@ -90,10 +90,10 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
-                type: 'add_git_remote_origin',
-                description: 'Setting latest remote origin address',
+                type: 'fetch_from_git',
+                description: 'Fetch from remote git repository',
                 command: 'git',
-                arguments: ['remote', 'add', 'origin', locals.course.repository],
+                arguments: ['fetch'],
                 working_directory: locals.course.path,
                 env: gitEnv,
                 on_success: syncStage1B4,
@@ -107,10 +107,10 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
-                type: 'fetch_from_git',
-                description: 'Fetch from remote git repository',
+                type: 'clean_git_repo',
+                description: 'Clean local files not in remote git repository',
                 command: 'git',
-                arguments: ['fetch'],
+                arguments: ['clean', '-fdx'],
                 working_directory: locals.course.path,
                 env: gitEnv,
                 on_success: syncStage1B5,
@@ -119,23 +119,6 @@ module.exports.pullAndUpdate = function(locals, callback) {
         };
 
         const syncStage1B5 = function() {
-            const jobOptions = {
-                course_id: locals.course.id,
-                user_id: locals.user.user_id,
-                authn_user_id: locals.authz_data.authn_user.user_id,
-                job_sequence_id: job_sequence_id,
-                type: 'clean_git_repo',
-                description: 'Clean local files not in remote git repository',
-                command: 'git',
-                arguments: ['clean', '-fdx'],
-                working_directory: locals.course.path,
-                env: gitEnv,
-                on_success: syncStage1B6,
-            };
-            serverJobs.spawnJob(jobOptions);
-        };
-
-        const syncStage1B6 = function() {
             const branch = 'origin/' + (locals.course.branch || config.courseCloneBranchDefault);
             const jobOptions = {
                 course_id: locals.course.id,
