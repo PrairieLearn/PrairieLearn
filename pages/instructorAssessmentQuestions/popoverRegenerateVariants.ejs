@@ -1,0 +1,9 @@
+<div>Hello, world!</div>
+<form name="regrade-form" method="POST">
+  <!-- <input type="hidden" name="__action" value="regrade"> -->
+  <!-- <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>"> -->
+  <button type="button" class="btn btn-secondary" onclick="$('#row<%= iRow %>PopoverRegrade').popover('hide')">
+    Cancel
+  </button>
+  <button type="submit" class="btn btn-danger">Mark all variants broken</button>
+</form>
