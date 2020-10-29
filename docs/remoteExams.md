@@ -29,12 +29,17 @@ Some notes about this configuration:
 * The `examUuid` parameter should be copied from the CBTF Scheduler website for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
 * Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by the CBTF on a per-student basis, taking into account conflict exams and disability accommodations.
 
-If some students need to take the exam outside of the CBTF then they can be added separately, like the following example. See the (next section)[#synchronous-timed-exams] for more details.
+If some students need to take the exam outside of the CBTF then they can be added separately, like the following example. See the (next section)[#synchronous-timed-exams] for more details. The additional access rules for specific students can be added at any time, including after other students already completed the CBTF exam. This is useful to set up accommodations for students that missed the exam. The order of the extra access rules is not important.
 
 ```json
 "allowAccess": [
     {
         "role": "TA",
+        "credit": 100
+    },
+    {
+        "mode": "Exam",
+        "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
         "credit": 100
     },
     {
@@ -45,11 +50,6 @@ If some students need to take the exam outside of the CBTF then they can be adde
         "endDate": "2020-04-20T12:40:00",
         "timeLimitMin": 90,
         "showClosedAssessment": false
-    },
-    {
-        "mode": "Exam",
-        "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
-        "credit": 100
     }
 ],
 ```
