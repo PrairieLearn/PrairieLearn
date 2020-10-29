@@ -31,7 +31,7 @@ Some notes about this configuration:
 
 ## CBTF exams with a few students outside the CBTF
 
-Sometimes exams in the CBTF (see above) need to have a few students take the exam without CBTF proctoring, for example if they have missed the exam and need to take it later without proctoring. The access control for this should look like:
+Sometimes exams in the CBTF ([see above](#exams-in-the-computer-based-testing-facility-cbtf)) need to have a few students take the exam without CBTF proctoring, for example if they have missed the exam and need to take it later without proctoring. The access control for this should look like:
 
 ```json
 "allowAccess": [
@@ -58,7 +58,7 @@ Sometimes exams in the CBTF (see above) need to have a few students take the exa
 
 Some notes about this configuration:
 
-* See the (next section)[#synchronous-timed-exams] for more details on the extra rule for the unproctored students.
+* See the [next section](#synchronous-timed-exams) for more details on the extra rule for the unproctored students.
 * The additional access rules for specific students can be added at any time, including after other students already completed the CBTF exam. This is useful to set up accommodations for students that missed the exam.
 * The order of the extra access rules is not important.
 
