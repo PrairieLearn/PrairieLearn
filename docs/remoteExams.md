@@ -29,7 +29,7 @@ Some notes about this configuration:
 * The `examUuid` parameter should be copied from the CBTF Scheduler website for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
 * Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by the CBTF on a per-student basis, taking into account conflict exams and disability accommodations.
 
-# CBTF exams with a few students outside the CBTF
+## CBTF exams with a few students outside the CBTF
 
 Sometimes exams in the CBTF (see above) need to have a few students take the exam without CBTF proctoring, for example if they have missed the exam and need to take it later without proctoring. The access control for this should look like:
 
