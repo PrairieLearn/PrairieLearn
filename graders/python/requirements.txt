@@ -17,6 +17,8 @@ beautifulsoup4==4.9.2
 bokeh==2.2.1
 folium==0.11.0
 Pygments==2.7.1
+PuLP==2.3
 ipython==7.16.1
 nbformat==5.0.7
 nbconvert==5.6.1
+tensorflow==2.3.1
