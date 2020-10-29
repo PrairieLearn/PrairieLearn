@@ -52,13 +52,13 @@ This file specifies basic information about the course:
     "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
     "name": "TAM 212",
     "title": "Introductory Dynamics",
+    "comment": "The assessment set order used here will be the one shown within PrairieLearn",
     "assessmentSets": [
-        {"comments": "The assessment set order used here will be the one shown within PrairieLearn"},
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
     ],
+    "comment": "Topics should be thought of as chapters or sections in a textbook",
     "topics": [
-        {"comments": "Topics should be thought of as chapters or sections in a textbook"},
         {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D"},
         {"name": "Center of mass", "color": "green3", "description": "Finding and using the center of mass of irregular bodies."}
     ],
@@ -79,7 +79,7 @@ Each assessment belongs to an *assessment set*. Each assessment set must have th
 
 Property | Description
 --- | ---
-`comments` | The comments for each property.
+`comment` | The comments for each property.
 `abbreviation` | Abbreviation that is joined with the assessment `number` to form the label, so `"abbreviation": "HW"` produces `HW1`, `HW2`, etc. This should be one or two uppercase letters (e.g., `HW` for homework, `E` for exam, `Q` for quiz).
 `name` | Full name that is joined with the assessment `number` to describe the assessment, so `"name": "Homework"` produces `Homework 1`, etc. This should be a singular noun.
 `heading` | Title that is listed above all the assessments in the set. Should be the plural version of the `name`.

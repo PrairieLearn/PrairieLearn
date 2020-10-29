@@ -13,7 +13,7 @@
     "zones": [
         {
             "title": "Lesson 1",
-            "comments": "Workshop Day 1: https://prairielearn.readthedocs.io/en/latest/workshop/lesson1/",
+            "comment": "Workshop Day 1: https://prairielearn.readthedocs.io/en/latest/workshop/lesson1/",
             "questions": [
                 {"id": "workshop/PeriodicTable1", "points": 1, "maxPoints": 3},
                 {"id": "workshop/Lesson1_example1_v1", "points": 1, "maxPoints": 3},
@@ -26,7 +26,7 @@
         },
         {
             "title": "Lesson 3",
-            "comments": " Workshop Day 3: https://prairielearn.readthedocs.io/en/latest/workshop/lesson3/",
+            "comment": " Workshop Day 3: https://prairielearn.readthedocs.io/en/latest/workshop/lesson3/",
             "questions": [
                 {"id": "workshop/Lesson3_example1_v1", "points": 1, "maxPoints": 3},
                 {"id": "workshop/Lesson3_example1_v2", "points": 1, "maxPoints": 3},
@@ -41,7 +41,7 @@
         },
         {
             "title": "Lesson 4",
-            "comments": " Workshop Day 4: https://prairielearn.readthedocs.io/en/latest/workshop/lesson4/",
+            "comment": " Workshop Day 4: https://prairielearn.readthedocs.io/en/latest/workshop/lesson4/",
             "questions": [
                 {"id": "workshop/Lesson4_example1", "points": 1, "maxPoints": 3},
                 {"id": "workshop/Lesson4_example2", "points": 1, "maxPoints": 3},
@@ -51,7 +51,7 @@
         },
         {
             "title": "Lesson 5",
-            "comments": " Workshop Day 5: https://prairielearn.readthedocs.io/en/latest/workshop/lesson5/",
+            "comment": " Workshop Day 5: https://prairielearn.readthedocs.io/en/latest/workshop/lesson5/",
             "questions": [
               {"id": "workshop/Lesson5_example1", "points": 1, "maxPoints": 3},
               {"id": "workshop/Lesson5_example2", "points": 1, "maxPoints": 3},

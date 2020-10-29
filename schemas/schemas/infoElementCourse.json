@@ -8,8 +8,8 @@
         "controller"
     ],
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         },
         "controller": {
@@ -21,6 +21,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "comment": {
+                    "description": "Add the comment",
+                    "type": "string"
+                },
                 "coreStyles": {
                     "description": "The styles required by this element from /public/stylesheets.",
                     "type": "array",

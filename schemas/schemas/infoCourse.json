@@ -11,8 +11,8 @@
         "topics"
     ],
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         },
         "uuid": {
@@ -38,6 +38,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "comment": {
+                    "description": "Add the comment",
+                    "type": "string"
+                },
                 "useNewQuestionRenderer": {
                     "description": "Feature flag to enable the new question renderer.",
                     "type": "boolean",
@@ -58,8 +62,8 @@
                     "color"
                 ],
                 "properties": {
-                    "comments": {
-                        "description": "Add the comments",
+                    "comment": {
+                        "description": "Add the comment",
                         "type": "string"
                     },
                     "abbreviation": {
@@ -91,8 +95,8 @@
                     "color"
                 ],
                 "properties": {
-                    "comments": {
-                        "description": "Add the comments",
+                    "comment": {
+                        "description": "Add the comment",
                         "type": "string"
                     },
                     "shortName": {
@@ -124,8 +128,8 @@
                     "color"
                 ],
                 "properties": {
-                    "comments": {
-                        "description": "Add the comments",
+                    "comment": {
+                        "description": "Add the comment",
                         "type": "string"
                     },
                     "shortName": {

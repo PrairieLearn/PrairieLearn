@@ -5,8 +5,8 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         },
         "fileName": {

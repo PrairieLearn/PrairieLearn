@@ -12,8 +12,8 @@
         "number"
     ],
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         },
         "uuid": {
@@ -109,6 +109,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "comment": {
+                    "description": "Add the comment",
+                    "type": "string"
+                },
                 "mode": {
                     "description": "The server mode required for access.",
                     "enum": [
@@ -163,6 +167,10 @@
                     "description": "Configuration related to Safe Exam Browser",
                     "type": "object",
                     "properties": {
+                        "comment": {
+                            "description": "Add the comment",
+                            "type": "string"
+                        },
                         "password": {
                             "description": "Password protect the SEB exam and config file",
                             "type": "string"
@@ -200,8 +208,8 @@
                     "description": "Zone title, displayed to the students at the top of the question list for the zone.",
                     "type": "string"
                 },
-                "comments": {
-                    "description": "Add the comments",
+                "comment": {
+                    "description": "Add the comment",
                     "type": "string"
                 },
                 "maxPoints": {
@@ -234,8 +242,8 @@
         "zoneQuestion": {
             "type": "object",
             "properties": {
-                "comments": {
-                    "description": "Add the comments",
+                "comment": {
+                    "description": "Add the comment",
                     "type": "string"
                 },
                 "points": {
@@ -274,6 +282,10 @@
         "questionAlternative": {
             "type": "object",
             "properties": {
+                "comment": {
+                    "description": "Add the comment",
+                    "type": "string"
+                },
                 "points": {
                     "$ref": "#/definitions/points"
                 },

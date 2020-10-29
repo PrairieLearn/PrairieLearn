@@ -8,8 +8,8 @@
         "description"
     ],
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         },
         "description": {
@@ -32,6 +32,10 @@
                 "additionalProperties": false,
                 "required": ["name", "description"],
                 "properties": {
+                    "comment": {
+                        "description": "Add the comment",
+                        "type": "string"
+                    },
                     "name": {
                         "description": "Name of the parameter. Must match a $name in the SQL.",
                         "type": "string"

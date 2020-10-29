@@ -4,8 +4,8 @@
     "description": "Options for a Calculation question.",
     "type": "object",
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         }
     }

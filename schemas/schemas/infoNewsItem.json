@@ -10,8 +10,8 @@
         "visible_to_students"
     ],
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         },
         "uuid": {

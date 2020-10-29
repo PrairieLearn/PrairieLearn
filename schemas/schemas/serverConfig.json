@@ -4,8 +4,8 @@
     "description": "A configuration file for the PrairieLearn server.",
     "type": "object",
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         },
         "courseDirs": {

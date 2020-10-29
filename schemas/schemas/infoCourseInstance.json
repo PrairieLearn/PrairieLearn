@@ -8,8 +8,8 @@
         "longName"
     ],
     "properties": {
-        "comments": {
-            "description": "Add the comments",
+        "comment": {
+            "description": "Add the comment",
             "type": "string"
         },
         "uuid": {
@@ -52,6 +52,10 @@
                 "description": "An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.",
                 "type": "object",
                 "properties": {
+                    "comment": {
+                        "description": "Add the comment",
+                        "type": "string"
+                    },
                     "role": {
                         "description": "The minimum user role required for access.",
                         "enum": [
