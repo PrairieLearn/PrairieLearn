@@ -29,7 +29,9 @@ Some notes about this configuration:
 * The `examUuid` parameter should be copied from the CBTF Scheduler website for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
 * Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by the CBTF on a per-student basis, taking into account conflict exams and disability accommodations.
 
-If some students need to take the exam outside of the CBTF then they can be added separately, like the following example. See the (next section)[#synchronous-timed-exams] for more details. The additional access rules for specific students can be added at any time, including after other students already completed the CBTF exam. This is useful to set up accommodations for students that missed the exam. The order of the extra access rules is not important.
+# CBTF exams with a few students outside the CBTF
+
+Sometimes exams in the CBTF (see above) need to have a few students take the exam without CBTF proctoring, for example if they have missed the exam and need to take it later without proctoring. The access control for this should look like:
 
 ```json
 "allowAccess": [
@@ -53,6 +55,12 @@ If some students need to take the exam outside of the CBTF then they can be adde
     }
 ],
 ```
+
+Some notes about this configuration:
+
+* See the (next section)[#synchronous-timed-exams] for more details on the extra rule for the unproctored students.
+* The additional access rules for specific students can be added at any time, including after other students already completed the CBTF exam. This is useful to set up accommodations for students that missed the exam.
+* The order of the extra access rules is not important.
 
 
 ## Synchronous, timed exams
