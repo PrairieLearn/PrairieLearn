@@ -27,6 +27,10 @@ def prepare(element_html, data):
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+
+    if data['panel'] == 'answer':
+        return pl.inner_html(element)
+
     answers_name = pl.get_string_attrib(element, 'answers-name', None)
     # TODO: Status logic -- is this question graded or not yet?
     partial = data['partial_scores'].get(answers_name, {'score': 0, 'feedback': '', 'status': 'ungraded'})
@@ -55,7 +59,7 @@ def render(element_html, data):
         'use_default_popover_body': pl.get_string_attrib(element, 'show-default', True)
     }
 
-    if data['options']['overlay_grading_interface']:
+    if data['options']['overlay_grading_interface'] and data['panel'] == 'question':
         popover_inner_html = []
         children = []
         # Move anything with the pl-manual-* prefix into the popover body
