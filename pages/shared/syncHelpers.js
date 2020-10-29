@@ -74,7 +74,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
                 type: 'add_git_remote_origin',
-                description: 'Setting latest remote origin address',
+                description: 'Updating to latest remote origin address',
                 command: 'git',
                 arguments: ['remote', 'set-url', 'origin', locals.course.repository],
                 working_directory: locals.course.path,
