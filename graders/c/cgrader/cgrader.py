@@ -106,7 +106,7 @@ class CGrader:
         if out and add_warning_result_msg:
             self.result['message'] += f'Compilation warnings:\n\n{out}\n'
         return self.add_test_result(name, output=out,
-                                    points=os.path.isfile(exec_file),
+                                    points=points and os.path.isfile(exec_file),
                                     max_points=points, field=field)
 
     def change_mode(self, file, mode='744'):
