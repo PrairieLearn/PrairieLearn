@@ -13,7 +13,10 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const serveAITimeLimit = function(req, res, next, instance_id=false) {
-    let retval = [];
+    let retval = {
+        next_update: 60,
+        remaining: [],
+    };
     let query;
     let params;
     if (instance_id === false) {
@@ -27,17 +30,21 @@ const serveAITimeLimit = function(req, res, next, instance_id=false) {
             assessment_instance_id: instance_id,
         };
         query = sql.select_assessment_instance;
+        retval.next_update = false;
     }
 
     sqldb.query(query, params, function(err, result) {
         if (ERR(err, next)) return;
         result.rows.forEach(function(row) {
-            retval.push({instance_id: row.assessment_instance_id,
-                         time_remaining: row.time_remaining});
+            retval.remaining.push({instance_id: row.assessment_instance_id,
+                                   time_remaining: row.time_remaining});
+            if (row.next_time_remaining_update &&
+                row.next_time_remaining_update < retval.next_update)
+                retval.next_update = row.next_time_remaining_update;
         });
         res.send(JSON.stringify(retval));
     });
-}
+};
 
 router.get('/', function(req, res, next) {
     debug('GET /');
@@ -134,6 +141,8 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             serveAITimeLimit(req, res, next, req.body.assessment_instance_id);
         });
+    } else if (req.body.__action == 'request_update_times') {
+        serveAITimeLimit(req, res, next, false);
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }

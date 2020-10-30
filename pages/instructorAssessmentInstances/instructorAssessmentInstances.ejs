@@ -7,10 +7,20 @@
     <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
     <script>
       var updateTimeRemaining = function(data, textStatus, jqxhr) {
-          data.forEach(function(element) {
+          data.remaining.forEach(function(element) {
               $('#time-remaining-aiid-' + element.instance_id).text(element.time_remaining);
           });
+          if (data.next_update) {
+              setTimeout(requestUpdatedTimes, data.next_update * 1000 + 1);
+          }
       }
+
+      var requestUpdatedTimes = function() {
+          $.post(window.location.href,
+                 "__action=request_update_times&__csrf_token=<%= __csrf_token %>",
+                 updateTimeRemaining, 'json');
+          # TODO In case of failure, try again after a bit.
+      };
       
       $(function() {
           $('.form-change-time-remaining').find('button').click(function(event) {
@@ -20,6 +30,7 @@
                      updateTimeRemaining, 'json');
               return false;
           });
+          setTimeout(requestUpdatedTimes, 1000);
       });
     </script>
   </head>
@@ -158,7 +169,7 @@
                 <td class="text-center align-middle"><%= row.date_formatted %></td>
                 <td class="text-center align-middle" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
                 <td class="text-center align-middle">
-                  <% if (row.time_remaining.endsWith('min')) { %>
+                  <% if (row.time_remaining.endsWith('min') || row.time_remaining.endsWith('sec')) { %>
                     <form class="form-inline justify-content-center form-change-time-remaining" method="POST">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                       <input type="hidden" name="assessment_instance_id" value="<%= row.assessment_instance_id %>">
