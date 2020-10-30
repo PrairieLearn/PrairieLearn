@@ -1,13 +1,11 @@
 <td class="align-middle">
   <%= course[column_name] %>
-  <%= default %>
-
   <button type="button" class="btn btn-xs btn-secondary"
      id="courseButton<%= column_name %><%= i %>" tabindex="0"
      data-toggle="popover" data-container="body"
      data-html="true" data-placement="auto" title="Change <%= label %>"
      data-content="<%= include('courseUpdateColumnForm',
-                   {id: 'courseButton' + column_name + i}) %>"
+                   {id: 'courseButton' + column_name + i, default: default}) %>"
      data-trigger="manual" onclick="$(this).popover('show')">
     <i class="fa fa-edit" aria-hidden="true"></i>
   </button>
