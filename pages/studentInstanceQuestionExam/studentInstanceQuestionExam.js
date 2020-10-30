@@ -58,7 +58,13 @@ function processSubmission(req, res, callback) {
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-    if (req.body.__action == 'grade' || req.body.__action == 'save') {
+    if (req.body.__action == 'update_timers') {
+        var retval = {
+            serverRemainingMS: res.locals.assessment_instance_remaining_ms,
+            serverTimeLimitMS: res.locals.assessment_instance_time_limit_ms,
+        };
+        res.send(JSON.stringify(retval));
+    } else if (req.body.__action == 'grade' || req.body.__action == 'save') {
         if (res.locals.authz_result.time_limit_expired) {
             return next(new Error('time limit is expired, please go back and finish your assessment'));
         }
