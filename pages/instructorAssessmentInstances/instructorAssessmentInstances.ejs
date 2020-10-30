@@ -5,6 +5,23 @@
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script src="/javascripts/jquery.tablesorter.min.js"></script>
     <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <script>
+      var updateTimeRemaining = function(data, textStatus, jqxhr) {
+          data.forEach(function(element) {
+              $('#time-remaining-aiid-' + element.instance_id).text(element.time_remaining);
+          });
+      }
+      
+      $(function() {
+          $('.form-change-time-remaining').find('button').click(function(event) {
+              event.preventDefault();
+              $.post(window.location.href,
+                     $(this).parents('form').serialize() + "&__action=" + $(this).val(),
+                     updateTimeRemaining, 'json');
+              return false;
+          });
+      });
+    </script>
   </head>
   <body>
     <script>
@@ -142,15 +159,16 @@
                 <td class="text-center align-middle" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
                 <td class="text-center align-middle">
                   <% if (row.time_remaining.endsWith('min')) { %>
-                    <form class="form-inline justify-content-center" method="POST">
+                    <form class="form-inline justify-content-center form-change-time-remaining" method="POST">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                      <input type="hidden" name="assessment_instance_id" value="<%= row.number %>">
+                      <input type="hidden" name="assessment_instance_id" value="<%= row.assessment_instance_id %>">
 
                       <button class="btn btn-xs btn-warning mr-1" name="__action" value="decrease_ai_date_limit">
                         <i class="fa fa-minus" aria-hidden="true"></i><span class="sr-only">minus</span>
                       </button>
-
-                      <%= row.time_remaining %>
+                      <span id="time-remaining-aiid-<%= row.assessment_instance_id %>">
+                        <%= row.time_remaining %>
+                      </span>
 
                       <button class="btn btn-xs btn-primary ml-1" name="__action" value="increase_ai_date_limit">
                         <i class="fa fa-plus" aria-hidden="true"></i><span class="sr-only">plus</span>

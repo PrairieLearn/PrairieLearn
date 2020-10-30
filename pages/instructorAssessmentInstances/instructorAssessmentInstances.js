@@ -12,6 +12,33 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
+const serveAITimeLimit = function(req, res, next, instance_id=false) {
+    let retval = [];
+    let query;
+    let params;
+    if (instance_id === false) {
+        params = {
+            assessment_id: res.locals.assessment.id, 
+            group_work: res.locals.assessment.group_work,
+        };
+        query = sql.select_assessment_instances;
+    } else {
+        params = {
+            assessment_instance_id: instance_id,
+        };
+        query = sql.select_assessment_instance;
+    }
+
+    sqldb.query(query, params, function(err, result) {
+        if (ERR(err, next)) return;
+        result.rows.forEach(function(row) {
+            retval.push({instance_id: row.assessment_instance_id,
+                         time_remaining: row.time_remaining});
+        });
+        res.send(JSON.stringify(retval));
+    });
+}
+
 router.get('/', function(req, res, next) {
     debug('GET /');
     const params = {
@@ -97,7 +124,7 @@ router.post('/', function(req, res, next) {
         };
         sqldb.query(sql.increase_ai_date_limit, params, function(err, _result) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            serveAITimeLimit(req, res, next, req.body.assessment_instance_id);
         });
     } else if (req.body.__action == 'decrease_ai_date_limit') {
         const params = {
@@ -105,7 +132,7 @@ router.post('/', function(req, res, next) {
         };
         sqldb.query(sql.decrease_ai_date_limit, params, function(err, _result) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            serveAITimeLimit(req, res, next, req.body.assessment_instance_id);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
