@@ -4,7 +4,11 @@
   <input type="hidden" name="course_id" value="<%= course.id %>">
   <input type="hidden" name="column_name" value="<%= column_name %>">
   <div class="form-group">
-    <input type="text" class="form-control" id="input<%= id %>" name="value" value="<%= course[column_name] %>">
+    <input type="text" class="form-control" id="input<%= id %>" name="value" value="<%= course[column_name] %>" 
+    <% if (default) { %>
+      placeholder="Defaults to '<%= config.cloneCourseDefaultBranch %>'"
+    <% } %>
+    >
   </div>
   <div class="text-right">
     <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
