@@ -51,38 +51,41 @@ process) in milliseconds as the variable "serverRemainingMS".
   window.allowQuestionUnload = false;
   var serverRemainingMS = <%= serverRemainingMS %>;
   var serverTimeLimitMS = <%= serverTimeLimitMS %>;
-  var clientStart;
-  if (window.performance && window.performance.timing && window.performance.timing.responseStart) {
-      clientStart = window.performance.timing.responseStart;
-  } else {
-      clientStart = Date.now();
-  }
+  var clientStart = Date.now();
+  
   var countdownDisplay = $('<%= displaySelector %>');
   var countdownProgress = $('<%= progressSelector %>');
   countdownProgress.addClass('progress');
   countdownProgress.html('<div class="progress-bar progress-bar-primary"></div>');
   countdownProgressBar = countdownProgress.children('div');
 
+  if (serverRemainingMS <= 0) {
+      window.allowQuestionUnload = true;
+      document.forms['time-limit-finish-form'].submit();
+  }
+
+  var handleServerResponseRemainingMS = function(data, textStatus, jqxhr) {
+      serverRemainingMS = data.serverRemainingMS;
+      serverTimeLimitMS = data.serverTimeLimitMS;
+      console.log('Time remaining: ' + serverRemainingMS + ' ms');
+      clientStart = Date.now();
+      if (serverRemainingMS <= 500) {
+          // do not trigger unsaved warning dialog
+          window.allowQuestionUnload = true;
+          document.forms['time-limit-finish-form'].submit();
+      } else
+          displayCountdown();
+  };
+  
   var updateServerRemainingMS = function() {
       $.post(window.location.href,
              "__action=update_timers&__csrf_token=<%= __csrf_token %>",
-             function(data, textStatus, jqxhr) {
-                 serverRemainingMS = data.serverRemainingMS;
-                 serverTimeLimitMS = data.serverTimeLimitMS;
-                 console.log('Time remaining: ' + serverRemainingMS + ' ms');
-                 // TODO Update clientStart
-                 clientStart = Date.now();
-                 if (serverRemainingMS <= 500) {
-                     // do not trigger unsaved warning dialog
-                     window.allowQuestionUnload = true;
-                     document.forms['time-limit-finish-form'].submit();
-                 } else
-                     displayCountdown();
-             }, 'json');
+             handleServerResponseRemainingMS, 'json');
+      
+      window.setTimeout(updateServerRemainingMS,
+                        serverRemainingMS > 60 ? 10000 : 2000);
   };
   
-  window.setInterval(updateServerRemainingMS, 10000);
-
   var displayCountdown = function() {
       var remainingMS = Math.max(0, serverRemainingMS - (Date.now() - clientStart));
       var remainingSec = Math.floor(remainingMS / 1000);
@@ -104,8 +107,12 @@ process) in milliseconds as the variable "serverRemainingMS".
           // reschedule for the next half-second time
           window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
       } else {
+          // If the timer runs out, trigger a new server update
+          // to confirm before closing
           updateServerRemainingMS();
       }
   };
+  
+  updateServerRemainingMS();
   displayCountdown();
 </script>
