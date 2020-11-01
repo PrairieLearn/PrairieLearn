@@ -14,7 +14,7 @@
         "typecheck": "tsc"
     },
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^5.14.0",
+        "@fortawesome/fontawesome-free": "^5.15.1",
         "@octokit/rest": "^18.0.4",
         "@prairielearn/prairielib": "^1.10.4",
         "ace-builds": "^1.4.12",
