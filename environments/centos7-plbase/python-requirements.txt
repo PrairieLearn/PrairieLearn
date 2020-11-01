@@ -21,5 +21,5 @@ Pygments==2.7.1
 sphinx==3.2.1
 sphinx-markdown-builder==0.5.4
 recommonmark==0.6.0
-mkdocs-material==6.0.1
+mkdocs-material==6.1.2
 PuLP==2.3
