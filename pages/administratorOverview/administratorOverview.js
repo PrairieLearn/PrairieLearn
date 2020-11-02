@@ -47,6 +47,7 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'courses_insert') {
+        if (!req.body.branch) { req.body.branch = config.cloneCourseDefaultBranch; }
         let params = [
             req.body.institution_id,
             req.body.short_name,
@@ -54,7 +55,7 @@ router.post('/', (req, res, next) => {
             req.body.display_timezone,
             req.body.path,
             req.body.repository,
-            req.body.branch || config.cloneCourseDefaultBranch,
+            req.body.branch,
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('courses_insert', params, (err, _result) => {
