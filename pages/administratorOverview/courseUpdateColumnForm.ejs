@@ -5,8 +5,8 @@
   <input type="hidden" name="column_name" value="<%= column_name %>">
   <div class="form-group">
     <input type="text" class="form-control" id="input<%= id %>" name="value" value="<%= course[column_name] %>" 
-    <% if (default) { %>
-      placeholder="Defaults to '<%= config.cloneCourseDefaultBranch %>'"
+    <% if (typeof placeholder === 'string') { %>
+      placeholder="Defaults to '<%= placeholder %>'"
     <% } %>
     >
   </div>
