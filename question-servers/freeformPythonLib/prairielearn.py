@@ -1089,7 +1089,6 @@ def escape_invalid_string(string):
     """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
 
-
 def clean_identifier_name(name):
     """
     clean_identifier_name(string)
@@ -1181,3 +1180,25 @@ def load_host_script(script_name):
     if script_name.endswith('.py'):
         script_name = script_name[:-3]
     return __import__(script_name)
+
+def index2key(i):
+    """
+    index2key(i)
+
+    Used when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
+
+    Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
+    """
+    if i >= 26:
+        n = i
+        base_26_str = ''
+        while not n < 26:
+            base_26_str = '{:02d}'.format(n % 26) + base_26_str
+            n = n // 26 - 1
+        base_26_str = '{:02d}'.format(n) + base_26_str
+        base_26_int = [int(base_26_str[i:i + 2]) for i in range(0, len(base_26_str), 2)]
+        key = ''.join([chr(ord('a') + i) for i in base_26_int])
+    else:
+        key = chr(ord('a') + i)
+
+    return key
