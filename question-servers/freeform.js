@@ -135,7 +135,7 @@ module.exports = {
         }
         callbackify(async () => {
             const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-            await chunks.ensureChunksForCourse(course.id, {'type': 'elements'});
+            await chunks.ensureChunksForCourse(course.id, [{'type': 'elements'}, {'type': 'elementExtensions'}]);
 
             const elements = await module.exports.loadElementsAsync(path.join(coursePath, 'elements'), 'course');
             courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};

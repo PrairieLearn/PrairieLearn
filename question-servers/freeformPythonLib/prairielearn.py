@@ -1089,6 +1089,7 @@ def escape_invalid_string(string):
     """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
 
+
 def clean_identifier_name(name):
     """
     clean_identifier_name(string)
@@ -1180,6 +1181,7 @@ def load_host_script(script_name):
     if script_name.endswith('.py'):
         script_name = script_name[:-3]
     return __import__(script_name)
+
 
 def index2key(i):
     """

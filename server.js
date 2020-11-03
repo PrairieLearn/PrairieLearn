@@ -676,13 +676,10 @@ module.exports.initExpress = function() {
     app.use('/pl/course_instance/:course_instance_id/instructor/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
     app.use('/pl/course/:course_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
 
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-    // API ///////////////////////////////////////////////////////////////
     // student - news_items
     app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
     app.use('/pl/course_instance/:course_instance_id/news_item', require('./pages/news_item/news_item.js'));
+
 
     // Allow access to effectiveUser as a Student page, but only for users have authn (not authz) as Instructor
     app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
