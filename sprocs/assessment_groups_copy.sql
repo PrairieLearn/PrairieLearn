@@ -36,7 +36,7 @@ BEGIN
 
     -- add a new group config
     INSERT INTO group_configs(assessment_id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_leave)
-    SELECT @assessment_groups_copy.assessment_id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_leave
+    SELECT assessment_groups_copy.assessment_id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_leave
     FROM group_configs gc
     WHERE gc.assessment_id = assessment_groups_copy.copying_assessment_id AND gc.deleted_at IS NULL
     RETURNING id INTO temp_new_group_config_id;
