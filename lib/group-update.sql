@@ -37,8 +37,8 @@ FROM
         user_id
     FROM
         group_configs AS gc
-        JOIN groups as g ON (gc.id = g.group_config_id)
-        JOIN group_users as gu ON (gu.group_id = g.id)
+        JOIN groups AS g ON (gc.id = g.group_config_id)
+        JOIN group_users AS gu ON (gu.group_id = g.id)
     WHERE 
         gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL AND g.deleted_at IS NULL)) temp
 JOIN
