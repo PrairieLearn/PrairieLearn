@@ -74,18 +74,6 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'copy_assessment_groups') {
-        //make sure the copying assessment_ belong to the same course_instance
-        let sameInstance = false;
-        res.locals.assessments.forEach(element => {
-            if (element.id == req.body.copyAssessmentId) {
-                sameInstance = true;
-            }
-        });
-        if (!sameInstance) {
-            res.locals.errormsg = 'The assessment that you are copying does not belong to the same course instance. Please select another one.';
-            obtainInfo(req, res, next);
-            return;
-        }
         const params = [
             res.locals.assessment.id,
             req.body.copyAssessmentId,

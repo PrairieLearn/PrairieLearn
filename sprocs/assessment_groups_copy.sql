@@ -14,9 +14,16 @@ DECLARE
 BEGIN
     -- ##################################################################
     -- get a copying group_config
-    SELECT id INTO temp_copy_group_config_id
-    FROM group_configs gc
-    WHERE gc.assessment_id = assessment_groups_copy.copying_assessment_id AND gc.deleted_at IS NULL;
+    SELECT src_gc.id INTO temp_copy_group_config_id
+    FROM
+        assessments AS src_a
+        JOIN group_configs AS src_gc ON (src_gc.assessment_id = src_a.id)
+        JOIN assessments AS dest_a ON (dest_a.id = assessment_groups_copy.assessment_id)
+    WHERE
+        src_a.id = copying_assessment_id
+        AND src_a.course_instance_id = dest_a.course_instance_id -- check they are in the same course instance
+        AND src_a.deleted_at IS NULL
+        AND src_gc.deleted_at IS NULL;
 
     -- soft delete the old group config
     UPDATE group_configs gc
