@@ -7,7 +7,8 @@ CREATE OR REPLACE FUNCTION
         received_time timestamptz,
         start_time timestamptz,
         finish_time timestamptz,
-        new_gradable boolean
+        new_gradable boolean,
+        is_regrade BOOLEAN
     ) RETURNS void
 AS $$
 DECLARE
@@ -104,7 +105,7 @@ BEGIN
 
         PERFORM variants_update_after_grading(variant_id, grading_job.correct);
         IF assessment_instance_id IS NOT NULL THEN
-           PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
+           PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id, is_regrade);
            PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
         END IF;
     END IF;
