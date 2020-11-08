@@ -79,7 +79,6 @@ Each assessment belongs to an *assessment set*. Each assessment set must have th
 
 Property | Description
 --- | ---
-`comment` | The comments for each property.
 `abbreviation` | Abbreviation that is joined with the assessment `number` to form the label, so `"abbreviation": "HW"` produces `HW1`, `HW2`, etc. This should be one or two uppercase letters (e.g., `HW` for homework, `E` for exam, `Q` for quiz).
 `name` | Full name that is joined with the assessment `number` to describe the assessment, so `"name": "Homework"` produces `Homework 1`, etc. This should be a singular noun.
 `heading` | Title that is listed above all the assessments in the set. Should be the plural version of the `name`.
@@ -202,12 +201,6 @@ You can add more tags to your course by listing them in the `infoCourse.json` fi
 
 The tag order in `infoCourse.json` is the order in which the tags will be listed within PrairieLearn. If you want to change the order of your tags or standardized tags then you can re-list them in whatever order you like.
 
-## Colors
-
-The possible colors for assessment sets, topic, and tags are:
-
-![Colors](colors.png)
-
 
 ## Timezone
 
@@ -220,3 +213,24 @@ The default timezone for courses is `America/Chicago` (U.S. Central Time). This 
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
+
+## Comment
+
+You can add comments to json files using the property `comment`. You can use this property more than once in the same file. For example:
+
+```json
+{
+    "comment": "assessments that are shared among a group of students",
+    "assessmentSets": [
+      {"abbreviation": "GA", "name": "Group Activity", "heading": "Group Activities", "color": "green1"}
+    ],
+    "comment": "timezone for the course",
+    "timezone": "America/New_York"
+}
+```
+
+## Colors
+
+The possible colors for assessment sets, topic, and tags are:
+
+![Colors](colors.png)

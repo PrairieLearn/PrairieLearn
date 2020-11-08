@@ -5,6 +5,7 @@
     "options": {
         "useNewQuestionRenderer": true
     },
+    "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
     "assessmentSets": [],
     "topics": [
         {"name": "Template", "color": "orange1", "description": "Templates to copy as the start for a new question."},
