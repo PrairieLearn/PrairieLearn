@@ -7,7 +7,8 @@ CREATE OR REPLACE FUNCTION
         instance_question_id bigint,
         submission_score DOUBLE PRECISION,
         grading_job_id bigint,
-        authn_user_id bigint
+        authn_user_id bigint,
+        is_regrade BOOLEAN
     ) RETURNS VOID
 AS $$
 DECLARE
@@ -18,10 +19,10 @@ BEGIN
     SELECT iq.open INTO instance_question_open
     FROM instance_questions AS iq WHERE iq.id = instance_question_id;
 
-    IF NOT instance_question_open THEN
+    IF NOT instance_question_open AND NOT is_regrade THEN
         -- this shouldn't happen, so log an error
         PERFORM issues_insert_for_variant(
-            v.id, 'Submission when instance question is closed', '', false,
+            v.id, 'Submission from student when instance question is closed', '', false,
             false, jsonb_build_object('grading_job_id', grading_job_id),
             '{}'::jsonb, instance_questions_grade.authn_user_id)
         FROM

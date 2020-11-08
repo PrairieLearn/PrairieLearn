@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
+const question = require('../../lib/question');
 const router = express.Router();
 const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 
@@ -150,6 +151,14 @@ router.post('/', (req, res, next) => {
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
+            if (ERR(err, next)) return;
+            ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
+        });
+    } else if (req.body.__action == 'regrade_question') {
+        question.regradeQuestion(req.body.instance_question_id, err => {
             if (ERR(err, next)) return;
             ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
                 if (ERR(err, next)) return;
