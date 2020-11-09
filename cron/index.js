@@ -85,6 +85,26 @@ module.exports = {
                 module: require('./calculateAssessmentMode'),
                 intervalSec: 'daily',
             },
+            {
+                name: 'workspaceTimeoutStop',
+                module: require('./workspaceTimeoutStop'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutStopSec,
+            },
+            {
+                name: 'workspaceTimeoutWarn',
+                module: require('./workspaceTimeoutWarn'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutWarnSec,
+            },
+            {
+                name: 'workspaceHostLoads',
+                module: require('./workspaceHostLoads'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
+            },
+            {
+                name: 'workspaceHostTransitions',
+                module: require('./workspaceHostTransitions'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
+            },
         ];
         logger.verbose('initializing cron', _.map(module.exports.jobs, j => _.pick(j, ['name', 'intervalSec'])));
 

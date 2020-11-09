@@ -15,7 +15,6 @@ DECLARE
     new_points DOUBLE PRECISION;
     course_id bigint;
     course_instance_id bigint;
-    user_id bigint;
     assessment_instance_updated boolean;
     new_instance_question_ids bigint[];
 BEGIN
@@ -38,14 +37,13 @@ BEGIN
     END IF;
 
     -- store old points/score_perc
-    SELECT ai.points,  ai.score_perc,      c.id,              ci.id, u.user_id
-    INTO  old_points, old_score_perc, course_id, course_instance_id,   user_id
+    SELECT ai.points,  ai.score_perc,      c.id,              ci.id
+    INTO  old_points, old_score_perc, course_id, course_instance_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN pl_courses AS c ON (c.id = ci.course_id)
-        JOIN users AS u USING (user_id)
     WHERE ai.id = assessment_instance_id;
 
     -- regrade questions, log it, and store the list of updated questions

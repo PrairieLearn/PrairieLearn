@@ -60,7 +60,6 @@ const qidsExampleCourse = [
     'element/multipleChoice',
     'element/numberInput',
     'element/panels',
-    'element/prairieDrawFigure',
     'element/pythonVariable',
     'element/stringInput',
     // FIXME: 'element/symbolicInput',

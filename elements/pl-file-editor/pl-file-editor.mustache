@@ -10,8 +10,9 @@ $(function() {
         aceTheme: {{#ace_theme}}"{{ace_theme}}"{{/ace_theme}}{{^ace_theme}}undefined{{/ace_theme}},
         minLines: {{#min_lines}}{{min_lines}}{{/min_lines}}{{^min_lines}}undefined{{/min_lines}},
         maxLines: {{#max_lines}}{{max_lines}}{{/max_lines}}{{^max_lines}}undefined{{/max_lines}},
-        autoResize: {{#auto_resize}}{{auto_resize}}{{/auto_resize}}{{^auto_resize}}undefined{{/auto_resize}},
-        preview: {{#preview}}"{{preview}}"{{/preview}}{{^preview}}undefined{{/preview}}
+        autoResize: {{auto_resize}},
+        preview: {{#preview}}"{{preview}}"{{/preview}}{{^preview}}undefined{{/preview}},
+        plOptionFocus: {{focus}}
     });
 });
 </script>

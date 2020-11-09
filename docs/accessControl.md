@@ -1,7 +1,7 @@
 
 # Access control to course instances and assessments
 
-By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file.
+By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file. The differences between Instructor, TA, and Student roles are further explained in the documentation about [course instance configuration](courseInstance.md#user-roles).
 
 The `allowAccess` rules in course instances and assessments do not grant authorization to sync course content from GitHub. This is controlled by [course admin permissions](sync.md#course-admin-permissions) on the server, not in the
 course JSON files.
@@ -43,6 +43,7 @@ Access restriction                                          | courseInstance | a
 [`password`](#passwords)                                    |   | ✓ | Password required to start an assessment (only for Exams). | `"password": "mysecret"`
 [`examUuid`](#exam-uuids)                                   |   | ✓ | Exam scheduler UUID that students must register for. | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
 [`showClosedAssessment`](#showinghiding-closed-assessments) |   | ✓ | Whether to allow viewing of assessment contents when closed (default `true`). | `"showClosedAssessment": false`
+[`showClosedAssessmentScore`](#showinghiding-all-score-information) |   | ✓ | Whether to allow viewing of the score of a closed assessment  (default `true`). | `"showClosedAssessmentScore": false`
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -59,9 +60,11 @@ If multiple access rules are satisfied then the highest `credit` value is taken 
 
 Restricting access to `"role": "Student"` is equivalent to not including a role restriction at all, because every user is equal to or higher than `Student` role.
 
+For more information about the differences between Instructor, TA, and Student roles, refer to the documentation about [course instance configuration](courseInstance.md#user-roles).
+
 ## Dates
 
-All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in Central Time (either CST or CDT as appropriate).
+All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in the [timezone of the course instance](courseInstance.md#timezone).
 
 If you want to include full days, then it is generally best to start at 1 second after midnight, and end at 1 second before midnight. This avoids any confusion around the meaning of times exactly at midnight. For example, start at `2015-04-05T00:00:01` and end at `2015-04-07T23:59:59` for the 3-day window from April 5th to April 7th inclusive.
 
@@ -103,7 +106,7 @@ The above example will give students 90 minutes for this exam, and they must sta
 
 ![Time limit illustrations](exam_timer.svg)
 
-**Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"` and the time limits will be enforced by the CBTF scheduling software.**
+**Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"`, in which case `timeLimitMin` will have no effect and the time limits will be enforced by the CBTF scheduling software.**
 
 ## Passwords
 
@@ -158,6 +161,29 @@ To block students from viewing closed assessment details, set `"showClosedAssess
 ```
 
 The `showClosedAssessment` access rule restriction is only really useful in conjuction with [time limits](#time-limits). It is common to pair `"showClosedAssessment": false` with [disabled real-time grading](assessment.md#disabling-real-time-grading).
+
+## Showing/hiding all score information
+
+When setting `showClosedAssessment` to `false` students will still by default still be able to see their assessment score immediately after submitting the exam.
+
+To block students from viewing closed assessment scores, set `"showClosedAssessmentScore": false` in the `allowAccess` rule, like this:
+
+```json
+"allowAccess": [
+    {
+        "startDate": "2015-01-19T00:00:01",
+        "endDate": "2015-05-13T23:59:59",
+        "timeLimitMin": 50,
+        "showClosedAssessment": false,
+        "showClosedAssessmentScore": false,
+        "credit": 100
+    }
+]
+```
+
+The `showClosedAssessment` access rule restriction is only useful in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`.
+
+
 
 ## Course instance example
 

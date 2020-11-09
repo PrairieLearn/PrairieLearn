@@ -11,6 +11,7 @@ yum -y install \
     postgresql11-server \
     postgresql11-contrib \
     redis \
+    docker \
     python3 \
     python3-pip \
     python3-devel \

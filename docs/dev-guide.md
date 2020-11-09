@@ -104,6 +104,8 @@ debug('func()', 'param:', param);
 
 * As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
 
+* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `npx mocha --trace-warnings tests/index.js`.
+
 ## Debugging client-side JavaScript
 
 * Make sure you have the JavaScript Console open in your browser and reload the page.
@@ -364,83 +366,83 @@ ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
 
 ## JSON syncing
 
-1. Edit the DB schema; e.g., to add a `require_honor_code` boolean for assessments, modify `database/tables/assessments.pg`:
+* Edit the DB schema; e.g., to add a `require_honor_code` boolean for assessments, modify `database/tables/assessments.pg`:
 
-    ```diff
-    @@ -16,2 +16,3 @@ columns
-         order_by: integer
-    +    require_honor_code: boolean default true
-         shuffle_questions: boolean default false
-    ```
+```diff
+@@ -16,2 +16,3 @@ columns
+     order_by: integer
++    require_honor_code: boolean default true
+     shuffle_questions: boolean default false
+```
 
-1. Add a DB migration; e.g., create `migrations/167_assessments__require_honor_code__add.sql`:
+* Add a DB migration; e.g., create `migrations/167_assessments__require_honor_code__add.sql`:
 
-    ```diff
-    @@ -0,0 +1 @@
-    +ALTER TABLE assessments ADD COLUMN require_honor_code boolean DEFAULT true;
-    ```
+```diff
+@@ -0,0 +1 @@
++ALTER TABLE assessments ADD COLUMN require_honor_code boolean DEFAULT true;
+```
 
-1. Edit the JSON schema; e.g., modify `schemas/schemas/infoAssessment.json`:
+* Edit the JSON schema; e.g., modify `schemas/schemas/infoAssessment.json`:
 
-    ```diff
-    @@ -89,2 +89,7 @@
-                 "default": true
-    +        },
-    +        "requireHonorCode": {
-    +            "description": "Requires the student to accept an honor code before starting exam assessments.",
-    +            "type": "boolean",
-    +            "default": true
-             }
-    ```
+```diff
+@@ -89,2 +89,7 @@
+             "default": true
++        },
++        "requireHonorCode": {
++            "description": "Requires the student to accept an honor code before starting exam assessments.",
++            "type": "boolean",
++            "default": true
+         }
+```
 
-1. Edit the sync parser; e.g., modify `sync/fromDisk/assessments.js`:
+* Edit the sync parser; e.g., modify `sync/fromDisk/assessments.js`:
 
-    ```diff
-    @@ -44,2 +44,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
-             const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
-    +        const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
+```diff
+@@ -44,2 +44,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
+         const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
++        const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
 
-    @@ -63,2 +64,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
-                 allow_real_time_grading: allowRealTimeGrading,
-    +            require_honor_code: requireHonorCode,
-                 auto_close: !!_.get(assessment, 'autoClose', true),
-    ```
+@@ -63,2 +64,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
+             allow_real_time_grading: allowRealTimeGrading,
++            require_honor_code: requireHonorCode,
+             auto_close: !!_.get(assessment, 'autoClose', true),
+```
 
-1. Edit the sync query; e.g., modify `sprocs/sync_assessments.sql`:
+* Edit the sync query; e.g., modify `sprocs/sync_assessments.sql`:
 
-    ```diff
-    @@ -44,3 +44,4 @@ BEGIN
-                 allow_issue_reporting,
-    -            allow_real_time_grading)
-    +            allow_real_time_grading,
-    +            require_honor_code)
-                 (
-    @@ -64,3 +65,4 @@ BEGIN
-                     (assessment->>'allow_issue_reporting')::boolean,
-    -                (assessment->>'allow_real_time_grading')::boolean
-    +                (assessment->>'allow_real_time_grading')::boolean,
-    +                (assessment->>'require_honor_code')::boolean
-             )
-    @@ -83,3 +85,4 @@ BEGIN
-                 allow_issue_reporting = EXCLUDED.allow_issue_reporting,
-    -            allow_real_time_grading = EXCLUDED.allow_real_time_grading
-    +            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
-    +            require_honor_code = EXCLUDED.require_honor_code
-             WHERE
-    ```
+```diff
+@@ -44,3 +44,4 @@ BEGIN
+             allow_issue_reporting,
+-            allow_real_time_grading)
++            allow_real_time_grading,
++            require_honor_code)
+             (
+@@ -64,3 +65,4 @@ BEGIN
+                 (assessment->>'allow_issue_reporting')::boolean,
+-                (assessment->>'allow_real_time_grading')::boolean
++                (assessment->>'allow_real_time_grading')::boolean,
++                (assessment->>'require_honor_code')::boolean
+         )
+@@ -83,3 +85,4 @@ BEGIN
+             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
+-            allow_real_time_grading = EXCLUDED.allow_real_time_grading
++            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
++            require_honor_code = EXCLUDED.require_honor_code
+         WHERE
+```
 
-1. Edit the sync tests; e.g., modify `tests/sync/util.js`:
+* Edit the sync tests; e.g., modify `tests/sync/util.js`:
 
-    ```diff
-    @@ -128,2 +128,3 @@ const syncFromDisk = require('../../sync/syncFromDisk');
-      * @property {boolean} allowRealTimeGrading
-    + * @property {boolean} requireHonorCode
-      * @property {boolean} multipleInstance
-    ```
+```diff
+@@ -128,2 +128,3 @@ const syncFromDisk = require('../../sync/syncFromDisk');
+  * @property {boolean} allowRealTimeGrading
++ * @property {boolean} requireHonorCode
+  * @property {boolean} multipleInstance
+```
 
-1. Add documentation; e.g., the honor code option is described at [Assessments -- Honor code](assessment.md#honor-code).
+* Add documentation; e.g., the honor code option is described at [Assessments -- Honor code](assessment.md#honor-code).
 
-1. Add [tests](#unit-tests-and-integration-tests).
+* Add [tests](#unit-tests-and-integration-tests).
 
 
 ## Database access
@@ -589,6 +591,16 @@ FROM
 
 * Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
 
+## Using async route handlers with ExpressJS
+
+* Express can't directly use async route handlers. Instead we use [express-async-handler](https://www.npmjs.com/package/express-async-handler) like this:
+
+```javascript
+const asyncHandler = require('express-async-handler');
+router.get('/', asyncHandler(async (req, res, next) => {
+    // can use "await" here
+}));
+```
 
 ## Interfacing between callback-style and async/await-style functions
 

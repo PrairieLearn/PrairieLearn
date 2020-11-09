@@ -55,3 +55,6 @@ __pycache__/
 
 # VSCode files
 .vscode
+
+# tmux
+.tmux.conf
