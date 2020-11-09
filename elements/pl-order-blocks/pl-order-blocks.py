@@ -70,7 +70,7 @@ def prepare(element_html, data):
                 incorrect_answers.append(str.strip(html_tags.text))
 
     if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
-        raise Exception('There are no correct answers specified for this question!')
+        raise Exception('There are no correct answers specified for this question.')
 
     minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', 1)
     maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', 2)
