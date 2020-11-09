@@ -128,23 +128,18 @@ module.exports = {
         return promisify(module.exports.loadElements)(sourceDir, elementType);
     },
 
-    loadElementsForCourse(course, callback) {
+    async loadElementsForCourseAsync(course) {
         if (courseElementsCache[course.id] !== undefined &&
             courseElementsCache[course.id].commit_hash === course.commit_hash) {
-            return callback(null, courseElementsCache[course.id].data);
+            return courseElementsCache[course.id].data;
         }
-        callbackify(async () => {
-            const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-            await chunks.ensureChunksForCourse(course.id, [{'type': 'elements'}, {'type': 'elementExtensions'}]);
 
-            const elements = await module.exports.loadElementsAsync(path.join(coursePath, 'elements'), 'course');
-            courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};
-            return elements;
-        })(callback);
-    },
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        await chunks.ensureChunksForCourseAsync(course.id, [{'type': 'elements'}, {'type': 'elementExtensions'}]);
 
-    async loadElementsForCourseAsync(course) {
-        return promisify(module.exports.loadElementsForCourse)(course);
+        const elements = await module.exports.loadElementsAsync(path.join(coursePath, 'elements'), 'course');
+        courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};
+        return elements;
     },
 
     /**
@@ -1433,43 +1428,48 @@ module.exports = {
         });
     },
 
+    async getContextAsync(question, course) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        const chunksToLoad = [
+            {
+                'type': 'question',
+                'questionId': question.id,
+            },
+            {
+                'type': 'serverFilesCourse',
+            },
+            {
+                'type': 'elements',
+            },
+            {
+                'type': 'elementExtensions',
+            },
+        ];
+        await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
+        const context = {
+            question,
+            course,
+            course_dir: course.path,
+            question_dir: path.join(coursePath, 'questions', question.directory),
+            course_elements_dir: path.join(coursePath, 'elements'),
+        };
+
+        /* Load elements and any extensions */
+        const elements = await module.exports.loadElementsForCourseAsync(course);
+        const extensions = await module.exports.loadExtensionsForCourseAsync(course);
+
+        context.course_elements = elements;
+        context.course_element_extensions = extensions;
+
+        return context;
+    },
+
     getContext: function(question, course, callback) {
-        callbackify(async () => {
-            const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-            const chunksToLoad = [
-                {
-                    'type': 'question',
-                    'questionId': question.id,
-                },
-                {
-                    'type': 'serverFilesCourse',
-                },
-                {
-                    'type': 'elements',
-                },
-                {
-                    'type': 'elementExtensions',
-                },
-            ];
-            await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
-
-            const context = {
-                question,
-                course,
-                course_dir: course.path,
-                question_dir: path.join(coursePath, 'questions', question.directory),
-                course_elements_dir: path.join(coursePath, 'elements'),
-            };
-
-            /* Load elements and any extensions */
-            const elements = await module.exports.loadElementsForCourseAsync(course);
-            const extensions = await module.exports.loadExtensionsForCourseAsync(course);
-
-            context.course_elements = elements;
-            context.course_element_extensions = extensions;
-
-            return context;
-        })(callback);
+        return callbackify(module.exports.getContextAsync)(question, course, (err, context) => {
+            if (ERR(err, callback)) return;
+            callback(null, context);
+        });
     },
 
     getCacheKey: function(course, data, context, callback) {
