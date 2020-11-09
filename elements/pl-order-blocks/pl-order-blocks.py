@@ -231,7 +231,7 @@ def parse(element_html, data):
         student_answer_temp = data['raw_submitted_answers'][temp]
 
     if student_answer_temp is None:
-        data['format_errors'][answer_name] = 'NULL was submitted as an answer!'
+        data['format_errors'][answer_name] = 'NULL was submitted as an answer.'
         return
     elif student_answer_temp == '':
         data['format_errors'][answer_name] = 'No answer was submitted.'
