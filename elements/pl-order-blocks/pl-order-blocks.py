@@ -180,7 +180,7 @@ def render(element_html, data):
                     solution_file = file.read()
                 return f'<pl-code language="python">{solution_file}</pl-code>'
             except FileNotFoundError:
-                return 'The instructor did not include a reference solution. Try contacting them for the solution implementation?'
+                return 'The reference solution is not provided for this question.'
 
         permutation_mode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
         permutation_mode = 'in any order' if permutation_mode == 'any' else 'in the specified order'
