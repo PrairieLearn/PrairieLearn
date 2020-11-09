@@ -9,6 +9,8 @@ const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
 
+const config = require('../../lib/config');
+
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
@@ -158,6 +160,10 @@ router.post('/', (req, res, next) => {
             });
         });
     } else if (req.body.__action == 'regrade_question') {
+        if (!config.regradeActive) {
+            res.status(204).send();
+            return;
+        }
         question.regradeQuestion(req.body.instance_question_id, err => {
             if (ERR(err, next)) return;
             ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
