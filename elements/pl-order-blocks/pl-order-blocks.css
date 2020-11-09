@@ -86,9 +86,17 @@ code.user-output {
 }
 
 p {
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
+.answer_block {
+  display: inline;
+  border-style: solid;
+  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
+  background-color: #EFEFEF;
+  margin-right: 10px;
+  padding: 3px;
+}
 
 .row:after {
   /* Clear floats after the columns */

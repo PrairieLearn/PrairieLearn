@@ -23,10 +23,10 @@
 
 {{#submission}}
     {{^parse-error}}
-        <div style="margin-bottom: 5px;"><strong>Your answer: </strong></div>
+        <div style="margin-bottom: 5px;"><strong>Your answer: </strong>
         {{#student_submission}}
         	{{#render_as_code}}
-        		<code class="user-output"> {{text}} </code> 
+        		<p class="answer_block"> {{text}} </p> 
         	{{/render_as_code}}
         	{{^render_as_code}}
         		<p> {{text}}</p>
@@ -39,6 +39,7 @@
                 <span class="badge {{colour}}"><i class="fa fa-times" aria-hidden="true"></i>
         {{score}}%</span> {{feedback}}
         {{/perfect_score}}
+        </div>
     {{/parse-error}}
 
     {{#parse-error}}
@@ -52,13 +53,14 @@
 {{/submission}}
 
 {{#true_answer}}
-    <div style="margin-bottom: 5px;"><strong>Correct answer ({{permutation_mode}}{{check_indentation}}):</strong></div>
+    <div style="margin-bottom: 7px;"><strong>Correct answer ({{permutation_mode}}{{check_indentation}}):</strong>
     {{#question_solution}}
         {{#render_as_code}}
-            <code class="user-output"> {{text}} </code>
+            <p class="answer_block"> {{text}} </p>
         {{/render_as_code}}
         {{^render_as_code}}
             <p> {{text}}</p>
         {{/render_as_code}}
     {{/question_solution}}
+    </div>
 {{/true_answer}}
