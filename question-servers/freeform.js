@@ -232,7 +232,15 @@ module.exports = {
      * @param {any} courseId
      */
     reloadElementsForCourse: async function(courseDir, courseId) {
-        const hash = await courseUtil.getOrUpdateCourseCommitHashAsync({'id': courseId, 'path': courseDir});
+        let hash = null;
+        try {
+            hash = await courseUtil.getOrUpdateCourseCommitHashAsync({'id': courseId, 'path': courseDir});
+        } catch (err) {
+            /* If we can't get a course hash, this likely isn't a Git repo so fail silently.
+               This usually happens when we're running tests and have manually created a course directory structure */
+            logger.debug(`Could not load course commit hash for course ${courseId} (${courseDir}) - ${err}`);
+        }
+
         const elements = await util.promisify(module.exports.loadElements)(path.join(courseDir, 'elements'), 'course');
         courseElementsCache[courseId] = {
             'commit_hash': hash,
