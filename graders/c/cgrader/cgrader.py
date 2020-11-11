@@ -186,7 +186,7 @@ class CGrader:
            and [t for t in reject_output if str(t) in outcmp]:
             points = False
 
-        return self.add_test_result(name, points=points, msg=msg,
+        return self.add_test_result(name, points=max_points if points else 0, msg=msg,
                                     output=out, max_points=max_points,
                                     field=field)
 
