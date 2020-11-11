@@ -18,10 +18,11 @@ now:          client time when the countdown is rendered
 countdownEnd: server time when the timer should expire
 d1, d2, d3:   time intervals between real event times
 
-To find clientStart we use either
-window.performance.timing.responseStart if available, or otherwise the
-current client time when the JS below first executes during page
-render.
+To find clientStart we use the current client time when the JS below
+first executes during page render. We assume that d1 is small enough
+that this would not give the student any advantage, particularly
+considering the student would presumably be unable to work on anything
+in this time period, since the page is still loading.
 
 We want a tight upper bound on d3 = (countdownEnd - now), and we want
 to calculate it only using time differentials computed either purely
@@ -37,7 +38,9 @@ d3 > (countdownEnd - process) - (now - clientStart)
 This bound is fairly tight if d1 is small.
 
 We assume that we have been passed the value of (countdownEnd -
-process) in milliseconds as the variable "serverRemainingMS".
+process) in milliseconds as the variable
+"serverRemainingMS". Periodically (every one minute) we update this
+remaining time, and at this point we update clientStart as well.
 
 *********************************************************************/
 %>
@@ -81,9 +84,6 @@ process) in milliseconds as the variable "serverRemainingMS".
       $.post(window.location.href,
              "__action=update_timers&__csrf_token=<%= __csrf_token %>",
              handleServerResponseRemainingMS, 'json');
-      
-      window.setTimeout(updateServerRemainingMS,
-                        serverRemainingMS > 60 ? 10000 : 2000);
   };
   
   var displayCountdown = function() {
@@ -112,7 +112,8 @@ process) in milliseconds as the variable "serverRemainingMS".
           updateServerRemainingMS();
       }
   };
-  
+
+  window.setInterval(updateServerRemainingMS, 60000);
   updateServerRemainingMS();
   displayCountdown();
 </script>
