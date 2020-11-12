@@ -43,7 +43,7 @@ BEGIN
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'branch' THEN
-            UPDATE pl_courses AS c SET branch = VALUE
+            UPDATE pl_courses AS c SET branch = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'institution_id' THEN
