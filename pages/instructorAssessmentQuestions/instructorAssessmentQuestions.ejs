@@ -129,13 +129,13 @@
                 </td>
                 <td class="text-center">
                   <div class="dropdown">
-                    <button type="button" class="btn btn-xs dropdown-toggle btn-primary" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button type="button" class="btn dropdown-toggle btn-primary" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                       Action <span class="caret"></span>
                     </button>
 
                     <div id="row<%= iRow %>PopoverRegrade"
                          tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                         data-html="true" data-placement="auto" title="Confirm regrade"
+                         data-html="true" data-placement="auto" title="Confirm mark as broken"
                          data-content="<%= include('popoverRegenerateVariants', {iRow: iRow}) %>">
                     </div>
 
@@ -144,7 +144,7 @@
 
                       <% if (authz_data.has_instructor_edit) { %>
                       <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
-                        <i class="fa fa-times mr-1" aria-hidden="true"></i> Mark Broken
+                        <i class="fa fa-times mr-1 text-danger" aria-hidden="true"></i> Mark as broken
                       </a>
                       <% } %>
 
