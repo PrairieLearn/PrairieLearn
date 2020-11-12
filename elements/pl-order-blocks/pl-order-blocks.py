@@ -20,6 +20,7 @@ def render_html_colour(score):
     else:
         return 'badge-warning'
 
+
 def get_all_answer(submitted_blocks, block_indents, leading_code, trailing_code):
     if len(submitted_blocks) == 0:
         return ''
@@ -30,23 +31,24 @@ def get_all_answer(submitted_blocks, block_indents, leading_code, trailing_code)
     answer_code = leading_code + '\n' + answer_code + trailing_code + '\n'
     return answer_code
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    
+
     pl.check_attribs(element,
-                 required_attribs=['answers-name'],
-                 optional_attribs=['shuffle-options',
-                                   'permutation-mode',
-                                   'check-indentation',
-                                   'header-left-column',
-                                   'header-right-column',
-                                   'external-grader',
-                                   'file-name',
-                                   'leading-code',
-                                   'trailing-code',
-                                   'dropzone-layout',
-                                   'max-incorrect',
-                                   'min-incorrect'])
+                     required_attribs=['answers-name'],
+                     optional_attribs=['shuffle-options',
+                                       'permutation-mode',
+                                       'check-indentation',
+                                       'header-left-column',
+                                       'header-right-column',
+                                       'external-grader',
+                                       'file-name',
+                                       'leading-code',
+                                       'trailing-code',
+                                       'dropzone-layout',
+                                       'max-incorrect',
+                                       'min-incorrect'])
 
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -56,14 +58,14 @@ def prepare(element_html, data):
     correct_answers_ranking = []
     incorrect_answers = []
 
-    for html_tags in element: # iterate through the tags inside pl-order-blocks, should be <pl-answer> tags
+    for html_tags in element:  # iterate through the tags inside pl-order-blocks, should be <pl-answer> tags
         if html_tags.tag == 'pl-answer':
             # correct attribute is not strictly required, as the attribute is irrelevant for autograded questions
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
 
             isCorrect = pl.get_boolean_attrib(html_tags, 'correct', True)  # default correctness to True
             answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1')  # get answer indent, and default to -1 (indent level ignored)
-            if isCorrect == True:
+            if isCorrect is True:
                 # add option to the correct answer array, along with the correct required indent
                 if pl.get_string_attrib(html_tags, 'ranking', '') != '':
                     ranking = pl.get_string_attrib(html_tags, 'ranking')
@@ -94,7 +96,7 @@ def prepare(element_html, data):
 
     is_shuffle = pl.get_boolean_attrib(element, 'shuffle-options', False)  # default to FALSE, no shuffling unless otherwise specified
 
-    if is_shuffle == True:
+    if is_shuffle is True:
         random.shuffle(mcq_options)
 
     data['params'][answer_name] = mcq_options
@@ -198,7 +200,7 @@ def render(element_html, data):
         permutation_mode = 'in any order' if permutation_mode == 'any' else 'in the specified order'
 
         check_indentation = pl.get_boolean_attrib(element, 'check-indentation', False)
-        check_indentation = ', with correct indentation' if check_indentation == True else ''
+        check_indentation = ', with correct indentation' if check_indentation is True else ''
 
         if answer_name in data['correct_answers']:
             html_params = {
@@ -225,8 +227,6 @@ def prettyPrint(array):
             temp = {'text': text, 'render_as_code': True}
         prettyPrintAnswer.append(dict(temp))
     return prettyPrintAnswer
-
-
 
 
 def parse(element_html, data):
@@ -346,7 +346,7 @@ def grade(element_html, data):
 
     check_indentation = pl.get_boolean_attrib(element, 'check-indentation', False)
     # check indents, and apply penalty if applicable
-    if check_indentation == True:
+    if check_indentation is True:
         for i, indent in enumerate(student_answer_indent):
             if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
                 indent_score += 1
