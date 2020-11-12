@@ -53,6 +53,7 @@ def prepare(element_html, data):
     mcq_options = []
     correct_answers = []
     correct_answers_indent = []
+    correct_answers_ranking = []
     incorrect_answers = []
 
     for html_tags in element: # iterate through the tags inside pl-order-blocks, should be <pl-answer> tags
@@ -64,6 +65,13 @@ def prepare(element_html, data):
             answerIndent = pl.get_string_attrib(html_tags, 'indent', '-1')  # get answer indent, and default to -1 (indent level ignored)
             if isCorrect == True:
                 # add option to the correct answer array, along with the correct required indent
+                if pl.get_string_attrib(html_tags, 'ranking', '') != '':
+                    ranking = pl.get_string_attrib(html_tags, 'ranking')
+                    try:
+                        ranking = int(ranking) - 1
+                    except ValueError:
+                        raise Exception('Ranking specified in <pl-answer> is not a number.')
+                    correct_answers_ranking.append(ranking)
                 correct_answers.append(str.strip(html_tags.text))
                 correct_answers_indent.append(answerIndent)
             else:
@@ -71,6 +79,10 @@ def prepare(element_html, data):
 
     if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
+
+    if (correct_answers_ranking != sorted(correct_answers_ranking)):
+        # sort correct answers by indices specified in corect_answers_ranking
+        correct_answers = [x for _, x in sorted(zip(correct_answers_ranking, correct_answers))]
 
     minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', 1)
     maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', 2)
