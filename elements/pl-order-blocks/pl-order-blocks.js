@@ -11,10 +11,8 @@ function check_block(event, ui) {
     var block_destination_name = event.target.getAttribute('name');
     console.log(ui.item[0]);
     if (block_parent_name !== block_destination_name) {
-        console.log("bad!");
         return false;
     }
-    console.log("ok");
     return true;
 }
 
