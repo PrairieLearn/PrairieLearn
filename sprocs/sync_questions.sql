@@ -134,7 +134,6 @@ BEGIN
         manual_grading_enabled = (src.data->>'manual_grading_enabled')::boolean,
         manual_grading_autograde_score_perc = (src.data->>'manual_grading_score_perc')::double precision,
         manual_grading_manual_score_perc = (src.data->>'manual_grading_manual_score_perc')::double precision,
-        manual_grading_override_score = (src.data->>'manual_grading_override_score')::boolean,
         dependencies = (src.data->>'dependencies')::jsonb,
         workspace_image = src.data->>'workspace_image',
         workspace_port = (src.data->>'workspace_port')::integer,
