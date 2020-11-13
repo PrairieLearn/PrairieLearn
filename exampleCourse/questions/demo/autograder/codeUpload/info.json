@@ -7,8 +7,9 @@
     "singleVariant": true,
     "gradingMethod": "External",
     "manualGradingOptions": {
-        "manualGradeWeight": 1,
-        "autoGradeWeight": 1,
+        "enabled": true,
+        "manualScoreWeight": 1,
+        "autogradeScoreWeight": 1,
         "overrideScore": false
     },
     "externalGradingOptions": {
