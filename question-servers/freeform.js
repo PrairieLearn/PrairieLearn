@@ -588,7 +588,6 @@ module.exports = {
     processQuestionHtml: function(phase, pc, data, context, callback) {
         const courseIssues = [];
         const origData = JSON.parse(JSON.stringify(data));
-
         const checkErr = module.exports.checkData(data, origData, phase);
         if (checkErr) {
             const courseIssue = new Error('Invalid state before ' + phase + ': ' + checkErr);
@@ -844,7 +843,7 @@ module.exports = {
                 variant_seed: parseInt(variant.variant_seed, 36),
                 options: _.get(variant, 'options', {}),
                 raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
-                editable: !!locals.allowAnswerEditing,
+                editable: locals.allowAnswerEditing,
                 panel: panel,
             };
 
@@ -854,6 +853,9 @@ module.exports = {
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
             data.options.base_url = locals.baseUrl;
             data.options.workspace_url = locals.workspaceUrl || null;
+
+            // Put grading view flag into data.options 
+            data.options.overlay_grading_interface = !!locals.overlayGradingInterface;
 
             // Put key paths in data.options
             _.extend(data.options, module.exports.getContextOptions(context));

@@ -424,6 +424,10 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'regrading'; next();},
         require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
         function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
         require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
@@ -467,6 +471,10 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'preview'; next();},
         require('./pages/shared/floatFormatters'),
         require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
         function(req, res, next) {res.locals.navSubPage = 'statistics'; next();},
