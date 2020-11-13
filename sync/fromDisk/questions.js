@@ -39,7 +39,6 @@ function getParamsForQuestion(q) {
         manual_grading_enabled: (q.manualGradingOptions && q.manualGradingOptions.enabled),
         manual_grading_autograde_score_perc: (q.manualGradingEnabled && q.manualGradingOptions && q.manualGradingOptions.autograde_score_perc),
         manual_grading_manual_score_perc: (q.manualGradingEnabled && q.manualGradingOptions && q.manualGradingOptions.manual_score_perc),
-        manual_grading_override_score: (q.manualGradingEnabled && q.manualGradingOptions && q.manualGradingOptions.override_score),
         dependencies: q.dependencies || {},
         workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
         workspace_port: (q.workspaceOptions && q.workspaceOptions.port),
