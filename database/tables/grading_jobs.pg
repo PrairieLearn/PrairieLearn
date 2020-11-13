@@ -15,6 +15,7 @@ columns
     grading_started_at: timestamp with time zone
     grading_submitted_at: timestamp with time zone
     id: bigint not null default nextval('grading_jobs_id_seq'::regclass)
+    manual_score: double precision
     output: text
     partial_scores: jsonb
     s3_bucket: text
@@ -22,6 +23,7 @@ columns
     score: double precision
     submission_id: bigint not null
     v2_score: double precision
+    weight_score: double precision
 
 indexes
     grading_jobs_pkey: PRIMARY KEY (id) USING btree (id)
