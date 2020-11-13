@@ -36,6 +36,8 @@ function getParamsForQuestion(q) {
         external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
         external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
         external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
+        manual_grading_enabled: (q.manualGradingEnabled),
+        manual_grading_options: (q.manualGradingEnabled && q.manualGradingOptions),
         dependencies: q.dependencies || {},
         workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
         workspace_port: (q.workspaceOptions && q.workspaceOptions.port),

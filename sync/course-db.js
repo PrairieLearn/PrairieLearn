@@ -259,6 +259,8 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {string[]} clientTemplates
   * @property {string} template
   * @property {"Internal" | "External" | "Manual"} gradingMethod
+  * @property {boolean} manualGradingEnabled
+  * @property {Object} manualGradingOptions
   * @property {boolean} singleVariant
   * @property {boolean} partialCredit
   * @property {Object} options
