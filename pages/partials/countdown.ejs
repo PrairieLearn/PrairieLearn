@@ -81,9 +81,7 @@ remaining time, and at this point we update clientStart as well.
   };
   
   var updateServerRemainingMS = function() {
-      $.post(window.location.href,
-             "__action=update_timers&__csrf_token=<%= __csrf_token %>",
-             handleServerResponseRemainingMS, 'json');
+      $.get("<%= serverUpdateURL %>", handleServerResponseRemainingMS, 'json');
   };
   
   var displayCountdown = function() {
