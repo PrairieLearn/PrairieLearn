@@ -6,6 +6,11 @@
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
+    "manualGradingOptions": {
+        "manualGradeWeight": 1,
+        "autoGradeWeight": 1,
+        "overrideScore": false
+    },
     "externalGradingOptions": {
         "enabled": true,
         "image": "prairielearn/grader-python",
