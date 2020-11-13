@@ -202,6 +202,28 @@
                 }
             }
         },
+        "manualGradingOptions": {
+            "description": "Options for manually graded questions.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "enabled"
+            ],
+            "properties": {
+                "enabled": {
+                    "description": "Whether the manual grading mode is currently enabled.",
+                    "type": "boolean"
+                },
+                "manualScorePerc": {
+                    "description": "The percentage in decimal format that manual grade score should be worth after manual grade entered.",
+                    "type": "number"
+                },
+                "autogradeScorePerc": {
+                    "description": "The percentage in decimal format that autograde score is worth minus manual score percentage.",
+                    "type": "number"
+                }
+            }
+        },
         "workspaceOptions": {
             "description": "Options for workspace questions.",
             "type": "object",
