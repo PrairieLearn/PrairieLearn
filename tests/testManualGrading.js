@@ -44,17 +44,17 @@ describe('Instructor manual grading', function() {
     //     });
     // });
 
-    describe('Manual grading features', () => {
+    describe('1. Override prior grade', () => {
         it('Front-end should be able to see prior grading info on manual grading question', () => {
             // Coordinate with mebird
         });
 
-        it('Should be able to override prior grade, 100% of question value, if override mode option set on question', () => {
+        it('Should be able to override prior grade, for 100% of question value, if override mode option set on question', () => {
             // allows for 100% of the question to be determined by the value entered manually
         });
     });
 
-    describe('Manual grading weighted score', () => {
+    describe('2. Manual grading weighted score', () => {
         it('Weighted grading should result in a grade of x% of final mark for manual score', () => {
 
         });
@@ -79,6 +79,10 @@ describe('Instructor manual grading', function() {
     });
 
     describe('Manual grading pre-grade and post-grade internal and external chaining ', () => {
-        it('Internal grader should produce pre-score partials and ')
+        it('Internal grader should produce pre-score partials and post-score, but send pre-score to external grader for further post-grading', () => {
+
+        });
+
+        it('External grader should produce ')
     });
 });
