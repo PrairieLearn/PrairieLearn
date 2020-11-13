@@ -16,7 +16,7 @@
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.15.1",
         "@octokit/rest": "^18.0.9",
-        "@prairielearn/prairielib": "^1.10.4",
+        "@prairielearn/prairielib": "^1.11.0",
         "ace-builds": "^1.4.12",
         "ajv": "^6.12.6",
         "ansi_up": "^4.0.4",
