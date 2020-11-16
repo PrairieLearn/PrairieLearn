@@ -140,31 +140,32 @@
                 <td class="text-center align-middle align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
                 <td class="text-center align-middle"><%= row.date_formatted %></td>
                 <td class="text-center align-middle" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
-                <td class="text-center align-middle">
-                  <% if (row.time_remaining.endsWith('min')) { %>
-                    <form class="form-inline justify-content-center" method="POST">
-                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                      <input type="hidden" name="assessment_instance_id" value="<%= row.number %>">
-
-                      <button class="btn btn-xs btn-warning mr-1" name="__action" value="decrease_ai_date_limit">
-                        <i class="fa fa-minus" aria-hidden="true"></i><span class="sr-only">minus</span>
-                      </button>
-
-                      <%= row.time_remaining %>
-
-                      <button class="btn btn-xs btn-primary ml-1" name="__action" value="increase_ai_date_limit">
-                        <i class="fa fa-plus" aria-hidden="true"></i><span class="sr-only">plus</span>
-                      </button>
-                    </form>
-                  <% } else { %>
-                    <%= row.time_remaining %>
-                  <% } %>
-                </td>
+                <td class="text-center align-middle"><%= row.time_remaining %></td>
                 <td class="text-center align-middle">
                   <div class="dropdown d-flex flex-row">
                     <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                       Action <span class="caret"></span>
                     </button>
+                    <div id="row<%= iRow %>PopoverAdjustTime"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Adjust Remaining Time"
+                         data-content="
+                                       <form name=&quot;adjust-time-form&quot; method=&quot;POST&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;change_remaining_time&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
+                                         <select class=form-control name=plus_minus><option value=+1>Add</option><option value=-1>Subtract</option></select>
+                                         <p class=&quot;form-inline&quot;>
+                                           <input class=form-control type=&quot;number&quot; name=&quot;time_add&quot; style=&quot;width: 5em&quot; value=&quot;5&quot;>
+                                           <select class=form-control name=time_ref><option value=60>minutes</option><option value=1>seconds</option></select>
+                                         </p>
+                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverAdjustTime').popover('hide')&quot;>
+                                           Cancel
+                                         </button>
+                                         <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Change Time</button>
+                                       </form>
+                                       ">
+                    </div>
                     <div id="row<%= iRow %>PopoverOpen"
                          tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                          data-html="true" data-placement="auto" title="Confirm open"
@@ -246,6 +247,14 @@
                       <% if (authz_data.has_instructor_edit) { %>
                       <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
                         <i class="far fa-circle" aria-hidden="true"></i> Re-open
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverAdjustTime').popover('show')"<% } %> href="#">
+                        <i class="far fa-clock" aria-hidden="true"></i> Change Remaining Time
                       </a>
                       <% } %>
 

@@ -91,19 +91,12 @@ router.post('/', function(req, res, next) {
                 res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
             });
         });
-    } else if (req.body.__action == 'increase_ai_date_limit') {
+    } else if (req.body.__action == 'change_remaining_time') {
         const params = {
             assessment_instance_id: req.body.assessment_instance_id,
+            time_add: req.body.time_add * req.body.time_ref * req.body.plus_minus
         };
-        sqldb.query(sql.increase_ai_date_limit, params, function(err, _result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'decrease_ai_date_limit') {
-        const params = {
-            assessment_instance_id: req.body.assessment_instance_id,
-        };
-        sqldb.query(sql.decrease_ai_date_limit, params, function(err, _result) {
+        sqldb.query(sql.change_remaining_time, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

@@ -1,17 +1,8 @@
--- BLOCK increase_ai_date_limit
+-- BLOCK change_remaining_time
 UPDATE
     assessment_instances AS ai
 SET
-    date_limit = date_limit + INTERVAL '5 min'
-WHERE
-    ai.open
-    AND ai.id = $assessment_instance_id
-
--- BLOCK decrease_ai_date_limit
-UPDATE
-    assessment_instances AS ai
-SET
-    date_limit = GREATEST(current_timestamp, date_limit - INTERVAL '5 min')
+    date_limit = GREATEST(current_timestamp, date_limit + $time_add * INTERVAL '1 sec')
 WHERE
     ai.open
     AND ai.id = $assessment_instance_id
