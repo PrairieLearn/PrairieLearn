@@ -5,34 +5,6 @@
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script src="/javascripts/jquery.tablesorter.min.js"></script>
     <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
-    <script>
-      var updateTimeRemaining = function(data, textStatus, jqxhr) {
-          data.remaining.forEach(function(element) {
-              $('#time-remaining-aiid-' + element.instance_id).text(element.time_remaining);
-          });
-          if (data.next_update) {
-              setTimeout(requestUpdatedTimes, data.next_update * 1000 + 1);
-          }
-      }
-
-      var requestUpdatedTimes = function() {
-          $.post(window.location.href,
-                 "__action=request_update_times&__csrf_token=<%= __csrf_token %>",
-                 updateTimeRemaining, 'json');
-          # TODO In case of failure, try again after a bit.
-      };
-      
-      $(function() {
-          $('.form-change-time-remaining').find('button').click(function(event) {
-              event.preventDefault();
-              $.post(window.location.href,
-                     $(this).parents('form').serialize() + "&__action=" + $(this).val(),
-                     updateTimeRemaining, 'json');
-              return false;
-          });
-          setTimeout(requestUpdatedTimes, 1000);
-      });
-    </script>
   </head>
   <body>
     <script>
@@ -169,17 +141,16 @@
                 <td class="text-center align-middle"><%= row.date_formatted %></td>
                 <td class="text-center align-middle" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
                 <td class="text-center align-middle">
-                  <% if (row.time_remaining.endsWith('min') || row.time_remaining.endsWith('sec')) { %>
-                    <form class="form-inline justify-content-center form-change-time-remaining" method="POST">
+                  <% if (row.time_remaining.endsWith('min')) { %>
+                    <form class="form-inline justify-content-center" method="POST">
                       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                      <input type="hidden" name="assessment_instance_id" value="<%= row.assessment_instance_id %>">
+                      <input type="hidden" name="assessment_instance_id" value="<%= row.number %>">
 
                       <button class="btn btn-xs btn-warning mr-1" name="__action" value="decrease_ai_date_limit">
                         <i class="fa fa-minus" aria-hidden="true"></i><span class="sr-only">minus</span>
                       </button>
-                      <span id="time-remaining-aiid-<%= row.assessment_instance_id %>">
-                        <%= row.time_remaining %>
-                      </span>
+
+                      <%= row.time_remaining %>
 
                       <button class="btn btn-xs btn-primary ml-1" name="__action" value="increase_ai_date_limit">
                         <i class="fa fa-plus" aria-hidden="true"></i><span class="sr-only">plus</span>
