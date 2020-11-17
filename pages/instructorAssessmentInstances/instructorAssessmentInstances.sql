@@ -1,4 +1,4 @@
--- BLOCK change_remaining_time
+-- BLOCK set_time_limit
 UPDATE
     assessment_instances AS ai
 SET
