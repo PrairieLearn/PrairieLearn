@@ -91,6 +91,7 @@ module.exports = {
             'assessment_instances_delete.sql',
             'assessment_instances_delete_all.sql',
             'assessment_instances_grade.sql',
+            'assessment_instances_group_contribution.sql',
             'assessment_instances_regrade.sql',
             'assessment_instances_select_for_auto_close.sql',
             'assessment_instances_select_log.sql',
