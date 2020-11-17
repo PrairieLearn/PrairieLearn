@@ -424,8 +424,9 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'regrading'; next();},
         require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
     ]);
-    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading', [
-        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/manual_grading', [
+        // function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        require('./middlewares/selectAndAuthzAssessmentInstance'),
         require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
