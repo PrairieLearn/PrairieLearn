@@ -383,11 +383,14 @@ Attribute | Type | Default | Description
 Within the `pl-order-blocks` element, each answer tile must be specified with
 a `pl-answer` that has the following attributes:
 
+**Note that the attributes below are ignored if  `external-grader` is set to `true`, as the external grader does not need or make use of any attributes from `pl-answer` to grade a student submission.**
+
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | true | Specifies whether the answer tile is a correct answer to the question. 
 `ranking` | positive integer | — | Specifies the correct ranking of this answer tile. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
 `indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the answer tile. For example, a value of `2` means the tile should be indented twice. A value of `-1` means the indention for this answer does not matter.
+
 
 #### Details
 
