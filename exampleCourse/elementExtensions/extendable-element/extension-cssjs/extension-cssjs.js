@@ -6,40 +6,40 @@ function set_wave(host) {
 
     let elems = $(host).children();
     const n = elems.length;
-    const dt = 1.0 / 60.0;
-    const c = 4.0;
-    const h = 1.0 / (n+1);
-    let x = Array(n).fill(0);     /* position */
-    let v = Array(n).fill(0);     /* x_t */
-    
+    const c = 1;
+    const damping = 0.95;
+    const dx = 1.0 / (n+1);
+    const dt = Math.min(dx/c, 1.0/60.0);
+    let x = Array(n).fill(0);     /* x_t */
+    let x_p = Array(n).fill(0);   /* x_{t-1} */
+
     elems.mouseover((ev) => {
         const id = parseInt(ev.target.getAttribute('index'));
-        v[id] = 2;
+        x[id] = x[id] * 1.01 + 0.1;
     });
 
     setInterval(() => {
         let u = Array(n).fill(0);
-        let chh = c / (h * h);
+        let cdtdx = Math.pow(c*dt/dx,2)
 
-        /* Solve x_tt */
-        u[0] = (-2 * x[0] + x[1]) * chh;
-        u[n-1] = (-2 * x[n-1] + x[n-2]) * chh;
+        /* Compute x_{t+1} */
+        u[0]   = 2 * x[0] - x_p[0] + cdtdx * (0 - 2 * x[0] + x[1]);
+        u[n-1] = 2 * x[n-1] - x_p[n-1] + cdtdx * (x[n-2] - 2 * x[n-1] + 0);
         for (let i = 1; i < n - 1; i++) {
-            u[i] = (-2 * x[i] + x[i-1] + x[i+1]) * chh;
+            u[i] = 2 * x[i] - x_p[i] + cdtdx * (x[i-1] - 2 * x[i] + x[i+1]);
         }
 
-        /* Integrate x_t and x */
+        /* Update x_t and x_{t-1} */
         for (let i = 0; i < n; i++) {
-            v[i] += u[i] * dt;
-            v[i] *= 0.98;
-            x[i] += v[i] * dt;
+            x_p[i] = x[i];
+            x[i] = u[i] * damping;
         }
 
         /* Update positions */
         elems.each((i, elem) => {
             $(elem).css('top', `${x[i] * 30}px`);
         });
-    }, dt * 1000.0);    
+    }, dt * 1000.0);
 }
 
 $(document).ready(() => {
