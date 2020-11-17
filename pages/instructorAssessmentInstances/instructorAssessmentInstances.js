@@ -97,8 +97,10 @@ router.post('/', function(req, res, next) {
             time_add: req.body.time_add * req.body.time_ref,
             base_time: 'date_limit',
         };
-        if (req.body.plus_minus == 'set')
+        if (req.body.plus_minus == 'set_total')
             params.base_time = 'start_date';
+        else if (req.body.plus_minus == 'set_rem')
+            params.base_time = 'current_date';
         else
             params.time_add *= req.body.plus_minus;
         sqldb.query(sql.set_time_limit, params, function(err, _result) {

@@ -64,7 +64,11 @@ UPDATE
     assessment_instances AS ai
 SET
     date_limit = GREATEST(current_timestamp,
-             (CASE WHEN $base_time = 'start_date' THEN ai.date ELSE ai.date_limit END) +
+             (CASE
+              WHEN $base_time = 'start_date' THEN ai.date
+              WHEN $base_time = 'current_date' THEN current_timestamp
+              ELSE ai.date_limit
+              END) +
              $time_add * INTERVAL '1 sec')
 WHERE
     ai.open

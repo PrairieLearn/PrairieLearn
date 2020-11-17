@@ -151,7 +151,7 @@
                          data-html="true" data-placement="auto" title="Set Time Limit"
                          data-content="
                                        <p>
-                                         Total time: <%= row.total_time %><br/>
+                                         Time limit: <%= row.total_time %><br/>
                                          Remaining time: <%= row.time_remaining %>
                                        </p>
                                        <form name=&quot;set-time-limit-form&quot; method=&quot;POST&quot;>
@@ -163,7 +163,8 @@
                                            <option value=+1>Add</option>
                                            <option value=-1>Subtract</option>
                                          <% } %>
-                                           <option value=set>Set total time to</option>
+                                           <option value=set_total>Set time limit to</option>
+                                           <option value=set_rem>Set remaining time to</option>
                                          </select>
                                          <p class=&quot;form-inline&quot;>
                                            <input class=form-control type=&quot;number&quot; name=&quot;time_add&quot; style=&quot;width: 5em&quot; value=&quot;5&quot;>
