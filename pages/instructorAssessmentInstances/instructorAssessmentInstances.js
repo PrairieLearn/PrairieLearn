@@ -94,8 +94,13 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'set_time_limit') {
         const params = {
             assessment_instance_id: req.body.assessment_instance_id,
-            time_add: req.body.time_add * req.body.time_ref * req.body.plus_minus,
+            time_add: req.body.time_add * req.body.time_ref,
+            base_time: 'date_limit',
         };
+        if (req.body.plus_minus == 'set')
+            params.base_time = 'start_date';
+        else
+            params.time_add *= req.body.plus_minus;
         sqldb.query(sql.set_time_limit, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
