@@ -1,0 +1,2 @@
+ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS manual_score_points DOUBLE PRECISION DEFAULT NULL;
+ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS autograde_score_points DOUBLE PRECISION DEFAULT NULL;
