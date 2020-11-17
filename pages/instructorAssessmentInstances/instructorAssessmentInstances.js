@@ -21,6 +21,40 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.user_scores = result.rows;
+        res.locals.time_limit_list = new Object();
+        res.locals.remaining_time_min = null;
+        res.locals.remaining_time_max = null;
+        res.locals.has_open_instance = false;
+        res.locals.has_closed_instance = false;
+        result.rows.forEach(function(row) {
+            if (row.time_remaining == 'Open')
+                res.locals.has_open_instance = true;
+            else if (row.time_remaining == 'Closed')
+                res.locals.has_closed_instance = true;
+            else {
+                if (!(row.total_time_sec in res.locals.time_limit_list))
+                    res.locals.time_limit_list[row.total_time_sec] = row.total_time;
+                if (res.locals.remaining_time_min === null ||
+                    res.locals.remaining_time_min > row.time_remaining_sec)
+                    res.locals.remaining_time_min = row.time_remaining_sec;
+                if (res.locals.remaining_time_max === null ||
+                    res.locals.remaining_time_max < row.time_remaining_sec)
+                    res.locals.remaining_time_max = row.time_remaining_sec;
+            }
+        });
+        res.locals.time_limit_list = Object.values(res.locals.time_limit_list);
+        res.locals.time_limit_list = res.locals.time_limit_list.length > 0 ? res.locals.time_limit_list.join(', ') : 'No time limits';
+        if (res.locals.remaining_time_min === null)
+            res.locals.remaining_time_range = 'No time limits';
+        else if (res.locals.remaining_time_max < 60)
+            res.locals.remaining_time_range = 'Less than a minute';
+        else if (res.locals.remaining_time_min < 60)
+            res.locals.remaining_time_range = 'up to ' + Math.floor(res.locals.remaining_time_max / 60) + ' min';
+        else if (Math.floor(res.locals.remaining_time_min / 60) == Math.floor(res.locals.remaining_time_max / 60))
+            res.locals.remaining_time_range = Math.floor(res.locals.remaining_time_min / 60) + ' min';
+        else
+            res.locals.remaining_time_range = 'between ' + Math.floor(res.locals.remaining_time_min / 60) + ' and ' + Math.floor(res.locals.remaining_time_max / 60) + ' min';
+        
         debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
@@ -43,6 +77,17 @@ router.post('/', function(req, res, next) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
+        });
+    } else if (req.body.__action == 'open_all') {
+        const assessment_id = res.locals.assessment.id;
+        const params = {
+            assessment_id,
+            authn_user_id: res.locals.authz_data.authn_user.user_id,
+            update_time_limit: !!req.body.update_time_limit,
+        };
+        sqldb.query(sql.open_all, params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'close') {
         const assessment_id = res.locals.assessment.id;
@@ -104,6 +149,22 @@ router.post('/', function(req, res, next) {
         else
             params.time_add *= req.body.plus_minus;
         sqldb.query(sql.set_time_limit, params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'set_time_limit_all') {
+        const params = {
+            assessment_id: res.locals.assessment.id,
+            time_add: req.body.time_add * req.body.time_ref,
+            base_time: 'date_limit',
+        };
+        if (req.body.plus_minus == 'set_total')
+            params.base_time = 'start_date';
+        else if (req.body.plus_minus == 'set_rem')
+            params.base_time = 'current_date';
+        else
+            params.time_add *= req.body.plus_minus;
+        sqldb.query(sql.set_time_limit_all, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

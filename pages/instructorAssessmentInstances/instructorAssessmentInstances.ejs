@@ -93,10 +93,89 @@
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Assessment instances
           <div class="ml-auto">
-            <button type="button" class="btn btn-sm btn-light" tabindex="0"
-               data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
-              <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
-            </button>
+            <div class="dropdown d-flex flex-row">
+              <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Action for all instances <span class="caret"></span>
+              </button>
+              <div id="PopoverSetTimeLimitAll"
+                   tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                   data-html="true" data-placement="auto" title="Set Time Limit"
+                   data-content="
+                                 <p>
+                                   Time limit: <%= time_limit_list %><br/>
+                                   Remaining time: <%= remaining_time_range %>
+                                 </p>
+                                 <form name=&quot;set-time-limit-form&quot; method=&quot;POST&quot;>
+                                   <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;set_time_limit_all&quot;>
+                                   <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                   <select class=form-control name=plus_minus>
+                                     <% if (remaining_time_min !== null) {
+                                          if (has_open_instance) { %>
+                                     <option value=+1>Add to exams with time limit</option>
+                                     <option value=-1>Subtract from exams with time limit</option>
+                                       <% } else { %>
+                                     <option value=+1>Add</option>
+                                     <option value=-1>Subtract</option>
+                                     <%   }
+                                        } %>
+                                     <option value=set_total>Set time limit to</option>
+                                     <option value=set_rem>Set remaining time to</option>
+                                   </select>
+                                   <p class=&quot;form-inline&quot;>
+                                     <input class=form-control type=&quot;number&quot; name=&quot;time_add&quot; style=&quot;width: 5em&quot; value=&quot;5&quot;>
+                                     <select class=form-control name=time_ref><option value=60>minutes</option><option value=1>seconds</option></select>
+                                   </p>
+                                   <p>NOTE: Only currently open instances will be updated. Instances that have been closed or that have not been started yet are not affected.</p>
+                                   <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#PopoverSetTimeLimitAll').popover('hide')&quot;>
+                                     Cancel
+                                   </button>
+                                   <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Set for all instances</button>
+                                 </form>
+                                 ">
+              </div>
+              <div id="PopoverOpenAll"
+                   tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                   data-html="true" data-placement="auto" title="Confirm open"
+                   data-content="
+                                 <p><small>
+                                     This will disable auto-closing. The assessments will need to be manually closed.
+                                 </small></p>
+                                 <form name=&quot;open-form&quot; method=&quot;POST&quot;>
+                                   <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;open_all&quot;>
+                                   <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                   <% if (remaining_time_min !== null) { %>
+                                   <div class=&quot;form-check&quot;>
+                                     <input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; name=&quot;update_time_limit&quot; value=&quot;true&quot; id=&quot;update_time_limit_open&quot;>
+                                     <label class=&quot;form-check-label&quot; for=&quot;update_time_limit_open&quot;>Also disable auto-closing for open assessments with time limits</label>
+                                   </div>
+                                   <% } %>
+                                   <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#PopoverOpenAll').popover('hide')&quot;>
+                                     Cancel
+                                   </button>
+                                   <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Open all instances</button>
+                                 </form>
+                                 ">
+              </div>
+              
+              <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+              <div class="dropdown-menu dropdown-menu-right" onclick="window.event.preventDefault();">
+                
+                <% if (authz_data.has_instructor_edit) { %>
+                <a class="dropdown-item"
+                   href="#"
+                   data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
+                  <i class="fa fa-times" aria-hidden="true"></i> Delete all instances
+                </a>
+                <a class="dropdown-item" onclick="$('#PopoverOpenAll').popover('show')" href="#">
+                  <i class="far fa-circle" aria-hidden="true"></i> Re-open all instances
+                </a>
+                <a class="dropdown-item" onclick="$('#PopoverSetTimeLimitAll').popover('show')" href="#">
+                  <i class="far fa-clock" aria-hidden="true"></i> Set time limit for all instances
+                </a>
+                <% } %>
+                
+              </div>
+            </div>
           </div>
         </div>
 
@@ -137,7 +216,7 @@
                 <td class="text-center align-middle"><%= row.role %></td>
                 <% } %>
                 <td class="text-center align-middle"><%= row.number %></td>
-                <td class="text-center align-middle align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
                 <td class="text-center align-middle"><%= row.date_formatted %></td>
                 <td class="text-center align-middle" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
                 <td class="text-center align-middle"><%= row.time_remaining %></td>

@@ -14,10 +14,20 @@ SELECT
     END AS time_remaining,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
+            THEN greatest(0, extract(epoch from (ai.date_limit - current_timestamp)))
+        ELSE NULL
+    END AS time_remaining_sec,
+    CASE
+        WHEN ai.open AND ai.date_limit IS NOT NULL
             THEN greatest(0, floor(extract(epoch from (ai.date_limit - ai.date)) / 60))::text || ' min'
         WHEN ai.open THEN 'Unlimited'
         ELSE 'Closed'
     END AS total_time,
+    CASE
+        WHEN ai.open AND ai.date_limit IS NOT NULL
+            THEN greatest(0, extract(epoch from (ai.date_limit - ai.date)))
+        ELSE NULL
+    END AS total_time_sec,
     format_date_full_compact(ai.date, ci.display_timezone) AS date_formatted,
     format_interval(ai.duration) AS duration,
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
@@ -59,6 +69,30 @@ INSERT INTO assessment_state_logs AS asl
         results
 );
 
+-- BLOCK open_all
+WITH results AS (
+    UPDATE assessment_instances AS ai
+    SET
+        open = true,
+        date_limit = NULL,
+        auto_close = FALSE,
+        modified_at = now()
+    WHERE
+        ai.assessment_id = $assessment_id
+        AND ($update_time_limit OR ai.open = FALSE)
+    RETURNING
+        ai.open,
+        ai.id AS assessment_instance_id
+)
+INSERT INTO assessment_state_logs AS asl
+        (open, assessment_instance_id, auth_user_id)
+(
+    SELECT
+        true, results.assessment_instance_id, $authn_user_id
+    FROM
+        results
+);
+
 -- BLOCK set_time_limit
 UPDATE
     assessment_instances AS ai
@@ -73,4 +107,20 @@ SET
 WHERE
     ai.open
     AND ai.id = $assessment_instance_id
+
+-- BLOCK set_time_limit_all
+UPDATE
+    assessment_instances AS ai
+SET
+    date_limit = GREATEST(current_timestamp,
+             (CASE
+              WHEN $base_time = 'start_date' THEN ai.date
+              WHEN $base_time = 'current_date' THEN current_timestamp
+              ELSE ai.date_limit
+              END) +
+             $time_add * INTERVAL '1 sec')
+WHERE
+    ai.open
+    AND ai.assessment_id = $assessment_id
+    AND (ai.date_limit IS NOT NULL OR $base_time <> 'date_limit')
 
