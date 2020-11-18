@@ -43,6 +43,7 @@ BEGIN
         open = new_values.open,
         status = new_values.status,
         points = new_values.points,
+        autograde_score = new_values.points,
         points_in_grading = 0,
         score_perc = new_values.score_perc,
         score_perc_in_grading = 0,
