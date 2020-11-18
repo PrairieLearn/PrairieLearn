@@ -1,4 +1,5 @@
 
+
 # PrairieLearn Elements for use in `question.html`
 
 When writing questions, there exists a core pool of elements that provides
@@ -363,27 +364,31 @@ Element to arrange given blocks of code/text
 ```
 #### Customizations
 
-
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `shuffle-options` | boolean | false | Specify whether the ordering of options on the left-hand-side should be shuffled. If false, the ordering in the HTML file will be used.
-`permutation-mode` | string | "html-order" | One of the following: `any`, `html-order`, `ranking`. See details below for description.
 `max-incorrect` | integer | 2 | Sets the maximum number of incorrect answers (`correct=false` html attribute) to display.
 `min-incorrect` | integer | 1 | Sets the minimum number of incorrect answers (`correct=false` html attribute) to display.
+`permutation-mode` | string | "html-order" | One of the following: `any`, `html-order`, `ranking`. See details below for description.
 `check-indentation` | boolean | false | Whether indentation is checked while marking.
+`external-grader` | boolean | false | Whether an external grader is used to determine the correct answers. (*)
+`file-name` | string | user_code.py  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
+`leading-code` | string | — | The file name of the leading code, to be used by the external grader.
+`trailing-code` | string | — | The file name of the trailing code, to be used by the external grader.
 `header-left-column` | string | "Drag from here" | The text to display for the header of the left column.
 `header-right-column` | string| "Construct your solution here" |  The text to display for the header of the right column.
-`external-grader` | boolean | false | Whether an external grader is used to determine the correct answers.
-`file-name` | string | user_code.py  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
-`leading-code` | string | — | The file name of the leading code.
-`trailing-code` | string | — | The file name of the trailing code.
 `dropzone-layout` | string | "horizontalLayout" | "horizontalLayout" shows the given boxes and empty area aligned side-by-side. "verticalLayout" shows the given boxes on the top, and the empty area on the bottom.
 
-Within the `pl-order-blocks` element, each answer tile must be specified with
-a `pl-answer` that has the following attributes:
+Within the `pl-order-blocks` element, each answer tile must be specified with a `pl-answer` that has the following attributes:
 
-**Note that the attributes below are ignored if  `external-grader` is set to `true`, as the external grader does not need or make use of any attributes from `pl-answer` to grade a student submission.**
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`correct` | boolean | true | Specifies whether the answer tile is a correct answer to the question.
+`ranking` | positive integer | — | Specifies the correct ranking of this answer tile. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
+`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the answer tile. For example, a value of `2` means the tile should be indented twice. A value of `-1` means the indention for this answer does not matter.
+
+**When `external-grader=true`, the attributes `permutation-mode` and `check-indentation` are ignored when grading a student submission. In a similar way, the attributes for `pl-answer` are also ignored.**
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
