@@ -13,8 +13,8 @@ columns
     grading_method: enum_grading_method not null default 'Internal'::enum_grading_method
     id: bigint not null default nextval('questions_id_seq'::regclass)
     manual_grading_enabled: boolean
-    manual_grading_autograde_score_perc: double precision
-    manual_grading_manual_score_perc: double precision
+    manual_grading_manual_grade_score_weight: double precision
+    manual_grading_autograde_score_weight: double precision
     manual_grading_override_score: boolean
     number: integer
     options: jsonb
