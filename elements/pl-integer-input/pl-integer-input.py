@@ -14,12 +14,14 @@ DISPLAY_DEFAULT = 'inline'
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
+ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = 0
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text', 'blank-value']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text', 'allow-blank', 'blank-value']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -167,8 +169,9 @@ def parse(element_html, data):
         return
 
     if a_sub.strip() == '':
-        a_sub = pl.get_string_attrib(element, 'blank-value', '')
-        if a_sub == '':
+        if pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT):
+            a_sub = pl.get_integer_attrib(element, 'blank-value', BLANK_VALUE_DEFAULT)
+        else:
             opts = {
                 'format_error': True,
                 'format_error_message': 'the submitted answer was blank.'
@@ -181,7 +184,7 @@ def parse(element_html, data):
 
     # Convert to integer
     try:
-        a_sub_parsed = pl.string_to_integer(a_sub)
+        a_sub_parsed = pl.string_to_integer(str(a_sub))
         if a_sub_parsed is None:
             raise ValueError('invalid submitted answer (wrong type)')
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
