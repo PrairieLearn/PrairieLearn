@@ -2,6 +2,7 @@ columns
     assessment_instance_id: bigint not null
     assessment_question_id: bigint not null
     autograde_score: double precision
+    autograde_score_in_grading: double precison
     authn_user_id: bigint
     average_submission_score: double precision
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
