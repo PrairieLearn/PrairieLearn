@@ -165,7 +165,7 @@
                   <% } %>
               </td>
               <td class="text-center">
-                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
+                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.instance_question.max_points}); %>
                 <% if (authz_data.has_instructor_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
                    id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
