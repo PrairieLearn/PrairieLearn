@@ -8,8 +8,8 @@
     "gradingMethod": "External",
     "manualGradingOptions": {
         "enabled": true,
-        "manualScorePerc": 33.33,
-        "autogradeScorePerc": 33.33
+        "manualScoreWeight": 80,
+        "autogradeScoreWeight": 20
     },
     "externalGradingOptions": {
         "enabled": true,
