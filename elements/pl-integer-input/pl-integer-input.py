@@ -19,7 +19,7 @@ PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text', 'blank-value']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -113,6 +113,8 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = '{:d}'.format(a_sub)
+            if data['raw_submitted_answers'].get(name, 'X').strip() == '':
+                html_params['a_sub'] = '(blank)'
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
@@ -165,15 +167,17 @@ def parse(element_html, data):
         return
 
     if a_sub.strip() == '':
-        opts = {
-            'format_error': True,
-            'format_error_message': 'the submitted answer was blank.'
-        }
-        with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
-            format_str = chevron.render(f, opts).strip()
-        data['format_errors'][name] = format_str
-        data['submitted_answers'][name] = None
-        return
+        a_sub = pl.get_string_attrib(element, 'blank-value', '')
+        if a_sub == '':
+            opts = {
+                'format_error': True,
+                'format_error_message': 'the submitted answer was blank.'
+            }
+            with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
+                format_str = chevron.render(f, opts).strip()
+                data['format_errors'][name] = format_str
+                data['submitted_answers'][name] = None
+            return
 
     # Convert to integer
     try:

@@ -56,3 +56,19 @@
     <pl-integer-input answers-name="c_5" size="5" show-help-text="false"></pl-integer-input>
   </div>
 </div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>This question uses the <code>blank-answer</code> to specify a value to be used if the user leaves it blank.</p>
+      <p> Solve for the value of $c$ given $c = \frac 1 0$ (leave the question blank if the value is undetermined). </p>
+    </pl-question-panel>
+    <pl-hide-in-panel answer="true">
+      <pl-integer-input answers-name="c_6" blank-value="2147483647" correct-answer="2147483647"></pl-integer-input>
+    </pl-hide-in-panel>
+    <pl-answer-panel>
+      <code>(blank)</code>
+    </pl-answer-panel>
+  </div>
+</div>
+

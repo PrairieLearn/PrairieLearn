@@ -380,6 +380,7 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
 `correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`blank-answer` | float | special | Value to be used as an answer if element is left blank. If used, a blank answer is considered for grading instead of marked as invalid.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
