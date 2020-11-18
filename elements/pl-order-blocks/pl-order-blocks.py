@@ -48,7 +48,8 @@ def prepare(element_html, data):
                                        'trailing-code',
                                        'dropzone-layout',
                                        'max-incorrect',
-                                       'min-incorrect'])
+                                       'min-incorrect',
+                                       'weight'])
 
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -348,6 +349,7 @@ def grade(element_html, data):
         final_score = float(correctness / len(true_answer))
 
     check_indentation = pl.get_boolean_attrib(element, 'check-indentation', False)
+    answer_weight = pl.get_integer_attrib(element, 'weight', 1)
     # check indents, and apply penalty if applicable
     if check_indentation is True:
         for i, indent in enumerate(student_answer_indent):
@@ -355,7 +357,7 @@ def grade(element_html, data):
                 indent_score += 1
         final_score = final_score * (indent_score / len(true_answer_indent))
 
-    data['partial_scores'][answer_name] = {'score': final_score, 'feedback': feedback}
+    data['partial_scores'][answer_name] = {'score': final_score, 'feedback': feedback, 'weight': answer_weight}
 
 
 def test(element_html, data):
