@@ -19,12 +19,13 @@ SHOW_HELP_TEXT_DEFAULT = True
 SHOW_PLACEHOLDER_DEFAULT = True
 SHOW_CORRECT_ANSWER_DEFAULT = True
 ALLOW_FRACTIONS_DEFAULT = True
-
+ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = 0
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text', 'size', 'show-correct-answer', 'show-placeholder', 'allow-fractions']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text', 'size', 'show-correct-answer', 'show-placeholder', 'allow-fractions', 'allow-blank', 'blank-value']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -178,6 +179,8 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = '{:.12g}'.format(a_sub)
+            if data['raw_submitted_answers'].get(name, 'X').strip() == '':
+                html_params['a_sub'] = '(blank)'
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
@@ -244,8 +247,15 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, 'blank-value', str(BLANK_VALUE_DEFAULT))
 
     a_sub = data['submitted_answers'].get(name, None)
+    # print(a_sub)
+    # print(allow_blank)
+    # print(blank_value)
+    if allow_blank and a_sub is not None and a_sub.strip() == '':
+        a_sub = blank_value
     value, newdata = pl.string_fraction_to_number(a_sub, allow_fractions, allow_complex)
 
     if value is not None:

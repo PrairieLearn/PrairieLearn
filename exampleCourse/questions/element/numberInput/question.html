@@ -70,3 +70,19 @@
     <pl-number-input answers-name="c_b" show-placeholder="false" size="10"></pl-number-input>
   </div>
 </div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>This example allows the user to provide a blank value as a valid response. It uses the  <code>allow-blank="true"</code> option.</p>
+      <p> Solve for the value of $c$ given $c^0 = 2$. Keep blank if there is no root.</p>
+    </pl-question-panel>
+    <pl-hide-in-panel answer="true">
+      <pl-number-input answers-name="c_6" label = "$c = $" allow-blank="true" blank-value="1e-100" correct-answer="1e-100"></pl-number-input>
+    </pl-hide-in-panel>
+    <pl-answer-panel>
+      <p>$c$ has no root</p>
+    </pl-answer-panel>
+  </div>
+</div>
+
