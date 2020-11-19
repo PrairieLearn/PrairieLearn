@@ -252,9 +252,6 @@ def parse(element_html, data):
     blank_value = pl.get_string_attrib(element, 'blank-value', str(BLANK_VALUE_DEFAULT))
 
     a_sub = data['submitted_answers'].get(name, None)
-    # print(a_sub)
-    # print(allow_blank)
-    # print(blank_value)
     if allow_blank and a_sub is not None and a_sub.strip() == '':
         a_sub = blank_value
     value, newdata = pl.string_fraction_to_number(a_sub, allow_fractions, allow_complex)
