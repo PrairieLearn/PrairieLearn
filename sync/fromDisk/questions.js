@@ -37,7 +37,7 @@ function getParamsForQuestion(q) {
         external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
         external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
         manual_grading_enabled: (q.manualGradingOptions && q.manualGradingOptions.enabled),
-        manual_grading_autograde_score_weight: (q.manualGradingOptions && q.manualGradingOptions.autogradegradeScoreWeight),
+        manual_grading_autograde_score_weight: (q.manualGradingOptions && (100 - q.manualGradingOptions.manualScoreWeight)),
         manual_grading_manual_score_weight: (q.manualGradingOptions && q.manualGradingOptions.manualScoreWeight),
         dependencies: q.dependencies || {},
         workspace_image: (q.workspaceOptions && q.workspaceOptions.image),

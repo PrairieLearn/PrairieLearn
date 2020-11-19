@@ -207,7 +207,8 @@
             "type": "object",
             "additionalProperties": false,
             "required": [
-                "enabled"
+                "enabled",
+                "manualScoreWeight"
             ],
             "properties": {
                 "enabled": {
@@ -215,7 +216,7 @@
                     "type": "boolean"
                 },
                 "manualScoreWeight": {
-                    "description": "The weight in percentage that manual grade score should be worth after manual grade entered. Mamual grade plus autograde must add up to 100",
+                    "description": "The weight in percentage that manual grade score should be worth after manual grade entered. Manual grade plus autograde must add up to 100",
                     "type": "number"
                 },
                 "autogradeScoreWeight": {
