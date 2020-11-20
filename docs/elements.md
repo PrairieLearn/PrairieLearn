@@ -1449,7 +1449,7 @@ Although it is possible to include this element inside a `<markdown>` tag, it is
 <pl-xss-safe>
 <markdown>
 {{{submitted}}}
-</markdown
+</markdown>
 </pl-xss-safe>
 ```
 
