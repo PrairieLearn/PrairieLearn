@@ -89,10 +89,9 @@ def prepare(element_html, data):
 
     defaultMinIncorrect = 1
     defaultMaxIncorrect = len(incorrect_answers)
-    
+
     minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', defaultMinIncorrect)
     maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', defaultMaxIncorrect)
-
 
     incorrect_answers_count = random.randint(minIncorrect, maxIncorrect)
     if incorrect_answers_count > len(incorrect_answers):
