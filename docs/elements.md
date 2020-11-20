@@ -367,6 +367,7 @@ Element to arrange given blocks of code/text
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
 `shuffle-options` | boolean | false | Specify whether the ordering of options on the left-hand-side should be shuffled. If false, the ordering in the HTML file will be used.
 `max-incorrect` | integer | 2 | Sets the maximum number of incorrect answers (`correct=false` html attribute) to display.
 `min-incorrect` | integer | 1 | Sets the minimum number of incorrect answers (`correct=false` html attribute) to display.
@@ -387,15 +388,8 @@ Attribute | Type | Default | Description
 `correct` | boolean | true | Specifies whether the answer tile is a correct answer to the question.
 `ranking` | positive integer | — | Specifies the correct ranking of this answer tile. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
 `indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the answer tile. For example, a value of `2` means the tile should be indented twice. A value of `-1` means the indention for this answer does not matter.
-`weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
 
 **When `external-grader=true`, the attributes `permutation-mode` and `check-indentation` are ignored when grading a student submission. In a similar way, the attributes for `pl-answer` are also ignored.**
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`correct` | boolean | true | Specifies whether the answer tile is a correct answer to the question. 
-`ranking` | positive integer | — | Specifies the correct ranking of this answer tile. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
-`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the answer tile. For example, a value of `2` means the tile should be indented twice. A value of `-1` means the indention for this answer does not matter.
 
 
 #### Details
