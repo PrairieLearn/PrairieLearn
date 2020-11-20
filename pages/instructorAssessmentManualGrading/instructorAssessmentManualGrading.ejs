@@ -150,13 +150,14 @@
                 (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/">instructor view</a>)
               </td>
               <td class="text-center">
-                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: question.max_points}); %>
-                <% if (authz_data.has_instructor_edit) { %>
+                <!--Manual Grading-->
+                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
+                <% if (authz_data.has_instructor_edit && (instance_question.manual_grading_enabled || instance_question.manual_score)) { %>
                   <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
                      id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
-                     data-content="<%= include('editQuestionManualPointsForm',
+                     data-content="<%= include('editQuestionPointsForm',
                                    {id: 'editQuestionManualPoints' + i_instance_question,
                                    instance_question: instance_question}); %>"
                      data-trigger="manual" onclick="$(this).popover('show')">
@@ -165,8 +166,9 @@
                   <% } %>
               </td>
               <td class="text-center">
-                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.instance_question.max_points}); %>
-                <% if (authz_data.has_instructor_edit) { %>
+                <!--Auto Grading-->
+                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
+                <% if (authz_data.has_instructor_edit && (instance_question.manual_grading_enabled || instance_question.manual_score)) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
                    id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
@@ -180,6 +182,7 @@
                 <% } %>
               </td>
               <td class="text-center">
+                <!--Awarded Points-->
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
                 <% if (authz_data.has_instructor_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
