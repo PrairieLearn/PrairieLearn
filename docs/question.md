@@ -216,6 +216,21 @@ def grade(data):
             data["score"] = 0.5
 ```
 
+## Accessing files on disk
+
+
+
+From within `server.py` functions, directories can be accessed as:
+
+```python
+data["options"]["question_path"]                      # on-disk location of the current question directory
+data["options"]["client_files_question_path"]         # on-disk location of clientFilesQuestion/
+data["options"]["client_files_question_url"]          # URL location of clientFilesQuestion/ (only in render() function)
+data["options"]["client_files_course_path"]           # on-disk location of clientFilesCourse/
+data["options"]["client_files_course_url"]            # URL location of clientFilesCourse/ (only in render() function)
+data["options"]["client_files_question_dynamic_url"]  # URL location of dynamically-generated question files (only in render() function)
+```
+
 ## Generating dynamic files
 
 You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
