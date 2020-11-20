@@ -27,7 +27,7 @@ router.get('/', function(req, res, next) {
         res.locals.has_open_instance = false;
         res.locals.has_closed_instance = false;
         result.rows.forEach(function(row) {
-            if (row.time_remaining == 'Open')
+            if (row.time_remaining == 'Unlimited')
                 res.locals.has_open_instance = true;
             else if (row.time_remaining == 'Closed')
                 res.locals.has_closed_instance = true;
@@ -83,7 +83,6 @@ router.post('/', function(req, res, next) {
         const params = {
             assessment_id,
             authn_user_id: res.locals.authz_data.authn_user.user_id,
-            update_time_limit: !!req.body.update_time_limit,
         };
         sqldb.query(sql.open_all, params, function(err, _result) {
             if (ERR(err, next)) return;
@@ -142,7 +141,9 @@ router.post('/', function(req, res, next) {
             time_add: req.body.time_add * req.body.time_ref,
             base_time: 'date_limit',
         };
-        if (req.body.plus_minus == 'set_total')
+        if (req.body.plus_minus == 'unlimited')
+            params.base_time = 'null';
+        else if (req.body.plus_minus == 'set_total')
             params.base_time = 'start_date';
         else if (req.body.plus_minus == 'set_rem')
             params.base_time = 'current_date';
@@ -158,7 +159,9 @@ router.post('/', function(req, res, next) {
             time_add: req.body.time_add * req.body.time_ref,
             base_time: 'date_limit',
         };
-        if (req.body.plus_minus == 'set_total')
+        if (req.body.plus_minus == 'unlimited')
+            params.base_time = 'null';
+        else if (req.body.plus_minus == 'set_total')
             params.base_time = 'start_date';
         else if (req.body.plus_minus == 'set_rem')
             params.base_time = 'current_date';
