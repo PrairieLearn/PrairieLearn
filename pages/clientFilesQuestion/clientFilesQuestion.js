@@ -1,6 +1,6 @@
-var path = require('path');
-var express = require('express');
-var router = express.Router();
+const path = require('path');
+const express = require('express');
+const router = express.Router();
 
 const error = require('@prairielearn/prairielib/error');
 const chunks = require('../../lib/chunks');
