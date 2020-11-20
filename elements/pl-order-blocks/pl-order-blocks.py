@@ -87,8 +87,12 @@ def prepare(element_html, data):
         # sort correct answers by indices specified in corect_answers_ranking
         correct_answers = [x for _, x in sorted(zip(correct_answers_ranking, correct_answers))]
 
-    minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', 1)
-    maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', 2)
+    defaultMinIncorrect = 1
+    defaultMaxIncorrect = len(incorrect_answers)
+    
+    minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', defaultMinIncorrect)
+    maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', defaultMaxIncorrect)
+
 
     incorrect_answers_count = random.randint(minIncorrect, maxIncorrect)
     if incorrect_answers_count > len(incorrect_answers):
