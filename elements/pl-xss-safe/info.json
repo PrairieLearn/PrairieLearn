@@ -1,0 +1,8 @@
+{
+    "controller": "pl-xss-safe.py",
+    "dependencies": {
+        "elementScripts": [
+            "pl-xss-safe.js"
+        ]
+    }
+}

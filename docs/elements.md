@@ -57,6 +57,7 @@ images, files, and code display. The following **decorative** elements are avail
   collection of graphic objects
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
+- [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1421,6 +1422,46 @@ Attribute | Type | Default | Description
 - [demo/autograder/python/pandas]
 - [demo/autograder/python/plots]
 - [demo/autograder/python/random]
+
+### `pl-xss-safe` element
+
+Removes potentially dangerous scripts from an HTML code. This is recommended when parsing and displaying student-provided code.
+
+#### Sample element
+
+```html
+<pl-xss-safe>
+{{{submitted}}}
+</pl-xss-safe>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`source-file-name` | text | - | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet).
+
+#### Interaction with other elements
+
+Although it is possible to include this element inside a `<markdown>` tag, it is usually better to convert from markdown to HTML before stripping the unsafe characters, as in the example below:
+
+```html
+<pl-xss-safe>
+<markdown>
+{{{submitted}}}
+</markdown
+</pl-xss-safe>
+```
+
+#### Example implementations
+
+- [demo/markdownEditorLivePreview]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+-----
 
 ## Conditional Elements
 
