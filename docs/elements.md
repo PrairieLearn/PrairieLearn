@@ -1431,7 +1431,7 @@ Removes potentially dangerous scripts from an HTML code. This is recommended whe
 
 ```html
 <pl-xss-safe>
-{{{submitted}}}
+{{{submitted_answers.ans1}}}
 </pl-xss-safe>
 ```
 
@@ -1448,7 +1448,7 @@ Although it is possible to include this element inside a `<markdown>` tag, it is
 ```html
 <pl-xss-safe>
 <markdown>
-{{{submitted}}}
+{{{submitted_answers.ans1}}}
 </markdown>
 </pl-xss-safe>
 ```
