@@ -1,1 +1,0 @@
-/* eslint-env browser,jquery */

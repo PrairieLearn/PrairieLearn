@@ -28,7 +28,7 @@ def render(element_html, data):
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
             raise Exception(f'Unknown file path: "{file_path}".')
-        
+
         f = open(file_path, 'r')
         code = ''
         for line in f.readlines():
@@ -52,7 +52,7 @@ def render(element_html, data):
     # JSON dumps adds the quotes and escapes needed to have the string
     # be assigned to a JS expression.
     quoted_code = json.dumps(code)
-            
+
     html_params = {
         'code': code,
         'quoted_code': quoted_code
