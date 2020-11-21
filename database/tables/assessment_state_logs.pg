@@ -4,6 +4,7 @@ columns
     date: timestamp with time zone default CURRENT_TIMESTAMP
     id: bigint not null default nextval('assessment_state_logs_id_seq'::regclass)
     open: boolean
+    date_limit: timestamp with time zone default NULL
 
 indexes
     assessment_state_logs_pkey: PRIMARY KEY (id) USING btree (id)

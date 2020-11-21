@@ -279,9 +279,20 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
-                    NULL::JSONB AS data
+                    CASE
+                    WHEN asl.open THEN jsonb_build_object(
+                         'date_limit',
+                         CASE WHEN asl.date_limit IS NULL THEN 'Unlimited'
+                         ELSE format_date_full_compact(asl.date_limit, ci.display_timezone)
+                         END
+                    )
+                    ELSE NULL::JSONB
+                    END AS data
                 FROM
                     assessment_state_logs AS asl
+                    JOIN assessment_instances AS ai ON (ai.id = ai_id)
+                    JOIN assessments AS a ON (a.id = ai.assessment_id)
+                    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
                     LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
                 WHERE
                     asl.assessment_instance_id = ai_id

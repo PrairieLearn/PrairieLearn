@@ -140,6 +140,7 @@ router.post('/', function(req, res, next) {
             assessment_instance_id: req.body.assessment_instance_id,
             time_add: req.body.time_add * req.body.time_ref,
             base_time: 'date_limit',
+            authn_user_id: res.locals.authz_data.authn_user.user_id,
         };
         if (req.body.plus_minus == 'unlimited')
             params.base_time = 'null';
@@ -158,6 +159,7 @@ router.post('/', function(req, res, next) {
             assessment_id: res.locals.assessment.id,
             time_add: req.body.time_add * req.body.time_ref,
             base_time: 'date_limit',
+            authn_user_id: res.locals.authz_data.authn_user.user_id,
         };
         if (req.body.plus_minus == 'unlimited')
             params.base_time = 'null';
