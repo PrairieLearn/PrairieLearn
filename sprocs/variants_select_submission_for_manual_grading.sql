@@ -1,8 +1,8 @@
-DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,boolean);
-DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,bigint);
+DROP FUNCTION IF EXISTS variants_select_submission_for_manual_grading(bigint,boolean);
+DROP FUNCTION IF EXISTS variants_select_submission_for_manual_grading(bigint,bigint);
 
 CREATE OR REPLACE FUNCTION
-    variants_select_submission_for_grading (
+    variants_select_submission_for_manual_grading (
         IN variant_id bigint,
         IN check_submission_id bigint DEFAULT NULL
     ) RETURNS TABLE (submission submissions)
@@ -14,7 +14,7 @@ BEGIN
     SELECT s.*
     INTO submission
     FROM submissions AS s
-    WHERE s.variant_id = variants_select_submission_for_grading.variant_id
+    WHERE s.variant_id = variants_select_submission_for_manual_grading.variant_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 

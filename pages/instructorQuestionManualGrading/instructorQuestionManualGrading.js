@@ -22,13 +22,21 @@ router.get('/', (req, res, next) => {
     sqlDb.query(sql.instance_question_select_last_variant, params, (err, result) => {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) throw new Error('Instance question not found');
+
         const variant_id = result.rows[0].id;
-        sqlDb.callZeroOrOneRow('variants_select_submission_for_manual_grading', [Number(variant_id), null], (err, result) => {
+
+        sqlDb.query(sql.instance_question_select_question, params, (err, result) => {
             if (ERR(err, next)) return;
-            if (result.rowCount == 0) return new NoSubmissionError();
-            const submission = result.rows[0];
-            debug('_gradeVariantWithClient()', 'selected submission', 'submission.id:', submission.id);
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            if (result.rowCount == 0) throw new Error('Question not found');
+            res.locals.question = result.rows[0];
+
+            sqlDb.callZeroOrOneRow('variants_select_submission_for_manual_grading', [Number(variant_id), null], (err, result) => {
+                if (ERR(err, next)) return;
+                if (result.rowCount == 0) return new NoSubmissionError();
+                const submission = result.rows[0];
+                debug('_gradeVariantWithClient()', 'selected submission', 'submission.id:', submission.id);
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
         });
     });
 

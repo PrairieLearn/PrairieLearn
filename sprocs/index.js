@@ -137,6 +137,7 @@ module.exports = {
             'variants_ensure_question.sql',
             'variants_insert.sql',
             'variants_select_submission_for_grading.sql',
+            'variants_select_submission_for_manual_grading.sql',
             'variants_select_for_assessment_instance_grading.sql',
             'variants_update_after_grading.sql',
             'variants_ensure_open.sql',
