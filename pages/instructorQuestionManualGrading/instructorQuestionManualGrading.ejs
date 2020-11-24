@@ -35,14 +35,16 @@
               </div>
           </div>
       </div>
-
+      <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
+        <blockquote style="color: red">Submission updated</blockquote>
+      <% } %>
       <form name="instance_question-mamual-grade-update-form" method="POST">
-        <input type="hidden" name="__action" value="Update Grade">
+        <input type="hidden" name="__action" value="add_manual_grade">
         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
         <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
         Score: <input name="submission-score" value="5"/>
-      </p>Note: <input name="submission-note" value="Good job.">
-      </p>
+      <p>Note: <input name="submission-note" value="Good job.">
+      <p>Submission id: <input name="submission-id" value="<%= submission.id %>">
         <button type="submit" class="btn btn-danger">Submit Manual Grade</button>
       </form>
 
