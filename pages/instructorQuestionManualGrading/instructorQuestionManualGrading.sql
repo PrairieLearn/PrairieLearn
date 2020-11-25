@@ -1,5 +1,5 @@
 -- BLOCK instance_question_select_last_variant 
-SELECT *
+SELECT v.*
 FROM
     variants as v
     JOIN instance_questions as iq ON (v.instance_question_id = iq.id)
