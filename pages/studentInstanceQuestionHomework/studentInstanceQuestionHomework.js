@@ -32,6 +32,9 @@ function processSubmission(req, res, callback) {
         submitted_answer: submitted_answer,
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
+        assessment_instance_id: res.locals.assessment_instance.id,
+        assessment_id: res.locals.assessment.id,
+        instance_question_id: res.locals.instance_question.id,
     };
     sqldb.callOneRow('variants_ensure_instance_question', [submission.variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;

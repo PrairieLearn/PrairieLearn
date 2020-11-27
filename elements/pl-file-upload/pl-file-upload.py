@@ -53,11 +53,18 @@ def render(element_html, data):
     html_params = {'name': answer_name, 'file_names': file_names_json, 'uuid': uuid}
 
     files = data['submitted_answers'].get('_files', None)
+    file_storage_s3 = data['submitted_answers'].get('_file_storage_s3', None)
+
     if files is not None:
         # Filter out any files not part of this element's file_names
         filtered_files = [x for x in files if x.get('name', '') in file_names]
         html_params['has_files'] = True
         html_params['files'] = json.dumps(filtered_files, allow_nan=False)
+
+        if file_storage_s3 is not None:
+            s3_files = file_storage_s3.get(answer_name, [])
+            s3_filtered_files = [x for x in s3_files if x.get('name', '') in file_names]
+            html_params['s3_files'] = json.dumps(s3_filtered_files, allow_nan=False)
     else:
         html_params['has_files'] = False
 
@@ -72,37 +79,47 @@ def parse(element_html, data):
     raw_file_names = pl.get_string_attrib(element, 'file-names', '')
     required_file_names = get_file_names_as_array(raw_file_names)
     answer_name = get_answer_name(raw_file_names)
-
     # Get submitted answer or return parse_error if it does not exist
     files = data['submitted_answers'].get(answer_name, None)
-    if not files:
-        add_format_error(data, 'No submitted answer for file upload.')
-        return
+    s3_files = data['submitted_answers'].get('_file_storage_s3', {}).get(answer_name, [])
 
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid
     # duplication
     del data['submitted_answers'][answer_name]
 
-    try:
-        parsed_files = json.loads(files)
-    except ValueError:
-        add_format_error(data, 'Could not parse submitted files.')
+    if files is not None:
 
-    # Filter out any files that were not listed in file_names
-    parsed_files = [x for x in parsed_files if x.get('name', '') in required_file_names]
+        try:
+            parsed_files = json.loads(files)
+        except ValueError:
+            add_format_error(data, 'Could not parse submitted files.')
 
-    if data['submitted_answers'].get('_files', None) is None:
-        data['submitted_answers']['_files'] = parsed_files
-    elif isinstance(data['submitted_answers'].get('_files', None), list):
-        data['submitted_answers']['_files'].extend(parsed_files)
-    else:
-        add_format_error(data, '_files was present but was not an array.')
+        # Filter out any files that were not listed in file_names
+        parsed_files = [x for x in parsed_files if x.get('name', '') in required_file_names]
 
-    # Validate that all required files are present
-    if parsed_files is not None:
-        submitted_file_names = [x.get('name', '') for x in parsed_files]
-        missing_files = [x for x in required_file_names if x not in submitted_file_names]
+        if data['submitted_answers'].get('_files', None) is None:
+            data['submitted_answers']['_files'] = parsed_files
+        elif isinstance(data['submitted_answers'].get('_files', None), list):
+            data['submitted_answers']['_files'].extend(parsed_files)
+        else:
+            add_format_error(data, '_files was present but was not an array.')
+
+        # Validate that all required files are present from db or s3 source
+        missing_files = []
+
+        if parsed_files is not None:
+            db_submitted_file_names = [x.get('name', '') for x in parsed_files]
+            missing_files = [x for x in required_file_names if x not in db_submitted_file_names]
+
+        if s3_files is not None:
+            s3_submitted_file_names = [x.get('name', '') for x in s3_files]
+            missing_files = [x for x in missing_files if x not in s3_submitted_file_names]
 
         if len(missing_files) > 0:
             add_format_error(data, 'The following required files were missing: ' + ', '.join(missing_files))
+        return
+
+    if not files:
+        add_format_error(data, 'No submitted answer for file upload.')
+        return

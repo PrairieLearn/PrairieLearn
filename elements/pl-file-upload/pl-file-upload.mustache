@@ -4,7 +4,8 @@ $(function() {
 
   new window.PLFileUpload(UUID, {
     acceptedFiles: {{&file_names}}
-    {{#has_files}}, files: {{&files}}{{/has_files}}
+    {{#has_files}}, files: {{&files}}, s3Files: {{&s3_files}} {{/has_files}},
+    
   });
 });
 </script>

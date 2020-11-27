@@ -4,10 +4,13 @@ CREATE OR REPLACE FUNCTION
         IN display_filename text,
         IN storage_filename text,
         IN type text,
+        IN assessment_id bigint,
         IN assessment_instance_id bigint,
         IN instance_question_id bigint,
+        IN question_id bigint,
         IN user_id bigint,
         IN authn_user_id bigint,
+        IN storage_type text,
         OUT file_id bigint
     )
 AS $$
@@ -30,8 +33,8 @@ BEGIN
     -- insert the file
 
     INSERT INTO files
-           (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, created_by)
-    VALUES (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, authn_user_id)
+           (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, question_id, user_id, created_by, storage_type)
+    VALUES (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, question_id, user_id, authn_user_id, storage_type)
     RETURNING id
     INTO file_id;
 
