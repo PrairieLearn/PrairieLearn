@@ -53,7 +53,8 @@ WHERE
 
 -- BLOCK get_running_workspace_id_by_uuid
 SELECT
-    w.id
+    w.id,
+    w.version
 FROM
     workspaces AS w
 JOIN
