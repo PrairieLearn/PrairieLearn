@@ -7,11 +7,13 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 BEGIN
-    SELECT array_agg(u.uid) OVER (ORDER BY u.uid)
+    SELECT array_agg(x.uid)
     INTO uid_list
-    FROM
-        group_users AS gu
-        JOIN users AS u ON (u.user_id = gu.user_id)
-    WHERE gu.group_id = groups_uid_list.group_id;
+    FROM (SELECT u.uid
+          FROM
+              group_users AS gu
+              JOIN users AS u ON (u.user_id = gu.user_id)
+          WHERE gu.group_id = groups_uid_list.group_id
+          ORDER BY u.uid) AS x;
 END
 $$ LANGUAGE plpgsql STABLE;
