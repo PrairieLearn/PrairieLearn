@@ -3,7 +3,7 @@ networkx==2.5
 numpy==1.19.2
 pandas==1.1.2
 scipy==1.5.2
-sympy==1.6.2
+sympy==1.7
 Pillow==7.2.0
 pygraphviz==1.6
 defusedxml==0.6.0
