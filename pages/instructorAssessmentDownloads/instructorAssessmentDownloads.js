@@ -100,7 +100,7 @@ router.get('/:filename', function(req, res, next) {
         ['Points', 'points'],
         ['Max points', 'max_points'],
         ['Duration (min)', 'duration_mins'],
-        ['Hightest score', 'highest_score'],
+        ['Highest score', 'highest_score'],
     ];
     let scoresColumns = studentColumn.concat(scoreColumn);
     let pointsColumns = studentColumn.concat(pointColumn);
