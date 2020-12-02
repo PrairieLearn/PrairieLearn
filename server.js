@@ -72,7 +72,7 @@ module.exports.initExpress = function() {
     const app = express();
     app.set('views', path.join(__dirname, 'pages'));
     app.set('view engine', 'ejs');
-    app.set('trust proxy', 'loopback');
+    app.set('trust proxy', config.trustProxy);
     config.devMode = (app.get('env') == 'development');
 
     app.use(function(req, res, next) {res.locals.config = config; next();});
