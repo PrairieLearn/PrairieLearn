@@ -19,18 +19,29 @@ class NoSubmissionError extends Error {
 router.get('/', (req, res, next) => {
     console.log(res.locals);
     const params = {instance_question_id: res.locals.instance_question_id};
-    sqlDb.query(sql.instance_question_select_last_variant, params, (err, result) => {
+    sqlDb.query(sql.instance_question_select_last_variant_with_submission, params, (err, result) => {
         if (ERR(err, next)) return;
-        if (result.rowCount == 0) throw new Error('Last variant not found for instance_question');
+        if (result.rowCount == 0) {
+            // perhaps student loaded view to create variant, but did not submit anything
+            res.locals['no_submission_found'] = true;
+            return;
+        }
 
         const variant_id = result.rows[0].id;
 
-        sqlDb.query(sql.instance_question_select_question, params, (err, result) => {
+        sqlDb.queryOneRow(sql.instance_question_select_question, params, (err, result) => {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) throw new Error('Question not found');
+
             res.locals.question = result.rows[0];
 
-            sqlDb.callZeroOrOneRow('variants_select_submission_for_manual_grading', [Number(variant_id), null], (err, result) => {
+            const params = [
+                variant_id,
+                null,
+                true, // select graded submissions
+            ];
+
+            sqlDb.callZeroOrOneRow('variants_select_submission_for_grading', params, (err, result) => {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return new NoSubmissionError();
                 const submission = result.rows[0];
@@ -51,18 +62,20 @@ router.post('/', function(req, res, next) {
         const score = req.body['submission-score'];
         const params = {instance_question_id: res.locals.instance_question_id};
 
-        sqlDb.query(sql.instance_question_select_last_variant, params, (err, result) => {
+        sqlDb.query(sql.instance_question_select_last_variant_with_submission, params, (err, result) => {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) throw new Error('Instance question not found');
     
             const variant_id = result.rows[0].id;
     
-            sqlDb.query(sql.instance_question_select_question, params, (err, result) => {
+            sqlDb.queryOneRow(sql.instance_question_select_question, params, (err, result) => {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) throw new Error('Question not found');
                 res.locals.question = result.rows[0];
-    
-                sqlDb.callZeroOrOneRow('variants_select_submission_for_manual_grading', [Number(variant_id), null], (err, result) => {
+
+                const params = [variant_id, null, true];
+
+                sqlDb.callZeroOrOneRow('variants_select_submission_for_grading', params, (err, result) => {
                     if (ERR(err, next)) return;
                     if (result.rowCount == 0) return new NoSubmissionError();
                     const submission = result.rows[0];
@@ -75,6 +88,7 @@ router.post('/', function(req, res, next) {
                         res.locals['submission'] = submission;
                         res.locals['submission_updated'] = true;
                         debug('_gradeVariantWithClient()', 'selected submission', 'submission.id:', submission.id);
+
                         const params = [
                             submission.id,
                             res.locals.authn_user.user_id,

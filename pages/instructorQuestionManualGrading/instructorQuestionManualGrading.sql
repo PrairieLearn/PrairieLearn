@@ -1,9 +1,10 @@
--- BLOCK instance_question_select_last_variant 
+-- BLOCK instance_question_select_last_variant_with_submission
 SELECT v.*
 FROM
     variants as v
+    JOIN submissions as s ON (s.variant_id = v.id)
     JOIN instance_questions as iq ON (v.instance_question_id = iq.id)
-WHERE instance_question_id = $instance_question_id
+WHERE iq.id = $instance_question_id
 ORDER BY v.id DESC
 LIMIT 1;
 
