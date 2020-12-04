@@ -112,7 +112,8 @@ BEGIN
             grading_method = 'External',
             override_score = new_score,
             score = COALESCE(new_score, score),
-            correct = COALESCE(new_correct, correct)
+            correct = COALESCE(new_correct, correct),
+            gradable = CASE WHEN new_score IS NULL THEN gradable ELSE TRUE END
         WHERE s.id = submission_id;
     END IF;
 
