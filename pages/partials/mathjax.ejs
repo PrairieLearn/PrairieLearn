@@ -1,4 +1,10 @@
 <script>
+
+ var outputComponent = 'output/chtml';
+ <% if (typeof questionHtml != 'undefined' && questionHtml.includes('pl-requires-svg-mathjax')) { %>
+     outputComponent = 'output/svg';
+ <% } %>
+
  var MathJax = {
      tex: {
          inlineMath: [['$', '$'], ['\\(', '\\)']]
@@ -7,7 +13,7 @@
          fontCache: 'global'
      },
      loader: {
-         load: ['input/tex', 'output/svg']
+         load: ['input/tex', outputComponent]
      },
      /* Register a callback to be run when MathJax is loaded, use MathJax.config.onReady() */
      readyQueue: [],
