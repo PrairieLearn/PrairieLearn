@@ -56,7 +56,7 @@
         "fs-extra": "^9.0.1",
         "googleapis": "^64.0.0",
         "handlebars": "^4.7.6",
-        "highlight.js": "^10.3.2",
+        "highlight.js": "^10.4.1",
         "http-proxy-middleware": "^1.0.6",
         "http-status": "^1.4.2",
         "isbinaryfile": "^4.0.6",
