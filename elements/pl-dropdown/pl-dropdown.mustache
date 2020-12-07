@@ -30,7 +30,7 @@
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
 
         {{^parse-error}}
-            <code class="user-output">{{submitted-answer}}</code>
+            <code class="user-output">{{{submitted-answer}}}</code>
 
             {{#correct}}
                 <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
@@ -50,6 +50,6 @@
 
 {{#answer}}
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
-        <code class="user-output">{{correct-answer}}</code>
+        <code class="user-output">{{{correct-answer}}}</code>
     </div>
 {{/answer}}
