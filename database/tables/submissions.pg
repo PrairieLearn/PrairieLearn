@@ -21,6 +21,7 @@ columns
     sid: text
     submitted_answer: jsonb
     true_answer: jsonb
+    user_id: bigint
     v2_score: double precision
     variant_id: bigint not null
 
