@@ -1,4 +1,10 @@
 <script>
+
+ var outputComponent = 'output/chtml';
+ <% if (typeof questionHtml != 'undefined' && questionHtml.includes('pl-requires-svg-mathjax')) { %>
+     outputComponent = 'output/svg';
+ <% } %>
+
  var MathJax = {
      tex: {
          inlineMath: [['$', '$'], ['\\(', '\\)']]
@@ -7,23 +13,13 @@
          fontCache: 'global'
      },
      loader: {
-         load: ['input/tex', 'output/svg']
+         load: ['input/tex', outputComponent]
      },
      /* Register a callback to be run when MathJax is loaded, use MathJax.config.onReady() */
      readyQueue: [],
      onReady: (cb) => { MathJax.config.readyQueue.push(cb); },
      startup: {
          ready: () => {
-             if (MathJax.version === '3.0.5') {
-                 /* Work-around for SVG output on MathJax 3.0.5, we can remove this after
-                    it's been fixed. */
-                 const SVGWrapper = MathJax._.output.svg.Wrapper.SVGWrapper;
-                 const CommonWrapper = SVGWrapper.prototype.__proto__;
-                 SVGWrapper.prototype.unicodeChars = function (text, variant) {
-                     if (!variant) variant = this.variant || 'normal';
-                     return CommonWrapper.unicodeChars.call(this, text, variant);
-                 }
-             }
              MathJax.startup.defaultReady();
              MathJax.Hub = {
                  Queue: function(){
