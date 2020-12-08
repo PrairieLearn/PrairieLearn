@@ -562,10 +562,12 @@ Attribute | Type | Default | Description
 `allow-partial-credit` | boolean | false | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
 `allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
 `allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
+`allow-blank` | boolean | false |  Whether or not empty input boxes are allowed. By default, matrices with at least one empty input box will not be graded (invalid format).
+`blank-answer` | string | 0 (zero) | Value to be used as an answer for each individual component if the component is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, etc.).
 
 #### Details
 
-The question will only be graded when all matrix components are entered.
+The question will only be graded when all matrix components are entered, unless the `allow-blank` attribute is enabled.
 
 #### Example implementations
 
