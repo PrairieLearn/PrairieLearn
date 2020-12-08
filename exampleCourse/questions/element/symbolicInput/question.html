@@ -58,3 +58,21 @@
         <pl-symbolic-input answers-name="dx" variables="x" size="5" show-help-text="false" label="$\dfrac{d}{dx} \frac{1}{2}x^2 =$"></pl-symbolic-input>
     </div>
 </div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example in which we allow a blank answer.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>The <code>allow-blank</code> attribute allows an expression to be left blank by the user and still be considered valid. By default a blank expression is equivalent to the expression <code>0</code>, unless the <code>blank-value</code> is used.</p>
+            <p>Write an expression for the result of $0^0$, or keep blank if the value is undeterministic.</p>
+        </pl-question-panel>
+        <pl-hide-in-panel answer="true">
+          <pl-symbolic-input answers-name="zerotozero" variables="y" label="$0^0 =$" allow-blank="true" blank-value="y"></pl-symbolic-input>
+        </pl-hide-in-panel>
+        <pl-answer-panel>
+          $0^0 = \texttt{(blank)}$
+        </pl-answer-panel>
+    </div>
+</div>

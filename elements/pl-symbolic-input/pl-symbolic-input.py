@@ -18,6 +18,8 @@ IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = 'i'
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 15  # Minimum size to show the placeholder text
+ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = '0'
 
 
 def get_variables_list(variables_string):
@@ -31,7 +33,7 @@ def get_variables_list(variables_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text', 'allow-blank', 'blank-value']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -134,7 +136,10 @@ def render(element_html, data):
             else:
                 a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
             a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
-            html_params['a_sub'] = sympy.latex(a_sub)
+            if data['raw_submitted_answers'].get(name, '').strip() == '':
+                html_params['a_sub'] = '\\texttt{(blank)}'
+            else:
+                html_params['a_sub'] = sympy.latex(a_sub)
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
@@ -216,9 +221,13 @@ def parse(element_html, data):
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, 'blank-value', str(BLANK_VALUE_DEFAULT))
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
+    if allow_blank and a_sub is not None and a_sub.strip() == '':
+        a_sub = blank_value
     if not a_sub:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
