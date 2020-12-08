@@ -444,6 +444,8 @@ Attribute | Type | Default | Description
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
 `allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
+`allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).
+`blank-answer` | string | 0 (zero) | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
