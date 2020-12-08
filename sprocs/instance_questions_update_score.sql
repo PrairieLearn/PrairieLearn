@@ -127,6 +127,7 @@ BEGIN
             points_in_grading = 0,
             score_perc = new_score_perc,
             score_perc_in_grading = 0,
+            status = 'complete',
             modified_at = now()
         WHERE iq.id = instance_question_id;
 
