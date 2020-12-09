@@ -208,7 +208,7 @@
             "additionalProperties": false,
             "required": [
                 "enabled",
-                "manualScoreWeight"
+                "reservedPoints"
             ],
             "properties": {
                 "enabled": {
