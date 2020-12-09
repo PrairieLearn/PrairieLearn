@@ -3,5 +3,9 @@
     "title": "Demo: Simple calculation to add numbers",
     "topic": "Algebra",
     "tags": ["mwest", "fa17", "tpl101", "v3"],
+    "manualGradingOptions": {
+        "enabled": true,
+        "reservedPoints": 30
+    },
     "type": "v3"
 }

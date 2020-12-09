@@ -32,7 +32,7 @@
             "title": "Fundamental questions",
             "bestQuestions": 3,
             "questions": [
-                {"id": "demo/calculation",          "points": 1, "maxPoints": 5},
+                {"id": "demo/calculation",          "points": 1, "maxPoints": 125},
                 {"id": "demo/matrixAlgebra",        "points": 1, "maxPoints": 5},
                 {"id": "demo/fixedCheckbox",        "points": 1, "maxPoints": 5},
                 {"id": "demo/randomPlot",           "points": 1, "maxPoints": 5}

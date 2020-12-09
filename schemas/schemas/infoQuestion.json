@@ -202,6 +202,29 @@
                 }
             }
         },
+        "manualGradingOptions": {
+            "description": "Options for manually graded questions.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "enabled",
+                "manualScoreWeight"
+            ],
+            "properties": {
+                "enabled": {
+                    "description": "Whether the manual grading mode is currently enabled.",
+                    "type": "boolean"
+                },
+                "manualScoreWeight": {
+                    "description": "The weight in percentage that manual grade score should be worth after manual grade entered. Manual grade plus autograde must add up to 100",
+                    "type": "number"
+                },
+                "autogradeScoreWeight": {
+                    "description": "The weight in percentage that autograde grade score should be worth after manual grade entered. Mamual grade plus autograde must add up to 100",
+                    "type": "number"
+                }
+            }
+        },
         "workspaceOptions": {
             "description": "Options for workspace questions.",
             "type": "object",

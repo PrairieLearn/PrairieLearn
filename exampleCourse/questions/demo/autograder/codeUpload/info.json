@@ -6,6 +6,10 @@
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
+    "manualGradingOptions": {
+        "enabled": true,
+        "reservedPoints": 50
+    },
     "externalGradingOptions": {
         "enabled": true,
         "image": "prairielearn/grader-python",

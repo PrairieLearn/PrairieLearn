@@ -131,6 +131,8 @@ BEGIN
         external_grading_entrypoint = src.data->>'external_grading_entrypoint',
         external_grading_timeout = (src.data->>'external_grading_timeout')::integer,
         external_grading_enable_networking = (src.data->>'external_grading_enable_networking')::boolean,
+        manual_grading_enabled = (src.data->>'manual_grading_enabled')::boolean,
+        manual_grading_reserved_points = (src.data->>'manual_grading_reserved_points')::double precision,
         dependencies = (src.data->>'dependencies')::jsonb,
         workspace_image = src.data->>'workspace_image',
         workspace_port = (src.data->>'workspace_port')::integer,
