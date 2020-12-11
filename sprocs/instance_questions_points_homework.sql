@@ -70,7 +70,14 @@ BEGIN
     FOR i in 1..length LOOP
         points := points + variants_points_list[i];
     END LOOP;
-    points := least(points, aq.max_points);
+
+    -- If manual grading question, we want to cap automatically awarded points
+    -- points = max_points - manual_grading_points
+    IF iq.manual_grading_enabled THEN
+        points := least(points, aq.max_points - iq.manual_grading_reserved_points) + iq.manual_grading_points;
+    ELSE
+        points := least(points, aq.max_points);
+    END IF;
 
     -- score_perc
     score_perc := points / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100;

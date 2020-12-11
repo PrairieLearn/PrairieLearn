@@ -1,6 +1,7 @@
 DROP FUNCTION IF EXISTS grading_jobs_insert(bigint,bigint,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
 
 DROP FUNCTION IF EXISTS grading_jobs_insert(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
+DROP FUNCTION IF EXISTS grading_jobs_insert(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb,double precision,jsonb);
 
 CREATE OR REPLACE FUNCTION
     grading_jobs_insert (
@@ -16,6 +17,8 @@ CREATE OR REPLACE FUNCTION
         IN new_submitted_answer jsonb DEFAULT NULL,
         IN new_params jsonb DEFAULT NULL,
         IN new_true_answer jsonb DEFAULT NULL,
+        IN manual_score double precision DEFAULT NULL,
+        IN manual_feedback jsonb DEFAULT NULL,
         OUT grading_job grading_jobs
     )
 AS $$

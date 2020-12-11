@@ -58,8 +58,8 @@ router.get('/', (req, res, next) => {
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'add_manual_grade') {
         const submission_id = req.body['submission-id'];
-        const note = req.body['submission-note'];
-        const score = req.body['submission-score'];
+        const manualFeedback = req.body['manual-feedback'];
+        const manualScore = req.body['manual-score'];
         const params = {instance_question_id: res.locals.instance_question_id};
 
         sqlDb.query(sql.instance_question_select_last_variant_with_submission, params, (err, result) => {
@@ -96,17 +96,21 @@ router.post('/', function(req, res, next) {
                             submission.broken,
                             submission.format_errors,
                             submission.partial_scores,
-                            score, // overwrite submission score
+                            submission.score,
                             submission.v2_score,
-                            {feedback:note}, // overwrite feedback
+                            submission.feedback,
                             submission.submitted_answer,
                             submission.params,
                             submission.true_answer,
+                            manualScore,
+                            manualFeedback,
                         ];
                     
                         sqlDb.callOneRow('grading_jobs_insert', params, (err, result) => {
                             if (ERR(err, next)) return;
                     
+                            // This is duplicate code that needs to be understood and resolved for the LTI update logic.
+
                             /* If the submission was marked invalid during grading the grading job will
                                be marked ungradable and we should bail here to prevent LTI updates. */
                             res.locals['grading_job'] = result.rows[0];
