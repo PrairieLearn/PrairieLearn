@@ -1,4 +1,4 @@
-FROM prairielearn/centos7-plbase
+FROM prairielearn/plbase
 
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
@@ -18,10 +18,11 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
     && node server.js --migrate-and-exit \
-    && su postgres -c "createuser root" \
-    && su postgres -c 'psql -c "alter user root with superuser;"' \
+    && su postgres -c "createuser -s root" \
     && /PrairieLearn/docker/start_postgres.sh stop \
     && /PrairieLearn/docker/gen_ssl.sh
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
-CMD /PrairieLearn/docker/init.sh
+
+# use -l to force a login shell to get the correct miniforge python path
+CMD ["/bin/bash", "-cl", "/PrairieLearn/docker/init.sh"]

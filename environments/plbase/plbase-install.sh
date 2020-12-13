@@ -1,35 +1,33 @@
 #!/bin/bash
 
-yum -y install \
-    epel-release \
-    https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm \
-    https://repo.ius.io/ius-release-el7.rpm
+yum update -y
 
-yum -y update
-
-yum -y install \
-    postgresql11-server \
-    postgresql11-contrib \
-    redis \
+amazon-linux-extras install -y \
+    vim \
     docker \
-    python3 \
-    python3-pip \
-    python3-devel \
+    postgresql11 \
+    redis4.0 \
+    R3.4
+
+yum -y install \
+    postgresql-server \
+    man \
+    emacs \
     gcc \
     make \
     openssl \
     dos2unix \
     tmux \
+    tar \
     readline-devel        `# needed for rpy2` \
     libcurl-devel         `# needed for rvest (for R)` \
     openssl-devel         `# needed for rvest (for R)` \
     libxml2-devel         `# needed for xml2 (for R)` \
     libpng-devel          `# needed for png (for R)` \
     libjpeg-turbo-devel   `# needed for jpeg (for R)` \
-    R \
     ImageMagick           `# for PrairieDraw label images` \
     texlive               `# for PrairieDraw label images` \
-    git224 \
+    git \
     graphviz \
     graphviz-devel
 
@@ -41,16 +39,28 @@ cd /nvm
 git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
-nvm install 12
+nvm install 14
 npm install npm@latest -g
 for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
-su postgres -c "/usr/pgsql-11/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log"
+su postgres -c "initdb -D /var/postgres"
 
 echo "setting up python3..."
+cd /
+curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
+bash Miniforge3-Linux-x86_64.sh -b -p /miniforge3
+/miniforge3/bin/conda init
+source /root/.bashrc
 python3 -m pip install --no-cache-dir -r /python-requirements.txt
+
+echo "run .bashrc even for non-interactive shells..."
+cat > /root/.bash_profile <<EOF
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+EOF
 
 echo "installing R packages..."
 chmod +x /r-requirements.R
