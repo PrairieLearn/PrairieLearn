@@ -20,7 +20,7 @@
         "ace-builds": "^1.4.12",
         "ajv": "^6.12.6",
         "ansi_up": "^4.0.4",
-        "archiver": "^5.0.2",
+        "archiver": "^5.1.0",
         "async": "^3.2.0",
         "async-stacktrace": "0.0.2",
         "aws-sdk": "^2.800.0",
