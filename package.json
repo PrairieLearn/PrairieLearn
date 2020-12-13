@@ -54,7 +54,7 @@
         "file-type": "^15.0.0",
         "filesize": "^6.1.0",
         "fs-extra": "^9.0.1",
-        "googleapis": "^65.0.0",
+        "googleapis": "^66.0.0",
         "handlebars": "^4.7.6",
         "highlight.js": "^10.4.1",
         "http-proxy-middleware": "^1.0.6",
