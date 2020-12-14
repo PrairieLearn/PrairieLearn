@@ -51,16 +51,9 @@ echo "setting up python3..."
 cd /
 curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
 bash Miniforge3-Linux-x86_64.sh -b -p /miniforge3
-/miniforge3/bin/conda init
-source /root/.bashrc
-python3 -m pip install --no-cache-dir -r /python-requirements.txt
-
-echo "run .bashrc even for non-interactive shells..."
-cat > /root/.bash_profile <<EOF
-if [ -f ~/.bashrc ]; then
-	. ~/.bashrc
-fi
-EOF
+for f in /miniforge3/bin/* ; do [ ! -f /usr/local/bin/`basename $f` ] && ln -s $f /usr/local/bin/`basename $f` ; done # add python to path
+python3 -m pip install --no-cache-dir --no-warn-script-location -r /python-requirements.txt
+for f in /miniforge3/bin/* ; do [ ! -f /usr/local/bin/`basename $f` ] && ln -s $f /usr/local/bin/`basename $f` ; done # add new scripts to path
 
 echo "installing R packages..."
 chmod +x /r-requirements.R

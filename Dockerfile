@@ -23,6 +23,4 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && /PrairieLearn/docker/gen_ssl.sh
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
-
-# use -l to force a login shell to get the correct miniforge python path
-CMD ["/bin/bash", "-cl", "/PrairieLearn/docker/init.sh"]
+CMD /PrairieLearn/docker/init.sh
