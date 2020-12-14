@@ -1,12 +1,14 @@
-var path = require('path');
-var express = require('express');
-var router = express.Router();
+const path = require('path');
+const express = require('express');
+const router = express.Router();
 
+const error = require('@prairielearn/prairielib/error');
 const chunks = require('../../lib/chunks');
 const ERR = require('async-stacktrace');
 
 router.get('/*', function(req, res, next) {
     const filename = req.params[0];
+    if (!filename) return next(error.make(400, 'No filename provided within clientFilesAssessment directory', {locals: res.locals, body: req.body}));
     const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
     const chunk = {
         'type': 'clientFilesAssessment',
