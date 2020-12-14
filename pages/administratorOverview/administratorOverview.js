@@ -47,7 +47,6 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'courses_insert') {
-        if (!req.body.branch) { req.body.branch = config.cloneCourseDefaultBranch; }
         let params = [
             req.body.institution_id,
             req.body.short_name,
@@ -63,7 +62,6 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'courses_update_column') {
-        if (req.body.column_name === 'branch' && !req.body.value) { req.body.value = config.cloneCourseDefaultBranch; }
         let params = [
             req.body.course_id,
             req.body.column_name,
