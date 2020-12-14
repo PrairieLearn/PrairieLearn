@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 BEGIN
-    SELECT array_agg(u.uid) OVER (ORDER BY u.uid)
+    SELECT array_agg(u.uid ORDER BY u.uid)
     INTO uid_list
     FROM
         group_users AS gu
