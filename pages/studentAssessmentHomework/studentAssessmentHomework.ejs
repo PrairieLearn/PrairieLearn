@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -22,7 +22,7 @@
              </p>
             <% } else { %>
           <p class="text-center">
-             This is a group homework.
+             This is a group assessment.
           </p>
           <% if (typeof usedjoincode !== 'undefined') { %>
             <div class="alert alert-danger" role="alert">
@@ -39,67 +39,10 @@
               Failed to create the group. It is already taken. Please try another one.
             </div>
           <% } %>
-          <div class="container-fluid">
-            <div class="row">
-                <% if (permissions.student_authz_create) { %>
-                <div class="col-sm bg-light py-4 px-4 border">
-                  <form id="create-form" name="create-form" method="POST">
-                    <input type="text" class="form-control" name="groupName" placeholder="Group Name">
-                    <small id="groupNameHelp" class="form-text text-muted">*Alpha and numeric characters only</small>
-                    <div class="mt-4 d-flex justify-content-center">
-                      <div class="form-group mb-0">
-                        <input type="hidden" name="__action" value="createGroup">
-                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                        <button type="submit" class="btn btn-primary">Create a New Group</button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-                <% } %>
-                <% if (permissions.student_authz_join) { %>
-                <div class="col-sm bg-light py-4 px-4 border">
-                  <form id="joingroup-form" name="joingroup-form" method="POST">
-                    <input type="text" class="form-control" name="joincode" placeholder="Join Code">
-                    <div class="mt-4 d-flex justify-content-center">
-                      <div class="form-group mb-0">
-                        <input type="hidden" name="__action" value="joinGroup">
-                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                        <button type="submit" class="btn btn-primary">Join Group via Join Code</button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-                <% } %>
-            </div>
-          </div>
+          <%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
           <% } %>
           <% } else {%>
-            <div class="container-fluid">
-              <div class="row">
-                <% if (permissions.student_authz_join) { %>
-                  <div class="col-sm bg-light py-4 px-4 border">
-                    <p>This is a group homework. Use your join code to invite others to join the group.</p>
-                    <span class="badge badge-secondary">Group Name</span> 
-                    <span id="group-name"><%= groupinfo[0].name %></span><br>
-                    <span class="badge badge-secondary">join Code</span> 
-                    <span id='join-code'><%= joincode %></span><br>
-                  </div>
-                  <% } %>
-                  <div class="col-sm bg-light py-4 px-4 border">
-                    <% if (permissions.student_authz_leave) { %>
-                    <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-end">
-                      <input type="hidden" name="__action" value="leaveGroup">
-                      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                      <button id="leave-group" type="submit" class="btn btn-danger">Leave the Group</button>
-                    </form>
-                    <% } %>
-                    <span class="badge badge-secondary">Group Members</span> 
-                    <% groupinfo.forEach(function(row) {%>
-                      <li><%= row.uid %></li>
-                    <% }); %>
-                  </div>
-              </div>
-            </div>
+            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, groupinfo: groupinfo}); %>
             <% if (start) { %>
             <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
               <input type="hidden" name="__action" value="newInstance">

@@ -24,10 +24,10 @@ router.get('/', function(req, res, next) {
             res.locals.images = result.rows;
             res.locals.imageSyncNeeded = false;
 
-            if (config.externalGradingImageRepository) {
+            if (config.cacheImageRegistry) {
                 const ecr = new AWS.ECR();
                 async.each(res.locals.images, (image, callback) => {
-                    var repository = new dockerUtil.DockerName(image.external_grading_image);
+                    var repository = new dockerUtil.DockerName(image.image);
                     image.tag = repository.getTag() || 'latest (implied)';
                     // Default to get overwritten later
                     image.pushed_at = null;
@@ -42,9 +42,11 @@ router.get('/', function(req, res, next) {
                         } else if (ERR(err, callback)) return;
                         res.locals.ecrInfo = {};
                         data.imageDetails.forEach((imageDetails) => {
-                            imageDetails.imageTags.forEach((tag) => {
-                                res.locals.ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
-                            });
+                            if (imageDetails.imageTags) {
+                                imageDetails.imageTags.forEach((tag) => {
+                                    res.locals.ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
+                                });
+                            }
                         });
 
                         // Put info from ECR into image for EJS
@@ -83,7 +85,7 @@ router.get('/', function(req, res, next) {
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 });
-            } else { //  no config.externalGradingImageRepository
+            } else { //  no config.cacheImageRegistry
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             }
         });
@@ -108,7 +110,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.locals.images = result.rows;
             if ('single_image' in req.body) {
-                res.locals.images = _.filter(result.rows, ['external_grading_image', req.body.single_image]);
+                res.locals.images = _.filter(result.rows, ['image', req.body.single_image]);
             }
             syncHelpers.ecrUpdate(res.locals, function(err, job_sequence_id) {
                 if (ERR(err, next)) return;

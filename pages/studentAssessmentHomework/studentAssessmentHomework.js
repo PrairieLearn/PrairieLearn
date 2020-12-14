@@ -90,14 +90,15 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'joinGroup') {
         try{
-            const group_name = req.body.joincode.split('-')[0];
-            const join_code = req.body.joincode.split('-')[1].toUpperCase();
+            const group_name = req.body.joinCode.split('-')[0];
+            const join_code = req.body.joinCode.split('-')[1].toUpperCase();
             if (join_code.length != 4) {
                 throw 'invalid length of join code';
             }
             const params = {
                 assessment_id: res.locals.assessment.id,
                 user_id: res.locals.user.user_id,
+                authn_user_id: res.locals.authn_user.user_id,
                 group_name,
                 join_code,
             };
@@ -120,7 +121,7 @@ router.post('/', function(req, res, next) {
                         res.locals.permissions = result.rows[0];            
                         res.locals.groupsize = 0;
                         //display the error on frontend
-                        res.locals.usedjoincode = req.body.joincode;
+                        res.locals.usedjoincode = req.body.joinCode;
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 }
@@ -135,7 +136,7 @@ router.post('/', function(req, res, next) {
                 res.locals.permissions = result.rows[0];            
                 res.locals.groupsize = 0;
                 //display the error on frontend
-                res.locals.usedjoincode = req.body.joincode;
+                res.locals.usedjoincode = req.body.joinCode;
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         }
@@ -143,6 +144,7 @@ router.post('/', function(req, res, next) {
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
+            authn_user_id: res.locals.authn_user.user_id,
             group_name: req.body.groupName,
         };
         //alpha and numeric characters only
@@ -153,10 +155,7 @@ router.post('/', function(req, res, next) {
             //try to create a group
             sqldb.query(sql.create_group, params, function(err, _result) {
                 if (!err) {
-                    sqldb.query(sql.join_justcreated_group, params, function(err, _result) {
-                        if (ERR(err, next)) return;
-                        res.redirect(req.originalUrl);
-                    });
+                    res.redirect(req.originalUrl);
                 } else {
                     sqldb.query(sql.get_config_info, params, function(err, result) {
                         if (ERR(err, next)) return;
@@ -181,6 +180,7 @@ router.post('/', function(req, res, next) {
         var params2 = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
+            authn_user_id: res.locals.authn_user.user_id,
         };
         sqldb.query(sql.leave_group, params2, function(err, _result) {
             if (ERR(err, next)) return;

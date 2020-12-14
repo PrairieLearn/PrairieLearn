@@ -427,6 +427,20 @@ module.exports.courseDataHasErrors = function(courseData) {
 };
 
 /**
+ * @param {CourseData} courseData
+ * @returns {boolean}
+ */
+module.exports.courseDataHasErrorsOrWarnings = function(courseData) {
+    if (infofile.hasErrorsOrWarnings(courseData.course)) return true;
+    if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings)) return true;
+    if (Object.values(courseData.courseInstances).some(courseInstance => {
+        if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
+        return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
+    })) return true;
+    return false;
+};
+
+/**
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
@@ -895,8 +909,8 @@ async function validateAssessment(assessment, questions) {
     };
     (assessment.zones || []).forEach(zone => {
         (zone.questions || []).map(zoneQuestion => {
-            if (!allowRealTimeGrading && Array.isArray(zoneQuestion.points)) {
-                errors.push(`Cannot specify an array of points for a question if real-time grading is disabled`);
+            if (!allowRealTimeGrading && Array.isArray(zoneQuestion.points) && zoneQuestion.points.length > 1) {
+                errors.push(`Cannot specify an array of multiple point values for a question if real-time grading is disabled`);
             }
             // We'll normalize either single questions or alternative groups
             // to make validation easier
@@ -907,8 +921,8 @@ async function validateAssessment(assessment, questions) {
             } else if ('alternatives' in zoneQuestion) {
                 zoneQuestion.alternatives.forEach(alternative => checkAndRecordQid(alternative.id));
                 alternatives = zoneQuestion.alternatives.map(alternative => {
-                    if (!allowRealTimeGrading && Array.isArray(alternative.points)) {
-                        errors.push(`Cannot specify an array of points for an alternative if real-time grading is disabled`);
+                    if (!allowRealTimeGrading && Array.isArray(alternative.points) && alternative.points.length > 1) {
+                        errors.push(`Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`);
                     }
                     return {
                         points: alternative.points || zoneQuestion.points,

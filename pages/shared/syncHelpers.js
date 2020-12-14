@@ -147,26 +147,33 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err, result) {
                     if (err) {
                         job.fail(err);
-                    } else if (result.hadJsonErrors) {
-                        job.fail('One or more JSON files contained errors and were unable to be synced');
-                    } else {
-                        if (config.chunksGenerator) {
-                             util.callbackify(chunks.updateChunksForCourse)({
-                                 coursePath: locals.course.path,
-                                 courseId: locals.course.id,
-                                 courseData: result.courseData,
-                                 oldHash: startGitHash,
-                                 newHash: endGitHash,
-                             }, (err) => {
-                                 if (err) {
-                                     job.fail(err);
-                                     return;
-                                 }
-                                 job.succeed();
-                             });
+                        return;
+                    }
+
+                    const checkJsonErrors = () => {
+                        if (result.hadJsonErrors) {
+                            job.fail('One or more JSON files contained errors and were unable to be synced');
                         } else {
                             job.succeed();
                         }
+                    };
+
+                    if (config.chunksGenerator) {
+                        util.callbackify(chunks.updateChunksForCourse)({
+                            coursePath: locals.course.path,
+                            courseId: locals.course.id,
+                            courseData: result.courseData,
+                            oldHash: startGitHash,
+                            newHash: endGitHash,
+                        }, (err) => {
+                            if (err) {
+                                job.fail(err);
+                            } else {
+                                checkJsonErrors();
+                            }
+                        });
+                    } else {
+                        checkJsonErrors();
                     }
                 });
             });
@@ -267,8 +274,8 @@ module.exports.gitStatus = function(locals, callback) {
 };
 
 module.exports.ecrUpdate = function(locals, callback) {
-    if (!config.externalGradingImageRepository) {
-        return callback(new Error('externalGradingImageRepository not defined'));
+    if (!config.cacheImageRegistry) {
+        return callback(new Error('cacheImageRegistry not defined'));
     }
 
     dockerUtil.setupDockerAuth((err, auth) => {
@@ -292,7 +299,7 @@ module.exports.ecrUpdate = function(locals, callback) {
                 var jobOptions = {
                     course_id: locals.course ? locals.course.id : null,
                     type: 'image_sync',
-                    description: `Pull image from Docker Hub and push to PL registry: ${image.external_grading_image}`,
+                    description: `Pull image from Docker Hub and push to PL registry: ${image.image}`,
                     job_sequence_id,
                 };
 
@@ -309,9 +316,9 @@ module.exports.ecrUpdate = function(locals, callback) {
                     debug('successfully created job ', {job_sequence_id});
 
                     // continue executing here to launch the actual job
-                    dockerUtil.pullAndPushToECR(image.external_grading_image, auth, job, (err) => {
+                    dockerUtil.pullAndPushToECR(image.image, auth, job, (err) => {
                         if (err) {
-                            job.fail(error.newMessage(err, `Error syncing ${image.external_grading_image}`));
+                            job.fail(error.newMessage(err, `Error syncing ${image.image}`));
                             return callback(err);
                         }
 

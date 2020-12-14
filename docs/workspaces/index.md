@@ -1,6 +1,4 @@
-# Workspaces (Alpha release: NOT suitable for student use)
-
-**WARNING**: As of Aug 14, 2020, workspaces are available on the live PrairieLearn server at https://prairielearn.engr.illinois.edu/. However, workspaces are **NOT** yet suitable for student use due to limited backend capacity and unimplemented security checks. It is planned that workspaces will be ready for full student use by Aug 24, 2020 (the first day of classes in Fall semester).
+# Workspaces
 
 Workspaces allow students to work in persistent remote containers via in-browser frontends such as VS Code and JupyterLab. The remote containers are configured by instructors to provide custom, uniform environments per question. Workspace questions are integrated with the standard PrairieLearn autograding pipeline.
 
@@ -193,7 +191,7 @@ docker run -it --rm -p 3000:3000 \
   -v "$HOME/pl_ag_jobs:/jobs" \
   -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  --add-host=host.docker.internal:172.17.0.1 \ # this line is new vs MacOS
+  --add-host=host.docker.internal:172.17.0.1 `# this line is new vs MacOS` \
   prairielearn/prairielearn
 ```
 
@@ -217,6 +215,21 @@ docker run -it --rm -p 3000:3000 `
     * Right-click the Docker "whale" icon in the taskbar
     * Click "Settings"
     * Ensure `C:` is checked
+
+If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v "$PWD":/course \
+    -v $HOME/pl_ag_jobs:/jobs \
+    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    --add-host=host.docker.internal:172.17.0.1 \
+    prairielearn/prairielearn
+```
+
+Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
+
 
 #### Developing with workspaces
 

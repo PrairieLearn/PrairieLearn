@@ -76,6 +76,10 @@ In the endpoint list below, path components starting with a colon like
     - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions`
     - All submissions for a given assessment instance.
 
+* **Assessment Instance Event Log:**
+    - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/log`
+    - Retrieves the event log for a specific assessment.
+
 * **One submission:**
     - `/pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id`
     - One specific submission.
