@@ -4,12 +4,8 @@
      id="courseButton<%= column_name %><%= i %>" tabindex="0"
      data-toggle="popover" data-container="body"
      data-html="true" data-placement="auto" title="Change <%= label %>"
-     <% if (typeof placeholder === 'string') { %>
-      data-content="<%= include('courseUpdateColumnForm', {id: 'courseButton' + column_name + i, placeholder}) %>"
-     <% } %>
-     <% if (typeof placeholder === 'undefined') { %>
-      data-content="<%= include('courseUpdateColumnForm', {id: 'courseButton' + column_name + i}) %>"
-     <% } %>
+     data-content="<%= include('courseUpdateColumnForm',
+                   {id: 'courseButton' + column_name + i}) %>"
      data-trigger="manual" onclick="$(this).popover('show')">
     <i class="fa fa-edit" aria-hidden="true"></i>
   </button>
