@@ -118,6 +118,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
         };
 
         const syncStage1B5 = function() {
+            const branch = locals.course.branch || config.cloningDefaultBranch;
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
@@ -126,7 +127,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
                 type: 'reset_from_git',
                 description: 'Reset state to remote git repository',
                 command: 'git',
-                arguments: ['reset', '--hard', 'origin/' + locals.course.branch],
+                arguments: ['reset', '--hard', 'origin/' + branch],
                 working_directory: locals.course.path,
                 env: gitEnv,
                 on_success: syncStage2,
