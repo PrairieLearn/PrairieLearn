@@ -347,4 +347,4 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 ## Why can't I connect to PrairieLearn with Docker Toolbox?
 
-Docker Toolbox by default doesn't bind to `localhost`, meaning you aren't able to access a local running copy of PrairieLearn at `localhost:3000` or `127.0.0.1:3000`.  To get around this, you can first find the ip that the Docker VM is running at by running `docker-machine ip default`.  This will return an IP address of the form `xxx.xxx.xxx.xxx`, you can then access PrairieLearn by pointing your browser to that IP address: `xxx.xxx.xxx.xxx:3000`.
+Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
