@@ -118,7 +118,7 @@ module.exports.pullAndUpdate = function(locals, callback) {
         };
 
         const syncStage1B5 = function() {
-            const branch = 'origin/' + (locals.course.branch || config.courseCloneBranchDefault);
+            const branch = 'origin/' + locals.course.branch;
             const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
