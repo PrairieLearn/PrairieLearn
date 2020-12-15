@@ -1,0 +1,112 @@
+<style>
+ img {
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+     margin-top: 15px;
+     margin-bottom: 15px;
+ }
+ p.content {
+     margin-top: 2rem;
+     margin-bottom: 2rem;
+ }
+ p.content-last {
+     margin-top: 2rem;
+ }
+ p.content-first {
+     margin-bottom: 2rem;
+ }
+ .code-block {
+     width: 100%;
+     margin-left: auto;
+     margin-right: auto;
+     overflow: hidden;
+     margin-bottom: 1rem;
+     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+     background: #f0f0f0;
+     padding: 1em;
+     padding-bottom: 0em;
+ }
+ .code-block div {
+     padding: 0.5rem;
+     display: block;
+     margin-bottom: -1em;
+     line-height: 125%;
+ }
+ img.modal-image {
+     cursor: pointer;
+ }
+</style>
+
+<p>
+  The <a href="https://prairielearn.readthedocs.io/en/latest/question/#how-questions-are-rendered">"new"
+  HTML renderer</a> is now used by default for all questions in
+  PrairieLearn. This new renderer is much more robust and can
+  correctly process nested elements, such as a <tt>pl-figure</tt>
+  inside a <tt>pl-multiple-choice</tt>.
+</p>
+
+<h4>Is my course already using the new renderer?</h4>
+
+<p>
+  The new renderer has been available since August 2018 and many
+  courses are already using it. If you
+  have <tt>"useNewQuestionRenderer": true</tt> in
+  your <tt>infoCourse.json</tt> then you are already using the new
+  renderer. If you don't see a line like this then you were using the
+  old legacy renderer, but now you are using the new renderer.
+</p>
+
+<h4>What changes to my questions are needed for the new renderer?</h4>
+
+<p>
+  Although it brings many benefits, the new renderer is stricter about
+  the HTML format in <tt>question.html</tt>. In particular, it's now
+  important to use explicit end tags for all PrairieLearn
+  elements. For example, rather than doing this:
+</p>
+
+<div class="code-block rounded">
+  <pre>
+&lt;pl-number-input answers-name="ans_rtol" label="$x =$" /&gt;    &lt;!-- OLD STYLE - DO NOT USE --&gt;</pre>
+</div>
+
+<p>
+  you should instead change to this (note the explicit <tt>&lt;/pl-number-input&gt;</tt> at the end):
+</p>
+
+<div class="code-block rounded">
+  <pre>
+&lt;pl-number-input answers-name="ans_rtol" label="$x =$" &gt;&lt;/pl-number-input&gt;    &lt;!-- NEW STYLE - THIS IS THE RIGHT WAY TO DO IT --&gt;</pre>
+</div>
+
+<h4>Can I keep using the old renderer?</h4>
+
+<p>
+  If you can't quickly update your questions to use the new renderer then you can temporarily revert back to using the old renderer for your course. This is only a temporary fix, however, because in the future the old renderer will be removed from PrairieLearn. To switch back to the old renderer, add <tt>"options"</tt> to your <tt>infoCourse.json</tt> file like this:
+</p>
+
+<div class="code-block rounded">
+  <pre>
+{
+    "uuid": "...",
+    "name": "...",
+    "title": "...",
+    "options": {
+        "useNewQuestionRenderer": false
+    },
+}</pre>
+</div>
+
+<h4>Where can I get more information?</h4>
+
+<p>
+  See
+  the <a href="https://prairielearn.readthedocs.io/en/latest/question/#how-questions-are-rendered">question
+  rendering documentation</a> for more details.
+</p>
+
+<hr class="mt-5">
+<p class="text-right small">
+    Want to help make PrairieLearn better? It's open source and <a href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
+</p>

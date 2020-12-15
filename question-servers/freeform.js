@@ -607,7 +607,7 @@ module.exports = {
             }
 
             // Switch based on which renderer is enabled for this course
-            const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
+            const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', true);
             let processFunction;
             let args;
             if (useNewQuestionRenderer) {
