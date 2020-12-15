@@ -80,7 +80,14 @@ module.exports.initExpress = function() {
     app.use(function(req, res, next) {config.setLocals(res.locals); next();});
 
     // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
-    app.use(function(req, res, next) {res.locals.userAgent = Bowser.parse(req.headers['user-agent']); next();});
+    app.use(function(req, res, next) {
+        if (req.headers['user-agent']) {
+            res.locals.userAgent = Bowser.parse(req.headers['user-agent']);
+        } else {
+            res.locals.userAgent = null;
+        }
+        next();
+    });
 
     // special parsing of file upload paths -- this is inelegant having it
     // separate from the route handlers but it seems to be necessary
