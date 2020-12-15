@@ -1,6 +1,11 @@
 <script>
 
+ // default to CHTML because of https://github.com/PrairieLearn/PrairieLearn/pull/3520
  var outputComponent = 'output/chtml';
+ <% if (userAgent.engine.name == 'WebKit') { %>
+     // workaround for https://github.com/PrairieLearn/PrairieLearn/issues/3540
+     outputComponent = 'output/svg';
+ <% } %>
  <% if (typeof questionHtml != 'undefined' && questionHtml.includes('pl-requires-svg-mathjax')) { %>
      outputComponent = 'output/svg';
  <% } %>
