@@ -101,7 +101,7 @@
                                 3: {
                                     <% all_tags.forEach(function(tag) { %>
                                     "<%= tag.name %>": function(e, n, f, i, $r, c, data) {
-                                        return new RegExp('\\b<%= tag.name %>\\b').test(e);
+                                        return /\b<%= escapeRegExp(tag.name) %>\b/.test(e);
                                     },
                                     <% }); %>
                                 },
@@ -109,7 +109,7 @@
                                 5: {
                                     <% all_assessments.forEach(function(assessment) { %>
                                     "<%= assessment.label %>": function(e, n, f, i, $r, c, data) {
-                                        return new RegExp('\\b<%= assessment.label %>\\b').test(e);
+                                        return /\b<%= escapeRegExp(assessment.label) %>\b/.test(e);
                                     },
                                     <% }); %>
                                 },
