@@ -77,7 +77,7 @@ ORDER BY z.number, z.id, aq.number;
 UPDATE variants AS v
 SET
     broken = true,
-    open = true
+    open = false
 WHERE id IN (
     SELECT v.id
     FROM
