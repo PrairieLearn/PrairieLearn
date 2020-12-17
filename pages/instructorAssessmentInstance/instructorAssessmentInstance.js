@@ -157,7 +157,7 @@ router.post('/', (req, res, next) => {
             });
         });
     } else if (req.body.__action == 'break_variant') {
-        var params = {"instance_question_id": req.body.__instance_question_id};
+        var params = {'instance_question_id': req.body.__instance_question_id};
         sqlDb.query(sql.mark_variant_broken, params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
