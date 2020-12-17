@@ -6,6 +6,63 @@ This page lists sample assessment configurations for remote exams, where student
 *See the [Access control](accessControl.md) page for details on `allowAccess` rules.*
 
 
+## Exams in the Computer-Based Testing Facility (CBTF)
+
+If you are using the CBTF for remote proctoring then the access control should look like:
+
+```json
+"allowAccess": [
+    {
+        "role": "TA",
+        "credit": 100
+    },
+    {
+        "mode": "Exam",
+        "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
+        "credit": 100
+    }
+],
+```
+
+Some notes about this configuration:
+
+* The `examUuid` parameter should be copied from the CBTF Scheduler website for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
+* Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by the CBTF on a per-student basis, taking into account conflict exams and disability accommodations.
+
+## CBTF exams with a few students outside the CBTF
+
+Sometimes exams in the CBTF ([see above](#exams-in-the-computer-based-testing-facility-cbtf)) need to have a few students take the exam without CBTF proctoring, for example if they have missed the exam and need to take it later without proctoring. The access control for this should look like:
+
+```json
+"allowAccess": [
+    {
+        "role": "TA",
+        "credit": 100
+    },
+    {
+        "mode": "Exam",
+        "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
+        "credit": 100
+    },
+    {
+        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "mode": "Public",
+        "credit": 100,
+        "startDate": "2020-04-20T11:00:00",
+        "endDate": "2020-04-20T12:40:00",
+        "timeLimitMin": 90,
+        "showClosedAssessment": false
+    }
+],
+```
+
+Some notes about this configuration:
+
+* See the [next section](#synchronous-timed-exams) for more details on the extra rule for the unproctored students.
+* The additional access rules for specific students can be added at any time, including after other students already completed the CBTF exam. This is useful to set up accommodations for students that missed the exam.
+* The order of the extra access rules is not important.
+
+
 ## Synchronous, timed exams
 
 **We recommend exams to be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit. 
