@@ -94,3 +94,19 @@ WHERE
     AND gr.deleted_at IS NULL
 GROUP BY
     gr.id;
+
+-- BLOCK mark_variant_broken
+UPDATE variants AS v
+SET
+    broken = true,
+    open = false
+WHERE id IN (
+    SELECT v.id
+    FROM
+        variants v
+        JOIN instance_questions iq ON v.instance_question_id = iq.id
+    WHERE
+        v.open = true
+        AND v.broken = false
+        AND iq.id = $instance_question_id
+);

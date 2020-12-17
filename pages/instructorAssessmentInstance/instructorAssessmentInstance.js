@@ -156,6 +156,12 @@ router.post('/', (req, res, next) => {
                 res.redirect(req.originalUrl);
             });
         });
+    } else if (req.body.__action == 'break_variant') {
+        var params = {"instance_question_id": req.body.__instance_question_id};
+        sqlDb.query(sql.mark_variant_broken, params, (err, _result) => {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
