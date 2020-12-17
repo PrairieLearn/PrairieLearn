@@ -1,9 +1,0 @@
-{
-    "description": "Hard reset a question that may be broken",
-    "params": [
-        {
-            "name": "assessment_question_id",
-            "description": "ID of assessment question to invalidate variants of"
-        }
-    ]
-}
