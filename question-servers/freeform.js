@@ -81,6 +81,13 @@ module.exports = {
                     return callback(null, files);
                 });
             },
+            async (files) => {
+                /* Filter out any non-directories */
+                return async.filter(files, async (file) => {
+                    const stats = await fs.promises.lstat(path.join(sourceDir, file));
+                    return stats.isDirectory();
+                });
+            },
             (elementNames, callback) => {
                 const elements = {};
                 async.each(elementNames, (elementName, callback) => {
@@ -191,6 +198,10 @@ module.exports = {
                 if (err.code === 'ENOENT') {
                     /* Not an extension directory, skip it. */
                     logger.verbose(`${infoPath} not found, skipping...`);
+                    return;
+                } else if (err.code === 'ENOTDIR') {
+                    /* Random file, skip it as well. */
+                    logger.verbose(`Found stray file ${infoPath}, skipping...`);
                     return;
                 } else {
                     throw err;
