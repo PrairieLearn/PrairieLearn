@@ -153,7 +153,8 @@ class CGrader:
         out = self.run_command(command if args is None else ([command] + args),
                                input, sandboxed=True, timeout=timeout)
         outcmp = out
-        if not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
+        if not out: out = '(NO OUTPUT)'
+        elif not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
 
         if ignore_case:
             outcmp = outcmp.lower()
