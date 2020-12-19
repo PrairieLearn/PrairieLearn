@@ -10,6 +10,7 @@ CREATE OR REPLACE FUNCTION
         IN display_timezone text,
         IN path text,
         IN repository text,
+        IN branch text,
         IN authn_user_id bigint,
         OUT new_row pl_courses
     )
@@ -17,9 +18,9 @@ AS $$
 BEGIN
     BEGIN
         INSERT INTO pl_courses AS c
-            (short_name, title, display_timezone, path, repository, institution_id)
+            (short_name, title, display_timezone, path, repository, branch, institution_id)
         VALUES
-            (short_name, title, display_timezone, path, repository, institution_id)
+            (short_name, title, display_timezone, path, repository, branch, institution_id)
         RETURNING
             c.* INTO new_row;
     EXCEPTION
