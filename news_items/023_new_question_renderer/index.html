@@ -63,12 +63,19 @@
   Although it brings many benefits, the new renderer is stricter about
   the HTML format in <tt>question.html</tt>. In particular, it's now
   important to use explicit end tags for all PrairieLearn
-  elements. For example, rather than doing this:
+  elements. For example:
 </p>
 
 <div class="code-block rounded">
   <pre>
-&lt;pl-number-input answers-name="ans_rtol" label="$x =$" /&gt;    &lt;!-- OLD STYLE - DO NOT USE --&gt;</pre>
+<span style="color:red">&lt;pl-number-input answers-name="x" label="$x=$" /&gt;</span>                     <<< OLD STYLE, DO NOT USE
+                                               ^
+                                       Remove this slash
+
+
+                                               Add this closing tag
+                                                vvvvvvvvvvvvvvvvvv
+<span style="color:green">&lt;pl-number-input answers-name="x" label="$x=$" &gt;&lt;/pl-number-input&gt;</span>    <<< NEW STYLE, THIS IS THE RIGHT WAY TO DO IT</pre>
 </div>
 
 <p>
@@ -77,7 +84,6 @@
 
 <div class="code-block rounded">
   <pre>
-&lt;pl-number-input answers-name="ans_rtol" label="$x =$" &gt;&lt;/pl-number-input&gt;    &lt;!-- NEW STYLE - THIS IS THE RIGHT WAY TO DO IT --&gt;</pre>
 </div>
 
 <h4>Can I keep using the old renderer?</h4>
@@ -92,9 +98,9 @@
     "uuid": "...",
     "name": "...",
     "title": "...",
-    "options": {
-        "useNewQuestionRenderer": false
-    },
+<span style="color:green">    "options": {</span>                               <<< ADD
+<span style="color:green">        "useNewQuestionRenderer": false</span>        <<< THESE
+<span style="color:green">    },</span>                                         <<< LINES
 }</pre>
 </div>
 
