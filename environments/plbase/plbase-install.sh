@@ -3,11 +3,11 @@
 yum update -y
 
 amazon-linux-extras install -y \
+    epel \
     vim \
     docker \
     postgresql11 \
-    redis4.0 \
-    R3.4
+    redis4.0
 
 yum -y install \
     postgresql-server \
@@ -25,6 +25,7 @@ yum -y install \
     libxml2-devel         `# needed for xml2 (for R)` \
     libpng-devel          `# needed for png (for R)` \
     libjpeg-turbo-devel   `# needed for jpeg (for R)` \
+    R \
     ImageMagick           `# for PrairieDraw label images` \
     texlive               `# for PrairieDraw label images` \
     git \
