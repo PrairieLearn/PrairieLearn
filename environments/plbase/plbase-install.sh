@@ -12,7 +12,7 @@ amazon-linux-extras install -y \
 yum -y install \
     postgresql-server \
     man \
-    emacs \
+    emacs-nox \
     gcc \
     make \
     openssl \
