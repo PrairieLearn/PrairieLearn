@@ -1,5 +1,5 @@
 chevron==0.13.1
-flake8==3.8.3
+flake8==3.8.4
 flake8-quotes==3.2.0
 lxml==4.6.2
 matplotlib==3.3.2
