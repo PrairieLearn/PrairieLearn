@@ -340,6 +340,10 @@ def grade(element_html, data):
     final_score = 0
     feedback = ''
 
+    if len(student_answer) == 0:
+    	data['format_errors'][answer_name] = 'Your submitted answer was empty.'
+    	return
+
     if permutation_mode == 'any':
         intersection = list(set(student_answer) & set(true_answer))
         final_score = float(len(intersection) / len(true_answer))
