@@ -265,6 +265,12 @@ To disable partial credit for a question, set `"partialCredit": false` in the `i
 
 In general, it is strongly recommended to leave partial credit enabled for all questions.
 
+## Preventing questions from locking when full credit is achieved
+
+Currently, PrairieLearn will lock a question and prevent students from submitting revised answers as soon as they score 100% on the problem. This may have negative side effects for questions where students would like to continue to refine their answer (for example, by adding additional comments to their code for staff reviewers to see). A workaround for this is to enable partial credit and only award at most 99% in your grader configuration for the question. You can explain to students that the last 1% of the grade will come from staff reviews for integrity.
+
+In the future, PrairieLearn may add an option to prevent this lock from occurring even with a 100% grade. Refer to this issue: https://github.com/PrairieLearn/PrairieLearn/issues/3191
+
 ## Using Markdown in questions
 
 HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:

@@ -100,7 +100,7 @@ router.get('/:filename', function(req, res, next) {
         ['Points', 'points'],
         ['Max points', 'max_points'],
         ['Duration (min)', 'duration_mins'],
-        ['Hightest score', 'highest_score'],
+        ['Highest score', 'highest_score'],
     ];
     let scoresColumns = studentColumn.concat(scoreColumn);
     let pointsColumns = studentColumn.concat(pointColumn);
@@ -195,6 +195,7 @@ router.get('/:filename', function(req, res, next) {
             const columns = identityColumn.concat([
                 ['qid', 'qid'],
                 ['old_score_perc', 'old_score_perc'],
+                ['old_feedback', 'old_feedback'],
                 ['submission_id', 'submission_id'],
                 ['params', 'params'],
                 ['true_answer', 'true_answer'],
