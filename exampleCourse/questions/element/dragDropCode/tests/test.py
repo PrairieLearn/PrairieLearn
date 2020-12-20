@@ -11,5 +11,7 @@ class Test(PLTestCase):
         user_val = Feedback.call_user(self.st.return_even)
         if user_val % 2 == 0:
             Feedback.set_score(1)
+            Feedback.add_feedback('Your answer is correct.')
         else:
             Feedback.set_score(0)
+            Feedback.add_feedback('The return value is not an even number.')

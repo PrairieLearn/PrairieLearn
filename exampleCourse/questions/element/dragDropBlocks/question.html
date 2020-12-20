@@ -1,9 +1,31 @@
 
+<pl-question-panel>
 <p>
 Drag all the prime numbers below to the yellow box. Note that the ordering of the answer does not matter, any permutation of prime numbers are accepted. Remember 1 is not a prime number.
 </p>
+</pl-question-panel>
 
-<pl-order-blocks answers-name="prime-numbers-unordered" shuffle-options="true" permutation-mode="any">
+<pl-order-blocks answers-name="prime-numbers-unordered" shuffle-options="true" permutation-mode="any" >
+  <pl-answer correct="false">1</pl-answer>
+  <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="true">3</pl-answer>
+  <pl-answer correct="false">4</pl-answer>
+  <pl-answer correct="true">5</pl-answer>
+  <pl-answer correct="false">6</pl-answer>
+  <pl-answer correct="true">7</pl-answer>
+  <pl-answer correct="false">8</pl-answer>
+  <pl-answer correct="false">9</pl-answer>
+  <pl-answer correct="false">10</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+<p>
+  Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>. Note that the ordering of the answer matters in this question.
+</p>
+</pl-question-panel>
+<pl-order-blocks answers-name="prime-numbers-ordered" shuffle-options="true" permutation-mode="html-order">
   <pl-answer correct="false">1</pl-answer>
   <pl-answer correct="true">2</pl-answer>
   <pl-answer correct="true">3</pl-answer>
@@ -13,30 +35,29 @@ Drag all the prime numbers below to the yellow box. Note that the ordering of th
   <pl-answer correct="true">7</pl-answer>
 </pl-order-blocks>
 
+<hr>
+
+<pl-question-panel>
 <p>
-  Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>. Note that the ordering of the answer matters in this question.
-</p>
-
-<pl-order-blocks answers-name="prime-numbers-ordered" shuffle-options="true" permutation-mode="html-order">
-  <pl-answer correct="false">1</pl-answer>
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="true">3</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
-  <pl-answer correct="false">6</pl-answer>
-  <pl-answer correct="true">7</pl-answer>
-</pl-order-blocks>  
-
+  Implement the Python function <code>my_sum</code>, which takes 2 numbers, <code>first</code> and <code>second</code>,
+  and return their sum. Note that the ordering of instantiation, computation, and returning of the value must be correct.
+  Remember to indent your code! </p>
 <p>
-  Implement the following Python function, which takes 2 numbers, <code>first</code> and <code>second</code>, and return their sum. Note the ordering of instantiation, computation, and returning of the value must be correct. Remember to indent your code!
+  Note that this part of the question
+  uses the attribute <code>pl-hide-in-panel answer="true"</code> to hide the correct answer.
 </p>
+</pl-question-panel>
 
-<pl-order-blocks answers-name="python-ordered" shuffle-options="false" permutation-mode="ranking">
-  <pl-info>def sum(first, second):</pl-info>
-  <pl-answer correct="true" ranking="1" indent="1">sum = 0</pl-answer>
-  <pl-answer correct="true" ranking="2" indent="1">sum += first</pl-answer>
-  <pl-answer correct="true" ranking="2" indent="1">sum += second</pl-answer>
-  <pl-answer correct="true" ranking="3" indent="1">return sum</pl-answer>
+<pl-hide-in-panel answer="true">
+<pl-order-blocks answers-name="python-ordered" shuffle-options="true"  permutation-mode="ranking">
+  <pl-answer correct="true" ranking="1" indent="1">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" ranking="2" indent="2">sum = 0</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="2">sum += first</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="2">sum += second</pl-answer>
+  <pl-answer correct="true" ranking="4" indent="2">return sum</pl-answer>
+  <pl-answer correct="false">sum + first</pl-answer>
+  <pl-answer correct="false">sum + second</pl-answer>
   <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
 
-</pl-order-blocks> 
+</pl-order-blocks>
+</pl-hide-in-panel>

@@ -5,12 +5,14 @@
 
 </pl-question-panel>
 
-<pl-order-blocks answers-name="coding" shuffle-options="false" external-grader="true" file-name="user_code.py" leading-code="tests/leading_code.py">
+<pl-hide-in-panel answer="true">
+<pl-order-blocks answers-name="coding" external-grader="true" file-name="user_code.py" leading-code="tests/leading_code.py">
   <pl-answer>def return_even():</pl-answer>
   <pl-answer>return 1</pl-answer>
   <pl-answer>return 2</pl-answer>
   <pl-answer>return 4</pl-answer>
 </pl-order-blocks>
+</pl-hide-in-panel>
 
 <pl-submission-panel>
   <pl-external-grader-results></pl-external-grader-results>

@@ -369,8 +369,8 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
 `shuffle-options` | boolean | false | Specify whether the ordering of options on the left-hand-side should be shuffled. If false, the ordering in the HTML file will be used.
-`max-incorrect` | integer | 2 | Sets the maximum number of incorrect answers (`correct=false` html attribute) to display.
-`min-incorrect` | integer | 1 | Sets the minimum number of incorrect answers (`correct=false` html attribute) to display.
+`max-incorrect` | integer | - | Sets the maximum number of incorrect answers (`correct=false` html attribute) to display.
+`min-incorrect` | integer | - | Sets the minimum number of incorrect answers (`correct=false` html attribute) to display.
 `permutation-mode` | string | "html-order" | One of the following: `any`, `html-order`, `ranking`. See details below for description.
 `check-indentation` | boolean | false | Whether indentation is checked while marking.
 `external-grader` | boolean | false | Whether an external grader is used to determine the correct answers. (*)
@@ -394,11 +394,14 @@ Attribute | Type | Default | Description
 
 #### Details
 
+If the attributes `max-incorrect` and  `min-incorrect` are not used, all the incorrect answers are displayed.
+
 Three different `permutation-mode` are available:
 
 * `any`: in this mode, if `n` is the total number of answers, each answer dragged and submitted by the student is given `1/n` points, and the ordering of the answer tile does not matter. That is, any permutation of the answers are accepted.
 * `html-order`: in this mode, the ordering of the answer tiles submitted by the student must match the ordering of the `pl-answer` options within the HTML file. There is no partial credit for this option.
 * `ranking`: in this mode, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer tile *X* should have a `ranking` integer that is less than or equal to the answer tile immediately below *X*. That is, the sequence of `ranking` integers of all the answer tiles should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer.
+
 
 #### Example implementations
 

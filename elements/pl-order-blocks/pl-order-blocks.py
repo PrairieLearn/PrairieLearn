@@ -87,16 +87,29 @@ def prepare(element_html, data):
         # sort correct answers by indices specified in corect_answers_ranking
         correct_answers = [x for _, x in sorted(zip(correct_answers_ranking, correct_answers))]
 
-    defaultMinIncorrect = 1
-    defaultMaxIncorrect = len(incorrect_answers)
 
-    minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', defaultMinIncorrect)
-    maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', defaultMaxIncorrect)
+    minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', None)
+    maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', None)
 
-    incorrect_answers_count = random.randint(minIncorrect, maxIncorrect)
-    if incorrect_answers_count > len(incorrect_answers):
-        incorrect_answers_count = len(incorrect_answers)
-    mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
+    if ( (minIncorrect is None) & (maxIncorrect is None) ):
+        mcq_options = correct_answers + incorrect_answers
+    else:
+        # Setting default for min-correct and checking for correct interval
+        if minIncorrect is None:
+            minIncorrect = 1
+        else:
+            if minIncorrect > len(incorrect_answers):
+                raise Exception('min-incorrect must be smaller than the number of given distractors.')
+        # Setting default for max-correct and checking for correct interval
+        if maxIncorrect is None:
+            maxIncorrect = len(incorrect_answers)
+        else:
+            if maxIncorrect > len(incorrect_answers):
+                raise Exception('max-incorrect must be smaller than the number of given distractors.')
+        if minIncorrect > maxIncorrect:
+            raise Exception('min-incorrect must be smaller than max-incorrect.')
+        incorrect_answers_count = random.randint(minIncorrect, maxIncorrect)
+        mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
 
     is_shuffle = pl.get_boolean_attrib(element, 'shuffle-options', False)  # default to FALSE, no shuffling unless otherwise specified
 
