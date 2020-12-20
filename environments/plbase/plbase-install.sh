@@ -56,4 +56,4 @@ chmod +x /r-requirements.R
 mkdir -p /usr/share/doc/R-3.4.3/html/
 touch /usr/share/doc/R-3.4.3/html/packages.html
 touch /usr/share/doc/R-3.4.3/html/R.css
-#su root -c "Rscript /r-requirements.R"
+su root -c "Rscript /r-requirements.R"
