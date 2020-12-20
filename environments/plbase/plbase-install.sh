@@ -3,7 +3,6 @@
 yum update -y
 
 amazon-linux-extras install -y \
-    epel \
     vim \
     docker \
     postgresql11 \
@@ -19,13 +18,6 @@ yum -y install \
     dos2unix \
     tmux \
     tar \
-    readline-devel        `# needed for rpy2` \
-    libcurl-devel         `# needed for rvest (for R)` \
-    openssl-devel         `# needed for rvest (for R)` \
-    libxml2-devel         `# needed for xml2 (for R)` \
-    libpng-devel          `# needed for png (for R)` \
-    libjpeg-turbo-devel   `# needed for jpeg (for R)` \
-    R \
     ImageMagick           `# for PrairieDraw label images` \
     texlive               `# for PrairieDraw label images` \
     git \
@@ -48,17 +40,20 @@ echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
 su postgres -c "initdb -D /var/postgres"
 
-echo "setting up python3..."
+echo "setting up conda..."
 cd /
 curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
-bash Miniforge3-Linux-x86_64.sh -b -p /miniforge3
-for f in /miniforge3/bin/* ; do [ ! -f /usr/local/bin/`basename $f` ] && ln -s $f /usr/local/bin/`basename $f` ; done # add python to path
+bash Miniforge3-Linux-x86_64.sh -b -p /usr/local -f
+
+echo "installing R..."
+conda install r-essentials
+
+echo "installing Python packages..."
 python3 -m pip install --no-cache-dir --no-warn-script-location -r /python-requirements.txt
-for f in /miniforge3/bin/* ; do [ ! -f /usr/local/bin/`basename $f` ] && ln -s $f /usr/local/bin/`basename $f` ; done # add new scripts to path
 
 echo "installing R packages..."
 chmod +x /r-requirements.R
 mkdir -p /usr/share/doc/R-3.4.3/html/
 touch /usr/share/doc/R-3.4.3/html/packages.html
 touch /usr/share/doc/R-3.4.3/html/R.css
-su root -c "Rscript /r-requirements.R"
+#su root -c "Rscript /r-requirements.R"
