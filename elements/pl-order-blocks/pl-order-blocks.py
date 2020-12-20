@@ -308,10 +308,12 @@ def parse(element_html, data):
         if file_name is not None:
             if leading_code is not None and trailing_code is not None:
                 file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, trailnewx_code)
-            if leading_code is None and trailing_code is not None:
+            elif leading_code is None and trailing_code is not None:
                 file_data = get_all_answer(student_answer, student_answer_indent, '', trailnewx_code)
-            if leading_code is not None and trailing_code is None:
+            elif leading_code is not None and trailing_code is None:
                 file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, '')
+            else:
+                file_data = get_all_answer(student_answer, student_answer_indent, '', '')
             if len(file_data) == 0:
                 data['format_errors']['_files'] = 'The submitted file was empty.'
             else:
