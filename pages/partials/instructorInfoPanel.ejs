@@ -70,12 +70,12 @@
   <% } %>
 
   <% let instructorUrlPrefix = urlPrefix;
-     if (!variant.assessment && typeof assessment !== "undefined") {
+     if (variant && !variant.assessment && typeof assessment !== "undefined") {
         variant.assessment = assessment;
         variant.assessment_instance = assessment_instance;
         instructorUrlPrefix = urlPrefix + '/instructor';
      }
-     if (variant.assessment) { %>
+     if (variant && variant.assessment) { %>
       <hr>
       <h5 class="card-title">Assessment Instance:</h5>
       <div class="d-flex flex-wrap">
