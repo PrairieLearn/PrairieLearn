@@ -100,3 +100,14 @@ data['params']['matrix'] = pl.to_json(mat)
         <pl-graph params-name-matrix="matrix2"></pl-graph>
     </div>
 </div>
+
+<div class="card my-2" >
+    <div class="card-body">
+        <pl-question-panel>
+            <p> The <code class="user-output">pl-graph</code> element has the ability to be extended on a course level to create graphs based on custom inputs.  This course extension located in <code class="user-output">elementExtensions/pl-graph/edge-inc-matrix</code> adds the capability of rendering edge-incidence matrices as graphs. </p>
+            <pl-matrix-latex params-name="edge-inc-mat"></pl-matrix-latex>
+            <pl-graph params-name-matrix="edge-inc-mat" params-type="edge-inc-matrix"></pl-graph>
+            <p> For more information on how to create extensions, check the <a href="">extension documentation</a> and <a href="">graph element documentation</a>. </p>
+        </pl-question-panel>
+    </div>
+</div>
