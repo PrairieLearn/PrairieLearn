@@ -29,6 +29,8 @@ DECLARE
     variant_id bigint;
     question_workspace_image text;
     workspace_id bigint;
+    assessment jsonb;
+    assessment_instance jsonb;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -114,7 +116,8 @@ BEGIN
     RETURNING id
     INTO variant_id;
 
-    SELECT variants_select(variant_id)
-    INTO variant;
+    SELECT v.variant
+    INTO variant
+    FROM variants_select(variant_id) v;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

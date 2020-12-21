@@ -39,20 +39,23 @@ BEGIN
         q.id = variant_with_id.question_id;
 
     IF variant_with_id.instance_question_id IS NOT NULL THEN
-       SELECT ai.*
-       INTO assessment_instance_record
-       FROM instance_questions AS iq
-       JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-       WHERE iq.id = variant_with_id.instance_question_id;
+        SELECT ai.*
+        INTO assessment_instance_record
+        FROM instance_questions AS iq
+        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        WHERE iq.id = variant_with_id.instance_question_id;
 
-       SELECT a.*
-       INTO assessment_record
-       FROM assessments AS a
-       WHERE a.id = assessment_instance_record.assessment_id;
+        SELECT a.*
+        INTO assessment_record
+        FROM assessments AS a
+        WHERE a.id = assessment_instance_record.assessment_id;
 
-       assessment := to_jsonb(assessment_record.*);
-       assessment_instance := jsonb_set(to_jsonb(assessment_instance_record.*), '{formatted_date}',
-                                        to_jsonb(format_date_full_compact(assessment_instance_record.date, COALESCE(course_instance_display_timezone, course_display_timezone))));
+        assessment := to_jsonb(assessment_record.*);
+        assessment_instance := jsonb_set(to_jsonb(assessment_instance_record.*), '{formatted_date}',
+                                         to_jsonb(format_date_full_compact(assessment_instance_record.date, COALESCE(course_instance_display_timezone, course_display_timezone))));
+    ELSE
+        assessment := to_jsonb(NULL::record);
+        assessment_instance := to_jsonb(NULL::record);
     END IF;
 
     variant := jsonb_set(to_jsonb(variant_with_id.*), '{formatted_date}',
