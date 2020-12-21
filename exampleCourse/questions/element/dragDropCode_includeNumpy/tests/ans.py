@@ -1,2 +1,4 @@
-def return_even():
-    return 2
+import numpy as np
+
+def my_dot_product(a,b):
+    return np.inner(a,b)
