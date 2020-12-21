@@ -2,9 +2,7 @@ DROP FUNCTION IF EXISTS variants_select(bigint);
 CREATE OR REPLACE FUNCTION
     variants_select (
         IN variant_id bigint,
-        OUT variant jsonb,
-        OUT assessment jsonb,
-        OUT assessment_instance jsonb
+        OUT variant jsonb
     )
 AS $$
 DECLARE
@@ -14,7 +12,7 @@ DECLARE
     assessment_record record;
     assessment_instance_record record;
 BEGIN
-    SELECT v.*
+    SELECT v.*, NULL::jsonb AS assessment, NULL::jsonb AS assessment_instance
     INTO variant_with_id
     FROM variants as v
     WHERE v.id = variants_select.variant_id;
@@ -50,12 +48,9 @@ BEGIN
         FROM assessments AS a
         WHERE a.id = assessment_instance_record.assessment_id;
 
-        assessment := to_jsonb(assessment_record.*);
-        assessment_instance := jsonb_set(to_jsonb(assessment_instance_record.*), '{formatted_date}',
+        variant_with_id.assessment := to_jsonb(assessment_record.*);
+        variant_with_id.assessment_instance := jsonb_set(to_jsonb(assessment_instance_record.*), '{formatted_date}',
                                          to_jsonb(format_date_full_compact(assessment_instance_record.date, COALESCE(course_instance_display_timezone, course_display_timezone))));
-    ELSE
-        assessment := to_jsonb(NULL::record);
-        assessment_instance := to_jsonb(NULL::record);
     END IF;
 
     variant := jsonb_set(to_jsonb(variant_with_id.*), '{formatted_date}',
