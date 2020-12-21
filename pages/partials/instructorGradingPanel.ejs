@@ -1,0 +1,23 @@
+<% if (authz_data.has_instructor_view || authz_data.has_course_permission_view) { %>
+    <div class="card mb-4 border-success">
+      <div class="card-header bg-success">Grading Panel</div>
+      <div class="card-body">
+        <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
+            <blockquote style="color: red">Submission updated</blockquote>
+        <% } %>
+        <form name="instance_question-mamual-grade-update-form" method="POST">
+            <input type="hidden" name="__action" value="add_manual_grade">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
+            <p>Score: <input name="submission-score" value="1"/>
+            <p>Note: <input name="submission-note" value="Good job.">
+            <p>Submission id: <input name="submission-id" value="<%= submission.id %>">
+            <button type="submit" class="btn btn-danger">Submit Manual Grade</button>
+        </form>
+      </div>
+      <div class="card-footer small">
+          This box is not visible to students.
+      </div>
+    </div>
+<% } %>
+    

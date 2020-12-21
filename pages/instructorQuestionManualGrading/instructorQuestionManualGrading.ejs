@@ -13,6 +13,7 @@
     <script src="/localscripts/question.js"></script>
     <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
     <% } %>
+    <%- extraHeadersHtml %>
   </head>
   <body>
     <%- include('../partials/navbar'); %>
@@ -22,9 +23,11 @@
     <div id="content" class="container">
       <div class="row">
           <div class="col-lg-9 col-sm-12">
+              <%- include('../partials/question', {question_context: 'instructor'}); %>
           </div>
 
           <div class="col-lg-3 col-sm-12">
+              <%- include('../partials/instructorGradingPanel', {question_context: 'instructor'}); %>
               <div class="card mb-4">
                   <div class="card-header bg-secondary text-white">Student view placeholder</div>
                   <div class="card-body">
@@ -33,20 +36,9 @@
                       </div>
                   </div>
               </div>
+              <%- include('../partials/instructorInfoPanel', {question_context: 'instructor'}); %>
           </div>
       </div>
-      <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
-        <blockquote style="color: red">Submission updated</blockquote>
-      <% } %>
-      <form name="instance_question-mamual-grade-update-form" method="POST">
-        <input type="hidden" name="__action" value="add_manual_grade">
-        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-        <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
-        Score: <input name="submission-score" value="1"/>
-      <p>Note: <input name="submission-note" value="Good job.">
-      <p>Submission id: <input name="submission-id" value="<%= submission.id %>">
-        <button type="submit" class="btn btn-danger">Submit Manual Grade</button>
-      </form>
 
     </div>
     <!-- Needs to be located below element scripts -->
