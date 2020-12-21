@@ -122,7 +122,7 @@
         "@types/chai": "^4.2.14",
         "@types/fs-extra": "^9.0.5",
         "@types/mocha": "^8.2.0",
-        "@types/node": "^14.14.13",
+        "@types/node": "^14.14.14",
         "@types/pg": "^7.14.7",
         "chai": "^4.1.2",
         "chai-as-promised": "^7.1.1",
