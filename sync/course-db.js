@@ -22,7 +22,7 @@ const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ schemaId: 'auto', allErrors: true, jsonPointers: true });
 // @ts-ignore
-ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
+ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-07.json'));
 
 const DEFAULT_QUESTION_INFO = {
     type: 'Calculation',
