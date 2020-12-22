@@ -102,7 +102,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     assessmentParams.alternativeGroups = zones.map((zone) => {
         let zoneSubmissionRateLimitMin = _.has(zone, 'submissionRateLimitMin') ? zone.submissionRateLimitMin : (assessment.submissionRateLimitMin || 0);
         return zone.questions.map((question) => {
-            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number }[]} */
+            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, submissionRateLimitMin: number }[]} */
             let alternatives;
             let questionSubmissionRateLimitMin = _.has(question, 'submissionRateLimitMin') ? question.submissionRateLimitMin : zoneSubmissionRateLimitMin;
             if (_(question).has('alternatives')) {
