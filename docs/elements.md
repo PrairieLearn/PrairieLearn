@@ -269,7 +269,7 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
 `allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
-`blank-answer` | string | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).
+`blank-value` | string | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 `show-placeholder` | boolean | true | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
@@ -383,7 +383,7 @@ Attribute | Type | Default | Description
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
 `correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
 `allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
-`blank-answer` | float | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.
+`blank-value` | float | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
@@ -445,7 +445,7 @@ Attribute | Type | Default | Description
 `allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
 `allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).
-`blank-answer` | string | 0 (zero) | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).
+`blank-value` | string | 0 (zero) | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
@@ -565,7 +565,7 @@ Attribute | Type | Default | Description
 `allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
 `allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
 `allow-blank` | boolean | false |  Whether or not empty input boxes are allowed. By default, matrices with at least one empty input box will not be graded (invalid format).
-`blank-answer` | string | 0 (zero) | Value to be used as an answer for each individual component if the component is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, etc.).
+`blank-value` | string | 0 (zero) | Value to be used as an answer for each individual component if the component is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, etc.).
 
 #### Details
 
