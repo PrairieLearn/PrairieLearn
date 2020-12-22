@@ -87,11 +87,10 @@ def prepare(element_html, data):
         # sort correct answers by indices specified in corect_answers_ranking
         correct_answers = [x for _, x in sorted(zip(correct_answers_ranking, correct_answers))]
 
-
     minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', None)
     maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', None)
 
-    if ( (minIncorrect is None) & (maxIncorrect is None) ):
+    if ((minIncorrect is None) & (maxIncorrect is None)):
         mcq_options = correct_answers + incorrect_answers
     else:
         # Setting default for min-correct and checking for correct interval
@@ -341,8 +340,8 @@ def grade(element_html, data):
     feedback = ''
 
     if len(student_answer) == 0:
-    	data['format_errors'][answer_name] = 'Your submitted answer was empty.'
-    	return
+        data['format_errors'][answer_name] = 'Your submitted answer was empty.'
+        return
 
     if permutation_mode == 'any':
         intersection = list(set(student_answer) & set(true_answer))
