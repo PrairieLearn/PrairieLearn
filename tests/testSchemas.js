@@ -1,4 +1,4 @@
-const Ajv = require('ajv');
+const Ajv = require('ajv').default;
 const assert = require('chai').assert;
 const schemas = require('../schemas');
 
