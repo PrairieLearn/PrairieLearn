@@ -1,6 +1,6 @@
 {
-    "uuid": "356308B1-25E3-44EB-B455-83A4F21371BE",
-    "title": "Element pl-order-blocks: Randomized parameters and externally graded",
+    "uuid": "3551731f-b6b4-4afc-b1f8-a8a4f7f73bcd",
+    "title": "pl-order-blocks: Ordering lines of autograded python code",
     "topic": "Autograder",
     "tags": ["code", "v3"],
     "type": "v3",

@@ -1,11 +1,43 @@
 
+
+
 <pl-question-panel>
 <p>
-Drag all the prime numbers below to the yellow box. Note that the ordering of the answer does not matter, any permutation of prime numbers are accepted. Remember 1 is not a prime number.
+This question illustrates different use cases for the
+<a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element"><code>pl-order-blocks</code></a>.
 </p>
+<hr>
+<p>
+<strong>Example 1:</strong> Drag all the prime numbers below to the yellow box. Remember 1 is not a prime number.
+</p>
+
+<p> This example uses the attribute <code>permutation-mode="any"</code>, so that any ordering of the solution is accepted as correct.</p>
+
 </pl-question-panel>
 
-<pl-order-blocks answers-name="prime-numbers-unordered" shuffle-options="true" permutation-mode="any" >
+<pl-order-blocks answers-name="prime-numbers-unordered" permutation-mode="any" >
+  <pl-answer correct="false">1</pl-answer>
+  <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="true">3</pl-answer>
+  <pl-answer correct="false">4</pl-answer>
+  <pl-answer correct="true">5</pl-answer>
+  <pl-answer correct="false">6</pl-answer>
+  <pl-answer correct="true">7</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+<p>
+  <strong>Example 2:</strong> Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>.
+</p>
+
+<p> This example uses the attribute <code>shuffle-options="true"</code> so that the
+  displayed blocks are shuffled in random order. It also uses <code>min-incorrect="2"</code> and
+  <code>max-incorrect="4"</code> to display a minimum of 2 incorrect distractors and maximum of 4.</p>
+
+</pl-question-panel>
+<pl-order-blocks answers-name="prime-numbers-ordered" shuffle-options="true" min-incorrect="2" max-incorrect="4">
   <pl-answer correct="false">1</pl-answer>
   <pl-answer correct="true">2</pl-answer>
   <pl-answer correct="true">3</pl-answer>
@@ -22,29 +54,13 @@ Drag all the prime numbers below to the yellow box. Note that the ordering of th
 
 <pl-question-panel>
 <p>
-  Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>. Note that the ordering of the answer matters in this question.
-</p>
-</pl-question-panel>
-<pl-order-blocks answers-name="prime-numbers-ordered" shuffle-options="true" permutation-mode="html-order">
-  <pl-answer correct="false">1</pl-answer>
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="true">3</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
-  <pl-answer correct="false">6</pl-answer>
-  <pl-answer correct="true">7</pl-answer>
-</pl-order-blocks>
-
-<hr>
-
-<pl-question-panel>
-<p>
-  Implement the Python function <code>my_sum</code>, which takes 2 numbers, <code>first</code> and <code>second</code>,
+  <strong>Example 3:</strong>  Implement the Python function <code>my_sum</code>, which takes 2 numbers, <code>first</code> and <code>second</code>,
   and return their sum. Note that the ordering of instantiation, computation, and returning of the value must be correct.
   Remember to indent your code! </p>
 <p>
-  Note that this part of the question
-  uses the attribute <code>pl-hide-in-panel answer="true"</code> to hide the correct answer.
+  This example uses the attribute <code>pl-hide-in-panel answer="true"</code> to hide the correct answer. It
+  also uses <code>permutation-mode="ranking"</code> to control how the correct solution is ordered
+  and <code>indent</code> attribute in <code>pl-answer</code> to define expected code indentation.
 </p>
 </pl-question-panel>
 
@@ -61,3 +77,29 @@ Drag all the prime numbers below to the yellow box. Note that the ordering of th
 
 </pl-order-blocks>
 </pl-hide-in-panel>
+
+
+<hr>
+
+
+<pl-question-panel>
+<p>
+  <strong>Example 4:</strong> Let $a, b, c, d, e$ be some integers such that e is odd. Prove that for any integers $m, n$, if $am^2 + bm +
+  cn^2 + dn + e$ is even then either $m$ is odd or $n$ is odd
+</p>
+</pl-question-panel>
+
+ <pl-order-blocks answers-name="latex_answers" shuffle-options="true" permutation-mode="ranking">
+  <pl-answer correct="true" ranking="1" >Proof by Contrapositive:</pl-answer>
+  <pl-answer correct="true" ranking="2" >Take some $m \in \mathbb{Z}$ </pl-answer>
+  <pl-answer correct="true" ranking="2" >Take some $n \in \mathbb{Z}$ </pl-answer>
+  <pl-answer correct="true" >Assume $m$ is even</pl-answer>
+  <pl-answer correct="true" >Assume $n$ is even</pl-answer>
+  <pl-answer correct="true" ranking="3" >$\exists l \in \mathbb{Z}$ such that $m = 2l$</pl-answer>
+  <pl-answer correct="true" ranking="3" >$\exists k \in \mathbb{Z}$ such that $n = 2k$</pl-answer>
+  <pl-answer correct="true" ranking="4">$am^2 + bm + cn^2 + dn + e$</pl-answer>
+  <pl-answer correct="true" ranking="5">$= a(2l)^2 + b(2l) + c(2k)^2 + d(2k) + e$ </pl-answer>
+  <pl-answer correct="true" ranking="6">$= 2(2al^2 + bl + 2ck^2 + dk) + e$ </pl-answer>
+  <pl-answer correct="true" ranking="7">Since $e$ is odd, $2(2al^2 + bl + 2ck^2 + dk) + e$ is odd </pl-answer>
+  <pl-answer correct="true" ranking="8">$QED$ </pl-answer>
+</pl-order-blocks>
