@@ -16,7 +16,7 @@
             </button>
           <% } %>
           <% if (showGradeButton) { %>
-              <% if (question_context == 'student_homework') { %>
+              <% if (question_context == 'student_homework' || question_context == 'student_exam') { %>
                   <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
                       <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
                           <span class="badge">
@@ -62,7 +62,7 @@
                 </button>
               <% } %>
               <% if (showGradeButton) { %>
-                  <% if (question_context == 'student_homework') { %>
+                  <% if (question_context == 'student_homework' || question_context == 'student_exam') { %>
                       <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
                           <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
                               <span class="badge">
