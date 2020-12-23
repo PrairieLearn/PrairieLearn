@@ -16,18 +16,27 @@
             </button>
           <% } %>
           <% if (showGradeButton) { %>
-              <% if (question_context == 'student_homework' || question_context == 'student_exam') { %>
-                  <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
-                      <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
-                          <span class="badge">
-                              <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
-                              tries left
-                          </span>
-                      <% } %>
-                  </button>
-              <% } else { %>
-                  <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade</button>
-              <% } %>
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
+            <%  var attemptsLeft = 0, attemptsTotal = 0;
+                if (question_context == 'student_homework') {
+                    attemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
+                    attemptsTotal = assessment_question.tries_per_variant;
+                } else if (question_context == 'student_exam') {
+                    attemptsLeft = instance_question.points_list.length;
+                    attemptsTotal = instance_question.points_list_original.length;
+                }
+                if (attemptsTotal > 0) { %>
+                <span class="badge">
+                    <% if (attemptsLeft > 1) { %>
+                    <%= attemptsLeft %> attempts left
+                    <% } else if (attemptsLeft == 1 && attemptsTotal > 1) { %>
+                    Last attempt
+                    <% } else if (attemptsLeft == 1 && attemptsTotal == 1) { %>
+                    Single attempt
+                    <% } %>
+                </span>
+                <% } %>
+            </button>
           <% } %>
           <% if (showManualGradingMsg) { %>
           <span class="order-3 ml-2">This question will be manually graded.</span>
@@ -62,18 +71,28 @@
                 </button>
               <% } %>
               <% if (showGradeButton) { %>
-                  <% if (question_context == 'student_homework' || question_context == 'student_exam') { %>
-                      <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
-                          <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
-                              <span class="badge">
-                                  <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
-                                  tries left
-                              </span>
-                          <% } %>
-                      </button>
-                  <% } else { %>
-                      <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade</button>
-                  <% } %>
+                <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
+                <%
+                var attemptsLeft = 0, attemptsTotal = 0;
+                if (question_context == 'student_homework') {
+                    attemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
+                    attemptsTotal = assessment_question.tries_per_variant;
+                } else if (question_context == 'student_exam') {
+                    attemptsLeft = instance_question.points_list.length;
+                    attemptsTotal = instance_question.points_list_original.length;
+                }
+                if (attemptsTotal > 0) { %>
+                <span class="badge">
+                    <% if (attemptsLeft > 1) { %>
+                    <%= attemptsLeft %> attempts left
+                    <% } else if (attemptsLeft == 1 && attemptsTotal > 1) { %>
+                    Last attempt
+                    <% } else if (attemptsLeft == 1 && attemptsTotal == 1) { %>
+                    Single attempt
+                    <% } %>
+                </span>
+                <% } %>
+                </button>
               <% } %>
               <% if (showManualGradingMsg) { %>
               <span class="order-3 ml-2">This question will be manually graded.</span>
