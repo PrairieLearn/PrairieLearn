@@ -972,7 +972,7 @@ module.exports.insertDevUser = function(callback) {
 if (config.startServer) {
     async.series([
         async () => {
-            logger.info('PrairieLearn server start');
+            logger.verbose('PrairieLearn server start');
 
             let configFilename = 'config.json';
             if ('config' in argv) {
@@ -1172,7 +1172,7 @@ if (config.startServer) {
         } else {
             logger.info('PrairieLearn server ready, press Control-C to quit');
             if (config.devMode) {
-                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
+                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
             }
             if ('exit' in argv) { logger.info('exit option passed, quitting...'); process.exit(0); }
         }
