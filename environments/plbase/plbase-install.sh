@@ -49,7 +49,7 @@ echo "installing R..."
 conda install r-essentials
 
 echo "installing Python packages..."
-python3 -m pip install --no-cache-dir --no-warn-script-location -r /python-requirements.txt
+python3 -m pip install --no-cache-dir -r /python-requirements.txt
 
 echo "installing R packages..."
 Rscript /r-requirements.R

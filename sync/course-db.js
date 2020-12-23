@@ -7,7 +7,7 @@ const fsPromises = require('fs').promises;
 const util = require('util');
 const async = require('async');
 const jju = require('jju');
-const Ajv = require('ajv');
+const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors');
 const { parseISO, isValid, isAfter } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
@@ -20,9 +20,7 @@ const perf = require('./performance')('course-db');
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ schemaId: 'auto', allErrors: true, jsonPointers: true });
-// @ts-ignore
-ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
+const ajv = new Ajv({ allErrors: true });
 
 const DEFAULT_QUESTION_INFO = {
     type: 'Calculation',
