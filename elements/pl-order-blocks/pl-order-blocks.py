@@ -54,6 +54,7 @@ def prepare(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     mcq_options = []
+    html_ordering = []
     correct_answers = []
     correct_answers_indent = []
     correct_answers_ranking = []
@@ -79,6 +80,7 @@ def prepare(element_html, data):
                 correct_answers_indent.append(answerIndent)
             else:
                 incorrect_answers.append(str.strip(html_tags.text))
+            html_ordering.append(str.strip(html_tags.text))
 
     if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
@@ -114,6 +116,8 @@ def prepare(element_html, data):
 
     if is_shuffle is True:
         random.shuffle(mcq_options)
+    else:
+    	mcq_options = html_ordering
 
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
