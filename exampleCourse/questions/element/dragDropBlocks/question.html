@@ -84,22 +84,15 @@ This question illustrates different use cases for the
 
 <pl-question-panel>
 <p>
-  <strong>Example 4:</strong> Let $a, b, c, d, e$ be some integers such that e is odd. Prove that for any integers $m, n$, if $am^2 + bm +
-  cn^2 + dn + e$ is even then either $m$ is odd or $n$ is odd
+  <strong>Example 4:</strong> Let $a, b$ be any even numbers. Prove that $a + b$ is always even. 
 </p>
 </pl-question-panel>
 
  <pl-order-blocks answers-name="latex_answers" shuffle-options="true" permutation-mode="ranking">
-  <pl-answer correct="true" ranking="1" >Proof by Contrapositive:</pl-answer>
-  <pl-answer correct="true" ranking="2" >Take some $m \in \mathbb{Z}$ </pl-answer>
-  <pl-answer correct="true" ranking="2" >Take some $n \in \mathbb{Z}$ </pl-answer>
-  <pl-answer correct="true" >Assume $m$ is even</pl-answer>
-  <pl-answer correct="true" >Assume $n$ is even</pl-answer>
-  <pl-answer correct="true" ranking="3" >$\exists l \in \mathbb{Z}$ such that $m = 2l$</pl-answer>
-  <pl-answer correct="true" ranking="3" >$\exists k \in \mathbb{Z}$ such that $n = 2k$</pl-answer>
-  <pl-answer correct="true" ranking="4">$am^2 + bm + cn^2 + dn + e$</pl-answer>
-  <pl-answer correct="true" ranking="5">$= a(2l)^2 + b(2l) + c(2k)^2 + d(2k) + e$ </pl-answer>
-  <pl-answer correct="true" ranking="6">$= 2(2al^2 + bl + 2ck^2 + dk) + e$ </pl-answer>
-  <pl-answer correct="true" ranking="7">Since $e$ is odd, $2(2al^2 + bl + 2ck^2 + dk) + e$ is odd </pl-answer>
-  <pl-answer correct="true" ranking="8">$QED$ </pl-answer>
+  <pl-answer correct="false">Let $a + b$ be even.</pl-answer>
+  <pl-answer correct="false">Implying $a, b$ are both even.</pl-answer>
+  <pl-answer correct="true" ranking="1">Let $a, b$ be any even numbers</pl-answer>
+  <pl-answer correct="true" ranking="2">Then $a = 2n, b = 2m$.</pl-answer>
+  <pl-answer correct="true" ranking="3">Implying $a + b = 2 (n+m)$</pl-answer>
+  <pl-answer correct="true" ranking="4">$QED$</pl-answer>
 </pl-order-blocks>

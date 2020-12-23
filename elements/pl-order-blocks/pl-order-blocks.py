@@ -381,7 +381,6 @@ def grade(element_html, data):
             if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
                 indent_score += 1
         final_score = final_score * (indent_score / len(true_answer_indent))
-
     data['partial_scores'][answer_name] = {'score': final_score, 'feedback': feedback, 'weight': answer_weight}
 
 
