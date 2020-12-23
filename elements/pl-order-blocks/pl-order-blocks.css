@@ -89,6 +89,10 @@ p {
   margin-bottom: 5px;
 }
 
+svg {
+  background-color: #EFEFEF;
+}
+
 .answer_block {
   display: inline;
   border-style: solid;

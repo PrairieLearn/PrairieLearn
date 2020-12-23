@@ -76,11 +76,11 @@ def prepare(element_html, data):
                     except ValueError:
                         raise Exception('Ranking specified in <pl-answer> is not a number.')
                     correct_answers_ranking.append(ranking)
-                correct_answers.append(str.strip(html_tags.text))
+                correct_answers.append(html_tags.text)
                 correct_answers_indent.append(answerIndent)
             else:
-                incorrect_answers.append(str.strip(html_tags.text))
-            html_ordering.append(str.strip(html_tags.text))
+                incorrect_answers.append(html_tags.text)
+            html_ordering.append(html_tags.text)
 
     if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
@@ -135,7 +135,7 @@ def render(element_html, data):
 
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
-                mcq_options.append(str.strip(html_tags.text))   # store the original specified ordering of all the MCQ options
+                mcq_options.append(html_tags.text)   # store the original specified ordering of all the MCQ options
 
         answer_name = pl.get_string_attrib(element, 'answers-name')
         header_left_column = pl.get_string_attrib(element, 'header-left-column', 'Drag from here:')
@@ -169,7 +169,7 @@ def render(element_html, data):
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
-            html = chevron.render(f, html_params).strip()
+            html = chevron.render(f, html_params)
         return html
 
     elif data['panel'] == 'submission':
@@ -202,7 +202,7 @@ def render(element_html, data):
 
         # Finally, render the HTML
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
-            html = chevron.render(f, html_params).strip()
+            html = chevron.render(f, html_params)
         return html
 
     elif data['panel'] == 'answer':
@@ -230,7 +230,7 @@ def render(element_html, data):
                 'check_indentation': check_indentation
             }
             with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
-                html = chevron.render(f, html_params).strip()
+                html = chevron.render(f, html_params)
             return html
         else:
             return ''
@@ -285,11 +285,10 @@ def parse(element_html, data):
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
         for answer in student_answer:
             e = pl_drag_drop_element.xpath(f'.//pl-answer[text()="{answer}"]')
-            try:
-                ranking = e[0].attrib['ranking']
-            except IndexError:
-                ranking = 0
-            except KeyError:
+            isCorrect = pl.get_boolean_attrib(e[0], 'correct', True)  # default correctness to True
+            if isCorrect:
+                ranking = pl.get_integer_attrib(e[0], 'ranking', 0)
+            else:
                 ranking = -1   # wrong answers have no ranking
             student_answer_ranking.append(ranking)
 
@@ -354,20 +353,15 @@ def grade(element_html, data):
         final_score = 1.0 if student_answer == true_answer else 0.0
     elif permutation_mode == 'ranking':
         ranking = data['submitted_answers'][answer_name]['student_submission_ordering']
-        correctness = 1
+        correctness = 1 + ranking.count(0)
         partial_credit = 0
         if len(ranking) != 0 and len(ranking) == len(true_answer):
+            ranking = list(filter(lambda x: x != 0, ranking))
             if ranking[0] == 1:
                 partial_credit = 1  # student will at least get 1 point for getting first element correct
             for x in range(0, len(ranking) - 1):
-                if int(ranking[x]) == -1:
-                    correctness = 0
-                    break
-                if int(ranking[x]) <= int(ranking[x + 1]):
+                if int(ranking[x]) == int(ranking[x + 1]) or int(ranking[x]) + 1 == int(ranking[x + 1]):
                     correctness += 1
-                else:
-                    correctness = 0
-                    break
         else:
             correctness = 0
         correctness = max(correctness, partial_credit)
@@ -381,7 +375,7 @@ def grade(element_html, data):
             if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
                 indent_score += 1
         final_score = final_score * (indent_score / len(true_answer_indent))
-    data['partial_scores'][answer_name] = {'score': final_score, 'feedback': feedback, 'weight': answer_weight}
+    data['partial_scores'][answer_name] = {'score': round(final_score, 1), 'feedback': feedback, 'weight': answer_weight}
 
 
 def test(element_html, data):
@@ -402,7 +396,7 @@ def test(element_html, data):
         incorrect_answers = []
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
-                incorrect_answers.append(str.strip(html_tags.text))
+                incorrect_answers.append(html_tags.text)
         incorrect_answers = list(filter(lambda x: x not in temp, incorrect_answers))
 
         incorrect_answers_indent = ['0'] * len(incorrect_answers)
