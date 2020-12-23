@@ -17,7 +17,7 @@
           <% } %>
           <% if (showGradeButton) { %>
             <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
-            <%  var attemptsLeft = 0, attemptsTotal = 0;
+            <%  let attemptsLeft = 0, attemptsTotal = 0;
                 if (question_context == 'student_homework') {
                     attemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
                     attemptsTotal = assessment_question.tries_per_variant;
@@ -73,7 +73,7 @@
               <% if (showGradeButton) { %>
                 <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
                 <%
-                var attemptsLeft = 0, attemptsTotal = 0;
+                let attemptsLeft = 0, attemptsTotal = 0;
                 if (question_context == 'student_homework') {
                     attemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
                     attemptsTotal = assessment_question.tries_per_variant;
