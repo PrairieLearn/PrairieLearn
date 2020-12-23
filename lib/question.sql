@@ -51,10 +51,10 @@ FROM
     ) AS gj ON TRUE
     LEFT JOIN LATERAL (
          SELECT
-            MAX(CASE
+            CASE
                 WHEN gj.date IS NULL OR aq.submission_rate_limit_min IS NULL THEN NULL
                 ELSE gj.date + aq.submission_rate_limit_min * INTERVAL '1 min'
-            END) OVER () AS next_submission_date
+            END AS next_submission_date
     ) AS ns ON TRUE
 WHERE
     v.id = $variant_id
