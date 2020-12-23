@@ -117,7 +117,7 @@ def prepare(element_html, data):
     if is_shuffle is True:
         random.shuffle(mcq_options)
     else:
-    	mcq_options = html_ordering
+        mcq_options = html_ordering
 
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
