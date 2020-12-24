@@ -348,7 +348,11 @@ def grade(element_html, data):
 
     if permutation_mode == 'any':
         intersection = list(set(student_answer) & set(true_answer))
-        final_score = float(len(intersection) / len(true_answer))
+        correct_answers_count = len(intersection)
+        incorrect_answers = list(set(student_answer) - set(true_answer))
+        final_score = float((len(intersection) - len(incorrect_answers))/ len(true_answer))
+        print(final_score)
+        final_score = max(0.0, final_score) # scores cannot be below 0
     elif permutation_mode == 'html-order':
         final_score = 1.0 if student_answer == true_answer else 0.0
     elif permutation_mode == 'ranking':
@@ -375,7 +379,7 @@ def grade(element_html, data):
             if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
                 indent_score += 1
         final_score = final_score * (indent_score / len(true_answer_indent))
-    data['partial_scores'][answer_name] = {'score': round(final_score, 1), 'feedback': feedback, 'weight': answer_weight}
+    data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight}
 
 
 def test(element_html, data):
