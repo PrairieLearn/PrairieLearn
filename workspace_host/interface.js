@@ -212,7 +212,7 @@ async.series([
     (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
-        logger.verbose(`Listening on port ${workspace_server_settings.port}`);
+        logger.verbose(`Workspace server listening on port ${workspace_server_settings.port}`);
         callback(null);
     },
     async () => {
