@@ -3,7 +3,7 @@
   window.setTimeout(function() {
     $('.question-grade').prop('disabled', false);
     $('.submission-suspended-msg').hide();
-  }, <%= nextSubmissionLeftMS %>);
+  }, <%= instance_question.next_submission_left_ms %>);
 </script>
 <% } %>
 <% if (question.type == 'Freeform') { %>
@@ -41,7 +41,7 @@
           <span class="order-3 ml-2">This question will be manually graded.</span>
           <% } %>
           <% if (showGradeButton && disableGradeButton) { %>
-          <span class="order-3 ml-2 submission-suspended-msg">Submissions suspended until <%= nextSubmissionFormattedDate %></span>
+          <span class="order-3 ml-2 submission-suspended-msg">Submissions suspended until <%= instance_question.next_submission_formatted_date %></span>
           <% } %>
         </span>
         <span class="d-flex">
@@ -90,7 +90,7 @@
               <span class="order-3 ml-2">This question will be manually graded.</span>
               <% } %>
               <% if (showGradeButton && disableGradeButton) { %>
-              <span class="order-3 ml-2 submission-suspended-msg">Submissions suspended until <%= nextSubmissionFormattedDate %></span>
+              <span class="order-3 ml-2 submission-suspended-msg">Submissions suspended until <%= instance_question.next_submission_formatted_date %></span>
               <% } %>
           </span>
           <span class="d-flex">

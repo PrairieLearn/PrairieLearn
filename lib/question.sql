@@ -26,12 +26,7 @@ SELECT
     CASE
         WHEN s.grading_requested_at IS NOT NULL THEN format_interval($req_date - s.grading_requested_at)
         ELSE NULL
-    END AS elapsed_grading_time,
-   format_date_full_compact(ns.next_submission_date, coalesce(ci.display_timezone, c.display_timezone)) AS next_submission_formatted_date,
-   CASE
-       WHEN ns.next_submission_date IS NULL THEN 0
-       ELSE floor(extract(epoch from (ns.next_submission_date - $req_date::timestamptz)) * 1000)
-   END AS next_submission_left_ms
+    END AS elapsed_grading_time
 FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
@@ -49,13 +44,6 @@ FROM
         ORDER BY id DESC
         LIMIT 1
     ) AS gj ON TRUE
-    LEFT JOIN LATERAL (
-         SELECT
-            CASE
-                WHEN gj.date IS NULL OR aq.submission_rate_limit_min IS NULL THEN NULL
-                ELSE gj.date + aq.submission_rate_limit_min * INTERVAL '1 min'
-            END AS next_submission_date
-    ) AS ns ON TRUE
 WHERE
     v.id = $variant_id
 ORDER BY
@@ -71,7 +59,7 @@ SELECT
     to_jsonb(gj) AS grading_job,
     to_jsonb(s) AS submission,
     to_jsonb(v) AS variant,
-    to_jsonb(iq) AS instance_question,
+    to_jsonb(iq) || to_jsonb(iqns) AS instance_question,
     to_jsonb(q) AS question,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(ai) AS assessment_instance,
@@ -106,6 +94,7 @@ FROM
     LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
+    JOIN LATERAL instance_question_next_submission(iq.id) AS iqns ON TRUE
 WHERE
     s.id = $submission_id
     AND gj.id = (
