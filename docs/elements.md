@@ -404,7 +404,7 @@ Attribute | Type | Default | Description
 
 1) Three different options for `permutation-mode` are available:
 
-* `any`: in this mode, if `n` is the total number of correct blocks, each correct block moved to the input area is given `1/n` points, and the ordering of the answer tile does not matter. That is, any permutation of the answers are accepted.
+* `any`: in this mode, if `n` is the total number of correct blocks, each correct block moved to the input area is given `1/n` points, and each incorrect block moved to the input area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only dragging incorrect answers). Note the ordering of the answer tile does not matter. That is, any permutation of the answers are accepted.
 * `html-order`: in this mode, the ordering of the blocks submitted by the student must match the ordering of the `pl-answer` options as they appear in the HTML file. There is no partial credit for this option.
 * `ranking`: in this mode, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block *X* should have a `ranking` integer that is less than or equal to the answer block immediately below *X*. That is, the sequence of `ranking` integers of all the answer blocks should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer.
 
