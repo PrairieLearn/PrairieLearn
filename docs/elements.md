@@ -352,56 +352,65 @@ Attribute | Type | Default | Description
 
 ### `pl-order-blocks` element
 
-Element to arrange given blocks of code/text
+Element to arrange given blocks of code or text that are displayed initially in the *input area*. The blocks can be moved to the *output area* to construct the solution of the problem.  In the example below, the input area is denoted by the header "Drag from here" and the output area is denoted with the header "Construct your solution here".
 
-#### Sample Element
-```
-<pl-order-blocks answers-name="result" shuffle-options="true">
-      <pl-answer correct="false">This tile should not be moved</pl-answer>
-      <pl-answer correct="true">This tile should be moved</pl-answer>
-      <pl-answer correct="true" indent=1>This tile should be moved with one indentation</pl-answer>
+#### Sample element
+
+![](elements/pl-order-blocks.png)
+
+**question.html**
+
+```html
+<pl-question-panel>
+<p> How can we compute $c$, the summation of two given numbers $a$ and $b$?</p>
+</pl-question-panel>
+<pl-order-blocks answers-name="sum_numbers" >
+  <pl-answer correct="false">$a * b$</pl-answer>
+  <pl-answer correct="true">$a + b$</pl-answer>
+  <pl-answer correct="false">$a + c$</pl-answer>
+  <pl-answer correct="false">$b + c$</pl-answer>
 </pl-order-blocks>
 ```
+
+
 #### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
-`shuffle-options` | boolean | false | Specify whether the ordering of options on the left-hand-side should be shuffled. If false, the ordering in the HTML file will be used.
-`max-incorrect` | integer | - | Sets the maximum number of incorrect answers (`correct=false` html attribute) to display.
-`min-incorrect` | integer | - | Sets the minimum number of incorrect answers (`correct=false` html attribute) to display.
+`shuffle-options` | boolean | false | Specify whether the ordering of the blocks in the input area should be shuffled. If false, the ordering of the answers in the HTML file (defined by `<pl-answer>`) will be used.
+`max-incorrect` | integer | special | The maximum number of incorrect answers to be displayed in the input area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
+`min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the input area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
 `permutation-mode` | string | "html-order" | One of the following: `any`, `html-order`, `ranking`. See details below for description.
-`check-indentation` | boolean | false | Whether indentation is checked while marking.
-`external-grader` | boolean | false | Whether an external grader is used to determine the correct answers. (*)
+`check-indentation` | boolean | false | Whether indentation is checked for correctness.
+`external-grader` | boolean | false | Whether an external grader is used to determine the correct answers. See more details below.
 `file-name` | string | user_code.py  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
 `leading-code` | string | — | The file name of the leading code, to be used by the external grader.
 `trailing-code` | string | — | The file name of the trailing code, to be used by the external grader.
-`header-left-column` | string | "Drag from here" | The text to display for the header of the left column.
-`header-right-column` | string| "Construct your solution here" |  The text to display for the header of the right column.
-`dropzone-layout` | string | "horizontalLayout" | "horizontalLayout" shows the given boxes and empty area aligned side-by-side. "verticalLayout" shows the given boxes on the top, and the empty area on the bottom.
+`header-left-column` | string | "Drag from here" | The text that appears at the start of the input area.
+`header-right-column` | string| "Construct your solution here" |  The text that appears at the start of the output area.
+`dropzone-layout` | string | "horizontalLayout" | "horizontalLayout" shows the input and output areas aligned side-by-side. "verticalLayout" shows the input area above the output area.
 
-Within the `pl-order-blocks` element, each answer tile must be specified with a `pl-answer` that has the following attributes:
+Within the `pl-order-blocks` element, each answer block must be specified with a `pl-answer` that has the following attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`correct` | boolean | true | Specifies whether the answer tile is a correct answer to the question.
-`ranking` | positive integer | — | Specifies the correct ranking of this answer tile. For example, an answer tile with ranking `2` should be placed below an answer tile with ranking `1`.
-`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the answer tile. For example, a value of `2` means the tile should be indented twice. A value of `-1` means the indention for this answer does not matter.
-
-**When `external-grader=true`, the attributes `permutation-mode` and `check-indentation` are ignored when grading a student submission. In a similar way, the attributes for `pl-answer` are also ignored.**
-
+`correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the output area).
+`ranking` | positive integer | — | This attribute is used when `permutation-mode="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
+`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter.
 
 #### Details
 
-If the attributes `max-incorrect` and  `min-incorrect` are not used, all the incorrect answers are displayed.
+1) Three different options for `permutation-mode` are available:
 
-Three different `permutation-mode` are available:
+* `any`: in this mode, if `n` is the total number of correct blocks, each correct block moved to the input area is given `1/n` points, and the ordering of the answer tile does not matter. That is, any permutation of the answers are accepted.
+* `html-order`: in this mode, the ordering of the blocks submitted by the student must match the ordering of the `pl-answer` options as they appear in the HTML file. There is no partial credit for this option.
+* `ranking`: in this mode, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block *X* should have a `ranking` integer that is less than or equal to the answer block immediately below *X*. That is, the sequence of `ranking` integers of all the answer blocks should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer.
 
-* `any`: in this mode, if `n` is the total number of answers, each answer dragged and submitted by the student is given `1/n` points, and the ordering of the answer tile does not matter. That is, any permutation of the answers are accepted.
-* `html-order`: in this mode, the ordering of the answer tiles submitted by the student must match the ordering of the `pl-answer` options within the HTML file. There is no partial credit for this option.
-* `ranking`: in this mode, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer tile *X* should have a `ranking` integer that is less than or equal to the answer tile immediately below *X*. That is, the sequence of `ranking` integers of all the answer tiles should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer.
-
+2) When `external-grader=true`:
+  - the attributes `permutation-mode` and `check-indentation` are ignored when grading a student submission. In a similar way, the attributes for `pl-answer` are also ignored.
+  - the solution constructed in the output area will be saved in the file `user_code.py`. If the solution depends on pre-existing code for execution, that code can be added to the file specified by `leading-code`. If additional code is needed after the one created in the output area, that code can be added to the file specified by `trailing-code`.
 
 #### Example implementations
 
