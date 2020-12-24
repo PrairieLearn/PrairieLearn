@@ -16,9 +16,10 @@
             </button>
           <% } %>
           <% if (showGradeButton) { %>
-            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
-            <%  let attemptsLeft = 0, attemptsTotal = 0;
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade</button>
+            <%  let attemptsLeft = 0, attemptsTotal = 0, suffix = '';
                 if (question_context == 'student_homework') {
+                    suffix = ' for this version';
                     attemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
                     attemptsTotal = assessment_question.tries_per_variant;
                 } else if (question_context == 'student_exam') {
@@ -26,20 +27,19 @@
                     attemptsTotal = instance_question.points_list_original.length;
                 }
                 if (attemptsTotal > 0) { %>
-                <span class="badge">
+                <span class="badge badge-info ml-1 order-3">
                     <% if (attemptsLeft > 1) { %>
-                    <%= attemptsLeft %> attempts left
+                    <%= attemptsLeft %> grade attempts left <%= suffix %>
                     <% } else if (attemptsLeft == 1 && attemptsTotal > 1) { %>
-                    Last attempt
-                    <% } else if (attemptsLeft == 1 && attemptsTotal == 1) { %>
-                    Single attempt
+                    Last grade attempt <%= suffix %>
+                    <% } else if (attemptsLeft == 1 && attemptsTotal == 1 && question_context == 'student_exam') { %>
+                    Single grade attempt <%= suffix %>
                     <% } %>
                 </span>
                 <% } %>
-            </button>
           <% } %>
           <% if (showManualGradingMsg) { %>
-          <span class="order-3 ml-2">This question will be manually graded.</span>
+          <span class="order-4 ml-2">This question will be manually graded.</span>
           <% } %>
         </span>
         <span class="d-flex">
@@ -71,10 +71,10 @@
                 </button>
               <% } %>
               <% if (showGradeButton) { %>
-                <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
-                <%
-                let attemptsLeft = 0, attemptsTotal = 0;
+                <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade</button>
+            <%  let attemptsLeft = 0, attemptsTotal = 0, suffix = '';
                 if (question_context == 'student_homework') {
+                    suffix = ' for this version';
                     attemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
                     attemptsTotal = assessment_question.tries_per_variant;
                 } else if (question_context == 'student_exam') {
@@ -82,20 +82,19 @@
                     attemptsTotal = instance_question.points_list_original.length;
                 }
                 if (attemptsTotal > 0) { %>
-                <span class="badge">
+                <span class="badge badge-info ml-1 order-3">
                     <% if (attemptsLeft > 1) { %>
-                    <%= attemptsLeft %> attempts left
+                    <%= attemptsLeft %> grade attempts left <%= suffix %>
                     <% } else if (attemptsLeft == 1 && attemptsTotal > 1) { %>
-                    Last attempt
-                    <% } else if (attemptsLeft == 1 && attemptsTotal == 1) { %>
-                    Single attempt
+                    Last grade attempt <%= suffix %>
+                    <% } else if (attemptsLeft == 1 && attemptsTotal == 1 && question_context == 'student_exam') { %>
+                    Single grade attempt <%= suffix %>
                     <% } %>
                 </span>
                 <% } %>
-                </button>
               <% } %>
               <% if (showManualGradingMsg) { %>
-              <span class="order-3 ml-2">This question will be manually graded.</span>
+              <span class="order-4 ml-2">This question will be manually graded.</span>
               <% } %>
           </span>
           <span class="d-flex">
