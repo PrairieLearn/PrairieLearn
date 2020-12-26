@@ -9,11 +9,11 @@ This question illustrates different use cases for the
 <strong>Example 1:</strong> Drag all the prime numbers below to the yellow box. Remember 1 is not a prime number.
 </p>
 
-<p> This example uses the attribute <code>permutation-mode="any"</code>, so that any ordering of the solution is accepted as correct.</p>
+<p> This example uses the attribute <code>grading-method="any"</code>, so that any ordering of the solution is accepted as correct.</p>
 
 </pl-question-panel>
 
-<pl-order-blocks answers-name="prime-numbers-unordered" permutation-mode="any" >
+<pl-order-blocks answers-name="prime-numbers-unordered" grading-method="any" >
   <pl-answer correct="false">1</pl-answer>
   <pl-answer correct="true">2</pl-answer>
   <pl-answer correct="true">3</pl-answer>
@@ -56,13 +56,13 @@ This question illustrates different use cases for the
   and return their sum. Note that the ordering of instantiation, computation, and returning of the value must be correct.
   Remember to indent your code! </p>
 <p>
- This examples uses <code>permutation-mode="ranking"</code> to control how the correct solution is ordered
+ This examples uses <code>grading-method="ranking"</code> to control how the correct solution is ordered
   and <code>indent</code> attribute in <code>pl-answer</code> to define expected code indentation.
 </p>
 </pl-question-panel>
 
 
-<pl-order-blocks answers-name="python-ordered" shuffle-options="true"  permutation-mode="ranking">
+<pl-order-blocks answers-name="python-ordered" shuffle-options="true"  grading-method="ranking">
   <pl-answer correct="true" ranking="1" indent="1">def my_sum(first, second):</pl-answer>
   <pl-answer correct="true" ranking="2" indent="2">sum = 0</pl-answer>
   <pl-answer correct="true" ranking="3" indent="2">sum += first</pl-answer>
@@ -84,14 +84,14 @@ This question illustrates different use cases for the
   <strong>Example 4:</strong> Let $a, b$ be any even numbers. Prove that $a + b$ is always even.
 </p>
 
-<p>This example uses the attribute <code>permutation-mode="ranking"</code> to control how the correct solution is ordered.
+<p>This example uses the attribute <code>grading-method="ranking"</code> to control how the correct solution is ordered.
 When the order of a correct block is not relevant,
  the attribute <code>ranking</code> is not provided. In this example, two of the blocks can be placed at any
-position when constructing the solution. The attribute <code>dropzone-layout="verticalLayout"</code> is used
+position when constructing the solution. The attribute <code>solution-placement="bottom"</code> is used
 to display the input area above the output area.</p>
 </pl-question-panel>
 
- <pl-order-blocks answers-name="latex_answers" shuffle-options="true" permutation-mode="ranking" dropzone-layout="verticalLayout">
+ <pl-order-blocks answers-name="latex_answers" shuffle-options="true" grading-method="ranking" solution-placement="bottom">
   <pl-answer correct="true" ranking="1" >Proof by Contrapositive:</pl-answer>
   <pl-answer correct="true" ranking="2" >Take some $m \in \mathbb{Z}$ </pl-answer>
   <pl-answer correct="true" ranking="2" >Take some $n \in \mathbb{Z}$ </pl-answer>
