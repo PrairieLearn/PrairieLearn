@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
+    <script src="/node_modules/floatthead/dist/jquery.floatThead.min.js"></script>
   </head>
   <script>
     $(function() {
@@ -36,7 +37,14 @@
         title: 'Change total percentage score',
         trigger: 'click',
       })
-    })
+    });
+    $(function() {
+        $('.table-sticky-header').floatThead({
+            responsiveContainer: function($table) {
+                return $table.closest('.table-responsive');
+            }
+        });
+    });
   </script>
   <body>
     <%- include('../partials/navbar'); %>
@@ -51,9 +59,9 @@
           Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
-        <div class="table-responsive table-no-wrap table-sticky-header">
-          <table class="table table-sm table-hover">
-            <thead>
+        <div class="table-responsive table-no-wrap">
+          <table class="table table-sm table-hover table-sticky-header">
+            <thead class="bg-white">
               <tr>
                 <th>UID</th>
                 <th>UIN</th>

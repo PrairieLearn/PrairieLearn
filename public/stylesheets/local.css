@@ -292,16 +292,3 @@ table td > .badge {
     margin-left: 5px;
     background: #fff;
 }
-
-.table-sticky-header {
-    overflow-y: auto;
-    height: calc(100vh - 240px); /* Consider another height */
-}
-
-.table-sticky-header table th {
-    position: -webkit-sticky; /* Apparently needed for Safari/iOS */
-    position: sticky;
-    top: 0;
-    background: white;
-}
-
