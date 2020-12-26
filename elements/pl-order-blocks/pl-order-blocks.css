@@ -14,14 +14,14 @@
   float: left;
 }
 
-.horizontalLayout {
+.right {
   /* This style applies to the DIV that holds each dropzone column */
   /* This particular style renders the dropzones in a single row horizontally */ 
   width: 46%;
   margin-right: 20px;
 }
 
-.verticalLayout {
+.bottom {
   /* This style applies to the DIV that holds each dropzone column */
   /* This particular style renders the dropzones in a single column vertically */ 
   width: 55%;

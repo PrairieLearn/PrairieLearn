@@ -48,7 +48,7 @@ def prepare(element_html, data):
                                        'file-name',
                                        'leading-code',
                                        'trailing-code',
-                                       'dropzone-layout',
+                                       'solution-placement',
                                        'max-incorrect',
                                        'min-incorrect',
                                        'weight'])
@@ -160,7 +160,7 @@ def render(element_html, data):
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
 
-        dropzone_layout = pl.get_string_attrib(element, 'dropzone-layout', 'horizontalLayout')
+        dropzone_layout = pl.get_string_attrib(element, 'solution-placement', 'horizontalLayout')
 
         html_params = {
             'question': True,
@@ -169,7 +169,7 @@ def render(element_html, data):
             'header-left-column': header_left_column,
             'header-right-column': header_right_column,
             'submission_dict': student_submission_dict_list,
-            'dropzone_layout': 'verticalLayout' if dropzone_layout == 'verticalLayout' else 'horizontalLayout'
+            'dropzone_layout': 'bottom' if dropzone_layout == 'bottom' else 'right'
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
