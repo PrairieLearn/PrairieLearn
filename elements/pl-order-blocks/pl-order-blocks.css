@@ -84,12 +84,8 @@ p {
   margin-bottom: 5px;
 }
 
-svg {
-  background-color: #EFEFEF;
-}
-
 .answer_block {
-  display: inline;
+  display: inline-block;
   border-style: solid;
   border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
   background-color: #EFEFEF;

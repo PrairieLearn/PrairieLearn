@@ -246,10 +246,7 @@ def pretty_print(array):
         return None
     prettyPrintAnswer = []
     for text in array:
-        if len(re.findall(r'\$.+\$', text)) == 1:  # used to match text surrounded by $, aka latex text
-            temp = {'text': text, 'render_as_code': False}
-        else:
-            temp = {'text': text, 'render_as_code': True}
+        temp = {'text': text}
         prettyPrintAnswer.append(dict(temp))
     return prettyPrintAnswer
 
