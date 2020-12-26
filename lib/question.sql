@@ -34,7 +34,6 @@ FROM
     LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
     LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    LEFT JOIN assessment_questions AS aq ON (aq.question_id = v.question_id AND aq.assessment_id = ai.assessment_id)
     JOIN questions AS q ON (q.id = v.question_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
     LEFT JOIN LATERAL (
