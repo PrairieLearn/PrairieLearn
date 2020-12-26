@@ -29,6 +29,7 @@ require('./testRealTimeGradingDisabled');
 require('./testShowClosedAssessmentScore');
 require('./testAccess');
 require('./testAccessAsStudent');
+require('./testCourseElementExtension');
 require('./testApi');
 require('./testLti');
 require('./testCron');
