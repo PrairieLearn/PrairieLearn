@@ -26,6 +26,8 @@ SELECT
     ci.short_name AS course_instance_short_name,
     CASE WHEN i.assessment_id IS NOT NULL THEN assessments_format(i.assessment_id) ELSE NULL END AS assessment,
     i.question_id,
+    i.instance_question_id,
+    i.course_instance_id,
     q.directory AS question_qid,
     u.uid AS user_uid,
     u.name AS user_name,
