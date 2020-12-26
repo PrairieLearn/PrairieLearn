@@ -16,27 +16,17 @@
             </button>
           <% } %>
           <% if (showGradeButton) { %>
-            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade</button>
-            <%  let attemptsLeft = 0, attemptsTotal = 0, suffix = '';
-                if (question_context == 'student_homework') {
-                    suffix = ' for this version';
-                    attemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
-                    attemptsTotal = assessment_question.tries_per_variant;
-                } else if (question_context == 'student_exam') {
-                    attemptsLeft = instance_question.points_list.length;
-                    attemptsTotal = instance_question.points_list_original.length;
-                }
-                if (attemptsTotal > 0) { %>
-                <span class="badge badge-info ml-1 order-3">
-                    <% if (attemptsLeft > 1) { %>
-                    <%= attemptsLeft %> grade attempts left <%= suffix %>
-                    <% } else if (attemptsLeft == 1 && attemptsTotal > 1) { %>
-                    Last grade attempt <%= suffix %>
-                    <% } else if (attemptsLeft == 1 && attemptsTotal == 1 && question_context == 'student_exam') { %>
-                    Single grade attempt <%= suffix %>
-                    <% } %>
-                </span>
-                <% } %>
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
+            <% if (variantAttemptsTotal > 0) { %>
+               <% if (variantAttemptsLeft > 1) { %>
+               <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
+               <% } else if (variantAttemptsLeft == 1 && variantAttemptsTotal > 1) { %>
+               <small class="font-italic ml-2">Last attempt</small>
+               <% } else if (variantAttemptsLeft == 1) { %>
+               <small class="font-italic ml-2">Single attempt</small>
+               <% } %>
+            <% } %>
+            </button>
           <% } %>
           <% if (showManualGradingMsg) { %>
           <span class="order-4 ml-2">This question will be manually graded.</span>
@@ -45,8 +35,11 @@
         <span class="d-flex">
           <input type="hidden" name="__variant_id" value="<%= variant.id %>">
           <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-          <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a><% } %>
-          <% if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try question again</a><% } %>
+          <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a>
+          <% } else if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try a new variant</a>
+          <% } else if (hasAttemptsOtherVariants) { %>
+          <small class="font-italic align-self-center">Additional attempts available with new variants</small>
+          <% } %>
         </span>
       </div>
     </div>
@@ -71,27 +64,17 @@
                 </button>
               <% } %>
               <% if (showGradeButton) { %>
-                <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade</button>
-            <%  let attemptsLeft = 0, attemptsTotal = 0, suffix = '';
-                if (question_context == 'student_homework') {
-                    suffix = ' for this version';
-                    attemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
-                    attemptsTotal = assessment_question.tries_per_variant;
-                } else if (question_context == 'student_exam') {
-                    attemptsLeft = instance_question.points_list.length;
-                    attemptsTotal = instance_question.points_list_original.length;
-                }
-                if (attemptsTotal > 0) { %>
-                <span class="badge badge-info ml-1 order-3">
-                    <% if (attemptsLeft > 1) { %>
-                    <%= attemptsLeft %> grade attempts left <%= suffix %>
-                    <% } else if (attemptsLeft == 1 && attemptsTotal > 1) { %>
-                    Last grade attempt <%= suffix %>
-                    <% } else if (attemptsLeft == 1 && attemptsTotal == 1 && question_context == 'student_exam') { %>
-                    Single grade attempt <%= suffix %>
-                    <% } %>
-                </span>
-                <% } %>
+                <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
+            <% if (variantAttemptsTotal > 0) { %>
+               <% if (variantAttemptsLeft > 1) { %>
+               <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
+               <% } else if (variantAttemptsLeft == 1 && variantAttemptsTotal > 1) { %>
+               <small class="font-italic ml-2">Last attempt</small>
+               <% } else if (variantAttemptsLeft == 1) { %>
+               <small class="font-italic ml-2">Single attempt</small>
+               <% } %>
+            <% } %>
+            </button>
               <% } %>
               <% if (showManualGradingMsg) { %>
               <span class="order-4 ml-2">This question will be manually graded.</span>
@@ -101,8 +84,11 @@
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <input type="hidden" name="postData" class="postData">
             <input type="hidden" name="__action" class="__action">
-            <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a><% } %>
-            <% if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try question again</a><% } %>
+            <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a>
+            <% } else if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try a new variant</a>
+            <% } else if (hasAttemptsOtherVariants) { %>
+            <small class="font-italic align-self-center">Additional attempts available with new variants</small>
+            <% } %>
           </span>
         </div>
       </div>
