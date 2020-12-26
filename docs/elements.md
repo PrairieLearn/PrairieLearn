@@ -385,7 +385,7 @@ Attribute | Type | Default | Description
 `permutation-mode` | string | "html-order" | One of the following: `any`, `html-order`, `ranking`. See details below for description.
 `check-indentation` | boolean | false | Whether indentation is checked for correctness.
 `external-grader` | boolean | false | Whether an external grader is used to determine the correct answers. See more details below.
-`file-name` | string | user_code.py  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
+`file-name` | string | `user_code.py`  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
 `leading-code` | string | — | The file name of the leading code, to be used by the external grader.
 `trailing-code` | string | — | The file name of the trailing code, to be used by the external grader.
 `header-left-column` | string | "Drag from here" | The text that appears at the start of the input area.
