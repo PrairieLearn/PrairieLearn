@@ -48,21 +48,16 @@
 
   display: block;
 
-  overflow: hidden;
-  text-overflow: ellipsis; /* Show overflow text as ... without mouse over */
-  white-space: nowrap;
-}
-
-.connectedSortable li:hover, .dropzone li:hover{
-    /* Show overflow text in the answer draggable tiles */
+  /* Show overflow text in the answer draggable tiles */
   white-space: normal;
   height: auto;
   max-height: none;
   overflow: visible;
-
-  cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
 }
 
+.connectedSortable li:hover, .dropzone li:hover{
+  cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
+}
 
 
 .info {
