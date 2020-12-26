@@ -198,7 +198,7 @@ def render(element_html, data):
             'submission': True,
             'uuid': uuid,
             'parse-error': data['format_errors'].get(answer_name, None),
-            'student_submission': prettyPrint(student_submission),
+            'student_submission': pretty_print(student_submission),
             'color': color,
             'score': score,
             'perfect_score': True if score == 100 else None,
@@ -230,7 +230,7 @@ def render(element_html, data):
         if answer_name in data['correct_answers']:
             html_params = {
                 'true_answer': True,
-                'question_solution': prettyPrint(data['correct_answers'][answer_name]['correct_answers']),
+                'question_solution': pretty_print(data['correct_answers'][answer_name]['correct_answers']),
                 'permutation_mode': permutation_mode,
                 'check_indentation': check_indentation
             }
@@ -241,7 +241,7 @@ def render(element_html, data):
             return ''
 
 
-def prettyPrint(array):
+def pretty_print(array):
     if array is None:
         return None
     prettyPrintAnswer = []
