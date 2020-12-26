@@ -87,6 +87,8 @@ def prepare(element_html, data):
             else:
                 incorrect_answers.append(html_tags.text)
             html_ordering.append(html_tags.text)
+        else:
+        	raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answers>.')
 
     if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
