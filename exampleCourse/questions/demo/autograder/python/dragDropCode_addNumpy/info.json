@@ -10,6 +10,6 @@
         "enabled": true,
         "image": "prairielearn/grader-python",
         "entrypoint": "/python_autograder/run.sh",
-        "timeout": 20
+        "timeout": 5
     }
 }
