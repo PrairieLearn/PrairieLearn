@@ -5,7 +5,6 @@ import chevron
 import base64
 import os
 import json
-import re
 
 PL_ANSWER_DEFAULT_CORRECTNESS = True
 PL_ANSWER_DEFAULT_INDENT = '-1'
