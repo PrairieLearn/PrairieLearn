@@ -11,8 +11,8 @@ import re
 # Official documentation on making custom PL
 
 
-def render_html_colour(score):
-    # used to render the correct colour depending on student score
+def render_html_color(score):
+    # used to render the correct color depending on student score
     if score == 0:
         return 'badge-danger'
     elif score == 1.0:
@@ -178,14 +178,14 @@ def render(element_html, data):
         # render the submission panel
         uuid = pl.get_uuid()
         student_submission = ''
-        colour = 'badge-danger'
+        color = 'badge-danger'
         score = 0
         feedback = None
 
         if answer_name in data['submitted_answers']:
             student_submission = data['submitted_answers'][answer_name]['student_raw_submission']
         if answer_name in data['partial_scores']:
-            colour = render_html_colour(data['partial_scores'][answer_name]['score'])
+            color = render_html_color(data['partial_scores'][answer_name]['score'])
             score = data['partial_scores'][answer_name]['score'] * 100
             feedback = data['partial_scores'][answer_name]['feedback']
 
@@ -194,7 +194,7 @@ def render(element_html, data):
             'uuid': uuid,
             'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': prettyPrint(student_submission),
-            'colour': colour,
+            'color': color,
             'score': score,
             'perfect_score': True if score == 100 else None,
             'feedback': feedback
