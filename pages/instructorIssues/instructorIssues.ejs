@@ -171,7 +171,7 @@
               <i class="fa fa-check-circle text-success issue-status-icon"></i>
               <% } %>
               <% if (row.instance_question_id) { %>
-              <a class="d-block" href="/pl/course_instance/<%= row.course_instance_id %>/instance_question/<%= row.instance_question_id %>/?variant_id=<%= row.variant_id %>">
+              <a class="d-block" href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instance_question/<%= row.instance_question_id %>/?variant_id=<%= row.variant_id %>">
                 <%= row.question_qid %>
               </a>
               <% } else { %>
