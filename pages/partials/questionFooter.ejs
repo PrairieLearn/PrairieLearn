@@ -39,6 +39,9 @@
           <% } else if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try a new variant</a>
           <% } else if (hasAttemptsOtherVariants) { %>
           <small class="font-italic align-self-center">Additional attempts available with new variants</small>
+          <button type="button" class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<%= include('newVariantInfo') %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
+              <i class="fa fa-question-circle" aria-hidden="true"></i>
+          </button>
           <% } %>
         </span>
       </div>
@@ -88,6 +91,9 @@
             <% } else if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try a new variant</a>
             <% } else if (hasAttemptsOtherVariants) { %>
             <small class="font-italic align-self-center">Additional attempts available with new variants</small>
+            <button type="button" class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<%= include('newVariantInfo') %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </button>
             <% } %>
           </span>
         </div>
@@ -100,5 +106,9 @@
   // Install on page load and reinstall on websocket re-render
   $('a.disable-on-click').on('click', function() {
     $(this).addClass('disabled');
+  });
+  // Enable popover
+  $(document).ready(function(){
+    $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
   });
 </script>
