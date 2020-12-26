@@ -7,9 +7,6 @@ import os
 import json
 import re
 
-# Read https://prairielearn.readthedocs.io/en/latest/devElements/
-# Official documentation on making custom PL
-
 PL_ANSWER_DEFAULT_CORRECTNESS = True
 PL_ANSWER_DEFAULT_INDENT = '-1'
 CHECK_PL_ANSWER_INDENTION_DEFAULT = False
@@ -88,7 +85,7 @@ def prepare(element_html, data):
                 incorrect_answers.append(html_tags.text)
             html_ordering.append(html_tags.text)
         else:
-        	raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answers>.')
+            raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answers>.')
 
     if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
