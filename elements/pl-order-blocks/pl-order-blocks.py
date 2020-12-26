@@ -10,7 +10,7 @@ PL_ANSWER_DEFAULT_CORRECTNESS = True
 PL_ANSWER_DEFAULT_INDENT = '-1'
 CHECK_PL_ANSWER_INDENTION_DEFAULT = False
 SHUFFLE_MCQ_OPTIONS_DEFAULT = False
-DEFAULT_PERMUTATION_MODE = 'html-order'
+DEFAULT_GRADING_MODE = 'ordered'
 
 
 def render_html_color(score):
@@ -40,11 +40,10 @@ def prepare(element_html, data):
     pl.check_attribs(element,
                      required_attribs=['answers-name'],
                      optional_attribs=['shuffle-options',
-                                       'permutation-mode',
+                                       'grading-method',
                                        'check-indentation',
                                        'header-left-column',
                                        'header-right-column',
-                                       'external-grader',
                                        'file-name',
                                        'leading-code',
                                        'trailing-code',
@@ -86,7 +85,7 @@ def prepare(element_html, data):
         else:
             raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answers>.')
 
-    if pl.get_boolean_attrib(element, 'external-grader', False) is False and len(correct_answers) == 0:
+    if pl.get_string_attrib(element, 'grading-method', 'ordered') != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
 
     if (correct_answers_ranking != sorted(correct_answers_ranking)):
@@ -177,7 +176,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'submission':
-        if pl.get_boolean_attrib(element, 'external-grader', False):
+    	if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
             return ''
         # render the submission panel
         uuid = pl.get_uuid()
@@ -210,7 +209,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'answer':
-        if pl.get_boolean_attrib(element, 'external-grader', False):  # if True
+        if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
             try:
                 base_path = data['options']['question_path']
                 file_lead_path = os.path.join(base_path, 'tests/ans.py')
@@ -220,8 +219,8 @@ def render(element_html, data):
             except FileNotFoundError:
                 return 'The reference solution is not provided for this question.'
 
-        permutation_mode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
-        permutation_mode = 'in any order' if permutation_mode == 'any' else 'in the specified order'
+        grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
+        grading_mode = 'in any order' if grading_mode == 'unordered' else 'in the specified order'
 
         check_indentation = pl.get_boolean_attrib(element, 'check-indentation', False)
         check_indentation = ', with correct indentation' if check_indentation is True else ''
@@ -230,7 +229,7 @@ def render(element_html, data):
             html_params = {
                 'true_answer': True,
                 'question_solution': pretty_print(data['correct_answers'][answer_name]['correct_answers']),
-                'permutation_mode': permutation_mode,
+                'grading_mode': grading_mode,
                 'check_indentation': check_indentation
             }
             with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -272,16 +271,16 @@ def parse(element_html, data):
 
     student_answer = []
     student_answer_indent = []
-    permutation_mode = pl.get_string_attrib(element, 'permutation-mode', DEFAULT_PERMUTATION_MODE)
+    grading_mode = pl.get_string_attrib(element, 'grading-method', DEFAULT_GRADING_MODE)
 
-    student_answer_ranking = ['Question permutation_mode is not "ranking"']
+    student_answer_ranking = ['Question grading_mode is not "ranking"']
 
     student_answer_temp = json.loads(student_answer_temp)
 
     student_answer = student_answer_temp['answers']
     student_answer_indent = student_answer_temp['answer_indent']
 
-    if permutation_mode.lower() == 'ranking':
+    if grading_mode.lower() == 'ranking':
         student_answer_ranking = []
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
         for answer in student_answer:
@@ -293,7 +292,7 @@ def parse(element_html, data):
                 ranking = -1   # wrong answers have no ranking
             student_answer_ranking.append(ranking)
 
-    if pl.get_boolean_attrib(element, 'external-grader', False):
+    if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
         leading_code = pl.get_string_attrib(element, 'leading-code', None)
         trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
@@ -335,7 +334,7 @@ def grade(element_html, data):
 
     student_answer = data['submitted_answers'][answer_name]['student_raw_submission']
     student_answer_indent = data['submitted_answers'][answer_name]['student_answer_indent']
-    permutation_mode = pl.get_string_attrib(element, 'permutation-mode', 'html-order')
+    grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
     true_answer = data['correct_answers'][answer_name]['correct_answers']
     true_answer_indent = data['correct_answers'][answer_name]['correct_answers_indent']
 
@@ -347,14 +346,14 @@ def grade(element_html, data):
         data['format_errors'][answer_name] = 'Your submitted answer was empty.'
         return
 
-    if permutation_mode == 'any':
+    if grading_mode == 'unordered':
         intersection = list(set(student_answer) & set(true_answer))
         incorrect_answers = list(set(student_answer) - set(true_answer))
         final_score = float((len(intersection) - len(incorrect_answers)) / len(true_answer))
         final_score = max(0.0, final_score)  # scores cannot be below 0
-    elif permutation_mode == 'html-order':
+    elif grading_mode == 'ordered':
         final_score = 1.0 if student_answer == true_answer else 0.0
-    elif permutation_mode == 'ranking':
+    elif grading_mode == 'ranking':
         ranking = data['submitted_answers'][answer_name]['student_submission_ordering']
         correctness = 1 + ranking.count(0)
         partial_credit = 0
