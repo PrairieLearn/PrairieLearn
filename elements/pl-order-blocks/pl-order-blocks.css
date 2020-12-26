@@ -89,8 +89,11 @@ p {
   border-style: solid;
   border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
   background-color: #EFEFEF;
+  border-radius: 4px;
   margin-right: 10px;
   padding: 3px;
+  padding-left: 7px;
+  padding-right: 7px;
 }
 
 .row:after {
