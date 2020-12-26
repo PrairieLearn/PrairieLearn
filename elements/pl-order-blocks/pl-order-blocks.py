@@ -176,7 +176,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'submission':
-    	if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
+        if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
             return ''
         # render the submission panel
         uuid = pl.get_uuid()
