@@ -106,7 +106,7 @@ class CGrader:
         if out and add_warning_result_msg:
             self.result['message'] += f'Compilation warnings:\n\n{out}\n'
         return self.add_test_result(name, output=out,
-                                    points=os.path.isfile(exec_file),
+                                    points=points if os.path.isfile(exec_file) else 0,
                                     max_points=points, field=field)
 
     def change_mode(self, file, mode='744'):
@@ -153,7 +153,8 @@ class CGrader:
         out = self.run_command(command if args is None else ([command] + args),
                                input, sandboxed=True, timeout=timeout)
         outcmp = out
-        if not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
+        if not out: out = '(NO OUTPUT)'
+        elif not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
 
         if ignore_case:
             outcmp = outcmp.lower()
@@ -186,7 +187,7 @@ class CGrader:
            and [t for t in reject_output if str(t) in outcmp]:
             points = False
 
-        return self.add_test_result(name, points=points, msg=msg,
+        return self.add_test_result(name, points=max_points if points else 0, msg=msg,
                                     output=out, max_points=max_points,
                                     field=field)
 
