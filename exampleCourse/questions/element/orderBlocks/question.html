@@ -30,12 +30,12 @@ This question illustrates different use cases for the
   <strong>Example 2:</strong> Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>.
 </p>
 
-<p> This example uses the attribute <code>shuffle-options="true"</code> so that the
+<p> This example uses the attribute <code>shuffle-source-blocks="true"</code> so that the
   displayed blocks are shuffled in random order. It also uses <code>min-incorrect="2"</code> and
   <code>max-incorrect="4"</code> to display a minimum of 2 incorrect distractors and maximum of 4.</p>
 
 </pl-question-panel>
-<pl-order-blocks answers-name="prime-numbers-ordered" shuffle-options="true" min-incorrect="2" max-incorrect="4">
+<pl-order-blocks answers-name="prime-numbers-ordered" shuffle-source-blocks="true" min-incorrect="2" max-incorrect="4">
   <pl-answer correct="false">1</pl-answer>
   <pl-answer correct="true">2</pl-answer>
   <pl-answer correct="true">3</pl-answer>
@@ -62,7 +62,7 @@ This question illustrates different use cases for the
 </pl-question-panel>
 
 
-<pl-order-blocks answers-name="python-ordered" shuffle-options="true"  grading-method="ranking">
+<pl-order-blocks answers-name="python-ordered" shuffle-source-blocks="true"  grading-method="ranking">
   <pl-answer correct="true" ranking="1" indent="1">def my_sum(first, second):</pl-answer>
   <pl-answer correct="true" ranking="2" indent="2">sum = 0</pl-answer>
   <pl-answer correct="true" ranking="3" indent="2">sum += first</pl-answer>
@@ -91,7 +91,7 @@ position when constructing the solution. The attribute <code>solution-placement=
 to display the input area above the output area.</p>
 </pl-question-panel>
 
- <pl-order-blocks answers-name="latex_answers" shuffle-options="true" grading-method="ranking" solution-placement="bottom">
+ <pl-order-blocks answers-name="latex_answers" shuffle-source-blocks="true" grading-method="ranking" solution-placement="bottom">
   <pl-answer correct="true" ranking="1" >Proof by Contrapositive:</pl-answer>
   <pl-answer correct="true" ranking="2" >Take some $m \in \mathbb{Z}$ </pl-answer>
   <pl-answer correct="true" ranking="2" >Take some $n \in \mathbb{Z}$ </pl-answer>

@@ -41,7 +41,7 @@ def prepare(element_html, data):
 
     pl.check_attribs(element,
                      required_attribs=['answers-name'],
-                     optional_attribs=['shuffle-options',
+                     optional_attribs=['shuffle-source-blocks',
                                        'grading-method',
                                        'check-indentation',
                                        'source-header',
@@ -117,7 +117,7 @@ def prepare(element_html, data):
         incorrect_answers_count = random.randint(minIncorrect, maxIncorrect)
         mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
 
-    is_shuffle = pl.get_boolean_attrib(element, 'shuffle-options', SHUFFLE_MCQ_OPTIONS_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
+    is_shuffle = pl.get_boolean_attrib(element, 'shuffle-source-blocks', SHUFFLE_MCQ_OPTIONS_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
 
     if is_shuffle is True:
         random.shuffle(mcq_options)
