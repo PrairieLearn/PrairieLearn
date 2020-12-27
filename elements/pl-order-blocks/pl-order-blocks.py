@@ -42,8 +42,8 @@ def prepare(element_html, data):
                      optional_attribs=['shuffle-options',
                                        'grading-method',
                                        'check-indentation',
-                                       'header-left-column',
-                                       'header-right-column',
+                                       'source-header',
+                                       'solution-header',
                                        'file-name',
                                        'leading-code',
                                        'trailing-code',
@@ -141,8 +141,8 @@ def render(element_html, data):
                 mcq_options.append(html_tags.text)   # store the original specified ordering of all the MCQ options
 
         answer_name = pl.get_string_attrib(element, 'answers-name')
-        header_left_column = pl.get_string_attrib(element, 'header-left-column', 'Drag from here:')
-        header_right_column = pl.get_string_attrib(element, 'header-right-column', 'Construct your solution here:')
+        source_header = pl.get_string_attrib(element, 'source-header', 'Drag from here:')
+        solution_header = pl.get_string_attrib(element, 'solution-header', 'Construct your solution here:')
 
         student_submission_dict_list = []
 
@@ -165,8 +165,8 @@ def render(element_html, data):
             'question': True,
             'answer_name': answer_name,
             'options': mcq_options,
-            'header-left-column': header_left_column,
-            'header-right-column': header_right_column,
+            'source-header': source_header,
+            'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'bottom' if dropzone_layout == 'bottom' else 'right'
         }
