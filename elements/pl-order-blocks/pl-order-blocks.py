@@ -15,7 +15,6 @@ DEFAULT_SOLUTION_PLACEMENT = 'right'
 FILE_NAME_DEFAULT = 'user_code.py'
 
 
-
 def render_html_color(score):
     # used to render the correct color depending on student score
     if score == 0:
@@ -284,7 +283,6 @@ def parse(element_html, data):
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         file_name = pl.get_string_attrib(element, 'file-name', FILE_NAME_DEFAULT)
-        base_path = data['options']['question_path']
 
         if len(student_answer) == 0:
             return ''
