@@ -22,6 +22,15 @@ def set_random_seed(seed=None):
     random.seed(seed)
 
 
+def try_read(fname):
+    try:
+        with open(fname, 'r', encoding='utf-8') as f:
+            contents = f.read()
+    except:
+        contents = ''
+    return contents
+
+
 def execute_code(fname_ref, fname_student, include_plt=False,
                  console_output_fname=None, test_iter_num=0, ipynb_key="#grade"):
     """
@@ -51,20 +60,24 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         str_setup = f.read()
     with open(fname_ref, 'r', encoding='utf-8') as f:
         str_ref = f.read()
-    try:
-        with open(join(filenames_dir, 'leading_code.py'), 'r', encoding='utf-8') as f:
-            str_leading = f.read()
-    except:
-        str_leading = ''
+
+    # Read in leading, trailing code
+    str_leading = try_read(join(filenames_dir, 'leading_code.py'))
+    str_trailing = try_read(join(filenames_dir, 'trailing_code.py'))
+
+    # Read student code (and transform if necessary) and append leading/trailing code
     with open(fname_student, 'r', encoding='utf-8') as f:
         filename, extension = splitext(fname_student)
         if extension == '.ipynb':
-            str_student = str_leading + pl_helpers.extract_ipynb_contents(f, ipynb_key)
+            str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
+    str_student = str_leading + str_student + str_trailing
+
     with open(join(filenames_dir, 'test.py'), encoding='utf-8') as f:
         str_test = f.read()
 
+    # Delete sensitive code so students can't read e.g. test cases or setup code
     os.remove(join(filenames_dir, 'data.json'))
     os.remove(fname_ref)
     os.remove(join(filenames_dir, 'setup_code.py'))
