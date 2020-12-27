@@ -11,6 +11,8 @@ PL_ANSWER_DEFAULT_INDENT = '-1'
 CHECK_PL_ANSWER_INDENTION_DEFAULT = False
 SHUFFLE_MCQ_OPTIONS_DEFAULT = False
 DEFAULT_GRADING_MODE = 'ordered'
+DEFAULT_SOLUTION_PLACEMENT = 'right'
+
 
 
 def render_html_color(score):
@@ -159,7 +161,7 @@ def render(element_html, data):
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
 
-        dropzone_layout = pl.get_string_attrib(element, 'solution-placement', 'horizontalLayout')
+        dropzone_layout = pl.get_string_attrib(element, 'solution-placement', DEFAULT_SOLUTION_PLACEMENT)
 
         html_params = {
             'question': True,
