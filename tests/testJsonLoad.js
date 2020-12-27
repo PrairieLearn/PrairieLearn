@@ -6,7 +6,7 @@ const jsonLoad = require('../lib/json-load');
 const testfile = filename => path.join(__dirname, 'testJsonLoad', filename);
 
 const schema = {
-    $schema: 'http://json-schema.org/draft-04/schema#',
+    $schema: 'http://json-schema.org/draft-07/schema#',
     type: 'object',
     additionalProperties: false,
     properties: {
