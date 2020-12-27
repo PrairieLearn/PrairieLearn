@@ -1,32 +1,14 @@
 
-
 # Regrading broken questions
 
 Despite all our best efforts, sometimes we put a broken question onto an exam. The recommended procedure for dealing with this situation is:
 
-- If the error is detected when just a small number of students have taken the exam, either correct the question, remove it from the exam, or replace it with a new question. The current options to regrade a broken questions are:
+1. If the error is detected when just a small number of students have taken the exam, either correct the question, remove it from the exam, or replace it with a new question. Either regrade the broken question with maximum points (see below) or adjust the scores of affected students by hand, perhaps with some correction factor for the added challenge they faced by encountering a broken question.
 
-	1. Give the maximum points to all the students that receive the broken question.
-	
-	2. Adjust the scores of affected students by hand, perhaps with some correction factor for the added challenge they faced by encountering a broken question.
-
-- If many students have taken the exam with the broken question then do not attempt to fix it but rather let the exam complete with all students experiencing the same issue. Then afterwards regrade the exam with all students being awarded maximum points for the broken question, as described below.
+2. If many students have taken the exam with the broken question then do not attempt to fix it but rather let the exam complete with all students experiencing the same issue. Then afterwards regrade the exam with all students being awarded maximum points for the broken question, as described below.
 
 
-## 1. Regrading a broken question for a given student
-
-Suppose the original `server.py` had the following code:
-
-```python
-# Compute the sum of these two integers
-c = a + b
-# Put the sum into data['correct_answers']
-data['correct_answers']['c'] = a
-```
-Note that accidently, the correct answer `c` was set with the variable `a`. 
-
-
-## 1. Regrading an assessment
+## Regrading an assessment
 
 The procedure to regrade an assessment is:
 
@@ -90,6 +72,3 @@ For questions that all students get on their assessment the above system is stra
 ```
 
 For fairness, it is generally it is preferred to take the approach immediately above and award maximum points to all students, no matter which alternative question appeared on their particular assessment instance.
-
-
-## Regrading a question
