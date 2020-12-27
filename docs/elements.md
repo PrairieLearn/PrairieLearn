@@ -361,15 +361,12 @@ Element to arrange given blocks of code or text that are displayed initially in 
 **question.html**
 
 ```html
-<p> List all even numbers in descending order:</p>
-<pl-order-blocks answers-name="order-numbers" shuffle-source-blocks="true">
-  <pl-answer correct="true">8</pl-answer>
-  <pl-answer correct="false">7</pl-answer>
-  <pl-answer correct="true">6</pl-answer>
-  <pl-answer correct="false">5</pl-answer>
-  <pl-answer correct="true">4</pl-answer>
-  <pl-answer correct="false">3</pl-answer>
+<p> List all the even numbers in order:</p>
+<pl-order-blocks answers-name="order-numbers" >
+  <pl-answer correct="false">1</pl-answer>
   <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="false">3</pl-answer>
+  <pl-answer correct="true">4</pl-answer>
 </pl-order-blocks>
 ```
 
