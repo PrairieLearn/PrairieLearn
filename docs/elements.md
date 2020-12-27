@@ -411,7 +411,8 @@ the correct answers (defined in `pl-answer`) appear in the HTML file. There is n
 #### Example implementations
 
 - [element/orderBlocks]
-- [demo/autograder/python/orderBlocks_randomParams]
+- [demo/autograder/python/orderBlocksRandomParams]
+- [demo/autograder/python/orderBlocksAddNumpy]
 
 -----
 
