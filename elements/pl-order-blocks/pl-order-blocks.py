@@ -11,8 +11,10 @@ PL_ANSWER_DEFAULT_INDENT = '-1'
 CHECK_PL_ANSWER_INDENTION_DEFAULT = False
 SHUFFLE_MCQ_OPTIONS_DEFAULT = False
 DEFAULT_GRADING_MODE = 'ordered'
-DEFAULT_SOLUTION_PLACEMENT = 'right'
-FILE_NAME_DEFAULT = 'user_code.py'
+MIN_NUMBER_OF_INCORRECT_ANSWERS_SHOWN_DEFAULT = None
+MAX_NUMBER_OF_INCORRECT_ANSWERS_SHOWN_DEFAULT = None
+DEFAULT_SOURCE_BLOCK_DIV_TITLE_TEXT = 'Drag from here:'
+DEFAULT_SOLUTION_BLOCK_DIV_TITLE_TEXT = 'Construct your solution here:'
 
 
 def render_html_color(score):
@@ -25,17 +27,30 @@ def render_html_color(score):
         return 'badge-warning'
 
 
+def get_all_answer(submitted_blocks, block_indents, leading_code, trailing_code):
+    if len(submitted_blocks) == 0:
+        return ''
+    answer_code = ''
+    for index, answer in enumerate(submitted_blocks):
+        indent = int(block_indents[index])
+        answer_code += ('    ' * indent) + answer + '\n'
+    answer_code = leading_code + '\n' + answer_code + trailing_code + '\n'
+    return answer_code
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     pl.check_attribs(element,
                      required_attribs=['answers-name'],
-                     optional_attribs=['shuffle-source-blocks',
+                     optional_attribs=['shuffle-options',
                                        'grading-method',
                                        'check-indentation',
-                                       'source-header',
-                                       'solution-header',
+                                       'header-left-column',
+                                       'header-right-column',
                                        'file-name',
+                                       'leading-code',
+                                       'trailing-code',
                                        'solution-placement',
                                        'max-incorrect',
                                        'min-incorrect',
@@ -72,7 +87,7 @@ def prepare(element_html, data):
                 incorrect_answers.append(html_tags.text)
             html_ordering.append(html_tags.text)
         else:
-            raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answers>.')
+            raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
@@ -81,30 +96,30 @@ def prepare(element_html, data):
         # sort correct answers by indices specified in corect_answers_ranking
         correct_answers = [x for _, x in sorted(zip(correct_answers_ranking, correct_answers))]
 
-    minIncorrect = pl.get_integer_attrib(element, 'min-incorrect', None)
-    maxIncorrect = pl.get_integer_attrib(element, 'max-incorrect', None)
+    min_incorrect = pl.get_integer_attrib(element, 'min-incorrect', MIN_NUMBER_OF_INCORRECT_ANSWERS_SHOWN_DEFAULT)
+    max_incorrect = pl.get_integer_attrib(element, 'max-incorrect', MAX_NUMBER_OF_INCORRECT_ANSWERS_SHOWN_DEFAULT)
 
-    if ((minIncorrect is None) & (maxIncorrect is None)):
+    if ((min_incorrect is None) & (max_incorrect is None)):
         mcq_options = correct_answers + incorrect_answers
     else:
         # Setting default for min-correct and checking for correct interval
-        if minIncorrect is None:
-            minIncorrect = 1
+        if min_incorrect is None:
+            min_incorrect = 1
         else:
-            if minIncorrect > len(incorrect_answers):
+            if min_incorrect > len(incorrect_answers):
                 raise Exception('min-incorrect must be smaller than the number of given distractors.')
         # Setting default for max-correct and checking for correct interval
-        if maxIncorrect is None:
-            maxIncorrect = len(incorrect_answers)
+        if max_incorrect is None:
+            max_incorrect = len(incorrect_answers)
         else:
-            if maxIncorrect > len(incorrect_answers):
+            if max_incorrect > len(incorrect_answers):
                 raise Exception('max-incorrect must be smaller than the number of given distractors.')
-        if minIncorrect > maxIncorrect:
+        if min_incorrect > max_incorrect:
             raise Exception('min-incorrect must be smaller than max-incorrect.')
-        incorrect_answers_count = random.randint(minIncorrect, maxIncorrect)
+        incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
         mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
 
-    is_shuffle = pl.get_boolean_attrib(element, 'shuffle-source-blocks', SHUFFLE_MCQ_OPTIONS_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
+    is_shuffle = pl.get_boolean_attrib(element, 'shuffle-options', SHUFFLE_MCQ_OPTIONS_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
 
     if is_shuffle is True:
         random.shuffle(mcq_options)
@@ -130,8 +145,8 @@ def render(element_html, data):
                 mcq_options.append(html_tags.text)   # store the original specified ordering of all the MCQ options
 
         answer_name = pl.get_string_attrib(element, 'answers-name')
-        source_header = pl.get_string_attrib(element, 'source-header', 'Drag from here:')
-        solution_header = pl.get_string_attrib(element, 'solution-header', 'Construct your solution here:')
+        header_left_column = pl.get_string_attrib(element, 'header-left-column', DEFAULT_SOURCE_BLOCK_DIV_TITLE_TEXT)
+        header_right_column = pl.get_string_attrib(element, 'header-right-column', DEFAULT_SOLUTION_BLOCK_DIV_TITLE_TEXT)
 
         student_submission_dict_list = []
 
@@ -148,14 +163,14 @@ def render(element_html, data):
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
 
-        dropzone_layout = pl.get_string_attrib(element, 'solution-placement', DEFAULT_SOLUTION_PLACEMENT)
+        dropzone_layout = pl.get_string_attrib(element, 'solution-placement', 'horizontalLayout')
 
         html_params = {
             'question': True,
             'answer_name': answer_name,
             'options': mcq_options,
-            'source-header': source_header,
-            'solution-header': solution_header,
+            'header-left-column': header_left_column,
+            'header-right-column': header_right_column,
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'bottom' if dropzone_layout == 'bottom' else 'right'
         }
@@ -231,11 +246,11 @@ def render(element_html, data):
 def pretty_print(array):
     if array is None:
         return None
-    prettyPrintAnswer = []
+    pretty_print_answer = []
     for text in array:
         temp = {'text': text}
-        prettyPrintAnswer.append(dict(temp))
-    return prettyPrintAnswer
+        pretty_print_answer.append(dict(temp))
+    return pretty_print_answer
 
 
 def parse(element_html, data):
@@ -282,19 +297,33 @@ def parse(element_html, data):
             student_answer_ranking.append(ranking)
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
-        file_name = pl.get_string_attrib(element, 'file-name', FILE_NAME_DEFAULT)
+        file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
+        leading_code = pl.get_string_attrib(element, 'leading-code', None)
+        trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
+        base_path = data['options']['question_path']
 
-        if len(student_answer) == 0:
-            return ''
-        answer_code = ''
-        for index, answer in enumerate(student_answer):
-            indent = int(student_answer_indent[index])
-            answer_code += ('    ' * indent) + answer + '\n'
+        if leading_code is not None:
+            file_lead_path = os.path.join(base_path, leading_code)
+            with open(file_lead_path, 'r') as file:
+                leadingnew_code = file.read()
+        if trailing_code is not None:
+            file_trail_path = os.path.join(base_path, trailing_code)
+            with open(file_trail_path, 'r') as file:
+                trailnewx_code = file.read()
 
-        if len(answer_code) == 0:
-            data['format_errors']['_files'] = 'The submitted file was empty.'
-        else:
-            data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(answer_code.encode('utf-8')).decode('utf-8')}]
+        if file_name is not None:
+            if leading_code is not None and trailing_code is not None:
+                file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, trailnewx_code)
+            elif leading_code is None and trailing_code is not None:
+                file_data = get_all_answer(student_answer, student_answer_indent, '', trailnewx_code)
+            elif leading_code is not None and trailing_code is None:
+                file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, '')
+            else:
+                file_data = get_all_answer(student_answer, student_answer_indent, '', '')
+            if len(file_data) == 0:
+                data['format_errors']['_files'] = 'The submitted file was empty.'
+            else:
+                data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
 
     data['submitted_answers'][answer_name] = {'student_submission_ordering': student_answer_ranking,
                                               'student_raw_submission': student_answer,
@@ -309,7 +338,7 @@ def grade(element_html, data):
 
     student_answer = data['submitted_answers'][answer_name]['student_raw_submission']
     student_answer_indent = data['submitted_answers'][answer_name]['student_answer_indent']
-    grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
+    grading_mode = pl.get_string_attrib(element, 'grading-method', DEFAULT_GRADING_MODE)
     true_answer = data['correct_answers'][answer_name]['correct_answers']
     true_answer_indent = data['correct_answers'][answer_name]['correct_answers_indent']
 
