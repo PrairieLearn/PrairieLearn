@@ -89,7 +89,13 @@ def prepare(element_html, data):
         else:
             raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
 
-    if pl.get_string_attrib(element, 'grading-method', 'ordered') != 'external' and len(correct_answers) == 0:
+    grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
+    accepted_grading_method = ['ordered', 'unordered', 'ranking', 'external']
+
+    if grading_method not in accepted_grading_method:
+        raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
+
+    if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
 
     if (correct_answers_ranking != sorted(correct_answers_ranking)):
