@@ -125,7 +125,7 @@ def prepare(element_html, data):
         incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
         mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
 
-    source_blocks_order = pl.get_boolean_attrib(element, 'source-blocks-order', SOURCE_BLOCKS_ORDER_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
+    source_blocks_order = pl.get_string_attrib(element, 'source-blocks-order', SOURCE_BLOCKS_ORDER_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
 
     if source_blocks_order == 'shuffle':
         random.shuffle(mcq_options)
