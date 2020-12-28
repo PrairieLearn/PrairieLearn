@@ -9,7 +9,7 @@ import json
 PL_ANSWER_CORRECTNESS_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = '-1'
 CHECK_INDENTION_DEFAULT = False
-SHUFFLE_SOURCE_BLOCKS_DEFAULT = False
+SOURCE_BLOCKS_ORDER_DEFAULT = 'random'
 GRADING_METHOD_DEFAULT = 'ordered'
 MIN_INCORRECT_DEFAULT = None
 MAX_INCORRECT_DEFAULT = None
@@ -43,7 +43,7 @@ def prepare(element_html, data):
 
     pl.check_attribs(element,
                      required_attribs=['answers-name'],
-                     optional_attribs=['shuffle-options',
+                     optional_attribs=['source-blocks-order',
                                        'grading-method',
                                        'check-indentation',
                                        'header-left-column',
@@ -125,11 +125,13 @@ def prepare(element_html, data):
         incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
         mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
 
-    is_shuffle = pl.get_boolean_attrib(element, 'shuffle-options', SHUFFLE_SOURCE_BLOCKS_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
+    source_blocks_order = pl.get_boolean_attrib(element, 'source-blocks-order', SOURCE_BLOCKS_ORDER_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
 
-    if is_shuffle is True:
+    if source_blocks_order == 'shuffle':
         random.shuffle(mcq_options)
-    else:
+    elif source_blocks_order == 'alphabetical':
+        print('Not yet implemented')
+    elif source_blocks_order == 'ordered':
         mcq_options = html_ordering
 
     data['params'][answer_name] = mcq_options
