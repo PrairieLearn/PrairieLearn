@@ -1,4 +1,4 @@
-const Ajv = require('ajv');
+const Ajv = require('ajv').default;
 const assert = require('chai').assert;
 const schemas = require('../schemas');
 
@@ -35,8 +35,7 @@ for (const schemaName of Object.keys(schemas)) {
     describe(`${schemaName} schema`, () => {
         const schema = schemas[schemaName];
         it('validates', () => {
-            const ajv = new Ajv({ schemaId: 'auto' });
-            ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
+            const ajv = new Ajv();
             const valid = ajv.validateSchema(schema);
             if (ajv.errors) {
                 // eslint-disable-next-line no-console
