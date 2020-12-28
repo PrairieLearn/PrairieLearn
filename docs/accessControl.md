@@ -108,6 +108,30 @@ The above example will give students 90 minutes for this exam, and they must sta
 
 **Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"`, in which case `timeLimitMin` will have no effect and the time limits will be enforced by the CBTF scheduling software.**
 
+### Time limit adjustments for open assessments
+
+Changes to the time limits in the `infoAssessment.json` file only take effect before an assessment is started. Once a student opens an assessment and creates an instance, the time limit for that assessment will be set based on the time limit rules at the time the assessment started. In some scenarios, instructors or invigilators may need to change the time limit allotted to individual students or for all students with an open assessment instance. This change could be due to errors in the original configuration, unexpected events (e.g., power outages or scheduling problems), or concessions.
+
+On the Instructor View for the assessment, select the Students tab. This tab will show a list of all students that have started the assessment. The "Remaining" column will include one of the following values:
+
+* The value "Closed" indicates that the student has already finished the assessment, that their time ran out, or ([for exam assessments with `autoClose` set as `true`](assessment.md#auto-closing-exam-assessments)) that the student was inactive for over six hours. Students do not have the ability to submit answers for these assessments.
+* The value "Unlimited" indicates that the assessment is open and has no time limit (other than the `autoClose` setting listed above). Students are able to submit answers for these assessments.
+* A value indicating a number of minutes indicates the remaining time until the exam is automatically closed. Students are able to submit answers until this time expires. Note that this time is computed when the page is loaded, so to get an updated time, the page must be refreshed.
+
+To change the remaining time, or to close or re-open an assessment, click on the "Actions" button, which will open the following options:
+
+* **Delete**: deletes all variants and submissions associated to the assessment instance, so the student can start from scratch. Use with caution, as this option cannot be undone at the moment.
+* **Regrade**: [regrades any question that has already been submitted](regrading.md).
+* **Re-open**: for closed instances, re-opens the instance with unlimited time. If a specific time limit is needed, you must first re-open the instance with this option, then choose the "Set Time Limit" action below.
+* **Set Time Limit**: sets the time limit for the instance. For instances with unlimited time, this action allows the instructor to set the total time limit (based on the time the student started the assessment) or the remaining time (from the current time). For instances with a set time limit, in addition to these two options, the action also allows the instructor to add or subtract time from the current limit, or to set the time limit to unlimited.
+* **Close**: closes the exam, grading any pending submission *that has already been saved*. The student will not be able to save or grade any additional questions at this point.
+
+![The Action menu for a single instance](instancesActionMenuOpen.png)
+
+The Delete, Re-open and Set Time Limit actions can also be set for all instances, using the Action for all instances button on the top-right corner of the table. Note that the Set Time Limit for all instances action only applies to open instances, and does not affect students that have closed instances.
+
+![The Action menu for all instances](instancesActionAllOpen.png)
+
 ## Passwords
 
 Remote or online exams sometimes use a “proctor password” to control access to Exams. This can be enabled with an access rule like:
