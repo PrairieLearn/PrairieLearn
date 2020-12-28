@@ -6,15 +6,15 @@ import base64
 import os
 import json
 
-PL_ANSWER_DEFAULT_CORRECTNESS = True
-PL_ANSWER_DEFAULT_INDENT = '-1'
-CHECK_PL_ANSWER_INDENTION_DEFAULT = False
-SHUFFLE_MCQ_OPTIONS_DEFAULT = False
-DEFAULT_GRADING_MODE = 'ordered'
-MIN_NUMBER_OF_INCORRECT_ANSWERS_SHOWN_DEFAULT = None
-MAX_NUMBER_OF_INCORRECT_ANSWERS_SHOWN_DEFAULT = None
-DEFAULT_SOURCE_BLOCK_DIV_TITLE_TEXT = 'Drag from here:'
-DEFAULT_SOLUTION_BLOCK_DIV_TITLE_TEXT = 'Construct your solution here:'
+PL_ANSWER_CORRECTNESS_DEFAULT = True
+PL_ANSWER_INDENT_DEFAULT = '-1'
+CHECK_INDENTION_DEFAULT = False
+SHUFFLE_SOURCE_BLOCKS_DEFAULT = False
+GRADING_METHOD_DEFAULT = 'ordered'
+MIN_INCORRECT_DEFAULT = None
+MAX_INCORRECT_DEFAULT = None
+SOURCE_HEADER_DEFAULT = 'Drag from here:'
+SOLUTION_HEADER_DEFAULT = 'Construct your solution here:'
 
 
 def render_html_color(score):
@@ -70,8 +70,8 @@ def prepare(element_html, data):
             # correct attribute is not strictly required, as the attribute is irrelevant for autograded questions
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
 
-            isCorrect = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_DEFAULT_CORRECTNESS)
-            answerIndent = pl.get_string_attrib(html_tags, 'indent', PL_ANSWER_DEFAULT_INDENT)  # get answer indent, and default to -1 (indent level ignored)
+            isCorrect = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECTNESS_DEFAULT)
+            answerIndent = pl.get_string_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
             if isCorrect is True:
                 # add option to the correct answer array, along with the correct required indent
                 if pl.get_string_attrib(html_tags, 'ranking', '') != '':
@@ -96,8 +96,8 @@ def prepare(element_html, data):
         # sort correct answers by indices specified in corect_answers_ranking
         correct_answers = [x for _, x in sorted(zip(correct_answers_ranking, correct_answers))]
 
-    min_incorrect = pl.get_integer_attrib(element, 'min-incorrect', MIN_NUMBER_OF_INCORRECT_ANSWERS_SHOWN_DEFAULT)
-    max_incorrect = pl.get_integer_attrib(element, 'max-incorrect', MAX_NUMBER_OF_INCORRECT_ANSWERS_SHOWN_DEFAULT)
+    min_incorrect = pl.get_integer_attrib(element, 'min-incorrect', MIN_INCORRECT_DEFAULT)
+    max_incorrect = pl.get_integer_attrib(element, 'max-incorrect', MAX_INCORRECT_DEFAULT)
 
     if ((min_incorrect is None) & (max_incorrect is None)):
         mcq_options = correct_answers + incorrect_answers
@@ -119,7 +119,7 @@ def prepare(element_html, data):
         incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
         mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
 
-    is_shuffle = pl.get_boolean_attrib(element, 'shuffle-options', SHUFFLE_MCQ_OPTIONS_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
+    is_shuffle = pl.get_boolean_attrib(element, 'shuffle-options', SHUFFLE_SOURCE_BLOCKS_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
 
     if is_shuffle is True:
         random.shuffle(mcq_options)
@@ -145,8 +145,8 @@ def render(element_html, data):
                 mcq_options.append(html_tags.text)   # store the original specified ordering of all the MCQ options
 
         answer_name = pl.get_string_attrib(element, 'answers-name')
-        header_left_column = pl.get_string_attrib(element, 'header-left-column', DEFAULT_SOURCE_BLOCK_DIV_TITLE_TEXT)
-        header_right_column = pl.get_string_attrib(element, 'header-right-column', DEFAULT_SOLUTION_BLOCK_DIV_TITLE_TEXT)
+        header_left_column = pl.get_string_attrib(element, 'header-left-column', SOURCE_HEADER_DEFAULT)
+        header_right_column = pl.get_string_attrib(element, 'header-right-column', SOLUTION_HEADER_DEFAULT)
 
         student_submission_dict_list = []
 
@@ -275,7 +275,7 @@ def parse(element_html, data):
 
     student_answer = []
     student_answer_indent = []
-    grading_mode = pl.get_string_attrib(element, 'grading-method', DEFAULT_GRADING_MODE)
+    grading_mode = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
     student_answer_ranking = ['Question grading_mode is not "ranking"']
 
@@ -289,7 +289,7 @@ def parse(element_html, data):
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
         for answer in student_answer:
             e = pl_drag_drop_element.xpath(f'.//pl-answer[text()="{answer}"]')
-            isCorrect = pl.get_boolean_attrib(e[0], 'correct', PL_ANSWER_DEFAULT_CORRECTNESS)  # default correctness to True
+            isCorrect = pl.get_boolean_attrib(e[0], 'correct', PL_ANSWER_CORRECTNESS_DEFAULT)  # default correctness to True
             if isCorrect:
                 ranking = pl.get_integer_attrib(e[0], 'ranking', 0)
             else:
@@ -338,7 +338,7 @@ def grade(element_html, data):
 
     student_answer = data['submitted_answers'][answer_name]['student_raw_submission']
     student_answer_indent = data['submitted_answers'][answer_name]['student_answer_indent']
-    grading_mode = pl.get_string_attrib(element, 'grading-method', DEFAULT_GRADING_MODE)
+    grading_mode = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     true_answer = data['correct_answers'][answer_name]['correct_answers']
     true_answer_indent = data['correct_answers'][answer_name]['correct_answers_indent']
 
@@ -373,7 +373,7 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
 
-    check_indentation = pl.get_boolean_attrib(element, 'check-indentation', CHECK_PL_ANSWER_INDENTION_DEFAULT)
+    check_indentation = pl.get_boolean_attrib(element, 'check-indentation', CHECK_INDENTION_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', 1)
     # check indents, and apply penalty if applicable
     if check_indentation is True:
