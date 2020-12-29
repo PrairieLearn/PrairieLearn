@@ -1,13 +1,5 @@
-<% if (showGradeButton && disableGradeButton) { %>
-<script>
-  window.setTimeout(function() {
-    $('.question-grade').prop('disabled', false);
-    $('.submission-suspended-msg').hide();
-  }, <%= instance_question.next_submission_left_ms %>);
-</script>
-<% } %>
-<% if (question.type == 'Freeform') { %>
   <div class="card-footer" id="question-panel-footer">
+<% if (question.type == 'Freeform') { %>
     <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
     This question is complete and cannot be answered again.
     <% } else { %>
@@ -41,9 +33,6 @@
           <% if (showManualGradingMsg) { %>
           <span class="order-4 ml-2">This question will be manually graded.</span>
           <% } %>
-          <% if (showGradeButton && disableGradeButton) { %>
-          <span class="order-3 ml-2 submission-suspended-msg">Submissions suspended until <%= instance_question.next_submission_formatted_date %></span>
-          <% } %>
         </span>
         <span class="d-flex">
           <input type="hidden" name="__variant_id" value="<%= variant.id %>">
@@ -59,10 +48,22 @@
         </span>
       </div>
     </div>
+      <% if (assessment_question && assessment_question.submission_rate_limit_min) { %>
+      <div class="row">
+        <div class="col d-flex justify-content-between">
+        <span class="d-flex">
+        <% if (showGradeButton && disableGradeButton) { %>
+          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended until <%= instance_question.next_submission_formatted_date %></small>
+        <% } %>
+        </span>
+        <span class="d-flex">
+          <small class="font-italic align-self-center">Can only be graded once every <%= assessment_question.submission_rate_limit_min %> minutes</small>
+        </span>
+        </div>
+      </div>
+      <% } %>
     <% } %>
-  </div>
 <% } else { %>
-  <div class="card-footer" id="question-panel-footer">
     <form class="question-form" name="question-form" method="POST">
       <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
       This question is complete and cannot be answered again.
@@ -116,10 +117,24 @@
           </span>
         </div>
       </div>
+      <% if (assessment_question && assessment_question.submission_rate_limit_min) { %>
+      <div class="row">
+        <div class="col d-flex justify-content-between">
+        <span class="d-flex">
+        <% if (showGradeButton && disableGradeButton) { %>
+          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended until <%= instance_question.next_submission_formatted_date %></small>
+        <% } %>
+        </span>
+        <span class="d-flex">
+          <small class="font-italic align-self-center">Can only be graded once every <%= assessment_question.submission_rate_limit_min %> minutes</small>
+        </span>
+        </div>
+      </div>
+      <% } %>
       <% } %>
     </form>
-  </div>
 <% } %>
+  </div>
 <script>
   // Install on page load and reinstall on websocket re-render
   $('a.disable-on-click').on('click', function() {
@@ -129,4 +144,10 @@
   $(document).ready(function(){
     $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
   });
+<% if (showGradeButton && disableGradeButton) { %>
+  window.setTimeout(function() {
+    $('.question-grade').prop('disabled', false);
+    $('.submission-suspended-msg').hide();
+  }, <%= instance_question.next_submission_left_ms %>);
+<% } %>
 </script>
