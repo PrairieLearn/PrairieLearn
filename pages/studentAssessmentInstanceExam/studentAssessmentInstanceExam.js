@@ -2,7 +2,6 @@ const util = require('util');
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const _ = require('lodash');
 
 const error = require('@prairielearn/prairielib/error');
 const assessment = require('../../lib/assessment');
