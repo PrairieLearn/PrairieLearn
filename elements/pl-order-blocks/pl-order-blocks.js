@@ -9,7 +9,6 @@ const MAX_INDENT = 4;     // defines the maximum number of times an answer block
 function check_block(event, ui) {
     var block_parent_name = $(ui.item.parent()[0]).attr('name');
     var block_destination_name = event.target.getAttribute('name');
-    console.log(ui.item[0]);
     if (block_parent_name !== block_destination_name) {
         return false;
     }
@@ -46,8 +45,8 @@ function set_answer(event) {
 
 
 function update_indent(leftDiff, id, ui) {
-    if (!ui.item.parent()[0].classList.contains('dropzone')){
-        // no need to support indent on MCQ option panel
+    if (!ui.item.parent()[0].classList.contains('dropzone') || !ui.item.parent()[0].classList.contains('enableIndentation')){
+        // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
         ui.item[0].style.marginLeft = INDENT_OFFSET + 'px';
         return;
     }
@@ -111,8 +110,11 @@ $( document ).ready(function() {
             set_answer(event);
         },
     }).disableSelection();
-    $('.dropzone').sortable({
-        grid: [TABWIDTH, 1],
+    $('.dropzone').each(function () {
+        if ($(this).hasClass('enableIndentation')) {
+            // only enable grid snapping for dropzones that chooses to enable indentation
+            $(this).sortable({grid: [TABWIDTH, 1]});
+        }
     });
     $('[data-toggle="popover"]').popover();
 });

@@ -45,7 +45,7 @@ def prepare(element_html, data):
                      required_attribs=['answers-name'],
                      optional_attribs=['source-blocks-order',
                                        'grading-method',
-                                       'check-indentation',
+                                       'indentation',
                                        'source-header',
                                        'solution-header',
                                        'file-name',
@@ -134,6 +134,9 @@ def prepare(element_html, data):
     elif source_blocks_order == 'ordered':
         mcq_options = html_ordering
 
+    check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
+    check_indentation = 'enableIndentation' if check_indentation is True else None
+
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
                                             'correct_answers_indent': correct_answers_indent}
@@ -173,6 +176,9 @@ def render(element_html, data):
 
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', 'horizontalLayout')
 
+        check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
+        check_indentation = 'enableIndentation' if check_indentation is True else None
+
         html_params = {
             'question': True,
             'answer_name': answer_name,
@@ -180,7 +186,8 @@ def render(element_html, data):
             'source-header': source_header,
             'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
-            'dropzone_layout': 'bottom' if dropzone_layout == 'bottom' else 'right'
+            'dropzone_layout': 'bottom' if dropzone_layout == 'bottom' else 'right',
+            'check_indentation': check_indentation
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -234,8 +241,8 @@ def render(element_html, data):
         grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
         grading_mode = 'in any order' if grading_mode == 'unordered' else 'in the specified order'
 
-        check_indentation = pl.get_boolean_attrib(element, 'check-indentation', False)
-        check_indentation = ', with correct indentation' if check_indentation is True else ''
+        check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
+        check_indentation = ', with correct indentation' if check_indentation is True else None
 
         if answer_name in data['correct_answers']:
             html_params = {
@@ -381,7 +388,7 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
 
-    check_indentation = pl.get_boolean_attrib(element, 'check-indentation', CHECK_INDENTION_DEFAULT)
+    check_indentation = pl.get_boolean_attrib(element, 'indentation', CHECK_INDENTION_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', 1)
     # check indents, and apply penalty if applicable
     if check_indentation is True:
