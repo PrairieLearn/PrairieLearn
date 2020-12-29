@@ -161,8 +161,7 @@ router.post('/', (req, res, next) => {
         });
     } else if (req.body.__action == 'regrade_question') {
         if (!config.regradeActive) {
-            res.status(204).send();
-            return;
+            return next(error.make(400, 'regrade disabled', {locals: res.locals, body: req.body}));
         }
         question.regradeQuestion(req.body.instance_question_id, err => {
             if (ERR(err, next)) return;

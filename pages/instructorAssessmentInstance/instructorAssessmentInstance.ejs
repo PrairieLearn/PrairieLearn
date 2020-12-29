@@ -106,7 +106,9 @@
             <tr>
               <th>Student question</th>
               <th>Instructor question</th>
+              <% if (config.regradeActive) { %>
               <th>Regrade</th>
+              <% } %>
               <th class="text-center">
                 Awarded points
               </th>
@@ -140,6 +142,8 @@
                 <%= instance_question.qid %>
                 (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/">instructor view</a>)
               </td>
+
+              <% if (config.regradeActive) { %>
               <td>
                 <form name="regrade-question-button" method="POST">
                   <input type="hidden" name="__action" value="regrade_question">
@@ -148,6 +152,7 @@
                   <button type="submit" class="btn btn-primary">Regrade</button>
                 </form>
               </td>
+              <% } %>
               <td class="text-center">
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
                 <% if (authz_data.has_instructor_edit) { %>
