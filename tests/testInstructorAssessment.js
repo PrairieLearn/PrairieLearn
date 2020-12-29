@@ -132,6 +132,7 @@ describe('Instructor assessment editing', function() {
     describe('5. GET to instructor assessment instances URL', function() {
         it('should load successfully', function(callback) {
             locals.instructorAssessmentInstancesUrl = locals.instructorAssessmentUrl + 'instances';
+            console.log(locals.instructorAssessmentInstancesUrl);
             request(locals.instructorAssessmentInstancesUrl, function (error, response, body) {
                 if (error) {
                     return callback(error);

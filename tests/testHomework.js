@@ -378,6 +378,7 @@ describe('Homework assessment', function() {
                     assessment_instance_points: 2,
                     assessment_instance_score_perc: 2/assessmentMaxPoints * 100,
                 };
+                console.log(locals);
                 locals.getSubmittedAnswer = function(variant) {
                     return {
                         wx: variant.true_answer.wx,
