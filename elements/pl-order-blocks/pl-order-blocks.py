@@ -65,13 +65,24 @@ def prepare(element_html, data):
     correct_answers_ranking = []
     incorrect_answers = []
 
+    check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
+
     for html_tags in element:  # iterate through the tags inside pl-order-blocks, should be <pl-answer> tags
         if html_tags.tag == 'pl-answer':
             # correct attribute is not strictly required, as the attribute is irrelevant for autograded questions
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
 
             isCorrect = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECTNESS_DEFAULT)
-            answerIndent = pl.get_string_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
+            if check_indentation is False:
+                # answerIndent = pl.get_string_attrib(html_tags, 'indent')
+                try:
+                    answerIndent = pl.get_string_attrib(html_tags, 'indent')
+                except Exception:
+                    answerIndent = -1
+                else:
+                    raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
+            else:
+                answerIndent = pl.get_string_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
             if isCorrect is True:
                 # add option to the correct answer array, along with the correct required indent
                 if pl.get_string_attrib(html_tags, 'ranking', '') != '':
@@ -134,9 +145,6 @@ def prepare(element_html, data):
     elif source_blocks_order == 'ordered':
         mcq_options = html_ordering
 
-    check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
-    check_indentation = 'enableIndentation' if check_indentation is True else None
-
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
                                             'correct_answers_indent': correct_answers_indent}
@@ -177,7 +185,6 @@ def render(element_html, data):
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', 'horizontalLayout')
 
         check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
-        check_indentation = 'enableIndentation' if check_indentation is True else None
 
         html_params = {
             'question': True,
@@ -187,7 +194,7 @@ def render(element_html, data):
             'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'bottom' if dropzone_layout == 'bottom' else 'right',
-            'check_indentation': check_indentation
+            'check_indentation': 'enableIndentation' if check_indentation is True else None
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -312,6 +319,9 @@ def parse(element_html, data):
             student_answer_ranking.append(ranking)
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
+        for html_tags in element:
+            if html_tags.tag == 'pl-answer':
+                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=[])
         file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
         leading_code = pl.get_string_attrib(element, 'leading-code', None)
         trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
