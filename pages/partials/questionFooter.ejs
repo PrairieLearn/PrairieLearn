@@ -48,7 +48,7 @@
         </span>
       </div>
     </div>
-      <% if (assessment_question && assessment_question.submission_rate_limit_min) { %>
+      <% if (typeof assessment_question !== "undefined" && assessment_question.submission_rate_limit_min) { %>
       <div class="row">
         <div class="col d-flex justify-content-between">
         <span class="d-flex">
@@ -117,7 +117,7 @@
           </span>
         </div>
       </div>
-      <% if (assessment_question && assessment_question.submission_rate_limit_min) { %>
+      <% if (typeof assessment_question !== "undefined" && assessment_question.submission_rate_limit_min) { %>
       <div class="row">
         <div class="col d-flex justify-content-between">
         <span class="d-flex">
