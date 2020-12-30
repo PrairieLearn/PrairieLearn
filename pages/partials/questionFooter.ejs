@@ -53,7 +53,16 @@
         <div class="col d-flex justify-content-between">
         <span class="d-flex">
         <% if (showGradeButton && disableGradeButton) { %>
-          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended until <%= instance_question.next_submission_formatted_date %></small>
+          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended for: <span id='submission-suspended-display'></span> <div id='submission-suspended-progress'></div> </small>
+          <%- include('countdown', {
+               serverTimeLimitMS: assessment_question.submission_rate_limit_min,
+               serverRemainingMS: instance_question.next_submission_left_ms,
+               progressSelector: '#submission-suspended-progress',
+               displaySelector: '#submission-suspended-display',
+               serverUpdateURL: false,
+               timerOutCode: "window.nextSubmissionReady();",
+               backgroundColorFunction: false,
+              }) %>
         <% } %>
         </span>
         <span class="d-flex">
@@ -122,7 +131,16 @@
         <div class="col d-flex justify-content-between">
         <span class="d-flex">
         <% if (showGradeButton && disableGradeButton) { %>
-          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended until <%= instance_question.next_submission_formatted_date %></small>
+          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended for: <span id='submission-suspended-display'></span> <span id='submission-suspended-progress'></span> </small>
+          <%- include('countdown', {
+               serverTimeLimitMS: assessment_question.submission_rate_limit_min,
+               serverRemainingMS: instance_question.next_submission_left_ms,
+               progressSelector: '#submission-suspended-progress',
+               displaySelector: '#submission-suspended-display',
+               serverUpdateURL: false,
+               timerOutCode: "window.nextSubmissionReady();",
+               backgroundColorFunction: false,
+              }) %>
         <% } %>
         </span>
         <span class="d-flex">
@@ -144,10 +162,8 @@
   $(document).ready(function(){
     $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
   });
-<% if (showGradeButton && disableGradeButton) { %>
-  window.setTimeout(function() {
+  window.nextSubmissionReady = function() {
     $('.question-grade').prop('disabled', false);
     $('.submission-suspended-msg').hide();
-  }, <%= instance_question.next_submission_left_ms %>);
-<% } %>
+  };
 </script>
