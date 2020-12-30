@@ -24,3 +24,18 @@ pages:
     - 'Requesting your course space': 'requestCourse.md'
     - 'Creating content in the browser': 'getStarted.md'
     - 'Workshop': 'workshop/index.md'
+
+- Student Manual:
+  - Get Started:
+    - 'Addding a course': 'addCourse.md'
+
+- Student Manual:
+  - Get Started:
+    - 'Adding a course': 'addCourse.md'
+
+- Developers Manual:
+  - 'PL architecture': 'makeCourse.md'
+
+- Administrative Manual:
+  - Get Started:
+    - 'Creating a course': 'makeCourse.md'
