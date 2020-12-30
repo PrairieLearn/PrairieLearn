@@ -46,6 +46,12 @@
         });
     });
   </script>
+  <style>
+    .sticky-column {
+      position: sticky;
+      left: 0;
+    }
+  </style>
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
@@ -63,7 +69,7 @@
           <table class="table table-sm table-hover table-sticky-header">
             <thead class="bg-white">
               <tr>
-                <th>UID</th>
+                <th class="sticky-column bg-white">UID</th>
                 <th>UIN</th>
                 <th>Name</th>
                 <th>Role</th>
@@ -75,7 +81,7 @@
             <tbody>
               <% user_scores.forEach(function(row, iRow) { %>
               <tr>
-                <td><%= row.uid %></td>
+                <td class="sticky-column bg-white"><%= row.uid %></td>
                 <td><%= row.uin %></td>
                 <td><%= row.user_name %></td>
                 <td><%= row.role %></td>
