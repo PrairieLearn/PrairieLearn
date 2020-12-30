@@ -17,13 +17,13 @@ pages:
 
 - Instructor Manual:
   - Get Started:
-    - 'Request your course space': 'requestCourse.md'
-    - 'Creating content in the browser': 'getStarted.md'
-    - 'Workshop': 'workshop/index.md'
+    - 'Requesting your course space': 'Instructor/GetStarted/requestCourse.md'
+    - 'Creating course content': 'Instructor/GetStarted/getStarted.md'
+    - 'Question Gallery': 'Instructor/GetStarted/questionGallery.md'
+    - 'Workshops': 'workshop/index.md'
   - How-to Guides:
-    - 'Requesting your course space': 'requestCourse.md'
-    - 'Creating content in the browser': 'getStarted.md'
-    - 'Workshop': 'workshop/index.md'
+    - 'Assessments': 'Instructor/HowTos/howtoAssessments.md'
+
 
 - Student Manual:
   - Get Started:
@@ -34,7 +34,8 @@ pages:
     - 'Adding a course': 'addCourse.md'
 
 - Developers Manual:
-  - 'PL architecture': 'makeCourse.md'
+  - Get Started:
+    - 'PL architecture': 'makeCourse.md'
 
 - Administrative Manual:
   - Get Started:

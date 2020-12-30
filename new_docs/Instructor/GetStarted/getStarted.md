@@ -1,8 +1,6 @@
 
 # Create content in the browser
 
-Now that you have access to your course in [https://prairielearn.engr.illinois.edu/](https://prairielearn.engr.illinois.edu/), it is time to start creating course content.
-
 This is a view of your course home page (or a similar variation, depending on when your course was originally created):
 
 ![](start-guide/homepage.png)
@@ -11,14 +9,12 @@ This tutorial will show you how to create:
 
 * [a course instance](#creating-a-course-instance)
 
-* [simple questions from scratch](#creating-questions-from-scratch)
+* [a question](#creating-questions-from-scratch)
 
-* [questions starting from provided examples](#creating-questions-from-the-example-course)
-
-* [assessments](#creating-a-new-assessment)
+* [an assessment](#creating-a-new-assessment)
 
 
-### Creating a course instance
+## Creating a course instance
 
 A course instance corresponds to a single offering of a course, such as "Fall 2020", or possibly "Fall 2020, Section M". Follow the steps below to create a new course instance:
 
@@ -61,9 +57,9 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 ![](start-guide/homepage_new_instance.png)
 
-### Creating questions from scratch
+## Creating a question
 
-##### Add a new question
+### 1) Adding a new question
 
 * go to the `Questions` tab. Your questions page should be similar to the example below:
 
@@ -136,7 +132,7 @@ To provide a simple example, here we first create a question without any randomi
 
 Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
 
-##### Start a new question from an existing one
+### 2) Creating a new question from an existing one inside your course
 
 * from the `Questions` tab, select the question you want to copy. As an example, we will use the question with QID `find_rectangle_area`.
 
@@ -204,7 +200,7 @@ def generate(data):
 
 * go to the `Preview` tab to see your question. Try it out! Check a different variant and see how the variables change.
 
-### Creating questions from the example course
+### 3) Copying a question from the example course
 
 You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to (depicted in red in the figure below). Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
@@ -220,7 +216,7 @@ You will find a variety of questions in the example course. This is probably you
 
 * That is it! Go to the `Questions` tab and you will see the question was added to your course. You can modify the question following the steps from the section above.
 
-### Creating a new assessment
+## Creating an assessment
 
 Before you create an assessment, make sure you are in the desired course instance. For example, we want to create a homework assessment in the "Fall 2020" course instance, as indicated below.
 
@@ -271,8 +267,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 * click `Save and sync`.
 
 
-
-Learn more:
+**Learn more:**
 
 - [Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
 
