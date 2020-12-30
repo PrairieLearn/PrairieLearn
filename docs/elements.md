@@ -1450,13 +1450,13 @@ Attribute | Type | Default | Description
 
 ### `pl-xss-safe` element
 
-Removes potentially dangerous scripts from an HTML code. This is recommended when parsing and displaying student-provided code.
+Removes potentially dangerous scripts from an HTML code. This is recommended when parsing and displaying student-provided code. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
 
 #### Sample element
 
 ```html
 <pl-xss-safe>
-{{{submitted_answers.ans1}}}
+{{{submitted_answers.answer}}}
 </pl-xss-safe>
 ```
 
@@ -1464,19 +1464,9 @@ Removes potentially dangerous scripts from an HTML code. This is recommended whe
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`source-file-name` | text | - | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet).
-
-#### Interaction with other elements
-
-Although it is possible to include this element inside a `<markdown>` tag, it is usually better to convert from markdown to HTML before stripping the unsafe characters, as in the example below:
-
-```html
-<pl-xss-safe>
-<markdown>
-{{{submitted_answers.ans1}}}
-</markdown>
-</pl-xss-safe>
-```
+`source-file-name` | string | - | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet).
+`submitted-file-name` | string | - | Name of the file submitted by the user to (typically using a `pl-file-editor` or `pl-file-upload` element) with the code to be used.
+`language` | string | html | Language of the provided code. The values "html" or "markdown" are currently supported.
 
 #### Example implementations
 
