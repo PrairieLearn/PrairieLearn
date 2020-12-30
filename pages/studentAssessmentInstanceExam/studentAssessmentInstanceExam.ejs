@@ -132,7 +132,7 @@
                 Time remaining: <span id="countdownDisplay"></span>
               </div>
             </div>
-            <%- include('../partials/countdown', {
+            <%- include('../partials/examTimeLimitCountdown', {
               serverTimeLimitMS: assessment_instance_time_limit_ms,
               serverRemainingMS: assessment_instance_remaining_ms,
               progressSelector: '#countdownProgress',
