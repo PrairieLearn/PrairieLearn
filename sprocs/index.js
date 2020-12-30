@@ -98,6 +98,7 @@ module.exports = {
             'assessment_instances_grade.sql',
             'assessment_instances_regrade.sql',
             'assessment_instances_select_for_auto_close.sql',
+            'assessment_instances_select_log.sql',
             'assessment_instances_ensure_open.sql',
             'instance_questions_points_homework.sql',
             'instance_questions_points_exam.sql',
@@ -184,6 +185,7 @@ module.exports = {
             'workspace_hosts_recapture_draining.sql',
             'workspace_hosts_drain_extra.sql',
             'workspace_hosts_find_terminable.sql',
+            'chunks_insert.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

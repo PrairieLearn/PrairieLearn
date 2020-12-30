@@ -19,7 +19,8 @@ WHERE
 UPDATE workspace_hosts
 SET
     state = 'unhealthy',
-    unhealthy_at = NOW()
+    unhealthy_at = NOW(),
+    unhealthy_reason = 'health check failed'
 WHERE
     instance_id = $instance_id
     AND wh.state IN ('launching', 'ready', 'draining');

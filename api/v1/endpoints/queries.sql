@@ -97,6 +97,7 @@ WITH object_data AS (
         aar.password,
         aar.seb_config,
         aar.show_closed_assessment,
+        aar.show_closed_assessment_score,
         format_date_iso8601(aar.start_date, ci.display_timezone) AS start_date,
         aar.time_limit_min,
         aar.uids

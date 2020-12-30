@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
     <link href="/stylesheets/issues.css" rel="stylesheet" />
@@ -188,9 +188,11 @@
                 #<%= row.issue_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span>
                 <% if (row.show_user) { %>
                   <% if (row.manually_reported) { %>by<% } else { %>for<% } %>
-                  <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=Hello%20<%= row.user_name %>,%0ARegarding%20the%20issue%20of:%0A%0A%22<%= row.student_message || '-' %>%22%0A%0AWe've..."><%= row.user_uid || '-' %></a>)
+                  <% let body = encodeURIComponent("Hello " + row.user_name + ",\n\nRegarding the issue of:\n\n\"" + (row.student_message || '-') +"\"\n\nWe've..."); %>
+                  <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= row.user_uid || '-' %></a>)
                 <% } %>
               </small>
+              <% } %>
               <% if (row.manually_reported) { %>
               <span class="badge badge-info">Manually reported</span>
               <% } else { %>

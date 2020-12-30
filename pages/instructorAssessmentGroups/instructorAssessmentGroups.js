@@ -35,16 +35,6 @@ function obtainInfo(req, res, next){
         res.locals.config_info.defaultMin = res.locals.config_info.minimum || 2;
         res.locals.config_info.defaultMax = res.locals.config_info.maximum || 5;
 
-        res.locals.config_info.permission = '';
-        if (res.locals.config_info.student_authz_join) {
-            res.locals.config_info.permission += 'join ';
-        }
-        if (res.locals.config_info.student_authz_create) {
-            res.locals.config_info.permission += 'create ';
-        }
-        if (res.locals.config_info.student_authz_leave) {
-            res.locals.config_info.permission += 'leave ';
-        }
         const params = {
             assessment_id: res.locals.assessment.id,
             course_instance_id: res.locals.config_info.course_instance_id,

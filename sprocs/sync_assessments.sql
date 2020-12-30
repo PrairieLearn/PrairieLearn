@@ -190,7 +190,8 @@ BEGIN
                 exam_uuid,
                 start_date,
                 end_date,
-                show_closed_assessment)
+                show_closed_assessment,
+                show_closed_assessment_score)
             (
                 SELECT
                     new_assessment_id,
@@ -204,7 +205,8 @@ BEGIN
                     (access_rule->>'exam_uuid')::uuid,
                     input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
-                    (access_rule->>'show_closed_assessment')::boolean
+                    (access_rule->>'show_closed_assessment')::boolean,
+                    (access_rule->>'show_closed_assessment_score')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -223,7 +225,8 @@ BEGIN
                 seb_config = EXCLUDED.seb_config,
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date,
-                show_closed_assessment = EXCLUDED.show_closed_assessment;
+                show_closed_assessment = EXCLUDED.show_closed_assessment,
+                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score;
         END LOOP;
 
         -- Delete excess access rules
@@ -421,6 +424,7 @@ BEGIN
     FROM assessments AS a
     WHERE
         a.deleted_at IS NULL
+        AND a.course_instance_id = syncing_course_instance_id
         AND (
             a.assessment_set_id IS NULL
             OR a.number IS NULL

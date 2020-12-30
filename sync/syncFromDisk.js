@@ -6,6 +6,8 @@ const namedLocks = require('../lib/named-locks');
 const courseDB = require('./course-db');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
+const config = require('../lib/config');
+
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
 const syncTopics = require('./fromDisk/topics');
@@ -22,15 +24,23 @@ const { promisify } = require('util');
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 /**
+ * @typedef {Object} SyncResults
+ * @property {boolean} hadJsonErrors
+ * @property {string} courseId
+ * @property {import('./course-db').CourseData} courseData
+ */
+
+/**
  *
  * @param {string} courseDir
  * @param {any} courseId
  * @param {any} logger
- * @returns Promise<{{ hadJsonErrors: boolean }}>
+ * @returns Promise<SyncResults>
  */
 async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info('Loading info.json files from course repository');
     perf.start('sync');
+
     const courseData = await perf.timedAsync('loadCourseData', () => courseDB.loadFullCourseNew(courseDir));
     // Write any errors and warnings to sync log
     courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, line => logger.info(line || ''));
@@ -48,7 +58,12 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     }));
     perf.end('syncAssessments');
     await freeformServer.reloadElementsForCourse(courseDir, courseId);
+    if (config.devMode) {
+        logger.info('Flushing course element and extensions cache...');
+        freeformServer.flushElementCache();
+    }
     const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
+    const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
     if (courseDataHasErrors) {
         logger.info(chalk.yellow('⚠ Some JSON files contained errors and were unable to be synced'));
     } else {
@@ -57,6 +72,9 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     perf.end('sync');
     return {
         hadJsonErrors: courseDataHasErrors,
+        hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
+        courseId,
+        courseData,
     };
 }
 
@@ -64,7 +82,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
  * @param {string} courseDir
  * @param {any} course_id
  * @param {any} logger
- * @param {(err: Error | null, result: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result: SyncResults) => void} callback
  */
 module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
     util.callbackify(async () => {
@@ -76,7 +94,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
  * @param {string} courseDir
  * @param {string} course_id
  * @param {any} logger
- * @param {(err: Error | null, result?: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result?: SyncResults) => void} callback
  */
 module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     const lockName = 'coursedir:' + courseDir;
@@ -104,7 +122,7 @@ module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
 /**
  * @param {string} courseDir
  * @param {any} logger
- * @param {(err: Error | null, result?: { hadJsonErrors: boolean }) => void} callback
+ * @param {(err: Error | null, result?: SyncResults) => void} callback
  */
 module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
     sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {

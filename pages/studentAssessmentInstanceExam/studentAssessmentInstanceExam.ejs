@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -28,7 +28,7 @@
             <% if (assessment_instance.all_questions_answered) { %>
             <div class="alert alert-warning">There are still unanswered questions.</div>
             <% } %>
-            <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
+            <p class="text-danger"><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
             <p>Are you sure you want to finish, complete, and close out the assessment?</p>
           </div>
           <div class="modal-footer">
@@ -76,7 +76,7 @@
         <div class="card-body">
           <% if (!assessment.allow_real_time_grading) { %>
             <div class="alert alert-warning">
-              This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later.
+              This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later. You can use the <span class="badge badge-outline badge-light">Finish assessment</span> button below to finish and calculate your final grade.
             </div>
           <% } %>
           <div class="row align-items-center">
@@ -208,7 +208,7 @@
 
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
-                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
+                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
                 <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
               <% } else { %>
                 <td class="text-center">
@@ -239,7 +239,7 @@
             <ul class="my-1">
               <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
               <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
-              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
+              <% if (authz_result.mode == 'SEB' || authz_result.password != null || authz_result.show_closed_assessment == false) { %>
                 <li>
                   After you have answered all the questions completely, click here:
                   <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal"<% if (!authz_result.authorized_edit) { %> disabled<% } %>>Finish assessment</button>
@@ -251,14 +251,10 @@
           <% } else { %>
             <ul class="my-1">
               <li>Submit your answer to each question with the <strong>Save</strong> button on the question page.</li>
-              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
-                <li>
-                  After you have answered all the questions completely, click here:
-                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal" <% if (!authz_result.authorized_edit) { %> disabled<% } %>>Finish assessment</button>
-                </li>
-              <% } else { %>
-                <li>When you are done, please logout and close your browser; there is no need to do anything else. Your saved answers will be automatically graded when your final score is computed.</li>
-              <% } %>
+              <li>
+                After you have answered all the questions completely, click here:
+                <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal" <% if (!authz_result.authorized_edit) { %> disabled<% } %>>Finish assessment</button>
+              </li>
             </ul>
           <% } %>
           <% if (!authz_result.authorized_edit) { %>
