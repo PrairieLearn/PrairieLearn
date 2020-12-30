@@ -135,6 +135,8 @@
             <%- include('../partials/examTimeLimitCountdown', {
               serverTimeLimitMS: assessment_instance_time_limit_ms,
               serverRemainingMS: assessment_instance_remaining_ms,
+              serverUpdateURL: urlPrefix + '/assessment_instance/' +
+                               assessment_instance.id + '/time_remaining',
               progressSelector: '#countdownProgress',
               displaySelector: '#countdownDisplay',
             }) %>

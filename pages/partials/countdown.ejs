@@ -40,7 +40,7 @@ This bound is fairly tight if d1 is small.
 We assume that we have been passed the value of (countdownEnd -
 process) in milliseconds as the variable
 "serverRemainingMS". Periodically (every one minute) we update this
-remaining time, and at this point we update clientStart as well.
+remaining time from the server, and at this point we update clientStart as well.
 
 *********************************************************************/
 %>
@@ -50,7 +50,7 @@ $(function() {
   var serverRemainingMS;
   var serverTimeLimitMS;
   var clientStart;
-  
+
   var countdownDisplay = $('<%= displaySelector %>');
   var countdownProgress = $('<%= progressSelector %>');
   countdownProgress.addClass('progress');
@@ -62,6 +62,7 @@ $(function() {
       serverTimeLimitMS = data.serverTimeLimitMS;
       console.log('Time remaining: ' + serverRemainingMS + ' ms');
       clientStart = Date.now();
+      if (serverRemainingMS <= 0) {
       if (serverRemainingMS <= 500) {
           <%= timerOutCode %>;
       } else
@@ -93,7 +94,7 @@ $(function() {
           countdownDisplay.text(remainingSec + ' sec');
       }
 
-      if (remainingMS > 500) {
+      if (remainingMS > 0) {
           // reschedule for the next half-second time
           window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
       } else {
