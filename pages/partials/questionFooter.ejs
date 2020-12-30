@@ -53,9 +53,9 @@
         <div class="col d-flex justify-content-between">
         <span class="d-flex">
         <% if (showGradeButton && disableGradeButton) { %>
-          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended for: <span id='submission-suspended-display'></span> <div id='submission-suspended-progress'></div> </small>
+          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended for: <span id='submission-suspended-display'></span> <div id='submission-suspended-progress' class='border border-info'></div> </small>
           <%- include('countdown', {
-               serverTimeLimitMS: assessment_question.submission_rate_limit_min,
+               serverTimeLimitMS: assessment_question.submission_rate_limit_min * 60 * 1000,
                serverRemainingMS: instance_question.next_submission_left_ms,
                progressSelector: '#submission-suspended-progress',
                displaySelector: '#submission-suspended-display',

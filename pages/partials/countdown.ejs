@@ -87,8 +87,6 @@ $(function() {
       <% } else { %>
       var backgroundColor = 'bg-primary';
       <% } %>
-      console.log(remainingMS, backgroundColor, perc);
-      countdownProgressBar = countdownProgress.children('div');
       
       countdownProgressBar.css('width', perc + '%');
       countdownProgressBar.attr('class', 'progress-bar ' + backgroundColor);
