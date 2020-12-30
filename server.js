@@ -661,7 +661,7 @@ module.exports.initExpress = function() {
     app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining', [
         require('./middlewares/selectAndAuthzAssessmentInstance'),
         require('./middlewares/studentAssessmentAccess'),
-        require('./pages/studentAssessmentInstanceTimeLeft/studentAssessmentInstanceTimeLeft'),
+        require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
         require('./middlewares/selectAndAuthzAssessmentInstance'),
