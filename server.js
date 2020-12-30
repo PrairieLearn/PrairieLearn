@@ -9,6 +9,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
 const blocked = require('blocked');
@@ -72,11 +73,21 @@ module.exports.initExpress = function() {
     const app = express();
     app.set('views', path.join(__dirname, 'pages'));
     app.set('view engine', 'ejs');
-    app.set('trust proxy', 'loopback');
+    app.set('trust proxy', config.trustProxy);
     config.devMode = (app.get('env') == 'development');
 
     app.use(function(req, res, next) {res.locals.config = config; next();});
     app.use(function(req, res, next) {config.setLocals(res.locals); next();});
+
+    // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
+    app.use(function(req, res, next) {
+        if (req.headers['user-agent']) {
+            res.locals.userAgent = Bowser.parse(req.headers['user-agent']);
+        } else {
+            res.locals.userAgent = null;
+        }
+        next();
+    });
 
     // special parsing of file upload paths -- this is inelegant having it
     // separate from the route handlers but it seems to be necessary
@@ -647,6 +658,11 @@ module.exports.initExpress = function() {
         require('./middlewares/studentAssessmentAccess'),
         require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining', [
+        require('./middlewares/selectAndAuthzAssessmentInstance'),
+        require('./middlewares/studentAssessmentAccess'),
+        require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
         require('./middlewares/selectAndAuthzAssessmentInstance'),
         require('./middlewares/logPageView')('studentAssessmentInstance'),
@@ -670,6 +686,11 @@ module.exports.initExpress = function() {
         app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
         app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
     }
+
+    // Serve extension statics
+    app.use('/pl/course_instance/:course_instance_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+    app.use('/pl/course_instance/:course_instance_id/instructor/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+    app.use('/pl/course/:course_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
 
     // student - news_items
     app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
@@ -956,7 +977,7 @@ module.exports.insertDevUser = function(callback) {
 if (config.startServer) {
     async.series([
         async () => {
-            logger.info('PrairieLearn server start');
+            logger.verbose('PrairieLearn server start');
 
             let configFilename = 'config.json';
             if ('config' in argv) {
@@ -1156,7 +1177,7 @@ if (config.startServer) {
         } else {
             logger.info('PrairieLearn server ready, press Control-C to quit');
             if (config.devMode) {
-                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
+                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
             }
             if ('exit' in argv) { logger.info('exit option passed, quitting...'); process.exit(0); }
         }
