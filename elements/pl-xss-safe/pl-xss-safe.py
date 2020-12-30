@@ -19,7 +19,7 @@ def prepare(element_html, data):
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     submitted_file_name = pl.get_string_attrib(element, 'submitted-file-name', SUBMITTED_FILE_NAME_DEFAULT)
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
-    
+
     if source_file_name is not None or submitted_file_name is not None:
         if element.text is not None and not str(element.text).isspace():
             raise Exception('Existing code cannot be added inside html element when "source-file-name" or "submitted-file-name" attributes are used.')
@@ -43,7 +43,7 @@ def render(element_html, data):
 
         with open(file_path, 'r') as f:
             code = f.read()
-        
+
     elif submitted_file_name is not None:
 
         files = data.get('submitted_answers', {}).get('_files', {})
