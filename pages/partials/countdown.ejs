@@ -72,7 +72,7 @@ remaining time, and at this point we update clientStart as well.
       serverTimeLimitMS = data.serverTimeLimitMS;
       console.log('Time remaining: ' + serverRemainingMS + ' ms');
       clientStart = Date.now();
-      if (serverRemainingMS <= 500) {
+      if (serverRemainingMS <= 0) {
           // do not trigger unsaved warning dialog
           window.allowQuestionUnload = true;
           document.forms['time-limit-finish-form'].submit();
@@ -101,7 +101,7 @@ remaining time, and at this point we update clientStart as well.
           countdownProgressBar.attr('class', 'progress-bar bg-danger');
       }
 
-      if (remainingMS > 500) {
+      if (remainingMS > 0) {
           // reschedule for the next half-second time
           window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
       } else {
