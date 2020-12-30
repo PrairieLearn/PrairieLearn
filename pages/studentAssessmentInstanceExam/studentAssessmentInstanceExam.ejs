@@ -135,6 +135,8 @@
             <%- include('../partials/countdown', {
               serverTimeLimitMS: assessment_instance_time_limit_ms,
               serverRemainingMS: assessment_instance_remaining_ms,
+              serverUpdateURL: urlPrefix + '/assessment_instance/' +
+                               assessment_instance.id + '/time_remaining',
               progressSelector: '#countdownProgress',
               displaySelector: '#countdownDisplay',
             }) %>
@@ -206,7 +208,7 @@
 
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
-                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
+                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
                 <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
               <% } else { %>
                 <td class="text-center">
