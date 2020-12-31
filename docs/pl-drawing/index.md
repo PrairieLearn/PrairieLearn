@@ -1397,8 +1397,8 @@ class BaseElement:
 
 Any element is free to define any of the above methods, and a description for each is given here:
 
-- `generate(element)`
-  Generates the representation of the element that is sent to the clientside JavaScript.  This function should parse element attributes using `prairielearn.get_x_attrib(el)` and return a dictionary that describes the element.  The exact format of this dictionary is unimportant, as only the JavaScript implementation of your element will later be using this.
+- `generate(element, data)`
+  Generates the representation of the element that is sent to the clientside JavaScript.  This function should parse element attributes using `prairielearn.get_x_attrib(el)` and return a dictionary that describes the element.  The exact format of this dictionary is unimportant, as only the JavaScript implementation of your element will later be using this.  `data` is a dictionary that currently contains `clientFilesUrl`, the base URL in which all client files can be loaded from.
 - `is_gradable()`
   Returns `True` if the current element is gradable, other it returns `False` if the element is not gradable and should be skipped in the grading stage.
 - `grade(ref, student, tol, angtol)`
@@ -1414,7 +1414,7 @@ Here is an example definition of the `pl-point` element:
 
 ```python
 class Point(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'black')
 
         return {
