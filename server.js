@@ -214,7 +214,9 @@ module.exports.initExpress = function() {
     app.use(express.static(path.join(__dirname, 'public')));
     app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
     app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
-    app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules')));
+    app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules'), {
+        maxAge: '31557600',
+    }));
     app.use((req, res, next) => {
         res.locals.node_modules_path = (filePath) => {
             const [maybeScope, maybeModule] = filePath.split('/');
@@ -228,7 +230,7 @@ module.exports.initExpress = function() {
             const version = require(`${moduleName}/package.json`).version;
             const hashedVersion = crypto.createHash('sha256').update(version).digest('hex');
             const hashSlice = hashedVersion.slice(0, 16);
-            return path.join('cacheable_node_modules', hashSlice, filePath);
+            return `/cacheable_node_modules/${hashSlice}/${filePath}`;
         };
         next();
     });
