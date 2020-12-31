@@ -192,7 +192,6 @@
                   <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= row.user_uid || '-' %></a>)
                 <% } %>
               </small>
-              <% } %>
               <% if (row.manually_reported) { %>
               <span class="badge badge-info">Manually reported</span>
               <% } else { %>
