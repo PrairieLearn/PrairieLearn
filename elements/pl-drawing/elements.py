@@ -35,7 +35,7 @@ elements = {}
 
 
 class BaseElement:
-    def generate(element):
+    def generate(element, data):
         return {}
 
     def is_gradable():
@@ -58,7 +58,7 @@ class BaseElement:
 
 
 class ControlledLine(BaseElement):
-    def generate(el):
+    def generate(el, data):
         if 'draw-error-box' in el.attrib:
             obj_draw = el.attrib['draw-error-box'] == 'true'
         else:
@@ -106,7 +106,7 @@ class ControlledLine(BaseElement):
 
 
 class ControlledCurvedLine(BaseElement):
-    def generate(el):
+    def generate(el, data):
         if 'draw-error-box' in el.attrib:
             obj_draw = el.attrib['draw-error-box'] == 'true'
         else:
@@ -165,7 +165,7 @@ class ControlledCurvedLine(BaseElement):
 
 
 class Roller(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'brown1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
@@ -191,7 +191,7 @@ class Roller(BaseElement):
 
 
 class Clamped(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'black')
         return {
             'x1': pl.get_float_attrib(el, 'x1', drawing_defaults['x1']),
@@ -214,7 +214,7 @@ class Clamped(BaseElement):
 
 
 class FixedPin(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'brown1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         obj = {
@@ -241,7 +241,7 @@ class FixedPin(BaseElement):
 
 
 class Rod(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'white')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
@@ -269,7 +269,7 @@ class Rod(BaseElement):
 
 
 class CollarRod(BaseElement):
-    def generate(el):
+    def generate(el, data):
         w = pl.get_float_attrib(el, 'width', 20)
         color = pl.get_color_attrib(el, 'color', 'white')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -304,7 +304,7 @@ class CollarRod(BaseElement):
 
 
 class ThreePointRod(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'white')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = pl.get_float_attrib(el, 'x1', 40)
@@ -343,7 +343,7 @@ class ThreePointRod(BaseElement):
 
 
 class FourPointRod(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'white')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = pl.get_float_attrib(el, 'x1', 40)
@@ -390,7 +390,7 @@ class FourPointRod(BaseElement):
 
 
 class Pulley(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'gray')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         r = pl.get_float_attrib(el, 'radius', 20)
@@ -424,7 +424,7 @@ class Pulley(BaseElement):
 
 
 class Vector(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'red3')
         anchor_is_tail = pl.get_boolean_attrib(el, 'anchor-is-tail', True)
         # This is the anchor point for Grading
@@ -542,8 +542,8 @@ class Vector(BaseElement):
 
 
 class DoubleHeadedVector(BaseElement):
-    def generate(el):
-        obj = Vector.generate(el)
+    def generate(el, data):
+        obj = Vector.generate(el, data)
         obj['type'] = 'pl-double-headed-vector'
         return obj
 
@@ -552,7 +552,7 @@ class DoubleHeadedVector(BaseElement):
 
 
 class ArcVector(BaseElement):
-    def generate(el):
+    def generate(el, data):
         disregard_sense = pl.get_boolean_attrib(el, 'disregard-sense', False)
         color = pl.get_color_attrib(el, 'color', 'purple')
         clockwise_direction = pl.get_boolean_attrib(el, 'clockwise-direction', True)
@@ -636,7 +636,7 @@ class ArcVector(BaseElement):
 
 
 class DistributedLoad(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'red3')
         anchor_is_tail = pl.get_boolean_attrib(el, 'anchor-is-tail', True)
         # This is the anchor point for Grading
@@ -773,7 +773,7 @@ class DistributedLoad(BaseElement):
 
 
 class Point(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'black')
         # Error box for grading
         x1 = pl.get_float_attrib(el, 'x1', 40)
@@ -830,7 +830,7 @@ class Point(BaseElement):
 
 
 class Coordinates(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'black')
         return {
             'left': pl.get_float_attrib(el, 'x1', drawing_defaults['x1']),
@@ -861,7 +861,7 @@ class Coordinates(BaseElement):
 
 
 class Dimensions(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'stroke-color', 'black')
         offset = pl.get_float_attrib(el, 'dim-offset', 0)
         x1 = pl.get_float_attrib(el, 'x1', drawing_defaults['x1'])
@@ -922,7 +922,7 @@ class Dimensions(BaseElement):
 
 
 class ArcDimensions(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
             'left': pl.get_float_attrib(el, 'x1', drawing_defaults['x1']),
@@ -954,7 +954,7 @@ class ArcDimensions(BaseElement):
 
 
 class Rectangle(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'green1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
@@ -976,7 +976,7 @@ class Rectangle(BaseElement):
 
 
 class Triangle(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'red1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
@@ -996,7 +996,7 @@ class Triangle(BaseElement):
 
 
 class Circle(BaseElement):
-    def generate(el):
+    def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'grey')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
@@ -1022,7 +1022,7 @@ class Circle(BaseElement):
 
 
 class Polygon(BaseElement):
-    def generate(el):
+    def generate(el, data):
         pointlist = json.loads(pl.get_string_attrib(el, 'plist', '[{"x": 66.21260699999999, "y": 82.746078}, {"x": 25.880586, "y": 78.50701}, {"x": 17.448900000000002, "y": 38.839035}, {"x": 52.569852, "y": 18.561946}, {"x": 82.707481, "y": 45.697991}]'))
         color = pl.get_color_attrib(el, 'color', 'white')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -1041,7 +1041,7 @@ class Polygon(BaseElement):
 
 
 class Spring(BaseElement):
-    def generate(el):
+    def generate(el, data):
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = pl.get_float_attrib(el, 'x1', drawing_defaults['x1'])
         y1 = pl.get_float_attrib(el, 'y1', drawing_defaults['y1'])
@@ -1074,7 +1074,7 @@ class Spring(BaseElement):
 
 
 class Line(BaseElement):
-    def generate(el):
+    def generate(el, data):
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = pl.get_float_attrib(el, 'x1', drawing_defaults['x1'])
         y1 = pl.get_float_attrib(el, 'y1', drawing_defaults['y1'])
@@ -1109,7 +1109,7 @@ class Line(BaseElement):
 
 
 class Arc(BaseElement):
-    def generate(el):
+    def generate(el, data):
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         theta1 = pl.get_float_attrib(el, 'start-angle', drawing_defaults['angle']) * math.pi / 180
         theta2 = pl.get_float_attrib(el, 'end-angle', drawing_defaults['end-angle']) * math.pi / 180
@@ -1138,7 +1138,7 @@ class Arc(BaseElement):
 
 
 class Text(BaseElement):
-    def generate(el):
+    def generate(el, data):
         return {
             'left': pl.get_float_attrib(el, 'x1', drawing_defaults['x1']),
             'top': pl.get_float_attrib(el, 'y1', drawing_defaults['y1']),
@@ -1154,7 +1154,7 @@ class Text(BaseElement):
 
 
 class Axes(BaseElement):
-    def generate(el):
+    def generate(el, data):
         if 'origin' in el.attrib:
             origin = json.loads(pl.get_string_attrib(el, 'origin'))
             origin_x = origin['x']
@@ -1190,7 +1190,7 @@ class Axes(BaseElement):
 
 
 class GraphLine(BaseElement):
-    def generate(el):
+    def generate(el, data):
         curved_line = False
 
         if 'origin' in el.attrib:
@@ -1405,13 +1405,17 @@ elements['pl-controls-group'] = DrawingControlsGroup
 elements['pl-drawing-button'] = DrawingControlsButton
 
 
+# Store elements that have been registered via extensions
+registered_elements = {}
+
+
 # Helper Functions
 
 def should_validate_attributes(name):
     if name in elements:
         return elements[name].validate_attributes()
     else:
-        return True
+        return False
 
 
 def get_attributes(name):
@@ -1425,7 +1429,8 @@ def generate(element, name, defaults={}):
     if name in elements:
         obj = defaults.copy()
         cls = elements[name]
-        obj.update(cls.generate(element))
+        data = registered_elements.get(name, [])
+        obj.update(cls.generate(element, data))
 
         # By default, set the grading name to the element name
         gradingName = cls.grading_name(element)
@@ -1451,3 +1456,12 @@ def grade(reference, element, name, tol, angtol):
         if cls.is_gradable():
             return elements[name].grade(reference, element, tol, angtol)
     return False
+
+
+def register_extension(name, module, data):
+    data_obj = {
+        'clientFilesUrl': data['options'].get('client_files_extensions_url', {}).get(name, None)
+    }
+    for elem_name, elem in module.elements.items():
+        registered_elements[elem_name] = data_obj
+        elements[elem_name] = elem

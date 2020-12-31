@@ -60,6 +60,7 @@ window.PLDrawingApi = {
     },
 
     'elements': {},
+    'elementModule': {},
     /**
      * Register a dictionary of elements.  These should map element names
      * to a static class corresponding to the element itself.
@@ -69,6 +70,9 @@ window.PLDrawingApi = {
      */
     registerElements: function(extensionName, dictionary) {
         _.extend(this.elements, dictionary);
+        Object.keys(dictionary).forEach(elem => {
+            this.elementModule[elem] = extensionName;
+        });
     },
 
     /**
@@ -148,18 +152,24 @@ window.PLDrawingApi = {
 
         /* Set all button icons */
         let drawing_btns = $(root_elem).find('button');
-        let image_base_url = elem_options['client_files'];
+        const image_base_url = elem_options['client_files'];
+        const element_base_url = elem_options['element_client_files'];
         drawing_btns.each(function(i, btn) {
             let img = btn.children[0];
-            let opts = parseElemOptions(img.parentNode);
-            let elem = window.PLDrawingApi.getElement(opts.type);
+            const opts = parseElemOptions(img.parentNode);
+            const elem = window.PLDrawingApi.getElement(opts.type);
+            const elem_name = opts.type;
             if (elem !== null) {
                 let image_filename = elem.get_button_icon(opts);
                 if (image_filename !== null) {
                     if (!image_filename.endsWith('.svg')) {
                         image_filename += '.svg';
                     }
-                    img.setAttribute('src', image_base_url + image_filename);
+                    let base = image_base_url;
+                    if (window.PLDrawingApi.elementModule[elem_name] !== '_base') {
+                        base = element_base_url[window.PLDrawingApi.elementModule[elem_name]] + '/';
+                    }
+                    img.setAttribute('src', base + image_filename);
                 }
                 let image_tooltip = elem.get_button_tooltip(opts);
                 if (image_tooltip !== null) {

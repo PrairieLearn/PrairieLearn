@@ -40,6 +40,12 @@ def union_drawing_items(e1, e2):
     return newobj
 
 
+def load_extensions(data):
+    extensions = pl.load_all_extensions(data)
+    for name, ext in extensions.items():
+        elements.register_extension(name, ext, data)
+
+
 def check_attributes_rec(element):
     # Recursively check attributes for a tree of elements
 
@@ -62,6 +68,8 @@ def prepare(element_html, data):
     w_button = None
 
     prev = not pl.get_boolean_attrib(element, 'gradable', defaults.element_defaults['gradable'])
+
+    load_extensions(data)
 
     # Some preparation for elements with grading componenet
     if not prev:
@@ -224,6 +232,8 @@ def render(element_html, data):
     btn_markup = ''
     init = []
 
+    load_extensions(data)
+
     for el in element:
         if el.tag is lxml.etree.Comment:
             continue
@@ -251,6 +261,7 @@ def render(element_html, data):
         'editable': (data['panel'] == 'question' and not preview_mode),
         'base_url': data['options']['base_url'],
         'client_files': '/pl/static/elements/pl-drawing/clientFilesElement/',
+        'element_client_files': data['options']['client_files_extensions_url'],
         'render_scale': pl.get_float_attrib(element, 'render-scale', defaults.element_defaults['render-scale']),
         'width': pl.get_string_attrib(element, 'width', defaults.element_defaults['width']),
         'height': pl.get_string_attrib(element, 'height', defaults.element_defaults['height'])
