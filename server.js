@@ -21,6 +21,7 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const crypto = require('crypto');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -213,6 +214,24 @@ module.exports.initExpress = function() {
     app.use(express.static(path.join(__dirname, 'public')));
     app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
     app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+    app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules')));
+    app.use((req, res, next) => {
+        res.locals.node_modules_path = (filePath) => {
+            const [maybeScope, maybeModule] = filePath.split('/');
+            let moduleName;
+            if (maybeScope.indexOf('@') === 0) {
+                // This is a scoped module
+                moduleName = `${maybeScope}/${maybeModule}`;
+            } else {
+                moduleName = maybeScope;
+            }
+            const version = require(`${moduleName}/package.json`).version;
+            const hashedVersion = crypto.createHash('sha256').update(version).digest('hex');
+            const hashSlice = hashedVersion.slice(0, 16);
+            return path.join('cacheable_node_modules', hashSlice, filePath);
+        };
+        next();
+    });
 
     // Support legacy use of ace by v2 questions
     app.use('/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
