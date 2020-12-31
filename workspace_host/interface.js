@@ -168,7 +168,7 @@ async.series([
     async () => {
         /* Always grab the port from the config */
         workspace_server_settings.port = config.workspaceHostPort;
-        logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
+        logger.verbose(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
     },
     (callback) => {
         const pgConfig = {
@@ -212,7 +212,7 @@ async.series([
     (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
-        logger.info(`Listening on port ${workspace_server_settings.port}`);
+        logger.verbose(`Workspace server listening on port ${workspace_server_settings.port}`);
         callback(null);
     },
     async () => {
@@ -350,7 +350,7 @@ async.series([
         logger.error('Error initializing workspace host:', err, data);
         markSelfUnhealthyAsync(err);
     } else {
-        logger.info('Successfully initialized workspace host');
+        logger.info('Workspace host ready');
     }
 });
 

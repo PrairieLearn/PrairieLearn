@@ -1,7 +1,4 @@
-FROM centos:7
-
-# Needed for AWS to properly handle UTF-8
-ENV PYTHONIOENCODING=UTF-8
+FROM amazonlinux:2
 
 # Make sure we are using UTF-8 for python3
 ENV LANG=en_US.UTF-8
