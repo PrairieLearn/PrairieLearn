@@ -6,7 +6,7 @@ class PrairieLearnLogo extends PLDrawingBaseElement {
                 obj.id = PLDrawingApi.generateID();
             }
 
-            /* Set the Fabric object's values from what we loaded *?
+            /* Set the Fabric object's values from what we loaded */
             obj.set({
                 'left': options.left,
                 'top': options.top,
