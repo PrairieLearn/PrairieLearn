@@ -150,7 +150,7 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     except Exception:
         err = sys.exc_info()
 
-    # Now that user code has been run, replace deleted files incase we are to run the tests again.
+    # Now that user code has been run, replace deleted files in case we are to run the tests again.
     with open(join(filenames_dir, 'data.json'), 'w', encoding='utf-8') as f:
         json.dump(data, f)
     with open(fname_ref, 'w', encoding='utf-8') as f:
