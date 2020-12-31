@@ -76,7 +76,7 @@ router.get('/', function(req, res, next) {
             res.locals.suspendedSavedAnswers = 0;
             res.locals.instance_questions.forEach((question) => {
                 if (question.status == 'saved') {
-                    if (question.next_submission_left_ms > 0)
+                    if (question.allow_grade_left_ms > 0)
                         res.locals.suspendedSavedAnswers++;
                     else
                         res.locals.savedAnswers++;

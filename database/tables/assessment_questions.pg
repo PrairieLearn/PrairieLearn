@@ -36,7 +36,7 @@ columns
     some_nonzero_submission_perc: double precision
     some_perfect_submission_perc: double precision
     some_submission_perc: double precision
-    submission_rate_limit_min: integer default 0
+    grade_rate_minutes: integer default 0
     submission_score_array_averages: double precision[]
     submission_score_array_variances: double precision[]
     tries_per_variant: integer default 1

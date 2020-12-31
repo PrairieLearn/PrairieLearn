@@ -13,7 +13,7 @@ SELECT
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
     (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count,
-    iqns.*
+    iqnag.*
 FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -22,7 +22,7 @@ FROM
     JOIN zones AS z ON (z.id = ag.zone_id)
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN question_order(ai.id) AS qo ON (qo.instance_question_id = iq.id)
-    JOIN instance_question_next_submission(iq.id) AS iqns ON TRUE
+    JOIN instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
 WHERE
     ai.id = $assessment_instance_id
 WINDOW

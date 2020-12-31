@@ -17,8 +17,8 @@
     <% } %>
 <% } %>
 
-<% if ("next_submission_left_ms" in instance_question && instance_question.next_submission_left_ms > 0) { %>
-<a class="btn btn-xs" data-toggle="popover" data-html="true" data-content="This question limits the rate of submissions. No further submissions will be processed until: <%= instance_question.next_submission_formatted_date %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
+<% if ("allow_grade_left_ms" in instance_question && instance_question.allow_grade_left_ms > 0) { %>
+<a class="btn btn-xs" data-toggle="popover" data-html="true" data-content="This question limits the rate of submissions. No further submissions will be processed until: <%= instance_question.allow_grade_formatted_date %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
     <i class="fa fa-hourglass-half" aria-hidden="true"></i>
 </a>
 <% } %>

@@ -1,10 +1,10 @@
-DROP FUNCTION IF EXISTS instance_question_next_submission(bigint);
+DROP FUNCTION IF EXISTS instance_questions_next_allowed_grade(bigint);
 CREATE OR REPLACE FUNCTION
-    instance_question_next_submission (
+    instance_questions_next_allowed_grade (
         IN iq_id BIGINT,
-        OUT next_submission_date TIMESTAMPTZ,
-        OUT next_submission_formatted_date TEXT,
-        OUT next_submission_left_ms BIGINT
+        OUT allow_grade_date TIMESTAMPTZ,
+        OUT allow_grade_formatted_date TEXT,
+        OUT allow_grade_left_ms BIGINT
     )
 AS $$
 DECLARE
@@ -16,11 +16,11 @@ BEGIN
     SELECT
         aq.question_id,
         v.course_instance_id,
-        MAX(gj.date + aq.submission_rate_limit_min * INTERVAL '1 min')
+        MAX(gj.date + aq.grade_rate_minutes * INTERVAL '1 min')
     INTO
         question_id,
         course_instance_id,
-        next_submission_date
+        allow_grade_date
     FROM
         instance_questions iq
         JOIN assessment_questions aq ON (aq.id = iq.assessment_question_id)
@@ -29,16 +29,16 @@ BEGIN
         JOIN grading_jobs gj ON (gj.submission_id = s.id)
     WHERE
         iq.id = iq_id
-        AND aq.submission_rate_limit_min IS NOT NULL
+        AND aq.grade_rate_minutes IS NOT NULL
         AND gj.gradable
     GROUP BY
         aq.question_id,
         v.course_instance_id;
 
     IF NOT FOUND THEN
-        next_submission_date := NULL;
-        next_submission_formatted_date := NULL;
-        next_submission_left_ms := 0;
+        allow_grade_date := NULL;
+        allow_grade_formatted_date := NULL;
+        allow_grade_left_ms := 0;
         RETURN;
     END IF;
 
@@ -56,8 +56,8 @@ BEGIN
         JOIN pl_courses AS c ON (c.id = q.course_id)
     WHERE q.id = question_id;
 
-    next_submission_formatted_date := format_date_full_compact(next_submission_date, COALESCE(course_instance_display_timezone, course_display_timezone));
-    next_submission_left_ms := GREATEST(0, floor(extract(epoch from (next_submission_date - CURRENT_TIMESTAMP)) * 1000));
+    allow_grade_formatted_date := format_date_full_compact(allow_grade_date, COALESCE(course_instance_display_timezone, course_display_timezone));
+    allow_grade_left_ms := GREATEST(0, floor(extract(epoch from (allow_grade_date - CURRENT_TIMESTAMP)) * 1000));
 
 END;
 $$ LANGUAGE PLPGSQL IMMUTABLE;

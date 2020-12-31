@@ -98,7 +98,7 @@
             "type": "boolean",
             "default": false
         },
-        "submissionRateLimitMin": {
+        "gradeRateMinutes": {
             "description": "Minimum amount of time (in minutes) between graded submissions of the same question.",
             "type": "integer",
             "minimum": 0
@@ -223,7 +223,7 @@
                         "$ref": "#/definitions/zoneQuestion"
                     }
                 },
-                "submissionRateLimitMin": {
+                "gradeRateMinutes": {
                     "description": "Minimum amount of time (in minutes) between graded submissions of the same question.",
                     "type": "integer",
                     "minimum": 0
@@ -267,7 +267,7 @@
                     "type": "number",
                     "default": 1
                 },
-                "submissionRateLimitMin": {
+                "gradeRateMinutes": {
                     "description": "Minimum amount of time (in minutes) between graded submissions of the same question.",
                     "type": "integer",
                     "minimum": 0
@@ -294,7 +294,7 @@
                     "type": "number",
                     "default": 1
                 },
-                "submissionRateLimitMin": {
+                "gradeRateMinutes": {
                     "description": "Minimum amount of time (in minutes) between graded submissions of the same question.",
                     "type": "integer",
                     "minimum": 0

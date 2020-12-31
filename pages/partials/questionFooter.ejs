@@ -48,29 +48,7 @@
         </span>
       </div>
     </div>
-      <% if (typeof assessment_question !== "undefined" && assessment_question.submission_rate_limit_min) { %>
-      <div class="row">
-        <div class="col d-flex justify-content-between">
-        <span class="d-flex">
-        <% if (showGradeButton && disableGradeButton) { %>
-          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended for: <span id='submission-suspended-display'></span> <div id='submission-suspended-progress' class='border border-info'></div> </small>
-          <%- include('countdown', {
-               serverTimeLimitMS: assessment_question.submission_rate_limit_min * 60 * 1000,
-               serverRemainingMS: instance_question.next_submission_left_ms,
-               progressSelector: '#submission-suspended-progress',
-               displaySelector: '#submission-suspended-display',
-               serverUpdateURL: false,
-               timerOutCode: "window.nextSubmissionReady();",
-               backgroundColorFunction: false,
-              }) %>
-        <% } %>
-        </span>
-        <span class="d-flex">
-          <small class="font-italic align-self-center">Can only be graded once every <%= assessment_question.submission_rate_limit_min %> minutes</small>
-        </span>
-        </div>
-      </div>
-      <% } %>
+    <%- include('submitRateFooter') %>
     <% } %>
 <% } else { %>
     <form class="question-form" name="question-form" method="POST">
@@ -107,9 +85,6 @@
               <% if (showManualGradingMsg) { %>
               <span class="order-4 ml-2">This question will be manually graded.</span>
               <% } %>
-              <% if (showGradeButton && disableGradeButton) { %>
-              <span class="order-3 ml-2 submission-suspended-msg">Submissions suspended until <%= instance_question.next_submission_formatted_date %></span>
-              <% } %>
           </span>
           <span class="d-flex">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -119,36 +94,14 @@
             <% } else if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try a new variant</a>
             <% } else if (hasAttemptsOtherVariants) { %>
             <small class="font-italic align-self-center">Additional attempts available with new variants</small>
-            <button type="button" class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<%= include('newVariantInfo') %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
+            <a class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<%= include('newVariantInfo') %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
-            </button>
+            </a>
             <% } %>
           </span>
         </div>
       </div>
-      <% if (typeof assessment_question !== "undefined" && assessment_question.submission_rate_limit_min) { %>
-      <div class="row">
-        <div class="col d-flex justify-content-between">
-        <span class="d-flex">
-        <% if (showGradeButton && disableGradeButton) { %>
-          <small class="font-italic ml-2 submission-suspended-msg">Submissions suspended for: <span id='submission-suspended-display'></span> <span id='submission-suspended-progress'></span> </small>
-          <%- include('countdown', {
-               serverTimeLimitMS: assessment_question.submission_rate_limit_min,
-               serverRemainingMS: instance_question.next_submission_left_ms,
-               progressSelector: '#submission-suspended-progress',
-               displaySelector: '#submission-suspended-display',
-               serverUpdateURL: false,
-               timerOutCode: "window.nextSubmissionReady();",
-               backgroundColorFunction: false,
-              }) %>
-        <% } %>
-        </span>
-        <span class="d-flex">
-          <small class="font-italic align-self-center">Can only be graded once every <%= assessment_question.submission_rate_limit_min %> minutes</small>
-        </span>
-        </div>
-      </div>
-      <% } %>
+      <%- include('submitRateFooter') %>
       <% } %>
     </form>
 <% } %>

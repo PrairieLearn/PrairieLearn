@@ -181,7 +181,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {string} id
   * @property {boolean} forceMaxPoints
   * @property {number} triesPerVariant
-  * @property {number} submissionRateLimitMin
+  * @property {number} gradeRateMinutes
   */
 
 /**
@@ -193,7 +193,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
- * @property {number} submissionRateLimitMin
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -203,7 +203,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
- * @property {number} submissionRateLimitMin
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -224,7 +224,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
  * @property {boolean} groupWork
- * @property {number} submissionRateLimitMin
+ * @property {number} gradeRateMinutes
  */
 
 /**

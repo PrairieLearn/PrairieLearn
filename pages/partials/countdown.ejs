@@ -85,7 +85,7 @@ $(function() {
       <% if (typeof backgroundColorFunction !== "undefined" && backgroundColorFunction) { %>
       var backgroundColor = <%= backgroundColorFunction%>(remainingSec);
       <% } else { %>
-      var backgroundColor = 'bg-primary';
+      var backgroundColor = 'bg-info';
       <% } %>
       
       countdownProgressBar.css('width', perc + '%');
