@@ -81,6 +81,8 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     os.remove(join(filenames_dir, 'data.json'))
     os.remove(fname_ref)
     os.remove(join(filenames_dir, 'setup_code.py'))
+    os.remove(join(filenames_dir, 'leading_code.py'))
+    os.remove(join(filenames_dir, 'trailing_code.py'))
     os.remove(join(filenames_dir, 'test.py'))
 
     repeated_setup_name = 'repeated_setup()'
@@ -147,12 +149,20 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         err = None
     except Exception:
         err = sys.exc_info()
+
+    # Now that user code has been run, replace deleted files incase we are to run the tests again.
     with open(join(filenames_dir, 'data.json'), 'w', encoding='utf-8') as f:
         json.dump(data, f)
     with open(fname_ref, 'w', encoding='utf-8') as f:
         f.write(str_ref)
     with open(join(filenames_dir, 'setup_code.py'), 'w', encoding='utf-8') as f:
         f.write(str_setup)
+    if len(str_leading) > 0:
+        with open(join(filenames_dir, 'leading_code.py'), 'w', encoding='utf-8') as f:
+            f.write(str_leading)
+    if len(str_trailing) > 0:
+        with open(join(filenames_dir, 'trailing_code.py'), 'w', encoding='utf-8') as f:
+            f.write(str_trailing)
     with open(join(filenames_dir, 'test.py'), 'w', encoding='utf-8') as f:
         f.write(str_test)
     if err is not None:
