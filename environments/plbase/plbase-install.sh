@@ -21,6 +21,7 @@ yum -y install \
     ImageMagick           `# for PrairieDraw label images` \
     texlive               `# for PrairieDraw label images` \
     git \
+    texlive-dvipng \
     graphviz \
     graphviz-devel
 
