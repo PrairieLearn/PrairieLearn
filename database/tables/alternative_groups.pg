@@ -1,7 +1,7 @@
 columns
+    advance_score_perc: double precision
     assessment_id: bigint not null
     id: bigint not null default nextval('alternative_groups_id_seq'::regclass)
-    advance_score_perc: double precision
     number: integer
     number_choose: integer
     zone_id: bigint not null
