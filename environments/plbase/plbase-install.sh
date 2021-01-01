@@ -18,10 +18,10 @@ yum -y install \
     dos2unix \
     tmux \
     tar \
-    ImageMagick           `# for PrairieDraw label images` \
-    texlive               `# for PrairieDraw label images` \
-    git \
+    ImageMagick \
+    texlive \
     texlive-dvipng \
+    git \
     graphviz \
     graphviz-devel
 
