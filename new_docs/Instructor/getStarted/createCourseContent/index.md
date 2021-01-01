@@ -3,7 +3,7 @@
 
 This is a view of your course home page (or a similar variation, depending on when your course was originally created):
 
-![](start-guide/homepage.png)
+![](homepage.png)
 
 This tutorial will show you how to create:
 
@@ -55,7 +55,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 * You will be able to see the new course instance from the course home page.
 
-![](start-guide/homepage_new_instance.png)
+![](homepage_new_instance.png)
 
 ## Creating a question
 
@@ -63,7 +63,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 * go to the `Questions` tab. Your questions page should be similar to the example below:
 
-![](start-guide/question_tab.png)
+![](question_tab.png)
 
 * click the button `Add question`.
 
@@ -128,7 +128,7 @@ To provide a simple example, here we first create a question without any randomi
 
 * if you go back to the question tab, you should see your new question.
 
-![](start-guide/question_add_new_1.png)
+![](question_add_new.png)
 
 Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
 
@@ -204,7 +204,7 @@ def generate(data):
 
 You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to (depicted in red in the figure below). Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
-![](start-guide/change-example-course.png)
+![](change-example-course.png)
 
 You will find a variety of questions in the example course. This is probably your best starting point when creating questions for the first time. Let's see how you can copy one of the example questions to your own course:
 
@@ -220,7 +220,7 @@ You will find a variety of questions in the example course. This is probably you
 
 Before you create an assessment, make sure you are in the desired course instance. For example, we want to create a homework assessment in the "Fall 2020" course instance, as indicated below.
 
-![](start-guide/create_assessment.png)
+![](create_assessment.png)
 
 * click the button `Add assessment`.
 

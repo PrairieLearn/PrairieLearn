@@ -12,31 +12,26 @@ extra_javascript:
 
 pages:
 - Introduction:
-  - 'What is PrairieLearn?': 'index.md'
-  - 'News': 'news_items.md'
+  - 'What is PrairieLearn?': 'Introduction/index.md'
+  - 'News': 'Introduction/news_items.md'
 
 - Instructor Manual:
   - Get Started:
-    - 'Requesting your course space': 'Instructor/GetStarted/requestCourse.md'
-    - 'Creating course content': 'Instructor/GetStarted/getStarted.md'
-    - 'Question Gallery': 'Instructor/GetStarted/questionGallery.md'
-    - 'Workshops': 'workshop/index.md'
+    - 'Requesting your course space': 'Instructor/getStarted/requestCourseSpace/index.md'
+    - 'Creating course content': 'Instructor/getStarted/createCourseContent/index.md'
+    - 'Question Gallery': 'Instructor/getStarted/questionGallery/index.md'
+    - 'Workshops': 'Instructor/getStarted/workshops/index.md'
   - How-to Guides:
     - 'Assessments': 'Instructor/HowTos/howtoAssessments.md'
 
-
 - Student Manual:
   - Get Started:
-    - 'Addding a course': 'addCourse.md'
-
-- Student Manual:
-  - Get Started:
-    - 'Adding a course': 'addCourse.md'
+    - 'Adding a course': 'Student/getStarted/addCourse/index.md'
 
 - Developers Manual:
   - Get Started:
-    - 'PL architecture': 'makeCourse.md'
+    - 'Installing with local source': 'Developer/getStarted/installingLocalSource/index.md'
 
 - Administrative Manual:
   - Get Started:
-    - 'Creating a course': 'makeCourse.md'
+    - 'Creating a course': 'Admin/getStarted/makeCourse/index.md'

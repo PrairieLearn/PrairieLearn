@@ -1,11 +1,12 @@
 # Request your course space
 
-**do we need to update this page!?**
+  **are we updating the instructions to request a course? How should I update this page?**
 
 To request your PrairieLearn course space, you can use the "Request course" links on the PrairieLearn home page or in the main dropdown menu.
 
-![](requestCourseButton.png)
 ![](requestCourseDropdown.png)
+
+![](requestCourseButton.png)
 
 This will bring you to a web form where you can request your course.
 
