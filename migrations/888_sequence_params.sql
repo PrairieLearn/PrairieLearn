@@ -1,6 +1,6 @@
-ALTER TABLE alternative_groups ADD COLUMN min_advance_perc DOUBLE PRECISION;
-ALTER TABLE assessments ADD COLUMN min_advance_perc DOUBLE PRECISION;
-ALTER TABLE zones ADD COLUMN min_advance_perc DOUBLE PRECISION;
+ALTER TABLE alternative_groups ADD COLUMN advance_score_perc DOUBLE PRECISION;
+ALTER TABLE assessments ADD COLUMN advance_score_perc DOUBLE PRECISION;
+ALTER TABLE zones ADD COLUMN advance_score_perc DOUBLE PRECISION;
 
-ALTER TABLE assessment_questions ADD COLUMN min_advance_perc DOUBLE PRECISION;
-ALTER TABLE assessment_questions ADD COLUMN effective_min_advance_perc DOUBLE PRECISION;
+ALTER TABLE assessment_questions ADD COLUMN advance_score_perc DOUBLE PRECISION;
+ALTER TABLE assessment_questions ADD COLUMN effective_advance_score_perc DOUBLE PRECISION;

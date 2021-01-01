@@ -65,7 +65,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         text: assessment.text,
         constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         group_work: !!assessment.groupWork,
-        min_advance_perc: assessment.advanceScorePerc,
+        advance_score_perc: assessment.advanceScorePerc,
     };
 
     const allowAccess = assessment.allowAccess || [];
@@ -94,7 +94,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             number_choose: zone.numberChoose,
             max_points: zone.maxPoints,
             best_questions: zone.bestQuestions,
-            min_advance_perc: zone.advanceScorePerc,
+            advance_score_perc: zone.advanceScorePerc,
         };
     });
 
@@ -157,7 +157,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             const alternativeGroupParams = {
                 number: alternativeGroupNumber,
                 number_choose: question.numberChoose,
-                min_advance_perc: question.advanceScorePerc,
+                advance_score_perc: question.advanceScorePerc,
             };
 
             alternativeGroupParams.questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
@@ -172,10 +172,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     tries_per_variant: alternative.triesPerVariant,
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
-                    min_advance_perc: alternative.advanceScorePerc,
-                    effective_min_advance_perc: [
+                    advance_score_perc: alternative.advanceScorePerc,
+                    effective_advance_score_perc: [
                             question.advanceScorePerc,
-                            alternativeGroupParams.min_advance_perc,
+                            alternativeGroupParams.advance_score_perc,
                             zone.advanceScorePerc,
                             assessment.advanceScorePerc,
                             0,

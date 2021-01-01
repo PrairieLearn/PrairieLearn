@@ -16,10 +16,10 @@ WITH locks_next AS (
         iq.id AS instance_question_id,
         NOT ( --- Do not lock if:
             (iq.open = false) -- Run out of attempts on previous question
-            OR (aq.effective_min_advance_perc = 0) -- Zero percent required to advance
+            OR (aq.effective_advance_score_perc = 0) -- Zero percent required to advance
             -- Score on previous question >= its unlock score
             OR (100*COALESCE(iq.highest_submission_score, 0)
-                >= aq.effective_min_advance_perc) 
+                >= aq.effective_advance_score_perc) 
         ) AS locking
     FROM
         assessment_instances ai 

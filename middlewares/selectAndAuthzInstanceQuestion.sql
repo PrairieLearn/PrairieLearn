@@ -56,7 +56,7 @@ SELECT
             ELSE aq.max_points
         END,
         'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
-        'min_advance_perc', aq.effective_min_advance_perc,
+        'advance_score_perc', aq.effective_advance_score_perc,
         'sequence_locked', iqi.sequence_locked
     ) AS instance_question_info,
     to_jsonb(aq) AS assessment_question,
