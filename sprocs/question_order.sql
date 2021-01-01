@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 -- Used to determine if an instance question should block 
--- access to further questions when minAdvancePerc is set.
+-- access to further questions when advanceScorePerc is set.
 WITH locks_next AS (
     SELECT 
         iq.id AS instance_question_id,

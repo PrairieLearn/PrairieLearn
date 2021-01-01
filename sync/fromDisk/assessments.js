@@ -65,7 +65,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         text: assessment.text,
         constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         group_work: !!assessment.groupWork,
-        min_advance_perc: assessment.minAdvancePerc,
+        min_advance_perc: assessment.advanceScorePerc,
     };
 
     const allowAccess = assessment.allowAccess || [];
@@ -94,7 +94,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             number_choose: zone.numberChoose,
             max_points: zone.maxPoints,
             best_questions: zone.bestQuestions,
-            min_advance_perc: zone.minAdvancePerc,
+            min_advance_perc: zone.advanceScorePerc,
         };
     });
 
@@ -102,7 +102,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     let assessmentQuestionNumber = 0;
     assessmentParams.alternativeGroups = zones.map((zone) => {
         return zone.questions.map((question) => {
-            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, minAdvancePerc: number }[]} */
+            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, advanceScorePerc: number }[]} */
             let alternatives;
             if (_(question).has('alternatives')) {
                 alternatives = _.map(question.alternatives, function(alternative) {
@@ -113,7 +113,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                         forceMaxPoints: _.has(alternative, 'forceMaxPoints') ? alternative.forceMaxPoints
                             : (_.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false),
                         triesPerVariant: _.has(alternative, 'triesPerVariant') ? alternative.triesPerVariant : (_.has(question, 'triesPerVariant') ? question.triesPerVariant : 1),
-                        minAdvancePerc: alternative.minAdvancePerc,
+                        advanceScorePerc: alternative.advanceScorePerc,
                     };
                 });
             } else if (_(question).has('id')) {
@@ -123,7 +123,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     points: question.points,
                     forceMaxPoints: question.forceMaxPoints || false,
                     triesPerVariant: question.triesPerVariant || 1,
-                    minAdvancePerc: question.minAdvancePerc,
+                    advanceScorePerc: question.advanceScorePerc,
                 }];
             }
 
@@ -157,7 +157,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             const alternativeGroupParams = {
                 number: alternativeGroupNumber,
                 number_choose: question.numberChoose,
-                min_advance_perc: question.minAdvancePerc,
+                min_advance_perc: question.advanceScorePerc,
             };
 
             alternativeGroupParams.questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
@@ -172,12 +172,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     tries_per_variant: alternative.triesPerVariant,
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
-                    min_advance_perc: alternative.minAdvancePerc,
+                    min_advance_perc: alternative.advanceScorePerc,
                     effective_min_advance_perc: [
-                            question.minAdvancePerc,
+                            question.advanceScorePerc,
                             alternativeGroupParams.min_advance_perc,
-                            zone.minAdvancePerc,
-                            assessment.minAdvancePerc,
+                            zone.advanceScorePerc,
+                            assessment.advanceScorePerc,
                             0,
                         ].find((e) => {
                           return typeof e === 'number';

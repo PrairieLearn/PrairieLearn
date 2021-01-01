@@ -148,16 +148,16 @@ Students are able to see their groupmates' UIDs, which can become a point of con
 
 Certain assessments might designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but instructors can configure assessments to not allow students to view future questions.
 
-To enable these features, set `minAdvancePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
+To enable these features, set `advanceScorePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
 
 ```js
 {
-    "minAdvancePerc": 100,
+    "advanceScorePerc": 100,
     "zones": [
         {
-            "minAdvancePerc": 80,
+            "advanceScorePerc": 80,
             "questions": [
-                {"id": "page1", "minAdvancePerc": 50},
+                {"id": "page1", "advanceScorePerc": 50},
                 {"id": "page2"},
                 {"id": "page3"}
             ]
@@ -166,7 +166,7 @@ To enable these features, set `minAdvancePerc` to any number between 0 and 100 a
 }
 ```
 
-In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `minAdvancePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80 in order to unlock `page3`. Because `minAdvancePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
+In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `advanceScorePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80 in order to unlock `page3`. Because `advanceScorePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
 
 If a student uses all of their attempts on a question and cannot submit any more attempts, the next question will automatically unlock, no matter what score they earned on the previous question. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
 

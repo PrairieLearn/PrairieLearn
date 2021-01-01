@@ -99,7 +99,7 @@
 
   * Add Python library regex to plbase (Nathan Bowman).
 
-  * Add `minAdvancePerc` attribute to assessment configs to force students to complete questions in-order (David Mitchell).
+  * Add optional `advanceScorePerc` attribute to assessment configs to force students to complete questions in-order (David Mitchell).
 
   * Add `all-of-the-above` and `none-of-the-above` attributes to `<pl-multiple-choice>` (Bojin Yao)
 
