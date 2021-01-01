@@ -9,7 +9,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
-const helperQuestion = require('./helperQuestion');
 
 describe('Exam assessment with grade rate set', function() {
     this.timeout(60000);
@@ -59,7 +58,7 @@ describe('Exam assessment with grade rate set', function() {
         const response = await helperClient.fetchCheerio(context.question1Url);
         assert.isTrue(response.ok);
 
-        elemList = response.$('button[name="__action"][value="grade"]');
+        let elemList = response.$('button[name="__action"][value="grade"]');
         assert.lengthOf(elemList, 1);
         assert.isFalse(elemList.is(':disabled'));
         
@@ -72,7 +71,7 @@ describe('Exam assessment with grade rate set', function() {
             __action: 'grade',
             __csrf_token: context.__csrf_token,
             __variant_id: context.__variant_id,
-            s: '50' // To get 50% of the question
+            s: '50', // To get 50% of the question
             
         };
         const response = await helperClient.fetchCheerio(context.question1Url, { method: 'POST', form });
@@ -84,7 +83,7 @@ describe('Exam assessment with grade rate set', function() {
         const response = await helperClient.fetchCheerio(context.question1Url);
         assert.isTrue(response.ok);
         
-        elemList = response.$('button[name="__action"][value="grade"]');
+        let elemList = response.$('button[name="__action"][value="grade"]');
         assert.lengthOf(elemList, 1);
         assert.isTrue(elemList.is(':disabled'));
     });
@@ -94,7 +93,7 @@ describe('Exam assessment with grade rate set', function() {
         const response = await helperClient.fetchCheerio(context.question2Url);
         assert.isTrue(response.ok);
 
-        elemList = response.$('button[name="__action"][value="grade"]');
+        let elemList = response.$('button[name="__action"][value="grade"]');
         assert.lengthOf(elemList, 1);
         assert.isFalse(elemList.is(':disabled'));
     });
