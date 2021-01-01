@@ -2,6 +2,9 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+
 var error = require('@prairielearn/prairielib/error');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -33,6 +36,7 @@ router.post('/', function(req, res, next) {
             user_id: res.locals.authn_user.user_id,
             req_date: res.locals.req_date,
         };
+        debug(`POST: enroll (${params.course_instance_id}, ${params.user_id}, ${params.req_date})`);
         sqldb.queryOneRow(sql.enroll, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);

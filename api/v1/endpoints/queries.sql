@@ -44,7 +44,7 @@ WITH object_data AS (
         u.user_id,
         u.uid AS user_uid,
         u.name AS user_name,
-        coalesce(e.role, 'None'::enum_role) AS user_role,
+        users_get_displayed_role(u.user_id, ci.id) AS user_role,
         ai.max_points,
         ai.points,
         ai.score_perc,
@@ -65,7 +65,6 @@ WITH object_data AS (
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         JOIN users AS u ON (u.user_id = ai.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         ci.id = $course_instance_id
         AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
@@ -96,7 +95,6 @@ WITH object_data AS (
         aar.number,
         aar.number AS assessment_access_rule_number,
         aar.password,
-        aar.role,
         aar.seb_config,
         aar.show_closed_assessment,
         aar.show_closed_assessment_score,
@@ -153,7 +151,7 @@ WITH object_data AS (
         u.user_id,
         u.uid AS user_uid,
         u.name AS user_name,
-        coalesce(e.role, 'None'::enum_role) AS user_role,
+        users_get_displayed_role(u.user_id, ci.id) AS user_role,
         a.id AS assessment_id,
         a.tid AS assessment_name,
         (aset.abbreviation || a.number) AS assessment_label,
@@ -191,7 +189,6 @@ WITH object_data AS (
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         JOIN users AS u ON (u.user_id = ai.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)

@@ -16,22 +16,23 @@ WHERE
     u.user_id = $user_id
     AND ci.deleted_at IS NULL
     AND c.deleted_at IS NULL
-    AND check_course_instance_access(ci.id, COALESCE(e.role, 'Student'), u.uid, u.institution_id, $req_date)
+    AND c.example_course IS FALSE
+    AND users_is_instructor_in_course(u.user_id, c.id) IS FALSE
+    AND check_course_instance_access(ci.id, u.uid, u.institution_id, $req_date)
 ORDER BY
     c.short_name, c.title, c.id, d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC;
 
 -- BLOCK enroll
 INSERT INTO enrollments AS e
-        (user_id, course_instance_id, role)
-(
-    SELECT
-        u.user_id, $course_instance_id, 'Student'
-    FROM
-        users AS u
-    WHERE
-        u.user_id = $user_id
-        AND check_course_instance_access($course_instance_id, 'Student', u.uid, u.institution_id, $req_date)
-)
+    (user_id, course_instance_id)
+SELECT
+    u.user_id,
+    $course_instance_id
+FROM
+    users AS u
+WHERE
+    u.user_id = $user_id
+    AND check_course_instance_access($course_instance_id, u.uid, u.institution_id, $req_date)
 RETURNING e.id;
 
 -- BLOCK unenroll
@@ -42,5 +43,5 @@ WHERE
     u.user_id = $user_id
     AND e.user_id = $user_id
     AND e.course_instance_id = $course_instance_id
-    AND check_course_instance_access($course_instance_id, e.role, u.uid, u.institution_id, $req_date)
+    AND check_course_instance_access($course_instance_id, u.uid, u.institution_id, $req_date)
 RETURNING e.id;

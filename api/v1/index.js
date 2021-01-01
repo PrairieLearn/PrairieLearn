@@ -6,8 +6,8 @@ router.use(require('./prettyPrintJson'));
 
 // All course instance pages require authorization
 router.use('/course_instances/:course_instance_id', [
-    require('../../middlewares/authzCourseInstance'),
-    require('../../middlewares/authzCourseInstanceHasInstructorView'),
+    require('../../middlewares/authzCourseOrInstance'),
+    require('../../middlewares/authzHasCoursePreviewOrInstanceView'),
 ]);
 
 // ROUTES

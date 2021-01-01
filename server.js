@@ -323,47 +323,55 @@ module.exports.initExpress = function() {
         ]);
     }
 
+    // Redirect plain course page either to student or instructor assessments page
+    app.use(/^(\/pl\/course_instance\/[0-9]+)\/?$/, (req, res, _next) => {res.redirect(`${req.params[0]}/assessments`);});
+    app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor)\/?$/, (req, res, _next) => {res.redirect(`${req.params[0]}/instance_admin/assessments`);});
+
+    // is the course instance being accessed through the student or instructor page route
+    app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.viewType = 'student'; next();});
+    app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.viewType = 'instructor'; next();});
+
     // all pages under /pl/course_instance require authorization
     app.use('/pl/course_instance/:course_instance_id', [
-      function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();},
-      function(req, res, next) {res.locals.navbarType = 'student'; next();},
-      require('./middlewares/authzCourseInstance'),
-      require('./middlewares/ansifySyncErrorsAndWarnings.js'),
+        require('./middlewares/authzCourseOrInstance'), // sets res.locals.course and res.locals.courseInstance
+        function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();},
+        function(req, res, next) {res.locals.navbarType = 'student'; next();},
+        require('./middlewares/ansifySyncErrorsAndWarnings.js'),
     ]);
 
-    // Redirect plain course page to Instructor or Student assessments page.
-    // We have to do this after initial authz so we know whether we are an Instructor,
-    // but before instructor authz so we still get a chance to enforce that.
-    app.use(/^\/pl\/course_instance\/[0-9]+\/?$/, function(req, res, _next) {
-        if (res.locals.authz_data.has_instructor_view) {
-            res.redirect(res.locals.urlPrefix + '/instructor/instance_admin/assessments');
-        } else {
-            res.redirect(res.locals.urlPrefix + '/assessments');
-        }
-    });
+    // Some course instance student pages only require authorization (already checked)
+    app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
+    app.use('/pl/course_instance/:course_instance_id/news_item', require('./pages/news_item/news_item.js'));
 
-    // Redirect Instructor effectiveUser page to the Student version if we don't have Instructor authz.
-    // This is needed to handle the redirection after we change effective user to a student.
-    app.use(/^\/pl\/course_instance\/[0-9]+\/instructor\/effectiveUser(\/?.*)$/, function(req, res, next) {
-        if (!res.locals.authz_data.has_instructor_view) {
-            res.redirect(res.locals.urlPrefix + '/effectiveUser');
-        } else {
-            next();
-        }
-    });
+    // Some course instance student pages only require the authn user to have permissions
+    app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'));
+    app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 
-    // all pages under /pl/course_instance/*/instructor require instructor permissions
-    app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceHasInstructorView'));
-    app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor'; next();});
-    app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
+    // All course instance instructor pages require the authn user to have permissions
+    app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'));
     app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectOpenIssueCount'));
+    app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
+    app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor'; next();});
+
+    // Some course instance instructor pages only require the authn user to have permissions (already checked)
+    app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
+    app.use('/pl/course_instance/:course_instance_id/instructor/news_items', require('./pages/news_items/news_items.js'));
+    app.use('/pl/course_instance/:course_instance_id/instructor/news_item', require('./pages/news_item/news_item.js'));
+
+    // All other course instance student pages require the effective user to have permissions
+    app.use('/pl/course_instance/:course_instance_id', require('./middlewares/authzHasCourseInstanceAccess'));
+
+    // All other course instance instructor pages require the effective user to have permissions
+    app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzHasCoursePreviewOrInstanceView'));
 
     // all pages under /pl/course require authorization
-    app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
-    app.use('/pl/course/:course_id', require('./middlewares/ansifySyncErrorsAndWarnings.js'));
-    app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
-    app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
-    app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount'));
+    app.use('/pl/course/:course_id', [
+        require('./middlewares/authzCourseOrInstance'), // set res.locals.course
+        require('./middlewares/ansifySyncErrorsAndWarnings.js'),
+        require('./middlewares/selectOpenIssueCount'),
+        function(req, res, next) {res.locals.navbarType = 'instructor'; next();},
+        function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();},
+    ]);
 
     // Serve element statics
     app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
@@ -382,10 +390,6 @@ module.exports.initExpress = function() {
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
     // Instructor pages //////////////////////////////////////////////////
-
-    app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
-        require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
-    ]);
 
     // single assessment
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
@@ -500,14 +504,7 @@ module.exports.initExpress = function() {
     app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
     app.use('/pl/course_instance/:course_instance_id/instructor/edit_error', require('./pages/editError/editError'));
 
-    // course instance - news_items
-    app.use('/pl/course_instance/:course_instance_id/instructor/news_items', require('./pages/news_items/news_items.js'));
-    app.use('/pl/course_instance/:course_instance_id/instructor/news_item', require('./pages/news_item/news_item.js'));
-
     // course instance - course admin pages
-    app.use('/pl/course_instance/:course_instance_id/instructor/course_admin', [
-        require('./middlewares/authzCourseInstanceHasCourseView'),
-    ]);
     app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/course_admin)\/?$/, (req, res, _next) => {
         res.redirect(`${req.params[0]}/instances`);
     });
@@ -548,10 +545,6 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'tags'; next();},
         require('./pages/instructorCourseAdminTags/instructorCourseAdminTags'),
     ]);
-    app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/grading', [
-        function(req, res, next) {res.locals.navSubPage = 'grading'; next();},
-        require('./pages/instructorCourseAdminGrading/instructorCourseAdminGrading'),
-    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/file_edit', [
         function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},
         require('./pages/instructorFileEditor/instructorFileEditor'),
@@ -566,7 +559,6 @@ module.exports.initExpress = function() {
     app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/instance_admin)\/?$/, (req, res, _next) => {
         res.redirect(`${req.params[0]}/assessments`);
     });
-    app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
     app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin', function(req, res, next) {res.locals.navPage = 'instance_admin'; next();});
     app.use('/pl/course_instance/:course_instance_id/instructor/instance_admin/settings', [
         function(req, res, next) {res.locals.navSubPage = 'settings'; next();},
@@ -683,7 +675,6 @@ module.exports.initExpress = function() {
     ]);
     if (config.devMode) {
         app.use('/pl/course_instance/:course_instance_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-        app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
         app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
     }
 
@@ -691,15 +682,6 @@ module.exports.initExpress = function() {
     app.use('/pl/course_instance/:course_instance_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
     app.use('/pl/course_instance/:course_instance_id/instructor/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
     app.use('/pl/course/:course_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
-
-    // student - news_items
-    app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
-    app.use('/pl/course_instance/:course_instance_id/news_item', require('./pages/news_item/news_item.js'));
-
-
-    // Allow access to effectiveUser as a Student page, but only for users have authn (not authz) as Instructor
-    app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
-    app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 
     // clientFiles
     app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
@@ -747,6 +729,14 @@ module.exports.initExpress = function() {
 
     app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/course_admin');}); // redirect plain course URL to overview page
 
+    // Some course pages only require the authn user to have permission (aleady checked)
+    app.use('/pl/course/:course_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
+    app.use('/pl/course/:course_id/news_items', require('./pages/news_items/news_items.js'));
+    app.use('/pl/course/:course_id/news_item', require('./pages/news_item/news_item.js'));
+
+    // All other course pages require the effective user to have permission
+    app.use('/pl/course/:course_id', require('./middlewares/authzHasCoursePreview'));
+
     // single question
 
     app.use('/pl/course/:course_id/question/:question_id', [
@@ -787,10 +777,6 @@ module.exports.initExpress = function() {
         require('./pages/instructorFileBrowser/instructorFileBrowser'),
     ]);
     app.use('/pl/course/:course_id/question/:question_id/file_download', require('./pages/instructorFileDownload/instructorFileDownload'));
-
-    // course - news_items
-    app.use('/pl/course/:course_id/news_items', require('./pages/news_items/news_items.js'));
-    app.use('/pl/course/:course_id/news_item', require('./pages/news_item/news_item.js'));
 
     app.use('/pl/course/:course_id/file_transfer', [
         require('./pages/instructorFileTransfer/instructorFileTransfer'),
@@ -837,10 +823,6 @@ module.exports.initExpress = function() {
     app.use('/pl/course/:course_id/course_admin/tags', [
         function(req, res, next) {res.locals.navSubPage = 'tags'; next();},
         require('./pages/instructorCourseAdminTags/instructorCourseAdminTags'),
-    ]);
-    app.use('/pl/course/:course_id/course_admin/grading', [
-        function(req, res, next) {res.locals.navSubPage = 'grading'; next();},
-        require('./pages/instructorCourseAdminGrading/instructorCourseAdminGrading'),
     ]);
     app.use('/pl/course/:course_id/course_admin/file_edit', [
         function(req, res, next) {res.locals.navSubPage = 'file_edit'; next();},

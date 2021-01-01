@@ -51,3 +51,5 @@ require('./sync');
 require('./testGroupGenerateAndDelete');
 require('./testGroupStudent');
 require('./testGroupScoreAndSync');
+// require('./testShowClosedAssessment');
+require('./permissions');

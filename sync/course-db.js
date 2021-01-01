@@ -84,7 +84,7 @@ const UUID_REGEX = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-
 // For finding all v4 UUIDs in a string/file
 const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
 
-/** 
+/**
  * @template T
  * @typedef {import('./infofile').InfoFile<T>} InfoFile<T>
  */
@@ -116,7 +116,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} color
  */
 
-/** 
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -366,8 +366,8 @@ module.exports.loadFullCourseNew = async function(courseDir) {
  * @template T
  * @param {any} courseId
  * @param {string} filePath
- * @param {InfoFile<T>} infoFile 
- * @param {(line?: string) => void} writeLine 
+ * @param {InfoFile<T>} infoFile
+ * @param {(line?: string) => void} writeLine
  */
 function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile, writeLine) {
     if (!infofile.hasErrorsOrWarnings(infoFile)) return;
@@ -448,7 +448,7 @@ module.exports.courseDataHasErrorsOrWarnings = function(courseData) {
  * @param {string} options.filePath
  * @param {object} [options.schema]
  * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
- * @returns {Promise<InfoFile<T>>} 
+ * @returns {Promise<InfoFile<T>>}
  */
 module.exports.loadInfoFile = async function({ coursePath, filePath, schema, tolerateMissing = false }) {
     const absolutePath = path.join(coursePath, filePath);
@@ -786,7 +786,7 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
 
 /**
  * @template T
- * @param {{ [id: string]: InfoFile<T>}} infos 
+ * @param {{ [id: string]: InfoFile<T>}} infos
  * @param {(uuid: string, otherIds: string[]) => string} makeErrorMessage
  */
 function checkDuplicateUUIDs(infos, makeErrorMessage) {
@@ -821,6 +821,23 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
 }
 
 /**
+ * Checks that roles are not present.
+ * @param {{ role?: UserRole }} rule
+ * @returns {string[]} A list of warnings, if any
+ */
+function checkAllowAccessRoles(rule) {
+    const warnings = [];
+    if ('role' in rule) {
+        if (rule.role == 'Student') {
+            warnings.push(`It is no longer necessary to specify a role (${rule.role}) in an "allowAccess" rule, since these rules are only used to grant student access.`);
+        } else {
+            warnings.push(`The "allowAccess" rule with role ${rule.role} will be ignored. Course owners should manage staff access on the course admin access page.`);
+        }
+    }
+    return warnings;
+}
+
+/**
  * Checks that dates, if present, are valid and sequenced correctly.
  * @param {{ startDate?: string, endDate?: string }} rule
  * @returns {string[]} A list of errors, if any
@@ -849,7 +866,7 @@ function checkAllowAccessDates(rule) {
 }
 
 /**
- * @param {Question} question 
+ * @param {Question} question
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
 async function validateQuestion(question) {
@@ -870,7 +887,7 @@ async function validateQuestion(question) {
 }
 
 /**
- * @param {Assessment} assessment 
+ * @param {Assessment} assessment
  * @param {{ [qid: string]: any }} questions
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
@@ -889,6 +906,11 @@ async function validateAssessment(assessment, questions) {
     (assessment.allowAccess || []).forEach(rule => {
         const allowAccessErrors = checkAllowAccessDates(rule);
         errors.push(...allowAccessErrors);
+    });
+
+    (assessment.allowAccess || []).forEach(rule => {
+        const allowAccessWarnings = checkAllowAccessRoles(rule);
+        warnings.push(...allowAccessWarnings);
     });
 
     const foundQids = new Set();
@@ -990,12 +1012,21 @@ async function validateCourseInstance(courseInstance) {
         errors.push(...allowAccessErrors);
     });
 
+    (courseInstance.allowAccess || []).forEach(rule => {
+        const allowAccessWarnings = checkAllowAccessRoles(rule);
+        warnings.push(...allowAccessWarnings);
+    });
+
+    if (_(courseInstance).has('userRoles')) {
+        warnings.push('The property "userRoles" will be ignored. Course owners should manage staff access on the course admin access page.');
+    }
+
     return { warnings, errors };
 }
 
 /**
  * Loads all questions in a course directory.
- * 
+ *
  * @param {string} coursePath
  */
 module.exports.loadQuestions = async function(coursePath) {
@@ -1015,7 +1046,7 @@ module.exports.loadQuestions = async function(coursePath) {
 
 /**
  * Loads all course instances in a course directory.
- * 
+ *
  * @param {string} coursePath
  */
 module.exports.loadCourseInstances = async function(coursePath) {
@@ -1035,7 +1066,7 @@ module.exports.loadCourseInstances = async function(coursePath) {
 
 /**
  * Loads all assessments in a course instance.
- * 
+ *
  * @param {string} coursePath
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions

@@ -7,10 +7,6 @@
     "allowRealTimeGrading": false,
     "allowAccess": [
         {
-            "role": "TA",
-            "credit": 100
-        },
-        {
             "mode": "Public",
             "credit": 100,
             "timeLimitMin": 5,

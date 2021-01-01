@@ -4,11 +4,7 @@
     "title": "Homework to test per-zone grading",
     "set": "Homework",
     "number": "4",
-    "allowAccess": [{
-            "mode": "Public",
-            "role": "TA",
-            "credit": 100
-        },
+    "allowAccess": [
         {
             "mode": "Public",
             "credit": 100,

@@ -5,10 +5,6 @@ SELECT
         ELSE aar.mode::text
     END AS mode,
     CASE
-        WHEN aar.role IS NULL THEN '—'
-        ELSE aar.role::text
-    END AS role,
-    CASE
         WHEN aar.uids IS NULL THEN '—'
         ELSE array_to_string(aar.uids, ', ')
     END AS uids,

@@ -17,24 +17,8 @@ describe('sproc check_course_instance_access* tests', function() {
         });
     });
 
-    it('pass for role Instructor', function(callback) {
-        var params = {
-            role: 'Instructor',
-            uid: 'person1@host.com',
-            date: null,
-            ci_id: 1,
-        };
-
-        sqldb.query(sql.cia_test, params, (err, result) => {
-            if (ERR(err, result)) return;
-            assert.strictEqual(result.rows[0].authorized, true);
-            callback(null);
-        });
-    });
-
     it('pass if all parameters match', function(callback) {
         var params = {
-            role: 'TA',
             uid: 'person1@host.com',
             date: '2010-07-07 06:06:06-00',
             ciar_id: 1,
@@ -48,9 +32,8 @@ describe('sproc check_course_instance_access* tests', function() {
         });
     });
 
-    it('fail if role is too low', function(callback) {
+    it('fail if uid (from school institution) not in list', function(callback) {
         var params = {
-            role: null,
             uid: 'user@school.edu',
             date: '2010-07-07 06:06:06-00',
             ciar_id: 1,
@@ -64,9 +47,8 @@ describe('sproc check_course_instance_access* tests', function() {
         });
     });
 
-    it('fail if uid not in list', function(callback) {
+    it('fail if uid (from host institution) not in list', function(callback) {
         var params = {
-            role: 'TA',
             uid: 'unknown@host.com',
             date: '2010-07-07 06:06:06-00',
             ciar_id: 1,
@@ -82,7 +64,6 @@ describe('sproc check_course_instance_access* tests', function() {
 
     it('fail if date is before start_date', function(callback) {
         var params = {
-            role: 'TA',
             uid: 'person1@host.com',
             date: '2007-07-07 06:06:06-00',
             ciar_id: 1,
@@ -98,7 +79,6 @@ describe('sproc check_course_instance_access* tests', function() {
 
     it('fail if date is after end_date', function(callback) {
         var params = {
-            role: 'TA',
             uid: 'person1@host.com',
             date: '2017-07-07 06:06:06-00',
             ciar_id: 1,
@@ -114,7 +94,6 @@ describe('sproc check_course_instance_access* tests', function() {
 
     it('pass if institution matches', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'person1@school.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 2,
@@ -130,7 +109,6 @@ describe('sproc check_course_instance_access* tests', function() {
 
     it('fail if institution specified and does not match', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'person1@anotherschool.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 2,
@@ -146,7 +124,6 @@ describe('sproc check_course_instance_access* tests', function() {
 
     it('fail if institution specified in rule is not in db', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'person1@anotherschool.edu',
             date: '2011-07-07 06:06:06-00',
             ciar_id: 3,
@@ -162,7 +139,6 @@ describe('sproc check_course_instance_access* tests', function() {
 
     it('pass if user matches course institution', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'person1@school.edu',
             date: '2013-07-07 06:06:06-00',
             ciar_id: 4,
@@ -178,7 +154,6 @@ describe('sproc check_course_instance_access* tests', function() {
 
     it('fail if user does not match course institution', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'person1@school.edu',
             date: '2013-07-07 06:06:06-00',
             ciar_id: 4,
@@ -191,9 +166,9 @@ describe('sproc check_course_instance_access* tests', function() {
             callback(null);
         });
     });
+
     it('fail if institution=LTI and user is not created with a course instance', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'normaluser@host.com',
             date: '2013-07-07 06:06:06-00',
             ciar_id: 5,
@@ -206,9 +181,9 @@ describe('sproc check_course_instance_access* tests', function() {
             callback(null);
         });
     });
+
     it('pass if institution=LTI and user is created with correct course instance', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'ltiuserci1@host.com',
             date: '2013-07-07 06:06:06-00',
             ciar_id: 5,
@@ -221,9 +196,9 @@ describe('sproc check_course_instance_access* tests', function() {
             callback(null);
         });
     });
+
     it('fail if institution=LTI and user is created with a different course instance', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'ltiuserci2@host.com',
             date: '2013-07-07 06:06:06-00',
             ciar_id: 5,
@@ -239,7 +214,6 @@ describe('sproc check_course_instance_access* tests', function() {
 
     it('fail if date is after end_date and LTI matches', function(callback) {
         var params = {
-            role: 'Student',
             uid: 'ltiuserci1@host.com',
             date: '2017-07-07 06:06:06-00',
             ciar_id: 5,

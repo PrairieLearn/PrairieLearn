@@ -1,7 +1,7 @@
 -- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
-    u.user_id, u.uid, u.uin, u.name, coalesce(e.role, 'None'::enum_role) AS role,
+    u.user_id, u.uid, u.uin, u.name, users_get_displayed_role(u.user_id, ci.id) AS role,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
@@ -28,11 +28,10 @@ FROM
     LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
     LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
     JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
-    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC, u.uid, groupname, u.uin, u.user_id, ai.number, ai.id;
+    u.uid, groupname, u.uin, u.user_id, ai.number, ai.id;
 
 
 -- BLOCK select_instance_questions
@@ -41,7 +40,7 @@ WITH instance_questions AS (
         u.uid,
         u.uin,
         u.name,
-        e.role,
+        users_get_displayed_role(u.user_id, ci.id) AS role,
         (aset.name || ' ' || a.number) AS assessment_label,
         ai.number AS assessment_instance_number,
         q.qid,
@@ -69,17 +68,16 @@ WITH instance_questions AS (
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
         LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
         JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     WHERE
         a.id = $assessment_id
     ORDER BY
         u.uid, u.uin, groupname, ai.number, q.qid, iq.number, iq.id
 )
-SELECT 
+SELECT
     *
-FROM 
-    instance_questions 
-WHERE 
+FROM
+    instance_questions
+WHERE
     ($group_work AND unique_group) OR $group_work = false;
 
 
@@ -129,7 +127,7 @@ WITH all_submissions AS (
         u.uid,
         u.uin,
         u.name,
-        e.role,
+        users_get_displayed_role(u.user_id, ci.id) AS role,
         (aset.name || ' ' || a.number) AS assessment_label,
         ai.number AS assessment_instance_number,
         q.qid,
@@ -170,7 +168,6 @@ WITH all_submissions AS (
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
         LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
         JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
@@ -257,7 +254,7 @@ all_files AS (
 )
 SELECT
     (
-        (CASE 
+        (CASE
             WHEN $group_work THEN groupname
             ELSE uid || '_' || uin
         END )
@@ -272,14 +269,14 @@ WHERE
     filename IS NOT NULL
     AND contents IS NOT NULL
 ORDER BY
-    (CASE 
+    (CASE
         WHEN $group_work THEN groupname
         ELSE uid
-     END), 
-    (CASE 
+     END),
+    (CASE
         WHEN $group_work THEN NULL
         ELSE uin
-     END),  
+     END),
         qid, filename, submission_id
 LIMIT
     $limit
@@ -361,7 +358,7 @@ all_files AS (
 )
 SELECT
     (
-        (CASE WHEN $group_work THEN groupname 
+        (CASE WHEN $group_work THEN groupname
               ELSE uid
         END)
         || '_' || assessment_instance_number
@@ -378,7 +375,7 @@ WHERE
     filename IS NOT NULL
     AND contents IS NOT NULL
 ORDER BY
-    (CASE WHEN $group_work THEN groupname 
+    (CASE WHEN $group_work THEN groupname
           ELSE uid
     END), assessment_instance_number, qid, variant_number, date
 LIMIT
@@ -387,16 +384,16 @@ OFFSET
     $offset;
 
 -- BLOCK group_configs
-SELECT 
+SELECT
     g.name, u.uid
-FROM 
+FROM
     group_configs AS gc
     JOIN groups AS g ON gc.id = g.group_config_id
     JOIN group_users AS gu ON g.id = gu.group_id
     JOIN users AS u ON gu.user_id = u.user_id
 WHERE
-    gc.assessment_id = $assessment_id 
-    AND gc.deleted_at IS NULL 
+    gc.assessment_id = $assessment_id
+    AND gc.deleted_at IS NULL
     AND g.deleted_at IS NULL
-ORDER BY 
+ORDER BY
     g.name, u.uid;

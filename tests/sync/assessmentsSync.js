@@ -14,7 +14,7 @@ const { assert } = chai;
 
 /**
  * Makes an empty assessment.
- * 
+ *
  * @param {import('./util').CourseData} courseData
  * @param {"Homework" | "Exam"} type
  * @returns {import('./util').Assessment}
@@ -34,7 +34,7 @@ function makeAssessment(courseData, type = 'Exam') {
 
 /**
  * Makes a new assessment.
- * 
+ *
  * @returns {import('./util').AssessmentSet}
  */
 function makeAssessmentSet() {
@@ -234,10 +234,8 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData);
     assessment.allowAccess.push({
       mode: 'Exam',
-      role: 'Student',
     }, {
       mode: 'Public',
-      role: 'TA',
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     const courseDir = await util.writeAndSyncCourseData(courseData);
@@ -249,7 +247,6 @@ describe('Assessment syncing', () => {
     const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
     const rulesForAssessment = syncedAssessmentAccessRules.filter(aar => aar.assessment_id === originalSyncedAssessment.id);
     assert.lengthOf(rulesForAssessment, 1);
-    assert.equal(rulesForAssessment[0].role, 'TA');
     assert.equal(rulesForAssessment[0].mode, 'Public');
   });
 
