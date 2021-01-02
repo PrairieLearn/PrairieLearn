@@ -139,13 +139,13 @@ WITH results AS (
                                     WHEN $base_time = 'current_date' THEN current_timestamp
                                     ELSE ai.date_limit
                                     END) +
-                                   $time_add * INTERVAL '1 sec')
+                                   make_interval(secs => $time_add)
                      END,
         modified_at = now()
     WHERE
         ai.open
         AND ai.assessment_id = $assessment_id
-        AND (ai.date_limit IS NOT NULL OR $base_time <> 'date_limit')
+        AND (ai.date_limit IS NOT NULL OR $base_time != 'date_limit')
     RETURNING
         ai.open,
         ai.id AS assessment_instance_id,
