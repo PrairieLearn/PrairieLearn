@@ -2,9 +2,9 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <script src="/javascripts/jquery.tablesorter.min.js"></script>
-    <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <link href="<% node_modules_path('tablesorter/dist/css/theme.bootstrap.css') %>" rel="stylesheet" />
+    <script src="<% node_modules_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
+    <script src="<% node_modules_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
   </head>
   <body>
     <script>
