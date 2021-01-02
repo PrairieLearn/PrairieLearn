@@ -215,7 +215,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 ## Comments in JSON files
 
-You can add comments to json files using the property `comment`. You can use this property more than once in the same file. For example:
+You can add comments to JSON files using the property `comment` on any object. You can only use this property once for each object. For example:
 
 ```json
 {
