@@ -214,6 +214,10 @@ module.exports.initExpress = function() {
     app.use(express.static(path.join(__dirname, 'public')));
     app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
     app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+
+    // To allow for more aggressive caching of files served from node_modules,
+    // we insert a hash of the module version into the request path. This allows
+    // us to treat those files as immutable and cache them essentially forever.
     app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules'), {
         maxAge: '31557600',
     }));
