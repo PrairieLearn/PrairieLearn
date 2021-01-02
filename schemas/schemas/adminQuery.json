@@ -10,7 +10,7 @@
     "properties": {
         "comment": {
             "description": "Add the comment",
-            "type": "string"
+            "type": ["string", "array", "object"]
         },
         "description": {
             "description": "Brief one-line description of the query.",
