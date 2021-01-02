@@ -16,7 +16,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
     "number": "2",
     "allowAccess": [],
     "zones": [],
-    "comment": "You can add comments to json files using this property."
+    "comment": "You can add comments to JSON files using this property."
 }
 ```
 
