@@ -2,10 +2,10 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <link href="<% node_modules_path('tablesorter/dist/css/theme.bootstrap.css') %>" rel="stylesheet" />
-    <link rel="stylesheet" href="<%= node_modules_path('highlight.js/styles/default.css') %>">
-    <script src="<% node_modules_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
-    <script src="<% node_modules_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
+    <link href="<%= node_modules_path('highlight.js/styles/default.css') %>" rel="stylesheet">
+    <link href="<%= node_modules_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
+    <script src="<%= node_modules_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
+    <script src="<%= node_modules_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'adminQueries'}); %>

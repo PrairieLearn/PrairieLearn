@@ -8,7 +8,7 @@
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
-    <script src="<% node_modules_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_path('lodash/lodash.min.js') %>"></script>
     <script src="/javascripts/require.js"></script>
     <script src="/localscripts/question.js"></script>
     <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
