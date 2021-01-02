@@ -3,12 +3,12 @@
   <head>
     <%- include('../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
     <%- include('../partials/mathjax'); %>
-    <script src="<%= node_modules_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
-    <script src="<%= node_modules_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
     <script src="/javascripts/require.js"></script>
     <script src="/localscripts/question.js"></script>
     <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>

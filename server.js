@@ -217,7 +217,7 @@ module.exports.initExpress = function() {
     // we insert a hash of the module version into the request path. This allows
     // us to treat those files as immutable and cache them essentially forever.
     app.use((req, res, next) => {
-        res.locals.node_modules_path = (filePath) => {
+        res.locals.node_modules_asset_path = (filePath) => {
             const [maybeScope, maybeModule] = filePath.split('/');
             let moduleName;
             if (maybeScope.indexOf('@') === 0) {
