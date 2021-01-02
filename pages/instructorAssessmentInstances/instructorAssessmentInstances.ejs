@@ -109,7 +109,7 @@
                    data-html="true" data-placement="auto" title="Set Time Limit"
                    data-content="
                                  <p>
-                                   Time limit: <%= time_limit_list %><br/>
+                                   Total time limit: <%= time_limit_list %><br/>
                                    Remaining time: <%= remaining_time_range %>
                                  </p>
                                  <form name=&quot;set-time-limit-form&quot; method=&quot;POST&quot;>
@@ -125,7 +125,7 @@
                                      <option value=-1>Subtract</option>
                                      <%   }
                                         } %>
-                                     <option value=set_total>Set time limit to</option>
+                                     <option value=set_total>Set total time limit to</option>
                                      <option value=set_rem>Set remaining time to</option>
                                      <% if (remaining_time_min !== null) { %>
                                      <option value=unlimited>Set as unlimited</option>
@@ -234,7 +234,7 @@
                          data-html="true" data-placement="auto" title="Set Time Limit"
                          data-content="
                                        <p>
-                                         Time limit: <%= row.total_time %><br/>
+                                         Total time limit: <%= row.total_time %><br/>
                                          Remaining time: <%= row.time_remaining %>
                                        </p>
                                        <form name=&quot;set-time-limit-form&quot; method=&quot;POST&quot;>
@@ -246,7 +246,7 @@
                                            <option value=+1>Add</option>
                                            <option value=-1>Subtract</option>
                                          <% } %>
-                                           <option value=set_total>Set time limit to</option>
+                                           <option value=set_total>Set total time limit to</option>
                                            <option value=set_rem>Set remaining time to</option>
                                          <% if (row.time_remaining != 'Unlimited') { %>
                                            <option value=unlimited>Set as unlimited</option>
