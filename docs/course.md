@@ -57,7 +57,6 @@ This file specifies basic information about the course:
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
     ],
-    "comment": "Topics should be thought of as chapters or sections in a textbook",
     "topics": [
         {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D"},
         {"name": "Center of mass", "color": "green3", "description": "Finding and using the center of mass of irregular bodies."}
@@ -214,7 +213,7 @@ The default timezone for courses is `America/Chicago` (U.S. Central Time). This 
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
 
-## Comment
+## Comments in JSON files
 
 You can add comments to json files using the property `comment`. You can use this property more than once in the same file. For example:
 
@@ -224,7 +223,6 @@ You can add comments to json files using the property `comment`. You can use thi
     "assessmentSets": [
       {"abbreviation": "GA", "name": "Group Activity", "heading": "Group Activities", "color": "green1"}
     ],
-    "comment": "timezone for the course",
     "timezone": "America/New_York"
 }
 ```

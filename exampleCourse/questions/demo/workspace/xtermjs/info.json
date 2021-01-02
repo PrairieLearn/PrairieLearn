@@ -10,6 +10,7 @@
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
+        "comment": "testing comments in workspace blocks", 
         "image": "prairielearn/workspace-xtermjs",
         "port": 8080,
         "home": "/home/prairie",
