@@ -22,6 +22,7 @@ const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const crypto = require('crypto');
+const { hashElement } = require('folder-hash');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -70,7 +71,7 @@ if ('h' in argv || 'help' in argv) {
  * Creates the express application and sets up all PrairieLearn routes.
  * @return {Express App} The express "app" object that was created.
  */
-module.exports.initExpress = function() {
+module.exports.initExpress = async function() {
     const app = express();
     app.set('views', path.join(__dirname, 'pages'));
     app.set('view engine', 'ejs');
@@ -211,14 +212,37 @@ module.exports.initExpress = function() {
         logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
         app.use(express.static(config.localRootFilesDir));
     }
+
+    // To allow for more aggressive caching of static files served from public/,
+    // we introduce a new `assets/` path that includes a cachebuster in the path.
+    // In requests for resources, the cachebuster will be a hash of the contents
+    // of `/public`, which we will compute at startup.
+    const assetsHash = await hashElement(path.join(__dirname, 'public'), {
+        encoding: 'hex',
+    });
+    const assetsHashSlice = assetsHash.slice(0, 16);
+    app.use((req, res, next) => {
+        res.locals.asset_path = (assetPath) => {
+            return `/assets/${assetsHashSlice}/${assetPath}`;
+        };
+        next();
+    });
+    app.use('/assets/:cachebuster', express.static(path.join(__dirname, 'public'), {
+        maxAge: '31557600',
+    }));
+    // This route is kept around for legacy reasons - new code should prefer the
+    // "cacheable" route above.
     app.use(express.static(path.join(__dirname, 'public')));
 
-    // To allow for more aggressive caching of files served from node_modules,
-    // we insert a hash of the module version into the request path. This allows
+    // To allow for more aggressive caching of files served from node_modules/,
+    // we insert a hash of the module version into the resource path. This allows
     // us to treat those files as immutable and cache them essentially forever.
+    // 
+    // This node_modules_asset_path utility function is used inside our templates
+    // to construct the appropriate path.
     app.use((req, res, next) => {
-        res.locals.node_modules_asset_path = (filePath) => {
-            const [maybeScope, maybeModule] = filePath.split('/');
+        res.locals.node_modules_asset_path = (assetPath) => {
+            const [maybeScope, maybeModule] = assetPath.split('/');
             let moduleName;
             if (maybeScope.indexOf('@') === 0) {
                 // This is a scoped module
@@ -229,7 +253,7 @@ module.exports.initExpress = function() {
             const version = require(`${moduleName}/package.json`).version;
             const hashedVersion = crypto.createHash('sha256').update(version).digest('hex');
             const hashSlice = hashedVersion.slice(0, 16);
-            return `/cacheable_node_modules/${hashSlice}/${filePath}`;
+            return `/cacheable_node_modules/${hashSlice}/${assetPath}`;
         };
         next();
     });
@@ -949,7 +973,7 @@ module.exports.initExpress = function() {
 var server;
 
 module.exports.startServerAsync = async () => {
-    const app = module.exports.initExpress();
+    const app = await module.exports.initExpress();
 
     if (config.serverType === 'https') {
         const key = await (fs.promises.readFile(config.sslKeyFile));
