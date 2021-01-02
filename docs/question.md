@@ -55,7 +55,7 @@ The `info.json` file for each question defines properties of the question. For e
     "topic": "Forces",
     "tags": ["secret", "Fa18"],
     "type": "v3",
-    "comment": "You can add comments to json files using this property."
+    "comment": "You can add comments to JSON files using this property."
 }
 ```
 
