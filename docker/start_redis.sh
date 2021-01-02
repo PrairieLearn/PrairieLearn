@@ -1,3 +1,3 @@
 #!/bin/bash
 
-redis-server --daemonize yes
+redis-server --daemonize yes > /dev/null

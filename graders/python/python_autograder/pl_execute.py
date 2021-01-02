@@ -6,8 +6,7 @@ import numpy.random
 import random
 import io
 import pl_helpers
-from os.path import join
-from os.path import splitext
+from os.path import join, splitext, exists
 from types import ModuleType, FunctionType
 from copy import deepcopy
 
@@ -20,6 +19,15 @@ class UserCodeFailed(Exception):
 def set_random_seed(seed=None):
     np.random.seed(seed)
     random.seed(seed)
+
+
+def try_read(fname):
+    try:
+        with open(fname, 'r', encoding='utf-8') as f:
+            contents = f.read()
+    except:
+        contents = ''
+    return contents
 
 
 def execute_code(fname_ref, fname_student, include_plt=False,
@@ -51,23 +59,31 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         str_setup = f.read()
     with open(fname_ref, 'r', encoding='utf-8') as f:
         str_ref = f.read()
-    try:
-        with open(join(filenames_dir, 'leading_code.py'), 'r', encoding='utf-8') as f:
-            str_leading = f.read()
-    except:
-        str_leading = ''
+
+    # Read in leading, trailing code
+    str_leading = try_read(join(filenames_dir, 'leading_code.py'))
+    str_trailing = try_read(join(filenames_dir, 'trailing_code.py'))
+
+    # Read student code (and transform if necessary) and append leading/trailing code
     with open(fname_student, 'r', encoding='utf-8') as f:
         filename, extension = splitext(fname_student)
         if extension == '.ipynb':
-            str_student = str_leading + pl_helpers.extract_ipynb_contents(f, ipynb_key)
+            str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
+    str_student = str_leading + str_student + str_trailing
+
     with open(join(filenames_dir, 'test.py'), encoding='utf-8') as f:
         str_test = f.read()
 
+    # Delete sensitive code so students can't read e.g. test cases or setup code
     os.remove(join(filenames_dir, 'data.json'))
     os.remove(fname_ref)
     os.remove(join(filenames_dir, 'setup_code.py'))
+    if exists(join(filenames_dir, 'leading_code.py')):
+        os.remove(join(filenames_dir, 'leading_code.py'))
+    if exists(join(filenames_dir, 'trailing_code.py')):
+        os.remove(join(filenames_dir, 'trailing_code.py'))
     os.remove(join(filenames_dir, 'test.py'))
 
     repeated_setup_name = 'repeated_setup()'
@@ -134,12 +150,20 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         err = None
     except Exception:
         err = sys.exc_info()
+
+    # Now that user code has been run, replace deleted files in case we are to run the tests again.
     with open(join(filenames_dir, 'data.json'), 'w', encoding='utf-8') as f:
         json.dump(data, f)
     with open(fname_ref, 'w', encoding='utf-8') as f:
         f.write(str_ref)
     with open(join(filenames_dir, 'setup_code.py'), 'w', encoding='utf-8') as f:
         f.write(str_setup)
+    if len(str_leading) > 0:
+        with open(join(filenames_dir, 'leading_code.py'), 'w', encoding='utf-8') as f:
+            f.write(str_leading)
+    if len(str_trailing) > 0:
+        with open(join(filenames_dir, 'trailing_code.py'), 'w', encoding='utf-8') as f:
+            f.write(str_trailing)
     with open(join(filenames_dir, 'test.py'), 'w', encoding='utf-8') as f:
         f.write(str_test)
     if err is not None:

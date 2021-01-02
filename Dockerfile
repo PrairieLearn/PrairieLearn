@@ -1,4 +1,4 @@
-FROM prairielearn/centos7-plbase
+FROM prairielearn/plbase
 
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
@@ -18,8 +18,7 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
     && node server.js --migrate-and-exit \
-    && su postgres -c "createuser root" \
-    && su postgres -c 'psql -c "alter user root with superuser;"' \
+    && su postgres -c "createuser -s root" \
     && /PrairieLearn/docker/start_postgres.sh stop \
     && /PrairieLearn/docker/gen_ssl.sh
 

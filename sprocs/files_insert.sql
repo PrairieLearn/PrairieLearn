@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS files_insert(text,text,text,bigint,bigint,bigint,bigint);
+DROP FUNCTION IF EXISTS files_insert(text,text,text,bigint,bigint,bigint,bigint,enum_file_storage_type);
 
 CREATE OR REPLACE FUNCTION
     files_insert(
@@ -8,6 +10,7 @@ CREATE OR REPLACE FUNCTION
         IN instance_question_id bigint,
         IN user_id bigint,
         IN authn_user_id bigint,
+        IN storage_type enum_file_storage_type,
         OUT file_id bigint
     )
 AS $$
@@ -30,8 +33,8 @@ BEGIN
     -- insert the file
 
     INSERT INTO files
-           (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, created_by)
-    VALUES (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, authn_user_id)
+           (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, created_by, storage_type)
+    VALUES (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, authn_user_id, storage_type)
     RETURNING id
     INTO file_id;
 
