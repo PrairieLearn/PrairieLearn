@@ -9,7 +9,7 @@
     ],
     "properties": {
         "comment": {
-            "description": "Add the comment",
+            "description": "Arbitrary comment for reference purposes.",
             "type": ["string", "array", "object"]
         },
         "description": {
