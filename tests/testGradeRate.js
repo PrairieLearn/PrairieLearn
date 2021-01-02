@@ -20,14 +20,16 @@ describe('Exam assessment with grade rate set', function() {
     
     before('set up testing server', async function() {
         await util.promisify(helperServer.before().bind(this))();
-        const results = await sqldb.queryOneRowAsync(sql.select_exam10, []);
+        const results = await sqldb.queryOneRowAsync(sql.select_exam, []);
         context.assessmentId = results.rows[0].id;
+        console.log(results.rows[0]);
         context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
     });
     after('shut down testing server', helperServer.after);
     
     step('visit start exam page', async () => {
         const response = await helperClient.fetchCheerio(context.assessmentUrl);
+        console.log(response);
         assert.isTrue(response.ok);
         
         assert.equal(response.$('#start-assessment').text(), 'Start assessment');
