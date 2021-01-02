@@ -6,8 +6,7 @@ import numpy.random
 import random
 import io
 import pl_helpers
-from os.path import join
-from os.path import splitext
+from os.path import join, splitext, exists
 from types import ModuleType, FunctionType
 from copy import deepcopy
 
@@ -81,8 +80,10 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     os.remove(join(filenames_dir, 'data.json'))
     os.remove(fname_ref)
     os.remove(join(filenames_dir, 'setup_code.py'))
-    os.remove(join(filenames_dir, 'leading_code.py'))
-    os.remove(join(filenames_dir, 'trailing_code.py'))
+    if exists(join(filenames_dir, 'leading_code.py')):
+        os.remove(join(filenames_dir, 'leading_code.py'))
+    if exists(join(filenames_dir, 'trailing_code.py')):
+        os.remove(join(filenames_dir, 'trailing_code.py'))
     os.remove(join(filenames_dir, 'test.py'))
 
     repeated_setup_name = 'repeated_setup()'
