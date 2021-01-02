@@ -229,6 +229,8 @@ You can add comments to json files using the property `comment`. You can use thi
 }
 ```
 
+**Warning:** if you have more than one comment for a JSON object (objects are delimitated by braces `{}`) then all but one of them will be silently discarded by the online course configuration editing tools. It's fine to have multiple comments in a JSON file but they have to be in separate objects. For example, comments inside the _same_ object (not supported) look like `{"comment": "AAA", "comment": "BBB"}`. Comments in _different_ objects (supported) look like `{"subObject1": {"comment": "AAA"}, "subObject2": {"comment": "BBB"}}`.
+
 ## Colors
 
 The possible colors for assessment sets, topic, and tags are:
