@@ -9,8 +9,8 @@
     ],
     "properties": {
         "comment": {
-            "description": "Add the comment",
-            "type": "string"
+            "description": "Arbitrary comment for reference purposes.",
+            "type": ["string", "array", "object"]
         },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
@@ -53,8 +53,8 @@
                 "type": "object",
                 "properties": {
                     "comment": {
-                        "description": "Add the comment",
-                        "type": "string"
+                        "description": "Arbitrary comment for reference purposes.",
+                        "type": ["string", "array", "object"]
                     },
                     "role": {
                         "description": "The minimum user role required for access.",

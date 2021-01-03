@@ -3,14 +3,10 @@
     "title": "v3 question options",
     "description": "Options for a v3 question.",
     "type": "object",
-    "comment": {
-        "description": "Add the comment",
-        "type": "string"
-    },
     "properties": {
         "comment": {
-            "description": "Add the comment",
-            "type": "string"
+            "description": "Arbitrary comment for reference purposes.",
+            "type": ["string", "array", "object"]
         }
     }
 }

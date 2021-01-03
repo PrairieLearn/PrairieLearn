@@ -9,8 +9,8 @@
     ],
     "properties": {
         "comment": {
-            "description": "Add the comment",
-            "type": "string"
+            "description": "Arbitrary comment for reference purposes.",
+            "type": ["string", "array", "object"]
         },
         "controller": {
             "description": "The name of the element's controller file.",
@@ -22,8 +22,8 @@
             "additionalProperties": false,
             "properties": {
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "coreStyles": {
                     "description": "The styles required by this element from /public/stylesheets.",

@@ -12,8 +12,8 @@
     ],
     "properties": {
         "comment": {
-            "description": "Add the comment",
-            "type": "string"
+            "description": "Arbitrary comment for reference purposes.",
+            "type": ["string", "array", "object"]
         },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
@@ -106,8 +106,8 @@
             ],
             "properties": {
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "enabled": {
                     "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
@@ -145,8 +145,8 @@
             "additionalProperties": false,
             "properties": {
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "coreStyles": {
                     "description": "The styles required by this question from /public/stylesheets.",
@@ -225,8 +225,8 @@
             ],
             "properties": {
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "image": {
                     "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",

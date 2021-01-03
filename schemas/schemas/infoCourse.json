@@ -12,8 +12,8 @@
     ],
     "properties": {
         "comment": {
-            "description": "Add the comment",
-            "type": "string"
+            "description": "Arbitrary comment for reference purposes.",
+            "type": ["string", "array", "object"]
         },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
@@ -39,8 +39,8 @@
             "additionalProperties": false,
             "properties": {
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "useNewQuestionRenderer": {
                     "description": "Feature flag to enable the new question renderer.",
@@ -63,8 +63,8 @@
                 ],
                 "properties": {
                     "comment": {
-                        "description": "Add the comment",
-                        "type": "string"
+                        "description": "Arbitrary comment for reference purposes.",
+                        "type": ["string", "array", "object"]
                     },
                     "abbreviation": {
                         "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
@@ -96,8 +96,8 @@
                 ],
                 "properties": {
                     "comment": {
-                        "description": "Add the comment",
-                        "type": "string"
+                        "description": "Arbitrary comment for reference purposes.",
+                        "type": ["string", "array", "object"]
                     },
                     "shortName": {
                         "description": "Short name (preferably 2 to 7 characters).",
@@ -129,8 +129,8 @@
                 ],
                 "properties": {
                     "comment": {
-                        "description": "Add the comment",
-                        "type": "string"
+                        "description": "Arbitrary comment for reference purposes.",
+                        "type": ["string", "array", "object"]
                     },
                     "shortName": {
                         "description": "Short name (preferably 2 to 7 characters).",

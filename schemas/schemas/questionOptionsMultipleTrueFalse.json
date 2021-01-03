@@ -10,8 +10,8 @@
     ],
     "properties": {
         "comment": {
-            "description": "Add the comment",
-            "type": "string"
+            "description": "Arbitrary comment for reference purposes.",
+            "type": ["string", "array", "object"]
         },
         "text": {
             "description": "Text to precede the set of statements being given.",

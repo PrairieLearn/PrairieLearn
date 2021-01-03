@@ -33,8 +33,8 @@
                 "required": ["name", "description"],
                 "properties": {
                     "comment": {
-                        "description": "Add the comment",
-                        "type": "string"
+                        "description": "Arbitrary comment for reference purposes.",
+                        "type": ["string", "array", "object"]
                     },
                     "name": {
                         "description": "Name of the parameter. Must match a $name in the SQL.",

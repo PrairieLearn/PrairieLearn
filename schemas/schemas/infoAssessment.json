@@ -13,8 +13,8 @@
     ],
     "properties": {
         "comment": {
-            "description": "Add the comment",
-            "type": "string"
+            "description": "Arbitrary comment for reference purposes.",
+            "type": ["string", "array", "object"]
         },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
@@ -110,8 +110,8 @@
             "additionalProperties": false,
             "properties": {
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "mode": {
                     "description": "The server mode required for access.",
@@ -168,8 +168,8 @@
                     "type": "object",
                     "properties": {
                         "comment": {
-                            "description": "Add the comment",
-                            "type": "string"
+                            "description": "Arbitrary comment for reference purposes.",
+                            "type": ["string", "array", "object"]
                         },
                         "password": {
                             "description": "Password protect the SEB exam and config file",
@@ -209,8 +209,8 @@
                     "type": "string"
                 },
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "maxPoints": {
                     "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
@@ -243,8 +243,8 @@
             "type": "object",
             "properties": {
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "points": {
                     "$ref": "#/definitions/points"
@@ -283,8 +283,8 @@
             "type": "object",
             "properties": {
                 "comment": {
-                    "description": "Add the comment",
-                    "type": "string"
+                    "description": "Arbitrary comment for reference purposes.",
+                    "type": ["string", "array", "object"]
                 },
                 "points": {
                     "$ref": "#/definitions/points"

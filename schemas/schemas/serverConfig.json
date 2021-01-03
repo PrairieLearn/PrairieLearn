@@ -5,8 +5,8 @@
     "type": "object",
     "properties": {
         "comment": {
-            "description": "Add the comment",
-            "type": "string"
+            "description": "Arbitrary comment for reference purposes.",
+            "type": ["string", "array", "object"]
         },
         "courseDirs": {
             "description": "Paths of the course directories.",
