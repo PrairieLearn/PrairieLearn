@@ -21,41 +21,49 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.user_scores = result.rows;
-        res.locals.time_limit_list = new Object();
-        res.locals.remaining_time_min = null;
-        res.locals.remaining_time_max = null;
-        res.locals.has_open_instance = false;
-        res.locals.has_closed_instance = false;
+        
+        let time_limit_list = new Object();
+        let remaining_time_min = null;
+        let remaining_time_max = null;
+        let has_open_instance = false;
+        let has_closed_instance = false;
         result.rows.forEach(function(row) {
             if (!row.open)
-                res.locals.has_closed_instance = true;
+                has_closed_instance = true;
             else if (row.time_remaining_sec === null)
-                res.locals.has_open_instance = true;
+                has_open_instance = true;
             else {
-                if (!(row.total_time_sec in res.locals.time_limit_list))
-                    res.locals.time_limit_list[row.total_time_sec] = row.total_time;
-                if (res.locals.remaining_time_min === null ||
-                    res.locals.remaining_time_min > row.time_remaining_sec)
-                    res.locals.remaining_time_min = row.time_remaining_sec;
-                if (res.locals.remaining_time_max === null ||
-                    res.locals.remaining_time_max < row.time_remaining_sec)
-                    res.locals.remaining_time_max = row.time_remaining_sec;
+                if (!(row.total_time_sec in time_limit_list))
+                    time_limit_list[row.total_time_sec] = row.total_time;
+                if (remaining_time_min === null ||
+                    remaining_time_min > row.time_remaining_sec)
+                    remaining_time_min = row.time_remaining_sec;
+                if (remaining_time_max === null ||
+                    remaining_time_max < row.time_remaining_sec)
+                    remaining_time_max = row.time_remaining_sec;
             }
         });
-        res.locals.time_limit_list = Object.values(res.locals.time_limit_list);
-        if (res.locals.time_limit_list.length > 5)
-            res.locals.time_limit_list.splice(3, res.locals.time_limit_list.length - 4, '...');
-        res.locals.time_limit_list = res.locals.time_limit_list.length > 0 ? res.locals.time_limit_list.join(', ') : 'No time limits';
-        if (res.locals.remaining_time_min === null)
-            res.locals.remaining_time_range = 'No time limits';
-        else if (res.locals.remaining_time_max < 60)
-            res.locals.remaining_time_range = 'Less than a minute';
-        else if (res.locals.remaining_time_min < 60)
-            res.locals.remaining_time_range = 'up to ' + Math.floor(res.locals.remaining_time_max / 60) + ' min';
-        else if (Math.floor(res.locals.remaining_time_min / 60) == Math.floor(res.locals.remaining_time_max / 60))
-            res.locals.remaining_time_range = Math.floor(res.locals.remaining_time_min / 60) + ' min';
+        time_limit_list = Object.values(time_limit_list);
+        if (time_limit_list.length > 5)
+            time_limit_list.splice(3, time_limit_list.length - 4, '...');
+
+        res.locals.time_limit_totals = {
+            total_time: time_limit_list.length > 0 ? time_limit_list.join(', ') : 'No time limits',
+            time_remaining_sec: remaining_time_max,
+            has_open_instance: has_open_instance,
+            has_closed_instance: has_closed_instance,
+            action: 'set_time_limit_all',
+        };
+        if (remaining_time_min === null)
+            res.locals.time_limit_totals.time_remaining = 'No time limits';
+        else if (remaining_time_max < 60)
+            res.locals.time_limit_totals.time_remaining = 'Less than a minute';
+        else if (remaining_time_min < 60)
+            res.locals.time_limit_totals.time_remaining = 'up to ' + Math.floor(remaining_time_max / 60) + ' min';
+        else if (Math.floor(remaining_time_min / 60) == Math.floor(remaining_time_max / 60))
+            res.locals.time_limit_totals.time_remaining = Math.floor(remaining_time_min / 60) + ' min';
         else
-            res.locals.remaining_time_range = 'between ' + Math.floor(res.locals.remaining_time_min / 60) + ' and ' + Math.floor(res.locals.remaining_time_max / 60) + ' min';
+            res.locals.time_limit_totals.time_remaining = 'between ' + Math.floor(remaining_time_min / 60) + ' and ' + Math.floor(remaining_time_max / 60) + ' min';
         
         debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);

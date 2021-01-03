@@ -15,7 +15,8 @@
               placement: 'right',
               title: function() {
                   let row = $(this).data('row');
-                  return row.open ? 'Change Time Limit' : 'Re-Open Instance';
+                  return row.action == 'set_time_limit_all' ? 'Change Time Limits' :
+                      row.open ? 'Change Time Limit' : 'Re-Open Instance';
               },
               container: 'body',
               html: true,
@@ -24,23 +25,31 @@
                   let that = this;
                   let row = $(this).data('row');
                   let form = $('<form name="set-time-limit-form" method="POST">');
+                  let action = row.action ? row.action : 'set_time_limit';
                   form.append(`<p>Total time limit: ${row.total_time}<br/>
                                   Remaining time: ${row.time_remaining}
                                </p>`);
-                  form.append('<input type="hidden" name="__action" value="set_time_limit">');
+                  form.append(`<input type="hidden" name="__action" value="${action}">`);
                   form.append('<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">');
-                  form.append(`<input type="hidden" name="assessment_instance_id" value="${row.assessment_instance_id}">`);
+                  if (row.assessment_instance_id)
+                      form.append(`<input type="hidden" name="assessment_instance_id" value="${row.assessment_instance_id}">`);
 
                   let select = $('<select class="form-control select-time-limit" name=plus_minus>');
                   if (row.time_remaining_sec !== null) {
-                      select.append('<option value=+1>Add</option>');
-                      select.append('<option value=-1>Subtract</option>');
+                      if (row.has_open_instance) {
+                          select.append('<option value=+1>Add to instances with time limit</option>');
+                          select.append('<option value=-1>Subtract from instances with time limit</option>');
+                      } else {
+                          select.append('<option value=+1>Add</option>');
+                          select.append('<option value=-1>Subtract</option>');
+                      }
                   }
                   select.append('<option value=set_total>Set total time limit to</option>');
                   select.append('<option value=set_rem>Set remaining time to</option>');
                   if (!row.open || row.time_remaining_sec !== null)
                       select.append('<option value=unlimited>Remove time limit</option>');
-                  if (row.open && (row.time_remaining_sec === null || row.time_remaining_sec > 0))
+                  if (row.open !== false && (row.time_remaining_sec === null ||
+                                             row.time_remaining_sec > 0))
                       select.append('<option value=expire>Expire time limit</option>');
                   select.change(function() {
                       $(this).parents('form').find('.time-limit-field').toggle($(this).val() != 'unlimited' && $(this).val() != 'expire');
@@ -54,14 +63,20 @@
                       time_ref_select.append('<option value=percent>% total limit</option>');
                   new_time.append(time_ref_select);
                   form.append(new_time);
-                  let cancel_button = $('<button type="button" class="btn btn-secondary" onclick="">Cancel</button>');
+                  if (row.has_closed_instance)
+                      form.append('<p>NOTE: Only currently open instances will be updated. Instances that have been closed or that have not been started yet are not affected.</p>');
+                  let buttons = $('<div class="btn-toolbar pull-right">');
+                  let cancel_button = $('<button type="button" class="btn btn-secondary mr-2" onclick="">Cancel</button>');
                   cancel_button.click(function() {
                       $(that).popover('hide')
                   });
-                  form.append(cancel_button);
-                  form.append('<button type="submit" class="btn btn-success">Set</button>');
+                  buttons.append(cancel_button);
+                  buttons.append('<button type="submit" class="btn btn-success">Set</button>');
+                  form.append(buttons);
                   return form;
               },
+          }).on("show.bs.popover", function() {
+              $($(this).data("bs.popover").getTipElement()).css("max-width", "350px");
           });
       });
     </script>
@@ -157,50 +172,6 @@
               <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Action for all instances <span class="caret"></span>
               </button>
-              <div id="PopoverSetTimeLimitAll"
-                   tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                   data-html="true" data-placement="auto" title="Change Time Limit"
-                   data-content="
-                                 <p>
-                                   Total time limit: <%= time_limit_list %><br/>
-                                   Remaining time: <%= remaining_time_range %>
-                                 </p>
-                                 <form name=&quot;set-time-limit-form&quot; method=&quot;POST&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;set_time_limit_all&quot;>
-                                   <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                   <select class=&quot;form-control select-time-limit&quot; name=plus_minus>
-                                     <% if (remaining_time_min !== null) {
-                                          if (has_open_instance) { %>
-                                     <option value=+1>Add to exams with time limit</option>
-                                     <option value=-1>Subtract from exams with time limit</option>
-                                       <% } else { %>
-                                     <option value=+1>Add</option>
-                                     <option value=-1>Subtract</option>
-                                     <%   }
-                                        } %>
-                                     <option value=set_total>Set total time limit to</option>
-                                     <option value=set_rem>Set remaining time to</option>
-                                     <% if (remaining_time_min !== null) { %>
-                                     <option value=unlimited>Set as unlimited</option>
-                                     <% } %>
-                                   </select>
-                                   <p class=&quot;form-inline&quot;>
-                                     <input class=&quot;form-control time-limit-field&quot; type=&quot;number&quot; name=&quot;time_add&quot; style=&quot;width: 5em&quot; value=&quot;5&quot;>
-                                     <select class=&quot;form-control time-limit-field&quot; name=time_ref>
-                                       <option value=minutes>minutes</option>
-                                     <% if (remaining_time_min !== null) { %>
-                                       <option value=percent>% total limit</option>
-                                     <% } %>
-                                     </select>
-                                   </p>
-                                   <p>NOTE: Only currently open instances will be updated. Instances that have been closed or that have not been started yet are not affected.</p>
-                                   <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#PopoverSetTimeLimitAll').popover('hide')&quot;>
-                                     Cancel
-                                   </button>
-                                   <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Set for all instances</button>
-                                 </form>
-                                 ">
-              </div>
               <div id="PopoverOpenAll"
                    tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                    data-html="true" data-placement="auto" title="Confirm open"
@@ -231,7 +202,7 @@
                 <a class="dropdown-item" onclick="$('#PopoverOpenAll').popover('show')" href="#">
                   <i class="far fa-circle" aria-hidden="true"></i> Re-open all instances
                 </a>
-                <a class="dropdown-item" onclick="showSetTimePopover('#PopoverSetTimeLimitAll')" href="#">
+                <a class="dropdown-item time-limit-edit-button" data-row='<%= JSON.stringify(time_limit_totals) %>'>
                   <i class="far fa-clock" aria-hidden="true"></i> Change time limit for all instances
                 </a>
                 <% } %>
