@@ -21,6 +21,7 @@ const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
+const assets = require('../lib/assets');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -1227,10 +1228,10 @@ module.exports = {
                         const coreScriptUrls = [];
                         const scriptUrls = [];
                         const styleUrls = [];
-                        dependencies.coreStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
-                        dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
-                        dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(`/node_modules/${file}`));
-                        dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
+                        dependencies.coreStyles.forEach((file) => styleUrls.push(assets.assetPath(`stylesheets/${file}`)));
+                        dependencies.coreScripts.forEach((file) => coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)));
+                        dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(assets.nodeModulesAssetPath(file)));
+                        dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(assets.nodeModulesAssetPath(file)));
                         dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesQuestionStyles.forEach((file) => styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
