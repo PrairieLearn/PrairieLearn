@@ -284,6 +284,14 @@ BEGIN
                          'date_limit',
                          CASE WHEN asl.date_limit IS NULL THEN 'Unlimited'
                          ELSE format_date_full_compact(asl.date_limit, ci.display_timezone)
+                         END,
+                         'time_limit',
+                         CASE WHEN asl.date_limit IS NULL THEN 'Unlimited'
+                         ELSE format_interval(asl.date_limit - ai.date)
+                         END,
+                         'remaining_time',
+                         CASE WHEN asl.date_limit IS NULL THEN 'Unlimited'
+                         ELSE format_interval(asl.date_limit - asl.date)
                          END
                     )
                     ELSE NULL::JSONB
