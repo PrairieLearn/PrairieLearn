@@ -7,9 +7,11 @@ SELECT
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
     CASE
+        WHEN ai.open AND ai.date_limit IS NOT NULL AND ai.date_limit <= current_timestamp
+            THEN 'Expired'
         WHEN ai.open AND ai.date_limit IS NOT NULL
             THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / 60))::text || ' min'
-        WHEN ai.open THEN 'Unlimited'
+        WHEN ai.open THEN 'Open (no time limit)'
         ELSE 'Closed'
     END AS time_remaining,
     CASE
@@ -20,7 +22,7 @@ SELECT
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
             THEN greatest(0, floor(extract(epoch from (ai.date_limit - ai.date)) / 60))::text || ' min'
-        WHEN ai.open THEN 'Unlimited'
+        WHEN ai.open THEN 'Open (no time limit)'
         ELSE 'Closed'
     END AS total_time,
     CASE

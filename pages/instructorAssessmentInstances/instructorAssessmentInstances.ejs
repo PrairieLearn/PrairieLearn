@@ -9,7 +9,57 @@
   <body>
     <script>
       $(function () {
-          $('[data-toggle="popover"]').popover({sanitize: false})
+          $('[data-toggle="popover"]').popover({sanitize: false});
+          $('.time-limit-edit-button').popover({
+              sanitize: false,
+              placement: 'right',
+              title: 'Change Time Limit',
+              container: 'body',
+              html: true,
+              trigger: 'click',
+              content: function() {
+                  let that = this;
+                  let row = $(this).data('row');
+                  let form = $('<form name="set-time-limit-form" method="POST">');
+                  form.append(`<p>Total time limit: ${row.total_time}<br/>
+                                  Remaining time: ${row.time_remaining}
+                               </p>`);
+                  form.append('<input type="hidden" name="__action" value="set_time_limit">');
+                  form.append('<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">');
+                  form.append(`<input type="hidden" name="assessment_instance_id" value="${row.assessment_instance_id}">`);
+
+                  let select = $('<select class="form-control select-time-limit" name=plus_minus>');
+                  if (row.time_remaining_sec !== null) {
+                      select.append('<option value=+1>Add</option>');
+                      select.append('<option value=-1>Subtract</option>');
+                  }
+                  select.append('<option value=set_total>Set total time limit to</option>');
+                  select.append('<option value=set_rem>Set remaining time to</option>');
+                  if (!row.open || row.time_remaining_sec !== null)
+                      select.append('<option value=unlimited>Remove time limit</option>');
+                  if (row.open && (row.time_remaining_sec === null || row.time_remaining_sec > 0))
+                      select.append('<option value=expire>Expire time limit</option>');
+                  select.change(function() {
+                      $(this).parents('form').find('.time-limit-field').toggle($(this).val() != 'unlimited' && $(this).val() != 'expire');
+                  });
+                  form.append(select);
+                  let new_time = $('<p class="form-inline">');
+                  new_time.append('<input class="form-control time-limit-field" type="number" name="time_add" style="width: 5em" value="5">');
+                  let time_ref_select = $('<select class="form-control time-limit-field" name=time_ref>');
+                  time_ref_select.append('<option value=minutes>minutes</option>');
+                  if (row.time_remaining_sec !== null)
+                      time_ref_select.append('<option value=percent>% total limit</option>');
+                  new_time.append(time_ref_select);
+                  form.append(new_time);
+                  let cancel_button = $('<button type="button" class="btn btn-secondary" onclick="">Cancel</button>');
+                  cancel_button.click(function() {
+                      $(that).popover('hide')
+                  });
+                  form.append(cancel_button);
+                  form.append('<button type="submit" class="btn btn-success">Set</button>');
+                  return form;
+              },
+          });
       });
     </script>
     <%- include('../partials/navbar'); %>
@@ -231,73 +281,16 @@
                 <td class="text-center align-middle">
                   <%= row.time_remaining %>
                   <% if (authz_data.has_instructor_edit) { %>
-                  <a class="btn btn-xs" onclick="showSetTimePopover('#row<%= iRow %>PopoverSetTimeLimit')">
+                  <a class="btn btn-xs time-limit-edit-button" data-row='<%= JSON.stringify(row) %>' >
                     <i class="fas fa-edit" aria-hidden="true"></i>
                   </a>
-                    <div id="row<%= iRow %>PopoverSetTimeLimit"
-                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                         data-html="true" data-placement="auto" title="Change Time Limit"
-                         data-content="
-                                       <p>
-                                         Total time limit: <%= row.total_time %><br/>
-                                         Remaining time: <%= row.time_remaining %>
-                                       </p>
-                                       <form name=&quot;set-time-limit-form&quot; method=&quot;POST&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;set_time_limit&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                         <select class=&quot;form-control select-time-limit&quot; name=plus_minus>
-                                         <% if (row.open && row.time_remaining != 'Unlimited') { %>
-                                           <option value=+1>Add</option>
-                                           <option value=-1>Subtract</option>
-                                         <% } %>
-                                           <option value=set_total>Set total time limit to</option>
-                                           <option value=set_rem>Set remaining time to</option>
-                                         <% if (row.time_remaining != 'Unlimited') { %>
-                                           <option value=unlimited>Set as unlimited</option>
-                                         <% } %>
-                                         </select>
-                                         <p class=&quot;form-inline&quot;>
-                                           <input class=&quot;form-control time-limit-field&quot; type=&quot;number&quot; name=&quot;time_add&quot; style=&quot;width: 5em&quot; value=&quot;5&quot;>
-                                           <select class=&quot;form-control time-limit-field&quot; name=time_ref>
-                                             <option value=minutes>minutes</option>
-                                         <% if (row.open && row.time_remaining != 'Unlimited') { %>
-                                             <option value=percent>% total limit</option>
-                                         <% } %>
-                                           </select>
-                                         </p>
-                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverSetTimeLimit').popover('hide')&quot;>
-                                           Cancel
-                                         </button>
-                                         <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Set</button>
-                                       </form>
-                                       ">
-                    </div>
+                  <% } %>
                 </td>
-                <% } %>
                 <td class="text-center align-middle">
                   <div class="dropdown">
                     <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                       Action <span class="caret"></span>
                     </button>
-                    <div id="row<%= iRow %>PopoverOpen"
-                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                         data-html="true" data-placement="auto" title="Confirm open"
-                         data-content="
-                                       <p><small>
-                                           This will disable auto-closing and time limits. The assessment will need to be manually closed.
-                                       </small></p>
-                                       <form name=&quot;open-form&quot; method=&quot;POST&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;open&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverOpen').popover('hide')&quot;>
-                                           Cancel
-                                         </button>
-                                         <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Open assessment</button>
-                                       </form>
-                                       ">
-                    </div>
                     <div id="row<%= iRow %>PopoverClose"
                          tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                          data-html="true" data-placement="auto" title="Confirm close"
@@ -351,28 +344,16 @@
                       <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
+                        <i class="fa fa-ban" aria-hidden="true"></i> Grade & Close
+                      </a>
+                      <% } %>
+
+                      <% if (authz_data.has_instructor_edit) { %>
                       <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
                         <i class="fa fa-sync" aria-hidden="true"></i> Regrade
                       </a>
                       <% } %>
-
-                      <!-- ################################################## -->
-
-                      <% if (authz_data.has_instructor_edit) { %>
-                      <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
-                        <i class="far fa-circle" aria-hidden="true"></i> Re-open
-                      </a>
-                      <% } %>
-
-                      <!-- ################################################## -->
-
-                      <% if (authz_data.has_instructor_edit) { %>
-                      <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
-                        <i class="fa fa-ban" aria-hidden="true"></i> Close
-                      </a>
-                      <% } %>
-
-                      <!-- ################################################## -->
 
                     </div>
                   </div>

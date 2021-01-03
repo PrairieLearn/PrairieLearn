@@ -27,10 +27,10 @@ router.get('/', function(req, res, next) {
         res.locals.has_open_instance = false;
         res.locals.has_closed_instance = false;
         result.rows.forEach(function(row) {
-            if (row.time_remaining == 'Unlimited')
-                res.locals.has_open_instance = true;
-            else if (row.time_remaining == 'Closed')
+            if (!row.open)
                 res.locals.has_closed_instance = true;
+            else if (row.time_remaining_sec === null)
+                res.locals.has_open_instance = true;
             else {
                 if (!(row.total_time_sec in res.locals.time_limit_list))
                     res.locals.time_limit_list[row.total_time_sec] = row.total_time;
@@ -148,7 +148,11 @@ router.post('/', function(req, res, next) {
         };
         if (req.body.plus_minus == 'unlimited')
             params.base_time = 'null';
-        else if (req.body.plus_minus == 'set_total')
+        else if (req.body.plus_minus == 'expire') {
+            params.base_time = 'current_date';
+            params.time_add = 0;
+            params.time_ref = 'minutes';
+        } else if (req.body.plus_minus == 'set_total')
             params.base_time = 'start_date';
         else if (req.body.plus_minus == 'set_rem')
             params.base_time = 'current_date';
