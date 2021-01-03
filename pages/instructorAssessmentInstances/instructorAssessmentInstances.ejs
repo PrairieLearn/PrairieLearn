@@ -13,7 +13,10 @@
           $('.time-limit-edit-button').popover({
               sanitize: false,
               placement: 'right',
-              title: 'Change Time Limit',
+              title: function() {
+                  let row = $(this).data('row');
+                  return row.open ? 'Change Time Limit' : 'Re-Open Instance';
+              },
               container: 'body',
               html: true,
               trigger: 'click',

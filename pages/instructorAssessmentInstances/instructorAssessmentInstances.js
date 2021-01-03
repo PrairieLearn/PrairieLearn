@@ -64,23 +64,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
-    if (req.body.__action == 'open') {
-        const assessment_id = res.locals.assessment.id;
-        const assessment_instance_id = req.body.assessment_instance_id;
-        assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
-            if (ERR(err, next)) return;
-            
-            const params = {
-                assessment_id,
-                assessment_instance_id,
-                authn_user_id: res.locals.authz_data.authn_user.user_id,
-            };
-            sqldb.queryOneRow(sql.open, params, function(err, _result) {
-                if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
-            });
-        });
-    } else if (req.body.__action == 'open_all') {
+    if (req.body.__action == 'open_all') {
         const assessment_id = res.locals.assessment.id;
         const params = {
             assessment_id,
