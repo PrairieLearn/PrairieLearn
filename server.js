@@ -70,7 +70,7 @@ if ('h' in argv || 'help' in argv) {
  * Creates the express application and sets up all PrairieLearn routes.
  * @return {Express App} The express "app" object that was created.
  */
-module.exports.initExpress = async function() {
+module.exports.initExpress = function() {
     const app = express();
     app.set('views', path.join(__dirname, 'pages'));
     app.set('view engine', 'ejs');
@@ -951,7 +951,7 @@ module.exports.initExpress = async function() {
 var server;
 
 module.exports.startServerAsync = async () => {
-    const app = await module.exports.initExpress();
+    const app = module.exports.initExpress();
 
     if (config.serverType === 'https') {
         const key = await (fs.promises.readFile(config.sslKeyFile));
