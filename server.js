@@ -21,8 +21,6 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const crypto = require('crypto');
-const { hashElement } = require('folder-hash');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -44,6 +42,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
+const assets = require('./lib/assets');
 
 
 process.on('warning', e => console.warn(e)); // eslint-disable-line no-console
@@ -216,15 +215,10 @@ module.exports.initExpress = async function() {
     // To allow for more aggressive caching of static files served from public/,
     // we introduce a new `assets/` path that includes a cachebuster in the path.
     // In requests for resources, the cachebuster will be a hash of the contents
-    // of `/public`, which we will compute at startup.
-    const assetsHash = await hashElement(path.join(__dirname, 'public'), {
-        encoding: 'hex',
-    });
-    const assetsHashSlice = assetsHash.slice(0, 16);
+    // of `/public`, which we will compute at startup. See `lib/assets.js` for
+    // implementation details.
     app.use((req, res, next) => {
-        res.locals.asset_path = (assetPath) => {
-            return `/assets/${assetsHashSlice}/${assetPath}`;
-        };
+        res.locals.asset_path = assets.assetPath;
         next();
     });
     app.use('/assets/:cachebuster', express.static(path.join(__dirname, 'public'), {
@@ -237,24 +231,8 @@ module.exports.initExpress = async function() {
     // To allow for more aggressive caching of files served from node_modules/,
     // we insert a hash of the module version into the resource path. This allows
     // us to treat those files as immutable and cache them essentially forever.
-    // 
-    // This node_modules_asset_path utility function is used inside our templates
-    // to construct the appropriate path.
     app.use((req, res, next) => {
-        res.locals.node_modules_asset_path = (assetPath) => {
-            const [maybeScope, maybeModule] = assetPath.split('/');
-            let moduleName;
-            if (maybeScope.indexOf('@') === 0) {
-                // This is a scoped module
-                moduleName = `${maybeScope}/${maybeModule}`;
-            } else {
-                moduleName = maybeScope;
-            }
-            const version = require(`${moduleName}/package.json`).version;
-            const hashedVersion = crypto.createHash('sha256').update(version).digest('hex');
-            const hashSlice = hashedVersion.slice(0, 16);
-            return `/cacheable_node_modules/${hashSlice}/${assetPath}`;
-        };
+        res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
         next();
     });
     app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules'), {
@@ -1165,6 +1143,12 @@ if (config.startServer) {
         (callback) => {
             if (!config.externalGradingEnableResults) return callback(null);
             externalGraderResults.init((err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            util.callbackify(assets.init)(err => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
