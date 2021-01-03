@@ -45,8 +45,6 @@ Most questions using this autograder will contain a `pl-file-editor` or `pl-file
 </pl-submission-panel>
 ```
 
-Any file submitted using a `pl-file-editor` or `pl-file-upload` will be available for use by the C grader. Other elements can also be accessed using the same `data` structure used in functions in `server.py`, as described below.
-
 ### `tests/test.py`
 
 The `test.py` file will contain the basic tests that must be executed by the C grader. A simple `test.py` will look like this:
@@ -67,7 +65,13 @@ g.start()
 
 The `tests` method above will contain the basis for user tests, and will have access to some regular functions provided by the C grader. Some methods that can be called are listed below.
 
-To create tests based on parameters defined by `server.py`, or to have access to submitted data from other elements such as `pl-string-input` elements, you can access the `self.data` dictionary. This dictionary contains the similar keys to those found in the `grade()` function in `server.py`, such as `self.data["params"]` or `self.data["submitted_answers"]`.
+Any file submitted using a `pl-file-editor` or `pl-file-upload` will
+be available for use by the C grader. To create tests based on
+parameters defined by `server.py`, or to have access to submitted data
+from other elements such as `pl-string-input` elements, you can access
+the `self.data` dictionary. This dictionary contains the similar keys
+to those found in the `grade()` function in `server.py`, such as
+`self.data["params"]` or `self.data["submitted_answers"]`.
 
 ## Available test options
 
@@ -83,6 +87,12 @@ By default, if the compilation fails, it will stop all tests and return the subm
 
 ```python
 self.test_compile_file('square.c', 'square', ungradable_if_failed=False)
+```
+
+By default, if the compilation succeeds but gives a warning, a message with the warning will be listed in the main results message, above the test results. If you would like the warnings to be listed only inside the results of the specific test, you can call the function with:
+
+```python
+self.test_compile_file('square.c', 'square', add_warning_result_msg=False)
 ```
 
 The results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
@@ -184,6 +194,12 @@ To avoid issues with student-provided code running longer than expected, such as
 self.test_run('./slowprogram', exp_output='COMPLETED', timeout=10)
 ```
 
+To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10KB (more precisely, 10240 characters) of output will fail and have its output truncated. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
+
+```python
+self.test_run('./verboseprogram', exp_output='COMPLETED', size_limit=102400)
+```
+
 The test will be created and shown to the user, worth 1 point by default. The default name for a test that include an `input` argument is: `Test with input "<INPUT>"` (where `INPUT` is the provided input). For a test that uses `args`, the default name is `Test with arguments "<ARGS>"` (where `ARGS` is the set of arguments separated by spaces). A message will also be included with a summary of expected and rejected outputs. To change these settings, use the `max_points`, `msg` and/or `name` arguments:
 
 ```python
@@ -272,5 +288,5 @@ By default, the sandbox user will not have access to any files inside the `/grad
 self.change_mode('/grade/student/myfile.txt', '744')
 ```
 
-Any program compiled with `test_compile_file()` will be granted executable permissions (mode `755`, so these programs don't need to be explicitly allowed by your tests.
+Any program compiled with `test_compile_file()` will be granted executable permissions (mode `755`), so these programs don't need to be explicitly allowed by your tests.
 
