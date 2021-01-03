@@ -1151,12 +1151,7 @@ if (config.startServer) {
                 callback(null);
             });
         },
-        (callback) => {
-            util.callbackify(assets.init)(err => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
+        async () => await assets.init(),
         function(callback) {
             load.initEstimator('request', 1);
             load.initEstimator('authed_request', 1);
