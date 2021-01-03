@@ -98,6 +98,7 @@ WITH results AS (
     UPDATE
         assessment_instances AS ai
     SET
+        open = TRUE,
         date_limit = CASE
                      WHEN $base_time = 'null' THEN NULL
                      ELSE GREATEST(current_timestamp,
@@ -114,8 +115,7 @@ WITH results AS (
                      END,
         modified_at = now()
     WHERE
-        ai.open
-        AND ai.id = $assessment_instance_id
+        ai.id = $assessment_instance_id
         AND ai.assessment_id = $assessment_id
     RETURNING
         ai.open,

@@ -106,7 +106,7 @@
               </button>
               <div id="PopoverSetTimeLimitAll"
                    tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                   data-html="true" data-placement="auto" title="Set Time Limit"
+                   data-html="true" data-placement="auto" title="Change Time Limit"
                    data-content="
                                  <p>
                                    Total time limit: <%= time_limit_list %><br/>
@@ -179,7 +179,7 @@
                   <i class="far fa-circle" aria-hidden="true"></i> Re-open all instances
                 </a>
                 <a class="dropdown-item" onclick="showSetTimePopover('#PopoverSetTimeLimitAll')" href="#">
-                  <i class="far fa-clock" aria-hidden="true"></i> Set time limit for all instances
+                  <i class="far fa-clock" aria-hidden="true"></i> Change time limit for all instances
                 </a>
                 <% } %>
                 
@@ -228,15 +228,15 @@
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
                 <td class="text-center align-middle"><%= row.date_formatted %></td>
                 <td class="text-center align-middle" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
-                <td class="text-center align-middle"><%= row.time_remaining %></td>
                 <td class="text-center align-middle">
-                  <div class="dropdown">
-                    <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                      Action <span class="caret"></span>
-                    </button>
+                  <%= row.time_remaining %>
+                  <% if (authz_data.has_instructor_edit) { %>
+                  <a class="btn btn-xs" onclick="showSetTimePopover('#row<%= iRow %>PopoverSetTimeLimit')">
+                    <i class="fas fa-edit" aria-hidden="true"></i>
+                  </a>
                     <div id="row<%= iRow %>PopoverSetTimeLimit"
                          tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                         data-html="true" data-placement="auto" title="Set Time Limit"
+                         data-html="true" data-placement="auto" title="Change Time Limit"
                          data-content="
                                        <p>
                                          Total time limit: <%= row.total_time %><br/>
@@ -247,7 +247,7 @@
                                          <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
                                          <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
                                          <select class=&quot;form-control select-time-limit&quot; name=plus_minus>
-                                         <% if (row.time_remaining != 'Unlimited') { %>
+                                         <% if (row.open && row.time_remaining != 'Unlimited') { %>
                                            <option value=+1>Add</option>
                                            <option value=-1>Subtract</option>
                                          <% } %>
@@ -261,7 +261,7 @@
                                            <input class=&quot;form-control time-limit-field&quot; type=&quot;number&quot; name=&quot;time_add&quot; style=&quot;width: 5em&quot; value=&quot;5&quot;>
                                            <select class=&quot;form-control time-limit-field&quot; name=time_ref>
                                              <option value=minutes>minutes</option>
-                                         <% if (row.time_remaining != 'Unlimited') { %>
+                                         <% if (row.open && row.time_remaining != 'Unlimited') { %>
                                              <option value=percent>% total limit</option>
                                          <% } %>
                                            </select>
@@ -273,6 +273,13 @@
                                        </form>
                                        ">
                     </div>
+                </td>
+                <% } %>
+                <td class="text-center align-middle">
+                  <div class="dropdown">
+                    <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Action <span class="caret"></span>
+                    </button>
                     <div id="row<%= iRow %>PopoverOpen"
                          tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                          data-html="true" data-placement="auto" title="Confirm open"
@@ -354,14 +361,6 @@
                       <% if (authz_data.has_instructor_edit) { %>
                       <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
                         <i class="far fa-circle" aria-hidden="true"></i> Re-open
-                      </a>
-                      <% } %>
-
-                      <!-- ################################################## -->
-
-                      <% if (authz_data.has_instructor_edit) { %>
-                      <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="showSetTimePopover('#row<%= iRow %>PopoverSetTimeLimit')"<% } %> href="#">
-                        <i class="far fa-clock" aria-hidden="true"></i> Set Time Limit
                       </a>
                       <% } %>
 
