@@ -101,12 +101,15 @@ WITH results AS (
         date_limit = CASE
                      WHEN $base_time = 'null' THEN NULL
                      ELSE GREATEST(current_timestamp,
-                                   (CASE
-                                    WHEN $base_time = 'start_date' THEN ai.date
-                                    WHEN $base_time = 'current_date' THEN current_timestamp
-                                    ELSE ai.date_limit
-                                    END) +
-                                   make_interval(secs => $time_add))
+                         (CASE
+                          WHEN $base_time = 'start_date' THEN ai.date
+                          WHEN $base_time = 'current_date' THEN current_timestamp
+                          ELSE ai.date_limit
+                          END) +
+                         (CASE
+                          WHEN $time_ref = 'minutes' THEN make_interval(mins => $time_add)
+                          WHEN $time_ref = 'percent' THEN (ai.date_limit - ai.date) * $time_add / 100
+                          END))
                      END,
         modified_at = now()
     WHERE

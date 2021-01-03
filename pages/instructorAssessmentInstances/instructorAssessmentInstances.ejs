@@ -254,7 +254,15 @@
                                          </select>
                                          <p class=&quot;form-inline&quot;>
                                            <input class=&quot;form-control time-limit-field&quot; type=&quot;number&quot; name=&quot;time_add&quot; style=&quot;width: 5em&quot; value=&quot;5&quot;>
-                                           <select class=&quot;form-control time-limit-field&quot; name=time_ref><option value=60>minutes</option><option value=1>seconds</option></select>
+                                         <% if (row.time_remaining != 'Unlimited') { %>
+                                           <select class=&quot;form-control time-limit-field&quot; name=time_ref>
+                                             <option value=minutes>minutes</option>
+                                             <option value=percent>% total limit</option>
+                                           </select>
+                                         <% } else { %>
+                                           <input type=hidden name=time_ref value=minutes>
+                                           minutes
+                                         <% } %>
                                          </p>
                                          <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverSetTimeLimit').popover('hide')&quot;>
                                            Cancel

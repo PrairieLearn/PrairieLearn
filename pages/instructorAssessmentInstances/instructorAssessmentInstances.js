@@ -138,7 +138,8 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'set_time_limit') {
         const params = {
             assessment_instance_id: req.body.assessment_instance_id,
-            time_add: req.body.time_add * req.body.time_ref,
+            time_add: req.body.time_add,
+            time_ref: req.body.time_ref,
             base_time: 'date_limit',
             authn_user_id: res.locals.authz_data.authn_user.user_id,
         };
