@@ -213,7 +213,7 @@ module.exports.initExpress = function() {
     }
 
     // To allow for more aggressive caching of static files served from public/,
-    // we introduce a new `assets/` path that includes a cachebuster in the path.
+    // we use an `assets/` path that includes a cachebuster in the path.
     // In requests for resources, the cachebuster will be a hash of the contents
     // of `/public`, which we will compute at startup. See `lib/assets.js` for
     // implementation details.
