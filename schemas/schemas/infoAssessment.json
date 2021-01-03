@@ -14,7 +14,7 @@
     "properties": {
         "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "type": ["string", "array", "object"]
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
         },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
@@ -111,7 +111,7 @@
             "properties": {
                 "comment": {
                     "description": "Arbitrary comment for reference purposes.",
-                    "type": ["string", "array", "object"]
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                 },
                 "mode": {
                     "description": "The server mode required for access.",
@@ -169,7 +169,7 @@
                     "properties": {
                         "comment": {
                             "description": "Arbitrary comment for reference purposes.",
-                            "type": ["string", "array", "object"]
+                            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                         },
                         "password": {
                             "description": "Password protect the SEB exam and config file",
@@ -210,7 +210,7 @@
                 },
                 "comment": {
                     "description": "Arbitrary comment for reference purposes.",
-                    "type": ["string", "array", "object"]
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                 },
                 "maxPoints": {
                     "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
@@ -244,7 +244,7 @@
             "properties": {
                 "comment": {
                     "description": "Arbitrary comment for reference purposes.",
-                    "type": ["string", "array", "object"]
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                 },
                 "points": {
                     "$ref": "#/definitions/points"
@@ -284,7 +284,7 @@
             "properties": {
                 "comment": {
                     "description": "Arbitrary comment for reference purposes.",
-                    "type": ["string", "array", "object"]
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                 },
                 "points": {
                     "$ref": "#/definitions/points"

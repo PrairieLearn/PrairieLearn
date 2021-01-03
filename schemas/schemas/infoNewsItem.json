@@ -12,7 +12,7 @@
     "properties": {
         "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "type": ["string", "array", "object"]
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
         },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
