@@ -43,6 +43,8 @@ router.get('/', function(req, res, next) {
             }
         });
         res.locals.time_limit_list = Object.values(res.locals.time_limit_list);
+        if (res.locals.time_limit_list.length > 5)
+            res.locals.time_limit_list.splice(3, res.locals.time_limit_list.length - 4, '...');
         res.locals.time_limit_list = res.locals.time_limit_list.length > 0 ? res.locals.time_limit_list.join(', ') : 'No time limits';
         if (res.locals.remaining_time_min === null)
             res.locals.remaining_time_range = 'No time limits';
