@@ -5,6 +5,10 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "fileName": {
             "description": "Filename of the file to download",
             "type": "string"
