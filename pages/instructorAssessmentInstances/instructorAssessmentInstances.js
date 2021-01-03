@@ -164,7 +164,11 @@ router.post('/', function(req, res, next) {
         };
         if (req.body.plus_minus == 'unlimited')
             params.base_time = 'null';
-        else if (req.body.plus_minus == 'set_total')
+        else if (req.body.plus_minus == 'expire') {
+            params.base_time = 'current_date';
+            params.time_add = 0;
+            params.time_ref = 'minutes';
+        } else if (req.body.plus_minus == 'set_total')
             params.base_time = 'start_date';
         else if (req.body.plus_minus == 'set_rem')
             params.base_time = 'current_date';
