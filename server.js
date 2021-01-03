@@ -225,6 +225,7 @@ module.exports.initExpress = function() {
         // In dev mode, assets are likely to change while the server is running,
         // so we'll prevent them from being cached.
         maxAge: config.devMode ? '0' : '31557600',
+        immutable: true,
     }));
     // This route is kept around for legacy reasons - new code should prefer the
     // "cacheable" route above.
@@ -239,6 +240,7 @@ module.exports.initExpress = function() {
     });
     app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules'), {
         maxAge: '31557600',
+        immutable: true,
     }));
     // This is included for backwards-compatibility with pages that might still
     // expect to be able to load files from the `/node_modules` route.
