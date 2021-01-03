@@ -215,7 +215,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 ## Comments in JSON files
 
-You can add comments to JSON files using the property `comment` on any object. You can only use this property once for each object. For example:
+You can add comments to JSON files using the `"comment"` key on any object. You can only use this key once for each object. For example:
 
 ```json
 {
@@ -229,7 +229,7 @@ You can add comments to JSON files using the property `comment` on any object. Y
 
 Comments can be strings, arrays, or JSON objects, but for most uses strings are recommended. 
 
-**Warning:** if you have more than one comment for a JSON object (objects are delimitated by braces `{}`) then all but one of them will be silently discarded by the online course configuration editing tools. It's fine to have multiple comments in a JSON file but they have to be in separate objects. For example, comments inside the _same_ object (not supported) look like `{"comment": "AAA", "comment": "BBB"}`. Comments in _different_ objects (supported) look like `{"subObject1": {"comment": "AAA"}, "subObject2": {"comment": "BBB"}}`.
+**Warning:** if you have more than one comment for a JSON object (objects are things wrapped in curly braces `{}`) then all but one of them will be silently discarded by the online course configuration editing tools. It's fine to have multiple comments in a JSON file but they have to be in separate objects. For example, comments inside the _same_ object (not supported) look like `{"comment": "AAA", "comment": "BBB"}`. Comments in _different_ objects (supported) look like `{"subObject1": {"comment": "AAA"}, "subObject2": {"comment": "BBB"}}`.
 
 ## Colors
 
