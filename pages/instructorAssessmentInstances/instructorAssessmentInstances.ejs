@@ -53,6 +53,7 @@
                       select.append('<option value=expire>Expire time limit</option>');
                   select.change(function() {
                       $(this).parents('form').find('.time-limit-field').toggle($(this).val() != 'unlimited' && $(this).val() != 'expire');
+                      $(this).parents('form').find('.reopen-closed-field').toggle($(this).val() != '+1' && $(this).val() != '-1' && $(this).val() != 'expire');
                   });
                   form.append(select);
                   let new_time = $('<p class="form-inline">');
@@ -63,8 +64,11 @@
                       time_ref_select.append('<option value=percent>% total limit</option>');
                   new_time.append(time_ref_select);
                   form.append(new_time);
-                  if (row.has_closed_instance)
-                      form.append('<p>NOTE: Only currently open instances will be updated. Instances that have been closed or that have not been started yet are not affected.</p>');
+                  if (row.has_closed_instance) {
+                      let checkbox = $('<div class="form-check mb-2 reopen-closed-field"><input class="form-check-input" type="checkbox" name="reopen_closed" value="true" id="reopen-closed"><label class="form-check-label" for="reopen-closed">Also re-open closed instances</label></div>');
+                      checkbox.toggle(row.time_remaining_sec === null);
+                      form.append(checkbox);
+                  }
                   let buttons = $('<div class="btn-toolbar pull-right">');
                   let cancel_button = $('<button type="button" class="btn btn-secondary mr-2" onclick="">Cancel</button>');
                   cancel_button.click(function() {
@@ -77,6 +81,7 @@
               },
           }).on("show.bs.popover", function() {
               $($(this).data("bs.popover").getTipElement()).css("max-width", "350px");
+              $(this).find('.select-time-limit').change();
           });
       });
     </script>

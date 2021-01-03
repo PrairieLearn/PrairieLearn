@@ -72,17 +72,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
-    if (req.body.__action == 'open_all') {
-        const assessment_id = res.locals.assessment.id;
-        const params = {
-            assessment_id,
-            authn_user_id: res.locals.authz_data.authn_user.user_id,
-        };
-        sqldb.query(sql.open_all, params, function(err, _result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'close') {
+    if (req.body.__action == 'close') {
         const assessment_id = res.locals.assessment.id;
         const assessment_instance_id = req.body.assessment_instance_id;
         assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
@@ -160,6 +150,7 @@ router.post('/', function(req, res, next) {
             time_add: req.body.time_add,
             time_ref: req.body.time_ref,
             base_time: 'date_limit',
+            reopen_closed: !!req.body.reopen_closed,
             authn_user_id: res.locals.authz_data.authn_user.user_id,
         };
         if (req.body.plus_minus == 'unlimited')

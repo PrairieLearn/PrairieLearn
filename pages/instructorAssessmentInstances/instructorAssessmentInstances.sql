@@ -48,30 +48,6 @@ WHERE
 ORDER BY
     e.role DESC, u.uid, u.user_id, ai.number, ai.id;
 
--- BLOCK open_all
-WITH results AS (
-    UPDATE assessment_instances AS ai
-    SET
-        open = true,
-        date_limit = NULL,
-        auto_close = FALSE,
-        modified_at = now()
-    WHERE
-        ai.assessment_id = $assessment_id
-        AND ai.open = FALSE
-    RETURNING
-        ai.open,
-        ai.id AS assessment_instance_id
-)
-INSERT INTO assessment_state_logs AS asl
-        (open, assessment_instance_id, auth_user_id)
-(
-    SELECT
-        true, results.assessment_instance_id, $authn_user_id
-    FROM
-        results
-);
-
 -- BLOCK set_time_limit
 WITH results AS (
     UPDATE
@@ -134,7 +110,7 @@ WITH results AS (
                      END,
         modified_at = now()
     WHERE
-        ai.open
+        (ai.open OR $reopen_closed)
         AND ai.assessment_id = $assessment_id
         AND (ai.date_limit IS NOT NULL OR ($base_time != 'date_limit' AND $time_ref != 'percent'))
     RETURNING
