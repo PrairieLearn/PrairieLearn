@@ -222,7 +222,9 @@ module.exports.initExpress = function() {
         next();
     });
     app.use('/assets/:cachebuster', express.static(path.join(__dirname, 'public'), {
-        maxAge: '31557600',
+        // In dev mode, assets are likely to change while the server is running,
+        // so we'll prevent them from being cached.
+        maxAge: config.devMode ? '0' : '31557600',
     }));
     // This route is kept around for legacy reasons - new code should prefer the
     // "cacheable" route above.
