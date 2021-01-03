@@ -168,7 +168,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
             $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
         }
         if (fileData) {
-            var download = '<a download="' + fileName + '" class="btn btn-outline-secondary btn-sm" id="file-download-' + uuid + '-' + index + '" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' + fileData + '">Download</a>'
+            var download = '<a download="' + fileName + '" class="btn btn-outline-secondary btn-sm" id="file-download-' + uuid + '-' + index + '" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' + fileData + '">Download</a>';
             
             var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>');
             if (isExpanded) {
