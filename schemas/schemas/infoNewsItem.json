@@ -10,6 +10,10 @@
         "visible_to_students"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
