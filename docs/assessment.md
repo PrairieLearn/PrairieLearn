@@ -15,7 +15,8 @@ Each assessment is a single directory in the `assessments` folder or any subfold
     "set": "Quiz",
     "number": "2",
     "allowAccess": [],
-    "zones": []
+    "zones": [],
+    "comment": "You can add comments to JSON files using this property."
 }
 ```
 
@@ -31,7 +32,7 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 
 * Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
 
-You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets). 
+You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets).
 
 ## Assessment types
 
@@ -56,6 +57,7 @@ An assessment is broken down in to a list of zones, like this:
 "zones": [
     {
         "title": "Easy questions",
+        "comment": "These are new questions created for this exam",
         "questions": [
             {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
             {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
@@ -63,6 +65,7 @@ An assessment is broken down in to a list of zones, like this:
     },
     {
         "title": "Hard questions",
+        "comment": "These are new questions created for this exam",
         "questions": [
             {"id": "hardQV1", "points": 10},
             {"id": "reallyHardQ", "points": [10, 10, 10]},
