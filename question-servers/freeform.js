@@ -1473,7 +1473,6 @@ module.exports = {
             course_dir: course.path,
             question_dir,
             question_dir_worker,
-            course_elements_dir: path.join(coursePath, 'elements'),
         };
 
         /* Load elements and any extensions */
