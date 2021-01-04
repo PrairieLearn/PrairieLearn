@@ -31,26 +31,28 @@
                                </p>`);
                   form.append(`<input type="hidden" name="__action" value="${action}">`);
                   form.append('<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">');
-                  if (row.assessment_instance_id)
+                  if (row.assessment_instance_id) {
                       form.append(`<input type="hidden" name="assessment_instance_id" value="${row.assessment_instance_id}">`);
-
-                  let select = $('<select class="form-control select-time-limit" name=plus_minus>');
+                  }
+                  let select = $('<select class="form-control select-time-limit" name="plus_minus">');
                   if (row.time_remaining_sec !== null) {
                       if (row.has_open_instance) {
-                          select.append('<option value=+1>Add to instances with time limit</option>');
-                          select.append('<option value=-1>Subtract from instances with time limit</option>');
+                          select.append('<option value="+1">Add to instances with time limit</option>');
+                          select.append('<option value="-1">Subtract from instances with time limit</option>');
                       } else {
-                          select.append('<option value=+1>Add</option>');
-                          select.append('<option value=-1>Subtract</option>');
+                          select.append('<option value="+1">Add</option>');
+                          select.append('<option value="-1">Subtract</option>');
                       }
                   }
-                  select.append('<option value=set_total>Set total time limit to</option>');
-                  select.append('<option value=set_rem>Set remaining time to</option>');
-                  if (!row.open || row.time_remaining_sec !== null)
-                      select.append('<option value=unlimited>Remove time limit</option>');
+                  select.append('<option value="set_total">Set total time limit to</option>');
+                  select.append('<option value="set_rem">Set remaining time to</option>');
+                  if (!row.open || row.time_remaining_sec !== null) {
+                      select.append('<option value="unlimited">Remove time limit</option>');
+                  }
                   if (row.open !== false && (row.time_remaining_sec === null ||
-                                             row.time_remaining_sec > 0))
-                      select.append('<option value=expire>Expire time limit</option>');
+                                             row.time_remaining_sec > 0)) {
+                      select.append('<option value="expire">Expire time limit</option>');
+                  }
                   select.change(function() {
                       $(this).parents('form').find('.time-limit-field').toggle($(this).val() != 'unlimited' && $(this).val() != 'expire');
                       $(this).parents('form').find('.reopen-closed-field').toggle($(this).val() != '+1' && $(this).val() != '-1' && $(this).val() != 'expire');
@@ -58,10 +60,11 @@
                   form.append(select);
                   let new_time = $('<p class="form-inline">');
                   new_time.append('<input class="form-control time-limit-field" type="number" name="time_add" style="width: 5em" value="5">');
-                  let time_ref_select = $('<select class="form-control time-limit-field" name=time_ref>');
-                  time_ref_select.append('<option value=minutes>minutes</option>');
-                  if (row.time_remaining_sec !== null)
-                      time_ref_select.append('<option value=percent>% total limit</option>');
+                  let time_ref_select = $('<select class="form-control time-limit-field" name="time_ref">');
+                  time_ref_select.append('<option value="minutes">minutes</option>');
+                  if (row.time_remaining_sec !== null) {
+                      time_ref_select.append('<option value="percent">% total limit</option>');
+                  }
                   new_time.append(time_ref_select);
                   form.append(new_time);
                   if (row.has_closed_instance) {
@@ -70,7 +73,7 @@
                       form.append(checkbox);
                   }
                   let buttons = $('<div class="btn-toolbar pull-right">');
-                  let cancel_button = $('<button type="button" class="btn btn-secondary mr-2" onclick="">Cancel</button>');
+                  let cancel_button = $('<button type="button" class="btn btn-secondary mr-2">Cancel</button>');
                   cancel_button.click(function() {
                       $(that).popover('hide')
                   });
@@ -136,13 +139,6 @@
             modal.find('.modal-score-perc').text(score_perc);
             modal.find('.modal-assessment-instance-id').val(assessment_instance_id);
         });
-
-        function showSetTimePopover(selector) {
-            $(selector).popover('show');
-            $('.select-time-limit').change(function() {
-                $(this).parents('form').find('.time-limit-field').toggle($(this).val() != 'unlimited');
-            });
-        }
       </script>
 
       <div class="modal fade" id="deleteAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllAssessmentInstances">
@@ -182,11 +178,11 @@
                 
                 <% if (authz_data.has_instructor_edit) { %>
                 <a class="dropdown-item"
-                   href="#"
+                   role="button" tabindex="0"
                    data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
                   <i class="fa fa-times" aria-hidden="true"></i> Delete all instances
                 </a>
-                <a class="dropdown-item time-limit-edit-button" data-row='<%= JSON.stringify(time_limit_totals) %>'>
+                <a role="button" tabindex="0" class="dropdown-item time-limit-edit-button" data-row="<%= JSON.stringify(time_limit_totals) %>">
                   <i class="far fa-clock" aria-hidden="true"></i> Change time limit for all instances
                 </a>
                 <% } %>
@@ -239,7 +235,7 @@
                 <td class="text-center align-middle">
                   <%= row.time_remaining %>
                   <% if (authz_data.has_instructor_edit) { %>
-                  <a class="btn btn-xs time-limit-edit-button" data-row='<%= JSON.stringify(row) %>' >
+                  <a role="button" tabindex="0" class="btn btn-xs time-limit-edit-button" data-row="<%= JSON.stringify(row) %>" >
                     <i class="fas fa-edit" aria-hidden="true"></i>
                   </a>
                   <% } %>
@@ -287,7 +283,7 @@
 
                       <% if (authz_data.has_instructor_edit) { %>
                       <a class="dropdown-item"
-                         href="#"
+                         role="button" tabindex="0"
                          data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
                          data-uid="<%= row.uid %>" data-name="<%= row.name %>"
                          data-number="<%= row.number %>"
@@ -302,13 +298,13 @@
                       <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
-                      <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
+                      <a role="button" tabindex="0" class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %>>
                         <i class="fa fa-ban" aria-hidden="true"></i> Grade & Close
                       </a>
                       <% } %>
 
                       <% if (authz_data.has_instructor_edit) { %>
-                      <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
+                      <a role="button" tabindex="0" class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')">
                         <i class="fa fa-sync" aria-hidden="true"></i> Regrade
                       </a>
                       <% } %>
