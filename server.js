@@ -1144,19 +1144,15 @@ if (config.startServer) {
                 callback(null);
             });
         },
-        function(callback) {
-            util.callbackify(cleanupMountDirectories)(callback);
-        },
-        function(callback) {
-            util.callbackify(async () => {
-                if (config.workersExecutionMode === 'container') {
-                    await Promise.all([
-                        hostfiles.copyElementFiles({ watch: true }),
-                        hostfiles.copyQuestionPythonFiles({ watch: true }),
-                        hostfiles.copyExampleCourseFiles({ watch: true }),
-                    ]);
-                }
-            })(callback);
+        async () => await cleanupMountDirectories(),
+        async () => {
+            if (config.workersExecutionMode === 'container') {
+                await Promise.all([
+                    hostfiles.copyElementFiles({ watch: true }),
+                    hostfiles.copyQuestionPythonFiles({ watch: true }),
+                    hostfiles.copyExampleCourseFiles({ watch: true }),
+                ]);
+            }
         },
         function(callback) {
             workers.init();
@@ -1185,12 +1181,7 @@ if (config.startServer) {
                 callback(null);
             });
         },
-        function(callback) {
-            util.callbackify(workspace.init)(err => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
+        async () => await workspace.init(),
         function(callback) {
             serverJobs.init(function(err) {
                 if (ERR(err, callback)) return;
