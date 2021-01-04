@@ -4,7 +4,11 @@ FROM amazonlinux:2
 ENV PYTHONIOENCODING=UTF-8
 ENV LANG=en_US.UTF-8
 
-COPY install.sh requirements.txt /
+COPY install.sh post-install.sh requirements.txt /
+RUN /bin/bash /install.sh
+
+# Copy the source files last to speed up local dev
 COPY python_autograder /python_autograder
 
-RUN /bin/bash /install.sh
+# Anything that needs to be run post-install
+RUN /bin/bash /post-install.sh
