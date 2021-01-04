@@ -1,11 +1,11 @@
-FROM prairielearn/centos7-plbase AS builder
+FROM prairielearn/plbase AS builder
 WORKDIR /app
 COPY package* ./
 RUN npm install
 COPY ./ ./
 RUN npm run build
 
-FROM prairielearn/centos7-plbase
+FROM prairielearn/plbase
 WORKDIR /app
 COPY --from=builder /app/package* ./
 RUN npm install --production

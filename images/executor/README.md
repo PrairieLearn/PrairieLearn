@@ -20,7 +20,7 @@ To build and tag the image and push it to the container registry, run:
 ./tools/release-executor.sh
 ```
 
-**IMPORTANT**: Whenever files for this image or the `prairielearn/centos7-plbase` image (upon which this image is built) are modified, the version in `EXECUTOR_VERSION` should be increased. Once a version is used, it should not be reused. To make that easy, the version should attempt to follow semantic versioning. The continuous integration process should help ensure that the version is changed whenever relevant files are also modified.
+**IMPORTANT**: Whenever files for this image or the `prairielearn/plbase` image (upon which this image is built) are modified, the version in `EXECUTOR_VERSION` should be increased. Once a version is used, it should not be reused. To make that easy, the version should attempt to follow semantic versioning. The continuous integration process should help ensure that the version is changed whenever relevant files are also modified.
 
 ## In-dev testing
 
