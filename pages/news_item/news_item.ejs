@@ -1,13 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageNote: news_item.formatted_date, pageTitle: news_item.title}); %>
     <link href="/stylesheets/issues.css" rel="stylesheet" />
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'news_item'}); %>
     <div id="content" class="container">
-      <%- include('../partials/navtabs'); %>
 
       <a class="btn btn-primary mb-4" href="<%= urlPrefix %>/news_items" role="button">
         <i class="fa fa-arrow-left" aria-hidden="true"></i>
@@ -25,6 +24,9 @@
           by <%- news_item.author %>
           <% } %>
         </i>
+        <% if (news_item.show_student_badge) { %>
+            <span class="badge badge-secondary ml-2">Visible to students</span>
+        <% } %>
       </p>
 
       <%- news_item_html %>

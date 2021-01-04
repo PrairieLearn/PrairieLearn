@@ -21,6 +21,7 @@ DECLARE
     assessment_instance_id bigint;
     last_access timestamptz;
     delta interval;
+    new_status enum_instance_question_status;
 BEGIN
     PERFORM variants_lock(variant_id);
 
@@ -63,7 +64,9 @@ BEGIN
     SELECT la.last_access
     INTO last_access
     FROM last_accesses AS la
-    WHERE la.user_id = variant.user_id;
+    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id 
+                ELSE la.group_id = variant.group_id
+            END);
 
     delta := coalesce(now() - last_access, interval '0 seconds');
     IF delta > interval '1 hour' THEN
@@ -72,7 +75,9 @@ BEGIN
 
     UPDATE last_accesses AS la
     SET last_access = now()
-    WHERE la.user_id = variant.user_id;
+    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id 
+                ELSE la.group_id = variant.group_id
+            END);
 
     -- ######################################################################
     -- actually insert the submission
@@ -94,16 +99,22 @@ BEGIN
         first_duration = coalesce(first_duration, delta)
     WHERE id = variant_id;
 
+    new_status := 'saved';
+    IF gradable = FALSE THEN new_status := 'invalid'; END IF;
+
     IF assessment_instance_id IS NOT NULL THEN
         UPDATE instance_questions
         SET
-            status = 'saved',
+            status = new_status,
             duration = duration + delta,
-            first_duration = coalesce(first_duration, delta)
+            first_duration = coalesce(first_duration, delta),
+            modified_at = now()
         WHERE id = instance_question_id;
 
         UPDATE assessment_instances AS ai
-        SET duration = ai.duration + delta
+        SET
+            duration = ai.duration + delta,
+            modified_at = now()
         FROM instance_questions AS iq
         WHERE
             iq.id = instance_question_id

@@ -2,15 +2,15 @@
     <!-------------------------------------------------------------------------------->
     <!-- Course Admin ---------------------------------------------------------------->
 
-    <li class="nav-item btn-group <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %>">
-        <a class="nav-link <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>" href="<%= urlPrefix %>/course_admin" role="button">
+    <li class="nav-item btn-group">
+        <a class="nav-link <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %> <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>" href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
-        <% if (locals.courses && courses.length > 0) { %>
+        <% if (locals.viewable_courses && viewable_courses.length > 0) { %>
         <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuCourseAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuCourseAdminLink" id="navbarDropdownMenuCourseAdmin">
-            <% courses.forEach(function(c) { %>
+            <% viewable_courses.forEach(function(c) { %>
                 <a class="dropdown-item <% if (course.id == c.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course/<%= c.id %>/course_admin<% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= c.short_name %></a>
             <% }); %>
         </div>
@@ -30,12 +30,9 @@
         <!-------------------------------------------------------------------------------->
         <!-- Instance Admin -------------------------------------------------------------->
 
-        <span class="navbar-text mx-2">
-            <i class="fas fa-circle"></i>
-        </span>
-
-        <li class="nav-item btn-group <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>">
-            <a class="nav-link" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
+        <span class="navbar-text mx-2 no-select">/</span>
+        <li class="nav-item btn-group">
+            <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
             <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuInstanceAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -60,12 +57,9 @@
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/gradebook">Gradebook</a></li>
 
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
-            <span class="navbar-text mx-2">
-                <i class="fas fa-circle"></i>
-            </span>
-
-            <li class="nav-item btn-group <% if (navPage == "assessment") { %>active<% } %>">
-                <a class="nav-link" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
+            <span class="navbar-text mx-2 no-select">/</span>
+            <li class="nav-item btn-group">
+                <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
                     <%= assessment_label %>
                 </a>
                 <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -81,10 +75,7 @@
         <% } %>
     <% } else { %>
         <% if (locals.course_instances && course_instances.length > 0) { %>
-            <span class="navbar-text mx-2">
-                <i class="fas fa-circle"></i>
-            </span>
-
+            <span class="navbar-text mx-2 no-select">/</span>
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuInstanceChoose" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Choose course instance...

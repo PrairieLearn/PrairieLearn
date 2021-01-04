@@ -1,11 +1,18 @@
 -- BLOCK setup_cia_generic_tests
 WITH
+setup_user AS (
+    INSERT INTO users (user_id, uid, lti_course_instance_id, institution_id) VALUES
+        (100, 'normaluser@host.com', null, 1),
+        (101, 'ltiuserci1@host.com', 1, 2),
+        (102, 'ltiuserci2@host.com', 2, 2)
+),
 setup_course AS (
     INSERT INTO pl_courses (id) VALUES (1)
 ),
 setup_ci AS (
     INSERT INTO course_instances (id, uuid, course_id) VALUES
-        (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1)
+        (1, '5159a291-566f-4463-8f11-b07c931ad72a', 1),
+        (2, '5159a291-566f-4463-8f11-b07c931ad72b', 1)
 ),
 setup_ciars AS (
     INSERT INTO course_instance_access_rules
@@ -13,7 +20,8 @@ setup_ciars AS (
         (1, 1, 1, 'TA', '{"person1@host.com", "person2@host.com"}', '2010-01-01 00:00:00-00', '2010-12-31 23:59:59-00', 'Any'),
         (2, 1, 2, null, null, '2011-01-01 00:00:00-00', '2011-12-31 23:59:59-00', 'school'),
         (3, 1, 3, null, null, '2012-01-01 00:00:00-00', '2012-12-31 23:59:59-00', 'notInDb'),
-        (4, 1, 4, null, null, '2013-01-01 00:00:00-00', '2013-12-31 23:59:59-00', null)
+        (4, 1, 4, null, null, '2013-01-01 00:00:00-00', '2013-12-31 23:59:59-00', null),
+        (5, 1, 5, null, null, '2013-01-01 00:00:00-00', '2013-12-31 23:59:59-00', 'LTI')
 ),
 setup_institutions AS (
     INSERT INTO institutions (id, short_name, long_name, uid_regexp) VALUES

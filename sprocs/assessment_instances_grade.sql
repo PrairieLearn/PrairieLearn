@@ -150,7 +150,8 @@ BEGIN
         points = new_values.points,
         points_in_grading = new_values.points_in_grading,
         score_perc = new_values.score_perc,
-        score_perc_in_grading = new_values.score_perc_in_grading
+        score_perc_in_grading = new_values.score_perc_in_grading,
+        modified_at = now()
     WHERE ai.id = assessment_instance_id
     RETURNING ai.*
     INTO new_assessment_instance;

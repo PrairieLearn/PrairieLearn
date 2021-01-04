@@ -14,7 +14,7 @@ element_names = {'controlledLine': 'Controlled Line', 'vector': 'Force Vector', 
 
 # Attributes for each element, automatically generated from doc.md
 element_attributes = {
-    'pl-drawing': ['gradable', 'answers-name', 'width', 'height', 'grid-size', 'snap-to-grid', 'correct-answer', 'tol', 'angle-tol', 'show-tolerance-hint', 'tolerance-hint', 'hide-answer-panel'],
+    'pl-drawing': ['gradable', 'answers-name', 'width', 'height', 'grid-size', 'snap-to-grid', 'correct-answer', 'tol', 'angle-tol', 'show-tolerance-hint', 'tolerance-hint', 'hide-answer-panel', 'disregard-extra-elements'],
     'pl-drawing-initial': ['draw-error-box', 'draw-error-box=true'],
     'pl-coordinates': [
         'x1',
@@ -278,7 +278,8 @@ element_defaults = {
     'width': 580,
     'height': 320,
     'show-tolerance-hint': True,
-    'render-scale': 1.5
+    'render-scale': 1.5,
+    'disregard-extra-elements': False
 }
 
 drawing_defaults = {
@@ -1794,7 +1795,7 @@ def render(element_html, data):
         'tolerance': pl.get_string_attrib(element, 'tolerance-hint', message_default),
     }
 
-    if (not (data['panel'] == 'question') and preview_mode) or data['panel'] == 'answer' and pl.get_boolean_attrib(element, 'hide-answer-panel', True):
+    if data['panel'] == 'answer' and pl.get_boolean_attrib(element, 'hide-answer-panel', True):
         return ''
 
     if preview_mode:
@@ -1863,6 +1864,7 @@ def grade(element_html, data):
     grid_size = pl.get_integer_attrib(element, 'grid-size', element_defaults['grid-size'])
     tol = pl.get_float_attrib(element, 'tol', grid_size / 2)
     angtol = pl.get_float_attrib(element, 'angle-tol', element_defaults['angle-tol'])
+    disregard_extra_elements = pl.get_boolean_attrib(element, 'disregard-extra-elements', element_defaults['disregard-extra-elements'])
 
     name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     student = data['submitted_answers'][name]
@@ -2070,19 +2072,25 @@ def grade(element_html, data):
         num_total_st += 1
 
         for ref_element in reference['objects']:
-            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or matches[ref_element['id']] or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
+            if ref_element['gradingName'] not in comp or ref_element['id'] not in matches or not ref_element['graded'] or element['gradingName'] != ref_element['gradingName']:
+                # Skip if the reference element is not gradable
+                continue
+
+            if not disregard_extra_elements and matches[ref_element['id']]:
+                # Skip if this object has already been matched
                 continue
 
             if comp[element['gradingName']](ref_element, element):
-                matches[ref_element['id']] = True
-
-                if 'optional_grading' in ref_element and ref_element['optional_grading']:
+                if ('optional_grading' in ref_element and ref_element['optional_grading']) or (disregard_extra_elements and matches[ref_element['id']]):
                     # It's optional but correct, so the score should not be affected
+                    # Or, it's a duplicate and we're okay with that.
                     num_optional += 1
                 else:
                     # if correct but optional, it does not add on number of correct answers,
                     # but the object will not be considered as extra
                     num_correct += 1
+
+                matches[ref_element['id']] = True
                 break
 
     extra_not_optional = num_total_st - (num_optional + num_correct)

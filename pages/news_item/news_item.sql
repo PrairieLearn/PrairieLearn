@@ -7,7 +7,8 @@ WITH mark_news_item_as_read AS (
 )
 SELECT
     ni.*,
-    format_date_only_no_tz(ni.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date
+    format_date_only_no_tz(ni.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
+    (users_is_course_staff($user_id) AND ni.visible_to_students) AS show_student_badge
 FROM
     news_items AS ni
     LEFT JOIN course_instances AS ci ON (ci.id = $course_instance_id)

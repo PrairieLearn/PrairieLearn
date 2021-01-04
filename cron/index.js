@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
 const debug = require('debug')('prairielearn:cron');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 
 const logger = require('../lib/logger');
 const config = require('../lib/config');
@@ -29,6 +29,11 @@ const jobTimeouts = {};
 module.exports = {
     init(callback) {
         debug(`init()`);
+        if (!config.cronActive) {
+            logger.verbose('cronActive is false, skipping cron initialization');
+            return callback(null);
+        }
+
         module.exports.jobs = [
             {
                 name: 'sendUnfinishedCronWarnings',
@@ -73,12 +78,32 @@ module.exports = {
             {
                 name: 'calculateAssessmentQuestionStats',
                 module: require('./calculateAssessmentQuestionStats'),
-                intervalSec: 'daily',
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCalculateAssessmentQuestionStatsSec,
             },
             {
                 name: 'calculateAssessmentMode',
                 module: require('./calculateAssessmentMode'),
                 intervalSec: 'daily',
+            },
+            {
+                name: 'workspaceTimeoutStop',
+                module: require('./workspaceTimeoutStop'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutStopSec,
+            },
+            {
+                name: 'workspaceTimeoutWarn',
+                module: require('./workspaceTimeoutWarn'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutWarnSec,
+            },
+            {
+                name: 'workspaceHostLoads',
+                module: require('./workspaceHostLoads'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
+            },
+            {
+                name: 'workspaceHostTransitions',
+                module: require('./workspaceHostTransitions'),
+                intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
             },
         ];
         logger.verbose('initializing cron', _.map(module.exports.jobs, j => _.pick(j, ['name', 'intervalSec'])));

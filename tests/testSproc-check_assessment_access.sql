@@ -16,7 +16,9 @@ setup_assessments AS (
 ),
 setup_aars AS (
     INSERT INTO assessment_access_rules (id, assessment_id, mode, role, uids, start_date, end_date) VALUES
-        (1, 1, 'Exam', 'TA', '{"person1@host.com", "person2@host.com"}', '2010-01-01 00:00:00-00', '2010-12-31 23:59:59-00')
+        (1, 1, 'Exam', 'TA', '{"person1@host.com", "person2@host.com"}', '2010-01-01 00:00:00-00', '2010-12-31 23:59:59-00'),
+        (2, 1, 'Exam', 'TA', NULL, '2010-01-01 00:00:00-00', '2010-12-31 23:59:59-00'),
+        (3, 1, 'Exam', 'TA', '{}', '2010-01-01 00:00:00-00', '2010-12-31 23:59:59-00')
 )
 SELECT true;
 

@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
     <%- include('../partials/mathjax'); %>
-
-    <script src="/javascripts/socket.io.js"></script>
+    <script src="/node_modules/socket.io-client/dist/socket.io.min.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -51,6 +50,8 @@
                 <%- include('../partials/countdown', {
                     serverTimeLimitMS: assessment_instance_time_limit_ms,
                     serverRemainingMS: assessment_instance_remaining_ms,
+                    serverUpdateURL: urlPrefix + '/assessment_instance/' +
+                                     assessment_instance.id + '/time_remaining',
                     progressSelector: '#countdownProgress',
                     displaySelector: '#countdownDisplay',
                     }) %>
@@ -76,7 +77,9 @@
             <% } %>
           </p>
 
-          <%- include('../partials/attachFilePanel') %>
+          <% if (config.attachedFilesDialogEnabled) { %>
+              <%- include('../partials/attachFilePanel') %>
+          <% } %>
 
           <% if (video) { %>
           <div class="modal" id="youtubemodal">
@@ -97,5 +100,7 @@
         </div>
       </div>
     </div>
+    <!-- Needs to be located below element scripts -->
+    <script src="/localscripts/questionPageScripts.js"></script>
   </body>
 </html>

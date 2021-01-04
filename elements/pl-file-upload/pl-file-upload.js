@@ -11,6 +11,7 @@ window.PLFileUpload = function(uuid, options) {
     this.uuid = uuid;
     this.files = options.files || [];
     this.acceptedFiles = options.acceptedFiles || [];
+    this.acceptedFilesLowerCase = this.acceptedFiles.map(f => f.toLowerCase());
 
     var elementId = '#file-upload-' + uuid;
     this.element = $(elementId);
@@ -34,16 +35,22 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
         url: '/none',
         autoProcessQueue: false,
         accept: function(file, done) {
-            if (_.includes(that.acceptedFiles, file.name)) {
+            // fuzzy case:
+            const fileNameLowerCase = file.name.toLowerCase();
+            if (_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
                 return done();
             }
             return done('invalid file');
         },
         addedfile: function(file) {
-            if (!_.includes(that.acceptedFiles, file.name)) {
+            // fuzzy case match
+            const fileNameLowerCase = file.name.toLowerCase();
+            if (!_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
                 that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
                 return;
             }
+            const acceptedFilesIdx = that.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
+            const acceptedName = that.acceptedFiles[acceptedFilesIdx];
             var reader = new FileReader();
             reader.onload = function(e) {
                 var dataUrl = e.target.result;
@@ -52,10 +59,10 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
 
                 // Store the file as base-64 encoded data
                 var base64FileData = dataUrl.substring(commaSplitIdx + 1);
-                that.saveSubmittedFile(file.name, base64FileData);
+                that.saveSubmittedFile(acceptedName, base64FileData);
                 that.renderFileList();
                 // Show the preview for the newly-uploaded file
-                that.element.find('li[data-file="' + file.name + '"] .file-preview').addClass('in');
+                that.element.find(`li[data-file="${acceptedName}"] .file-preview`).addClass('in');
             };
 
             reader.readAsDataURL(file);
@@ -161,6 +168,8 @@ window.PLFileUpload.prototype.renderFileList = function() {
             $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
         }
         if (fileData) {
+            var download = '<a download="' + fileName + '" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' + fileData + '">Download</a>';
+
             var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>');
             if (isExpanded) {
                 $preview.addClass('in');
@@ -176,7 +185,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
                 $preview.find('code').text('Unable to decode file.');
             }
             $file.append($preview);
-            $fileStatusContainer.append('<div class="file-status-container-right"><button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>');
+            $fileStatusContainer.append('<div class="file-status-container-right">' + download + '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>');
         }
 
         $fileList.append($file);

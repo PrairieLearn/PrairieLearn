@@ -8,7 +8,7 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 module.exports = {};
 
 module.exports.run = function(callback) {
-    if (!config.externalGradingUseAws) return callback(null); // FIXME: replace with config.runningInEc2
+    if (!config.runningInEc2) return callback(null);
     const params = [
         config.groupName,
         config.serverLoadAverageIntervalSec,
@@ -16,7 +16,7 @@ module.exports.run = function(callback) {
     sqldb.call('server_loads_current', params, (err, result) => {
         if (ERR(err, callback)) return;
         if (result.rowCount == 0) return callback(null); // nothing to report
-        const cloudwatch = new AWS.CloudWatch();
+        const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
         async.each(result.rows, (row, callback) => {
             const params = {
                 Namespace: 'PrairieLearn',

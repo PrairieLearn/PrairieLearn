@@ -36,7 +36,13 @@ FROM
     LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN questions AS q ON (q.id = v.question_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
-    LEFT JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+    LEFT JOIN LATERAL (
+        SELECT *
+        FROM grading_jobs
+        WHERE submission_id = s.id
+        ORDER BY id DESC
+        LIMIT 1
+    ) AS gj ON TRUE
 WHERE
     v.id = $variant_id
 ORDER BY
@@ -106,3 +112,11 @@ FROM
     LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
     s.id = $submission_id;
+
+-- BLOCK select_workspace_id
+SELECT
+    w.id AS workspace_id
+FROM
+    variants AS v
+    JOIN workspaces AS w ON (v.workspace_id = w.id)
+WHERE v.id = $variant_id;

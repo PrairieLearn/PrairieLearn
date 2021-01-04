@@ -2,7 +2,8 @@
 SELECT
     ni.*,
     format_date_only_no_tz(ni.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
-    (an.id IS NOT NULL) AS unread
+    (an.id IS NOT NULL) AS unread,
+    (users_is_course_staff($user_id) AND ni.visible_to_students) AS show_student_badge
 FROM
     news_items AS ni
     LEFT JOIN news_item_notifications AS an ON (an.news_item_id = ni.id AND an.user_id = $user_id)

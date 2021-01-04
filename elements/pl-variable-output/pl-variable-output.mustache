@@ -12,6 +12,8 @@
             {{#show_mathematica}}<li class="nav-item" role="presentation"><a class="nav-link{{#active_tab_mathematica}} active{{/active_tab_mathematica}}" href="#mathematica-{{uuid}}" aria-controls="mathematica-{{uuid}}" role="tab" data-toggle="pill">Mathematica</a></li>{{/show_mathematica}}
 
             {{#show_python}}<li class="nav-item" role="presentation"><a class="nav-link{{#active_tab_python}} active{{/active_tab_python}}" href="#python-{{uuid}}" aria-controls="python-{{uuid}}" role="tab" data-toggle="pill">Python</a></li>{{/show_python}}
+
+            {{#show_r}}<li class="nav-item" role="presentation"><a class="nav-link{{#active_tab_r}} active{{/active_tab_r}}" href="#r-{{uuid}}" aria-controls="r-{{uuid}}" role="tab" data-toggle="pill">R</a></li>{{/show_r}}
         </ul>
     </div>
     <div class="card-body">
@@ -31,6 +33,12 @@
             <div role="tabpanel" class="tab-pane {{#active_tab_python}}active{{/active_tab_python}}" id="python-{{uuid}}">
                 <pre class="bg-dark text-white rounded p-2" id="python-data-{{uuid}}">{{python_data}}</pre>
                 <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
+                    copy this text
+                </button>
+            </div>
+            <div role="tabpanel" class="tab-pane {{#active_tab_r}}active{{/active_tab_r}}" id="r-{{uuid}}">
+                <pre class="bg-dark text-white rounded p-2" id="r-data-{{uuid}}">{{r_data}}</pre>
+                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#r-data-{{uuid}}">
                     copy this text
                 </button>
             </div>

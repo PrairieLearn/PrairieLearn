@@ -96,8 +96,7 @@ async.series([
                 return next(null);
             });
             request.on('error', (err) => {
-                logger.error(`Error submitting job ${n}!`);
-                logger.error(err);
+                logger.error(`Error submitting job ${n}`, err);
                 return next(err);
             });
         }, (err) => {
@@ -157,7 +156,7 @@ async.series([
     },
 
 ], (err) => {
-    ERR(err, (err) => logger.error(err));
+    ERR(err, (err) => logger.error('Error', err));
 
     async.series([
         // Tear down all the buckets we created so as not to leave extra files

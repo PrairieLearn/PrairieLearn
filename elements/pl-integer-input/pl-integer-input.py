@@ -3,7 +3,6 @@ from html import escape
 import chevron
 import math
 import prairielearn as pl
-import numpy as np
 import random
 
 
@@ -12,12 +11,15 @@ CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
+SIZE_DEFAULT = 35
+SHOW_HELP_TEXT_DEFAULT = True
+PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -34,6 +36,7 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -56,6 +59,9 @@ def render(element_html, data):
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
+            'size': size,
+            'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
+            'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD,
             'uuid': pl.get_uuid()
         }
 
@@ -72,6 +78,8 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        html_params['display_append_span'] = html_params['show_info'] or suffix
 
         if display == 'inline':
             html_params['inline'] = True
@@ -93,7 +101,7 @@ def render(element_html, data):
             'uuid': pl.get_uuid()
         }
 
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -105,10 +113,13 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = '{:d}'.format(a_sub)
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+                html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -123,6 +134,8 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -151,16 +164,27 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
+    if a_sub.strip() == '':
+        opts = {
+            'format_error': True,
+            'format_error_message': 'the submitted answer was blank.'
+        }
+        with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
+            format_str = chevron.render(f, opts).strip()
+        data['format_errors'][name] = format_str
+        data['submitted_answers'][name] = None
+        return
+
     # Convert to integer
     try:
         a_sub_parsed = pl.string_to_integer(a_sub)
         if a_sub_parsed is None:
             raise ValueError('invalid submitted answer (wrong type)')
-        if not np.isfinite(a_sub_parsed):
-            raise ValueError('invalid submitted answer (not finite)')
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
-        data['format_errors'][name] = 'Invalid format. The submitted answer was not an integer.'
+        with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
+            format_str = chevron.render(f, {'format_error': True}).strip()
+        data['format_errors'][name] = format_str
         data['submitted_answers'][name] = None
 
 
@@ -208,7 +232,7 @@ def test(element_html, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
     if result == 'correct':
         data['raw_submitted_answers'][name] = str(a_tru)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}

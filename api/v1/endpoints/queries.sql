@@ -3,7 +3,7 @@ WITH object_data AS (
     SELECT
         a.id AS assessment_id,
         a.tid AS assessment_name,
-        (aset.abbreviation || a.number) as assessment_label,
+        (aset.abbreviation || a.number) AS assessment_label,
         a.type,
         a.number AS assessment_number,
         a.order_by AS assessment_order_by,
@@ -37,6 +37,7 @@ WITH object_data AS (
         ai.id AS assessment_instance_id,
         a.id AS assessment_id,
         a.tid AS assessment_name,
+        a.title AS assessment_title,
         (aset.abbreviation || a.number) AS assessment_label,
         aset.abbreviation AS assessment_set_abbreviation,
         a.number AS assessment_number,
@@ -78,6 +79,73 @@ SELECT
 FROM
     object_data;
 
+-- BLOCK select_assessment_access_rules
+WITH object_data AS (
+    SELECT
+        a.id AS assessment_id,
+        a.tid AS assessment_name,
+        a.title AS assessment_title,
+        (aset.abbreviation || a.number) AS assessment_label,
+        aset.abbreviation AS assessment_set_abbreviation,
+        a.number AS assessment_number,
+        aar.credit,
+        format_date_iso8601(aar.end_date, ci.display_timezone) AS end_date,
+        aar.exam_uuid,
+        aar.id AS assessment_access_rule_id,
+        aar.mode,
+        aar.number,
+        aar.number AS assessment_access_rule_number,
+        aar.password,
+        aar.role,
+        aar.seb_config,
+        aar.show_closed_assessment,
+        aar.show_closed_assessment_score,
+        format_date_iso8601(aar.start_date, ci.display_timezone) AS start_date,
+        aar.time_limit_min,
+        aar.uids
+    FROM
+        assessments AS a
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+        JOIN assessment_access_rules AS aar ON (aar.assessment_id = a.id)
+    WHERE
+        ci.id = $course_instance_id
+        AND a.id = $assessment_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY assessment_access_rule_number, assessment_access_rule_id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
+-- BLOCK select_instance_questions
+WITH object_data AS (
+    SELECT
+        q.id AS question_id,
+        q.qid AS question_name,
+        iq.id AS instance_question_id,
+        iq.number AS instance_question_number,
+        aq.max_points AS assessment_question_max_points,
+        iq.points AS instance_question_points,
+        iq.score_perc AS instance_question_score_perc
+    FROM
+        assessment_instances AS ai
+        JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+    WHERE
+        ai.id = $assessment_instance_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY instance_question_id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
 -- BLOCK select_submissions
 WITH object_data AS (
     SELECT
@@ -106,6 +174,7 @@ WITH object_data AS (
         v.options,
         format_date_iso8601(s.date, ci.display_timezone) AS date,
         s.submitted_answer,
+        s.partial_scores,
         s.override_score,
         s.credit,
         s.mode,

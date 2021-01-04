@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
     <script src="/javascripts/lodash.min.js"></script>
@@ -15,7 +15,7 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
-      <%- include('../partials/instructorAssessmentTabs'); %>
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
@@ -68,7 +68,7 @@
             $(function() {
                 var xdata = [<% questions.forEach(function(question) { %><%= question.mean_question_score %>,<% }); %>];
                 var ydata = [<% questions.forEach(function(question) { %><%= question.discrimination %>,<% }); %>];
-                var labels = [<% questions.forEach(function(question) { %><%= question.number %>,<% }); %>];
+                var labels = [<% questions.forEach(function(question) { %><%= question.assessment_question_number %>,<% }); %>];
                 var options = {
                     xgrid: _.range(0, 110, 10),
                     ygrid: _.range(0, 110, 10),
@@ -120,7 +120,7 @@
                 <th class="text-center">Question</th>
                 <th class="text-center">Mean score</th>
                 <th class="text-center">Discrimination</th>
-                <th class="text-center">Number of submissions</th>
+                <th class="text-center">Attempts</th>
                 <th class="text-center">Quintiles</th>
               </tr>
             </thead>
@@ -129,12 +129,12 @@
               <tr>
                 <td>
                   <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
-                    <%= row.number %>. <%= row.title %>
+                    <%= row.assessment_question_number %>. <%= row.question_title %>
                   </a>
                 </td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
-                <td class="text-center"><%= parseFloat(row.average_number_submissions).toFixed(2); %></td>
+                <td class="text-center"><%= formatFloat(row.average_number_submissions, 2); %></td>
                 <% if (row.number > 0) { %>
                 <td class="text-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
                 <script>
@@ -210,7 +210,7 @@
             <tr>
               <td style="white-space: nowrap;">
                 <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
-                    <%= row.number %>. <%= row.qid %>
+                    <%= row.assessment_question_number %>. <%= row.qid %>
                 </a>
               </td>
               <td class="text-center">

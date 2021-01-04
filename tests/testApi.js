@@ -408,4 +408,60 @@ describe('API', function() {
             assert.equal(locals.gradebookEntry.max_points, helperExam.assessmentMaxPoints);
         });
     });
+
+    describe('12. GET to API for Exam 1 instance questions', function() {
+        it('should load successfully', function(callback) {
+            locals.apiInstanceQuestionUrl = locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}/instance_questions`;
+            const options = {
+                url: locals.apiInstanceQuestionUrl,
+                headers: {
+                    'Private-Token': locals.api_token,
+                },
+            };
+            request(options, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON', function() {
+            locals.json = JSON.parse(page);
+        });
+        it('should have seven questions', function() {
+            assert.lengthOf(locals.json, 7);
+        });
+    });
+
+    describe('13. GET to API for Exam 1 access rules', function() {
+        it('should load successfully', function(callback) {
+            locals.apiAssessmentAccessRulesUrl = locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}/assessment_access_rules`;
+            const options = {
+                url: locals.apiAssessmentAccessRulesUrl,
+                headers: {
+                    'Private-Token': locals.api_token,
+                },
+            };
+            request(options, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON', function() {
+            locals.json = JSON.parse(page);
+        });
+        it('should have two access rules', function() {
+            assert.lengthOf(locals.json, 2);
+        });
+    });
 });

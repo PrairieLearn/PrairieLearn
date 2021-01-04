@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageNote: question.qid}); %>
     <%- include('../partials/mathjax'); %>
-    <script src="/javascripts/socket.io.js"></script>
+    <script src="/node_modules/socket.io-client/dist/socket.io.min.js"></script>
     <script src="/javascripts/d3.min.js"></script>
     <script src="/javascripts/lodash.min.js"></script>
     <script src="/localscripts/stacked_histogram.js"></script>
@@ -22,7 +22,7 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
-      <%- include('../partials/navtabs'); %>
+      <%- include('../partials/questionSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           Detailed assessment statistics for question <%= question.qid %>
@@ -48,11 +48,10 @@
             <% assessment_stats.forEach(function(row, i) { %>
             <tr>
               <td>
-                  <%= row.course_title %>
+                  <%= row.course_instance_short_name %>
               </td>
               <td style="width: 1%">
-                <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="badge color-<%=
-                  row.color %> color-hover" role="button"><%= row.label %></a>
+                <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="badge color-<%= row.assessment_color %> color-hover" role="button"><%= row.assessment_label %></a>
               </td>
               <td class="text-center">
                   <%= formatFloat(row.mean_question_score, 1) %>
@@ -127,7 +126,7 @@
                   <% } %>
               </td>
               <td class="text-center">
-                <% if (row.type !== 'Homework') { %>
+                <% if (row.assessment_type !== 'Homework') { %>
                   <% if (row.incremental_submission_points_array_averages !== null) { %>
                     <div id="incrementalSubmissionPointsArray<%= i %>" class="miniHist"></div>
                   <% } %>

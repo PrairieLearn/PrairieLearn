@@ -25,7 +25,8 @@ BEGIN
     SET
         open = FALSE,
         closed_at = CURRENT_TIMESTAMP,
-        duration = main.duration
+        duration = main.duration,
+        modified_at = now()
     WHERE ai.id = assessment_instance_id;
 
     INSERT INTO assessment_state_logs

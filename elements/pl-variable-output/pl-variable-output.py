@@ -8,13 +8,14 @@ DIGITS_DEFAULT = 2
 SHOW_MATLAB_DEFAULT = True
 SHOW_MATHEMATICA_DEFAULT = True
 SHOW_PYTHON_DEFAULT = True
+SHOW_R_DEFAULT = True
 DEFAULT_TAB_DEFAULT = 'matlab'
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
-    optional_attribs = ['digits', 'default-tab', 'show-matlab', 'show-mathematica', 'show-python']
+    optional_attribs = ['digits', 'default-tab', 'show-matlab', 'show-mathematica', 'show-python', 'show-r']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
@@ -24,14 +25,15 @@ def render(element_html, data):
     show_matlab = pl.get_boolean_attrib(element, 'show-matlab', SHOW_MATLAB_DEFAULT)
     show_mathematica = pl.get_boolean_attrib(element, 'show-mathematica', SHOW_MATHEMATICA_DEFAULT)
     show_python = pl.get_boolean_attrib(element, 'show-python', SHOW_PYTHON_DEFAULT)
+    show_r = pl.get_boolean_attrib(element, 'show-r', SHOW_R_DEFAULT)
     default_tab = pl.get_string_attrib(element, 'default-tab', DEFAULT_TAB_DEFAULT)
 
-    tab_list = ['matlab', 'mathematica', 'python']
+    tab_list = ['matlab', 'mathematica', 'python', 'r']
     if default_tab not in tab_list:
         raise Exception(f'invalid default-tab: {default_tab}')
 
     # Setting the default tab
-    displayed_tab = [show_matlab, show_mathematica, show_python]
+    displayed_tab = [show_matlab, show_mathematica, show_python, show_r]
     if not any(displayed_tab):
         raise Exception('All tabs have been hidden from display. At least one tab must be shown.')
 
@@ -43,14 +45,15 @@ def render(element_html, data):
     default_tab_index = tab_list.index(default_tab)
 
     # Active tab should be the default tab
-    default_tab_list = [False, False, False]
+    default_tab_list = [False, False, False, False]
     default_tab_list[default_tab_index] = True
-    [active_tab_matlab, active_tab_mathematica, active_tab_python] = default_tab_list
+    [active_tab_matlab, active_tab_mathematica, active_tab_python, active_tab_r] = default_tab_list
 
     # Process parameter data
     matlab_data = ''
     mathematica_data = ''
     python_data = 'import numpy as np\n\n'
+    r_data = ''
     for child in element:
         if child.tag == 'variable':
             # Raise exception if variable does not have a name
@@ -72,11 +75,13 @@ def render(element_html, data):
             var_matlab_comment = ''
             var_mathematica_comment = ''
             var_python_comment = ''
+            var_r_comment = ''
             if pl.has_attrib(child, 'comment'):
                 var_comment = pl.get_string_attrib(child, 'comment')
                 var_matlab_comment = f' % {var_comment}'
                 var_mathematica_comment = f' (* {var_comment} *)'
                 var_python_comment = f' # {var_comment}'
+                var_r_comment = f' # {var_comment}'
 
             # Get digit for child, if it exists
             if not pl.has_attrib(child, 'digits'):
@@ -110,21 +115,26 @@ def render(element_html, data):
             var_matlab_data = pl.string_from_numpy(var_data, language='matlab', digits=var_digits)
             var_mathematica = pl.string_from_numpy(var_data, language='mathematica', digits=var_digits)
             var_python_data = pl.string_from_numpy(var_data, language='python', digits=var_digits)
+            var_r_data = pl.string_from_numpy(var_data, language='r', digits=var_digits)
 
             matlab_data += f'{var_name_disp} = {var_matlab_data};{var_matlab_comment}\n'
             mathematica_data += f'{var_name_disp}{mathematica_suffix} = {var_mathematica};{var_mathematica_comment}\n'
             python_data += f'{var_name_disp} = {prefix}{var_python_data}{suffix}{var_python_comment}\n'
+            r_data += f'{var_name_disp} = {var_r_data}{var_r_comment}\n'
 
     html_params = {
         'active_tab_matlab': active_tab_matlab,
         'active_tab_mathematica': active_tab_mathematica,
         'active_tab_python': active_tab_python,
+        'active_tab_r': active_tab_r,
         'show_matlab': show_matlab,
         'show_mathematica': show_mathematica,
         'show_python': show_python,
+        'show_r': show_r,
         'matlab_data': matlab_data,
         'mathematica_data': mathematica_data,
         'python_data': python_data,
+        'r_data': r_data,
         'uuid': pl.get_uuid()
     }
 

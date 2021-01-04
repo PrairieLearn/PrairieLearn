@@ -71,6 +71,8 @@
 
   * Add tests for LTI auth (Dave Mussulman).
 
+  * Add more robust Python autograder to `prairielearn/grader-python` (Nathan Bowman and Nicolas Nytko).
+
   * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
 
   * Add file size limit to student-visible part of `pl-file-upload` (Nathan Bowman).
@@ -79,6 +81,28 @@
 
   * Add support for editing from bare git repo (Tim Bretl).
 
+  * Add instructor panel to `course` question pages (Tim Yang).
+
+  * Add `disregard-extra-elements` attribute to `pl-drawing` element to ignore duplicate grading objects (Nicolas Nytko).
+
+  * Add extra `/course*` mount points (Tim Yang).
+
+  * Add R vector/matrix support in `pl-variable-output` (James Balamuta).
+
+  * Add example course question templates (James Balamuta).
+
+  * Add support for pages to set their own titles in browser tabs via `res.locals.pageTitle` (David Mitchell)
+
+  * Add extra `/course*` mount points (Tim Yang).
+
+  * Add confirmation dialog for unsaved changes on question pages (Tim Yang).
+
+  * Add Python library regex to plbase (Nathan Bowman).
+
+  * Add `all-of-the-above` and `none-of-the-above` attributes to `<pl-multiple-choice>` (Bojin Yao)
+
+  * Add `external-json` attribute to `<pl-multiple-choice>` (Bojin Yao)
+
   * Change v3 questions to disable autocomplete on the question form (Nathan Walters).
 
   * Change `centos7-python` to `grader-python` and place it under `graders/`  (James Balamuta).
@@ -86,6 +110,8 @@
   * Change blocked-event-loop detection to be more lightweight in production (Matt West).
 
   * Change file editing access to `Editor`, down from `Owner` (Matt West).
+
+  * Change syncing to be more resilient and to record errors/warnings encountered during sync (Nathan Walters).
 
   * Change element default setup to be top-down instead of inline (James Balamuta).
 
@@ -122,6 +148,8 @@
   * Change order in which course instances are listed to be by earliest and latest access date (Tim Bretl).
 
   * Change size limit for form data to account for increase from encoding (Nathan Bowman).
+
+  * Change styling for invalid input and `pl-string-input` for increased clarity. (Nicolas Nytko)
 
   * Fix dead letter cron job for `async` v3 (Matt West).
 
@@ -229,7 +257,15 @@
 
   * Fix gradebook and question statistics download links (Tim Bretl).
 
+  * Fix `demoRandomPlot` by updating the matlibplot subplot code (James Balamuta).
+
+  * Fix default institution in course instance access rules (Tim Bretl).
+
+  * Fix `group_work` flag when calling `authz_assessment_instance` (Tim Bretl).
+
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
+
+  * Remove introduction alert at the top of `homework` assessments (Tim Yang).
 
 * __3.2.0__ - 2019-08-05
 

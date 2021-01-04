@@ -57,7 +57,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var questionStatsList = result.rows;
             var csvData = [];
-            var csvHeaders = ['Course instance', 'Assessment'];
+            var csvHeaders = ['Course', 'Instance', 'Assessment', 'Question number', 'QID', 'Question title'];
             Object.keys(res.locals.stat_descriptions).forEach(key => {
                 csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
             });
@@ -66,8 +66,12 @@ router.get('/:filename', function(req, res, next) {
 
             _(questionStatsList).each(function(questionStats) {
                 var questionStatsData = [];
-                questionStatsData.push(questionStats.course_title);
-                questionStatsData.push(questionStats.label);
+                questionStatsData.push(questionStats.course_short_name);
+                questionStatsData.push(questionStats.course_instance_short_name);
+                questionStatsData.push(questionStats.assessment_label);
+                questionStatsData.push(questionStats.assessment_question_number);
+                questionStatsData.push(questionStats.qid);
+                questionStatsData.push(questionStats.question_title);
                 questionStatsData.push(questionStats.mean_question_score);
                 questionStatsData.push(questionStats.question_score_variance);
                 questionStatsData.push(questionStats.discrimination);

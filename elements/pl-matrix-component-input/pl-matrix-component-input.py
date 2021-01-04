@@ -14,13 +14,26 @@ RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
 ALLOW_PARTIAL_CREDIT_DEFAULT = False
+ALLOW_FRACTIONS_DEFAULT = True
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback', 'allow-fractions', 'rows', 'columns']
     pl.check_attribs(element, required_attribs, optional_attribs)
+    name = pl.get_string_attrib(element, 'answers-name')
+    if name not in data['correct_answers']:
+        m = pl.get_integer_attrib(element, 'rows', None)
+        if m is None:
+            raise Exception('Number of rows is not set in pl-matrix-component-input with no correct answer.')
+        if m < 1:
+            raise Exception('Number of rows in pl-matrix-component-input must be strictly positive.')
+        n = pl.get_integer_attrib(element, 'columns', None)
+        if n is None:
+            raise Exception('Number of columns is not set in pl-matrix-component-input with no correct answer.')
+        if n < 1:
+            raise Exception('Number of columns in pl-matrix-component-input must be strictly positive.')
 
 
 def render(element_html, data):
@@ -30,6 +43,7 @@ def render(element_html, data):
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', ALLOW_PARTIAL_CREDIT_DEFAULT)
     allow_feedback = pl.get_boolean_attrib(element, 'allow-feedback', allow_partial_credit)
+    allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -37,17 +51,18 @@ def render(element_html, data):
         # Get true answer
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is None:
-            raise Exception('No value in data["correct_answers"] for variable %s in pl-matrix-component-input element' % name)
+            m = pl.get_integer_attrib(element, 'rows', None)
+            n = pl.get_integer_attrib(element, 'columns', None)
         else:
             if np.isscalar(a_tru):
                 raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element cannot be a scalar.' % name)
             else:
                 a_tru = np.array(a_tru)
 
-        if a_tru.ndim != 2:
-            raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.' % name)
-        else:
-            m, n = np.shape(a_tru)
+            if a_tru.ndim != 2:
+                raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.' % name)
+            else:
+                m, n = np.shape(a_tru)
 
         input_array = createTableForHTMLDisplay(m, n, name, label, data, 'input')
 
@@ -74,6 +89,7 @@ def render(element_html, data):
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
+        info_params['allow_fractions'] = allow_fractions
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
@@ -120,8 +136,17 @@ def render(element_html, data):
             'uuid': pl.get_uuid()
         }
 
-        a_tru = pl.from_json(data['correct_answers'].get(name, None))
-        m, n = np.shape(a_tru)
+        if parse_error is None:
+            a_submitted = pl.from_json(data['submitted_answers'].get(name, None))
+            if a_submitted is not None and len(a_submitted.shape) == 2:
+                m, n = np.shape(a_submitted)
+        else:
+            a_tru = pl.from_json(data['correct_answers'].get(name, None))
+            if a_tru is not None and len(a_tru.shape) == 2:
+                m, n = np.shape(a_tru)
+            else:
+                m = pl.get_integer_attrib(element, 'rows', None)
+                n = pl.get_integer_attrib(element, 'columns', None)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -137,7 +162,7 @@ def render(element_html, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
-        if parse_error is None:
+        if parse_error is None and name in data['submitted_answers']:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -157,9 +182,14 @@ def render(element_html, data):
                     html_params['a_sub'] = sub_latex
             else:
                 html_params['a_sub'] = sub_latex
+        elif name not in data['submitted_answers']:
+            html_params['missing_input'] = True
+            html_params['parse_error'] = None
         else:
             # create html table to show submitted answer when there is an invalid format
             html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, label, data, 'output-invalid')
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -208,17 +238,20 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
 
-    # Get true answer
+    # Get dimensions of the input matrix
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
-        return
-    a_tru = np.array(a_tru)
-    if a_tru.ndim != 2:
-        raise ValueError('true answer must be a 2D array')
+        m = pl.get_integer_attrib(element, 'rows', None)
+        n = pl.get_integer_attrib(element, 'columns', None)
     else:
-        m, n = np.shape(a_tru)
-        A = np.empty([m, n])
+        a_tru = np.array(a_tru)
+        if a_tru.ndim != 2:
+            raise ValueError('true answer must be a 2D array')
+        else:
+            m, n = np.shape(a_tru)
+    A = np.empty((m, n))
 
     # Create an array for the submitted answer to be stored in data['submitted_answer'][name]
     # used for display in the answer and submission panels
@@ -228,30 +261,18 @@ def parse(element_html, data):
         for j in range(n):
             each_entry_name = name + str(n * i + j + 1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
-            if a_sub is None:
-                data['submitted_answers'][each_entry_name] = None
-                data['format_errors'][each_entry_name] = '(No submitted answer)'
-                invalid_format = True
-            elif not a_sub:
-                data['submitted_answers'][each_entry_name] = None
-                data['format_errors'][each_entry_name] = '(Invalid blank entry)'
-                invalid_format = True
+            value, newdata = pl.string_fraction_to_number(a_sub, allow_fractions, allow_complex=False)
+            if value is not None:
+                A[i, j] = value
+                data['submitted_answers'][each_entry_name] = newdata['submitted_answers']
             else:
-                a_sub_parsed = pl.string_to_number(a_sub, allow_complex=False)
-                if a_sub_parsed is None:
-                    data['submitted_answers'][each_entry_name] = None
-                    data['format_errors'][each_entry_name] = '(Invalid format)'
-                    invalid_format = True
-                elif not np.isfinite(a_sub_parsed):
-                    data['submitted_answers'][each_entry_name] = None
-                    data['format_errors'][each_entry_name] = '(Invalid format - not finite)'
-                    invalid_format = True
-                else:
-                    data['submitted_answers'][each_entry_name] = pl.to_json(a_sub_parsed)
-                    A[i, j] = a_sub_parsed
+                invalid_format = True
+                data['format_errors'][each_entry_name] = newdata['format_errors']
+                data['submitted_answers'][each_entry_name] = None
 
     if invalid_format:
-        data['format_errors'][name] = 'At least one of the entries has invalid format (empty entries or not a double precision floating point number)'
+        with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
+            data['format_errors'][name] = chevron.render(f, {'format_error': True, 'allow_fractions': allow_fractions}).strip()
         data['submitted_answers'][name] = None
     else:
         data['submitted_answers'][name] = pl.to_json(A)
@@ -348,7 +369,7 @@ def test(element_html, data):
     else:
         m, n = np.shape(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'incorrect'], [5, 5, 1])[0]
+    result = data['test_type']
 
     number_of_correct = 0
     feedback = {}
@@ -402,11 +423,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
             format_errors = data['format_errors'].get(each_entry_name, None)
             if format_errors is None:
-                display_array += ' <td class="allborder"> '
+                display_array += '<td class="allborder"><code class="user-output">'
             else:
-                display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
-            display_array += escape(raw_submitted_answer)
-            display_array += ' </td> '
+                display_array += '<td class="allborder"><code class="user-output-invalid">'
+            display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
+            display_array += '</code></td> '
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
         # Add the other rows
@@ -417,11 +438,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
                 format_errors = data['format_errors'].get(each_entry_name, None)
                 if format_errors is None:
-                    display_array += ' <td class="allborder"> '
+                    display_array += '<td class="allborder"><code class="user-output">'
                 else:
-                    display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
-                display_array += escape(raw_submitted_answer)
-                display_array += ' </td> '
+                    display_array += '<td class="allborder"><code class="user-output-invalid">'
+                display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
+                display_array += '</code></td> '
             display_array += '</tr>'
         display_array += '</table>'
 

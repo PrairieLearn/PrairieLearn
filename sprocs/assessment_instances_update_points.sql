@@ -23,7 +23,8 @@ BEGIN
             points = new_points,
             points_in_grading = 0,
             score_perc = new_score_perc,
-            score_perc_in_grading = 0
+            score_perc_in_grading = 0,
+            modified_at = now()
         WHERE ai.id = assessment_instance_id
         RETURNING ai.*
     )

@@ -33,3 +33,13 @@
   overflow-x: auto;
   overflow-y: auto;
 }
+
+.pl-matrix-component-input-invalid table {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.pl-matrix-component-input-invalid table td.allborder {
+    border: unset;
+    min-width: unset;
+}

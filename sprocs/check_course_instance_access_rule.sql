@@ -49,7 +49,7 @@ BEGIN
             FROM users
             WHERE users.uid = check_course_instance_access_rule.uid;
 
-            IF user_result.lti_course_instance_id != course_instance_access_rule.course_instance_id THEN
+            IF user_result.lti_course_instance_id IS DISTINCT FROM course_instance_access_rule.course_instance_id THEN
                 available := FALSE;
             END IF;
         ELSIF course_instance_access_rule.institution != 'Any' THEN

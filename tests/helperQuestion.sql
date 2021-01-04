@@ -105,6 +105,14 @@ SELECT *
 FROM job_sequences
 WHERE id = $job_sequence_id;
 
+-- BLOCK select_jobs
+SELECT j.*
+FROM
+    jobs AS j
+    JOIN job_sequences AS js ON (js.id = j.job_sequence_id)
+WHERE js.id = $job_sequence_id
+ORDER BY j.number_in_sequence;
+
 -- BLOCK select_issues_for_last_variant
 WITH last_variant AS (
     SELECT *
@@ -117,3 +125,19 @@ FROM
     issues,
     last_variant
 WHERE variant_id = last_variant.id;
+
+-- BLOCK select_question_feedback
+SELECT s.feedback
+FROM
+    submissions AS s
+    JOIN variants AS v ON (v.id = s.variant_id)
+    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+WHERE
+    (s.id = $submission_id OR $submission_id IS NULL)
+    AND (ai.id = $assessment_instance_id)
+    AND (q.qid = $qid)
+ORDER BY s.date DESC
+LIMIT 1;

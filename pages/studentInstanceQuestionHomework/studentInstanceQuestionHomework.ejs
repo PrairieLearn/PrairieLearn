@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
     <%- include('../partials/mathjax'); %>
-    <script src="/javascripts/socket.io.js"></script>
+    <script src="/node_modules/socket.io-client/dist/socket.io.min.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -53,7 +53,9 @@
             <% } %>
           </p>
 
-          <%- include('../partials/attachFilePanel') %>
+          <% if (config.attachedFilesDialogEnabled) { %>
+              <%- include('../partials/attachFilePanel') %>
+          <% } %>
 
           <% if (video) { %>
           <div class="modal" id="youtubemodal">
@@ -76,5 +78,7 @@
         </div>
       </div>
     </div>
+    <!-- Needs to be located below element scripts -->
+    <script src="/localscripts/questionPageScripts.js"></script>
   </body>
 </html>

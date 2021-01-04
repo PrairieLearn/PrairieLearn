@@ -12,8 +12,8 @@
         {
             "mode": "Exam",
             "credit": 100,
-            "examUuid": "edd569e8-5075-4c35-88f9-28c5feaad0cb"
-       }
+            "examUuid": "b5094bf7-565d-43c1-b536-54708d3e89ad"
+        }
     ],
     "zones": [
         {
@@ -23,16 +23,16 @@
                     "numberChoose": 1,
                     "points": [25, 24, 23, 22, 21, 20],
                     "alternatives": [
-                        {"id": "demoCalculation"},
-                        {"id": "demoMatrixAlgebra"}
+                        {"id": "demo/calculation"},
+                        {"id": "demo/matrixAlgebra"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": [25, 24, 23, 22, 21, 20],
                     "alternatives": [
-                        {"id": "demoFixedCheckbox"},
-                        {"id": "demoRandomPlot"}
+                        {"id": "demo/fixedCheckbox"},
+                        {"id": "demo/randomPlot"}
                     ]
                 }
             ]
@@ -44,16 +44,16 @@
                     "numberChoose": 1,
                     "points": [10, 9, 8, 7, 6],
                     "alternatives": [
-                        {"id": "demoMatrixComplexAlgebra"},
-                        {"id": "demoRandomCheckbox"}
+                        {"id": "demo/matrixComplexAlgebra"},
+                        {"id": "demo/randomCheckbox"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": [10, 9, 8, 7, 6],
                     "alternatives": [
-                        {"id": "demoRandomMultipleChoice"},
-                        {"id": "demoStudentFaces"}
+                        {"id": "demo/randomMultipleChoice"},
+                        {"id": "demo/studentFaces"}
                     ]
                 }
            ]
@@ -65,16 +65,16 @@
                     "numberChoose": 1,
                     "points": [5, 4, 3, 2, 1],
                     "alternatives": [
-                        {"id": "demoRandomDataFrame"},
-                        {"id": "demoRandomSymbolic"}
+                        {"id": "demo/randomDataFrame"},
+                        {"id": "demo/randomSymbolic"}
                     ]
                 },
                 {
                     "numberChoose": 1,
                     "points": [5, 4, 3, 2, 1],
                     "alternatives": [
-                        {"id": "demoCustomElement"},
-                        {"id": "demoCustomGradeFunction"}
+                        {"id": "demo/custom/element"},
+                        {"id": "demo/custom/gradeFunction"}
                     ]
                 }
             ]

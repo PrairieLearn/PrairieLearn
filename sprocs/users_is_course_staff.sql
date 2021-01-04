@@ -25,4 +25,4 @@ BEGIN
 
     is_course_staff := FOUND;
 END;
-$$ LANGUAGE plpgsql VOLATILE;
+$$ LANGUAGE plpgsql STABLE;

@@ -3,6 +3,7 @@ columns
     correct: boolean
     date: timestamp with time zone default CURRENT_TIMESTAMP
     feedback: jsonb
+    gradable: boolean
     graded_at: timestamp with time zone
     graded_by: bigint
     grading_finished_at: timestamp with time zone

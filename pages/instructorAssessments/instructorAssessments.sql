@@ -19,7 +19,10 @@ SELECT
     a.type,
     a.number as assessment_number,
     a.title,
+    a.group_work AS group_work,
     a.assessment_set_id,
+    a.sync_errors,
+    a.sync_warnings,
     tstats.number,
     tstats.mean,
     tstats.std,
@@ -109,7 +112,7 @@ SELECT
         || '_' || submission_number
         || '_' || filename
     ) AS filename,
-    decode(contents, 'base64') AS contents
+    base64_safe_decode(contents) AS contents
 FROM
     all_file_submissions
 ORDER BY

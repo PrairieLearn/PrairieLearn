@@ -7,7 +7,7 @@ const question = require('../../lib/question');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const fs = require('fs-extra');
-const uuidv4 = require('uuid/v4');
+const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logger = require('../../lib/logger');
@@ -21,7 +21,8 @@ router.post('/', function(req, res, next) {
     if (req.body.__action == 'test_once') {
         const count = 1;
         const showDetails = true;
-        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+        const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
+        question.startTestQuestion(count, showDetails, res.locals.question, assessmentGroupWork, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
@@ -29,7 +30,8 @@ router.post('/', function(req, res, next) {
         if (res.locals.question.grading_method !== 'External') {
             const count = 100;
             const showDetails = false;
-            question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+            const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
+            question.startTestQuestion(count, showDetails, res.locals.question, assessmentGroupWork, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
                 if (ERR(err, next)) return;
                 res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
             });
@@ -39,7 +41,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'change_id') {
         debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
         if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
-        if (!/^[-A-Za-z0-9_]+$/.test(req.body.id)) return next(new Error(`Invalid QID (was not only letters, numbers, dashes, and underscores, with no spaces): ${req.body.id}`));
+        if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) return next(new Error(`Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`));
         let qid_new;
         try {
             qid_new = path.normalize(req.body.id);
@@ -57,7 +59,7 @@ router.post('/', function(req, res, next) {
             editor.canEdit((err) => {
                 if (ERR(err, next)) return;
                 editor.doEdit((err, job_sequence_id) => {
-                    if (ERR(err, (e) => logger.error(e))) {
+                    if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                         res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                     } else {
                         res.redirect(req.originalUrl);
@@ -75,7 +77,7 @@ router.post('/', function(req, res, next) {
             editor.canEdit((err) => {
                 if (ERR(err, next)) return;
                 editor.doEdit((err, job_sequence_id) => {
-                    if (ERR(err, (e) => logger.error(e))) {
+                    if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                         res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                     } else {
                         debug(`Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`);
@@ -126,7 +128,7 @@ router.post('/', function(req, res, next) {
         editor.canEdit((err) => {
             if (ERR(err, next)) return;
             editor.doEdit((err, job_sequence_id) => {
-                if (ERR(err, (e) => logger.error(e))) {
+                if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                     res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                 } else {
                     res.redirect(res.locals.urlPrefix + '/course_admin/questions');
@@ -150,7 +152,7 @@ router.get('/', function(req, res, next) {
                 if (GHfound) {
                     res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
                 }
-            } else if (res.locals.course.options.isExampleCourse) {
+            } else if (res.locals.course.example_course) {
                 res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
             }
             callback(null);

@@ -185,11 +185,11 @@ function browseDirectory(file_browser, callback) {
                             path: path.relative(file_browser.paths.coursePath, filepath),
                             encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                             dir: file_browser.paths.workingPath,
-                            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
-                            canUpload: file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+                            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.example_course),
+                            canUpload: file_browser.has_course_permission_edit && (! file_browser.example_course),
                             canDownload: file_browser.has_course_permission_edit,
-                            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
-                            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+                            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
+                            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
                             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     } else if (stats.isDirectory()) {
@@ -263,11 +263,11 @@ function browseFile(file_browser, callback) {
             path: path.relative(file_browser.paths.coursePath, filepath),
             encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
             dir: path.dirname(file_browser.paths.workingPath),
-            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
-            canUpload: file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+            canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.example_course),
+            canUpload: file_browser.has_course_permission_edit && (! file_browser.example_course),
             canDownload: file_browser.has_course_permission_edit,
-            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
-            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.isExampleCourse),
+            canRename: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
+            canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
         };
         callback(null);
@@ -278,7 +278,7 @@ router.get('/*', function(req, res, next) {
     debug('GET /');
     let file_browser = {
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        isExampleCourse: res.locals.course.options.isExampleCourse,
+        example_course: res.locals.course.example_course,
     };
     async.waterfall([
         (callback) => {
@@ -355,7 +355,7 @@ router.post('/*', function(req, res, next) {
             editor.canEdit((err) => {
                 if (ERR(err, next)) return;
                 editor.doEdit((err, job_sequence_id) => {
-                    if (ERR(err, (e) => logger.error(e))) {
+                    if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                         res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                     } else {
                         res.redirect(req.originalUrl);
@@ -391,7 +391,7 @@ router.post('/*', function(req, res, next) {
                 editor.canEdit((err) => {
                     if (ERR(err, next)) return;
                     editor.doEdit((err, job_sequence_id) => {
-                        if (ERR(err, (e) => logger.error(e))) {
+                        if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                             res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                         } else {
                             if (req.body.was_viewing_file) {
@@ -433,7 +433,7 @@ router.post('/*', function(req, res, next) {
                 editor.canEdit((err) => {
                     if (ERR(err, next)) return;
                     editor.doEdit((err, job_sequence_id) => {
-                        if (ERR(err, (e) => logger.error(e))) {
+                        if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
                             res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
                         } else {
                             res.redirect(req.originalUrl);

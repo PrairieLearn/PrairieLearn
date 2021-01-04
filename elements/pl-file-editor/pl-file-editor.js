@@ -1,5 +1,6 @@
 /* eslint-env browser,jquery */
-/* global ace */
+/* global ace, showdown, MathJax, filterXSS */
+
 window.PLFileEditor = function(uuid, options) {
     var elementId = '#file-editor-' + uuid;
     this.element = $(elementId);
@@ -32,15 +33,37 @@ window.PLFileEditor = function(uuid, options) {
 
     if (options.minLines) {
         this.editor.setOption('minLines', options.minLines);
-    } 
+    }
 
     if (options.maxLines) {
         this.editor.setOption('maxLines', options.maxLines);
-    } 
+    }
 
     if (options.autoResize) {
         this.editor.setAutoScrollEditorIntoView(true);
         this.editor.setOption('maxLines', Infinity);
+    }
+
+    this.plOptionFocus = options.plOptionFocus;
+
+    if (options.preview == 'markdown') {
+        let renderer = new showdown.Converter({
+            'literalMidWordUnderscores':true,
+            'literalMidWordAsterisks':true,
+        });
+
+        this.editor.session.on('change', () => {
+            this.updatePreview(renderer.makeHtml(this.editor.getValue()));
+        });
+        this.updatePreview(renderer.makeHtml(this.editor.getValue()));
+    } else if (options.preview == 'html') {
+        this.editor.session.on('change', () => {
+            this.updatePreview(this.editor.getValue());
+        });
+        this.updatePreview(this.editor.getValue());
+    } else if (options.preview !== undefined) {
+        let preview = this.element.find('.preview')[0];
+        preview.innerHTML = '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
     }
 
     var currentContents = '';
@@ -50,6 +73,22 @@ window.PLFileEditor = function(uuid, options) {
     this.setEditorContents(currentContents);
 
     this.initRestoreOriginalButton();
+};
+
+window.PLFileEditor.prototype.updatePreview = function(html_contents) {
+    const default_preview_text = '<p>Begin typing above to preview</p>';
+    let preview = this.element.find('.preview')[0];
+    if (html_contents.trim().length == 0) {
+        preview.innerHTML = default_preview_text;
+    } else {
+        let sanitized_contents = filterXSS(html_contents);
+        preview.innerHTML = sanitized_contents;
+        if (sanitized_contents.includes('$') ||
+            sanitized_contents.includes('\\(') || sanitized_contents.includes('\\)') ||
+            sanitized_contents.includes('\\[') || sanitized_contents.includes('\\]')) {
+            MathJax.typesetPromise();
+        }
+    }
 };
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function() {
@@ -74,7 +113,9 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function() {
 window.PLFileEditor.prototype.setEditorContents = function(contents) {
     this.editor.setValue(contents);
     this.editor.gotoLine(1, 0);
-    this.editor.focus();
+    if (this.plOptionFocus) {
+        this.editor.focus();
+    }
     this.syncFileToHiddenInput();
 };
 

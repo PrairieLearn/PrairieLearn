@@ -12,7 +12,10 @@ ACE_THEME_DEFAULT = None
 SOURCE_FILE_NAME_DEFAULT = None
 MIN_LINES_DEFAULT = None
 MAX_LINES_DEFAULT = None
-AUTO_RESIZE_DEFAULT = 'true'
+AUTO_RESIZE_DEFAULT = True
+PREVIEW_DEFAULT = None
+FOCUS_DEFAULT = False
+DIRECTORY_DEFAULT = '.'
 
 
 def get_answer_name(file_name):
@@ -28,13 +31,16 @@ def add_format_error(data, error_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize']
+    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize', 'preview', 'focus', 'directory']
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
 
+    file_name = pl.get_string_attrib(element, 'file-name')
     if '_required_file_names' not in data['params']:
         data['params']['_required_file_names'] = []
-    data['params']['_required_file_names'].append(pl.get_string_attrib(element, 'file-name'))
+    elif file_name in data['params']['_required_file_names']:
+        raise Exception('There is more than one file editor with the same file name.')
+    data['params']['_required_file_names'].append(file_name)
 
     if source_file_name is not None:
         if element.text is not None and not str(element.text).isspace():
@@ -53,9 +59,16 @@ def render(element_html, data):
     ace_theme = pl.get_string_attrib(element, 'ace-theme', ACE_THEME_DEFAULT)
     uuid = pl.get_uuid()
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
+    directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
     min_lines = pl.get_integer_attrib(element, 'min-lines', MIN_LINES_DEFAULT)
     max_lines = pl.get_integer_attrib(element, 'max-lines', MAX_LINES_DEFAULT)
-    auto_resize = pl.get_string_attrib(element, 'auto-resize', AUTO_RESIZE_DEFAULT)
+    auto_resize = pl.get_boolean_attrib(element, 'auto-resize', AUTO_RESIZE_DEFAULT)
+    preview = pl.get_string_attrib(element, 'preview', PREVIEW_DEFAULT)
+    focus = pl.get_boolean_attrib(element, 'focus', FOCUS_DEFAULT)
+
+    # stringify boolean attributes (needed when written to html_params)
+    auto_resize = 'true' if auto_resize else 'false'
+    focus = 'true' if focus else 'false'
 
     # If auto_resize is set but min_lines isn't, the height of the
     # file editor area will be set to 1 line. Thus, we need to set
@@ -73,11 +86,19 @@ def render(element_html, data):
         'min_lines': min_lines,
         'max_lines': max_lines,
         'auto_resize': auto_resize,
-        'uuid': uuid
+        'preview': preview,
+        'uuid': uuid,
+        'focus': focus
     }
 
     if source_file_name is not None:
-        file_path = os.path.join(data['options']['question_path'], source_file_name)
+        if directory == 'serverFilesCourse':
+            directory = data['options']['server_files_course_path']
+        elif directory == 'clientFilesCourse':
+            directory = data['options']['client_files_course_path']
+        else:
+            directory = os.path.join(data['options']['question_path'], directory)
+        file_path = os.path.join(directory, source_file_name)
         text_display = open(file_path).read()
     else:
         if element.text is not None:

@@ -161,6 +161,42 @@ describe('sproc check_assessment_access* tests', function() {
             });
         });
 
+        it('pass if all parameters match, with no uids', function(callback) {
+            var params = {
+                mode: 'Exam',
+                role: 'TA',
+                user_id: 1020,
+                uid: 'unknown@host.com',
+                date: '2010-07-07 06:06:06-00',
+                use_date_check: true,
+                aar_id: 2,
+            };
+
+            sqldb.query(sql.caar_test, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                assert.strictEqual(result.rows[0].authorized, true);
+                callback(null);
+            });
+        });
+
+        it('fail if uids = []', function(callback) {
+            var params = {
+                mode: 'Exam',
+                role: 'TA',
+                user_id: 1020,
+                uid: 'person1@host.com',
+                date: '2010-07-07 06:06:06-00',
+                use_date_check: true,
+                aar_id: 3,
+            };
+
+            sqldb.query(sql.caar_test, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                assert.strictEqual(result.rows[0].authorized, false);
+                callback(null);
+            });
+        });
+
         it('fail if mode does not match', function(callback) {
             var params = {
                 mode: 'Public',
