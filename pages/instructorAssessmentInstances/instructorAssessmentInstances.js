@@ -58,16 +58,17 @@ router.get('/', function(req, res, next) {
             has_closed_instance: has_closed_instance,
             action: 'set_time_limit_all',
         };
-        if (remaining_time_min === null)
+        if (remaining_time_min === null) {
             res.locals.time_limit_totals.time_remaining = 'No time limits';
-        else if (remaining_time_max < 60)
+        } else if (remaining_time_max < 60) {
             res.locals.time_limit_totals.time_remaining = 'Less than a minute';
-        else if (remaining_time_min < 60)
+        } else if (remaining_time_min < 60) {
             res.locals.time_limit_totals.time_remaining = 'up to ' + Math.floor(remaining_time_max / 60) + ' min';
-        else if (Math.floor(remaining_time_min / 60) == Math.floor(remaining_time_max / 60))
+        } else if (Math.floor(remaining_time_min / 60) == Math.floor(remaining_time_max / 60)) {
             res.locals.time_limit_totals.time_remaining = Math.floor(remaining_time_min / 60) + ' min';
-        else
+        } else {
             res.locals.time_limit_totals.time_remaining = 'between ' + Math.floor(remaining_time_min / 60) + ' and ' + Math.floor(remaining_time_max / 60) + ' min';
+        }
         
         debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
