@@ -4,7 +4,7 @@ This image will be used to execute course code in isolation in production enviro
 
 ## Release process
 
-This image is built and pushed to the container registry as `prairielearn/executor:VERSION`, where version is a string in the `EXECUTOR_VERSION` file in the root of the PrairieLearn repository. This allows us to consistently identify which version of this container should be used by any given version of PrairieLearn. For example, if some revision of PrairieLearn has an `EXECUTOR_VERSION` file with the contents `v1.2.3`, that version of PrairieLearn will execute code in the `prairielearn/executor:v1.2.3` image.
+This image is built and pushed to the container registry as `prairielearn/executor:VERSION`, where version is a string in the `EXECUTOR_VERSION` file in the root of the PrairieLearn repository. This allows us to consistently identify which version of this container should be used by any given version of PrairieLearn. For example, if some revision of PrairieLearn has an `EXECUTOR_VERSION` file with the contents `v123`, that version of PrairieLearn will execute code in the `prairielearn/executor:v123` image.
 
 There are scripts in the `/tools` directory that will aid with the building and releasing of this image. They will automatically pull the version from `EXECUTOR_VERSION` and use it when tagging the resulting image. The scripts should be run from the root of the repository.
 
@@ -20,18 +20,18 @@ To build and tag the image and push it to the container registry, run:
 ./tools/release-executor.sh
 ```
 
-**IMPORTANT**: Whenever files for this image or the `prairielearn/plbase` image (upon which this image is built) are modified, the version in `EXECUTOR_VERSION` should be increased. Once a version is used, it should not be reused. To make that easy, the version should attempt to follow semantic versioning. The continuous integration process should help ensure that the version is changed whenever relevant files are also modified.
+**IMPORTANT**: Whenever files for this image or the `prairielearn/plbase` image (upon which this image is built) are modified, the version in `EXECUTOR_VERSION` should be increased. Once a version is used, it should not be reused. The continuous integration process should help ensure that the version is changed whenever relevant files are also modified.
 
 ## In-dev testing
 
 Build the image using the above `build-executor.sh` script. Make note of the name of the resulting image; you'll need this image name momentarily.
 
-Start the container, using the version of the container that you noted above (the examples below use version `v1.0.0`). Note that we mount in the PrairieLearn `elements` directory so that the examples below can use PrairieLearn's elements:
+Start the container, using the version of the container that you noted above (the examples below use version `v123`). Note that we mount in the PrairieLearn `elements` directory so that the examples below can use PrairieLearn's elements:
 
 ```sh
-docker run --rm -it -v /path/to/checked/out/PrairieLearn/elements/:/elements/ prairielearn/executor:v1.0.0
+docker run --rm -it -v /path/to/checked/out/PrairieLearn/elements/:/elements/ prairielearn/executor:v123
 # Optionally, enable debug prints
-docker run --rm -it -e DEBUG='*' -v /path/to/checked/out/PrairieLearn/elements/:/elements/ prairielearn/executor:v1.0.0
+docker run --rm -it -e DEBUG='*' -v /path/to/checked/out/PrairieLearn/elements/:/elements/ prairielearn/executor:v123
 ```
 
 Once the container is running, paste the following and hit `Enter`:
