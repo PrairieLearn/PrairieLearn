@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
     SELECT
-        MAX(gj.date + aq.grade_rate_minutes * INTERVAL '1 min')
+        MAX(gj.date + make_interval(mins => aq.grade_rate_minutes))
     INTO
         allow_grade_date
     FROM

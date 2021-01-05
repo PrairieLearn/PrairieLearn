@@ -17,7 +17,7 @@
     <% } %>
 <% } %>
 
-<% if ("allow_grade_left_ms" in instance_question && instance_question.allow_grade_left_ms > 0) { %>
+<% if (instance_question.allow_grade_left_ms != null && instance_question.allow_grade_left_ms > 0) { %>
 <a class="grade-rate-limit-popover btn btn-xs" data-toggle="popover" data-html="true" data-content="This question limits the rate of submissions. Further grade allowed <%= instance_question.allow_grade_interval %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
     <i class="fa fa-hourglass-half" aria-hidden="true"></i>
 </a>
