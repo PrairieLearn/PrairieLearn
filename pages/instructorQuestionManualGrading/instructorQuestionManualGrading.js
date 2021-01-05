@@ -7,6 +7,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const question = require('../../lib/question');
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
 const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
+const fs = require('fs-extra');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -20,9 +21,8 @@ class NoSubmissionError extends Error {
 // TODO:
 // eslint-disable-next-line no-unused-vars
 router.get('/', (req, res, next) => {
-    console.log(res.locals);
     const params = {instance_question_id: res.locals.instance_question_id};
-    
+    console.log(res.locals);
     async.series([
         // First, grab the most recent variant associated with this instance question for this assessment
         (callback) => 
@@ -33,9 +33,11 @@ router.get('/', (req, res, next) => {
                     res.locals['no_submission_found'] = true;
                     return;
                 }
-
+                debug(`found variant: ${result.rows[0].id}`);
+                console.log('found variant');
                 // Set the variant ID to the most recent submission
                 params.variant_id = result.rows[0].id;
+                res.locals.variant_id = result.rows[0].id;
                 callback(null);
             }),
         // Select the higher level question data given the instance question
@@ -43,33 +45,44 @@ router.get('/', (req, res, next) => {
             sqlDb.queryOneRow(sql.instance_question_select_question, params, (err, result) => { 
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) throw new Error('Question not found');
+
+                debug(`found question`);
+                console.log('found question');
+
                 res.locals.question = result.rows[0];
                 callback(null);
             }),
         // Check for the variant to be graded
         (callback) => {
-            const params = [
+            const variantParams = [
                 params.variant_id,
                 null,
                 true, // select graded submissions
             ];
-            sqlDb.callZeroOrOneRow('variants_select_submission_for_grading', params, (err, result) => {
+            sqlDb.callZeroOrOneRow('variants_select_submission_for_grading', variantParams, (err, result) => {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return new NoSubmissionError();
+
+                debug(`found submission`);
+                console.log('found submission');
+
                 res.locals['submission'] = result.rows[0];
                 callback(null);
             });
         },
         // Grab the question data so we can render the question body
-        (callback) => {
-            res.locals.overlayGradingInterface = true;
-            question.getAndRenderVariant(params.variant_id, null, res.locals, function (
-              err,
-            ) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
-        },
+        // (callback) => {
+        //     res.locals.overlayGradingInterface = true;
+        //     question.getAndRenderVariant(params.variant_id, null, res.locals, function (
+        //       err,
+        //     ) {
+        //       if (ERR(err, callback)) return;
+        //       debug(`found question data`);
+        //       console.log('found question');
+
+        //       callback(null);
+        //     });
+        // },
         // Log the page view
         (callback) => {
             logPageView(req, res, (err) => {
