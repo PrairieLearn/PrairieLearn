@@ -499,7 +499,7 @@ module.exports = {
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);                   if (err) return err;
+        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade']);          if (err) return err;
         err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']); if (err) return err;
         err = checkProp('variant_seed',          'integer', allPhases,                            []);                                        if (err) return err;
         err = checkProp('options',               'object',  allPhases,                            []);                                        if (err) return err;
