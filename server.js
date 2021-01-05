@@ -468,14 +468,6 @@ module.exports.initExpress = function() {
         require('./pages/shared/floatFormatters'),
         require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
     ]);
-    app.use('/pl/assessment_instance/:assessment_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
-        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
-        function(req, res, next) {
-            res.locals['assessment_instance_id'] = req.params.assessment_instance_id;
-            res.locals['instance_question_id'] = req.params.instance_question_id;
-            next();},
-        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
-    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
         function(req, res, next) {res.locals.navSubPage = 'statistics'; next();},
         require('./pages/shared/assessmentStatDescriptions'),
@@ -661,6 +653,14 @@ module.exports.initExpress = function() {
         require('./middlewares/studentAssessmentAccess'),
         require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
         require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
+    ]);
+    app.use('/pl/assessment_instance/:assessment_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        function(req, res, next) {
+            res.locals['assessment_instance_id'] = req.params.assessment_instance_id;
+            res.locals['instance_question_id'] = req.params.instance_question_id;
+            next();},
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
         require('./middlewares/selectAndAuthzInstanceQuestion'),
