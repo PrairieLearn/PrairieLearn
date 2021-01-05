@@ -103,7 +103,7 @@
             "default": false
         },
         "gradeRateMinutes": {
-            "description": "Minimum amount of time (in minutes) between graded submissions of the same question.",
+            "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
             "type": "integer",
             "minimum": 0
         }
@@ -240,7 +240,7 @@
                     }
                 },
                 "gradeRateMinutes": {
-                    "description": "Minimum amount of time (in minutes) between graded submissions of the same question.",
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
                     "type": "integer",
                     "minimum": 0
                 }
@@ -288,7 +288,7 @@
                     "default": 1
                 },
                 "gradeRateMinutes": {
-                    "description": "Minimum amount of time (in minutes) between graded submissions of the same question.",
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
                     "type": "integer",
                     "minimum": 0
                 }
@@ -319,7 +319,7 @@
                     "default": 1
                 },
                 "gradeRateMinutes": {
-                    "description": "Minimum amount of time (in minutes) between graded submissions of the same question.",
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
                     "type": "integer",
                     "minimum": 0
                 }
