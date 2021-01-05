@@ -2,13 +2,9 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/d3.min.js"></script>
-    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <script src="/javascripts/jquery.tablesorter.min.js"></script>
-    <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
-    <script src="/localscripts/histogram.js"></script>
-    <script src="/localscripts/scatter.js"></script>
+    <link href="<%= node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
   </head>
   <body>
     <script>
