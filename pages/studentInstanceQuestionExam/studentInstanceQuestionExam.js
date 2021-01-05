@@ -73,8 +73,8 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'timeLimitFinish') {
         const closeExam = true;
-        const instructorOverride = false;
-        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, instructorOverride, function(err) {
+        const overrideGradeRate = false;
+        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, overrideGradeRate, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });

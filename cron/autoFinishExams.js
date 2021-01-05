@@ -18,8 +18,8 @@ module.exports.run = function(callback) {
             logger.verbose('autoFinishExams: finishing ' + examItem.assessment_instance_id, examItem);
             const authn_user_id = null; // graded by the system
             const closeExam = true; // close the exam after grading it
-            const instructorOverride = true; // override submission/grading limits
-            assessment.gradeAssessmentInstance(examItem.assessment_instance_id, authn_user_id, closeExam, instructorOverride, function(err) {
+            const overrideGradeRate = true; // override submission/grading limits
+            assessment.gradeAssessmentInstance(examItem.assessment_instance_id, authn_user_id, closeExam, overrideGradeRate, function(err) {
                 if (ERR(err, () => {})) {
                     logger.error('Error finishing exam', {examItem, err});
                 }

@@ -31,7 +31,7 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
-        const instructorOverride = false;
+        const overrideGradeRate = false;
         var closeExam;
         if (req.body.__action == 'grade') {
             if (!res.locals.assessment.allow_real_time_grading) {
@@ -46,7 +46,7 @@ router.post('/', function(req, res, next) {
         } else {
             next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
         }
-        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, instructorOverride, function(err) {
+        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, overrideGradeRate, function(err) {
             if (ERR(err, next)) return;
             if (req.body.__action == 'timeLimitFinish') {
                 res.redirect(req.originalUrl + '?timeLimitExpired=true');
