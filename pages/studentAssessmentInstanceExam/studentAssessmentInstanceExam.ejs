@@ -238,9 +238,9 @@
             </form>
             <ul class="my-1">
               <% if (suspendedSavedAnswers > 1) { %>
-              <li>There are <%= suspendedSavedAnswers %> saved answers that cannot be graded yet because their grade rate has not been reached. They are marked with the <i class="fa fa-hourglass-half"></i> icon above. To grade these answers, wait until enough time has elapsed, then refresh this page.</li>
+              <li>There are <%= suspendedSavedAnswers %> saved answers that cannot be graded yet because their grade rate has not been reached. They are marked with the <i class="fa fa-hourglass-half"></i> icon above. Reload this page to update this information.</li>
               <% } else if (suspendedSavedAnswers == 1) { %>
-              <li>There is one saved answer that cannot be graded yet because its grade rate has not been reached. It is marked with the <i class="fa fa-hourglass-half"></i> icon above. To grade this answer, wait until enough time has elapsed, then refresh this page.</li>
+              <li>There is one saved answer that cannot be graded yet because its grade rate has not been reached. It is marked with the <i class="fa fa-hourglass-half"></i> icon above. Reload this page to update this information.</li>
               <% } %>
               <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
               <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
