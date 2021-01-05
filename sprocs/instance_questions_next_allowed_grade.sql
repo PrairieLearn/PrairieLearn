@@ -1,7 +1,7 @@
 DROP FUNCTION IF EXISTS instance_questions_next_allowed_grade(bigint);
 CREATE OR REPLACE FUNCTION
     instance_questions_next_allowed_grade (
-        IN iq_id BIGINT,
+        IN instance_question_id BIGINT,
         OUT allow_grade_date TIMESTAMPTZ,
         OUT allow_grade_left_ms BIGINT,
         OUT allow_grade_interval TEXT
@@ -19,7 +19,7 @@ BEGIN
         JOIN submissions s ON (s.variant_id = v.id)
         JOIN grading_jobs gj ON (gj.submission_id = s.id)
     WHERE
-        iq.id = iq_id
+        iq.id = instance_questions_next_allowed_grade.instance_question_id
         AND aq.grade_rate_minutes IS NOT NULL
         AND gj.gradable;
 
