@@ -74,15 +74,15 @@ def prepare(element_html, data):
 
             is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
             if check_indentation is False:
-                # answerIndent = pl.get_string_attrib(html_tags, 'indent')
+                # answer_indent = pl.get_string_attrib(html_tags, 'indent')
                 try:
-                    answerIndent = pl.get_string_attrib(html_tags, 'indent')
+                    answer_indent = pl.get_string_attrib(html_tags, 'indent')
                 except Exception:
-                    answerIndent = -1
+                    answer_indent = -1
                 else:
                     raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
             else:
-                answerIndent = pl.get_string_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
+                answer_indent = pl.get_string_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
             if is_correct is True:
                 # add option to the correct answer array, along with the correct required indent
                 if pl.get_string_attrib(html_tags, 'ranking', '') != '':
@@ -93,7 +93,7 @@ def prepare(element_html, data):
                         raise Exception('Ranking specified in <pl-answer> is not a number.')
                     correct_answers_ranking.append(ranking)
                 correct_answers.append(html_tags.text)
-                correct_answers_indent.append(answerIndent)
+                correct_answers_indent.append(answer_indent)
             else:
                 incorrect_answers.append(html_tags.text)
             html_ordering.append(html_tags.text)
