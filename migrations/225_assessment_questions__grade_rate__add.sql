@@ -1,1 +1,1 @@
-ALTER TABLE assessment_questions ADD COLUMN grade_rate_minutes integer default 0;
+ALTER TABLE assessment_questions ADD COLUMN grade_rate_minutes double precision default 0;

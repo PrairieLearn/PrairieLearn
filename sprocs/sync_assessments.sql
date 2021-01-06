@@ -304,7 +304,7 @@ BEGIN
                         jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
-                        (assessment_question->>'grade_rate_minutes')::integer,
+                        (assessment_question->>'grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
                         (assessment_question->>'question_id')::bigint,
