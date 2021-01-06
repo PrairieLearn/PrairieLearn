@@ -15,7 +15,7 @@ MIN_INCORRECT_DEFAULT = None
 MAX_INCORRECT_DEFAULT = None
 SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Construct your solution here:'
-
+FILE_NAME_DEFAULT = 'user_code.py'
 
 def render_html_color(score):
     # used to render the correct color depending on student score
@@ -322,7 +322,7 @@ def parse(element_html, data):
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
                 pl.check_attribs(html_tags, required_attribs=[], optional_attribs=[])
-        file_name = pl.get_string_attrib(element, 'file-name', 'user_code.py')
+        file_name = pl.get_string_attrib(element, 'file-name', FILE_NAME_DEFAULT)
         leading_code = pl.get_string_attrib(element, 'leading-code', None)
         trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
         base_path = data['options']['question_path']
