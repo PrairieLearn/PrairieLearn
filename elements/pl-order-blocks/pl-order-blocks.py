@@ -124,13 +124,13 @@ def prepare(element_html, data):
             min_incorrect = 1
         else:
             if min_incorrect > len(incorrect_answers):
-                raise Exception('min-incorrect must be smaller than the number of given distractors.')
+                raise Exception('min-incorrect must be less than or equal to the number of incorrect <pl-answers>.')
         # Setting default for max-correct and checking for correct interval
         if max_incorrect is None:
             max_incorrect = len(incorrect_answers)
         else:
             if max_incorrect > len(incorrect_answers):
-                raise Exception('max-incorrect must be smaller than the number of given distractors.')
+                raise Exception('max-incorrect must be less than or equal to the number of incorrect <pl-answers>.')
         if min_incorrect > max_incorrect:
             raise Exception('min-incorrect must be smaller than max-incorrect.')
         incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
