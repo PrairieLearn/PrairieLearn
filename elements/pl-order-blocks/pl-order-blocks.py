@@ -6,7 +6,7 @@ import base64
 import os
 import json
 
-PL_ANSWER_CORRECTNESS_DEFAULT = True
+PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = '-1'
 CHECK_INDENTION_DEFAULT = False
 SOURCE_BLOCKS_ORDER_DEFAULT = 'random'
@@ -72,7 +72,7 @@ def prepare(element_html, data):
             # correct attribute is not strictly required, as the attribute is irrelevant for autograded questions
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
 
-            isCorrect = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECTNESS_DEFAULT)
+            is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
             if check_indentation is False:
                 # answerIndent = pl.get_string_attrib(html_tags, 'indent')
                 try:
@@ -83,7 +83,7 @@ def prepare(element_html, data):
                     raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
             else:
                 answerIndent = pl.get_string_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
-            if isCorrect is True:
+            if is_correct is True:
                 # add option to the correct answer array, along with the correct required indent
                 if pl.get_string_attrib(html_tags, 'ranking', '') != '':
                     ranking = pl.get_string_attrib(html_tags, 'ranking')
@@ -311,8 +311,8 @@ def parse(element_html, data):
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
         for answer in student_answer:
             e = pl_drag_drop_element.xpath(f'.//pl-answer[text()="{answer}"]')
-            isCorrect = pl.get_boolean_attrib(e[0], 'correct', PL_ANSWER_CORRECTNESS_DEFAULT)  # default correctness to True
-            if isCorrect:
+            is_correct = pl.get_boolean_attrib(e[0], 'correct', PL_ANSWER_CORRECT_DEFAULT)  # default correctness to True
+            if is_correct:
                 ranking = pl.get_integer_attrib(e[0], 'ranking', 0)
             else:
                 ranking = -1   # wrong answers have no ranking
