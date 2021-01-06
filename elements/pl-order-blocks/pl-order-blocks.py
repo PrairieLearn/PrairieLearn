@@ -17,6 +17,7 @@ SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Construct your solution here:'
 FILE_NAME_DEFAULT = 'user_code.py'
 
+
 def render_html_color(score):
     # used to render the correct color depending on student score
     if score == 0:
