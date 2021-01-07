@@ -153,16 +153,16 @@ def parse(element_html, data):
         
         # A blank is a valid submission from the HTML, but causes a format error.
         if student_answer is BLANK_ANSWER:
-            data['format_errors'][expected_html_name] = 'The submitted answer was left blank.'
+            data["format_errors"][expected_html_name] = "The submitted answer was left blank."
         elif student_answer is None:
-            data['format_errors'][expected_html_name] = 'No answer was submitted.'
+            data["format_errors"][expected_html_name] = "No answer was submitted."
         else:
             try:
                 int_val = int(student_answer)
                 if int_val not in range(1, len(display_options) + 1):
-                    data['format_errors'][expected_html_name] = 'The submitted answer is invalid.'
+                    data["format_errors"][expected_html_name] = "The submitted answer is invalid."
             except:
-                data["format_errors"][expected_html_name]  = 'The submitted answer is invalid.'
+                data["format_errors"][expected_html_name]  = "The submitted answer is invalid."
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -338,29 +338,29 @@ def grade(element_html, data):
     
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers-name')
-    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    name = pl.get_string_attrib(element, "answers-name")
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     _, display_options = data["params"][name]
     correct_answers = data["correct_answers"].get(name, [])
 
-    result = data['test_type']
-    if result == 'correct':
+    result = data["test_type"]
+    if result == "correct":
         for i in range(len(correct_answers)):
             expected_html_name = get_form_name(name, i)
             correct_answer = str(correct_answers[i])
             data["raw_submitted_answers"][expected_html_name] = correct_answer
-        data['partial_scores'][name] = {'score': 1, 'weight': weight}
+        data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         for i in range(len(correct_answers)):
             expected_html_name = get_form_name(name, i)
             incorrect_answer = str(correct_answers[i] % len(display_options) + 1)
             data["raw_submitted_answers"][expected_html_name] = incorrect_answer
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
         for i in range(len(correct_answers)):
             expected_html_name = get_form_name(name, i)
             data["raw_submitted_answers"][expected_html_name] = None
-            data['format_errors'][expected_html_name] = 'No answer was submitted.'
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
+            data["format_errors"][expected_html_name] = "No answer was submitted."
+        data["partial_scores"][name] = {"score": 0, "weight": weight}
         
