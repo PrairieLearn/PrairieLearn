@@ -1,0 +1,36 @@
+
+.matching-answers > div {
+    display: flex;
+    align-items: baseline;
+    margin-top: 1ex;
+}
+
+.matching-answers > div > div {
+    margin-right: 1ex;
+}
+
+.matching-answer-select {
+    min-width: 4em;
+}
+
+.matching-options ol {
+    margin-top: 0.5em;
+    counter-reset: item;
+}
+
+.matching-options ol > li {
+    margin-bottom: 1em;
+    padding: 0 0 0 2em;
+    text-indent: -1em;
+    list-style-type: none;
+    counter-increment: item;
+}
+  
+.matching-options ol > li:before {
+    display: inline-block;
+    width: 1em;
+    padding-right: 0.5em;
+    font-weight: bold;
+    text-align: right;
+    content: counter(item) ".";
+  }

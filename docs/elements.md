@@ -25,6 +25,8 @@ PrairieLearn presently provides the following templated **input field** elements
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
+- [`pl-matching`](#pl-matching-element): Select a matching option for each entry in 
+  a group.
 - [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
   a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
@@ -511,6 +513,62 @@ Attribute | Type | Default | Description
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-number-input` for numeric input](#pl-number-input-element)
+
+-----
+
+### `pl-matching` element
+
+Given a list of questions, select a matching option for each entry from  a drop-down list.
+
+#### Sample element
+
+![](elements/pl-matching.png)
+
+**question.html**
+```html
+<pl-matching answers-name="string_value">
+  <pl-answer match="d.c.">United States</pl-answer>
+  <pl-answer match="Mexico City">Mexico</pl-answer>
+  <pl-answer match="Paris">France</pl-answer>
+
+  <pl-option name="d.c.">Washington, D.C.</pl-option>
+  <pl-option>Mexico City</pl-option>
+  <pl-option>Paris</pl-option>
+</pl-matching>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`fixed-order` | boolean | False | Whether or not to display the answers in a fixed order; otherwise they are shuffled. Options are always shuffled.
+`number-answers` | integer | special | The number of answers to display. Defaults to all answers.
+`number-options` | integer | special | The number of options to display. Defaults to all options.
+`none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options. Automatically set to true if number-options is less than the total number of options.
+`blank` | boolean | False | Option to add blank dropdown entry as default selection in each drop-down list..
+
+Inside the `pl-matching` element, a series of `pl-answer` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively.
+
+The content of a `pl-answer` can be any HTML element, including other PrairieLearn eleemnts. A `pl-answer` must be specified with these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`match` | string | — | Must be equal to the `name` of one of the `pl-option` elements, and identifies that option as the correct response for this `pl-answer.`
+
+
+The content of a `pl-option` can be any HTML element, including other PrairieLearn eleemnts. `A pl-option` must be specified with these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`name` | string | special | A key used to match this option as the correct response to a `pl-answer`. If not given, the attribute is set to the inner HTML of the `pl-option`.
+
+
+
+#### Example implementations
+
+* [element/matching]
 
 -----
 
@@ -1724,6 +1782,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
 [element/integerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/integerInput
 [element/markdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/markdown
+[element/matching]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matching
 [element/matrixComponentInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixComponentInput
 [element/matrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
 [element/multipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
