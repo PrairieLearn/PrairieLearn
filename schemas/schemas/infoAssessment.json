@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Assessment info",
     "description": "Configuration data for an assessment.",
     "type": "object",
@@ -12,6 +12,10 @@
         "number"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
@@ -108,6 +112,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "mode": {
                     "description": "The server mode required for access.",
                     "enum": [
@@ -162,6 +170,10 @@
                     "description": "Configuration related to Safe Exam Browser",
                     "type": "object",
                     "properties": {
+                        "comment": {
+                            "description": "Arbitrary comment for reference purposes.",
+                            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                        },
                         "password": {
                             "description": "Password protect the SEB exam and config file",
                             "type": "string"
@@ -184,6 +196,11 @@
                     "description": "Whether the student can view the assessment after it has been closed",
                     "type": "boolean",
                     "default": true
+                },
+                "showClosedAssessmentScore": {
+                    "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
+                    "type": "boolean",
+                    "default": true
                 }
             }
         },
@@ -193,6 +210,10 @@
                 "title": {
                     "description": "Zone title, displayed to the students at the top of the question list for the zone.",
                     "type": "string"
+                },
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                 },
                 "maxPoints": {
                     "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
@@ -227,6 +248,10 @@
         "zoneQuestion": {
             "type": "object",
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "points": {
                     "$ref": "#/definitions/points"
                 },
@@ -266,6 +291,10 @@
         "questionAlternative": {
             "type": "object",
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "points": {
                     "$ref": "#/definitions/points"
                 },

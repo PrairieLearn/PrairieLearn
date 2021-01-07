@@ -17,8 +17,8 @@ BEGIN
     FROM
         group_configs AS gc
         JOIN groups AS gr ON (gr.group_config_id = gc.id)
-        JOIN group_users AS gu ON (gu.group_id = gr.id)
-        JOIN users AS u ON (u.user_id = gu.user_id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = gr.id)
+        LEFT JOIN users AS u ON (u.user_id = gu.user_id)
     WHERE
         gc.deleted_at IS NULL
         AND gr.deleted_at IS NULL

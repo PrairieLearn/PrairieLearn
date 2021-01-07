@@ -52,6 +52,7 @@ This file specifies basic information about the course:
     "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
     "name": "TAM 212",
     "title": "Introductory Dynamics",
+    "comment": "The assessment set order used here will be the one shown within PrairieLearn",
     "assessmentSets": [
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
@@ -197,11 +198,7 @@ You can add more tags to your course by listing them in the `infoCourse.json` fi
     ]
 ```
 
-## Colors
-
-The possible colors for assessment sets, topic, and tags are:
-
-![Colors](colors.png)
+The tag order in `infoCourse.json` is the order in which the tags will be listed within PrairieLearn. If you want to change the order of your tags or standardized tags then you can re-list them in whatever order you like.
 
 
 ## Timezone
@@ -215,3 +212,27 @@ The default timezone for courses is `America/Chicago` (U.S. Central Time). This 
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
+
+## Comments in JSON files
+
+You can add comments to JSON files using the `"comment"` key on any object. You can only use this key once for each object. For example:
+
+```json
+{
+    "comment": "assessments that are shared among a group of students",
+    "assessmentSets": [
+      {"abbreviation": "GA", "name": "Group Activity", "heading": "Group Activities", "color": "green1"}
+    ],
+    "timezone": "America/New_York"
+}
+```
+
+Comments can be strings, arrays, or JSON objects, but for most uses strings are recommended. 
+
+**Warning:** if you have more than one comment for a JSON object (objects are things wrapped in curly braces `{}`) then all but one of them will be silently discarded by the online course configuration editing tools. It's fine to have multiple comments in a JSON file but they have to be in separate objects. For example, comments inside the _same_ object (not supported) look like `{"comment": "AAA", "comment": "BBB"}`. Comments in _different_ objects (supported) look like `{"subObject1": {"comment": "AAA"}, "subObject2": {"comment": "BBB"}}`.
+
+## Colors
+
+The possible colors for assessment sets, topic, and tags are:
+
+![Colors](colors.png)

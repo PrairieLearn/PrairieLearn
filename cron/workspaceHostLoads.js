@@ -92,6 +92,10 @@ const cloudwatch_definitions = {
         'name': 'WorkspacesLaunching',
         'unit': 'Count',
     },
+    'workspace_relaunching_count': {
+        'name': 'WorkspacesRelaunching',
+        'unit': 'Count',
+    },
     'workspace_running_count': {
         'name': 'WorkspacesRunning',
         'unit': 'Count',

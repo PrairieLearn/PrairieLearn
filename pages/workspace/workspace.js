@@ -34,6 +34,7 @@ router.get('/:action', asyncHandler(async (req, res, next) => {
     if (action === 'reboot') {
         debug(`Rebooting workspace ${workspace_id}`);
         await workspaceHelper.updateState(workspace_id, 'stopped', 'Rebooting container');
+        await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {workspace_id});
         res.redirect(`/pl/workspace/${workspace_id}`);
     } else if (action === 'reset') {
         debug(`Resetting workspace ${workspace_id}`);
