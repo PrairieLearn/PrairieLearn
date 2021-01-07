@@ -26,12 +26,12 @@ def get_form_name(answers_name, index):
 def get_select_options(options_list, selected_value):
     return [{
         'value': opt,
-        'selected': 'selected' if opt == selected_value else ""
+        'selected': 'selected' if opt == selected_value else ''
     } for opt in options_list]
 
 
 def categorize_matches(element, data):
-    '''Get provided answers and options from the pl-matching element'''
+    """Get provided answers and options from the pl-matching element"""
     options = {}
     answers = []
     index = 0
@@ -178,7 +178,7 @@ def render(element_html, data):
     if (partial_credit and editable) or hide_score_badge:
         show_answer_feedback = False
 
-    html = ""
+    html = ''
 
     if data['panel'] == 'question':
         answerset = []
