@@ -20,21 +20,22 @@
 </style>
 
 <p>
-  Practice is important in learning and there should be room for
-  mistakes and learning from them. Immediate feedback can help as it
-  can give feedback despite the limited human resources. However, to
-  prevent mindless trial-and-error problem solving, controlling
-  resubmissions can be an effective tool
-  (<a href="https://dl.acm.org/doi/pdf/10.1145/1930464.1930480"
-  target="_blank">Ihantola et. al., Review of Recent Systems for
-  Automatic Assessment of Programming Assignments</a>).
+  <a href="https://github.com/jonatanschroeder">Jonatan Schroeder</a> continues his excellent work with another new feature! PrairieLearn now allows instructors to set a minimum time that students must wait between grading their answers to a question. For the student this looks like:
 </p>
 
 <p>
-  Thanks to <a href="https://github.com/jonatanschroeder">Jonatan Schroeder</a>, PrairieLearn now allows instructors to limit the amount of feedback provided to students by setting the rate at which graded submissions are allowed, in effect blocking students from requesting grade too often. The <code>gradeRateMinutes</code> setting was added, which indicates how long a student needs to wait after grading a question to resubmit a new answer to the same question for grading.
+  <img src="gradeBlocked.png">
 </p>
-  
-<pre class="mb-2 rounded">
+
+<p>
+   Saving answers is still allowed when a grading rate limit is in effect for a question, but the question can't be graded again until either the waiting time has elapsed, or when the assessment finishes.
+</p>
+
+<p>
+  To configure a grading rate limit, set the <code>gradeRateMinutes</code> key in <code>infoAssessment.json</code>. This indicates how long a student needs to wait after grading a question to resubmit a new answer to the same question for grading and it can be set at different levels of the assessment, with lower levels overriding higher ones. For example:
+</p>
+
+<pre class="mb-3 rounded">
 "zones": [
     {
         "gradeRateMinutes": 30,
@@ -48,15 +49,11 @@
 </pre>
 
 <p>
-   Students are still able to save a submission, but are not able to grade until either the waiting time has elapsed, or when they finish the assesment.
+  The motivation behind grading rate limits is to prevent mindless trial-and-error problem solving. While we know that practice is key for learning and that it's important to allow room for mistakes and repeated attempts, it's also valuable to encourage reflection and thinking between solution attempts. To achieve this, controlling resubmissions can be an effective tool (<a href="https://dl.acm.org/doi/pdf/10.1145/1930464.1930480" target="_blank">Ihantola et. al. 2010, "Review of Recent Systems for Automatic Assessment of Programming Assignments"</a>), such as by limiting the grading rate.
 </p>
 
 <p>
-  <img src="gradeBlocked.png">
-</p>
-
-<p>
-  Additional information can be found in the <a href="https://prairielearn.readthedocs.io/en/latest/assessment/#limiting-the-rate-of-received-feedback-by-a-student">PrairieLearn documentation page</a>.
+  Additional information about grading rate limits can be found in the <a href="https://prairielearn.readthedocs.io/en/latest/assessment/#limiting-the-rate-at-which-answers-can-be-graded">PrairieLearn documentation page</a>.
 </p>
 
 <hr class="mt-5">

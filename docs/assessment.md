@@ -238,7 +238,7 @@ For assessments with type "Homework", students will be presented with an unlimit
 ],
 ```
 
-## Limiting the rate of received feedback by a student
+## Limiting the rate at which answers can be graded
 
 Practice is important in learning and there should be room for mistakes and learning from them. Immediate feedback can help as it can give feedback despite the limited human resources. However, to prevent mindless trial-and-error problem solving, controlling resubmissions can be an effective tool ([Ihantola et. al., Review of Recent Systems for Automatic Assessment of Programming Assignments](https://dl.acm.org/doi/pdf/10.1145/1930464.1930480)).
 
