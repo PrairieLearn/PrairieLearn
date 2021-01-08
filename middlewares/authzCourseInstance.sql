@@ -15,8 +15,7 @@ FROM
 WHERE
     ci.id = $course_instance_id
     AND ci.deleted_at IS NULL
-    AND c.deleted_at IS NULL
-    AND (permissions_course_instance->>'role')::enum_role > 'None';
+    AND c.deleted_at IS NULL;
 
 -- BLOCK ensure_enrollment
 INSERT INTO enrollments

@@ -20,6 +20,11 @@ module.exports = function(req, res, next) {
     sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+        var permissions_course_instance = result.rows[0].permissions_course_instance;
+        var permissions_course = result.rows[0].permissions_course;
+
+        if (permissions_course_instance.role == 'None')
+            return res.redirect('/pl/course_instance/' + req.params.course_instance_id + '/enroll');
 
         var authn_mode = result.rows[0].mode;
         res.locals.course = result.rows[0].course;
@@ -27,9 +32,6 @@ module.exports = function(req, res, next) {
         res.locals.editable_courses = result.rows[0].editable_courses;
         res.locals.viewable_courses = result.rows[0].viewable_courses;
         res.locals.course_instances = result.rows[0].course_instances;
-
-        var permissions_course_instance = result.rows[0].permissions_course_instance;
-        var permissions_course = result.rows[0].permissions_course;
 
         // effective user data defaults to auth user data
         res.locals.authz_data = {
