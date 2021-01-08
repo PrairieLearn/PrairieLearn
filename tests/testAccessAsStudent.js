@@ -33,9 +33,9 @@ describe('Test access with authn as student', function() {
                 if (error) {
                     return callback(error);
                 }
-                console.log(response);
-                if (response.statusCode != 403) {
-                    return callback(new Error('bad status: ' + response.statusCode));
+                // Response should either be an access code error or a redirect to enrollment
+                if (response.status_code != '403' && response.path != '/pl/course_instance/1/enroll') {
+                    return callback(new Error('Student has access to page other than enrolling: ' + response.path));
                 }
                 callback(null);
             });
