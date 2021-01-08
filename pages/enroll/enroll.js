@@ -12,7 +12,6 @@ router.get('/', function(req, res, next) {
     if (res.locals.authn_provider_name == 'LTI') {
         return next(error.make(400, 'Enrollment unavailable, managed via LTI'));
     }
-    console.log('Course instance ID: ', res.locals);
     if (res.locals.course_instance_id) {
         var params = {
             user_id: res.locals.authn_user.user_id,
