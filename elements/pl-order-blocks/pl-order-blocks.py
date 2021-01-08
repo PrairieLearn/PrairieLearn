@@ -28,17 +28,6 @@ def render_html_color(score):
         return 'badge-warning'
 
 
-def get_all_answer(submitted_blocks, block_indents, leading_code, trailing_code):
-    if len(submitted_blocks) == 0:
-        return ''
-    answer_code = ''
-    for index, answer in enumerate(submitted_blocks):
-        indent = int(block_indents[index])
-        answer_code += ('    ' * indent) + answer + '\n'
-    answer_code = leading_code + '\n' + answer_code + trailing_code + '\n'
-    return answer_code
-
-
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
@@ -50,8 +39,6 @@ def prepare(element_html, data):
                                        'source-header',
                                        'solution-header',
                                        'file-name',
-                                       'leading-code',
-                                       'trailing-code',
                                        'solution-placement',
                                        'max-incorrect',
                                        'min-incorrect',
@@ -324,32 +311,17 @@ def parse(element_html, data):
             if html_tags.tag == 'pl-answer':
                 pl.check_attribs(html_tags, required_attribs=[], optional_attribs=[])
         file_name = pl.get_string_attrib(element, 'file-name', FILE_NAME_DEFAULT)
-        leading_code = pl.get_string_attrib(element, 'leading-code', None)
-        trailing_code = pl.get_string_attrib(element, 'trailing-code', None)
-        base_path = data['options']['question_path']
 
-        if leading_code is not None:
-            file_lead_path = os.path.join(base_path, leading_code)
-            with open(file_lead_path, 'r') as file:
-                leadingnew_code = file.read()
-        if trailing_code is not None:
-            file_trail_path = os.path.join(base_path, trailing_code)
-            with open(file_trail_path, 'r') as file:
-                trailnewx_code = file.read()
+        answer_code = ''
+        for index, answer in enumerate(student_answer):
+            indent = int(student_answer_indent[index])
+            answer_code += ('    ' * indent) + answer + '\n'
 
-        if file_name is not None:
-            if leading_code is not None and trailing_code is not None:
-                file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, trailnewx_code)
-            elif leading_code is None and trailing_code is not None:
-                file_data = get_all_answer(student_answer, student_answer_indent, '', trailnewx_code)
-            elif leading_code is not None and trailing_code is None:
-                file_data = get_all_answer(student_answer, student_answer_indent, leadingnew_code, '')
-            else:
-                file_data = get_all_answer(student_answer, student_answer_indent, '', '')
-            if len(file_data) == 0:
-                data['format_errors']['_files'] = 'The submitted file was empty.'
-            else:
-                data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(file_data.encode('utf-8')).decode('utf-8')}]
+        if len(answer_code) == 0:
+            data['format_errors']['_files'] = 'The submitted file was empty.'
+        else:
+            data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(answer_code.encode('utf-8')).decode('utf-8')}]
+
 
     data['submitted_answers'][answer_name] = {'student_submission_ordering': student_answer_ranking,
                                               'student_raw_submission': student_answer,
