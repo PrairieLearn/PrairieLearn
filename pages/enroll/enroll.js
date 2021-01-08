@@ -12,12 +12,12 @@ router.get('/', function(req, res, next) {
     if (res.locals.authn_provider_name == 'LTI') {
         return next(error.make(400, 'Enrollment unavailable, managed via LTI'));
     }
+    var params = {
+        user_id: res.locals.authn_user.user_id,
+        req_date: res.locals.req_date,
+    };
     if (res.locals.course_instance_id) {
-        var params = {
-            user_id: res.locals.authn_user.user_id,
-            req_date: res.locals.req_date,
-            course_instance_id: res.locals.course_instance_id,
-        };
+        params.course_instance_id = res.locals.course_instance_id;
         sqldb.query(sql.select_course_instance, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
@@ -25,10 +25,6 @@ router.get('/', function(req, res, next) {
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     } else {
-        var params = {
-            user_id: res.locals.authn_user.user_id,
-            req_date: res.locals.req_date,
-        };
         sqldb.query(sql.select_course_instances, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.course_instances = result.rows;
