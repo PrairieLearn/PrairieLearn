@@ -33,6 +33,7 @@ describe('Test access with authn as student', function() {
                 if (error) {
                     return callback(error);
                 }
+                console.log(response);
                 if (response.statusCode != 403) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
