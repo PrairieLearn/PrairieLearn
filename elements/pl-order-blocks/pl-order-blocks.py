@@ -8,7 +8,7 @@ import json
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
-CHECK_INDENTION_DEFAULT = False
+INDENTION_DEFAULT = False
 SOURCE_BLOCKS_ORDER_DEFAULT = 'random'
 GRADING_METHOD_DEFAULT = 'ordered'
 MIN_INCORRECT_DEFAULT = None
@@ -16,6 +16,8 @@ MAX_INCORRECT_DEFAULT = None
 SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Construct your solution here:'
 FILE_NAME_DEFAULT = 'user_code.py'
+SOLUTION_PLACEMENT_DEFAULT = 'right'
+WEIGHT_DEFAULT = 1
 
 
 def render_html_color(score):
@@ -170,7 +172,7 @@ def render(element_html, data):
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
 
-        dropzone_layout = pl.get_string_attrib(element, 'solution-placement', 'horizontalLayout')
+        dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
 
         check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
 
@@ -371,8 +373,8 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
 
-    check_indentation = pl.get_boolean_attrib(element, 'indentation', CHECK_INDENTION_DEFAULT)
-    answer_weight = pl.get_integer_attrib(element, 'weight', 1)
+    check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
+    answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     # check indents, and apply penalty if applicable
     if check_indentation is True:
         for i, indent in enumerate(student_answer_indent):
