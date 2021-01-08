@@ -5,6 +5,7 @@ const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseInstanceUrl = baseUrl + '/course_instance/1';
 const assessmentsUrl = courseInstanceUrl + '/assessments';
+const enrollUrl = courseInstanceUrl + '/enroll';
 
 const storedConfig = {};
 
@@ -34,8 +35,8 @@ describe('Test access with authn as student', function() {
                     return callback(error);
                 }
                 // Response should either be an access code error or a redirect to enrollment
-                if (response.status_code != '403' && response.path != '/pl/course_instance/1/enroll') {
-                    return callback(new Error('Student has access to page other than enrolling: ' + response.path));
+                if (response.status_code != '403' && response.href != enrollUrl) {
+                    return callback(new Error('Student has access to page other than enrolling: ' + response.href));
                 }
                 callback(null);
             });
