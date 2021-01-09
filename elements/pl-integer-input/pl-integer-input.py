@@ -243,6 +243,7 @@ def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    base = pl.get_integer_attrib(element, 'base', BASE_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
@@ -253,10 +254,10 @@ def test(element_html, data):
 
     result = data['test_type']
     if result == 'correct':
-        data['raw_submitted_answers'][name] = str(a_tru)
+        data['raw_submitted_answers'][name] = numpy.base_repr(a_tru, base=base)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
-        data['raw_submitted_answers'][name] = str(a_tru + (random.randint(1, 11) * random.choice([-1, 1])))
+        data['raw_submitted_answers'][name] = numpy.base_repr(a_tru + (random.randint(1, 11) * random.choice([-1, 1])), base=base)
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif result == 'invalid':
         # FIXME: add more invalid expressions, make text of format_errors
