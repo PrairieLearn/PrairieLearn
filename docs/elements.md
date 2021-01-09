@@ -686,6 +686,7 @@ Attribute | Type | Default | description
 `ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+`directory` | string | special | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory.
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
 `auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
@@ -1287,6 +1288,7 @@ Attribute | Type | Default | Description
 `engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
 `params-name-matrix` | string | `None` | The the name of a parameter containing the adjacency matrix to use as input for the graph.
 `params-name-labels` | string | `None` | When using an adjacency matrix, the parameter that contains the labels for each node.
+`params-type` | string | `adjacency-matrix` | How to interpret the input data in `params-name-matrix`.  By default, only `adjacency-matrix` exists but custom types can be added through extensions.
 `weights` | boolean | `None` | When using an adjacency matrix, whether or not to show the edge weights.  By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).
 `weights-digits` | integer | `"2"` | When using an adjacency matrix, how many digits to show for the weights.
 `weights-presentation-type` | string | `'f'` | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`.
@@ -1295,6 +1297,29 @@ Attribute | Type | Default | Description
 #### Example implementations
 
 - [element/graph]
+
+#### Extension API
+
+Custom values for `params-type` can be added with [element extensions](elementExtensions.md).  Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
+
+A minimal type function can look something like:
+
+```
+def custom_type(element, data):
+    return "graph { a -- b; }"
+```
+
+In order to register these custom types, your extension should define the global `backends` dictionary.  This will map a value of `params-type` to your function above:
+
+```
+backends = {
+    'my-custom-type': custom_type
+}
+```
+
+This will automatically get picked up when the extension gets imported.  If your extension needs extra attributes to be defined, you may optionally define the global `optional_attribs` array that contains a list of attributes that the element may use.
+
+For a full implementation, check out the `edge-inc-matrix` extension in the exampleCourse.
 
 #### See also
 
