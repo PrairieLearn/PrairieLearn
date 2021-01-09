@@ -587,7 +587,7 @@ def string_to_integer(s, base=10):
     """
     if s is None:
         return None
-    
+
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace(u'\u2212', '-').strip()
 
@@ -596,7 +596,7 @@ def string_to_integer(s, base=10):
         s = s[2:].strip()
     elif base == 16 and s.startswith('-0x'):
         s = '-' + s[3:].strip()
-    
+
     # Check if it is an integer, i.e., if it contains only digits and possibly
     # hypen minus as the first character
     if base <= 10 and not (s.isdigit() or s[1:].isdigit()):

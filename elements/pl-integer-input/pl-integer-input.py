@@ -209,6 +209,7 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    base = pl.get_integer_attrib(element, 'base', BASE_DEFAULT)
 
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
