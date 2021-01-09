@@ -1,9 +1,11 @@
 <%
 /*********************************************************************
 
-This code makes a countdown timer to a fixed final time. We assume
-that the server and client clocks are not synchronized, so we only use
-time differentials to relate server to client times. The key event
+This code makes a countdown timer UI to a server-determined final
+time. We assume that the server and client clocks are not
+synchronized, so we only use time differentials to relate server to
+client times. We also assume that the final time is relatively fixed,
+though occasional changes in the server are supported. The key event
 times are:
 
 Server time:        process                       countdownEnd
@@ -40,32 +42,23 @@ This bound is fairly tight if d1 is small.
 We assume that we have been passed the value of (countdownEnd -
 process) in milliseconds as the variable
 "serverRemainingMS". Periodically (every one minute) we update this
-remaining time from the server, and at this point we update clientStart as well.
+remaining time from the server, and at this point we update
+clientStart as well.
 
 *********************************************************************/
 %>
 
-<form name="time-limit-finish-form" method="POST">
-  <input type="hidden" name="__action" value="timeLimitFinish">
-  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-</form>
-
 <script>
-  window.allowQuestionUnload = false;
-  var serverRemainingMS = <%= serverRemainingMS %>;
-  var serverTimeLimitMS = <%= serverTimeLimitMS %>;
-  var clientStart = Date.now();
-  
+$(function() {
+  var serverRemainingMS;
+  var serverTimeLimitMS;
+  var clientStart;
+
   var countdownDisplay = $('<%= displaySelector %>');
   var countdownProgress = $('<%= progressSelector %>');
   countdownProgress.addClass('progress');
   countdownProgress.html('<div class="progress-bar progress-bar-primary"></div>');
   countdownProgressBar = countdownProgress.children('div');
-
-  if (serverRemainingMS <= 0) {
-      window.allowQuestionUnload = true;
-      document.forms['time-limit-finish-form'].submit();
-  }
 
   var handleServerResponseRemainingMS = function(data, textStatus, jqxhr) {
       serverRemainingMS = data.serverRemainingMS;
@@ -73,15 +66,15 @@ remaining time from the server, and at this point we update clientStart as well.
       console.log('Time remaining: ' + serverRemainingMS + ' ms');
       clientStart = Date.now();
       if (serverRemainingMS <= 0) {
-          // do not trigger unsaved warning dialog
-          window.allowQuestionUnload = true;
-          document.forms['time-limit-finish-form'].submit();
+          <%= timerOutCode %>;
       } else
           displayCountdown();
   };
   
   var updateServerRemainingMS = function() {
+      <% if (typeof serverUpdateURL !== 'undefined' && serverUpdateURL) { %>
       $.get("<%= serverUpdateURL %>", handleServerResponseRemainingMS, 'json');
+      <% } %>
   };
   
   var displayCountdown = function() {
@@ -89,28 +82,41 @@ remaining time from the server, and at this point we update clientStart as well.
       var remainingSec = Math.floor(remainingMS / 1000);
       var remainingMin = Math.floor(remainingSec / 60);
       var perc = 100 - Math.max(0, Math.min(100, remainingMS / serverTimeLimitMS * 100));
+      <% if (typeof backgroundColorFunction !== 'undefined' && backgroundColorFunction) { %>
+      var backgroundColor = <%= backgroundColorFunction%>(remainingSec);
+      <% } else { %>
+      var backgroundColor = 'bg-info';
+      <% } %>
+      
       countdownProgressBar.css('width', perc + '%');
-      if (remainingSec >= 180) {
+      countdownProgressBar.attr('class', 'progress-bar ' + backgroundColor);
+      if (remainingSec >= 60) {
           countdownDisplay.text(remainingMin + ' min');
-          countdownProgressBar.attr('class', 'progress-bar bg-primary');
-      } else if (remainingSec >= 60) {
-          countdownDisplay.text(remainingMin + ' min');
-          countdownProgressBar.attr('class', 'progress-bar bg-warning');
       } else {
           countdownDisplay.text(remainingSec + ' sec');
-          countdownProgressBar.attr('class', 'progress-bar bg-danger');
       }
 
       if (remainingMS > 0) {
           // reschedule for the next half-second time
           window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
       } else {
+          <% if (typeof serverUpdateURL !== 'undefined' && serverUpdateURL) { %>
           // If the timer runs out, trigger a new server update
           // to confirm before closing
           updateServerRemainingMS();
+          <% } else { %>
+          <%= timerOutCode %>;
+          <% } %>
       }
   };
 
+  handleServerResponseRemainingMS({
+      serverRemainingMS: <%= serverRemainingMS %>, 
+      serverTimeLimitMS: <%= serverTimeLimitMS %>, 
+  });
+
+  <% if (typeof serverUpdateURL !== 'undefined' && serverUpdateURL) { %>
   window.setInterval(updateServerRemainingMS, 60000);
-  displayCountdown();
+  <% } %>
+});
 </script>

@@ -2,10 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/d3.min.js"></script>
-    <script src="/localscripts/histmini.js"></script>
-    <script src="/node_modules/chart.js/dist/Chart.min.js"></script>
+    <script src="<%= node_modules_asset_path('chart.js/dist/Chart.min.js') %>"></script>
     <style>
     canvas {
       border: none;
