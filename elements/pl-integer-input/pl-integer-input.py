@@ -26,6 +26,9 @@ def prepare(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     base = pl.get_integer_attrib(element, 'base', BASE_DEFAULT)
 
+    if base < 2 or base > 36:
+        raise Exception('Base must be between 2 and 36')
+    
     correct_answer = pl.string_to_integer(pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT), base)
     if correct_answer is not None:
         if name in data['correct_answers']:
