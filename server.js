@@ -359,17 +359,7 @@ module.exports.initExpress = function() {
         ]);
     }
 
-    // Enroll does not require authorization
-    app.use('/pl/course_instance/:course_instance_id/enroll', [
-      function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();},
-      function(req, res, next) {res.locals.course_instance_id = req.params.course_instance_id; next();},
-      function(req, res, next) {res.locals.navbarType = 'student'; next();},
-      function(req, res, next) {res.locals.navPage = 'enroll'; next();},
-      //require('./middlewares/authzCourseInstance'),
-      require('./pages/enroll/enroll'),
-    ]);
-
-    // all other pages under /pl/course_instance require authorization
+    // all pages under /pl/course_instance require authorization
     app.use('/pl/course_instance/:course_instance_id', [
       function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();},
       function(req, res, next) {res.locals.navbarType = 'student'; next();},

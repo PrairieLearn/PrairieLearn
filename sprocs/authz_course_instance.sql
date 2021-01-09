@@ -12,6 +12,20 @@ DECLARE
     role enum_role;
     permissions_course_instance jsonb;
 BEGIN
+    
+    INSERT INTO enrollments AS e
+            (user_id, course_instance_id, role)
+    (
+        SELECT
+            u.user_id, authz_course_instance.course_instance_id, 'Student'
+        FROM
+            users AS u
+        WHERE
+            u.user_id = authz_course_instance.user_id
+            AND check_course_instance_access(authz_course_instance.course_instance_id, 'Student', u.uid, u.institution_id, req_date)
+    )
+    ON CONFLICT DO NOTHING;
+
     SELECT e.role INTO role
     FROM
         enrollments AS e

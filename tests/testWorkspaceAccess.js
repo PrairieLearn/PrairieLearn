@@ -11,7 +11,6 @@ const helperServer = require('./helperServer');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const enrollUrl = '/pl/course_instance/1/enroll';
 const storedConfig = {};
 
 const studentOne = {
@@ -124,7 +123,7 @@ describe('Test workspace authorization access', function() {
             it('try to access with the student', async function() {
                 const url = baseUrl + `/workspace/${workspace_id}`;
                 const response = await requestAsync(url);
-                assert(response.statusCode == '403' || response.req.path == enrollUrl, 'Should deny access or offer enrollment in course instance');
+                assert.equal(response.statusCode, 403);
             });
         });
     });
@@ -193,7 +192,7 @@ describe('Test workspace authorization access', function() {
             it('try to access with the student', async function() {
                 const url = baseUrl + `/workspace/${workspace_id}`;
                 const response = await requestAsync(url);
-                assert(response.statusCode == '403' || response.req.path == enrollUrl, 'Should deny access or offer enrollment in course instance');
+                assert.equal(response.statusCode, 403);
             });
         });
     });
@@ -269,7 +268,7 @@ describe('Test workspace authorization access', function() {
             it('try to access with the student', async function() {
                 const url = baseUrl + `/workspace/${workspace_id}`;
                 const response = await requestAsync(url);
-                assert(response.statusCode == '403' || response.req.path == enrollUrl, 'Should deny access or offer enrollment in course instance');
+                assert.equal(response.statusCode, 403);
             });
         });
     });

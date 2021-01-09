@@ -16,21 +16,11 @@ router.get('/', function(req, res, next) {
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
     };
-    if (res.locals.course_instance_id) {
-        params.course_instance_id = res.locals.course_instance_id;
-        sqldb.query(sql.select_course_instance, params, function(err, result) {
-            if (ERR(err, next)) return;
-            if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
-            res.locals.course_instances = result.rows;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        });
-    } else {
-        sqldb.query(sql.select_course_instances, params, function(err, result) {
-            if (ERR(err, next)) return;
-            res.locals.course_instances = result.rows;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        });
-    }
+    sqldb.query(sql.select_course_instances, params, function(err, result) {
+        if (ERR(err, next)) return;
+        res.locals.course_instances = result.rows;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
 });
 
 router.post('/', function(req, res, next) {
