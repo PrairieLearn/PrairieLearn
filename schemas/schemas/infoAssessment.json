@@ -101,6 +101,11 @@
             "description": "Whether the assessment will support group work.",
             "type": "boolean",
             "default": false
+        },
+        "gradeRateMinutes": {
+            "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+            "type": "number",
+            "minimum": 0
         }
     },
     "definitions": {
@@ -233,6 +238,11 @@
                     "items": {
                         "$ref": "#/definitions/zoneQuestion"
                     }
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             },
             "required": [
@@ -276,6 +286,11 @@
                     "description": "The maximum number of graded submissions allowed for each question instance.",
                     "type": "number",
                     "default": 1
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             }
         },
@@ -302,6 +317,11 @@
                     "description": "The maximum number of graded submissions allowed for each question instance.",
                     "type": "number",
                     "default": 1
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             }
         },

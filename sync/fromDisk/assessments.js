@@ -100,9 +100,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     let alternativeGroupNumber = 0;
     let assessmentQuestionNumber = 0;
     assessmentParams.alternativeGroups = zones.map((zone) => {
+        let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes') ? zone.gradeRateMinutes : (assessment.gradeRateMinutes || 0);
         return zone.questions.map((question) => {
-            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number }[]} */
+            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number }[]} */
             let alternatives;
+            let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes') ? question.gradeRateMinutes : zoneGradeRateMinutes;
             if (_(question).has('alternatives')) {
                 alternatives = _.map(question.alternatives, function(alternative) {
                     return {
@@ -112,6 +114,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                         forceMaxPoints: _.has(alternative, 'forceMaxPoints') ? alternative.forceMaxPoints
                             : (_.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false),
                         triesPerVariant: _.has(alternative, 'triesPerVariant') ? alternative.triesPerVariant : (_.has(question, 'triesPerVariant') ? question.triesPerVariant : 1),
+                        gradeRateMinutes: _.has(alternative, 'gradeRateMinutes') ? alternative.gradeRateMinutes : questionGradeRateMinutes,
                     };
                 });
             } else if (_(question).has('id')) {
@@ -121,6 +124,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     points: question.points,
                     forceMaxPoints: question.forceMaxPoints || false,
                     triesPerVariant: question.triesPerVariant || 1,
+                    gradeRateMinutes: questionGradeRateMinutes,
                 }];
             }
 
@@ -166,6 +170,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     init_points: alternative.initPoints,
                     force_max_points: alternative.forceMaxPoints,
                     tries_per_variant: alternative.triesPerVariant,
+                    grade_rate_minutes: alternative.gradeRateMinutes,
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
                 };

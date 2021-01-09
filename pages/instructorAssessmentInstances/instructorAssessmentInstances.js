@@ -84,7 +84,8 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             
             const close = true;
-            assessment.gradeAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id, close, function(err) {
+            const overrideGradeRate = true;
+            assessment.gradeAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });

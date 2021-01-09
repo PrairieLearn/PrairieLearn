@@ -27,6 +27,7 @@ require('./testHomework');
 require('./testExam');
 require('./testRealTimeGradingDisabled');
 require('./testShowClosedAssessmentScore');
+require('./testGradeRate');
 require('./testAccess');
 // require('./testAccessAsStudent');
 require('./testCourseElementExtension');
