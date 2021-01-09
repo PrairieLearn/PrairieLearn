@@ -578,22 +578,32 @@ def string_partition_outer_interval(s, left='[', right=']'):
     return s_before_left, s, s_after_right
 
 
-def string_to_integer(s):
-    """string_to_integer(s)
+def string_to_integer(s, base=10):
+    """string_to_integer(s, base=10)
 
     Parses a string that is an integer.
 
     Returns a number with type int, or None on parse error.
     """
+    if s is None:
+        return None
+    
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace(u'\u2212', '-').strip()
+
+    # If base is 16, strip "0x" prefix
+    if base == 16 and s.startswith('0x'):
+        s = s[2:].strip()
+    elif base == 16 and s.startswith('-0x'):
+        s = '-' + s[3:].strip()
+    
     # Check if it is an integer, i.e., if it contains only digits and possibly
     # hypen minus as the first character
-    if not (s.isdigit() or s[1:].isdigit()):
+    if base <= 10 and not (s.isdigit() or s[1:].isdigit()):
         return None
     # Try to parse as int
     try:
-        s_int = int(s)
+        s_int = int(s, base)
         return s_int
     except Exception:
         # If that didn't work, return None

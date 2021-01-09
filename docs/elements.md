@@ -379,9 +379,10 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
+`base` | integer | 10 | The base used to parse and represent the answer.
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
