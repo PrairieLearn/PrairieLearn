@@ -47,7 +47,6 @@ function set_answer(event) {
 function update_indent(leftDiff, id, ui) {
     if (!ui.item.parent()[0].classList.contains('dropzone') || !ui.item.parent()[0].classList.contains('enableIndentation')){
         // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
-        console.log('indent not updated!');
         ui.item[0].style.marginLeft = INDENT_OFFSET + 'px';
         return;
     }
