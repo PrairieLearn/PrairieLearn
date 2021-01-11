@@ -591,10 +591,6 @@ def string_to_integer(s, base=10):
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace(u'\u2212', '-').strip()
 
-    # Check if it is an integer, i.e., if it contains only digits and possibly
-    # hypen minus as the first character
-    if base != 0 and base <= 10 and not (s.isdigit() or s[1:].isdigit()):
-        return None
     # Try to parse as int
     try:
         s_int = int(s, base)

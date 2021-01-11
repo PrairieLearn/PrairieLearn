@@ -395,7 +395,7 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 
 * The prefixes `0x` and `0X` can be used for base-16 values (e.g., `0x1a`);
 * The prefixes `0b` and `0B` can be used for base-2 values (e.g., `0b1101`);
-* The prefixes `0o` and `0O` or just `0` can be used for base-8 values (e.g., `0o777` or `0777`).
+* The prefixes `0o` and `0O` can be used for base-8 values (e.g., `0o777`).
 
 #### Example implementations
 
