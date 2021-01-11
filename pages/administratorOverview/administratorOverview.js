@@ -54,6 +54,7 @@ router.post('/', (req, res, next) => {
             req.body.display_timezone,
             req.body.path,
             req.body.repository,
+            req.body.branch,
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('courses_insert', params, (err, _result) => {

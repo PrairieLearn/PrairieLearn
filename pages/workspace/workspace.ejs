@@ -3,8 +3,8 @@
 
 <head>
   <%- include('../partials/head'); %>
-  <link rel="stylesheet" href="/stylesheets/workspace.css">
-  <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+  <link href="<%= asset_path('stylesheets/workspace.css') %>" rel="stylesheet">
+  <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
 </head>
 
 <body class="d-flex flex-column h-100">

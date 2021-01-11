@@ -5,6 +5,7 @@
     "options": {
         "useNewQuestionRenderer": true
     },
+    "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
     "assessmentSets": [],
     "topics": [
         {"name": "Template", "color": "orange1", "description": "Templates to copy as the start for a new question."},
@@ -33,6 +34,7 @@
         {"name": "ressick2", "color": "gray1", "description": "Question originally written by ressick2"},
         {"name": "eliving2", "color": "gray1", "description": "Question originally written by eliving2"},
         {"name": "nwalter2", "color": "pink1", "description": "Question originally written by nwalter2"},
+        {"name": "nnytko2", "color": "turquoise1", "description": "Question originally written by nnytko2"},
         {"name": "astec", "color": "orange2", "description": "Question originally written by andrewstec"},
         {"name": "tpl101", "color": "gray1", "description": "Question originally written for the XC 101 example course"},
         {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},

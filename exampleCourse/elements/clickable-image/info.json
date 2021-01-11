@@ -1,6 +1,8 @@
 {
     "controller": "clickable-image.py",
+    "comment": "use comments to discuss top-level details", 
     "dependencies": {
+        "comment": "or to explain dependencies",
         "elementStyles": [
             "clickable-image.css"
         ],

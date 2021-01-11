@@ -173,7 +173,7 @@ module.exports = {
                 }
             });
             it('should have or not have tryAgain button', function() {
-                elemList = locals.$('a:contains(Try question again)');
+                elemList = locals.$('a:contains(Try a new variant)');
                 if (locals.shouldHaveButtons.includes('tryAgain')) {
                     assert.lengthOf(elemList, 1);
                 } else {
