@@ -18,38 +18,45 @@ class NoSubmissionError extends Error {
 // eslint-disable-next-line no-unused-vars
 router.get('/', (req, res, next) => {
     console.log(res.locals);
-    const params = {instance_question_id: res.locals.instance_question_id};
-    sqlDb.query(sql.instance_question_select_last_variant_with_submission, params, (err, result) => {
+    const params = [res.locals.instance_question.id];
+    sqlDb.callZeroOrOneRow('variants_select_question_and_last_submission', params, (err, result) => {
         if (ERR(err, next)) return;
-        if (result.rowCount == 0) {
-            // perhaps student loaded view to create variant, but did not submit anything
-            res.locals['no_submission_found'] = true;
-            return;
-        }
-
-        const variant_id = result.rows[0].id;
-
-        sqlDb.queryOneRow(sql.instance_question_select_question, params, (err, result) => {
-            if (ERR(err, next)) return;
-            if (result.rowCount == 0) throw new Error('Question not found');
-
-            res.locals.question = result.rows[0];
-
-            const params = [
-                variant_id,
-                null,
-                true, // select graded submissions
-            ];
-
-            sqlDb.callZeroOrOneRow('variants_select_submission_for_grading', params, (err, result) => {
-                if (ERR(err, next)) return;
-                if (result.rowCount == 0) return new NoSubmissionError();
-                const submission = result.rows[0];
-                res.locals['submission'] = submission;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            });
-        });
+        if (result.rowCount == 0) return new NoSubmissionError();
+        const submission = result.rows[0];
+        res.locals['submission'] = submission;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
+    // sqlDb.query(sql.instance_question_select_last_variant_with_submission, params, (err, result) => {
+    //     if (ERR(err, next)) return;
+    //     if (result.rowCount == 0) {
+    //         // perhaps student loaded view to create variant, but did not submit anything
+    //         res.locals['no_submission_found'] = true;
+    //         return;
+    //     }
+
+    //     const variant_id = result.rows[0].id;
+
+    //     sqlDb.queryOneRow(sql.instance_question_select_question, params, (err, result) => {
+    //         if (ERR(err, next)) return;
+    //         if (result.rowCount == 0) throw new Error('Question not found');
+
+    //         res.locals.question = result.rows[0];
+
+    //         const params = [
+    //             variant_id,
+    //             null,
+    //             true, // select graded submissions
+    //         ];
+
+    //         sqlDb.callZeroOrOneRow('variants_select_question_and_last_submission', params, (err, result) => {
+    //             if (ERR(err, next)) return;
+    //             if (result.rowCount == 0) return new NoSubmissionError();
+    //             const submission = result.rows[0];
+    //             res.locals['submission'] = submission;
+    //             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    //         });
+    //     });
+    // });
 
     debug('GET /');
 });
