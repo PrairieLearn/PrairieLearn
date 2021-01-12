@@ -8,7 +8,7 @@ fi
 
 # Only locally start postgres if we weren't given a PG_HOST environment variable
 if [[ -z "$PG_HOST" ]]; then
-  su postgres -c "pg_ctl -D /var/postgres -l /var/postgres/postgresql.log $ACTION"
+  su postgres -c "pg_ctl --silent --pgdata=/var/postgres --log=/var/postgres/postgresql.log $ACTION"
 fi
 
 if [[ "$ACTION" == "start" ]]; then

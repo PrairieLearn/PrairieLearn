@@ -10,6 +10,7 @@ amazon-linux-extras install -y \
 
 yum -y install \
     postgresql-server \
+    postgresql-contrib \
     man \
     emacs-nox \
     gcc \
@@ -18,8 +19,9 @@ yum -y install \
     dos2unix \
     tmux \
     tar \
-    ImageMagick           `# for PrairieDraw label images` \
-    texlive               `# for PrairieDraw label images` \
+    ImageMagick \
+    texlive \
+    texlive-dvipng \
     git \
     graphviz \
     graphviz-devel
