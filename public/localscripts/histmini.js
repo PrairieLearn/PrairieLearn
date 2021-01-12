@@ -22,13 +22,13 @@ function histmini(selector, data, options) {
         width = options.width - margin.left - margin.right,
         height = options.height - margin.top - margin.bottom;
 
-    var x = d3.scale.ordinal()
+    var x = d3.scaleOrdinal()
         .domain(d3.range(data.length))
         .rangeRoundBands([0, width], 0.2);
 
     var ymin = (options.ymin == "auto" ? _(data).min() : options.ymin);
     var ymax = (options.ymax == "auto" ? _(data).max() : options.ymax);
-    var y = d3.scale.linear()
+    var y = d3.scaleLinear()
         .domain([ymin, ymax])
         .range([height, 0]);
 

@@ -26,13 +26,13 @@ function scatter(selector, xdata, ydata, options) {
 
     var xmin = (options.xmin == "auto" ? _(options.xgrid).min() : options.xmin);
     var xmax = (options.xmax == "auto" ? _(options.xgrid).max() : options.xmax);
-    var x = d3.scale.linear()
+    var x = d3.scaleLinear()
         .domain([xmin, xmax])
         .range([0, width]);
 
     var ymin = (options.ymin == "auto" ? _(options.ygrid).min() : options.ymin);
     var ymax = (options.ymax == "auto" ? _(options.ygrid).max() : options.ymax);
-    var y = d3.scale.linear()
+    var y = d3.scaleLinear()
         .domain([ymin, ymax])
         .range([height, 0]);
 

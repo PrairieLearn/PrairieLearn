@@ -19,13 +19,13 @@ function stacked_histogram(selector, data, data2, bucketNames, options) {
     var width = 600 - options.leftMargin - options.rightMargin;
     var height = 371 - options.topMargin - options.bottomMargin;
 
-    var x = d3.scale.ordinal()
+    var x = d3.scaleOrdinal()
         .domain(bucketNames)
         .rangeBands([0, width]);
 
     var ymin = (options.ymin == "auto" ? _(data).min() : options.ymin);
     var ymax = (options.ymax == "auto" ? _(data).max() + _(data2).max() : options.ymax);
-    var y = d3.scale.linear()
+    var y = d3.scaleLinear()
         .domain([ymin, ymax])
         .nice()
         .range([height, 0]);

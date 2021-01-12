@@ -31,19 +31,19 @@ function parallel_histograms(selector, data, options) {
     var numBuckets = data[0].histogram.length;
     var numDays = data.length;
 
-    var yOrdinal = d3.scale.ordinal()
+    var yOrdinal = d3.scaleOrdinal()
         .domain(d3.range(numBuckets))
         .rangeRoundBands([0, height]);
 
-    var yLinear = d3.scale.linear()
+    var yLinear = d3.scaleLinear()
         .domain([0, numBuckets])
         .range([0, height]);
 
-    var xOrdinal = d3.scale.ordinal()
+    var xOrdinal = d3.scaleOrdinal()
         .domain(d3.range(numDays))
         .rangeRoundBands([0, width], 0.0);
 
-    var xLinear = d3.scale.linear()
+    var xLinear = d3.scaleLinear()
         .domain([0, numDays])
         .range([0, width]);
 
