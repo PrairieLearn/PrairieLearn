@@ -7,7 +7,7 @@ import os
 import json
 
 PL_ANSWER_CORRECT_DEFAULT = True
-PL_ANSWER_INDENT_DEFAULT = -1
+PL_ANSWER_INDENT_DEFAULT = '-1'
 INDENTION_DEFAULT = False
 SOURCE_BLOCKS_ORDER_DEFAULT = 'random'
 GRADING_METHOD_DEFAULT = 'ordered'
@@ -64,7 +64,6 @@ def prepare(element_html, data):
 
             is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
             if check_indentation is False:
-                # answer_indent = pl.get_string_attrib(html_tags, 'indent')
                 try:
                     answer_indent = pl.get_string_attrib(html_tags, 'indent')
                 except Exception:
@@ -72,7 +71,7 @@ def prepare(element_html, data):
                 else:
                     raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
             else:
-                answer_indent = pl.get_integer_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
+                answer_indent = pl.get_string_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
             if is_correct is True:
                 # add option to the correct answer array, along with the correct required indent
                 if pl.get_string_attrib(html_tags, 'ranking', '') != '':
