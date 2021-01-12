@@ -706,12 +706,11 @@ module.exports.initExpress = function() {
         require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
         require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
     ]);
-    app.use('/pl/assessment_instance/:assessment_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
         function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
         function(req, res, next) {
-            res.locals['assessment_instance_id'] = req.params.assessment_instance_id;
-            res.locals['instance_question_id'] = req.params.instance_question_id;
             next();},
+        require('./middlewares/selectAndAuthzInstanceQuestion'),
         require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
