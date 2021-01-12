@@ -125,7 +125,7 @@ def prepare(element_html, data):
         incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
         mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
 
-    source_blocks_order = pl.get_string_attrib(element, 'source-blocks-order', SOURCE_BLOCKS_ORDER_DEFAULT) 
+    source_blocks_order = pl.get_string_attrib(element, 'source-blocks-order', SOURCE_BLOCKS_ORDER_DEFAULT)
 
     if source_blocks_order == 'random':
         random.shuffle(mcq_options)
@@ -322,7 +322,6 @@ def parse(element_html, data):
             data['format_errors']['_files'] = 'The submitted file was empty.'
         else:
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(answer_code.encode('utf-8')).decode('utf-8')}]
-
 
     data['submitted_answers'][answer_name] = {'student_submission_ordering': student_answer_ranking,
                                               'student_raw_submission': student_answer,
