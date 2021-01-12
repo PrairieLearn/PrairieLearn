@@ -1,20 +1,17 @@
 -- BLOCK instance_question_select_last_variant_with_submission
-
 DROP FUNCTION IF EXISTS variants_select_question_and_last_submission(integer);
+DROP FUNCTION IF EXISTS variants_select_question_and_last_submission(bigint);
 
 CREATE OR REPLACE FUNCTION
     variants_select_question_and_last_submission(
-        IN iq_id integer,
-        OUT question questions,
-        OUT variant variants
+        IN iq_id bigint,
+        OUT question jsonb,
+        OUT variant jsonb
     )
 AS $$
-<<main>>
-DECLARE 
-    variant variants;
-    question questions;
 BEGIN
-    SELECT q.*
+
+    SELECT to_jsonb(q.*)
     INTO question
     FROM
         questions as q
@@ -22,7 +19,7 @@ BEGIN
         JOIN instance_questions AS iq ON (aq.id = iq.assessment_question_id)
     WHERE iq.id = iq_id;
 
-    SELECT v.*
+    SELECT to_jsonb(v.*)
     INTO variant
     FROM
         variants as v
