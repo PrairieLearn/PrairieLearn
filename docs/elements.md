@@ -377,12 +377,12 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
-`source-blocks-order` | string | "random" | The order of the blocks in the source area. One of the following: `random` or `ordered`. See more details below.
-`max-incorrect` | integer | special | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
-`min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
-`indentation` | boolean | false | Whether indentation is checked for correctness in the solution area.
 `grading-method` | string | "ordered" | One of the following: `ordered`, `unordered`, `ranking`, `external`. See more details below.
 `file-name` | string | `user_code.py`  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
+`source-blocks-order` | string | "random" | The order of the blocks in the source area. One of the following: `random` or `ordered`. See more details below.
+`indentation` | boolean | false | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).
+`max-incorrect` | integer | special | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
+`min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
 `source-header` | string | "Drag from here" | The text that appears at the start of the source area.
 `solution-header` | string| "Construct your solution here" |  The text that appears at the start of the solution area.
 `solution-placement` | string | "right" | "right" shows the source and solution areas aligned side-by-side. "bottom" shows the solution area below the source area.
@@ -397,18 +397,19 @@ Attribute | Type | Default | Description
 
 #### Details
 
-Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
-
-* `ordered`:  the blocks appear in the source area in the same order they appear in the HTML file.
-* `random`:  the blocks are shuffled.
-
 Different grading options are defined via the attribute `grading-method`:
 
 * `ordered`: in this method, the correct ordering of the blocks is defined by the ordering in which
 the correct answers (defined in `pl-answer`) appear in the HTML file. There is no partial credit for this option.
 * `unordered`: in this method, if `n` is the total number of correct blocks, each correct block moved to the solution area is given `1/n` points, and each incorrect block moved to the solution area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only moving incorrect answers). Note the ordering of the blocks does not matter. That is, any permutation of the answers within the solution area is accepted. There is partial credit for this option.
 * `ranking`: in this method, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block *X* should have a `ranking` integer that is less than or equal to the answer block immediately below *X*. That is, the sequence of `ranking` integers of all the answer blocks should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer. There is partial credit for this option.
-* `external`: in this method, the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader (and hence, the attributes of `pl-answer` are ignored). Depending on the external grader grading code logic, it may be possible to enable or disable partial credit.
+* `external`: in this method, the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader. Depending on the external grader grading code logic, it may be possible to enable or disable partial credit. The attribute `correct` for `pl-answer` can still be used in conjunction with `min-correct` and `max-correct` for display purposes only, but not used for grading purposes. The attributes `ranking` and `indent` are not allowed for this grading method.
+
+Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
+
+* `ordered`:  the blocks appear in the source area in the same order they appear in the HTML file.
+* `random`:  the blocks are shuffled.
+
 
 #### Example implementations
 

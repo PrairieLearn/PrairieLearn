@@ -56,11 +56,17 @@ def prepare(element_html, data):
     incorrect_answers = []
 
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
+    grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
+    accepted_grading_method = ['ordered', 'unordered', 'ranking', 'external']
+    if grading_method not in accepted_grading_method:
+        raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
 
     for html_tags in element:  # iterate through the tags inside pl-order-blocks, should be <pl-answer> tags
         if html_tags.tag == 'pl-answer':
-            # correct attribute is not strictly required, as the attribute is irrelevant for autograded questions
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
+            if grading_method == 'external':
+                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
+            else:
+                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
 
             is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
             if check_indentation is False:
@@ -88,12 +94,6 @@ def prepare(element_html, data):
             html_ordering.append(html_tags.text)
         else:
             raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
-
-    grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
-    accepted_grading_method = ['ordered', 'unordered', 'ranking', 'external']
-
-    if grading_method not in accepted_grading_method:
-        raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
 
     if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
