@@ -28,7 +28,7 @@ router.post('/', (req, res, next) => {
 
     if (req.body.__action == 'course_permissions_insert_by_multi_user_uid') {
         // Get set of unique, non-empty UIDs with no leading or trailing whitespaces
-        let uids = new Set(req.body.uid.split(',').map((uid) => uid.trim()).filter((uid) => (uid)));
+        let uids = new Set(req.body.uid.split(/[\s,;]+/).map((uid) => uid.trim()).filter(uid => uid));
 
         // Verify there is at least one UID
         if (uids.length == 0) return next(error.make(400, 'Empty list of UIDs'));
