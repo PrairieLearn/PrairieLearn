@@ -32,18 +32,15 @@ function stacked_histogram(selector, data, data2, bucketNames, options) {
 
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
-    var xAxis = d3.svg.axis()
+    var xAxis = d3.axisBottom()
         .scale(x)
-        .tickFormat(xTickFormat)
-        .orient("bottom");
+        .tickFormat(xTickFormat);
 
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left");
+    var yAxis = d3.axisLeft()
+        .scale(y);
     
-    var yGrid = d3.svg.axis()
+    var yGrid = d3.axisLeft()
         .scale(y)
-        .orient("left")
         .tickSize(-width)
         .tickFormat("");
 

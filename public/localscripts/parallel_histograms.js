@@ -55,9 +55,8 @@ function parallel_histograms(selector, data, options) {
 
     var yTickFormat = (function(d, i) {return data[i].label;});
 
-    var verticalGridLinear = d3.svg.axis()
+    var verticalGridLinear = d3.axisBottom()
         .scale(xLinear)
-        .orient("bottom")
         .tickSize(-height)
         .tickFormat("");
 
@@ -66,9 +65,8 @@ function parallel_histograms(selector, data, options) {
         .attr("transform", "translate(" + yAxisWidth + "," + heightWithPadding + ")")
         .call(verticalGridLinear);
 
-    var verticalGridOrdinal = d3.svg.axis()
+    var verticalGridOrdinal = d3.axisBottom()
         .scale(xOrdinal)
-        .orient("bottom")
         .tickSize(-height)
         .tickFormat("");
 
@@ -77,9 +75,8 @@ function parallel_histograms(selector, data, options) {
         .attr("transform", "translate(" + yAxisWidth + "," + heightWithPadding + ")")
         .call(verticalGridOrdinal);
 
-    var horizontalGrid = d3.svg.axis()
+    var horizontalGrid = d3.axisLeft()
         .scale(yLinear)
-        .orient("left")
         .tickSize(-width)
         .tickFormat("");
 
@@ -123,8 +120,7 @@ function parallel_histograms(selector, data, options) {
             .attr("y2", function(d) {return heightWithPadding - yLinear(Math.min(100, mean) / 100 * numBuckets);});
     }
 
-    var yAxis = d3.svg.axis()
-        .orient("left")
+    var yAxis = d3.axisLeft()
         .tickFormat(function(d, i) {
           return yTickLabels[i];
         })
@@ -155,7 +151,7 @@ function parallel_histograms(selector, data, options) {
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
 
-    var xAxis = d3.svg.axis()
+    var xAxis = d3.axisBottom()
         .scale(xOrdinal)
         .tickFormat(function(d, i) {
             return data[i].label;

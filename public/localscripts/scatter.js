@@ -44,31 +44,27 @@ function scatter(selector, xdata, ydata, options) {
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
 
-    var xAxis = d3.svg.axis()
+    var xAxis = d3.axisBottom()
         .scale(x)
         .tickValues(options.xgrid)
-        .tickFormat(xTickFormat)
-        .orient("bottom");
+        .tickFormat(xTickFormat);
 
     var yTickFormat = (options.yTickLabels == "auto" ? null
                        : function(d, i) {return options.yTickLabels[i];});
-    var yAxis = d3.svg.axis()
+    var yAxis = d3.axisLeft()
         .scale(y)
         .tickValues(options.ygrid)
-        .tickFormat(yTickFormat)
-        .orient("left");
+        .tickFormat(yTickFormat);
 
-    var xGrid = d3.svg.axis()
+    var xGrid = d3.axisBottom()
         .scale(x)
         .tickValues(options.xgrid)
-        .orient("bottom")
         .tickSize(-height)
         .tickFormat("");
 
-    var yGrid = d3.svg.axis()
+    var yGrid = d3.axisLeft()
         .scale(y)
         .tickValues(options.ygrid)
-        .orient("left")
         .tickSize(-width)
         .tickFormat("");
 
