@@ -377,10 +377,10 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
-`shuffle-source-blocks` | boolean | false | Specify whether the ordering of the blocks in the source area should be shuffled. If false, the ordering of the answers in the HTML file (defined by `<pl-answer>`) will be used.
+`source-blocks-order` | string | "random" | The order of the blocks in the source area. One of the following: `random` or `ordered`. See more details below.
 `max-incorrect` | integer | special | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
 `min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
-`check-indentation` | boolean | false | Whether indentation is checked for correctness in the solution area.
+`indentation` | boolean | false | Whether indentation is checked for correctness in the solution area.
 `grading-method` | string | "ordered" | One of the following: `ordered`, `unordered`, `ranking`, `external`. See more details below.
 `file-name` | string | `user_code.py`  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
 `source-header` | string | "Drag from here" | The text that appears at the start of the source area.
@@ -393,9 +393,14 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
 `ranking` | positive integer | — | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
-`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter.
+`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.
 
 #### Details
+
+Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
+
+* `ordered`:  the blocks appear in the source area in the same order they appear in the HTML file.
+* `random`:  the blocks are shuffled.
 
 Different grading options are defined via the attribute `grading-method`:
 

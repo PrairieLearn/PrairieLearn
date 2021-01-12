@@ -55,7 +55,7 @@ def prepare(element_html, data):
     correct_answers_ranking = []
     incorrect_answers = []
 
-    check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
+    check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
 
     for html_tags in element:  # iterate through the tags inside pl-order-blocks, should be <pl-answer> tags
         if html_tags.tag == 'pl-answer':
@@ -126,14 +126,14 @@ def prepare(element_html, data):
         incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
         mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
 
-    source_blocks_order = pl.get_string_attrib(element, 'source-blocks-order', SOURCE_BLOCKS_ORDER_DEFAULT)  # default to FALSE, no shuffling unless otherwise specified
+    source_blocks_order = pl.get_string_attrib(element, 'source-blocks-order', SOURCE_BLOCKS_ORDER_DEFAULT) 
 
-    if source_blocks_order == 'shuffle':
+    if source_blocks_order == 'random':
         random.shuffle(mcq_options)
-    elif source_blocks_order == 'alphabetical':
-        print('Not yet implemented')
     elif source_blocks_order == 'ordered':
         mcq_options = html_ordering
+    else:
+        raise Exception('the selected option for "source-blocks-order" does not exist.')
 
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
@@ -174,7 +174,7 @@ def render(element_html, data):
 
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
 
-        check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
+        check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
 
         html_params = {
             'question': True,
@@ -238,7 +238,7 @@ def render(element_html, data):
         grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
         grading_mode = 'in any order' if grading_mode == 'unordered' else 'in the specified order'
 
-        check_indentation = pl.get_boolean_attrib(element, 'indentation', False)
+        check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         check_indentation = ', with correct indentation' if check_indentation is True else None
 
         if answer_name in data['correct_answers']:
