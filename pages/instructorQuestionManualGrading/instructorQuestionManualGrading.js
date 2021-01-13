@@ -9,7 +9,7 @@ const { error, sqlDb} = require('@prairielearn/prairielib');
 // eslint-disable-next-line no-unused-vars
 router.get('/', (req, res, next) => {
     const params = [res.locals.instance_question.id];
-    sqlDb.callZeroOrOneRow('variants_select_question_and_last_submission', params, (err, result) => {
+    sqlDb.callZeroOrOneRow('instance_question_select_manual_grading_objects', params, (err, result) => {
         if (ERR(err, next)) return;
 
         // FYI, Maja:
@@ -34,7 +34,7 @@ router.post('/', function(req, res, next) {
         const score = req.body.submission_score;
         const params = {instance_question_id: res.locals.instance_question_id};
 
-        sqlDb.callZeroOrOneRow('variants_select_question_and_last_submission', params, (err, result) => {
+        sqlDb.callZeroOrOneRow('instance_question_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
 
             const {question, variant, submission} = result.rows[0];
