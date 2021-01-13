@@ -39,7 +39,7 @@ BEGIN
     INTO submission
     FROM
         submissions AS s
-    WHERE s.variant_id = variant->>'id'::bigint
+    WHERE s.variant_id = (SELECT (variant->'id')::bigint)
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
