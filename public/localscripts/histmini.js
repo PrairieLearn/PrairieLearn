@@ -52,8 +52,16 @@ function histmini(selector, data, options) {
         .attr("height", function(d, i) {return y(0) - y(d);});
 
     svg.append("line")
-        .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .attr('x2', width)
+        .attr('y2', 0)
+        .attr('class', 'x axis');
 
     svg.append("line")
-        .attr({x1: 0, y1: height, x2: width, y2: height, "class": "x axis"})
+        .attr('x1', 0)
+        .attr('y1', height)
+        .attr('x2', width)
+        .attr('y2', height)
+        .attr('class', 'x axis');
 };
