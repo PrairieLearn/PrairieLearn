@@ -32,7 +32,7 @@ router.post('/', function(req, res, next) {
     if (req.body.__action == 'add_manual_grade') {
         const note = req.body.submission_note;
         const score = req.body.submission_score;
-        const params = {instance_question_id: res.locals.instance_question_id};
+        const params = [res.locals.instance_question.id];
 
         sqlDb.callZeroOrOneRow('instance_question_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
@@ -65,6 +65,7 @@ router.post('/', function(req, res, next) {
                 res.locals['grading_job'] = result.rows[0];
                 if (!res.locals['grading_job'].gradable) return next(error.make('Invalid submission error'));
 
+                res.locals['submission_updated'] = true;
                 debug('_gradeVariantWithClient()', 'inserted', 'grading_job.id:', res.locals['grading_job'].id);
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
