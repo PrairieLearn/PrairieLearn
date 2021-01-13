@@ -21,9 +21,15 @@ router.get('/', (req, res, next) => {
     const params = [res.locals.instance_question.id];
     sqlDb.callZeroOrOneRow('variants_select_question_and_last_submission', params, (err, result) => {
         if (ERR(err, next)) return;
+
+        // Just a note, we have to determine what happens if no submission exists on a variant or if something is
+        // ungradable.
+
         if (result.rowCount == 0) return new NoSubmissionError();
         const submission = result.rows[0];
-        res.locals['submission'] = submission;
+        res.locals['question'] = result.rows[0].question;
+        res.locals['variant'] = result.rows[0].variant;
+        res.locals['submission'] = result.rows[0].submission;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
     // sqlDb.query(sql.instance_question_select_last_variant_with_submission, params, (err, result) => {
