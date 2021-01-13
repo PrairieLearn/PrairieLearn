@@ -3,9 +3,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const { error, sqlDb} = require('@prairielearn/prairielib');
 
 // TODO:
 // eslint-disable-next-line no-unused-vars
