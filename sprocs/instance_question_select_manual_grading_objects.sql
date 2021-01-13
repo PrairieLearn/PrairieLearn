@@ -32,11 +32,15 @@ BEGIN
     ORDER BY v.date DESC, v.id DESC
     LIMIT 1;
 
+    -- If a variant has not been found, student has not loaded question
+    IF variant IS NULL THEN RETURN; END IF;
+
+    -- If student has not loaded question, expect submission to be null
     SELECT to_jsonb(s.*)
     INTO submission
     FROM
         submissions AS s
-    WHERE s.variant_id = variants_select_submission_for_grading.variant_id
+    WHERE s.variant_id = variant->>'id'::bigint
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
