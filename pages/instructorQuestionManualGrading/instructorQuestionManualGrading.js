@@ -22,47 +22,17 @@ router.get('/', (req, res, next) => {
     sqlDb.callZeroOrOneRow('variants_select_question_and_last_submission', params, (err, result) => {
         if (ERR(err, next)) return;
 
-        // Just a note, we have to determine what happens if no submission exists on a variant or if something is
-        // ungradable.
+        // FYI, Maja:
+        // Use case 1: Student never loaded question (variant and submission is null)
+        // Use case 2: Student loaded question but did not submit anything (submission is null)
+        // Use case 3: Student has answered question (question, variant, submission are NOT null)
+        // Other cases to figure out later: grading in progress, question is broken...
 
-        if (result.rowCount == 0) return new NoSubmissionError();
-        const submission = result.rows[0];
         res.locals['question'] = result.rows[0].question;
         res.locals['variant'] = result.rows[0].variant;
         res.locals['submission'] = result.rows[0].submission;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
-    // sqlDb.query(sql.instance_question_select_last_variant_with_submission, params, (err, result) => {
-    //     if (ERR(err, next)) return;
-    //     if (result.rowCount == 0) {
-    //         // perhaps student loaded view to create variant, but did not submit anything
-    //         res.locals['no_submission_found'] = true;
-    //         return;
-    //     }
-
-    //     const variant_id = result.rows[0].id;
-
-    //     sqlDb.queryOneRow(sql.instance_question_select_question, params, (err, result) => {
-    //         if (ERR(err, next)) return;
-    //         if (result.rowCount == 0) throw new Error('Question not found');
-
-    //         res.locals.question = result.rows[0];
-
-    //         const params = [
-    //             variant_id,
-    //             null,
-    //             true, // select graded submissions
-    //         ];
-
-    //         sqlDb.callZeroOrOneRow('variants_select_question_and_last_submission', params, (err, result) => {
-    //             if (ERR(err, next)) return;
-    //             if (result.rowCount == 0) return new NoSubmissionError();
-    //             const submission = result.rows[0];
-    //             res.locals['submission'] = submission;
-    //             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    //         });
-    //     });
-    // });
 
     debug('GET /');
 });
