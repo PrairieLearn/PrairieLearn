@@ -37,8 +37,7 @@ BEGIN
     -- If student has not loaded question, expect submission to be null
     SELECT to_jsonb(s.*)
     INTO submission
-    FROM
-        submissions AS s
+    FROM submissions AS s
     WHERE s.variant_id = (SELECT (variant->'id')::bigint)
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
