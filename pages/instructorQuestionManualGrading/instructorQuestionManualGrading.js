@@ -5,8 +5,6 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { error, sqlDb} = require('@prairielearn/prairielib');
 
-// TODO:
-// eslint-disable-next-line no-unused-vars
 router.get('/', (req, res, next) => {
     const params = [res.locals.instance_question.id];
     sqlDb.callZeroOrOneRow('instance_question_select_manual_grading_objects', params, (err, result) => {
