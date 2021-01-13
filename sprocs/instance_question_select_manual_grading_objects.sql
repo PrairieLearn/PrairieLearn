@@ -1,6 +1,8 @@
 -- BLOCK instance_question_select_last_variant_with_submission
-DROP FUNCTION IF EXISTS variants_select_question_and_last_submission(integer);
 DROP FUNCTION IF EXISTS variants_select_question_and_last_submission(bigint);
+
+-- Gets question for instance question, the last variant for an instance question,
+-- and last submission for the variant.
 
 CREATE OR REPLACE FUNCTION
     variants_select_question_and_last_submission(
@@ -37,18 +39,6 @@ BEGIN
     WHERE s.variant_id = variants_select_submission_for_grading.variant_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
-
-    -- SELECT
-    --     v.*,   q.*
-    -- INTO
-    --     variant,    question
-    -- FROM
-    --     variants AS v
-    --     JOIN submissions AS s ON (s.variant_id = v.id)
-    --     JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
-    --     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-    --     JOIN questions AS q ON (aq.question_id = q.id)
-    -- WHERE iq.id = 1;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
