@@ -1,11 +1,10 @@
 -- BLOCK instance_question_select_last_variant_with_submission
-DROP FUNCTION IF EXISTS variants_select_question_and_last_submission(bigint);
+DROP FUNCTION IF EXISTS instance_question_select_manual_grading_objects(bigint);
 
--- Gets question for instance question, the last variant for an instance question,
--- and last submission for the variant.
+-- Retrieves the last variant for an instance question and last submission for the variant.
 
 CREATE OR REPLACE FUNCTION
-    variants_select_question_and_last_submission(
+    instance_question_select_manual_grading_objects(
         IN iq_id bigint,
         OUT question jsonb,
         OUT variant jsonb,
