@@ -48,7 +48,7 @@ function histmini(selector, data, options) {
         .attr("class", "bar")
         .attr("x", function(d, i) {return x(i);})
         .attr("y", function(d, i) {return y(d);})
-        .attr("width", function(d, i) {return x.rangeBand();})
+        .attr("width", function(d, i) {return x.bandwidth();})
         .attr("height", function(d, i) {return y(0) - y(d);});
 
     svg.append("line")
