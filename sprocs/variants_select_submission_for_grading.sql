@@ -31,6 +31,5 @@ BEGIN
     IF NOT submission.gradable THEN RETURN; END IF;
 
     RETURN NEXT;
-
 END;
 $$ LANGUAGE plpgsql VOLATILE;
