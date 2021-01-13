@@ -31,17 +31,18 @@ function parallel_histograms(selector, data, options) {
     var numBuckets = data[0].histogram.length;
     var numDays = data.length;
 
-    var yOrdinal = d3.scaleOrdinal()
+    var yOrdinal = d3.scaleBand()
         .domain(d3.range(numBuckets))
-        .rangeRoundBands([0, height]);
+        .rangeRound([0, height]);
 
     var yLinear = d3.scaleLinear()
         .domain([0, numBuckets])
         .range([0, height]);
 
-    var xOrdinal = d3.scaleOrdinal()
+    var xOrdinal = d3.scaleBand()
         .domain(d3.range(numDays))
-        .rangeRoundBands([0, width], 0.0);
+        .rangeRound([0, width])
+        .padding(0.0);
 
     var xLinear = d3.scaleLinear()
         .domain([0, numDays])
