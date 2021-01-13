@@ -33,7 +33,7 @@ function histmini(selector, data, options) {
         .domain([ymin, ymax])
         .range([height, 0]);
 
-    var color = d3.scale.category10();
+    var color = d3.scaleOrdinal(d3.schemeCategory10);
 
     var svg = d3.select($(selector).get(0)).append("svg")
         .attr("width", width + margin.left + margin.right)
