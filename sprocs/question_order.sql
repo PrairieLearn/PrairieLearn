@@ -41,13 +41,13 @@ SELECT
         ELSE aq.number::text
     END AS question_number,
     NOT ((lag(aq.id) OVER w) IS NULL) -- Don't block if first question in assessment
-        AND BOOL_OR(ln_.locking) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) -- Or if the previous question locks ahead
+        AND BOOL_OR(locks_next.locking) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) -- Or if the previous question locks ahead
     AS sequence_locked
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
-    JOIN locks_next AS ln_ ON (ln_.instance_question_id = iq.id)
+    JOIN locks_next ON (locks_next.instance_question_id = iq.id)
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
