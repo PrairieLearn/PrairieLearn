@@ -147,9 +147,9 @@ Students are able to see their groupmates' UIDs, which can become a point of con
 
 ## Forcing students to complete questions in-order
 
-**Warning**: We strongly advise against using this feature in exam situations. See below for details.
+**WARNING:** We **strongly** discourage the use of this option during exams, as it can be very detrimental to student success. See below for more details.
 
-Certain assessments might designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but instructors can configure assessments to not allow students to view future questions.
+Certain assessments might designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but assessments can be configured to not allow students to view future unsolved questions.
 
 To enable these features, set `advanceScorePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
 
@@ -173,9 +173,9 @@ In the above example, a student will need to score at least 50% on `page1` in or
 
 If a student uses all of their attempts on a question and cannot submit any more attempts, the next question will automatically unlock, no matter what score they earned on the previous question. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
 
-### Note about exam-type assessments
+### Note about exam-type assessments and in-order questions
 
-This feature is intended to be used in [groupwork](#enabling-group-work-for-collaborative-assessments) and custom assessment types which are indirectly supported, such as worksheets or practice exams (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage instructors from using this feature in actual exams.
+The `advanceScorePerc` attribute is intended to be used in [groupwork](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in actual exams.
 
 ## Auto-closing Exam assessments
 
