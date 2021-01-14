@@ -517,9 +517,6 @@ module.exports.initExpress = function() {
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
         function(req, res, next) {res.locals.navSubPage = 'statistics'; next();},
-        function(req, res, next) {
-            res.locals['assessment_instance_id'] = req.params.assessment_instance_id;
-            next();},
         require('./pages/shared/assessmentStatDescriptions'),
         require('./pages/shared/floatFormatters'),
         require('./pages/instructorQuestionStatistics/instructorQuestionStatistics'),
