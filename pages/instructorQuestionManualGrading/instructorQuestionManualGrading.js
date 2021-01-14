@@ -7,35 +7,33 @@ const question = require('../../lib/question');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { error, sqlDb} = require('@prairielearn/prairielib');
 
+// Other cases to figure out later: grading in progress, question is broken...
 router.get('/', (req, res, next) => {
     async.series([
+        // Should we move this block into question.js? getAndRenderVariantForGrading
         (callback) => {
             const params = [res.locals.instance_question.id];
             sqlDb.callZeroOrOneRow('instance_question_select_manual_grading_objects', params, (err, result) => {
                 if (ERR(err, next)) return;
-                res.locals['question'] = result.rows[0].question;
-                res.locals['variant'] = result.rows[0].variant;
-                res.locals['submission'] = result.rows[0].submission;
+
+                /**
+                 * Student never loaded question (variant and submission is null)
+                 * Student loaded question but did not submit anything (submission is null)
+                 */
+                if (result.rowCount == 0 || !result.rows[0].variant || !result.rows[0].submission) {
+                    return new question.NoSubmissionError();
+                }
+
+                res.locals.question = result.rows[0].question;
+                res.locals.variant = result.rows[0].variant;
+                res.locals.submission = result.rows[0].submission;
                 callback(null);
             });
         },
        (callback) => {
-            // FYI, Maja:
-            // Use case 1: Student never loaded question (variant and submission is null)
-            // Use case 2: Student loaded question but did not submit anything (submission is null)
-            // Use case 1/2: "An answer has not been submitted for this question. Grading has been disabled."
-            //              Should we render the question in this case?
-            // Use case 3: Student has answered question (question, variant, submission are NOT null)
-            // Other cases to figure out later: grading in progress, question is broken...
-            console.log(res.locals);
             res.locals.overlayGradingInterface = true;
-            question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (
-              err,
-            ) {
+            question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
               if (ERR(err, callback)) return;
-              debug(`found question data`);
-              console.log('found question');
-
               callback(null);
             });
         },
