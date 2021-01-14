@@ -4,6 +4,7 @@
     "title": "Worksheet template: Newton's law",
     "set": "Worksheet",
     "number": "1",
+    "requireHonorCode": false,
     "allowAccess": [
         {
             "mode": "Public",
