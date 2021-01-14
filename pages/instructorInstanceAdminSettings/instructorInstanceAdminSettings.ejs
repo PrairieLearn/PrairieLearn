@@ -69,12 +69,14 @@
                     </tr>
                     <% } %>
                     <tr>
-                      <th>Student Link</th>
-                      <td>
-                        <a href="<%= studentLink %>"><%= studentLink %></a>
-                        <button type="button" class="btn btn-xs btn-secondary btn-copy" data-clipboard-text="<%= studentLink %>">
-                          <i class="far fa-clipboard"></i>
-                        </button>
+                      <th class="align-middle">Student Link</th>
+                      <td class="form-inline align-middle">
+                        <span class="input-group">
+                          <span readonly class="form-control form-control-sm"><%= studentLink %></span>
+                          <button type="button" class="input-group-prepend btn btn-sm btn-outline-secondary btn-copy" data-clipboard-text="<%= studentLink %>">
+                            <i class="far fa-clipboard"></i>
+                          </button>
+                        </span>
                       </td>
                     </tr>
                 </tbody>
