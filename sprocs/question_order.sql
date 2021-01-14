@@ -14,11 +14,12 @@ AS $$
 WITH locks_next AS (
     SELECT 
         iq.id AS instance_question_id,
-        NOT ( --- Do not lock if:
-            (iq.open = false) -- Run out of attempts on previous question
-            OR (aq.effective_advance_score_perc = 0) -- Zero percent required to advance
-            -- Score on previous question >= its unlock score
-            OR (100*COALESCE(iq.highest_submission_score, 0)
+        -- Advancement locking rule 1:
+        NOT ( -- Do not lock next question if:
+            -- Run out of attempts
+            (iq.open = false) 
+            OR -- Score >= unlock score
+            (100*COALESCE(iq.highest_submission_score, 0)
                 >= aq.effective_advance_score_perc) 
         ) AS locking
     FROM
@@ -40,9 +41,13 @@ SELECT
         WHEN a.type = 'Exam' THEN (row_number() OVER w)::text
         ELSE aq.number::text
     END AS question_number,
-    NOT ((lag(aq.id) OVER w) IS NULL) -- Don't block if first question in assessment
-        AND BOOL_OR(locks_next.locking) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) -- Or if the previous question locks ahead
-    AS sequence_locked
+    -- Advancement locking rule 2:
+    ( -- Lock only if:
+        -- Not the first question in the assessment
+        (NOT (lag(aq.id) OVER w) IS NULL)
+        AND -- Any previous question locks ahead
+        (BOOL_OR(locks_next.locking) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING))
+    ) AS sequence_locked
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
