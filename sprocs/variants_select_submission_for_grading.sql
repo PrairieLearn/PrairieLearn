@@ -1,12 +1,10 @@
 DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,boolean);
 DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,bigint);
-DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,bigint,boolean);
 
 CREATE OR REPLACE FUNCTION
     variants_select_submission_for_grading (
         IN variant_id bigint,
-        IN check_submission_id bigint DEFAULT NULL,
-        IN return_graded_submissions boolean DEFAULT FALSE
+        IN check_submission_id bigint DEFAULT NULL
     ) RETURNS TABLE (submission submissions)
 AS $$
 BEGIN
@@ -26,16 +24,12 @@ BEGIN
         RAISE EXCEPTION 'check_submission_id mismatch: % vs %', check_submission_id, submission.id;
     END IF;
 
-    IF return_graded_submissions IS NOT TRUE THEN
-        -- returning the submission for now. We have to decide what to do in each case on the front-end, but returning object for now.
-        -- I know we want graded objects and likely want to display gradsing in progress if it is occurring.
-        IF submission.score IS NOT NULL THEN RETURN; END IF; -- already graded
-        IF submission.grading_requested_at IS NOT NULL THEN RETURN; END IF; -- grading is in progress
-        IF submission.broken THEN RETURN; END IF;
-        IF NOT submission.gradable THEN RETURN; END IF;
-    END IF;
+    -- does the most recent submission actually need grading?
+    IF submission.score IS NOT NULL THEN RETURN; END IF; -- already graded
+    IF submission.grading_requested_at IS NOT NULL THEN RETURN; END IF; -- grading is in progress
+    IF submission.broken THEN RETURN; END IF;
+    IF NOT submission.gradable THEN RETURN; END IF;
 
     RETURN NEXT;
-
 END;
 $$ LANGUAGE plpgsql VOLATILE;

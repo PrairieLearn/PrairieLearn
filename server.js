@@ -515,14 +515,6 @@ module.exports.initExpress = function() {
         require('./pages/shared/floatFormatters'),
         require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
     ]);
-<<<<<<< HEAD
-    app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id/instance_question/:instance_question_id/manual_grading', [
-        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
-        require('./middlewares/selectAndAuthzInstanceQuestion'),
-        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
-    ]);
-=======
->>>>>>> 1257e8d1da48606ca6b886c24e15074f13875b6d
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
         function(req, res, next) {res.locals.navSubPage = 'statistics'; next();},
         function(req, res, next) {
