@@ -104,6 +104,7 @@ SELECT DISTINCT ON (ai.id, q.qid)
     u.uin,
     q.qid,
     iq.score_perc AS old_score_perc,
+    s.feedback AS old_feedback,
     s.id AS submission_id,
     v.params,
     v.true_answer,
