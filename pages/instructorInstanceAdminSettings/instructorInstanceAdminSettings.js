@@ -29,6 +29,7 @@ router.get('/', function(req, res, next) {
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');
+        res.locals.urlHost = req.headers.host;
         res.locals.infoCourseInstancePath = encodePath(path.join('courseInstances', res.locals.course_instance.short_name, 'infoCourseInstance.json'));
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
