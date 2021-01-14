@@ -1,13 +1,10 @@
--- BLOCK select_exam9
+-- BLOCK select_sequential_exam
 SELECT
     a.id
 FROM
     assessments AS a
-    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE
-    a.course_instance_id = 1
-    AND aset.abbreviation = 'E'
-    AND a.number = '9';
+    a.uuid = 'd7bcc376-4f23-41d6-9f71-87dd1d23991b';
 
 -- BLOCK select_locked_question
 SELECT
