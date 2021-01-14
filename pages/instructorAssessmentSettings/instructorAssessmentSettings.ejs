@@ -55,6 +55,7 @@
                         </td>
                     </tr>
                     <% } %>
+                    <tr><th>Student Link</th><td><a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment/<%= assessment.id %>"><%= urlHost %><%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment/<%= assessment.id %></a></td></tr>
                 </tbody>
             </table>
             <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
