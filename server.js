@@ -708,8 +708,6 @@ module.exports.initExpress = function() {
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
         function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
-        function(req, res, next) {
-            next();},
         require('./middlewares/selectAndAuthzInstanceQuestion'),
         require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
     ]);
