@@ -94,28 +94,10 @@
               </th>
             </tr>
             <% } %>
-            <tr class="<% if (question.sequence_locked) { %>bg-light<% } %>">
+            <tr class="<% if (question.sequence_locked) { %>bg-light pl-sequence-locked<% } %>">
               <td>
-                <a
-                  <% if (question.sequence_locked) { %>
-                    class="text-muted"
-                  <% } else { %>
-                    href="<%= urlPrefix %>/instance_question/<%= question.id %>/"
-                  <% } %>
-                >
-                  <%= question.question_number %>. <%= question.question_title %>
-                  <% if (question.sequence_locked) { %>
-                    <a tabindex="0" class="btn btn-xs border text-secondary" role="button"
-                       data-toggle="popover" data-trigger="focus" data-container="body"
-                       data-html="true"
-                       data-content="You must score at least <%= question.prev_iq_advance_score_perc %>% on <%= question.prev_iq_title %> to unlock this question.">
-                         <i class="fas fa-lock" aria-hidden="true"></i>
-                    </a>
-                  <% } %>
-                </a>
-                <% if (question.file_count > 0) { %>
-                  <i class="fas fa-paperclip"></i>
-                <% } %>
+                <% question.rowLabelText = `${question.question_number}. ${question.question_title}`; %>
+                <%- include('../partials/studentAssessmentInstanceRowLabel.ejs', question); %>
               </td>
               <td class="text-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
               <td class="text-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points});  %></td>

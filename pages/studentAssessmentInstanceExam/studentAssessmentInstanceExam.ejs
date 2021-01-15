@@ -176,7 +176,7 @@
             </tr>
           </thead>
           <tbody>
-          <% instance_questions.forEach(function(instance_question) { %>
+          <% instance_questions.forEach(function(instance_question, iq_index) { %>
             <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
               <th colspan="5">
@@ -200,28 +200,9 @@
             <% } %>
             <tr class="<% if (instance_question.sequence_locked) { %>bg-light pl-sequence-locked<% } %>">
               <td>
-                <a
-                  <% if (instance_question.sequence_locked) { %>
-                    class="text-muted"
-                  <% } else { %>
-                    href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/"
-                  <% } %>
-                >
-                  Question <%= instance_question.question_number %>
-                </a>
-                <% if (instance_question.sequence_locked) { %>
-                  <a tabindex="0" class="btn btn-xs border text-secondary" role="button"
-                     data-toggle="popover" data-trigger="focus" data-container="body"
-                     data-html="true"
-                     data-content="You must score at least <%= instance_question.prev_iq_advance_score_perc %>% on <%= instance_question.prev_iq_title %> to unlock this question.">
-                       <i class="fas fa-lock" aria-hidden="true"></i>
-                  </a>
-                <% } %>
-                <% if (instance_question.file_count > 0) { %>
-                  <i class="fas fa-paperclip"></i>
-                <% } %>
+                <% instance_question.rowLabelText = `Question ${instance_question.question_number}`;%>
+                <%- include('../partials/studentAssessmentInstanceRowLabel.ejs', instance_question); %>
               </td>
-
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
                 <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
