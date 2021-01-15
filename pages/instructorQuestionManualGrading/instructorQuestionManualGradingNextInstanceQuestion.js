@@ -8,9 +8,13 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
     const params = {assessment_question_id: req.params.assessment_question_id};
-    sqlDb.query(sql.get_unmarked_instance_questions, params, (err, result) => {
+    sqlDb.queryZeroOrOneRow(sql.get_unmarked_instance_questions, params, (err, result) => {
         if (ERR(err, next)) return;
-        console.log('result', result);
+        console.log(res.locals.urlPrefix);
+        console.log(result);
+        const course_instance_id = 1;
+        const instance_question_id = 1;
+        res.redirect(res.locals.urlPrefix + '/pl/course_instance/' + course_instance_id + '/instance_question/' + instance_question_id);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 
