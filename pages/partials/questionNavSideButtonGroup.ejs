@@ -1,18 +1,17 @@
-<div class="text-center">
+<div class="text-center mb-4">
   <%- include("../partials/questionNavSideButton", {
     button: {
       "id": "question-nav-prev",
       "label": "Previous question",
-      "sequenceLockedPopoverContent": "Earlier problems must be completed to go back.",
-      "question": instance_question_info.prev
-    }
+    },
+    question: instance_question_info.prev,
   }); %>
   <%- include("../partials/questionNavSideButton", {
     button: {
       "id": "question-nav-next",
       "label": "Next question",
-      "sequenceLockedPopoverContent": `You must score at least ${instance_question_info.advance_score_perc}% on this question to unlock the next.`,
-      "question": instance_question_info.next
-    }
+    },
+    question: instance_question_info.next,
+    unlock_score: instance_question_info.advance_score_perc,
   }); %>
 </div>
