@@ -706,6 +706,10 @@ module.exports.initExpress = function() {
         require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
         require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment_question/:assessment_question_id/manual_grading', [
+        // to do: middleware require('./middleware/selectAndAuthzAssessmentQuestion'),
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
         function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
         require('./middlewares/selectAndAuthzInstanceQuestion'),
