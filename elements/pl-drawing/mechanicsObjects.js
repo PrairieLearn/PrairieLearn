@@ -58,7 +58,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
         this._renderStroke(ctx);
 
         if (this.drawPin) {
-            ctx.fillStyle = this.stroke;
+            this.fill = this.stroke;
             ctx.beginPath();
             ctx.arc(0, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
@@ -99,7 +99,7 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
         ctx.arcTo(-rPx     , rPx    , 0        , rPx    , rPx);
         ctx.closePath();
         ctx.strokeStyle = this.strokeColor;
-        ctx.fillStyle = this.color;
+        this.fill = this.color;
         this._renderFill(ctx);
         this._renderStroke(ctx);
 
@@ -107,13 +107,13 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
             ctx.beginPath();
             ctx.arc(0, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = 'black';
             this._renderFill(ctx);
 
             ctx.beginPath();
             ctx.arc(len, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = 'black';
             this._renderFill(ctx);
         }
     },
@@ -192,7 +192,7 @@ mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
         }
         ctx.closePath();
         ctx.strokeStyle = this.strokeColor;
-        ctx.fillStyle = this.color;
+        this.fill = this.color;
         this._renderFill(ctx);
         this._renderStroke(ctx);
 
@@ -200,13 +200,13 @@ mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
             ctx.beginPath();
             ctx.arc(0, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
 
             ctx.beginPath();
             ctx.arc(len, 0, 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
         }
     },
@@ -263,7 +263,7 @@ mechanicsObjects.LShapeRod = fabric.util.createClass(fabric.Object, {
         ctx.arcTo(p10.e(1),p10.e(2),p11.e(1),p11.e(2),d);
         ctx.arcTo(p11.e(1),p11.e(2),p1.e(1),p1.e(2),d);
         ctx.strokeStyle = this.strokeColor;
-        ctx.fillStyle = this.color;
+        this.fill = this.color;
         this._renderFill(ctx);
         this._renderStroke(ctx);
         ctx.closePath();
@@ -272,19 +272,19 @@ mechanicsObjects.LShapeRod = fabric.util.createClass(fabric.Object, {
             ctx.beginPath();
             ctx.arc(rC.e(1), rC.e(2), 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
 
             ctx.beginPath();
             ctx.arc(rA.e(1), rA.e(2), 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
 
             ctx.beginPath();
             ctx.arc(rB.e(1), rB.e(2), 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
         }
 
@@ -380,7 +380,7 @@ mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
         ctx.arcTo(p5.e(1),p5.e(2),p6.e(1),p6.e(2),d);
         ctx.arcTo(p6.e(1),p6.e(2),p1.e(1),p1.e(2),d);
         ctx.strokeStyle = this.strokeColor;
-        ctx.fillStyle = this.color;
+        this.fill = this.color;
         this._renderFill(ctx);
         this._renderStroke(ctx);
         ctx.closePath();
@@ -389,25 +389,25 @@ mechanicsObjects.TShapeRod = fabric.util.createClass(fabric.Object, {
             ctx.beginPath();
             ctx.arc(rP.e(1), rP.e(2), 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
 
             ctx.beginPath();
             ctx.arc(rQ.e(1), rQ.e(2), 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
 
             ctx.beginPath();
             ctx.arc(rS.e(1), rS.e(2), 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
 
             ctx.beginPath();
             ctx.arc(rR.e(1), rR.e(2), 4, 0, 2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "black";
+            this.fill = "black";
             this._renderFill(ctx);
         }
 
@@ -446,7 +446,7 @@ mechanicsObjects.ClampedEnd = fabric.util.createClass(fabric.Object, {
         ctx.lineTo(0, 0);
         ctx.closePath();
         ctx.strokeStyle = this.stroke;
-        ctx.fillStyle = gradient;
+        this.fill = gradient;
         this._renderFill(ctx);
         this._renderStroke(ctx);
 
@@ -479,7 +479,7 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
         ctx.arcTo(-w/2, -w/2,  -w/2, 0, w/2);
         ctx.closePath();
         ctx.strokeStyle = this.stroke;
-        ctx.fillStyle = this.color;
+        this.fill = this.color;
         this._renderFill(ctx);
         this._renderStroke(ctx);
         // ======== Add pin placement =========
@@ -487,7 +487,7 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
             ctx.beginPath();
             ctx.arc(0,0,4,0*Math.PI,2 * Math.PI);
             ctx.closePath();
-            ctx.fillStyle = "rgb(0, 0, 0)";
+            this.fill = "rgb(0, 0, 0)";
             this._renderFill(ctx);
         }
         // ======== Add ground =========
@@ -498,7 +498,7 @@ mechanicsObjects.FixedPin = fabric.util.createClass(fabric.Object, {
             gradient.addColorStop(0, '#CACFD2');
             gradient.addColorStop(1, '#626567');
             ctx.beginPath();
-            ctx.fillStyle = gradient;
+            this.fill = gradient;
             ctx.strokeStyle = "black";
             ctx.rect(-w_ground/2,h,w_ground,h_ground);
             this._renderFill(ctx);
@@ -535,7 +535,7 @@ mechanicsObjects.Roller = fabric.util.createClass(fabric.Object, {
         ctx.arcTo(-w/2, -w/2,  -w/2, 0, w/2);
         ctx.closePath();
         ctx.strokeStyle = this.stroke;
-        ctx.fillStyle = this.color;
+        this.fill = this.color;
         this._renderFill(ctx);
         this._renderStroke(ctx);
         // ======== Add pin placement =========
@@ -543,13 +543,13 @@ mechanicsObjects.Roller = fabric.util.createClass(fabric.Object, {
           ctx.beginPath();
           ctx.arc(0,0,4,0*Math.PI,2 * Math.PI);
           ctx.closePath();
-          ctx.fillStyle = "black";
+          this.fill = "black";
           this._renderFill(ctx);
         }
         // ======== Add rollers =========
         ctx.beginPath();
         ctx.strokeStyle = "black";
-        ctx.fillStyle = "gray";
+        this.fill = "gray";
         ctx.lineWidth = 1.5;
         ctx.arc(-w/4,h-w/5,w/5,0*Math.PI,2 * Math.PI);
         ctx.closePath();
@@ -943,7 +943,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
 
         ctx.lineWidth = this.strokeWidth;
         ctx.strokeStyle = this.stroke;
-        ctx.fillStyle = this.stroke;
+        this.fill = this.stroke;
         ctx.stroke()
         ctx.fill();
     },
