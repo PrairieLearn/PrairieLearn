@@ -132,7 +132,7 @@
                 Time remaining: <span id="countdownDisplay"></span>
               </div>
             </div>
-            <%- include('../partials/countdown', {
+            <%- include('../partials/examTimeLimitCountdown', {
               serverTimeLimitMS: assessment_instance_time_limit_ms,
               serverRemainingMS: assessment_instance_remaining_ms,
               serverUpdateURL: urlPrefix + '/assessment_instance/' +
@@ -234,6 +234,11 @@
               <% } %>
             </form>
             <ul class="my-1">
+              <% if (suspendedSavedAnswers > 1) { %>
+              <li>There are <%= suspendedSavedAnswers %> saved answers that cannot be graded yet because their grade rate has not been reached. They are marked with the <i class="fa fa-hourglass-half"></i> icon above. Reload this page to update this information.</li>
+              <% } else if (suspendedSavedAnswers == 1) { %>
+              <li>There is one saved answer that cannot be graded yet because its grade rate has not been reached. It is marked with the <i class="fa fa-hourglass-half"></i> icon above. Reload this page to update this information.</li>
+              <% } %>
               <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
               <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
               <% if (authz_result.mode == 'SEB' || authz_result.password != null || authz_result.show_closed_assessment == false) { %>

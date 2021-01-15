@@ -104,6 +104,11 @@
         },
         "advanceScorePerc": {
             "$ref": "#/definitions/advanceScorePerc"
+        },
+        "gradeRateMinutes": {
+            "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+            "type": "number",
+            "minimum": 0
         }
     },
     "definitions": {
@@ -239,6 +244,11 @@
                 },
                 "advanceScorePerc": {
                     "$ref": "#/definitions/advanceScorePerc"
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             },
             "required": [
@@ -285,6 +295,11 @@
                 },
                 "advanceScorePerc": {
                     "$ref": "#/definitions/advanceScorePerc"
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             }
         },
@@ -314,6 +329,11 @@
                 },
                 "advanceScorePerc": {
                     "$ref": "#/definitions/advanceScorePerc"
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             }
         },

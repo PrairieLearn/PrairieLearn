@@ -47,7 +47,7 @@
                 <p class="mb-0">
                   Time remaining: <span id="countdownDisplay"></span>
                 </p>
-                <%- include('../partials/countdown', {
+                <%- include('../partials/examTimeLimitCountdown', {
                     serverTimeLimitMS: assessment_instance_time_limit_ms,
                     serverRemainingMS: assessment_instance_remaining_ms,
                     serverUpdateURL: urlPrefix + '/assessment_instance/' +

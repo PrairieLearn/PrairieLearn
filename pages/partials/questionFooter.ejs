@@ -1,5 +1,5 @@
-<% if (question.type == 'Freeform') { %>
   <div class="card-footer" id="question-panel-footer">
+<% if (question.type == 'Freeform') { %>
     <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
     This question is complete and cannot be answered again.
     <% } else { %>
@@ -16,7 +16,7 @@
             </button>
           <% } %>
           <% if (showGradeButton) { %>
-            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton ? "disabled" : "" %> name="__action" value="grade">Save & Grade
             <% if (variantAttemptsTotal > 0) { %>
                <% if (variantAttemptsLeft > 1) { %>
                <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
@@ -48,10 +48,9 @@
         </span>
       </div>
     </div>
+    <%- include('submitRateFooter') %>
     <% } %>
-  </div>
 <% } else { %>
-  <div class="card-footer" id="question-panel-footer">
     <form class="question-form" name="question-form" method="POST">
       <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
       This question is complete and cannot be answered again.
@@ -69,7 +68,7 @@
                 </button>
               <% } %>
               <% if (showGradeButton) { %>
-                <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
+                <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton ? "disabled" : "" %> >Save & Grade
             <% if (variantAttemptsTotal > 0) { %>
                <% if (variantAttemptsLeft > 1) { %>
                <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
@@ -95,17 +94,18 @@
             <% } else if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try a new variant</a>
             <% } else if (hasAttemptsOtherVariants) { %>
             <small class="font-italic align-self-center">Additional attempts available with new variants</small>
-            <button type="button" class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<%= include('newVariantInfo') %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
+            <a class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<%= include('newVariantInfo') %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
-            </button>
+            </a>
             <% } %>
           </span>
         </div>
       </div>
+      <%- include('submitRateFooter') %>
       <% } %>
     </form>
-  </div>
 <% } %>
+  </div>
 <script>
   // Install on page load and reinstall on websocket re-render
   $('a.disable-on-click').on('click', function() {
@@ -115,4 +115,9 @@
   $(document).ready(function(){
     $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
   });
+  window.nextSubmissionReady = function() {
+    $('.question-grade').prop('disabled', false);
+    $('.submission-suspended-msg').hide();
+    $('.grade-rate-limit-popover').hide();
+  };
 </script>
