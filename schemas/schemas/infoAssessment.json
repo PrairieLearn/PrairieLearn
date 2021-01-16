@@ -99,12 +99,12 @@
             "default": false
         },
         "groupMaxSize": {
-            "description": "Maximum size of a group.",
+            "description": "Maximum number of students in a group.",
             "type": "number",
             "default": null
         },
         "groupMinSize": {
-            "description": "Minimum size of a group.",
+            "description": "Minimum number of students in a group.",
             "type": "number",
             "default": null
         },

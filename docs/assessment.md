@@ -106,7 +106,7 @@ For practice exams it is often desirable to make a *multiple instance* assessmen
 ## Enabling group work for collaborative assessments
 
 By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
-Instructor should also set information about group size constraints and student permissions in the json format. Example:
+Information about the group configuration can be set in the `infoAssessment.json` file. For example:
 ```json
 {
         "groupWork": true,
