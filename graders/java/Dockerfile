@@ -24,6 +24,6 @@ COPY javagrader.py /javagrader/javagrader.py
 COPY libs /javagrader/libs
 COPY JUnitAutograder.java /javagrader/
 
-ENV CLASSPATH=/javagrader:/javagrader/libs/hamcrest-core-1.3.jar:/javagrader/libs/junit-4.12.jar:/javagrader/libs/json-simple-1.1.1.jar:/grade/student:/grade/tests/libs/*:/grade/serverFilesCourse/java/libs/*:/grade/tests/junit:/grade/student
+ENV CLASSPATH=/javagrader:/javagrader/libs/*:/grade/tests/libs/*:/grade/serverFilesCourse/java/libs/*:/grade/tests/junit:/grade/student
 
 RUN javac -d /javagrader /javagrader/JUnitAutograder.java
