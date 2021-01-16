@@ -117,6 +117,14 @@ Information about the group configuration can be set in the `infoAssessment.json
         "studentGroupLeave": true,
 }
 ```
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`groupWork` | boolean | false | Enable the group work for the assessment.
+`groupMaxSize` | integer | - | The maximum size of a group.
+`groupMinSize` | integer | - | The minimum size of a group.
+`studentGroupCreate` | boolean | false | Allow students to create groups.
+`studentGroupJoin` | boolean | false | Allow students to join other groups by join code.
+`studentGroupLeave` | boolean | false | Allow students to leave groups.
 
 ### Instructor options for groupWork
 
