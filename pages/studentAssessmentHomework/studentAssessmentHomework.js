@@ -98,6 +98,7 @@ router.post('/', function(req, res, next) {
             const params = {
                 assessment_id: res.locals.assessment.id,
                 user_id: res.locals.user.user_id,
+                authn_user_id: res.locals.authn_user.user_id,
                 group_name,
                 join_code,
             };
@@ -143,6 +144,7 @@ router.post('/', function(req, res, next) {
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
+            authn_user_id: res.locals.authn_user.user_id,
             group_name: req.body.groupName,
         };
         //alpha and numeric characters only
@@ -153,10 +155,7 @@ router.post('/', function(req, res, next) {
             //try to create a group
             sqldb.query(sql.create_group, params, function(err, _result) {
                 if (!err) {
-                    sqldb.query(sql.join_justcreated_group, params, function(err, _result) {
-                        if (ERR(err, next)) return;
-                        res.redirect(req.originalUrl);
-                    });
+                    res.redirect(req.originalUrl);
                 } else {
                     sqldb.query(sql.get_config_info, params, function(err, result) {
                         if (ERR(err, next)) return;
@@ -181,6 +180,7 @@ router.post('/', function(req, res, next) {
         var params2 = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
+            authn_user_id: res.locals.authn_user.user_id,
         };
         sqldb.query(sql.leave_group, params2, function(err, _result) {
             if (ERR(err, next)) return;

@@ -9,6 +9,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
 const blocked = require('blocked');
@@ -41,6 +42,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
+const assets = require('./lib/assets');
 
 
 process.on('warning', e => console.warn(e)); // eslint-disable-line no-console
@@ -72,10 +74,21 @@ module.exports.initExpress = function() {
     const app = express();
     app.set('views', path.join(__dirname, 'pages'));
     app.set('view engine', 'ejs');
-    app.set('trust proxy', 'loopback');
+    app.set('trust proxy', config.trustProxy);
     config.devMode = (app.get('env') == 'development');
 
+    app.use(function(req, res, next) {res.locals.config = config; next();});
     app.use(function(req, res, next) {config.setLocals(res.locals); next();});
+
+    // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
+    app.use(function(req, res, next) {
+        if (req.headers['user-agent']) {
+            res.locals.userAgent = Bowser.parse(req.headers['user-agent']);
+        } else {
+            res.locals.userAgent = null;
+        }
+        next();
+    });
 
     // special parsing of file upload paths -- this is inelegant having it
     // separate from the route handlers but it seems to be necessary
@@ -189,15 +202,53 @@ module.exports.initExpress = function() {
     app.use(bodyParser.urlencoded({extended: false, limit: 5 * 1536 * 1024}));
     app.use(cookieParser());
     app.use(passport.initialize());
-    app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+    if (config.devMode)
+        app.use(favicon(path.join(__dirname, 'public', 'favicon-dev.ico')));
+    else
+        app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
     if ('localRootFilesDir' in config) {
         logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
         app.use(express.static(config.localRootFilesDir));
     }
+
+    // To allow for more aggressive caching of static files served from public/,
+    // we use an `assets/` path that includes a cachebuster in the path.
+    // In requests for resources, the cachebuster will be a hash of the contents
+    // of `/public`, which we will compute at startup. See `lib/assets.js` for
+    // implementation details.
+    app.use((req, res, next) => {
+        res.locals.asset_path = assets.assetPath;
+        next();
+    });
+    app.use('/assets/:cachebuster', express.static(path.join(__dirname, 'public'), {
+        // In dev mode, assets are likely to change while the server is running,
+        // so we'll prevent them from being cached.
+        maxAge: config.devMode ? '0' : '31557600',
+        immutable: true,
+    }));
+    // This route is kept around for legacy reasons - new code should prefer the
+    // "cacheable" route above.
     app.use(express.static(path.join(__dirname, 'public')));
-    app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
+
+    // To allow for more aggressive caching of files served from node_modules/,
+    // we insert a hash of the module version into the resource path. This allows
+    // us to treat those files as immutable and cache them essentially forever.
+    app.use((req, res, next) => {
+        res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
+        next();
+    });
+    app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules'), {
+        maxAge: '31557600',
+        immutable: true,
+    }));
+    // This is included for backwards-compatibility with pages that might still
+    // expect to be able to load files from the `/node_modules` route.
     app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+
+    // Included for backwards-compatibility; new code should load MathJax from
+    // `/cacheable_node_modules` instead.
+    app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
 
     // Support legacy use of ace by v2 questions
     app.use('/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
@@ -206,7 +257,6 @@ module.exports.initExpress = function() {
     // Middleware for all requests
     // response_id is logged on request, response, and error to link them together
     app.use(function(req, res, next) {res.locals.response_id = uuidv4(); next();});
-    app.use(function(req, res, next) {res.locals.config = config; next();});
 
     // load accounting for requests
     app.use(function(req, res, next) {load.startJob('request', res.locals.response_id); next();});
@@ -644,6 +694,11 @@ module.exports.initExpress = function() {
         require('./middlewares/studentAssessmentAccess'),
         require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining', [
+        require('./middlewares/selectAndAuthzAssessmentInstance'),
+        require('./middlewares/studentAssessmentAccess'),
+        require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
         require('./middlewares/selectAndAuthzAssessmentInstance'),
         require('./middlewares/logPageView')('studentAssessmentInstance'),
@@ -667,6 +722,11 @@ module.exports.initExpress = function() {
         app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
         app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
     }
+
+    // Serve extension statics
+    app.use('/pl/course_instance/:course_instance_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+    app.use('/pl/course_instance/:course_instance_id/instructor/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+    app.use('/pl/course/:course_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
 
     // student - news_items
     app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
@@ -953,7 +1013,7 @@ module.exports.insertDevUser = function(callback) {
 if (config.startServer) {
     async.series([
         async () => {
-            logger.info('PrairieLearn server start');
+            logger.verbose('PrairieLearn server start');
 
             let configFilename = 'config.json';
             if ('config' in argv) {
@@ -1091,6 +1151,7 @@ if (config.startServer) {
                 callback(null);
             });
         },
+        async () => await assets.init(),
         function(callback) {
             load.initEstimator('request', 1);
             load.initEstimator('authed_request', 1);
@@ -1153,7 +1214,7 @@ if (config.startServer) {
         } else {
             logger.info('PrairieLearn server ready, press Control-C to quit');
             if (config.devMode) {
-                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
+                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
             }
             if ('exit' in argv) { logger.info('exit option passed, quitting...'); process.exit(0); }
         }

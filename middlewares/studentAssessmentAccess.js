@@ -15,6 +15,19 @@ router.all('/', function(req, res, next) {
         checkUserAgent(res, req.headers['user-agent']);
     }
 
+    if (
+        !_.get(res.locals, 'authz_result.show_closed_assessment', true) &&
+        !_.get(res.locals, 'assessment_instance.open', true)
+    ) {
+        // This assessment instance is closed and can no longer be viewed
+        if (!_.get(res.locals, 'authz_result.show_closed_assessment_score', true)){
+            closedAssessmentNotViewableHiddenGrade(res);
+        } else {
+            closedAssessmentNotViewable(res);
+        }
+        return;
+    }
+    
     // SafeExamBrowser protect the assesment
     if ('authz_result' in res.locals &&
         res.locals.authz_result.mode == 'SEB') {
@@ -33,12 +46,8 @@ router.all('/', function(req, res, next) {
     // Password protect the assessment
     if ('authz_result' in res.locals &&
         'password' in res.locals.authz_result &&
-        res.locals.authz_result.password) {
-
-        // If the assessment is complete, use this middleware to show the logout page
-        if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {
-            return badSEB(req, res);
-        }
+        res.locals.authz_result.password &&
+        !('assessment_instance' in res.locals && res.locals.assessment_instance.open == false)) {
 
         // No password yet case
         if (req.cookies.pl_assessmentpw == null) {
@@ -54,15 +63,6 @@ router.all('/', function(req, res, next) {
         }
 
         // Successful password case: falls though
-    }
-
-    if (
-        !_.get(res.locals, 'authz_result.show_closed_assessment', true) &&
-        !_.get(res.locals, 'assessment_instance.open', true)
-    ) {
-        // This assessment instance is closed and can no longer be viewed
-        closedAssessmentNotViewable(res);
-        return;
     }
 
     // Pass-through for everything else
@@ -122,5 +122,10 @@ function checkUserAgent(res, userAgent) {
 
 function closedAssessmentNotViewable(res) {
     res.locals.prompt = 'closedAssessmentNotViewable';
+    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+}
+
+function closedAssessmentNotViewableHiddenGrade(res) {
+    res.locals.prompt = 'closedAssessmentNotViewableHiddenGrade';
     res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }

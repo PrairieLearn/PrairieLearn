@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -118,7 +118,7 @@
                    tabindex="0" data-toggle="popover" data-html="true"
                    title="Questions using <%= image.image %>"
                    data-content="<%= include('listQuestionsPopover', {image}); %>"
-                   data-trigger="focus">
+                   data-trigger="focus" href="#">
                     Show
                   </a>
                   <% } else { %>
