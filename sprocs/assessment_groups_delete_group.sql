@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
     -- ##################################################################
-    -- verify the updating group is belonged to the selected assessment
+    -- verify the group that will be deleted does in fact below to the selected assessment
     -- then lock the group row
     PERFORM 1
     FROM
@@ -18,7 +18,8 @@ BEGIN
         gc.assessment_id = assessment_groups_delete_group.assessment_id
         AND g.id = arg_group_id
         AND g.deleted_at IS NULL
-        FOR UPDATE of g;
+    FOR UPDATE of g;
+
     IF NOT FOUND THEN
         RAISE EXCEPTION 'The user does not belong to the assessment';
     END IF;

@@ -13,7 +13,7 @@ DECLARE
     temp_new_group_id BIGINT;
 BEGIN
     -- ##################################################################
-    -- get a copying group_config
+    -- get the group_config that will be copied
     SELECT src_gc.id INTO temp_copy_group_config_id
     FROM
         assessments AS src_a
