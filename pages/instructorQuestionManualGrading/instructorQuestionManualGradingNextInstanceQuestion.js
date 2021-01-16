@@ -7,15 +7,13 @@ const {error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
-    const params = {assessment_question_id: req.params.assessment_question_id};
+    const params = {assessment_question_id: res.locals.assessment_question_id};
     sqlDb.queryZeroOrOneRow(sql.get_unmarked_instance_questions, params, (err, result) => {
         if (ERR(err, next)) return;
         console.log(res.locals.urlPrefix);
         console.log(result);
-        const course_instance_id = 1;
-        const instance_question_id = 1;
-        res.redirect(res.locals.urlPrefix + '/pl/course_instance/' + course_instance_id + '/instance_question/' + instance_question_id);
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        const instance_question_id = result.rows[0].id;
+        res.redirect(res.locals.urlPrefix + '/instance_question/' + instance_question_id);
     });
 
     debug('GET /');
