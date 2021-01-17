@@ -51,9 +51,9 @@ public class JUnitAutograder extends RunListener {
             autograder.findStudentFiles(baseDirectoryForStudentCode);
             autograder.findTestFiles(baseDirectoryForTests, "");
 
-            autograder.compileFiles(autograder.studentFiles, "Compilation errors, please fix and try again.",
+            autograder.compileFiles(autograder.studentFiles, true, "Compilation errors, please fix and try again.",
                     "Compilation warnings:");
-            autograder.compileFiles(autograder.testFiles,
+            autograder.compileFiles(autograder.testFiles, false,
                     "Error compiling test files. This typically means your class does not match the specified signature.",
                     null);
             autograder.runTests();
@@ -96,7 +96,7 @@ public class JUnitAutograder extends RunListener {
      * https://stackoverflow.com/questions/2946338/how-do-i-programmatically-compile-and-instantiate-a-java-class
      * https://stackoverflow.com/questions/55496833/getting-list-of-all-tests-junit-tests
      */
-    private void compileFiles(Iterable<File> files, String messageIfError, String messageIfWarning) throws UngradableException {
+    private void compileFiles(Iterable<File> files, boolean listError, String messageIfError, String messageIfWarning) throws UngradableException {
 
         StringWriter out = new StringWriter();
         StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
@@ -107,12 +107,15 @@ public class JUnitAutograder extends RunListener {
                 fileManager.getJavaFileObjectsFromFiles(files)).call();
 
         if (!result) {
-            System.out.println("Compilation error");
-            this.message = messageIfError + "\n\n" + out.toString() + "\n";
+            System.out.println("Compilation error:");
+            System.out.println(out.toString());
+            this.message += messageIfError + (listError ? "\n\n" + out.toString() : "") + "\n";
             throw new UngradableException();
-        } else if (messageIfWarning != null && !"".equals(out.toString())) {
-            System.out.println("Compilation warning");
-            this.message = messageIfWarning + "\n\n" + out.toString() + "\n";
+        } else if (!"".equals(out.toString())) {
+            System.out.println("Compilation warning:");
+            System.out.println(out.toString());
+            if (listError)
+                this.message += messageIfWarning + "\n\n" + out.toString() + "\n";
         }
     }
 
