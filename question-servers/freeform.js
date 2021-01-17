@@ -224,7 +224,8 @@ module.exports = {
             return courseExtensionsCache[course.id].data;
         }
 
-        let extensions = await module.exports.loadExtensionsAsync(path.join(course.path, 'elementExtensions'));
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        let extensions = await module.exports.loadExtensionsAsync(path.join(coursePath, 'elementExtensions'));
         courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
         return extensions;
     },
@@ -392,7 +393,7 @@ module.exports = {
         const pythonFunction = phase;
         const pythonArgs = [data];
         if (phase == 'render') pythonArgs.push(html);
-        const fullFilename = path.join(context.question_dir, 'server.py');
+        const fullFilename = path.join(context.question_dir_host, 'server.py');
         fs.access(fullFilename, fs.constants.R_OK, (err) => {
             if (err) {
                 // server.py does not exist
@@ -715,7 +716,7 @@ module.exports = {
             return callback(null, courseIssues, data, '', Buffer.from(''));
         }
 
-        const htmlFilename = path.join(context.question_dir, 'question.html');
+        const htmlFilename = path.join(context.question_dir_host, 'question.html');
         module.exports.execTemplate(htmlFilename, data, (err, html, $) => {
             if (err) {
                 const courseIssue = new Error(htmlFilename + ': ' + err.toString());
@@ -862,7 +863,7 @@ module.exports = {
         options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
         options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
         options.server_files_course_path = path.join(context.course_dir, 'serverFilesCourse');
-        options.course_extensions_path = path.join(context.course.path, 'elementExtensions');
+        options.course_extensions_path = path.join(context.course_dir, 'elementExtensions');
         return options;
     },
 
@@ -1460,19 +1461,21 @@ module.exports = {
         ];
         await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
-        // question_dir is the path to the question as PL sees it
-        // question_dir_worker is the path to the question as the worker that
-        // executes code will see it
-        const courseRootWorker = config.workersExecutionMode === 'internal' ? coursePath : '/course';
-        const question_dir = path.join(coursePath, 'questions', question.directory);
-        const question_dir_worker = path.join(courseRootWorker, 'questions', question.directory);
+        // The `*Host` values here refer to the paths relative to PrairieLearn;
+        // the other values refer to the paths as they will be seen by the worker
+        // that actually executes the question.
+        const courseDirectory = config.workersExecutionMode === 'internal' ? coursePath : '/course';
+        const courseDirectoryHost = coursePath;
+        const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
+        const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
 
         const context = {
             question,
             course,
-            course_dir: course.path,
-            question_dir,
-            question_dir_worker,
+            course_dir: courseDirectory,
+            course_dir_host: courseDirectoryHost,
+            question_dir: questionDirectory,
+            question_dir_host: questionDirectoryHost,
         };
 
         /* Load elements and any extensions */
