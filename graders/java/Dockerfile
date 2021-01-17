@@ -21,8 +21,8 @@ RUN useradd -g sbuser sbuser
 
 RUN mkdir /javagrader
 COPY libs /javagrader/libs
-COPY JUnitAutograder.java /javagrader/
+COPY JUnitAutograder.java AutograderInfo.java /javagrader/
 
 ENV CLASSPATH=/javagrader:/javagrader/libs/*:/grade/tests/libs/*:/grade/serverFilesCourse/java/libs/*:/grade/tests/junit:/grade/student
 
-RUN javac -d /javagrader /javagrader/JUnitAutograder.java
+RUN javac -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java

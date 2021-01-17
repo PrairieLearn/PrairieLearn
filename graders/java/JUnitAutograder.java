@@ -5,6 +5,7 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
+import org.prairielearn.autograder.AutograderInfo;
 
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
@@ -136,15 +137,15 @@ public class JUnitAutograder extends RunListener {
     @Override
     public void testStarted(Description description) throws Exception {
         AutograderTest test = new AutograderTest(description.getMethodName());
-//        AutograderInfo info = description.getAnnotation(AutograderInfo.class);
-//        if (info != null) {
-//            if (info.points() > 0)
-//                test.points = test.maxPoints = info.points();
-//            if (!"".equals(info.name()))
-//                test.name = info.name();
-//            if (!"".equals(info.description()))
-//                test.name = info.description();
-//        }
+        AutograderInfo info = description.getAnnotation(AutograderInfo.class);
+        if (info != null) {
+            if (info.points() > 0)
+                test.points = test.maxPoints = info.points();
+            if (!"".equals(info.name()))
+                test.name = info.name();
+            if (!"".equals(info.description()))
+                test.name = info.description();
+        }
         testMap.put(description, test);
     }
 
