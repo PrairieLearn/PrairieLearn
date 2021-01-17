@@ -13,6 +13,7 @@
 !docker/
 !elements/
 !exampleCourse/
+!executor.js
 !grader_host/
 !lib/
 !middlewares/

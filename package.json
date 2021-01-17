@@ -6,6 +6,7 @@
     "scripts": {
         "start": "node server.js",
         "start-nodemon": "npx nodemon -L server.js",
+        "start-executor": "node executor.js",
         "test": "nyc --reporter=lcov mocha tests/index.js",
         "test-sync": "mocha tests/sync/index.js",
         "test-nocoverage": "mocha tests/index.js",
