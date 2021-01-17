@@ -20,7 +20,6 @@ RUN groupadd sbuser
 RUN useradd -g sbuser sbuser
 
 RUN mkdir /javagrader
-COPY javagrader.py /javagrader/javagrader.py
 COPY libs /javagrader/libs
 COPY JUnitAutograder.java /javagrader/
 
