@@ -13,7 +13,6 @@ const { promisify, callbackify } = require('util');
 
 const config = require('../lib/config');
 const schemas = require('../schemas');
-const config = require('../lib/config');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller-python');
 const workers = require('../lib/workers');

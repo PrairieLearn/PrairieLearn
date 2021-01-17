@@ -13,8 +13,9 @@ enum CallerState {
   CREATED = "CREATED",
   WAITING = "WAITING",
   IN_CALL = "IN_CALL",
+  RESTARTING = "RESTARTING",
   EXITING = "EXITING",
-  EXITED = "EXITED"
+  EXITED = "EXITED",
 }
 
 type CallerCallback = (err: Error, data?: any, output?: string) => void;
@@ -104,10 +105,13 @@ class FunctionMissingError extends Error {
     -> CallerState.WAITING, CallerState.EXITED
 
   CallerState.WAITING: Child process is running but no call is active, everything is healthy.
-    -> CallerState.IN_CALL, CallerState.EXITING, CallerState.EXITED
+    -> CallerState.IN_CALL, CallerState.RESTARTING, CallerState.EXITING, CallerState.EXITED
 
   CallerState.IN_CALL: A call is currently running.
     -> CallerState.WAITING, CallerState.EXITING, CallerState.EXITED
+
+  RESTARTING: The worker is restarting; waiting for confirmation of successful restart.
+    -> CallerState.WAITING, CallerState.EXITING
 
   CallerState.EXITING: The child process is being terminated.
     -> CallerState.EXITED
@@ -126,6 +130,7 @@ class PythonCaller {
   outputStderr: string;
   outputBoth: string;
   outputData: string;
+  outputRestart: string;
 
   lastCallData: any;
 
@@ -144,6 +149,7 @@ class PythonCaller {
     this.outputStderr = "";
     this.outputBoth = "";
     this.outputData = "";
+    this.outputRestart = "";
 
     // for error logging
     this.lastCallData = null;
@@ -174,14 +180,14 @@ class PythonCaller {
     const localOptions = _.defaults(options, {
       cwd: __dirname,
       paths: [],
-      timeout: 20000 // FIXME: this number (equivalent to 20 seconds) should not have to be this high
+      timeout: 20000, // FIXME: this number (equivalent to 20 seconds) should not have to be this high
     });
     const callData = {
       file,
       fcn,
       args,
       cwd: localOptions.cwd,
-      paths: localOptions.paths
+      paths: localOptions.paths,
     };
     const callDataString = JSON.stringify(callData);
     this.callback = callback;
@@ -191,6 +197,7 @@ class PythonCaller {
     this.outputStderr = "";
     this.outputBoth = "";
     this.outputData = "";
+    this.outputRestart = "";
 
     this.lastCallData = callData;
 
@@ -211,7 +218,7 @@ class PythonCaller {
       CallerState.CREATED,
       CallerState.WAITING,
       CallerState.EXITING,
-      CallerState.EXITED
+      CallerState.EXITED,
     ]);
 
     if (this.state == CallerState.CREATED) {
@@ -226,7 +233,25 @@ class PythonCaller {
         debug(
           `exit restart(), state: ${String(this.state)}, uuid: ${this.uuid}`
         );
-        callback(null, true);
+
+        this.state = CallerState.RESTARTING;
+        this.callback = callback;
+        this.timeoutID = setTimeout(this._restartTimeout.bind(this), 1000);
+
+        // Before reporting the restart as successful, we need to wait
+        // for a confirmation message to ensure that control has actually
+        // been returned to the Zygote. There's a potential race condition
+        // where we recieve this confirmation before we actually enter the
+        // official RESTARTING stage. To account for this, we check if
+        // there was a correct restart confirmation delivered at this point.
+        // If there was, we can immediately report the restart as successful.
+        // Otherwise, we defer control to either the output handler or the
+        // timeout; eventually, one of them will complete and allow us to exit
+        // the restarting stage.
+        if (this._restartWasSuccessful()) {
+          this._restartIsFinished();
+        }
+        // callback(null, true);
       });
     } else if (
       this.state == CallerState.EXITING ||
@@ -246,7 +271,7 @@ class PythonCaller {
       CallerState.CREATED,
       CallerState.WAITING,
       CallerState.EXITING,
-      CallerState.EXITED
+      CallerState.EXITED,
     ]);
 
     if (this.state == CallerState.CREATED) {
@@ -292,8 +317,9 @@ class PythonCaller {
     env.PYTHONIOENCODING = "utf-8";
     const options: child_process.SpawnOptions = {
       cwd: __dirname,
-      stdio: ["pipe", "pipe", "pipe", "pipe"], // stdin, stdout, stderr, and an extra one for data
-      env
+      // stdin, stdout, stderr, and two extra ones for data and exit confirmations
+      stdio: ["pipe", "pipe", "pipe", "pipe", "pipe"],
+      env,
     };
     this.child = child_process.spawn(cmd, args, options);
     debug(`started child pid ${this.child.pid}, uuid: ${this.uuid}`);
@@ -302,10 +328,13 @@ class PythonCaller {
     this.child.stdout.setEncoding("utf8");
     // @ts-ignore
     this.child.stdio[3].setEncoding("utf8");
+    // @ts-ignore
+    this.child.stdio[4].setEncoding("utf8");
 
     this.child.stderr.on("data", this._handleStderrData.bind(this));
     this.child.stdout.on("data", this._handleStdoutData.bind(this));
     this.child.stdio[3].on("data", this._handleStdio3Data.bind(this));
+    this.child.stdio[4].on("data", this._handleStdio4Data.bind(this));
 
     this.child.on("exit", this._handleChildExit.bind(this));
     this.child.on("error", this._handleChildError.bind(this));
@@ -327,7 +356,7 @@ class PythonCaller {
     this._checkState([
       CallerState.IN_CALL,
       CallerState.EXITING,
-      CallerState.WAITING
+      CallerState.WAITING,
     ]);
     if (this.state == CallerState.IN_CALL) {
       this.outputStderr += data;
@@ -382,6 +411,29 @@ class PythonCaller {
     );
   }
 
+  _handleStdio4Data(data: string) {
+    debug(
+      `enter _handleStdio4Data(), state: ${String(this.state)}, uuid: ${
+        this.uuid
+      }`
+    );
+    // Unlike in other calls, we'll allow data in any state since this data
+    // will come in outside the normal "call" flow and isn't guaranteed to
+    // be received in the RESTARTING state.
+    this.outputRestart += data;
+
+    // If this data is received while not in the RESTARTING state, it will
+    // be handled by the restart() function itself.
+    if (this.state == CallerState.RESTARTING && this._restartWasSuccessful()) {
+      this._restartIsFinished();
+    }
+    debug(
+      `exit _handleStdio4Data(), state: ${String(this.state)}, uuid: ${
+        this.uuid
+      }`
+    );
+  }
+
   _handleChildExit(code: number, signal: string) {
     debug(
       `enter _handleChildExit(), state: ${String(this.state)}, uuid: ${
@@ -391,7 +443,7 @@ class PythonCaller {
     this._checkState([
       CallerState.WAITING,
       CallerState.IN_CALL,
-      CallerState.EXITING
+      CallerState.EXITING,
     ]);
     delete activeCallers[this.uuid];
     if (this.state == CallerState.WAITING) {
@@ -436,7 +488,7 @@ class PythonCaller {
     this._checkState([
       CallerState.WAITING,
       CallerState.IN_CALL,
-      CallerState.EXITING
+      CallerState.EXITING,
     ]);
     if (this.state == CallerState.WAITING) {
       this._logError(
@@ -493,6 +545,40 @@ class PythonCaller {
     );
   }
 
+  _restartTimeout() {
+    debug(
+      `enter _restartTimeout(), state: ${String(this.state)}, uuid: ${
+        this.uuid
+      }`
+    );
+    this._checkState([CallerState.RESTARTING]);
+    this.timeoutID = null;
+    const err = new Error(
+      "restart timeout exceeded, killing PythonCaller child"
+    );
+    this.child.kill("SIGTERM");
+    this.state = CallerState.EXITING;
+    this._callCallback(err);
+    debug(
+      `exit _restartTimeout(), state: ${String(this.state)}, uuid: ${this.uuid}`
+    );
+  }
+
+  _clearRestartTimeout() {
+    debug(
+      `enter _clearRestartTimeout(), state: ${String(this.state)}, uuid: ${
+        this.uuid
+      }`
+    );
+    clearTimeout(this.timeoutID);
+    this.timeoutID = null;
+    debug(
+      `exit _clearRestartTimeout(), state: ${String(this.state)}, uuid: ${
+        this.uuid
+      }`
+    );
+  }
+
   _callCallback(err: Error, data?: any, output?: string) {
     debug(
       `enter _callCallback(), state: ${String(this.state)}, uuid: ${this.uuid}`
@@ -540,6 +626,48 @@ class PythonCaller {
     );
   }
 
+  /**
+   * Returns true if a restart was successfully confirmed. A return value of
+   * false doesn't necessarily mean that the restart has failed; we just may
+   * not yet have enough information to determine if it was successful. We
+   * always let the restart timeout handle the unsuccessful case to simplify
+   * code.
+   */
+  _restartWasSuccessful() {
+    if (this.outputRestart.indexOf("\n") === -1) {
+      // We haven't yet gotten enough output to know if the restart
+      // was successful.
+      return false;
+    }
+    try {
+      const data = JSON.parse(this.outputRestart);
+      return data.exited === true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  _restartIsFinished() {
+    debug(
+      `enter _restartIsFinished(), state: ${String(this.state)}, uuid: ${
+        this.uuid
+      }`
+    );
+    if (!this._checkState([CallerState.RESTARTING])) return;
+    this._clearRestartTimeout();
+    this.state = CallerState.WAITING;
+    const c = this.callback;
+    this.callback = null;
+    // This function is guaranteed to only be called if there was a successful
+    // restart, so we don't have to do any
+    c(null, true);
+    debug(
+      `exit _restartIsFinished(), state: ${String(this.state)}, uuid: ${
+        this.uuid
+      }`
+    );
+  }
+
   _errorData() {
     const errForStack = new Error();
     return {
@@ -552,7 +680,7 @@ class PythonCaller {
       outputBoth: this.outputBoth,
       outputData: this.outputData,
       stack: errForStack.stack,
-      lastCallData: this.lastCallData
+      lastCallData: this.lastCallData,
     };
   }
 
