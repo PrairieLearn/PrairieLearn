@@ -7,10 +7,12 @@ import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
 import javax.tools.JavaCompiler;
+import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -31,6 +33,10 @@ public class JUnitAutograder extends RunListener {
     private List<AutograderTest> tests = new ArrayList<>();
     private Map<Description, AutograderTest> testMap = new HashMap<>();
 
+    private Collection<File> studentFiles = new HashSet<>();
+    private Collection<File> testFiles = new HashSet<>();
+    private Collection<String> testClasses = new HashSet<>();
+
     public JUnitAutograder() {
         this.compiler = ToolProvider.getSystemJavaCompiler();
         this.jUnitCore = new JUnitCore();
@@ -41,21 +47,47 @@ public class JUnitAutograder extends RunListener {
 
         JUnitAutograder autograder = new JUnitAutograder();
 
-        autograder.compileStudentFiles(baseDirectoryForStudentCode);
-        autograder.testFilesInDirectory(baseDirectoryForTests, "");
-        autograder.saveResults();
+        try {
+            autograder.findStudentFiles(baseDirectoryForStudentCode);
+            autograder.findTestFiles(baseDirectoryForTests, "");
+
+            autograder.compileFiles(autograder.studentFiles, "Compilation errors, please fix and try again.",
+                    "Compilation warnings:");
+            autograder.compileFiles(autograder.testFiles,
+                    "Error compiling test files. This typically means your class does not match the specified signature.",
+                    null);
+            autograder.runTests();
+
+        } catch (UngradableException e) {
+            autograder.gradable = false;
+        } finally {
+            autograder.saveResults();
+        }
     }
 
-    private void compileStudentFiles(File directory) {
+    private void findStudentFiles(File directory) throws UngradableException {
+
+        StringWriter out = new StringWriter();
 
         for (File fileEntry : directory.listFiles()) {
             if (fileEntry.isDirectory())
-                this.compileStudentFiles(fileEntry);
+                this.findStudentFiles(fileEntry);
             else if (fileEntry.getName().endsWith(".java")) {
                 System.out.println("Student class found: " + fileEntry.getName());
-                this.compiler.run(null, null, null,
-                        "-d", baseDirectoryForStudentCode.getAbsolutePath(),
-                        fileEntry.getAbsolutePath());
+                this.studentFiles.add(fileEntry);
+            }
+        }
+    }
+
+    public void findTestFiles(File directory, String classBaseName) throws UngradableException {
+
+        for (File fileEntry : directory.listFiles()) {
+            if (fileEntry.isDirectory())
+                this.findTestFiles(fileEntry, classBaseName + fileEntry.getName() + ".");
+            else if (fileEntry.getName().endsWith(".java")) {
+                System.out.println("Test found: " + fileEntry.getName());
+                testFiles.add(fileEntry);
+                testClasses.add(classBaseName + fileEntry.getName().substring(0, fileEntry.getName().length() - 5));
             }
         }
     }
@@ -64,26 +96,36 @@ public class JUnitAutograder extends RunListener {
      * https://stackoverflow.com/questions/2946338/how-do-i-programmatically-compile-and-instantiate-a-java-class
      * https://stackoverflow.com/questions/55496833/getting-list-of-all-tests-junit-tests
      */
-    public void testFilesInDirectory(File directory, String classBaseName) {
+    private void compileFiles(Iterable<File> files, String messageIfError, String messageIfWarning) throws UngradableException {
 
-        for (File fileEntry : directory.listFiles()) {
-            if (fileEntry.isDirectory())
-                this.testFilesInDirectory(fileEntry, classBaseName + fileEntry.getName() + ".");
-            else if (fileEntry.getName().endsWith(".java")) {
-                System.out.println("Test found: " + fileEntry.getName());
-                String className = classBaseName + fileEntry.getName().substring(0, fileEntry.getName().length() - 5);
-                this.compiler.run(null, null, null,
-                        "-d", baseDirectoryForTests.getAbsolutePath(),
-                        fileEntry.getAbsolutePath());
-                try {
-                    Class<?> cls = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-                    this.jUnitCore.run(cls);
-                } catch (ClassNotFoundException e) {
-                    AutograderTest test = new AutograderTest(className);
-                    test.points = 0;
-                    test.message = "Could not load test class " + className;
-                    tests.add(test);
-                }
+        StringWriter out = new StringWriter();
+        StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
+
+        boolean result = this.compiler.getTask(out, null, null,
+                Arrays.asList(new String[]{"-Xlint", "-d", baseDirectoryForStudentCode.getAbsolutePath()}),
+                null,
+                fileManager.getJavaFileObjectsFromFiles(files)).call();
+
+        if (!result) {
+            System.out.println("Compilation error");
+            this.message = messageIfError + "\n\n" + out.toString() + "\n";
+            throw new UngradableException();
+        } else if (messageIfWarning != null && !"".equals(out.toString())) {
+            System.out.println("Compilation warning");
+            this.message = messageIfWarning + "\n\n" + out.toString() + "\n";
+        }
+    }
+
+    public void runTests() throws UngradableException {
+
+        for (String className : testClasses) {
+            try {
+                Class<?> cls = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
+                this.jUnitCore.run(cls);
+            } catch (ClassNotFoundException e) {
+                this.points = 0;
+                this.message = "Could not load test class " + className;
+                throw new UngradableException();
             }
         }
     }
@@ -171,5 +213,8 @@ public class JUnitAutograder extends RunListener {
             object.put("message", this.message);
             return object;
         }
+    }
+
+    private class UngradableException extends Exception {
     }
 }
