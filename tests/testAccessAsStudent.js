@@ -17,7 +17,7 @@ const storedConfig = {};
 
 var newAssessmentsUrl;
 
-describe('Test student auto-enrolment', function() {
+describe('Test student auto-enrollment', function() {
     this.timeout(20000);
 
     before('set authenticated user', function(callback) {
