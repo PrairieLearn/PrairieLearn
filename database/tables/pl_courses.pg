@@ -15,6 +15,7 @@ columns
     sync_job_sequence_id: bigint
     sync_warnings: text
     title: text
+    manual_grading_visible: boolean
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
