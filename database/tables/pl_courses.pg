@@ -7,6 +7,7 @@ columns
     grading_queue: text
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
+    manual_grading_visible: boolean
     options: jsonb not null default '{}'::jsonb
     path: text
     repository: text
@@ -15,7 +16,6 @@ columns
     sync_job_sequence_id: bigint
     sync_warnings: text
     title: text
-    manual_grading_visible: boolean
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
