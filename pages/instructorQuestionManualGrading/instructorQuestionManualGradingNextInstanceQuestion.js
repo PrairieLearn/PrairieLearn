@@ -10,8 +10,7 @@ router.get('/', (req, res, next) => {
     const params = {assessment_question_id: res.locals.assessment_question_id};
     sqlDb.queryZeroOrOneRow(sql.get_unmarked_instance_questions, params, (err, result) => {
         if (ERR(err, next)) return;
-        console.log(res.locals.urlPrefix);
-        console.log(result);
+        if (result.rowCount === 0) return next(error.make('500', 'No unmarked assignments to load'));
         const instance_question_id = result.rows[0].id;
         res.redirect(res.locals.urlPrefix + '/instance_question/' + instance_question_id + '/manual_grading');
     });
