@@ -4,7 +4,7 @@ const { PythonCaller, FunctionMissingError } = require('./lib/code-caller-python
 
 /**
  * @typedef {Object} Request
- * @property {string} type
+ * @property {import('./lib/code-caller-python').CallType} type
  * @property {string} directory
  * @property {string} file
  * @property {string} fcn
@@ -24,13 +24,28 @@ const { PythonCaller, FunctionMissingError } = require('./lib/code-caller-python
  * Receives a single line of input and executes the instructions contained in
  * it in the provided code caller.
  *
+ * The Promise returned from this function should never reject - errors will
+ * be indicated by the `error` property on the result.
+ *
  * @param {string} line
  * @param {PythonCaller} caller
  * @returns {Promise<Results>}
  */
-async function handleInput(line, caller) {
-  return new Promise((resolve, reject) => {
-    const request = /** @type {Request} */ (JSON.parse(line));
+function handleInput(line, caller) {
+  return new Promise((resolve) => {
+    /** @type {Request} */
+    let request;
+    try {
+      request = JSON.parse(line);
+    } catch (err) {
+      // We shouldn't ever get malformed JSON from the caller - but if we do,
+      // handle it gracefully.
+      resolve({
+        error: err.message,
+        needsFullRestart: false,
+      });
+      return;
+    }
 
     if (request.fcn === 'restart') {
       caller.restart((restartErr, success) => {
@@ -45,7 +60,9 @@ async function handleInput(line, caller) {
     // Course will always be at `/course` in the Docker executor
     caller.prepareForCourse('/course', (err) => {
       if (err) {
-        // TODO: handle err?
+        // We should never actually hit this case - but if we do, handle it so
+        // that all our bases are covered.
+        resolve({ needsFullRestart: true });
       }
 
       caller.call(
