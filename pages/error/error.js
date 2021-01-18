@@ -12,7 +12,7 @@ module.exports = function(err, req, res, _next) {
     res.status(err.status);
     var referrer = req.get('Referrer') || null;
     logger.log(
-        (err.status >= 500) ? 'error' : 'info',
+        (err.status >= 500) ? 'error' : 'verbose',
         'Error page',
         {
             msg: err.message,
