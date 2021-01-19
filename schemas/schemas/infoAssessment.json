@@ -126,6 +126,7 @@
             "description": "Whether students can leave groups.",
             "type": "boolean",
             "default": false
+        },
         "gradeRateMinutes": {
             "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
             "type": "number",
