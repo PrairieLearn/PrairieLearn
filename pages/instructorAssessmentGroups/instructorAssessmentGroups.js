@@ -107,12 +107,12 @@ router.post('/', function(req, res, next) {
         uidlist.forEach(uid => {
             updateList.push([groupname, uid]);
         });
-        const params2 = [
+        const params = [
             assessment_id,
             updateList,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_groups_update', params2, (err, result) => {
+        sqldb.call('assessment_groups_update', params, (err, result) => {
             if (err) {
                 res.locals.errormsg = 'ERROR when adding group ' + groupname + ' - Internal ' + String(err);
             } else {

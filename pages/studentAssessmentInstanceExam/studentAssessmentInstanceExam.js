@@ -54,6 +54,15 @@ router.post('/', function(req, res, next) {
                 res.redirect(req.originalUrl);
             }
         });
+    } else if (req.body.__action == 'leaveGroup') {
+        var params = {
+            assessment_instance_id: res.locals.assessment_instance.id,
+            user_id: res.locals.user.user_id,
+        };
+        sqldb.query(sql.leave_group, params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect('/pl/course_instance/' + res.locals.course_instance.id + '/assessment/' + res.locals.assessment.id);
+        });
     } else {
         next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
@@ -62,7 +71,10 @@ router.post('/', function(req, res, next) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
 
-    var params = {assessment_instance_id: res.locals.assessment_instance.id};
+    var params = {
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+    };
     sqldb.query(sql.select_instance_questions, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.instance_questions = result.rows;
