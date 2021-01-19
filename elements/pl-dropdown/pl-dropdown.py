@@ -111,6 +111,7 @@ def render(element_html, data):
             'parse-error': data['format_errors'].get(answers_name, None),
             'submission': True,
             'submitted-answer': submitted_answer,
+            'display-score-badge': correct is not None,
             'correct': correct
         }
 
