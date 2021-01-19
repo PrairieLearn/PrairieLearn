@@ -38,6 +38,7 @@
               <li class="list-group-item py-2">I certify that I am <%= user.name %> and I am allowed to take this assessment.</li>
               <li class="list-group-item py-2">I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.</li>
             </ul>
+
             <div class="card-footer text-center border-top-0 py-2">
               <span class="form-check d-inline">
                 <input type="checkbox" class="form-check-input" id="certify-pledge">
@@ -57,9 +58,11 @@
             const certify = $('#certify-pledge')[0];
             const start = $('#start-assessment')[0];
             const form = $('#confirm-form')[0];
+
             certify.onchange = () => {
               start.disabled = !certify.checked;
             };
+            
             form.onsubmit = () => {
                 start.disabled = true;
                 start.html = '<i class="fa fa-sync fa-spin fa-fw"></i> Generating assessment…';
