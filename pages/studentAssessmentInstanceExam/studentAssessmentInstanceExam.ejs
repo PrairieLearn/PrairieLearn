@@ -8,6 +8,7 @@
       $(function () {
           $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
       });
+
       // make the file inputs display the file name
       $(document).on('change', '.custom-file-input', function () {
           let filename = $(this).val().replace(/\\/g, '/').replace(/.*\//, '');
@@ -62,6 +63,7 @@
         $(function() {$('#timeLimitExpiredModal').modal({})})
       </script>
     <% } // showTimeLimitExpiredModal %>
+    
     <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
     <div id="content" class="container">
       <div class="card mb-4">
@@ -203,6 +205,7 @@
                   <i class="fas fa-paperclip"></i>
                 <% } %>
               </td>
+
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
                 <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
