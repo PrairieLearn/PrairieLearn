@@ -112,7 +112,8 @@ BEGIN
             grading_method = 'External',
             override_score = new_score,
             score = COALESCE(new_score, score),
-            correct = COALESCE(new_correct, correct)
+            correct = COALESCE(new_correct, correct),
+            gradable = CASE WHEN new_score IS NULL THEN gradable ELSE TRUE END
         WHERE s.id = submission_id;
     END IF;
 
@@ -126,6 +127,7 @@ BEGIN
             points_in_grading = 0,
             score_perc = new_score_perc,
             score_perc_in_grading = 0,
+            status = 'complete',
             modified_at = now()
         WHERE iq.id = instance_question_id;
 

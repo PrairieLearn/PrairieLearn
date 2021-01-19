@@ -194,6 +194,12 @@ To avoid issues with student-provided code running longer than expected, such as
 self.test_run('./slowprogram', exp_output='COMPLETED', timeout=10)
 ```
 
+To avoid issues with student-provided code producing code that is too large for PrairieLearn to handle, by default any program with more than 10KB (more precisely, 10240 characters) of output will fail and have its output truncated. To change this limit, use the `size_limit` argument, which should be set to a number of characters.
+
+```python
+self.test_run('./verboseprogram', exp_output='COMPLETED', size_limit=102400)
+```
+
 The test will be created and shown to the user, worth 1 point by default. The default name for a test that include an `input` argument is: `Test with input "<INPUT>"` (where `INPUT` is the provided input). For a test that uses `args`, the default name is `Test with arguments "<ARGS>"` (where `ARGS` is the set of arguments separated by spaces). A message will also be included with a summary of expected and rejected outputs. To change these settings, use the `max_points`, `msg` and/or `name` arguments:
 
 ```python
