@@ -142,7 +142,7 @@
               <div class="modal-body">
                 <form name="copy-assessment-group-form" method="POST" enctype="multipart/form-data">
                   <div class="input-group mb-3">
-                    <select class="custom-select" name="copyAssessmentId">
+                    <select class="custom-select" name="copy_assessment_id">
                       <option selected>Choose Assessment...</option>
                       <% assessment_list_rows.forEach(function(row, iRow) {%>
                       <option value=<%= row.id %>><%= row.tid %>: <%= row.title %></option>

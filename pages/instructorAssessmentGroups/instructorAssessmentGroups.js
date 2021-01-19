@@ -76,7 +76,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'copy_assessment_groups') {
         const params = [
             res.locals.assessment.id,
-            req.body.copyAssessmentId,
+            req.body.copy_assessment_id,
             res.locals.authn_user.user_id,
         ];
         sqldb.call('assessment_groups_copy', params, function(err, _result) {
@@ -95,7 +95,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'add_group') {
         const assessment_id = res.locals.assessment.id;
         const group_name = req.body.group_name;
-        if (!group_name && String(group_name).length < 1) {
+        if (!group_name || String(group_name).length < 1) {
             res.locals.errormsg = 'Please enter a group name when adding a group';
             obtainInfo(req, res, next);
             return;
