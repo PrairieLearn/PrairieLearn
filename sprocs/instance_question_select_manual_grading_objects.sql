@@ -21,6 +21,7 @@ BEGIN
         JOIN instance_questions AS iq ON (aq.id = iq.assessment_question_id)
     WHERE iq.id = iq_id;
 
+    -- If a variant has not been found, student has not opened question
     SELECT to_jsonb(v.*)
     INTO variant
     FROM
@@ -29,7 +30,7 @@ BEGIN
     ORDER BY v.date DESC, v.id DESC
     LIMIT 1;
 
-    -- -- If a variant has not been found, student has not loaded question
+    -- If variant is found but no submission, student did not submit anything
     SELECT to_jsonb(s.*)
     INTO submission
     FROM
@@ -37,6 +38,7 @@ BEGIN
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE iq.id = iq_id
+    ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
 END;
