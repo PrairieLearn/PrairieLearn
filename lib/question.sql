@@ -122,13 +122,14 @@ FROM
     JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE v.id = $variant_id;
 
---BLOCK select_all_submissions_and_variants
-SELECT s.*, v.variant_seed, v.options, v.question_id, ci.course_id, aq.init_points
+--BLOCK select_all_submissions_and_other_data
+SELECT s.*, v.variant_seed, v.options, v.question_id, ci.course_id, aq.init_points, q.qid
 FROM submissions AS s
 JOIN variants AS v ON (v.id = s.variant_id)
 JOIN course_instances AS ci on (ci.id = v.course_instance_id)
 LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
 JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+JOIN questions AS q ON (q.id = aq.question_id)
 WHERE iq.id = $instance_question_id
 ORDER BY s.id ASC;
 
@@ -145,7 +146,7 @@ WHERE q.id = $question_id;
 --BLOCK select_variant
 SELECT v.*
 FROM variants AS v
-WHERE v.id = $question_id;
+WHERE v.id = $variant_id;
 
 --BLOCK reset_instance_question
 UPDATE instance_questions as iq
