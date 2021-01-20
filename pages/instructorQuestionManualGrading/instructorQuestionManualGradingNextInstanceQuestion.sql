@@ -1,4 +1,4 @@
--- BLOCK get_unmarked_instance_questions
+-- BLOCK get_next_unmarked_instance_question
 SELECT s.*
     FROM instance_questions AS iq
     JOIN variants AS v ON (v.instance_question_id = iq.id)
