@@ -1,8 +1,14 @@
 -- BLOCK get_unmarked_instance_questions
-SELECT iq.* FROM instance_questions AS iq
-    LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
-    LEFT JOIN submissions AS s ON (s.variant_id = v.id)
-    -- Note that we want WHERE s.graded_at OR where no submission exists so we can manually grade 
-    -- non-submissions as 0 or where submissions have been submitted likely as non-0 scores.
-WHERE iq.assessment_question_id = $assessment_question_id AND (s.graded_at IS NULL OR s IS NULL);
-    
+SELECT s.*
+    FROM instance_questions AS iq
+    JOIN variants AS v ON (v.instance_question_id = iq.id)
+    JOIN (
+        -- We only want the last submission...
+        SELECT * FROM submissions AS s
+        ORDER BY s.date DESC, s.id DESC
+        LIMIT 1
+    ) s ON (s.variant_id = v.id)
+    -- ... and ONLY IF the last submission 'graded_at' is null (has not been graded)
+WHERE iq.assessment_question_id = 53 AND s.graded_at IS NULL
+ORDER BY s.date DESC, s.id DESC
+LIMIT 1;
