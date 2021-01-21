@@ -26,13 +26,13 @@ function scatter(selector, xdata, ydata, options) {
 
     var xmin = (options.xmin == "auto" ? _(options.xgrid).min() : options.xmin);
     var xmax = (options.xmax == "auto" ? _(options.xgrid).max() : options.xmax);
-    var x = d3.scale.linear()
+    var x = d3.scaleLinear()
         .domain([xmin, xmax])
         .range([0, width]);
 
     var ymin = (options.ymin == "auto" ? _(options.ygrid).min() : options.ymin);
     var ymax = (options.ymax == "auto" ? _(options.ygrid).max() : options.ymax);
-    var y = d3.scale.linear()
+    var y = d3.scaleLinear()
         .domain([ymin, ymax])
         .range([height, 0]);
 
@@ -44,31 +44,27 @@ function scatter(selector, xdata, ydata, options) {
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
 
-    var xAxis = d3.svg.axis()
+    var xAxis = d3.axisBottom()
         .scale(x)
         .tickValues(options.xgrid)
-        .tickFormat(xTickFormat)
-        .orient("bottom");
+        .tickFormat(xTickFormat);
 
     var yTickFormat = (options.yTickLabels == "auto" ? null
                        : function(d, i) {return options.yTickLabels[i];});
-    var yAxis = d3.svg.axis()
+    var yAxis = d3.axisLeft()
         .scale(y)
         .tickValues(options.ygrid)
-        .tickFormat(yTickFormat)
-        .orient("left");
+        .tickFormat(yTickFormat);
 
-    var xGrid = d3.svg.axis()
+    var xGrid = d3.axisBottom()
         .scale(x)
         .tickValues(options.xgrid)
-        .orient("bottom")
         .tickSize(-height)
         .tickFormat("");
 
-    var yGrid = d3.svg.axis()
+    var yGrid = d3.axisLeft()
         .scale(y)
         .tickValues(options.ygrid)
-        .orient("left")
         .tickSize(-width)
         .tickFormat("");
 
