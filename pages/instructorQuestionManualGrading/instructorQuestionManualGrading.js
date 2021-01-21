@@ -32,7 +32,7 @@ router.get('/', (req, res, next) => {
                 res.locals.question = result.rows[0].question;
                 res.locals.variant = result.rows[0].variant;
                 res.locals.submission = result.rows[0].submission;
-                res.locals.submission.score = res.locals.submission.score * 100;
+                res.locals.score_perc = res.locals.submission.score * 100;
                 callback(null);
             });
         },
