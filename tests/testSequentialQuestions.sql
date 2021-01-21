@@ -1,10 +1,5 @@
 -- BLOCK select_sequential_exam
-SELECT
-    a.id
-FROM
-    assessments AS a
-WHERE
-    a.uuid = 'd7bcc376-4f23-41d6-9f71-87dd1d23991b';
+SELECT id from assessments WHERE a.uuid = 'd7bcc376-4f23-41d6-9f71-87dd1d23991b';
 
 -- BLOCK select_locked_question
 SELECT
