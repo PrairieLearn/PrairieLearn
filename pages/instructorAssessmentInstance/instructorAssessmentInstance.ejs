@@ -144,14 +144,23 @@
               </td>
 
               <% if (config.regradeActive) { %>
-              <td>
+              <!-- <td>
                 <form name="regrade-question-button" method="POST">
                   <input type="hidden" name="__action" value="regrade_question">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                   <input type="hidden" name="instance_question_id" value="<%= instance_question.id %>">
                   <button type="submit" class="btn btn-primary">Regrade</button>
                 </form>
-              </td>
+              </td> -->
+              <td>
+                <button type="button" class="btn btn-primary regradeQuestionButton"
+                  id="regradeQuestion<%= i_instance_question %>" tabindex="0"
+                  data-toggle="popover" data-container="body"
+                  data-html="true" data-placement="auto" title="Regrade question <%= instance_question.question_number %>"
+                  data-content="<%= include('regradeQuestionForm',
+                                {id: 'regradeQuestion' + i_instance_question,
+                                instance_question: instance_question}); %>"
+                  data-trigger="manual" onclick="$(this).popover('show')">Regrade</button>
               <% } %>
               <td class="text-center">
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>

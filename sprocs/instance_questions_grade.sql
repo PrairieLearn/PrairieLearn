@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION
         submission_score DOUBLE PRECISION,
         grading_job_id bigint,
         authn_user_id bigint,
-        is_regrade BOOLEAN
+        is_regrade BOOLEAN DEFAULT FALSE
     ) RETURNS VOID
 AS $$
 DECLARE

@@ -166,13 +166,11 @@ router.post('/', (req, res, next) => {
         let instance_question_id = req.body.instance_question_id;
         let course_id = res.locals.course.id;
         let authn_user_id = res.locals.authn_user.user_id;
-        question.regradeQuestion(authn_user_id, course_id, instance_question_id, (err, job_sequence_id) => {
+        let update_method = req.body.update_method;
+        let keep_highest_score = update_method == 'highest-score-update';
+        question.regradeQuestion(authn_user_id, course_id, instance_question_id, keep_highest_score, (err, job_sequence_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-            // ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
-            //     if (ERR(err, next)) return;
-            //     res.redirect(req.originalUrl);
-            // });
         });
 
     } else {
