@@ -21,24 +21,23 @@ BEGIN
         JOIN instance_questions AS iq ON (aq.id = iq.assessment_question_id)
     WHERE iq.id = iq_id;
 
+    -- If a variant has not been found, student has not opened question
     SELECT to_jsonb(v.*)
     INTO variant
     FROM
         variants as v
-        JOIN submissions as s ON (s.variant_id = v.id)
-        JOIN instance_questions as iq ON (v.instance_question_id = iq.id)
-    WHERE iq.id = iq_id
+    WHERE v.instance_question_id = iq_id
     ORDER BY v.date DESC, v.id DESC
     LIMIT 1;
 
-    -- If a variant has not been found, student has not loaded question
-    IF variant IS NULL THEN RETURN; END IF;
-
-    -- If student has not loaded question, expect submission to be null
+    -- If variant is found but no submission, student did not submit anything
     SELECT to_jsonb(s.*)
     INTO submission
-    FROM submissions AS s
-    WHERE s.variant_id = (SELECT (variant->'id')::bigint)
+    FROM
+        instance_questions AS iq
+        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
+    WHERE iq.id = iq_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 

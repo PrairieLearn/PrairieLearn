@@ -50,7 +50,6 @@ router.get('/', (req, res, next) => {
     debug('GET /');
 });
 
-// TODO:
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'add_manual_grade') {
         const note = req.body.submission_note;
