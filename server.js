@@ -433,10 +433,6 @@ module.exports.initExpress = function() {
         res.redirect(`${req.params[0]}/questions`);
     });
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', function(req, res, next) {res.locals.navPage = 'assessment'; next();});
-    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading', [
-        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
-        require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
-    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/settings', [
         function(req, res, next) {res.locals.navSubPage = 'settings'; next();},
         require('./pages/instructorAssessmentSettings/instructorAssessmentSettings'),
@@ -474,6 +470,10 @@ module.exports.initExpress = function() {
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/regrading', [
         function(req, res, next) {res.locals.navSubPage = 'regrading'; next();},
         require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
         function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
