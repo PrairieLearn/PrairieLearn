@@ -28,6 +28,12 @@
     urlSuffix:      '/assessment/'+assessment.id+'/question_statistics',
     iconClasses:    'fas fa-table',
     tabLabel:       'Question stats'}) %>
+<!--  TODO: Put tab behind  -->
+<%- include('navTab', {
+    activeSubPage:  'manual_grading',
+    urlSuffix:      '/assessment/'+assessment.id+'/manual_grading',
+    iconClasses:    'fas fa-table',
+    tabLabel:       'Manual Grading'}) %>
 <%- include('navTab', {
     activeSubPage:  'regrading',
     urlSuffix:      '/assessment/'+assessment.id+'/regrading',

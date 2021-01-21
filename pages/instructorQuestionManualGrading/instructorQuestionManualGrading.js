@@ -5,7 +5,7 @@ const path = require('path');
 const async = require('async');
 const question = require('../../lib/question');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { error, sqlDb} = require('@prairielearn/prairielib');
+const { error, sqlDb } = require('@prairielearn/prairielib');
 
 // Other cases to figure out later: grading in progress, question is broken...
 router.get('/', (req, res, next) => {
@@ -16,11 +16,16 @@ router.get('/', (req, res, next) => {
             sqlDb.callZeroOrOneRow('instance_question_select_manual_grading_objects', params, (err, result) => {
                 if (ERR(err, next)) return;
 
+                // Instance question doesn't exist (redirect to config page)
+                if (result.rowCount == 0) {
+                    return new question.NoSubmissionError();
+                }
+
                 /**
                  * Student never loaded question (variant and submission is null)
                  * Student loaded question but did not submit anything (submission is null)
                  */
-                if (result.rowCount == 0 || !result.rows[0].variant || !result.rows[0].submission) {
+                if (!result.rows[0].variant || !result.rows[0].submission) {
                     return new question.NoSubmissionError();
                 }
 

@@ -9,10 +9,11 @@
             <input type="hidden" name="__action" value="add_manual_grade">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
-            <p>Score: <input name="submission-score" value="1"/>
-            <p>Note: <input name="submission-note" value="Good job.">
-            <p>Submission id: <input name="submission-id" value="<%= submission.id %>">
-            <button type="submit" class="btn btn-danger">Submit Manual Grade</button>
+            <p>Score: <input name="submission-score" value="<%= submission.score %>"/>
+            <p>Note: <input name="submission-note" value="<%- JSON.stringify(submission.feedback) %>">
+            <!-- <p>Submission id: <input name="submission-id" value="<%= submission.id %>"> -->
+            <button type="submit" class="btn btn-primary">Submit And Next For Question</button>
+            <!-- <button type="submit" class="btn btn-info">Submit And Next For Student</button> -->
         </form>
       </div>
       <div class="card-footer small">
