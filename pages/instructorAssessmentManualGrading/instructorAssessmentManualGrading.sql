@@ -2,8 +2,8 @@
 SELECT
     s.*
 FROM
-    assessment_questions AS aq
-    JOIN instance_questions AS iq ON (aq.id = iq.assessment_question_id)
+    instance_questions AS iq
+    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     JOIN variants AS v ON (v.instance_question_id = iq.id)
     JOIN (
         -- We only want the last submission...
@@ -11,9 +11,8 @@ FROM
         ORDER BY s.date DESC, s.id DESC
         LIMIT 1
     ) s ON (s.variant_id = v.id)
--- Filter out only for questions marked for grading
 WHERE
     -- Front end can filter out by the manual grading date
-    aq.assessment_id = $assessment_id
-ORDER BY aq.assessment_id DESC, s.date DESC, s.id DESC
+    ai.assessment_id = $assessment_id
+ORDER BY iq.id DESC, s.date DESC, s.id DESC
 LIMIT 1;

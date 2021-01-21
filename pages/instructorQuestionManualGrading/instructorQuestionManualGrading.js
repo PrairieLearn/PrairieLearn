@@ -18,7 +18,7 @@ router.get('/', (req, res, next) => {
 
                 // Instance question doesn't exist (redirect to config page)
                 if (result.rowCount == 0) {
-                    return new Error('No gradeable submissions found.');
+                    return callback(error.make(404, 'Instance question not found.', {locals: res.locals, body: req.body}));
                 }
 
                 /**
@@ -26,7 +26,7 @@ router.get('/', (req, res, next) => {
                  * Student loaded question but did not submit anything (submission is null)
                  */
                 if (!result.rows[0].variant || !result.rows[0].submission) {
-                    return new Error('No gradeable submissions found.');
+                    return callback(error.make(404, 'No gradable submissions found.', {locals: res.locals, body: req.body}));
                 }
 
                 res.locals.question = result.rows[0].question;
@@ -38,12 +38,12 @@ router.get('/', (req, res, next) => {
        (callback) => {
             res.locals.overlayGradingInterface = true;
             question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
-              if (ERR(err, callback)) return;
+              if (ERR(err, next)) return;
               callback(null);
             });
         },
     ], (err) => {
-        if (ERR(err, next)) return;
+        if (ERR(err, next)) return;   
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 

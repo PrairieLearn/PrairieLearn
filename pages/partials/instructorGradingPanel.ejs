@@ -15,17 +15,17 @@
               <div class="input-group">
                 <input type="text" class="form-control" id="submissionScore" name="submission-score" value="<%= submission.score %>" aria-describedby="scoreHelpBlock"/>  
                 <span class="input-group-addon">%</span>
-                <small id="scoreHelpBlock" class="form-text text-muted">
-                  This percentage will override the most recent submission score.
-                </small>
               </div>
+              <small id="scoreHelpBlock" class="form-text text-muted">
+                This percentage will override the most recent submission score.
+              </small>
             </div>
             <div class="form-group">
               <label for="submission-feedback">Feedback:</label>
               <input name="submission-note" class="form-control" id="submission-feedback" value="<%- JSON.stringify(submission.feedback) %>">
             </div>
             <div class="text-right">
-              <button type="submit" class="btn btn-primary">Submit</button>
+              <button type="submit" class="btn btn-primary">Submit and Next</button>
             </div>
         </form>
       </div>
