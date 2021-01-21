@@ -18,6 +18,5 @@ FROM
     ) s ON (s.variant_id = v.id)
 WHERE
     ai.assessment_id = $assessment_id
-    AND s.gradable IS TRUE
 ORDER BY iq.id DESC, s.date DESC, s.id DESC
 LIMIT 1;
