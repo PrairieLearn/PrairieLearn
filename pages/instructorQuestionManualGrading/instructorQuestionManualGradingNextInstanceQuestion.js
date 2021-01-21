@@ -11,9 +11,12 @@ router.get('/', (req, res, next) => {
     // Unmarked instance question df. Is last created submission of instance question AND has null graded_at value.
     sqlDb.queryZeroOrOneRow(sql.get_next_unmarked_instance_question, params, (err, result) => {
         if (ERR(err, next)) return;
-        // TODO: Should we direct to the admin page? 
-        // `${res.locals.urlPrefix}/assessment/${assessment_id}/manual_grading`
-        if (!result.rows[0]) return next(error.make('500', 'No unmarked instance questions to load for assessment_question_id: ' + params.assessment_question_id));
+
+        // If we have no more submissions, then redirect back to manual grading page
+        if (!result.rows[0]) {
+            res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`);
+            return;
+        }
         const instance_question_id = result.rows[0].id;
         res.redirect(res.locals.urlPrefix + '/instance_question/' + instance_question_id + '/manual_grading');
     });
