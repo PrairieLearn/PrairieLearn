@@ -46,7 +46,7 @@ router.post('/', function(req, res, next) {
                 submission.broken,
                 submission.format_errors,
                 submission.partial_scores,
-                score, // overwrite submission score
+                score / 100, // overwrite submission score
                 submission.v2_score,
                 {manual:note}, // overwrite feedback
                 submission.submitted_answer,
