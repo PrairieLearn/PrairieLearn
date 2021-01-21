@@ -12,7 +12,7 @@
           $('[data-toggle="popover"]').popover({sanitize: false})
       });
     </script>
-    <%- include('../partials/navbar', {navPage: ''}); %>
+    <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
@@ -22,6 +22,12 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Manual Grading Queue
+        </div>
+
+        <div class="card-body">
+          <p class="small">
+            A list of ungraded submissions for questions. Note that submissions that students have saved, but not submitted, may be listed here.
+          </p>
         </div>
 
         <div class="table-responsive">
