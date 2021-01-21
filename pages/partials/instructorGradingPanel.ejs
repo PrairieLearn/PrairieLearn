@@ -5,15 +5,28 @@
         <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
             <blockquote style="color: red">Submission updated</blockquote>
         <% } %>
-        <form name="instance_question-mamual-grade-update-form" method="POST">
+        <form name="instance_question-manual-grade-update-form" method="POST">
             <input type="hidden" name="__action" value="add_manual_grade">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
-            <p>Score: <input name="submission-score" value="<%= submission.score %>"/>
-            <p>Note: <input name="submission-note" value="<%- JSON.stringify(submission.feedback) %>">
-            <!-- <p>Submission id: <input name="submission-id" value="<%= submission.id %>"> -->
-            <button type="submit" class="btn btn-primary">Submit And Next For Question</button>
-            <!-- <button type="submit" class="btn btn-info">Submit And Next For Student</button> -->
+            <input type="hidden" name="assessment_instance" value="<%= assessment_instance.assessment_id %>">
+            <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
+            <div class="form-group">
+              <label for="submissionScore">Score:</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="submissionScore" name="submission-score" value="<%= submission.score %>" aria-describedby="scoreHelpBlock"/>  
+                <span class="input-group-addon">%</span>
+                <small id="scoreHelpBlock" class="form-text text-muted">
+                  This percentage will override the most recent submission score.
+                </small>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="submission-feedback">Feedback:</label>
+              <input name="submission-note" class="form-control" id="submission-feedback" value="<%- JSON.stringify(submission.feedback) %>">
+            </div>
+            <div class="text-right">
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </div>
         </form>
       </div>
       <div class="card-footer small">

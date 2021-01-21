@@ -18,7 +18,7 @@ router.get('/', (req, res, next) => {
 
                 // Instance question doesn't exist (redirect to config page)
                 if (result.rowCount == 0) {
-                    return new question.NoSubmissionError();
+                    return new Error('No gradeable submissions found.');
                 }
 
                 /**
@@ -26,7 +26,7 @@ router.get('/', (req, res, next) => {
                  * Student loaded question but did not submit anything (submission is null)
                  */
                 if (!result.rows[0].variant || !result.rows[0].submission) {
-                    return new question.NoSubmissionError();
+                    return new Error('No gradeable submissions found.');
                 }
 
                 res.locals.question = result.rows[0].question;
@@ -89,12 +89,13 @@ router.post('/', function(req, res, next) {
 
                 res.locals['submission_updated'] = true;
                 debug('_gradeVariantWithClient()', 'inserted', 'grading_job.id:', res.locals['grading_job'].id);
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_instance}/assessment_question/${req.body.assessment_question_id}/manual_grading`);
             });
 
         });
     } else if (req.body.__action == 'update_manual_grade') {
-        //
+        // TODO: Update grade in DB?
+
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
