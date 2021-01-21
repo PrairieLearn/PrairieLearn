@@ -35,13 +35,13 @@
                 <th class="text-center" colspan="2">
                   Percentage score
                 </th>
-                <th class="text=center" colspan="2">
-                  Manual grading
+                <th class="text=center" colspan="1">
+                  Begin Grading
                 </th>
               </tr>
             </thead>
             <tbody>
-              <% instance_questions.forEach(function(instance_question, i_instance_question) { %>
+              <% instance_questions_to_grade.forEach(function(instance_question, i_instance_question) { %>
               <tr>
                 <td>
                   S-<%= instance_question.question_number %>.
@@ -80,23 +80,79 @@
                   <% } %>
                 </td>
                 <td>
-                  <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/manual_grading">Grade manually&nbsp;<i class="fa fa-arrow-right" aria-hidden="true"></i></a>
+                  <a class="btn btn-xs btn-secondary" href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/manual_grading"><i class="fa fa-arrow-right" aria-hidden="true"></i></a>
                 </td>
               </tr>
               <% }); %>
             </tbody>
           </table>
+        </div>
+      </div>
 
-          <script>
-            $(function(){
-                $("#loginstanceQuestionGradingTable").tablesorter({
-                    theme: "bootstrap",
-                    widthFixed: true,
-                    headerTemplate: '{content} {icon}',
-                    widgets: ["uitheme"],
-                });
-            });
-          </script>
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Graded Questions
+        </div>
+
+        <div class="table-responsive">
+          <table id="instanceQuestionGradingTable" class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Student question</th>
+                <th class="text-center">
+                  Awarded points
+                </th>
+                <th class="text-center" colspan="2">
+                  Percentage score
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <% instance_questions_graded.forEach(function(instance_question, i_instance_question) { %>
+              <tr>
+                <td>
+                  S-<%= instance_question.question_number %>.
+                  (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">student view</a>)
+                </td>
+                <td class="text-center">
+                  <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
+                  <% if (authz_data.has_instructor_edit) { %>
+                  <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
+                    id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
+                    data-toggle="popover" data-container="body"
+                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
+                    data-content="<%= include('../partials/editQuestionPointsForm',
+                                  {id: 'editQuestionPoints' + i_instance_question,
+                                  instance_question: instance_question}); %>"
+                    data-trigger="manual" onclick="$(this).popover('show')">
+                    <i class="fa fa-edit" aria-hidden="true"></i>
+                  </button>
+                  <% } %>
+                </td>
+                <td class="align-middle text-center">
+                  <%- include('../partials/scorebar', {score: instance_question.score_perc}); %>
+                </td>
+                <td class="align-middle" style="width: 1em;">
+                  <% if (authz_data.has_instructor_edit) { %>
+                  <button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
+                    id="editQuestionScorePerc<%= i_instance_question %>" tabindex="0"
+                    data-toggle="popover" data-container="body"
+                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> percentage score"
+                    data-content="<%= include('../partials/editQuestionScorePercForm',
+                                  {id: 'editQuestionScorePerc' + i_instance_question,
+                                  instance_question: instance_question}); %>"
+                    data-trigger="manual" onclick="$(this).popover('show')">
+                    <i class="fa fa-edit" aria-hidden="true"></i>
+                  </button>
+                  <% } %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
         </div>
       </div>
 
