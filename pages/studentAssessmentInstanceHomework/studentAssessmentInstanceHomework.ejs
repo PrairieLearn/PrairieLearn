@@ -36,7 +36,7 @@
               <%- include('../partials/pointsFormatter'); %>
               Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= assessment_instance.max_points %>
             </div>
-            <div class="col-md-3 col-sm-8 col-xs-12">
+            <div class="col-md-3 col-sm-6 col-xs-12">
               <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
             </div>
             <div class="col-md-6 col-sm-12 col-xs-12 text-right">
@@ -57,11 +57,7 @@
           </div>
           <% } %>
         </div>
-        <% if (assessment_text_templated) { %>
-          <div class="card-body bg-light border-top py-3">
-            <%- assessment_text_templated %>
-          </div>
-        <% } %>
+
         <table class="table table-sm table-hover">
           <thead>
             <tr>
@@ -72,13 +68,11 @@
             </tr>
           </thead>
           <tbody>
-            <% questions.forEach(function(question, q_index) { %>
+            <% questions.forEach(function(question) { %>
             <% if (question.start_new_zone && question.zone_title) { %>
             <tr>
               <th colspan="4">
-                <span class="mr-1">
-                  <%= question.zone_title %>
-                </span>
+                <%= question.zone_title %>
                 <% if (question.zone_has_max_points) { %>
                   <%- include('../partials/zoneInfoBadge', { zoneInfo: {
                     popoverContent: `Of the points that you are awarded for answering these questions, at most ${question.zone_max_points} will count toward your total points.`,
