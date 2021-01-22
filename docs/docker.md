@@ -89,14 +89,14 @@ The server will be available on port `3000`.
 
 The equivalent `docker run` command to perform all these actions would be:
 ```sh
-docker build -t prairielearn . 
+docker build -t prairielearn/prairielearn:local . 
 docker run -it --rm \
       -p 3000:3000 \
       - ./testCourse:/course \
       -v ${HOME}/pl_ag_jobs:/jobs -e HOST_JOBS_DIR=${HOME}/pl_ag_jobs \
       -v .:/PrairieLearn -e NODEMON=true \
       -v /var/run/docker.sock:/var/run/docker.sock
-      prairielearn
+      prairielearn/prairielearn
 ```
 
 ### Useful Commands
