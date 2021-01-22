@@ -1,60 +1,62 @@
-# JetBrains IDE files
-/.idea/
+# Development
 
-# OS X Finder files
-**/.DS_Store
+## Custom scripts
+/start-custom.sh
+docker-compose.override.yml # see section on multiple compose files in https://docs.docker.com/compose/reference/overview/
 
-# Backend dependencies
-/v1/backend/node_modules/
-/v1/frontend-build/
-/node_modules/
+## Editors
+/.idea/ # JetBrains
+.vscode
+.tmux.conf
 
-# Custom startup script
-/start.sh
+## Swap files
+**/*.swp
+**/*.swo
 
-# Server log files
-/v1/backend/server.log
-/server.log
+## Backup files
+**/*~
 
-# MkDocs generated HTML
-/site/
+## File explorers
+**/.DS_Store # OSX Finder
 
-# JSDoc generated HTML
-/docs/code-docs/
+# PrairieLearn
 
-# Config files
+## Config
 /v1/backend/config.json
 /v1/backend/config.json.*
 /config.json
 /aws-config.json
 
-# Swap files
-**/*.swp
-**/*.swo
+## Dependencies
+/v1/backend/node_modules/
+/v1/frontend-build/
+/node_modules/
 
-# Backup Files
-**/*~
+## Generated HTML
+/site/ # mkdocs
+/docs/code-docs/ #jsdoc
 
-# NPM log file
+## Runtime artifacts
+
+### Logs
+/v1/backend/server.log
+/server.log
 npm-debug.log
 
-# Code coverage files
+### Code coverage
 /coverage/
 /.nyc_output/
 
-# Python
+## Programming languages
+
+### Python
 __pycache__/
 *.py[cod]
 *$py.class
 
-# R
+### R
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 
-# VSCode files
-.vscode
-
-# tmux
-.tmux.conf
