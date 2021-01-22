@@ -22,17 +22,18 @@ function histmini(selector, data, options) {
         width = options.width - margin.left - margin.right,
         height = options.height - margin.top - margin.bottom;
 
-    var x = d3.scale.ordinal()
+    var x = d3.scaleBand()
         .domain(d3.range(data.length))
-        .rangeRoundBands([0, width], 0.2);
+        .rangeRound([0, width])
+        .padding(0.2);
 
     var ymin = (options.ymin == "auto" ? _(data).min() : options.ymin);
     var ymax = (options.ymax == "auto" ? _(data).max() : options.ymax);
-    var y = d3.scale.linear()
+    var y = d3.scaleLinear()
         .domain([ymin, ymax])
         .range([height, 0]);
 
-    var color = d3.scale.category10();
+    var color = d3.scaleOrdinal(d3.schemeCategory10);
 
     var svg = d3.select($(selector).get(0)).append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -47,12 +48,20 @@ function histmini(selector, data, options) {
         .attr("class", "bar")
         .attr("x", function(d, i) {return x(i);})
         .attr("y", function(d, i) {return y(d);})
-        .attr("width", function(d, i) {return x.rangeBand();})
+        .attr("width", function(d, i) {return x.bandwidth();})
         .attr("height", function(d, i) {return y(0) - y(d);});
 
     svg.append("line")
-        .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+        .attr('x1', 0)
+        .attr('y1', 0)
+        .attr('x2', width)
+        .attr('y2', 0)
+        .attr('class', 'x axis');
 
     svg.append("line")
-        .attr({x1: 0, y1: height, x2: width, y2: height, "class": "x axis"})
+        .attr('x1', 0)
+        .attr('y1', height)
+        .attr('x2', width)
+        .attr('y2', height)
+        .attr('class', 'x axis');
 };

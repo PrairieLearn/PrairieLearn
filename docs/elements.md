@@ -381,14 +381,25 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.
 `allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 `blank-value` | float | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
+`base` | integer | 10 | The base used to parse and represent the answer, or the special value 0 (see below).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
+
+#### Specifying a non-trivial base
+
+By default, the values are interpreted in base 10. The `base` argument may also be used, with a value between 2 and 36, to indicate a different base to interpret the student input, as well as to print the final result.
+
+The `base` argument can also accept a special value of 0. In this case, the values will by default be interpreted in base 10, however the student has the option of using different prefixes to indicate a value in a different format:
+
+* The prefixes `0x` and `0X` can be used for base-16 values (e.g., `0x1a`);
+* The prefixes `0b` and `0B` can be used for base-2 values (e.g., `0b1101`);
+* The prefixes `0o` and `0O` can be used for base-8 values (e.g., `0o777`).
 
 #### Example implementations
 
