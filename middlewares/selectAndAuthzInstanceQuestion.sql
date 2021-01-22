@@ -2,10 +2,10 @@
 WITH instance_questions_info AS (
     SELECT
         iq.id,
+        -- prev and next instance questions are JSON objects to pass directly 
+        -- to partials that render links inside of instance question pages.
         jsonb_build_object(
-            'id', (lag(iq.id) OVER w),
-            'score_perc', (lag(iq.score_perc) OVER w),
-            'sequence_locked', (lag(qo.sequence_locked) OVER w)
+            'id', (lag(iq.id) OVER w)
         ) AS prev_instance_question,
         jsonb_build_object(
             'id', (lead(iq.id) OVER w),
