@@ -12,17 +12,33 @@ DECLARE
     role enum_role;
     permissions_course_instance jsonb;
 BEGIN
-    SELECT e.role INTO role
-    FROM
-        enrollments AS e
-        JOIN users AS u ON (u.user_id = e.user_id)
-    WHERE
-        u.user_id = authz_course_instance.user_id
-        AND e.course_instance_id = authz_course_instance.course_instance_id
-        AND check_course_instance_access(authz_course_instance.course_instance_id, e.role, u.uid, u.institution_id, req_date);
+    
+    INSERT INTO enrollments AS e
+            (user_id, course_instance_id, role)
+    (
+        SELECT
+            u.user_id, authz_course_instance.course_instance_id, 'Student'
+        FROM
+            users AS u
+        WHERE
+            u.user_id = authz_course_instance.user_id
+            AND check_course_instance_access(authz_course_instance.course_instance_id, 'Student', u.uid, u.institution_id, req_date)
+    )
+    ON CONFLICT DO NOTHING RETURNING e.role INTO role;
 
     IF NOT FOUND THEN
-        role := 'None';
+        SELECT e.role INTO role
+        FROM
+            enrollments AS e
+            JOIN users AS u ON (u.user_id = e.user_id)
+        WHERE
+            u.user_id = authz_course_instance.user_id
+            AND e.course_instance_id = authz_course_instance.course_instance_id
+            AND check_course_instance_access(authz_course_instance.course_instance_id, e.role, u.uid, u.institution_id, req_date);
+
+        IF NOT FOUND THEN
+            role := 'None';
+        END IF;
     END IF;
 
     IF is_administrator THEN
