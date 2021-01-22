@@ -1,19 +1,17 @@
-version: '3.2'
+version: '3.8'
 services:
   pl:
     build:
       context: .
+    image: prairielearn/prairielearn:local
     ports:
       - 3000:3000
     volumes:
       - ./testCourse:/course
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/pl_ag_jobs:/jobs
+      - .:/PrairieLearn
     container_name: pl
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
-
-    # Starts the server with a different starting command
-    # Replaces /PrairieLearn/docker/init.sh
-    # This isn't functional on windows machines
-    # command: /PrairieLearn/docker/start_workspace.sh
+      - NODEMON=true

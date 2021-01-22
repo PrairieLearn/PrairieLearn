@@ -256,13 +256,6 @@ mkdir "$HOME/pl_ag_jobs"
 ```
 - Modify your PL docker run call to include the jobs directory.
 
-##### Docker Compose
-We have a `docker-compose.yml` in the top level of the PraireLearn repository which will build a local image of PraireLearn and run it in a container named `pl`. The test course directory will be mounted as a course.
-
-To build the image and start the container, type `docker-compose up` in the root directory. 
-
-To remove the container, type `docker-compose down`. To force the image to rebuild before restarting the container, type `docker-compose build`.
-
 ##### Shell Command
 On MacOS and Linux, `cd` to your course directory and copy-paste the following command:
 ```sh
