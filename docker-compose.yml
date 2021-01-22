@@ -1,8 +1,9 @@
-version: '3.2'
+version: '3.8'
 services:
   pl:
     build:
       context: .
+    image: prairielearn/prairielearn:local
     ports:
       - 3000:3000
     volumes:
@@ -13,5 +14,4 @@ services:
     container_name: pl
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
-      - DEBUG="* node server" 
       - NODEMON=true
