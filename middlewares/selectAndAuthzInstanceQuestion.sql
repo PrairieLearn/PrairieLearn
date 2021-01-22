@@ -12,8 +12,8 @@ WITH instance_questions_info AS (
             'score_perc', (lead(iq.score_perc) OVER w),
             'sequence_locked', (lead(qo.sequence_locked) OVER w)
         ) AS next_instance_question,
-        qo.question_number AS question_number,
-        qo.sequence_locked AS sequence_locked
+        qo.question_number,
+        qo.sequence_locked
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
