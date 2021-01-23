@@ -1,0 +1,17 @@
+{
+    "uuid": "ad089d0e-44b8-4ae7-add4-26bcd1474015",
+    "type": "v3",
+    "title": "Autograder demo: Hello World in Java",
+    "topic": "Autograder",
+    "tags": [
+        "burcu", "v3", "short-coding"
+    ],
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "jonatanschroeder/javagrader",
+        "timeout": 100,
+        "entrypoint": "java JUnitAutograder"
+    }
+}
