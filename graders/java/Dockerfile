@@ -23,6 +23,6 @@ RUN mkdir /javagrader
 COPY libs /javagrader/libs
 COPY JUnitAutograder.java AutograderInfo.java /javagrader/
 
-ENV CLASSPATH=/javagrader:/javagrader/libs/*:/grade/tests/libs/*:/grade/serverFilesCourse/java/libs/*:/grade/tests/junit:/grade/student
+ENV CLASSPATH=/javagrader:/javagrader/libs::/javagrader/libs/*:/grade/tests/libs:/grade/tests/libs/*:/grade/serverFilesCourse/java/libs/*:/grade/tests/junit:/grade/student
 
 RUN javac -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java

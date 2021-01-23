@@ -165,7 +165,8 @@ public class JUnitAutograder extends RunListener {
         AutograderTest test = testMap.get(failure.getDescription());
         if (test != null) {
             test.points = 0;
-            test.output = failure.getTrace();
+            test.message = failure.getMessage();
+            //test.output = failure.getTrace();
         }
     }
 
@@ -173,6 +174,7 @@ public class JUnitAutograder extends RunListener {
     private void saveResults() {
 
         JSONArray resultsTests = new JSONArray();
+        Collections.sort(this.tests);
         for (AutograderTest test : this.tests)
             resultsTests.add(test.toJson());
 
@@ -194,7 +196,7 @@ public class JUnitAutograder extends RunListener {
         }
     }
 
-    private class AutograderTest {
+    private class AutograderTest implements Comparable<AutograderTest> {
 
         private String name;
         private String description = "";
@@ -216,6 +218,10 @@ public class JUnitAutograder extends RunListener {
             object.put("output", this.output);
             object.put("message", this.message);
             return object;
+        }
+
+        public int compareTo(AutograderTest other) {
+            return this.name.compareTo(other.name);
         }
     }
 
