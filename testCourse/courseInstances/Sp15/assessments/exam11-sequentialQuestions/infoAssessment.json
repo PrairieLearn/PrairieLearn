@@ -35,7 +35,17 @@
         },
         {
             "questions": [
-                {"id": "partialCredit4_v2", "points": 1}
+                {"id": "partialCredit4_v2", "points": 1, "advanceScorePerc": 0}
+            ]
+        },
+        {
+            "questions": [
+                {"id": "addVectors", "points": 1}
+            ]
+        },
+        {
+            "questions": [
+                {"id": "addNumbers", "points": 1}
             ]
         }
     ]
