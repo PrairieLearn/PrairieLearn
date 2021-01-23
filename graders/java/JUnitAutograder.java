@@ -166,6 +166,7 @@ public class JUnitAutograder extends RunListener {
         if (test != null) {
             test.points = 0;
             test.message = failure.getMessage();
+            if (test.message == null) test.message = "";
             //test.output = failure.getTrace();
         }
     }
