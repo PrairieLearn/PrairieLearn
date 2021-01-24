@@ -28,13 +28,21 @@
 <p>
     PrairieLearn now has a new <code class="user-output">pl-order-blocks</code> element, thanks to the collaborative efforts of 
     <a href="https://github.com/frozemint">Jesse Wong</a> (University of British Columbia) and
-     <a href="https://github.com/xinhexu2">Zander Xu</a> (University of Illinois at Urbana-Champaign).
-    These can be used to arrange blocks from a given list to construct a solution.  It has many applications, 
+    <a href="https://github.com/xinhexu2">Zander Xu</a> (University of Illinois at Urbana-Champaign), with input from
+    <a href="https://github.com/nicknytko">Nicolas Nytko</a>,
+    <a href="https://github.com/SethPoulsen">Seth Poulsen</a>,
+    <a href="https://github.com/andrewstec">Andrew Stec</a>,
+    <a href="https://github.com/nathanielweinman">Nathaniel Weinman</a>,
+    and <a href="https://github.com/tdy">Tim Yang</a>.
+</p>
+
+<p>
+    This element can be used to select arrange blocks from a given list to construct a solution.  It has many applications, 
     including Parsons Problems, where students arrange blocks of scrambled code. Our source code was inspired by the the Parsons Problem 
     implementation in <a href="https://js-parsons.github.io">js-parsons</a>.
 </p>
 
-<img class="border rounded" src="pl-order-blocks.png" width="440px">
+<img class="border rounded" src="pl-order-blocks.png" width="600px">
 
 <p>
     Each block is specified in the <code class="user-output">question.html</code> similarly to the <code class="user-output">pl-multiple-choice</code> element. The code that 
@@ -55,7 +63,7 @@
 the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader, as illustrated in this 
 other example.</p>
 
-<img class="border rounded" src="pl-order-blocks-code.png" width="440px">
+<img class="border rounded" src="pl-order-blocks-code.png" width="594px">
 
 <div class="code-block rounded">
     <pre>Write the function <code>my_dot_product</code>:
