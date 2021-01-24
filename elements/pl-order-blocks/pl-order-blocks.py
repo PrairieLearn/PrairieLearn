@@ -182,7 +182,7 @@ def render(element_html, data):
             'source-header': source_header,
             'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
-            'dropzone_layout': 'bottom' if dropzone_layout == 'bottom' else 'right',
+            'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'enableIndentation' if check_indentation is True else None
         }
 
