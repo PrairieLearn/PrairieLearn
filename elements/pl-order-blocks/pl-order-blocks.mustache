@@ -1,7 +1,7 @@
 {{#question}}
     <div class="row">
         <div class="column {{dropzone_layout}}">
-            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="connectedSortable">
+            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="pl-order-blocks-connected-sortable">
                 <li class='ui-sortable-handle info info-fixed'>{{source-header}}</li>
                     {{#options}}
                         <li string="{{.}}" data-title="{{.}}">{{.}}</li>
@@ -9,7 +9,7 @@
                 </ul>
         </div>
             <div class="column {{dropzone_layout}}">
-                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="connectedSortable dropzone {{check_indentation}}">
+                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="dropzone pl-order-blocks-connected-sortable {{check_indentation}}">
                     <li class="ui-sortable-handle info info-fixed">{{solution-header}}</li>
                     {{#submission_dict}}
                         <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;'>{{text}}</li>

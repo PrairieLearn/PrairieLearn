@@ -87,11 +87,11 @@ function update_indent(leftDiff, id, ui) {
 
 $( document ).ready(function() {
     // Add drag and drop functionality for options elements that
-    // has the connectedSortable class code for the HTML popover
-    $('.connectedSortable').sortable({
+    // has the pl-order-blocks-connected-sortable class code for the HTML popover
+    $('.pl-order-blocks-connected-sortable').sortable({
         items: 'li:not(.info-fixed)',
         cancel: '.info',
-        connectWith: '.connectedSortable',
+        connectWith: '.pl-order-blocks-connected-sortable',
         placeholder: 'ui-state-highlight',
         create: function(event){
             // when the sortable is created, we need to put the two functions here
