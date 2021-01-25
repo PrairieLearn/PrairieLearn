@@ -11,7 +11,6 @@ const namedLocks = require('../lib/named-locks');
 
 async function loadNewsItems() {
     const news_items = [];
-    const numbers = [];
     const regex = /^([0-9]+)_.+$/;
     const dirs = await fsPromises.readdir(__dirname);
     await async.each(dirs, async (dir) => {
