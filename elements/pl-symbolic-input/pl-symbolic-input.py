@@ -136,10 +136,7 @@ def render(element_html, data):
             else:
                 a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
             a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
-            if data['raw_submitted_answers'].get(name, '').strip() == '':
-                html_params['a_sub'] = '\\texttt{(blank)}'
-            else:
-                html_params['a_sub'] = sympy.latex(a_sub)
+            html_params['a_sub'] = sympy.latex(a_sub)
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None

@@ -180,8 +180,6 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = '{:.12g}'.format(a_sub)
-            if data['raw_submitted_answers'].get(name, 'X').strip() == '':
-                html_params['a_sub'] = '(blank)'
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None

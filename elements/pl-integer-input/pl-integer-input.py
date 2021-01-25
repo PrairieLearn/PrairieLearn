@@ -134,8 +134,6 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = numpy.base_repr(a_sub, base) if base > 0 else data['raw_submitted_answers'].get(name, str(a_sub))
-            if data['raw_submitted_answers'].get(name, 'X').strip() == '':
-                html_params['a_sub'] = '(blank)'
 
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
