@@ -8,4 +8,3 @@ SELECT iq.*
         ORDER BY s.auth_user_id, s.date DESC, s.id DESC
     ) s ON (s.variant_id = v.id)
 WHERE iq.assessment_question_id = $assessment_question_id AND s.graded_at IS NULL;
-LIMIT 1;
