@@ -4,19 +4,24 @@ This file documents the default Java autograder included in the `prairielearn/gr
 
 ## Overview
 
-The Java autograder is based on [JUnit 4](https://junit.org/junit4/). In essence, individual tests correspond to individual annotated methods that run testing code, such as ([source](https://github.com/junit-team/junit4/wiki/Getting-started)):
+The Java autograder is based on [JUnit 5](https://junit.org/junit5/). In essence, individual tests correspond to individual annotated methods that run testing code, such as ([source](https://junit.org/junit5/docs/current/user-guide/#writing-tests)):
 
 ```java
-import static org.junit.Assert.assertEquals;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class CalculatorTest {
-  @Test
-  public void evaluatesExpression() {
-    Calculator calculator = new Calculator();
-    int sum = calculator.evaluate("1+2+3");
-    assertEquals(6, sum);
-  }
+import example.util.Calculator;
+
+import org.junit.jupiter.api.Test;
+
+class MyFirstJUnitJupiterTests {
+
+    private final Calculator calculator = new Calculator();
+
+    @Test
+    void addition() {
+        assertEquals(2, calculator.add(1, 1));
+    }
+
 }
 ```
 
@@ -75,7 +80,18 @@ Inside the `tests/junit` directory, one or more classes can be provided with met
 
 Tests that are part of a package must be provided in an equivalent subdirectory. For example, if a test named `AppTest` is in package `com.example.myapp.test`, it must be saved in the file `tests/junit/com/example/myapp/test/AppTest.java`.
 
-By default, all tests will be named based on the method name for the corresponding test, and will be worth one point. To change this default, the `@AutograderInfo` must be added as shown below:
+Each test found by JUnit will be provided as an individual result to the student. The name of the test result is based on the test's [display name](https://junit.org/junit5/docs/current/user-guide/#writing-tests-display-names). By default, each test will be worth one point. To change this default, a [tag](https://junit.org/junit5/docs/current/user-guide/#writing-tests-tagging-and-filtering) in the format `@Tag("points=XX")` (replacing `XX` with a number of points) must be provided. For example:
+
+```java
+    @Test
+    @DisplayName("Test addition of values 1 and 1")
+    @Tag("points=5")
+    void addition() {
+        assertEquals(2, calculator.add(1, 1));
+    }
+```
+
+An alternative method to specify points and display name is to use the custom `@AutograderInfo` annotation as shown below. This is recommended for legacy JUnit 4 tests, which provide limited support for tags.
 
 ```java
 import org.prairielearn.autograder.AutograderInfo;
@@ -90,7 +106,7 @@ import org.prairielearn.autograder.AutograderInfo;
     }
 ```
 
-Tests are listed to the user in alphabetical order of name.
+To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order).
 
 ### Libraries and instructor-provided classes
 
@@ -107,3 +123,5 @@ Some questions may include libraries and base classes that are common across mul
         "entrypoint": "java JUnitAutograder",
     }
 ```
+
+The libraries required to run JUnit 5 tests are already included as part of the autograder container, and don't need to be included again.
