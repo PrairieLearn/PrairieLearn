@@ -1,3 +1,5 @@
+
+
 # PrairieLearn Elements for use in `question.html`
 
 When writing questions, there exists a core pool of elements that provides
@@ -17,6 +19,7 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
+- [`pl-order-blocks`](#pl-order-blocks-element): Select and arrange given blocks of code or text.
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
@@ -344,6 +347,75 @@ Attribute | Type | Default | Description
 
 - [demo/overlayDropdown]
 - [element/dropdown]
+
+-----
+
+### `pl-order-blocks` element
+
+Element to arrange given blocks of code or text that are displayed initially in the *source area*. The blocks can be moved to the *solution area* to construct the solution of the problem.  In the example below, the source area is denoted by the header "Drag from here" and the solution area is denoted with the header "Construct your solution here".
+
+#### Sample element
+
+![](elements/pl-order-blocks.png)
+
+**question.html**
+
+```html
+<p> List all the even numbers in order:</p>
+<pl-order-blocks answers-name="order-numbers" >
+  <pl-answer correct="false">1</pl-answer>
+  <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="false">3</pl-answer>
+  <pl-answer correct="true">4</pl-answer>
+</pl-order-blocks>
+```
+
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
+`grading-method` | string | "ordered" | One of the following: `ordered`, `unordered`, `ranking`, `external`. See more details below.
+`file-name` | string | `user_code.py`  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
+`source-blocks-order` | string | "random" | The order of the blocks in the source area. One of the following: `random` or `ordered`. See more details below.
+`indentation` | boolean | false | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).
+`max-incorrect` | integer | special | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
+`min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
+`source-header` | string | "Drag from here" | The text that appears at the start of the source area.
+`solution-header` | string| "Construct your solution here" |  The text that appears at the start of the solution area.
+`solution-placement` | string | "right" | "right" shows the source and solution areas aligned side-by-side. "bottom" shows the solution area below the source area.
+
+Within the `pl-order-blocks` element, each answer block must be specified with a `pl-answer` that has the following attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
+`ranking` | positive integer | — | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
+`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.
+
+#### Details
+
+Different grading options are defined via the attribute `grading-method`:
+
+* `ordered`: in this method, the correct ordering of the blocks is defined by the ordering in which
+the correct answers (defined in `pl-answer`) appear in the HTML file. There is no partial credit for this option.
+* `unordered`: in this method, if `n` is the total number of correct blocks, each correct block moved to the solution area is given `1/n` points, and each incorrect block moved to the solution area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only moving incorrect answers). Note the ordering of the blocks does not matter. That is, any permutation of the answers within the solution area is accepted. There is partial credit for this option.
+* `ranking`: in this method, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block *X* should have a `ranking` integer that is less than or equal to the answer block immediately below *X*. That is, the sequence of `ranking` integers of all the answer blocks should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer. There is partial credit for this option.
+* `external`: in this method, the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader. Depending on the external grader grading code logic, it may be possible to enable or disable partial credit. The attribute `correct` for `pl-answer` can still be used in conjunction with `min-incorrect` and `max-incorrect` for display purposes only, but not used for grading purposes. The attributes `ranking` and `indent` are not allowed for this grading method.
+
+Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
+
+* `ordered`:  the blocks appear in the source area in the same order they appear in the HTML file.
+* `random`:  the blocks are shuffled.
+
+
+#### Example implementations
+
+- [element/orderBlocks]
+- [demo/autograder/python/orderBlocksRandomParams]
+- [demo/autograder/python/orderBlocksAddNumpy]
 
 -----
 
