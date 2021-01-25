@@ -7,7 +7,10 @@ const {sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
-    const params = {assessment_question_id: res.locals.assessment_question_id};
+    const params = {
+        assessment_question_id: res.locals.assessment_question_id,
+        assessment_id: res.locals.assessment.id,
+    };
     // Unmarked instance question df. Is last created submission of instance question AND has null graded_at value.
     sqlDb.queryZeroOrOneRow(sql.get_next_unmarked_instance_question, params, (err, result) => {
         if (ERR(err, next)) return;
