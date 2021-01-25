@@ -47,7 +47,7 @@ describe('Assessment that forces students to complete questions in-order', funct
     context.instanceQuestions = results.rows.map(e => {return {
       id: Number(e.instance_question_id),
       locked: Boolean(e.sequence_locked),
-      url: `${context.courseInstanceBaseUrl}/instance_question/${e.instance_question_id}/`
+      url: `${context.courseInstanceBaseUrl}/instance_question/${e.instance_question_id}/`,
     };});
   }
 
@@ -71,14 +71,14 @@ describe('Assessment that forces students to complete questions in-order', funct
     context.assessmentInstanceId = urlParts[urlParts.length-1];
     await refreshContextQuestions();
 
-    initialExpectedLocks = [false, false, true, true, true, true];
+    const initialExpectedLocks = [false, false, true, true, true, true];
 
     // Locks in database match assessment configuration
     assert.deepEqual(
       context.instanceQuestions.map(e=>{
         return e.locked;
       }),
-      initialExpectedLocks
+      initialExpectedLocks,
     );
 
     // Locks in UI match database
