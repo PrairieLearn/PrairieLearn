@@ -1,0 +1,19 @@
+<h2>Summary</h2>
+<p>
+  Thanks to the work of <a href="https://astrosticks.com">David Mitchell</a>, assessments can now be configured 
+  for students to complete questions in the order that they appear. For instructors who want to configure worksheets, 
+  labs, etc. where each question builds off of previous knowledge, this feature is for you.
+</p>
+<p>
+  Adding the key <code class="bg-light">advanceScorePerc</code> with a value between 0 and 100 at any level of your 
+  <code class="bg-light">infoAssessment.json</code> config will cause all questions affected to require a submission
+  that's correct to at least that percentage before allowing students to access later questions.
+</p>
+<p>This config will produce the following assessment:</p>
+<code>
+
+</code>
+<img src="sequenceLocking.png" alt="PrairieLearn assessment with ">
+<p>
+  If a student runs out of attempts on a question, the next question will unlock automatically.
+</p>
