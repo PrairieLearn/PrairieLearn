@@ -31,12 +31,12 @@ describe('Assessment that forces students to complete questions in-order', funct
     const response = await helperClient.fetchCheerio(context.instructorAssessmentQuestionsUrl, { method: 'GET' });
     assert.isTrue(response.ok);
 
-    const expectedPercentages = [0, 60, 75, 0, 100, 100];
+    context.expectedPercentages = [0, 60, 75, 0, 30, 100];
     const computedPercentages = response.$('.pl-sequence-prev-unlock-score').map((i, elem) => {
       // turn string "25%" -> number 25
       return Number(response.$(elem).text().trim().slice(0,-1));
     }).get();
-    assert.deepEqual(expectedPercentages, computedPercentages);
+    assert.deepEqual(computedPercentages, context.expectedPercentages);
   });
 
   /**
@@ -63,29 +63,37 @@ describe('Assessment that forces students to complete questions in-order', funct
     assert.isTrue(response.ok);
 
     // We should have been redirected to the assessment instance
-    const assessmentInstanceUrl = response.url;
-    assert.include(assessmentInstanceUrl, '/assessment_instance/');
-    context.assessmentInstanceUrl = assessmentInstanceUrl;
-
-    const urlParts = assessmentInstanceUrl.split('/');
+    context.assessmentInstanceUrl = response.url;
+    assert.include(context.assessmentInstanceUrl, '/assessment_instance/');
+    
+    const urlParts = context.assessmentInstanceUrl.split('/');
     context.assessmentInstanceId = urlParts[urlParts.length-1];
     await refreshContextQuestions();
 
     const initialExpectedLocks = [false, false, true, true, true, true];
 
-    // Locks in database match assessment configuration
-    assert.deepEqual(
-      context.instanceQuestions.map(e=>{
-        return e.locked;
-      }),
-      initialExpectedLocks,
-    );
+    it('Locks in database should match assessment configuration', ()=>{
+      assert.deepEqual(
+        context.instanceQuestions.map(e=>{
+          return e.locked;
+        }),
+        initialExpectedLocks,
+      );
+    });
 
-    // Locks in UI match database
-    const computedLocks = response.$('table#assessment-questions tbody tr').map((i, elem) => {
-      return response.$(elem).hasClass('pl-sequence-locked');
-    }).get();
-    assert.deepEqual(computedLocks, initialExpectedLocks);
+    it('Locks in student assessment instance page should match those in database', ()=>{
+      const computedLocks = response.$('table#assessment-questions tbody tr').map((i, elem) => {
+        return response.$(elem).hasClass('pl-sequence-locked');
+      }).get();
+      assert.deepEqual(computedLocks, initialExpectedLocks);
+    });
+
+    it('Question 3 should require 60% on Question 2 to unlock', ()=>{
+      assert.include(
+        response.$('table#assessment-questions tbody tr:nth-child(3)').html(),
+        '60% on Question 2',
+      );
+    });
   });
 
   step('Accessing Question 3 returns a 403', async function() {
@@ -107,6 +115,11 @@ describe('Assessment that forces students to complete questions in-order', funct
     assert.isTrue(response.ok);
 
     assert.isTrue(response.$('#question-nav-next').hasClass('pl-sequence-locked'));
+  });
+
+  step('Question 2 "next question" link contains the correct advanceScorePerc', async function() {
+    const response = await submitQuestion(50, context.firstUnlockedQuestion);
+    assert.include(response.$('#question-nav-next').attr('data-content'), '60%');
   });
 
   async function submitQuestion(score, question) {

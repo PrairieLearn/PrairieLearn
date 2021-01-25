@@ -39,8 +39,9 @@
             ]
         },
         {
+            "advanceScorePerc": 35,
             "questions": [
-                {"id": "addVectors", "points": 1}
+                {"id": "addVectors", "points": 1, "advanceScorePerc": 30}
             ]
         },
         {
