@@ -13,30 +13,14 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
 
-    SELECT to_jsonb(q.*)
-    INTO question
-    FROM
-        questions as q
-        JOIN assessment_questions AS aq ON (q.id = aq.question_id)
-        JOIN instance_questions AS iq ON (aq.id = iq.assessment_question_id)
-    WHERE iq.id = iq_id;
-
-    -- If a variant has not been found, student has not opened question
-    SELECT to_jsonb(v.*)
-    INTO variant
-    FROM
-        variants as v
-    WHERE v.instance_question_id = iq_id
-    ORDER BY v.date DESC, v.id DESC
-    LIMIT 1;
-
-    -- If variant is found but no submission, student did not submit anything
-    SELECT to_jsonb(s.*)
-    INTO submission
+    SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*)
+    INTO question, variant, submission
     FROM
         instance_questions AS iq
-        JOIN variants AS v ON (v.instance_question_id = iq.id)
-        JOIN submissions AS s ON (s.variant_id = v.id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
+        LEFT JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE iq.id = iq_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
