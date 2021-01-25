@@ -1,10 +1,15 @@
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.junit.runner.Description;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
-import org.junit.runner.notification.RunListener;
+import org.junit.platform.engine.TestExecutionResult;
+import org.junit.platform.engine.TestTag;
+import org.junit.platform.engine.support.descriptor.MethodSource;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
+
 import org.prairielearn.autograder.AutograderInfo;
 
 import javax.tools.JavaCompiler;
@@ -14,25 +19,22 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.lang.reflect.InvocationTargetException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.*;
 
-public class JUnitAutograder extends RunListener {
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
+
+public class JUnitAutograder implements TestExecutionListener {
 
     private static final File baseDirectoryForStudentCode = new File("/grade/student");
     private static final File baseDirectoryForTests = new File("/grade/tests/junit");
 
     private final JavaCompiler compiler;
-    private final JUnitCore jUnitCore;
+    private final Launcher launcher;
 
     private double points = 0, maxPoints = 0;
     private String output = "", message = "";
     private boolean gradable = true;
     private List<AutograderTest> tests = new ArrayList<>();
-    private Map<Description, AutograderTest> testMap = new HashMap<>();
 
     private Collection<File> studentFiles = new HashSet<>();
     private Collection<File> testFiles = new HashSet<>();
@@ -40,8 +42,8 @@ public class JUnitAutograder extends RunListener {
 
     public JUnitAutograder() {
         this.compiler = ToolProvider.getSystemJavaCompiler();
-        this.jUnitCore = new JUnitCore();
-        jUnitCore.addListener(this);
+        launcher = LauncherFactory.create();
+        launcher.registerTestExecutionListeners(this);
     }
 
     public static void main(String args[]) {
@@ -52,7 +54,8 @@ public class JUnitAutograder extends RunListener {
             autograder.findStudentFiles(baseDirectoryForStudentCode);
             autograder.findTestFiles(baseDirectoryForTests, "");
 
-            autograder.compileFiles(autograder.studentFiles, true, "Compilation errors, please fix and try again.",
+            autograder.compileFiles(autograder.studentFiles, true,
+                    "Compilation errors, please fix and try again.",
                     "Compilation warnings:");
             autograder.compileFiles(autograder.testFiles, false,
                     "Error compiling test files. This typically means your class does not match the specified signature.",
@@ -122,10 +125,13 @@ public class JUnitAutograder extends RunListener {
 
     public void runTests() throws UngradableException {
 
+        LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
+
         for (String className : testClasses) {
             try {
                 Class<?> cls = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-                this.jUnitCore.run(cls);
+                LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request().selectors(selectClass(cls)).build();
+                this.launcher.execute(request);
             } catch (ClassNotFoundException e) {
                 this.points = 0;
                 this.message = "Could not load test class " + className;
@@ -135,47 +141,52 @@ public class JUnitAutograder extends RunListener {
     }
 
     @Override
-    public void testStarted(Description description) throws Exception {
-        AutograderTest test = new AutograderTest(description.getMethodName());
-        AutograderInfo info = description.getAnnotation(AutograderInfo.class);
-        if (info != null) {
-            if (info.points() > 0)
-                test.points = test.maxPoints = info.points();
-            if (!"".equals(info.name()))
-                test.name = info.name();
-            if (!"".equals(info.description()))
-                test.name = info.description();
-        }
-        testMap.put(description, test);
-    }
+    public synchronized void executionFinished(TestIdentifier test, TestExecutionResult result) {
+        if (!test.isTest()) return;
+        AutograderTest autograderTest = new AutograderTest(test.getDisplayName());
 
-    @Override
-    public synchronized void testFinished(Description description) throws Exception {
-        AutograderTest test = testMap.get(description);
-        if (test != null) {
-            this.tests.add(test);
-            this.points += test.points;
-            this.maxPoints += test.maxPoints;
+        for (TestTag tag : test.getTags()) {
+            if (tag.getName().startsWith("points=")) {
+                try {
+                    autograderTest.maxPoints = autograderTest.points = Double.parseDouble(tag.getName().substring(7));
+                } catch(NumberFormatException exception) {
+                    this.output = "Could not parse points tag: " + tag.getName();
+                    this.gradable = false;
+                }
+            }
         }
-    }
 
-    @Override
-    public void testFailure(Failure failure) throws Exception {
-        System.out.println("Test " + failure.getDescription() + " failed");
-        AutograderTest test = testMap.get(failure.getDescription());
-        if (test != null) {
-            test.points = 0;
-            test.message = failure.getMessage();
-            if (test.message == null) test.message = "";
-            //test.output = failure.getTrace();
+        // For compatibility with JUnit4 autograder
+        test.getSource().ifPresent(source -> {
+            if (source instanceof MethodSource) {
+                AutograderInfo info = ((MethodSource) source).getJavaMethod().getAnnotation(AutograderInfo.class);
+                if (info != null) {
+                    if (info.points() > 0)
+                        autograderTest.points = autograderTest.maxPoints = info.points();
+                    if (!"".equals(info.name()))
+                        autograderTest.name = info.name();
+                    if (!"".equals(info.description()))
+                        autograderTest.description = info.description();
+                }
+            }
+        });
+
+        if (!result.getStatus().equals(TestExecutionResult.Status.SUCCESSFUL)) {
+            autograderTest.points = 0;
+            result.getThrowable().ifPresent(t -> autograderTest.message = t.getMessage());
+            if (autograderTest.message == null)
+                autograderTest.message = "";
         }
-    }
 
+        this.tests.add(autograderTest);
+        this.points += autograderTest.points;
+        this.maxPoints += autograderTest.maxPoints;
+    }
 
     private void saveResults() {
 
         JSONArray resultsTests = new JSONArray();
-        Collections.sort(this.tests);
+        //Collections.sort(this.tests);
         for (AutograderTest test : this.tests)
             resultsTests.add(test.toJson());
 
