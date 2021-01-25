@@ -26,7 +26,10 @@ services:
   init: *dev-options
   
   # interactive terminal on development image
-  it:
+  bash:
     << : *dev-options
+    stdin_open: true
+    tty: true
     working_dir: /PrairieLearn
     command: bash
+  
