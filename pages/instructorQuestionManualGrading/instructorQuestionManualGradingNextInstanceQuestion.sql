@@ -9,5 +9,5 @@ SELECT iq.*
         WHERE s.graded_at IS NULL
         ORDER BY s.auth_user_id, s.date DESC, s.id DESC
     ) s ON (s.variant_id = v.id)
-WHERE iq.assessment_question_id = 50
+WHERE iq.assessment_question_id = $assessment_question_id
 LIMIT 1;
