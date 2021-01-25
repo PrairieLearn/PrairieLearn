@@ -86,7 +86,7 @@ router.post('/', function(req, res, next) {
                 /* If the submission was marked invalid during grading the grading job will
                    be marked ungradable and we should bail here to prevent LTI updates. */
                 res.locals['grading_job'] = result.rows[0];
-                if (!res.locals['grading_job'].gradable) return next(error.make('Invalid submission error'));
+                if (!res.locals['grading_job'].gradable) return next(error.make(400, 'Invalid submission error'));
 
                 res.locals['submission_updated'] = true;
                 debug('_gradeVariantWithClient()', 'inserted', 'grading_job.id:', res.locals['grading_job'].id);
