@@ -12,7 +12,7 @@
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block form-group form-inline">
         <select name="{{answers-name}}" class="form-control">
             {{#options}}
-                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{value}}</option>
+                <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>
             {{/options}}
         </select>
         {{#has_submission}}
@@ -30,14 +30,16 @@
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
 
         {{^parse-error}}
-            <code class="user-output">{{submitted-answer}}</code>
+            <code class="user-output">{{{submitted-answer}}}</code>
 
-            {{#correct}}
-                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
-            {{/correct}}
-            {{^correct}}
-                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
-            {{/correct}}
+            {{#display-score-badge}}
+                {{#correct}}
+                    <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                {{/correct}}
+                {{^correct}}
+                    <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                {{/correct}}
+            {{/display-score-badge}}
         {{/parse-error}}
 
         {{#parse-error}}
@@ -50,6 +52,6 @@
 
 {{#answer}}
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
-        <code class="user-output">{{correct-answer}}</code>
+        <code class="user-output">{{{correct-answer}}}</code>
     </div>
 {{/answer}}

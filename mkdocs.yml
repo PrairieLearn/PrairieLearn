@@ -45,6 +45,7 @@ pages:
   - 'Installing natively': 'installingNative.md'
   - 'Server configuration': 'configJson.md'
   - 'Question element writing': 'devElements.md'
+  - 'Element extensions': 'elementExtensions.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
 - Admin Guide:

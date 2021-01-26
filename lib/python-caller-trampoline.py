@@ -91,7 +91,7 @@ def worker_loop():
             # now, instead, we read the "file" as a string, then compile and exec it:
             mod = {}
             file_path = os.path.join(cwd, file + '.py')
-            with open(file_path) as inf:
+            with open(file_path, encoding='utf-8') as inf:
                 # use compile to associate filename with code object, so the
                 # filename appears in the traceback if there is an error
                 # (https://stackoverflow.com/a/437857)

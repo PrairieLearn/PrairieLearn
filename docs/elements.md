@@ -379,12 +379,23 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
+`base` | integer | 10 | The base used to parse and represent the answer, or the special value 0 (see below).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
+
+#### Specifying a non-trivial base
+
+By default, the values are interpreted in base 10. The `base` argument may also be used, with a value between 2 and 36, to indicate a different base to interpret the student input, as well as to print the final result.
+
+The `base` argument can also accept a special value of 0. In this case, the values will by default be interpreted in base 10, however the student has the option of using different prefixes to indicate a value in a different format:
+
+* The prefixes `0x` and `0X` can be used for base-16 values (e.g., `0x1a`);
+* The prefixes `0b` and `0B` can be used for base-2 values (e.g., `0b1101`);
+* The prefixes `0o` and `0O` can be used for base-8 values (e.g., `0o777`).
 
 #### Example implementations
 
@@ -678,6 +689,7 @@ Attribute | Type | Default | description
 `ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+`directory` | string | special | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory.
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
 `auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
@@ -1279,6 +1291,7 @@ Attribute | Type | Default | Description
 `engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
 `params-name-matrix` | string | `None` | The the name of a parameter containing the adjacency matrix to use as input for the graph.
 `params-name-labels` | string | `None` | When using an adjacency matrix, the parameter that contains the labels for each node.
+`params-type` | string | `adjacency-matrix` | How to interpret the input data in `params-name-matrix`.  By default, only `adjacency-matrix` exists but custom types can be added through extensions.
 `weights` | boolean | `None` | When using an adjacency matrix, whether or not to show the edge weights.  By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).
 `weights-digits` | integer | `"2"` | When using an adjacency matrix, how many digits to show for the weights.
 `weights-presentation-type` | string | `'f'` | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`.
@@ -1287,6 +1300,29 @@ Attribute | Type | Default | Description
 #### Example implementations
 
 - [element/graph]
+
+#### Extension API
+
+Custom values for `params-type` can be added with [element extensions](elementExtensions.md).  Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
+
+A minimal type function can look something like:
+
+```
+def custom_type(element, data):
+    return "graph { a -- b; }"
+```
+
+In order to register these custom types, your extension should define the global `backends` dictionary.  This will map a value of `params-type` to your function above:
+
+```
+backends = {
+    'my-custom-type': custom_type
+}
+```
+
+This will automatically get picked up when the extension gets imported.  If your extension needs extra attributes to be defined, you may optionally define the global `optional_attribs` array that contains a list of attributes that the element may use.
+
+For a full implementation, check out the `edge-inc-matrix` extension in the exampleCourse.
 
 #### See also
 
