@@ -80,7 +80,7 @@ router.post('/', function(req, res, next) {
                 submission.true_answer,
             ];
 
-            sqlDb.callOneRow('grading_jobs_insert', params, (err, result) => {
+            sqlDb.callOneRow('grading_jobs_insert_internal', params, (err, result) => {
                 if (ERR(err, next)) return;
 
                 /* If the submission was marked invalid during grading the grading job will
