@@ -90,7 +90,7 @@ router.post('/', function(req, res, next) {
 
                 res.locals['submission_updated'] = true;
                 debug('_gradeVariantWithClient()', 'inserted', 'grading_job.id:', res.locals['grading_job'].id);
-                res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_instance}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
+                res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_instance_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
             });
 
         });

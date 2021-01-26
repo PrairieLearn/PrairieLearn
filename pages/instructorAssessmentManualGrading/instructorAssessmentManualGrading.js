@@ -22,7 +22,6 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         res.locals.instance_questions_to_grade = result.rows.filter(isGradable);
         res.locals.instance_questions_graded = result.rows.filter(iq => !isGradable(iq));
-        console.log(result.rows);
         debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

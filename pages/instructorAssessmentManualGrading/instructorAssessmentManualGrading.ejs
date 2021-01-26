@@ -24,12 +24,6 @@
           <%= assessment_set.name %> <%= assessment.number %>: Manual Grading Queue
         </div>
 
-        <div class="card-body">
-          <p class="small">
-            A list of ungraded submissions for questions. Note that submissions that students have saved, but not submitted, may be listed here.
-          </p>
-        </div>
-
         <div class="table-responsive">
           <table id="instanceQuestionGradingTable" class="table table-sm table-hover">
             <thead>
@@ -92,6 +86,14 @@
               <% }); %>
             </tbody>
           </table>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            <p class="mb-0">
+              This list may include answers that students saved but did not request to be graded.
+            </p>
+          </small>
         </div>
       </div>
 
