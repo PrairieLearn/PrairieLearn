@@ -8,7 +8,7 @@
         <form name="instance_question-manual-grade-update-form" method="POST">
             <input type="hidden" name="__action" value="add_manual_grade">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <input type="hidden" name="assessment_instance_id" value="<%= assessment_instance.assessment_id %>">
+            <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
             <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
             <div class="form-group">
               <label for="submissionScore">Score:</label>
