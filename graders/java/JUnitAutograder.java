@@ -186,7 +186,6 @@ public class JUnitAutograder implements TestExecutionListener {
     private void saveResults() {
 
         JSONArray resultsTests = new JSONArray();
-        //Collections.sort(this.tests);
         for (AutograderTest test : this.tests)
             resultsTests.add(test.toJson());
 
