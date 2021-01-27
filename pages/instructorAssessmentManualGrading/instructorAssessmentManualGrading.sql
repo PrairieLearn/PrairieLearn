@@ -3,6 +3,7 @@ SELECT DISTINCT ON (iq.id)
     iq.*,
     s.graded_at,
     q.id AS question_id,
+    q.title AS question_title,
     aq.max_points,
     ai.id AS assessment_instance_id,
     qo.question_number

@@ -44,7 +44,7 @@
               <% instance_questions_to_grade.forEach(function(instance_question, i_instance_question) { %>
               <tr>
                 <td>
-                  S-<%= instance_question.question_number %>.
+                  S-<%= instance_question.question_number %>. <%= instance_question.question_title %>
                   (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">student view</a>)
                 </td>
                 <td class="text-center">
@@ -122,7 +122,7 @@
               <% instance_questions_graded.forEach(function(instance_question, i_instance_question) { %>
               <tr>
                 <td>
-                  S-<%= instance_question.question_number %>.
+                  S-<%= instance_question.question_number %>. <%= instance_question.question_title %>
                   (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">student view</a>)
                 </td>
                 <td class="text-center">
