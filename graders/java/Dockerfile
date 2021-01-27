@@ -26,3 +26,6 @@ COPY JUnitAutograder.java AutograderInfo.java /javagrader/
 ENV CLASSPATH=/javagrader:/javagrader/libs:/javagrader/libs/*:/grade/tests/libs:/grade/tests/libs/*:/grade/serverFilesCourse/java/libs/*:/grade/tests/junit:/grade/student
 
 RUN javac -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java
+
+COPY autograder.sh /bin
+RUN chmod 700 /bin/autograder.sh

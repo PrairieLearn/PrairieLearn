@@ -12,6 +12,6 @@
         "enabled": true,
         "image": "prairielearn/grader-java",
         "timeout": 100,
-        "entrypoint": "java JUnitAutograder"
+        "entrypoint": "autograder.sh"
     }
 }
