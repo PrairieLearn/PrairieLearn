@@ -13,9 +13,12 @@
     ],
     "zones": [
         {
-            "advanceScorePerc": 80,
             "questions": [
-                {"id": "demo/demoNewton-page1", "points": [5,4,3,2,1], "advanceScorePerc": 50},
+                {"id": "demo/demoNewton-page1", "points": [5,2], "advanceScorePerc": 50}
+            ]
+        },
+        {
+            "questions": [
                 {"id": "demo/demoNewton-page2", "points": [5,4,3,2,1]}
             ]
         }
