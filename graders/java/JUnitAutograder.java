@@ -91,7 +91,7 @@ public class JUnitAutograder implements TestExecutionListener {
             else if (fileEntry.getName().endsWith(".java")) {
                 System.out.println("Test found: " + fileEntry.getName());
                 testFiles.add(fileEntry);
-                testClasses.add(classBaseName + fileEntry.getName().substring(0, fileEntry.getName().length() - 5));
+                testClasses.add(classBaseName + fileEntry.getName().substring(0, fileEntry.getName().lastIndexOf('.')));
             }
         }
     }

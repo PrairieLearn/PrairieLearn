@@ -13,7 +13,7 @@
     "externalGradingOptions": {
         "enabled": true,
         "image": "prairielearn/grader-java",
-        "timeout": 10,
+        "timeout": 20,
         "entrypoint": "java JUnitAutograder"
     }
 }
