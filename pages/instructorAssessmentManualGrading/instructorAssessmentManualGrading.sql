@@ -18,3 +18,5 @@ FROM
 WHERE
     ai.assessment_id = $assessment_id
 ORDER BY iq.id DESC, s.date DESC, s.id DESC;
+
+
