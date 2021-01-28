@@ -8,8 +8,8 @@ const logger = require('../lib/logger');
 const config = require('../lib/config');
 
 const namedLocks = require('../lib/named-locks');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = ../prairielib/sql-db');
+var sqlLoader = ../prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

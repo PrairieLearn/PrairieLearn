@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = ../prairielib/sql-db');
 const stringify = require('json-stable-stringify');
 const { assert } = require('chai');
 

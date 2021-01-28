@@ -27,8 +27,8 @@ const stream = require('stream');
 const LocalLock = require('../lib/local-lock');
 const asyncHandler = require('express-async-handler');
 
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = ../prairielib/sql-db');
+const sqlLoader = ../prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();

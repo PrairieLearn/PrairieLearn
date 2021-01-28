@@ -4,11 +4,11 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const error = require('@prairielearn/prairielib/error');
+const error = ../prairielib/error');
 const regrading = require('../../lib/regrading');
 const assessment = require('../../lib/assessment');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = ../prairielib/sql-db');
+const sqlLoader = ../prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

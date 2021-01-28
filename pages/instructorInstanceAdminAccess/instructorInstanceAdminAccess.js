@@ -2,8 +2,8 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var sqldb = require('@prairielearn/prairielib').sqldb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var sqldb = ../prairielib').sqldb;
+var sqlLoader = ../prairielib').sqlLoader;
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

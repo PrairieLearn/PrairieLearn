@@ -8,8 +8,8 @@ const hljs = require('highlight.js');
 
 const csvMaker = require('../../lib/csv-maker');
 const jsonLoad = require('../../lib/json-load');
-const { sqldb } = require('@prairielearn/prairielib');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const { sqldb } = ../prairielib');
+const sqlLoader = ../prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

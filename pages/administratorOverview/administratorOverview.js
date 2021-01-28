@@ -4,8 +4,8 @@ const util = require('util');
 const express = require('express');
 const router = express.Router();
 
-const error = require('@prairielearn/prairielib/error');
-const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
+const error = ../prairielib/error');
+const { sqlDb, sqlLoader } = ../prairielib');
 
 const chunks = require('../../lib/chunks');
 const cache = require('../../lib/cache');

@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const assert = require('chai').assert;
 
-const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
+const { sqldb, sqlLoader } = ../prairielib');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperDb = require('./helperDb');
 

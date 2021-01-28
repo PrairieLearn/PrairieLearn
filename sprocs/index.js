@@ -4,9 +4,9 @@ const path = require('path');
 const async = require('async');
 
 const namedLocks = require('../lib/named-locks');
-const error = require('@prairielearn/prairielib/error');
+const error = ../prairielib/error');
 const logger = require('../lib/logger');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = ../prairielib/sql-db');
 
 module.exports = {
     init(callback) {
