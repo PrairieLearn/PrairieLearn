@@ -22,11 +22,6 @@ router.get('/', function(req, res, next) {
     sqlDb.queryOneRow(sql.select_question, params, (err, result) => {
         if (ERR(err, next)) return;
         
-        // Instance question doesn't exist
-        if (result.rowCount == 0) {
-            return error.make(404, 'Assessment question not found.');
-        }
-
         res.locals.question_id    = result.rows[0].question_id;
         res.locals.question_title = result.rows[0].question_title;
         res.locals.max_points     = result.rows[0].max_points;
