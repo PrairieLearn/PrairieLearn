@@ -3,9 +3,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
-
-const ltiOutcomes = require('../../lib/ltiOutcomes');
+const { _error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
