@@ -1,9 +1,9 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-var error = require('@prairielearn/prairielib/error');
+var sqldb = ../prairielib/sql-db');
+var sqlLoader = ../prairielib/sql-loader');
+var error = ../prairielib/error');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

@@ -7,10 +7,10 @@ const router = express.Router();
 
 const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = ../prairielib/sql-db');
+const sqlLoader = ../prairielib/sql-loader');
 
-const error = require('@prairielearn/prairielib/error');
+const error = ../prairielib/error');
 const debug = require('debug')('prairielearn:instructorAssessments');
 const logger = require('../../lib/logger');
 const { AssessmentAddEditor } = require('../../lib/editors');

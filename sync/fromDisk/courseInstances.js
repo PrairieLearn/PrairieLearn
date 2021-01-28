@@ -1,6 +1,6 @@
 // @ts-check
 const _ = require('lodash');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = ../prairielib/sql-db');
 
 const infofile = require('../infofile');
 const perf = require('../performance')('question');

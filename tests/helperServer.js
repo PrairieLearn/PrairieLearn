@@ -18,8 +18,8 @@ const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
 const workers = require('../lib/workers');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = ../prairielib/sql-db');
+const sqlLoader = ../prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 config.startServer = false;

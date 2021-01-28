@@ -3,9 +3,9 @@ var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
-var error = require('@prairielearn/prairielib').error;
-var sqldb = require('@prairielearn/prairielib').sqldb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var error = ../prairielib').error;
+var sqldb = ../prairielib').sqldb;
+var sqlLoader = ../prairielib').sqlLoader;
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

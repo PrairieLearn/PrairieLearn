@@ -2,8 +2,8 @@ var ERR = require('async-stacktrace');
 var assert = require('chai').assert;
 var path = require('path');
 
-var sqldb = require('@prairielearn/prairielib').sqldb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var sqldb = ../prairielib').sqldb;
+var sqlLoader = ../prairielib').sqlLoader;
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 var groupUpdate = require('../lib/group-update');

@@ -5,7 +5,7 @@ const async = require('async');
 const moment = require('moment');
 const express = require('express');
 const router = express.Router();
-const { sqldb, sqlLoader, error } = require('@prairielearn/prairielib');
+const { sqldb, sqlLoader, error } = ../prairielib');
 
 const syncHelpers = require('../shared/syncHelpers');
 const config = require('../../lib/config');

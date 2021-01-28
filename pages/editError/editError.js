@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const error = require('@prairielearn/prairielib/error');
+const error = ../prairielib/error');
 const serverJobs = require('../../lib/server-jobs');
 const syncHelpers = require('../shared/syncHelpers');
 

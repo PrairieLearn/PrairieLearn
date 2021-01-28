@@ -2,8 +2,8 @@ const { callbackify } = require('util');
 
 const logger = require('../lib/logger');
 const opsbot = require('../lib/opsbot');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = ../prairielib/sql-db');
+const sqlLoader = ../prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

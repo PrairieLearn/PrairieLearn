@@ -1,4 +1,4 @@
-const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
+const { sqldb, sqlLoader } = ../prairielib');
 const logger = require('./logger');
 const config = require('./config').config;
 const lifecycle = require('./lifecycle');
