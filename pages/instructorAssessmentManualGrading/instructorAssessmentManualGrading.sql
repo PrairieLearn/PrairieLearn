@@ -1,20 +1,33 @@
--- BLOCK select_instance_questions_manual_grading
-SELECT DISTINCT ON (iq.id)
-    iq.*,
-    s.graded_at,
+-- BLOCK select_questions_manual_grading
+SELECT
+    aq.*,
+    q.qid,
+    q.title,
     q.id AS question_id,
-    q.title AS question_title,
-    aq.max_points,
-    ai.id AS assessment_instance_id,
-    qo.question_number
+    admin_assessment_question_number(aq.id) as number,
+    ag.number AS alternative_group_number,
+    (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
+    (SELECT COUNT(DISTINCT iq.id)
+     FROM
+         instance_questions AS iq
+         JOIN variants AS v ON (v.instance_question_id = iq.id)
+         JOIN submissions AS s ON (s.variant_id = v.id)
+     WHERE
+         iq.assessment_question_id = aq.id) AS num_submissions,
+    (SELECT COUNT(DISTINCT iq.id)
+     FROM
+         instance_questions AS iq
+         JOIN variants AS v ON (v.instance_question_id = iq.id)
+         JOIN submissions AS s ON (s.variant_id = v.id)
+     WHERE
+         iq.assessment_question_id = aq.id
+         AND s.graded_at IS NULL) AS num_ungraded_submissions
 FROM
-    instance_questions AS iq
-    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
-    JOIN question_order(ai.id) AS qo ON (qo.instance_question_id = iq.id)
-    JOIN variants AS v ON (v.instance_question_id = iq.id)
-    JOIN submissions s ON (s.variant_id = v.id)
+    JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
 WHERE
-    ai.assessment_id = $assessment_id
-ORDER BY iq.id DESC, s.date DESC, s.id DESC;
+    aq.assessment_id = $assessment_id
+    AND aq.deleted_at IS NULL
+    AND q.deleted_at IS NULL
+ORDER BY aq.number;
