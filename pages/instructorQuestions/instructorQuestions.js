@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const error = require('@prairielearn/prairielib/error');
+const {escapeRegExp} = require('../../prairielib/util');
 const path = require('path');
 const logger = require('../../lib/logger');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -14,6 +15,10 @@ const async = require('async');
 
 router.get('/', function(req, res, next) {
     const course_instance_id = res.locals.course_instance ? res.locals.course_instance.id : null;
+
+    // Pass filtering function to front-end
+    res.locals.escapeRegExp = escapeRegExp;
+
     async.series([
         (callback) => {
             fs.access(res.locals.course.path, (err) => {
