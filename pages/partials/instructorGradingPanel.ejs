@@ -26,6 +26,12 @@
             </div>
             <div class="text-right">
               <button type="submit" class="btn btn-primary">Submit and Next</button>
+              <button type="submit" class="btn btn-danger" onclick="((e) => {
+                e.preventDefault();
+                console.log('<%= urlPrefix %>');
+                const thing = '<%= urlPrefix %>';
+                // $.post('<%= urlPrefix %>/abort_grading');
+              })">Abort Grading</button>
             </div>
         </form>
       </div>
