@@ -715,6 +715,16 @@ module.exports.initExpress = function() {
         require('./middlewares/selectAndAuthzAssessment'),
         require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instance_question/:instance_question_id/abort_grading', [
+        function(req, res, next) {
+            res.locals.instance_question_id = req.params.instance_question_id;
+            res.locals.course_instance_id = req.params.course_instance_id;
+            res.locals.assessment_id = req.params.assessment_id;
+            next();
+        },
+        require('./middlewares/selectAndAuthzAssessment'),
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingAbortInstanceQuestion'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
         function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
         require('./middlewares/selectAndAuthzInstanceQuestion'),
