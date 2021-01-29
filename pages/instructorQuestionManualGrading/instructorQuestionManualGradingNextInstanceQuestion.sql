@@ -1,4 +1,4 @@
--- BLOCK get_next_unmarked_instance_question
+-- BLOCK get_and_set_next_unmarked_instance_question_for_manual_grading
 UPDATE instance_questions
 SET manual_grading_started_at = NOW()
 WHERE id = (
