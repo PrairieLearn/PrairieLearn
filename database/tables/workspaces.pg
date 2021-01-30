@@ -1,6 +1,7 @@
 columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     heartbeat_at: timestamp with time zone
+    homedir_location: enum_workspace_homedir_location not null default 's3'::enum_workspace_homedir_location
     hostname: text
     id: bigint not null default nextval('workspaces_id_seq'::regclass)
     launch_port: bigint
