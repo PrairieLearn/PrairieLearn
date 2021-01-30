@@ -14,11 +14,6 @@
     <script src="<%= asset_path(`localscripts/question${effectiveQuestionType}.js`) %>"></script>
     <% } %>
     <%- extraHeadersHtml %>
-    <script>
-      $(function () {
-          $('[data-toggle="popover"]').popover({sanitize: false})
-      });
-    </script>
   </head>
   <body>
     <script>
