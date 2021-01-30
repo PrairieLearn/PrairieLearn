@@ -44,8 +44,8 @@ SELECT
     -- Advancement locking rule 2:
     ( -- Lock only if:
         -- Not the first question in the assessment
-        (NOT (lag(aq.id) OVER w) IS NULL)
-        AND -- Any previous question locks ahead
+        ((lag(aq.id) OVER w) IS NOT NULL)
+        AND -- Any previous question locks all questions ahead of it
         (BOOL_OR(locks_next.locking) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING))
     ) AS sequence_locked
 FROM
