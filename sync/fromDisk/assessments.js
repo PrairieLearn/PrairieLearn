@@ -179,15 +179,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
                     advance_score_perc: alternative.advanceScorePerc,
-                    effective_advance_score_perc: [
-                            question.advanceScorePerc,
-                            alternativeGroupParams.advance_score_perc,
-                            zone.advanceScorePerc,
-                            assessment.advanceScorePerc,
-                            0,
-                        ].find((e) => {
-                          return typeof e === 'number';
-                        }),
+                    effective_advance_score_perc: 
+                        question.advanceScorePerc
+                        ?? alternativeGroupParams.advance_score_perc
+                        ?? zone.advanceScorePerc
+                        ?? assessment.advanceScorePerc
+                        ?? 0
                 };
 
             });
