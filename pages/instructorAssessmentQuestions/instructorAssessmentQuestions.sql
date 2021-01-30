@@ -56,7 +56,7 @@ SELECT
     (z.max_points IS NOT NULL) AS zone_has_max_points,
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
-    aq.effective_advance_score_perc AS assessment_question_unlock_score_perc
+    aq.effective_advance_score_perc AS assessment_question_advance_score_perc
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
