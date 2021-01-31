@@ -47,8 +47,8 @@ SELECT
     to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
-        'prev', iqi.prev_instance_question,
-        'next', iqi.next_instance_question,
+        'prev_instance_question', iqi.prev_instance_question,
+        'next_instance_question', iqi.next_instance_question,
         'question_number', iqi.question_number,
         'max_points', CASE
             WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
