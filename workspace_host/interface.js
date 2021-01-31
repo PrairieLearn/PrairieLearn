@@ -527,7 +527,7 @@ const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
  * Looks up a workspace object by the workspace id.
  * This object contains all columns in the 'workspaces' table as well as:
  * - local_name (container name)
- * - s3_name (subdirectory name on s3)
+ * - remote_name (subdirectory name on s3)
  * @param {integer} workspace_id Workspace ID to search by.
  * @return {object} Workspace object, as described above.
  */
@@ -535,7 +535,7 @@ async function _getWorkspaceAsync(workspace_id) {
     const result = await sqldb.queryOneRowAsync(sql.get_workspace, { workspace_id, instance_id: workspace_server_settings.instance_id });
     const workspace = result.rows[0];
     workspace.local_name = `workspace-${workspace.launch_uuid}`;
-    workspace.s3_name = `workspace-${workspace.id}-${workspace.version}`;
+    workspace.remote_name = `workspace-${workspace.id}-${workspace.version}`;
     return workspace;
 }
 
@@ -684,7 +684,7 @@ async function _autoUpdateJobManager() {
         debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
         const workspace = await _getWorkspaceAsync(workspace_id);
         const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
-        const s3_name = workspace.s3_name;
+        const remote_name = workspace.remote_name;
         const sync_ignore = workspaceSettings.workspace_sync_ignore;
         debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         debug(`watch: localPath=${local_path}`);
@@ -702,7 +702,7 @@ async function _autoUpdateJobManager() {
             logger.info(`_autoUpdateJobManager: skip ignored`);
             continue;
         } else {
-            s3_path = `${s3_name}/current/${local_path}`;
+            s3_path = `${remote_name}/current/${local_path}`;
             logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
         }
 
@@ -776,19 +776,30 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 async function _getInitialZipAsync(workspace) {
     workspaceHelper.updateMessage(workspace.id, 'Loading initial files');
     const localName = workspace.local_name;
-    const s3Name = workspace.s3_name;
+    const remoteName = workspace.remote_name;
     const localPath = `${workspacePrefix}/${localName}`;
     const zipPath = `${config.workspaceHostZipsDirectory}/${localName}-initial.zip`;
-    const s3Path = `${s3Name}/initial.zip`;
+    const remotePath = `${remoteName}/initial.zip`;
 
-    debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
-    const options = {
-        owner: config.workspaceJobsDirectoryOwnerUid,
-        group: config.workspaceJobsDirectoryOwnerGid,
-    };
+    debug(`Downloading remotePath=${remotePath} to zipPath=${zipPath}`);
     const isDirectory = false;
     update_queue[[zipPath, isDirectory]] = { action: 'skip' };
-    await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, options);
+
+    if (workspace.homedir_location == 'S3') {
+        const options = {
+            owner: config.workspaceJobsDirectoryOwnerUid,
+            group: config.workspaceJobsDirectoryOwnerGid,
+        };
+        await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, remotePath, zipPath, options);
+    } else if (workspace.homedir_location == 'FileSystem') {
+        const root = config.workspaceHostHomeDirRoot;
+        await fsPromises.copyFile(path.join(root, remotePath), zipPath);
+        await fsPromises.chown(zipPath,
+                               config.workspaceJobsDirectoryOwnerUid,
+                               config.workspaceJobsDirectoryOwnerGid);
+    } else {
+        throw new Error(`Unknown backing file storage: ${workspace.homedir_location}`);
+    }
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
@@ -826,8 +837,13 @@ async function _getInitialZipAsync(workspace) {
 
 function _getInitialFiles(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Loading files');
+    if (workspace.homedir_location == 'FileSystem') {
+        /* We already have the files loaded, so nothing to do. */
+        return callback(null);
+    }
+
     const localPath = `${workspacePrefix}/${workspace.local_name}`;
-    const s3Path = `${workspace.s3_name}/current`;
+    const s3Path = `${workspace.remote_name}/current`;
     _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
         if (ERR(err, callback)) return;
         var jobs = [];
@@ -1046,13 +1062,14 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     };
     await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
 
-    const result = await sqldb.queryOneRowAsync(sql.select_workspace_version, {workspace_id});
-    const { workspace_version } = result.rows[0];
+    const { workspace_version } = (await sqldb.queryOneRowAsync(sql.select_workspace_version, {workspace_id})).rows[0];
+    const { homedir_location } = (await sqldb.queryOneRowAsync(sql.select_workspace_homedir_location, { workspace_id })).rows[0];
     const workspace = {
         'id': workspace_id,
         'launch_uuid': uuid,
         'local_name': `workspace-${uuid}`,
-        's3_name': `workspace-${workspace_id}-${workspace_version}`,
+        'remote_name': `workspace-${workspace_id}-${workspace_version}`,
+        'homedir_location': homedir_location,
     };
 
     logger.info(`Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`);
@@ -1127,7 +1144,7 @@ function gradeSequence(workspace_id, res) {
             const workspace = await _getWorkspaceAsync(workspace_id);
             const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
             const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
-            const zipName = `${workspace.s3_name}-${timestamp}.zip`;
+            const zipName = `${workspace.remote_name}-${timestamp}.zip`;
             zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
 
             return {
