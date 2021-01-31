@@ -1,5 +1,7 @@
 #!/bin/bash
 
+yum install -y tmux
+
 yum update -y
 
 amazon-linux-extras install -y \
@@ -17,7 +19,6 @@ yum -y install \
     make \
     openssl \
     dos2unix \
-    tmux \
     tar \
     ImageMagick \
     texlive \
