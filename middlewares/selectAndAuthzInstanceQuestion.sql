@@ -9,7 +9,6 @@ WITH instance_questions_info AS (
         ) AS prev_instance_question,
         jsonb_build_object(
             'id', (lead(iq.id) OVER w),
-            'score_perc', (lead(iq.score_perc) OVER w),
             'sequence_locked', (lead(qo.sequence_locked) OVER w)
         ) AS next_instance_question,
         qo.question_number,
