@@ -17,7 +17,8 @@ WHERE id = (
             ) s ON (s.variant_id = v.id)
     WHERE 
         iq.assessment_question_id = $assessment_question_id
-        AND (iq.manual_grading_locked IS FALSE
+        -- If previously accessed for manual grading, do not access again for 'manual_grading_lock_time' to prevent TAs overlapping
+        AND iq.manual_grading_locked IS FALSE
         AND a.id = $assessment_id
     ORDER BY RANDOM()
     LIMIT 1
