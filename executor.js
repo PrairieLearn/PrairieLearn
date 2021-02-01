@@ -76,6 +76,8 @@ function handleInput(line, caller) {
           resolve({
             // `FunctionMissingError` shouldn't be propagated as an actual error
             // we'll report it via `functionMissing`
+            // TODO: `error.data` contains valuable information - we should try
+            // to shuttle it back up to the parent process so it can be displayed.
             error: err && !functionMissing ? err.message : undefined,
             data,
             output,
