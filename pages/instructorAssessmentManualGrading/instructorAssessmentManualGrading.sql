@@ -21,7 +21,15 @@ SELECT
          JOIN submissions AS s ON (s.variant_id = v.id)
      WHERE
          iq.assessment_question_id = aq.id
-         AND s.graded_at IS NULL) AS num_ungraded_submissions
+         AND s.graded_at IS NULL) AS num_ungraded_submissions,
+    (SELECT COUNT(DISTINCT iq.id)
+     FROM
+         instance_questions AS iq
+         JOIN variants AS v ON (v.instance_question_id = iq.id)
+         JOIN submissions AS s ON (s.variant_id = v.id)
+     WHERE
+         iq.assessment_question_id = aq.id
+         AND iq.manual_grading_locked IS TRUE) AS num_locked_submissions
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)

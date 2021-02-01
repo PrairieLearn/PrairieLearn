@@ -27,6 +27,8 @@
                 <th>QID</th>
                 <th>Points</th>
                 <th>Number of Submissions</th>
+                <th>Locked Submissions</th>
+                <th></th>
                 <th></th>
               </tr>
             </thead>
@@ -51,10 +53,20 @@
                 <td class="text-center">
                   <%= question.num_submissions %>
                 </td>
+                <td class="text-center">
+                  <%= question.num_locked_submissions %>
+                </td>
+                <td class="text-center">
+                  <% if (question.num_locked_submissions > 0) { %>
+                    <a class="btn btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/unlock_ungraded">
+                      Unlock <%= question.num_locked_submissions %> submission<% if (question.num_locked_submissions > 1) { %>s<% } %>
+                    </a>
+                    <% } %>
+                </td>
                 <td>
                   <% if (question.num_ungraded_submissions > 0) { %>
                   <a class="btn btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/next_ungraded">
-                    Grade <%= question.num_ungraded_submissions %> submission<% if (question.num_ungraded_submissions > 1) { %>s<% } %>
+                    Grade <%= question.num_ungraded_submissions - question.num_locked_submissions %> submission<% if (question.num_ungraded_submissions - question.num_locked_submissions> 1) { %>s<% } %>
                   </a>
                   <% } %>
                 </td>
