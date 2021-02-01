@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const config = require('../../lib/config');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
@@ -10,6 +11,7 @@ router.get('/', (req, res, next) => {
     const params = {
         assessment_question_id: res.locals.assessment_question_id,
         assessment_id: res.locals.assessment.id,
+        manual_grading_lock_time: config.manualGradingLockTime,
     };
     // Unmarked instance question df. Is last created submission of instance question AND has null graded_at value.
     sqlDb.queryZeroOrOneRow(sql.get_and_set_next_unmarked_instance_question_for_manual_grading, params, (err, result) => {
