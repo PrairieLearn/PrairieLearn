@@ -18,7 +18,7 @@
         "@octokit/rest": "^18.0.12",
         "@prairielearn/prairielib": "^1.11.0",
         "ace-builds": "^1.4.12",
-        "ajv": "^7.0.2",
+        "ajv": "^7.0.3",
         "ansi_up": "^4.0.4",
         "archiver": "^5.1.0",
         "async": "^3.2.0",
