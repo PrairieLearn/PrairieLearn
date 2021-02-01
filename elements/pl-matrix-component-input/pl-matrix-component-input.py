@@ -143,7 +143,7 @@ def render(element_html, data):
             if a_submitted is not None and len(a_submitted.shape) == 2:
                 m, n = np.shape(a_submitted)
         else:
-            a_tru = pl.from_json(data['correct_answers'].get(name, None))
+            a_tru = np.array(pl.from_json(data['correct_answers'].get(name, None)))
             if a_tru is not None and len(a_tru.shape) == 2:
                 m, n = np.shape(a_tru)
             else:
