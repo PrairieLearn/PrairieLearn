@@ -181,13 +181,23 @@ def render(element_html, data):
     html = ''
 
     if data['panel'] == 'question':
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
+        display_score_badge = score is not None and show_answer_feedback
+
         answerset = []
-        for answer in display_answers:
+        for i, answer in enumerate(display_answers):
             form_name = get_form_name(name, answer['key'])
+            student_answer = submitted_answers.get(form_name, None)
+            correct_answer = str(data['correct_answers'].get(name)[i])
+
             answer_html = {
                 'html': answer['html'].strip(),
                 'options': get_select_options(dropdown_options, submitted_answers.get(form_name, None)),
-                'name': form_name
+                'name': form_name,
+                'display_score_badge': display_score_badge,
+                'correct': display_score_badge and student_answer == correct_answer,
+                'incorrect': display_score_badge and student_answer != correct_answer,
             }
             answerset.append(answer_html)
 
