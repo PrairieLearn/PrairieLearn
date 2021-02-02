@@ -7,5 +7,5 @@ FROM
     JOIN assessments AS a ON (a.id = aq.assessment_id)
 WHERE 
     iq.assessment_question_id = $assessment_question_id
-    AND iq.manual_grading_user IS NOT NULL
-    AND a.id = $assessment_id;
+    AND a.id = $assessment_id
+    AND iq.manual_grading_user IS NOT NULL;

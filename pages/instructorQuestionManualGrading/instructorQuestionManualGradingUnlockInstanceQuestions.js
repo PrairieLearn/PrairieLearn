@@ -8,10 +8,10 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
     const params = {
-        assessment_question_id: res.locals.assessment_question_id,
-        assessment_id: res.locals.assessment.id,
+        'assessment_id': res.locals.assessment.id,
+        'assessment_question_id': res.locals.assessment_question_id,
     };
-    sqlDb.call(sql.unlock_locked_instance_questions, params, (err) => {
+    sqlDb.query(sql.unlock_locked_instance_questions, params, (err) => {
         if (ERR(err, next)) return;
 
         res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
