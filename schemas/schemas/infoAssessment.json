@@ -105,12 +105,10 @@
         "groupMaxSize": {
             "description": "Maximum number of students in a group.",
             "type": "number",
-            "default": null
         },
         "groupMinSize": {
             "description": "Minimum number of students in a group.",
             "type": "number",
-            "default": null
         },
         "studentGroupCreate": {
             "description": "Whether students can create groups.",
