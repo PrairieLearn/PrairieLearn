@@ -10,6 +10,7 @@ router.get('/', (req, res, next) => {
     const params = {
         assessment_question_id: res.locals.assessment_question_id,
         assessment_id: res.locals.assessment.id,
+        user_id: res.locals.authn_user.user_id,
     };
     // Unmarked instance question df. Is last created submission of instance question AND has null graded_at value.
     sqlDb.queryZeroOrOneRow(sql.get_and_set_next_unmarked_instance_question_for_manual_grading, params, (err, result) => {

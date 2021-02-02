@@ -1,9 +1,9 @@
 -- BLOCK get_and_set_next_unmarked_instance_question_for_manual_grading
 UPDATE instance_questions
-SET manual_grading_locked = TRUE
+SET manual_grading_user = $user_id
 WHERE id = (
     SELECT iq.id
-    FROM 
+    FROM
         instance_questions AS iq
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
             JOIN assessments AS a ON (a.id = aq.assessment_id)
@@ -17,8 +17,7 @@ WHERE id = (
             ) s ON (s.variant_id = v.id)
     WHERE 
         iq.assessment_question_id = $assessment_question_id
-        -- If previously accessed for manual grading, do not access again for 'manual_grading_lock_time' to prevent TAs overlapping
-        AND iq.manual_grading_locked IS FALSE
+        AND iq.manual_grading_user IS NULL
         AND a.id = $assessment_id
     ORDER BY RANDOM()
     LIMIT 1
