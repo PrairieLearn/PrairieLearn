@@ -62,7 +62,6 @@
             certify.onchange = () => {
               start.disabled = !certify.checked;
             };
-            
             form.onsubmit = () => {
                 start.disabled = true;
                 start.html = '<i class="fa fa-sync fa-spin fa-fw"></i> Generating assessment…';
