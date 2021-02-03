@@ -1,9 +1,9 @@
-DROP FUNCTION IF EXISTS get_and_set_next_unmarked_instance_question_for_manual_grading(bigint, bigint, bigint);
+DROP FUNCTION IF EXISTS instance_questions_select_lock_next_submission_for_manual_grading(bigint, bigint, bigint);
 
 -- Retrieves the last variant for an instance question and last submission for the variant.
 
 CREATE OR REPLACE FUNCTION
-    get_and_set_next_unmarked_instance_question_for_manual_grading(
+    instance_questions_select_lock_next_submission_for_manual_grading(
         IN assessment_id bigint,
         IN assessment_question_id bigint,
         IN user_id bigint,
