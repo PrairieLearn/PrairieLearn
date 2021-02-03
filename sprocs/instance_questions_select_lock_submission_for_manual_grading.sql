@@ -1,8 +1,3 @@
--- BLOCK get_and_set_next_unmarked_instance_question_for_manual_grading
-
-
-
--- BLOCK instance_question_select_last_variant_with_submission
 DROP FUNCTION IF EXISTS get_and_set_next_unmarked_instance_question_for_manual_grading(bigint, bigint, bigint);
 
 -- Retrieves the last variant for an instance question and last submission for the variant.
@@ -20,7 +15,7 @@ DECLARE
 BEGIN
 
     UPDATE submissions
-    SET manual_grading_user = 1
+    SET manual_grading_user = user_id
     WHERE id = (
         SELECT s.id
         FROM
@@ -36,9 +31,9 @@ BEGIN
                     ORDER BY s.auth_user_id, s.date DESC, s.id DESC
                 ) s ON (s.variant_id = v.id)
         WHERE 
-            iq.assessment_question_id = 50
+            iq.assessment_question_id = assessment_question_id
             AND s.manual_grading_user IS NULL
-            AND a.id = 5
+            AND a.id = assessment_id
         ORDER BY RANDOM()
         LIMIT 1
     )
