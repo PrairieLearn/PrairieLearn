@@ -13,7 +13,7 @@ router.get('/', (req, res, next) => {
         // Should we move this block into question.js? getAndRenderVariantForGrading
         (callback) => {
             const params = [res.locals.instance_question.id];
-            sqlDb.callZeroOrOneRow('instance_question_select_manual_grading_objects', params, (err, result) => {
+            sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
                 if (ERR(err, next)) return;
 
                 // Instance question doesn't exist (redirect to config page)
