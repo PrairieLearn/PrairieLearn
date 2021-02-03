@@ -28,6 +28,7 @@
                 <th>Points</th>
                 <th>Number of Submissions</th>
                 <th>Locked Submissions</th>
+                <th>Grading By</th>
                 <th></th>
                 <th></th>
               </tr>
@@ -55,6 +56,9 @@
                 </td>
                 <td class="text-center">
                   <%= question.num_locked_submissions %>
+                </td>
+                <td class="text-center">
+                  <%= question.manual_grading_users %>
                 </td>
                 <td class="text-center">
                   <% if (question.num_locked_submissions > 0) { %>
