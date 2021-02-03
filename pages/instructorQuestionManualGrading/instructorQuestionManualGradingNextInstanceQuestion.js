@@ -12,7 +12,7 @@ router.get('/', (req, res, next) => {
         res.locals.authn_user.user_id,
     ];
     // Unmarked instance question df. Is last created submission of instance question AND has null graded_at value.
-    sqlDb.callZeroOrOneRow('instance_questions_select_lock_submission_for_manual_grading', params, (err, result) => {
+    sqlDb.callZeroOrOneRow('instance_questions_select_lock_next_submission_for_manual_grading', params, (err, result) => {
         if (ERR(err, next)) return;
 
         // If we have no more submissions, then redirect back to manual grading page
