@@ -4,8 +4,8 @@ DROP FUNCTION IF EXISTS instance_questions_select_lock_next_submission_for_manua
 
 CREATE OR REPLACE FUNCTION
     instance_questions_select_lock_next_submission_for_manual_grading(
-        IN assessment_id bigint,
-        IN assessment_question_id bigint,
+        IN a_id bigint,
+        IN aq_id bigint,
         IN user_id bigint,
         OUT instance_question jsonb
     )
@@ -31,9 +31,9 @@ BEGIN
                     ORDER BY s.auth_user_id, s.date DESC, s.id DESC
                 ) s ON (s.variant_id = v.id)
         WHERE 
-            iq.assessment_question_id = assessment_question_id
+            iq.assessment_question_id = aq_id
             AND s.manual_grading_user IS NULL
-            AND a.id = assessment_id
+            AND a.id = a_id
         ORDER BY RANDOM()
         LIMIT 1
     )
@@ -46,7 +46,7 @@ BEGIN
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN assessments AS a ON (a.id = aq.assessment_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
-        JOIN submission AS s ON (s.variant_id = v.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE s.id = submission_id;
 
 END;
