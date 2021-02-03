@@ -57,7 +57,7 @@ router.post('/', function(req, res, next) {
         const score = req.body.submission_score;
         const params = [res.locals.instance_question.id];
 
-        sqlDb.callZeroOrOneRow('instance_question_select_manual_grading_objects', params, (err, result) => {
+        sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
 
             const {question, variant, submission} = result.rows[0];
