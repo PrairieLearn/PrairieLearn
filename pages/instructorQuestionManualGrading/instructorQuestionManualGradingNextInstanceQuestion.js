@@ -20,7 +20,7 @@ router.get('/', (req, res, next) => {
             res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`);
             return;
         }
-        const instance_question_id = result.rows[0].id;
+        const instance_question_id = result.rows[0].instance_question.id;
         res.redirect(`${res.locals.urlPrefix}/instance_question/${instance_question_id}/manual_grading`);
     });
 
