@@ -30,7 +30,7 @@ SELECT
      WHERE
          iq.assessment_question_id = aq.id
          AND s.manual_grading_user IS NOT NULL) AS num_locked_submissions,
-    (SELECT s.manual_grading_user
+    (SELECT array_agg(DISTINCT s.manual_grading_user)
      FROM
          instance_questions AS iq
          JOIN variants AS v ON (v.instance_question_id = iq.id)
