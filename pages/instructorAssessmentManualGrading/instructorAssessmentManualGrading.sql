@@ -29,7 +29,14 @@ SELECT
          JOIN submissions AS s ON (s.variant_id = v.id)
      WHERE
          iq.assessment_question_id = aq.id
-         AND iq.manual_grading_user IS NOT NULL) AS num_locked_submissions
+         AND s.manual_grading_user IS NOT NULL) AS num_locked_submissions,
+    (SELECT s.manual_grading_user
+     FROM
+         instance_questions AS iq
+         JOIN variants AS v ON (v.instance_question_id = iq.id)
+         JOIN submissions AS s ON (s.variant_id = v.id)
+     WHERE
+         iq.assessment_question_id = aq.id) AS manual_grading_users
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)

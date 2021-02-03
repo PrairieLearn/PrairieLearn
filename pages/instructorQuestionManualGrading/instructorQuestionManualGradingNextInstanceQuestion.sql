@@ -1,8 +1,8 @@
 -- BLOCK get_and_set_next_unmarked_instance_question_for_manual_grading
-UPDATE instance_questions
+UPDATE submissions
 SET manual_grading_user = $user_id
 WHERE id = (
-    SELECT iq.id
+    SELECT s.id
     FROM
         instance_questions AS iq
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -17,7 +17,7 @@ WHERE id = (
             ) s ON (s.variant_id = v.id)
     WHERE 
         iq.assessment_question_id = $assessment_question_id
-        AND iq.manual_grading_user IS NULL
+        AND s.manual_grading_user IS NULL
         AND a.id = $assessment_id
     ORDER BY RANDOM()
     LIMIT 1

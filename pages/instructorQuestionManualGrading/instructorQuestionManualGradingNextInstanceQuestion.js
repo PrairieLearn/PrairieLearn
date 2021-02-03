@@ -3,17 +3,16 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const {sqlDb, sqlLoader} = require('@prairielearn/prairielib');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const {sqlDb} = require('@prairielearn/prairielib');
 
 router.get('/', (req, res, next) => {
-    const params = {
-        assessment_question_id: res.locals.assessment_question_id,
-        assessment_id: res.locals.assessment.id,
-        user_id: res.locals.authn_user.user_id,
-    };
+    const params = [
+        res.locals.assessment.id,
+        res.locals.assessment_question_id,
+        res.locals.authn_user.user_id,
+    ];
     // Unmarked instance question df. Is last created submission of instance question AND has null graded_at value.
-    sqlDb.queryZeroOrOneRow(sql.get_and_set_next_unmarked_instance_question_for_manual_grading, params, (err, result) => {
+    sqlDb.callZeroOrOneRow('instance_questions_select_lock_submission_for_manual_grading', params, (err, result) => {
         if (ERR(err, next)) return;
 
         // If we have no more submissions, then redirect back to manual grading page

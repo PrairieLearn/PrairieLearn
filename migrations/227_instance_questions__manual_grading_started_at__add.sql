@@ -1,2 +1,2 @@
-ALTER TABLE instance_questions
+ALTER TABLE submissions
     ADD COLUMN manual_grading_user bigint;

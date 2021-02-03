@@ -64,7 +64,7 @@
                     <% } %>
                 </td>
                 <td>
-                  <% if (question.num_ungraded_submissions > 0) { %>
+                  <% if (question.num_ungraded_submissions != 0 && (question.num_locked_submissions !== question.num_ungraded_submissions)) { %>
                   <a class="btn btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/next_ungraded">
                     Grade <%= question.num_ungraded_submissions - question.num_locked_submissions %> submission<% if (question.num_ungraded_submissions - question.num_locked_submissions> 1) { %>s<% } %>
                   </a>
