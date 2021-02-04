@@ -36,6 +36,7 @@ BEGIN
             AND a.id = a_id
         ORDER BY RANDOM()
         LIMIT 1
+        FOR UPDATE
     )
     RETURNING id INTO submission_id;
 
