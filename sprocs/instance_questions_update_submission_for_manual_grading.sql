@@ -1,10 +1,10 @@
-DROP FUNCTION IF EXISTS instance_questions_select_lock_next_submission_for_manual_grading(bigint, bigint, bigint);
+DROP FUNCTION IF EXISTS instance_questions_update_submission_for_manual_grading(bigint, bigint, bigint);
 
 -- Use an assessment question ID to get list of instance questions.
 -- LOCK and UPDATE last submission for each instance question.
 
 CREATE OR REPLACE FUNCTION
-    instance_questions_select_lock_next_submission_for_manual_grading(
+    instance_questions_update_submission_for_manual_grading(
         IN a_id bigint, -- for endpoint auth
         IN aq_id bigint, -- for query
         IN user_id bigint, -- to mark submission as being graded by
