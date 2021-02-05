@@ -16,7 +16,8 @@ DECLARE
 BEGIN
 
     -- Only LAST, aka. MAX(date), submission qualifies for Manual Grading
-    SELECT * FROM submissions
+    SELECT id FROM submissions
+    INTO submission_id
     WHERE (auth_user_id, date) IN (
         -- If we can group by ID here somehow, we can do a more precise query and perhaps
         -- also support teamwork manual grading one day.
@@ -28,18 +29,17 @@ BEGIN
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
             JOIN assessments AS a ON (a.id = aq.assessment_id)
         WHERE 
-            iq.assessment_question_id = 67
-            AND a.id = 6
-            AND s.manual_grading_user IS NULL
+            iq.assessment_question_id = aq_id
+            AND a.id = a_id
             AND s.graded_at IS NULL
         GROUP BY s.auth_user_id
         LIMIT 1
-    ) AND graded_at IS NULL
+    ) AND manual_grading_user IS NULL
     FOR UPDATE;
 
     UPDATE submissions
     SET manual_grading_user = user_id
-    RETURNING id INTO submission_id;
+    WHERE id = submission_id;
 
     SELECT to_jsonb(iq.*)
     INTO instance_question
