@@ -38,12 +38,22 @@ def prepare(element_html, data):
             raise Exception('duplicate correct_answers variable name: %s' % name)
         # Test conversion, but leave as string so proper value is shown on answer panel
         a_tru_parsed = pl.string_to_integer(correct_answer, base)
-        if  a_tru_parsed is None:
+        if a_tru_parsed is None:
             raise Exception('correct answer is not a valid input: %s' % name)
         if a_tru_parsed > 2**53-1 or a_tru_parsed < -((2**53)-1):
             raise Exception('answer must be between (2**53)-1 and -((2**53)-1)')
-
         data['correct_answers'][name] = correct_answer
+        return
+
+    a_tru = pl.from_json(data['correct_answers'].get(name, None))
+    if a_tru is not None:
+        if isinstance(a_tru, str):
+            a_tru = pl.string_to_integer(a_tru, base)
+        if a_tru is None:
+            raise Exception('correct answer is not a valid input: %s' % name)
+        if a_tru > 2**53-1 or a_tru < -((2**53)-1):
+            raise Exception('answer must be between (2**53)-1 and -((2**53)-1)')
+
 
 
 def render(element_html, data):
