@@ -40,7 +40,7 @@ def prepare(element_html, data):
         a_tru_parsed = pl.string_to_integer(correct_answer, base)
         if a_tru_parsed is None:
             raise Exception('correct answer is not a valid input: %s' % name)
-        if a_tru_parsed > 2**53-1 or a_tru_parsed < -((2**53)-1):
+        if a_tru_parsed > 2 ** 53 - 1 or a_tru_parsed < -((2 ** 53) - 1):
             raise Exception('answer must be between (2**53)-1 and -((2**53)-1)')
         data['correct_answers'][name] = correct_answer
         return
@@ -51,9 +51,8 @@ def prepare(element_html, data):
             a_tru = pl.string_to_integer(a_tru, base)
         if a_tru is None:
             raise Exception('correct answer is not a valid input: %s' % name)
-        if a_tru > 2**53-1 or a_tru < -((2**53)-1):
+        if a_tru > 2 ** 53 - 1 or a_tru < -((2 ** 53) - 1):
             raise Exception('answer must be between (2**53)-1 and -((2**53)-1)')
-
 
 
 def render(element_html, data):
@@ -229,7 +228,7 @@ def parse(element_html, data):
         a_sub_parsed = pl.string_to_integer(str(a_sub), base)
         if a_sub_parsed is None:
             raise ValueError('invalid submitted answer (wrong type)')
-        if a_sub_parsed > 2**53-1 or a_sub_parsed < -((2**53)-1):
+        if a_sub_parsed > 2 ** 53 - 1 or a_sub_parsed < -((2 ** 53) - 1):
             data['format_errors'][name] = 'Answer must be between (2**53)-1 and -((2**53)-1)'
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
