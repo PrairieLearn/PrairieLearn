@@ -207,7 +207,7 @@ with open(4, 'w', encoding='utf-8') as exitf:
                         # Run this a few times to catch anything trying to get away by
                         # repeated forking
                         for i in range(10):
-                            os.system(f"pkill -u executor --signal SIGKILL")
+                            os.system("pkill -u executor --signal SIGKILL")
 
                     # We'll need to write a confirmation message on file
                     # descriptor 4 so that PL knows that control was actually
