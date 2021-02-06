@@ -87,7 +87,6 @@ window.InstructorFileEditor = function(options) {
         name: 'saveAndSync',
         bindKey: {win: 'Ctrl-s', mac: 'Command-s'},
         exec: function() {
-            console.log(`#${options.saveElementId}`);
             $(`#${options.saveElementId}`).click();
         },
     });
