@@ -99,7 +99,7 @@ function handleInput(line, caller) {
     terminal: false,
   });
 
-  let pc = new PythonCaller({ reportLoad: false });
+  let pc = new PythonCaller({ reportLoad: false, dropPrivileges: true });
   pc.ensureChild();
 
   // Safety check: if we receive more input while handling another request,

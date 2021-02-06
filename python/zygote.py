@@ -169,6 +169,8 @@ def terminate_worker(signum, stack):
 signal.signal(signal.SIGTERM, terminate_worker)
 signal.signal(signal.SIGINT, terminate_worker) # Ctrl-C case
 
+drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
+
 with open(4, 'w', encoding='utf-8') as exitf:
     while True:
         worker_pid = os.fork()
@@ -177,7 +179,18 @@ with open(4, 'w', encoding='utf-8') as exitf:
             # file descriptor 4
             exitf.close()
 
+            # If configured to do so, drop to a deprivileged user before running
+            # any user code. This should generally only be enabled when running
+            # in Docker, as the `prairielearn/executor` image will be guaranteed
+            # to have the user that we drop to.
+            if drop_privileges:
+                import pwd
+                user = pwd.getpwnam("executor")
+                os.setgid(user.pw_gid)
+                os.setuid(user.pw_uid)
+
             worker_loop()
+
             break
         else:
             pid,status = os.waitpid(worker_pid, 0)
@@ -186,6 +199,15 @@ with open(4, 'w', encoding='utf-8') as exitf:
                 if os.WEXITSTATUS(status) == 0:
                     # Everything is ok, the worker exited gracefully,
                     # just repeat
+
+                    # Once this child exits, clean up after it if we
+                    # were running as the `executor` user
+                    if drop_privileges:
+                        # Kill all processes started by `executor`
+                        # Run this a few times to catch anything trying to get away by
+                        # repeated forking
+                        for i in range(10):
+                            os.system(f"pkill -u executor --signal SIGKILL")
 
                     # We'll need to write a confirmation message on file
                     # descriptor 4 so that PL knows that control was actually
