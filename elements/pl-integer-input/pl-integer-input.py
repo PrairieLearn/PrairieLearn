@@ -48,7 +48,7 @@ def prepare(element_html, data):
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is not None:
         try:
-            a_tru = int(a_tru, base) 
+            a_tru = int(a_tru, base)
         except Exception:
             raise Exception('correct answer is not a valid input: %s' % name)
         if a_tru > 2**53 - 1 or a_tru < -((2**53) - 1):
