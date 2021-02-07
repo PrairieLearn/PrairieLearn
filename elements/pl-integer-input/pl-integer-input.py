@@ -48,7 +48,7 @@ def prepare(element_html, data):
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is not None:
         try:
-            if isinstance(a_tru,str):
+            if isinstance(a_tru, str):
                 a_tru = int(a_tru, base)
         except Exception:
             raise Exception('correct answer is not a valid input: %s' % name)
