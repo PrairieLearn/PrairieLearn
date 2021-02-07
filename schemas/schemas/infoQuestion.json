@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Question Info",
     "description": "Info files for questions.",
     "type": "object",
@@ -11,6 +11,10 @@
         "topic"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
@@ -101,6 +105,10 @@
                 "entrypoint"
             ],
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "enabled": {
                     "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
                     "type": "boolean"
@@ -136,6 +144,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "coreStyles": {
                     "description": "The styles required by this question from /public/stylesheets.",
                     "type": "array",
@@ -212,6 +224,10 @@
                 "home"
             ],
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "image": {
                     "description": "The Docker image that will be used to serve this question. Should be specified as Dockerhub image.",
                     "type": "string"

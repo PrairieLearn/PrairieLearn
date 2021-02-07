@@ -28,6 +28,13 @@
     urlSuffix:      '/assessment/'+assessment.id+'/question_statistics',
     iconClasses:    'fas fa-table',
     tabLabel:       'Question stats'}) %>
+<% if (course.manual_grading_visible) { %>
+    <%- include('navTab', {
+        activeSubPage:  'manual_grading',
+        urlSuffix:      '/assessment/'+assessment.id+'/manual_grading',
+        iconClasses:    'fas fa-marker',
+        tabLabel:       'Manual Grading'}) %>
+<% } %>
 <%- include('navTab', {
     activeSubPage:  'regrading',
     urlSuffix:      '/assessment/'+assessment.id+'/regrading',
