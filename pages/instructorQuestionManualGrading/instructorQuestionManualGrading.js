@@ -12,7 +12,10 @@ router.get('/', (req, res, next) => {
     async.series([
         // Should we move this block into question.js? getAndRenderVariantForGrading
         (callback) => {
-            const params = [res.locals.instance_question.id];
+            const params = [
+                res.locals.instance_question.id,
+                res.locals.authn_user.user_id,
+            ];
             sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
                 if (ERR(err, next)) return;
 
