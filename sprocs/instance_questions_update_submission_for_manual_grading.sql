@@ -19,8 +19,7 @@ BEGIN
     SELECT id FROM submissions
     INTO submission_id
     WHERE (auth_user_id, date) IN (
-        -- If we can group by ID here somehow, we can do a more precise query and perhaps
-        -- also support teamwork manual grading one day.
+        -- If we can group and add the respective ID here somehow, we can do a safer query
         SELECT s.auth_user_id, MAX(s.date)
         FROM
             submissions AS s
