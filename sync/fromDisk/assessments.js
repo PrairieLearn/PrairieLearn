@@ -180,7 +180,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     number_in_alternative_group: alternativeIndex + 1,
                     advance_score_perc: alternative.advanceScorePerc,
                     effective_advance_score_perc: 
-                        question.advanceScorePerc
+                        alternative.advanceScorePerc
+                        ?? question.advanceScorePerc
                         ?? alternativeGroupParams.advance_score_perc
                         ?? zone.advanceScorePerc
                         ?? assessment.advanceScorePerc

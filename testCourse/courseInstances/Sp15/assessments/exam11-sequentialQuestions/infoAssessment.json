@@ -14,9 +14,9 @@
                 {
                     "numberChoose": 1,
                     "points": 1,
-                    "advanceScorePerc": 0,
+                    "advanceScorePerc": 1,
                     "alternatives": [
-                        {"id": "partialCredit1"}
+                        {"id": "partialCredit1", "advanceScorePerc": 0}
                     ]
                 }
             ]
