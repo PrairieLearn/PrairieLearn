@@ -788,33 +788,19 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 async function _getInitialZipAsync(workspace) {
     workspaceHelper.updateMessage(workspace.id, 'Loading initial files');
     const localName = workspace.local_name;
-    const remoteName = workspace.remote_name;
-    let localPath;
+    const s3Name = workspace.remote_name;
+    const localPath = `${workspacePrefix}/${localName}`;
     const zipPath = `${config.workspaceHostZipsDirectory}/${localName}-initial.zip`;
-    const remotePath = `${remoteName}/initial.zip`;
+    const s3Path = `${s3Name}/initial.zip`;
 
-    debug(`Downloading remotePath=${remotePath} to zipPath=${zipPath}`);
-    if (workspace.homedir_location == 'S3') {
-        localPath = `${workspacePrefix}/${localName}`;
-
-        const isDirectory = false;
-        update_queue[[zipPath, isDirectory]] = { action: 'skip' };
-        const options = {
-            owner: config.workspaceJobsDirectoryOwnerUid,
-            group: config.workspaceJobsDirectoryOwnerGid,
-        };
-        await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, remotePath, zipPath, options);
-    } else if (workspace.homedir_location == 'FileSystem') {
-        const root = config.workspaceHostHomeDirRoot;
-        localPath = `${root}/${remoteName}/current`;
-
-        await fsPromises.copyFile(path.join(root, remotePath), zipPath);
-        await fsPromises.chown(zipPath,
-                               config.workspaceJobsDirectoryOwnerUid,
-                               config.workspaceJobsDirectoryOwnerGid);
-    } else {
-        throw new Error(`Unknown backing file storage: ${workspace.homedir_location}`);
-    }
+    debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
+    const options = {
+        owner: config.workspaceJobsDirectoryOwnerUid,
+        group: config.workspaceJobsDirectoryOwnerGid,
+    };
+    const isDirectory = false;
+    update_queue[[zipPath, isDirectory]] = { action: 'skip' };
+    await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, options);
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
@@ -852,10 +838,6 @@ async function _getInitialZipAsync(workspace) {
 
 function _getInitialFiles(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Loading files');
-    if (workspace.homedir_location == 'FileSystem') {
-        /* We already have the files loaded, so nothing to do. */
-        return callback(null);
-    }
 
     const localPath = `${workspacePrefix}/${workspace.local_name}`;
     const s3Path = `${workspace.remote_name}/current`;
@@ -1105,12 +1087,17 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
     logger.info(`Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`);
     try { // only errors at this level will set host to unhealthy
-        if (useInitialZip) {
-            debug(`init: bootstrapping workspace with initial.zip`);
-            await _getInitialZipAsync(workspace);
-        } else {
-            debug(`init: syncing workspace from S3`);
-            await _getInitialFilesAsync(workspace);
+
+        /* We only need to worry about the initial zip or syncing files if we're running on S3.
+           Filesystem-backed workspaces can get away with no initial syncing steps. */
+        if (homedir_location == 'S3') {
+            if (useInitialZip) {
+                debug(`init: bootstrapping workspace with initial.zip`);
+                await _getInitialZipAsync(workspace);
+            } else {
+                debug(`init: syncing workspace from S3`);
+                await _getInitialFilesAsync(workspace);
+            }
         }
 
         try {
