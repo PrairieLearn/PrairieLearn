@@ -768,7 +768,7 @@ function s3CheckPrefixExists(path, callback) {
         Bucket: config.workspaceS3Bucket,
         Prefix: path,
     };
-    s3ListObjectsV2(params, (err, data) => {
+    s3.listObjectsV2(params, (err, data) => {
         if (ERR(err, callback)) return;
         return callback(data.KeyCount > 0);
     });
