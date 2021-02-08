@@ -35,8 +35,8 @@ BEGIN
         )
         AND manual_grading_user IS NULL
         AND graded_at IS NULL
-    FOR UPDATE
-    LIMIT 1;
+    LIMIT 1
+    FOR UPDATE;
 
     UPDATE submissions
     SET manual_grading_user = user_id
