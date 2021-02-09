@@ -27,22 +27,21 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
-    SELECT to_jsonb(q.*), to_jsonb(v.*)
-    INTO question, variant
+    UPDATE submissions
+    SET manual_grading_user = user_id
+    WHERE id = (SELECT id FROM submission);
+
+    SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*)
+    INTO question, variant, submission
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE iq.id = iq_id
+    WHERE iq.id = 3
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
-
-    UPDATE submissions
-    SET manual_grading_user = user_id
-    WHERE id = (SELECT id FROM submission)
-    RETURNING * INTO submission;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
