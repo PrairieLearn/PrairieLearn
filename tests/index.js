@@ -45,7 +45,6 @@ require('./testSchemas');
 require('./testMarkdown');
 require('./testRedirects');
 require('./testIssues');
-require('./testSequentialQuestions');
 require('./testChunks');
 require('./testLocalLock');
 require('./testWorkspaceAccess');
