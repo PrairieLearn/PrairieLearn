@@ -13,10 +13,12 @@ CREATE OR REPLACE FUNCTION
         OUT _user jsonb
     )
 AS $$
+DECLARE
+    temp submissions%rowtype;
 BEGIN
 
     SELECT s.*
-    INTO submission
+    INTO temp
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -28,10 +30,12 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
-    IF submission IS NOT NULL AND (SELECT manual_grading_user FROM submission) IS NULL THEN
+    IF NOT FOUND THEN RAISE EXCEPTION 'no submission found for instance question: %', iq_id; END IF;
+
+    IF temp.manual_grading_user IS NULL THEN
         UPDATE submissions
         SET manual_grading_user = user_id
-        WHERE id = (SELECT id FROM submission);
+        WHERE id = temp.id;
     END IF;
 
     SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*)
