@@ -11,7 +11,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 /**
  * SYNCING PROCESS:
- * 
+ *
  * 1. Assign order_by number to every assessment
  * 2. Check that no UUIDs are duplicated within this course instance
  * 3. Check that no UUIDS are duplicated in any other course instance
@@ -38,7 +38,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  */
 
  /**
-  * 
+  *
   * @param {import('../infofile').InfoFile<import('../course-db').Assessment>} assessmentInfoFile
   * @param {{ [qid: string]: any }} questionIds
   */
@@ -71,6 +71,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         student_group_create: !!assessment.studentGroupCreate,
         student_group_join: !!assessment.studentGroupJoin,
         student_group_leave: !!assessment.studentGroupLeave,
+        advance_score_perc: assessment.advanceScorePerc,
     };
 
     const allowAccess = assessment.allowAccess || [];
@@ -100,6 +101,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             number_choose: zone.numberChoose,
             max_points: zone.maxPoints,
             best_questions: zone.bestQuestions,
+            advance_score_perc: zone.advanceScorePerc,
         };
     });
 
@@ -108,7 +110,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     assessmentParams.alternativeGroups = zones.map((zone) => {
         let zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes') ? zone.gradeRateMinutes : (assessment.gradeRateMinutes || 0);
         return zone.questions.map((question) => {
-            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number }[]} */
+            /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, advanceScorePerc: number }[]} */
             let alternatives;
             let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes') ? question.gradeRateMinutes : zoneGradeRateMinutes;
             if (_(question).has('alternatives')) {
@@ -120,6 +122,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                         forceMaxPoints: _.has(alternative, 'forceMaxPoints') ? alternative.forceMaxPoints
                             : (_.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false),
                         triesPerVariant: _.has(alternative, 'triesPerVariant') ? alternative.triesPerVariant : (_.has(question, 'triesPerVariant') ? question.triesPerVariant : 1),
+                        advanceScorePerc: alternative.advanceScorePerc,
                         gradeRateMinutes: _.has(alternative, 'gradeRateMinutes') ? alternative.gradeRateMinutes : questionGradeRateMinutes,
                     };
                 });
@@ -130,6 +133,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     points: question.points,
                     forceMaxPoints: question.forceMaxPoints || false,
                     triesPerVariant: question.triesPerVariant || 1,
+                    advanceScorePerc: question.advanceScorePerc,
                     gradeRateMinutes: questionGradeRateMinutes,
                 }];
             }
@@ -164,6 +168,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             const alternativeGroupParams = {
                 number: alternativeGroupNumber,
                 number_choose: question.numberChoose,
+                advance_score_perc: question.advanceScorePerc,
             };
 
             alternativeGroupParams.questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
@@ -179,6 +184,14 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     grade_rate_minutes: alternative.gradeRateMinutes,
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
+                    advance_score_perc: alternative.advanceScorePerc,
+                    effective_advance_score_perc: 
+                        alternative.advanceScorePerc
+                        ?? question.advanceScorePerc
+                        ?? alternativeGroupParams.advance_score_perc
+                        ?? zone.advanceScorePerc
+                        ?? assessment.advanceScorePerc
+                        ?? 0,
                 };
 
             });

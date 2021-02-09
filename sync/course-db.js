@@ -84,7 +84,7 @@ const UUID_REGEX = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-
 // For finding all v4 UUIDs in a string/file
 const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
 
-/** 
+/**
  * @template T
  * @typedef {import('./infofile').InfoFile<T>} InfoFile<T>
  */
@@ -116,7 +116,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} color
  */
 
-/** 
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -194,6 +194,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
 
@@ -204,6 +205,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
 
@@ -231,6 +233,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {boolean} studentGroupCreate
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
 
@@ -377,8 +380,8 @@ module.exports.loadFullCourseNew = async function(courseDir) {
  * @template T
  * @param {any} courseId
  * @param {string} filePath
- * @param {InfoFile<T>} infoFile 
- * @param {(line?: string) => void} writeLine 
+ * @param {InfoFile<T>} infoFile
+ * @param {(line?: string) => void} writeLine
  */
 function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile, writeLine) {
     if (!infofile.hasErrorsOrWarnings(infoFile)) return;
@@ -459,7 +462,7 @@ module.exports.courseDataHasErrorsOrWarnings = function(courseData) {
  * @param {string} options.filePath
  * @param {object} [options.schema]
  * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
- * @returns {Promise<InfoFile<T>>} 
+ * @returns {Promise<InfoFile<T>>}
  */
 module.exports.loadInfoFile = async function({ coursePath, filePath, schema, tolerateMissing = false }) {
     const absolutePath = path.join(coursePath, filePath);
@@ -797,7 +800,7 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
 
 /**
  * @template T
- * @param {{ [id: string]: InfoFile<T>}} infos 
+ * @param {{ [id: string]: InfoFile<T>}} infos
  * @param {(uuid: string, otherIds: string[]) => string} makeErrorMessage
  */
 function checkDuplicateUUIDs(infos, makeErrorMessage) {
@@ -860,7 +863,7 @@ function checkAllowAccessDates(rule) {
 }
 
 /**
- * @param {Question} question 
+ * @param {Question} question
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
 async function validateQuestion(question) {
@@ -881,7 +884,7 @@ async function validateQuestion(question) {
 }
 
 /**
- * @param {Assessment} assessment 
+ * @param {Assessment} assessment
  * @param {{ [qid: string]: any }} questions
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
@@ -1006,7 +1009,7 @@ async function validateCourseInstance(courseInstance) {
 
 /**
  * Loads all questions in a course directory.
- * 
+ *
  * @param {string} coursePath
  */
 module.exports.loadQuestions = async function(coursePath) {
@@ -1026,7 +1029,7 @@ module.exports.loadQuestions = async function(coursePath) {
 
 /**
  * Loads all course instances in a course directory.
- * 
+ *
  * @param {string} coursePath
  */
 module.exports.loadCourseInstances = async function(coursePath) {
@@ -1046,7 +1049,7 @@ module.exports.loadCourseInstances = async function(coursePath) {
 
 /**
  * Loads all assessments in a course instance.
- * 
+ *
  * @param {string} coursePath
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions
