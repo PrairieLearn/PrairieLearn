@@ -1,4 +1,5 @@
 columns
+    advance_score_perc: double precision
     allow_issue_reporting: boolean default true
     allow_real_time_grading: boolean default true
     assessment_set_id: bigint
