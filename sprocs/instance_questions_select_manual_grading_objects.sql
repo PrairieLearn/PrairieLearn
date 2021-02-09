@@ -28,7 +28,7 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
-    IF submission IS NOT NULL AND submission->>'manual_grading_user' IS NOT NULL THEN
+    IF submission IS NOT NULL AND (SELECT manual_grading_user FROM submission) IS NULL THEN
         UPDATE submissions
         SET manual_grading_user = user_id
         WHERE id = (SELECT id FROM submission);
@@ -42,7 +42,7 @@ BEGIN
         JOIN questions AS q ON (q.id = aq.question_id)
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
-        FULL JOIN users as u ON (s.manual_grading_user = u.user_id)
+        JOIN users AS u ON (u.user_id = s.manual_grading_user)
     WHERE iq.id = iq_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
