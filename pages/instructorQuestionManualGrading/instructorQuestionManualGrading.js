@@ -35,7 +35,7 @@ router.get('/', (req, res, next) => {
                 res.locals.question = result.rows[0].question;
                 res.locals.variant = result.rows[0].variant;
                 res.locals.submission = result.rows[0].submission;
-                res.locals.user = result.rows[0]._user;
+                res.locals.grading_user = result.rows[0].grading_user;
                 res.locals.score_perc = res.locals.submission.score * 100;
                 callback(null);
             });
@@ -63,14 +63,14 @@ router.post('/', function(req, res, next) {
             res.locals.instance_question.id,
             res.locals.authn_user.user_id,
         ];
-
+        console.log('authnuser  tep', res.locals.authn_user);
         sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
 
-            const {question, variant, submission, _user} = result.rows[0];
-            if (!question || !variant || !submission) return next(error.make('500', 'Manual grading dependencies missing'));
+            const {question, variant, submission, grading_user} = result.rows[0];
+            if (!question || !variant || !submission || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
 
-            Object.assign(res.locals, {question, variant, submission, user: _user});
+            Object.assign(res.locals, {question, variant, submission, grading_user});
 
             const params = [
                 submission.id,
