@@ -14,22 +14,60 @@ SELECT
          JOIN submissions AS s ON (s.variant_id = v.id)
      WHERE
          iq.assessment_question_id = aq.id) AS num_submissions,
-    (SELECT COUNT(DISTINCT iq.id)
-     FROM
-         instance_questions AS iq
-         JOIN variants AS v ON (v.instance_question_id = iq.id)
-         JOIN submissions AS s ON (s.variant_id = v.id)
-     WHERE
-         iq.assessment_question_id = aq.id
-         AND s.graded_at IS NULL) AS num_ungraded_submissions,
-    (SELECT COUNT(DISTINCT iq.id)
-     FROM
-         instance_questions AS iq
-         JOIN variants AS v ON (v.instance_question_id = iq.id)
-         JOIN submissions AS s ON (s.variant_id = v.id)
-     WHERE
-         iq.assessment_question_id = aq.id
-         AND s.manual_grading_user IS NOT NULL) AS num_locked_submissions,
+    (SELECT COUNT(DISTINCT IQ.id)
+     FROM 
+         submissions AS S
+         JOIN variants AS V ON (s.variant_id = v.id)
+         JOIN instance_questions AS IQ ON (v.instance_question_id = iq.id)
+     WHERE (s.auth_user_id, s.date) 
+        IN (
+             SELECT s.auth_user_id, MAX(s.date)
+             FROM
+                 submissions AS s
+                 JOIN variants AS v ON (s.variant_id = v.id)
+                 JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
+             WHERE
+                 iq.assessment_question_id = aq.id
+             GROUP BY s.auth_user_id
+         )
+         AND manual_grading_user IS NOT NULL
+         AND graded_at IS NOT NULL) AS num_graded,
+    (SELECT COUNT(DISTINCT IQ.id)
+     FROM 
+         submissions AS S
+         JOIN variants AS V ON (s.variant_id = v.id)
+         JOIN instance_questions AS IQ ON (v.instance_question_id = iq.id)
+     WHERE (s.auth_user_id, s.date) 
+        IN (
+             SELECT s.auth_user_id, MAX(s.date)
+             FROM
+                 submissions AS s
+                 JOIN variants AS v ON (s.variant_id = v.id)
+                 JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
+             WHERE
+                 iq.assessment_question_id = aq.id
+             GROUP BY s.auth_user_id
+         )
+         AND manual_grading_user IS NOT NULL
+         AND graded_at IS NULL) AS num_locked_submissions,
+    (SELECT COUNT(DISTINCT IQ.id)
+     FROM 
+         submissions AS S
+         JOIN variants AS V ON (s.variant_id = v.id)
+         JOIN instance_questions AS IQ ON (v.instance_question_id = iq.id)
+     WHERE (s.auth_user_id, s.date) 
+        IN (
+             SELECT s.auth_user_id, MAX(s.date)
+             FROM
+                 submissions AS s
+                 JOIN variants AS v ON (s.variant_id = v.id)
+                 JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
+             WHERE
+                 iq.assessment_question_id = aq.id
+             GROUP BY s.auth_user_id
+         )
+         AND manual_grading_user IS NULL
+         AND graded_at IS NULL) AS num_ungraded_submissions,
     (SELECT array_agg(DISTINCT u.uid)
      FROM
          instance_questions AS iq
