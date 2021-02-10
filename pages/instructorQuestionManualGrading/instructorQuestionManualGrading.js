@@ -59,7 +59,10 @@ router.post('/', function(req, res, next) {
     if (req.body.__action == 'add_manual_grade') {
         const note = req.body.submission_note;
         const score = req.body.submission_score;
-        const params = [res.locals.instance_question.id];
+        const params = [
+            res.locals.instance_question.id,
+            res.locals.authn_user.user_id,
+        ];
 
         sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
