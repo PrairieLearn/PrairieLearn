@@ -10,4 +10,5 @@ FROM
 WHERE 
     iq.assessment_question_id = $assessment_question_id
     AND a.id = $assessment_id
-    AND s.manual_grading_user IS NOT NULL;
+    AND s.manual_grading_user IS NOT NULL
+    AND s.graded_at IS NULL;
