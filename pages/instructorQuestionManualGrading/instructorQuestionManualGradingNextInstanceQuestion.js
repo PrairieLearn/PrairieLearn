@@ -15,8 +15,8 @@ router.get('/', (req, res, next) => {
     sqlDb.callZeroOrOneRow('instance_questions_update_submission_for_manual_grading', params, (err, result) => {
         if (ERR(err, next)) return;
 
-        // If we have no more submissions, then redirect back to manual grading page
-        if (!result.rows[0]) {
+        // If we have no more instance questions with gradable submissions, then redirect back to manual grading page
+        if (!result.rows[0].instance_question) {
             res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`);
             return;
         }
