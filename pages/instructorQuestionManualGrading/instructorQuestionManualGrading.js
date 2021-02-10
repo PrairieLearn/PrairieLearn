@@ -35,6 +35,7 @@ router.get('/', (req, res, next) => {
                 res.locals.question = result.rows[0].question;
                 res.locals.variant = result.rows[0].variant;
                 res.locals.submission = result.rows[0].submission;
+                res.locals.user = result.rows[0]._user;
                 res.locals.score_perc = res.locals.submission.score * 100;
                 callback(null);
             });
@@ -63,10 +64,10 @@ router.post('/', function(req, res, next) {
         sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
 
-            const {question, variant, submission} = result.rows[0];
+            const {question, variant, submission, _user} = result.rows[0];
             if (!question || !variant || !submission) return next(error.make('500', 'Manual grading dependencies missing'));
 
-            Object.assign(res.locals, {question, variant, submission});
+            Object.assign(res.locals, {question, variant, submission, user: _user});
 
             const params = [
                 submission.id,
@@ -82,7 +83,7 @@ router.post('/', function(req, res, next) {
                 submission.params,
                 submission.true_answer,
             ];
-
+            console.log('grading_jobs_insert_internal params', params);
             sqlDb.callOneRow('grading_jobs_insert_internal', params, (err, result) => {
                 if (ERR(err, next)) return;
 
