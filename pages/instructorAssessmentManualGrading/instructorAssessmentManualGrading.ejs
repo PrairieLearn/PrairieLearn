@@ -26,10 +26,11 @@
                 <th></th>
                 <th>QID</th>
                 <th>Points</th>
-                <th>Number of Submissions</th>
+                <th>Total Submissions</th>
+                <th>Eligible for Manual Grading</th>
+                <th>Manually Graded</th>
                 <th>Locked Submissions</th>
-                <th>Graded</th>
-                <th>Grading By</th>
+                <th>Grading Users</th>
                 <th></th>
                 <th></th>
               </tr>
@@ -56,12 +57,14 @@
                   <%= question.num_submissions %>
                 </td>
                 <td class="text-center">
-                  <%= question.num_locked_submissions %>
+                  <%= question.num_submissions_eligible %>
                 </td>
                 <td class="text-center">
                   <%= question.num_graded %>
                 </td>
-
+                <td class="text-center">
+                  <%= question.num_locked_submissions %>
+                </td>
                 <td class="text-center">
                   <%= question.manual_grading_users %>
                 </td>

@@ -63,7 +63,6 @@ router.post('/', function(req, res, next) {
             res.locals.instance_question.id,
             res.locals.authn_user.user_id,
         ];
-        console.log('authnuser  tep', res.locals.authn_user);
         sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
 
