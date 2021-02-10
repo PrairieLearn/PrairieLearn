@@ -86,7 +86,6 @@ router.post('/', function(req, res, next) {
                 submission.params,
                 submission.true_answer,
             ];
-            console.log('grading_jobs_insert_internal params', params);
             sqlDb.callOneRow('grading_jobs_insert_internal', params, (err, result) => {
                 if (ERR(err, next)) return;
 
