@@ -45,6 +45,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Object} questionParams
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */

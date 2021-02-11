@@ -128,6 +128,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Object} questionParams
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */

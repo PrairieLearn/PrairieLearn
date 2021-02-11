@@ -9,6 +9,7 @@ columns
     institution_id: bigint not null default 1
     manual_grading_visible: boolean default false
     options: jsonb not null default '{}'::jsonb
+    question_params: jsonb not null default '{}'::jsonb
     path: text
     repository: text
     short_name: text
