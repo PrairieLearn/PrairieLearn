@@ -974,6 +974,8 @@ function _createContainer(workspace, callback) {
 
         workspacePath = path.join(workspaceDir, remoteName, 'current');
         workspaceJobPath = path.join(jobDirectory, remoteName, 'current');
+    } else {
+        return callback(new Error(`Unknown backing file storage: ${workspace.homedir_location}`));
     }
 
     const containerPath = workspace.settings.workspace_home;
