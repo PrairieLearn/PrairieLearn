@@ -4,14 +4,14 @@
     "version": "3.2.0",
     "private": true,
     "scripts": {
-        "start": "node server.js",
-        "start-nodemon": "npx nodemon -L server.js",
-        "test": "nyc --reporter=lcov mocha tests/index.js",
-        "test-sync": "mocha tests/sync/index.js",
-        "test-nocoverage": "mocha tests/index.js",
-        "lint-js": "eslint --ext js \"**/*.js\"",
-        "lint-python": "python3 -m flake8 ./",
-        "typecheck": "tsc"
+        "start": "make start",
+        "start-nodemon": "make start-nodemon",
+        "test": "make test",
+        "test-sync": "make test-sync",
+        "test-nocoverage": "make test-nocoverage",
+        "lint-js": "make lint-js",
+        "lint-python": "make lint-python",
+        "typecheck": "make typecheck"
     },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.15.1",
