@@ -762,18 +762,6 @@ async function _autoUpdateJobManager() {
     }
 }
 
-function s3CheckPrefixExists(path, callback) {
-    const s3 = new AWS.S3();
-    const params = {
-        Bucket: config.workspaceS3Bucket,
-        Prefix: path,
-    };
-    s3.listObjectsV2(params, (err, data) => {
-        if (ERR(err, callback)) return;
-        return callback(data.KeyCount > 0);
-    });
-}
-
 function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
     const s3 = new AWS.S3();
 
@@ -855,34 +843,27 @@ function _getInitialFiles(workspace, callback) {
     const localPath = `${workspacePrefix}/${workspace.local_name}`;
     const s3Path = `${workspace.remote_name}/current`;
 
-    s3CheckPrefixExists(workspace.remote_name, (err, exists) => {
+    _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
         if (ERR(err, callback)) return;
-        if (!exists) {
-            return callback(new Error('Could not get initial files from S3.'));
-        }
+        var jobs = [];
+        jobs_params.forEach(([localPath, s3Path]) => {
+            jobs.push( ((callback) => {
+                const options = {
+                    owner: config.workspaceJobsDirectoryOwnerUid,
+                    group: config.workspaceJobsDirectoryOwnerGid,
+                };
+                const isDirectory = localPath.endsWith('/');
+                update_queue[[localPath, isDirectory]] = { action: 'skip' };
+                awsHelper.downloadFromS3(config.workspaceS3Bucket, s3Path, localPath, options, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }));
+        });
 
-        _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
+        async.parallel(jobs, function(err) {
             if (ERR(err, callback)) return;
-            var jobs = [];
-            jobs_params.forEach(([localPath, s3Path]) => {
-                jobs.push( ((callback) => {
-                    const options = {
-                        owner: config.workspaceJobsDirectoryOwnerUid,
-                        group: config.workspaceJobsDirectoryOwnerGid,
-                    };
-                    const isDirectory = localPath.endsWith('/');
-                    update_queue[[localPath, isDirectory]] = { action: 'skip' };
-                    awsHelper.downloadFromS3(config.workspaceS3Bucket, s3Path, localPath, options, (err) => {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                }));
-            });
-
-            async.parallel(jobs, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null, workspace);
-            });
+            callback(null, workspace);
         });
     });
 }
@@ -993,6 +974,8 @@ function _createContainer(workspace, callback) {
 
         workspacePath = path.join(workspaceDir, remoteName, 'current');
         workspaceJobPath = path.join(jobDirectory, remoteName, 'current');
+    } else {
+        return callback(new Error(`Unknown backing file storage: ${workspace.homedir_location}`));
     }
 
     const containerPath = workspace.settings.workspace_home;
