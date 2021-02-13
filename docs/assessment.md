@@ -129,6 +129,8 @@ Attribute | Type | Default | Description
 `studentGroupJoin` | boolean | false | Allow students to join other groups by join code.
 `studentGroupLeave` | boolean | false | Allow students to leave groups.
 
+Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
+
 ### Instructor options for groupWork
 
 ![Instructor group assignment page](groupwork_instructor_interface.png)

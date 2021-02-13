@@ -183,14 +183,19 @@ BEGIN
                 (valid_assessment.data->>'student_group_create')::boolean,
                 (valid_assessment.data->>'student_group_join')::boolean,
                 (valid_assessment.data->>'student_group_leave')::boolean
-            ) ON CONFLICT (assessment_id) WHERE deleted_at IS NULL
+            ) ON CONFLICT (assessment_id)
             DO UPDATE
             SET 
                 maximum = EXCLUDED.maximum,
                 minimum = EXCLUDED.minimum,
                 student_authz_create = EXCLUDED.student_authz_create,
                 student_authz_join = EXCLUDED.student_authz_join,
-                student_authz_leave = EXCLUDED.student_authz_leave;
+                student_authz_leave = EXCLUDED.student_authz_leave,
+                deleted_at = NULL;
+        ELSE
+            UPDATE group_configs
+            SET deleted_at = now()
+            WHERE assessment_id = new_assessment_id;
         END IF;
 
         -- Now process all access rules for this assessment
