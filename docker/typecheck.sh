@@ -1,4 +1,3 @@
 #!/bin/bash
 
-cd /PrairieLearn
-npm run typecheck -s
+make -s -C /PrairieLearn typecheck
