@@ -145,8 +145,7 @@ def parse(element_html, data):
             file_contents = base64.b64encode(normalized.encode('UTF-8').strip()).decode()
             data['submitted_answers'][answer_name] = file_contents
         except:
-            # If input is not decodeable as UTF-8, ignore
-            pass
+            add_format_error(data, 'Submitted answer is not a valid UTF-8 string.')
 
     if data['submitted_answers'].get('_files', None) is None:
         data['submitted_answers']['_files'] = []
