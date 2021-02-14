@@ -128,7 +128,9 @@ class CGrader:
                  ignore_consec_spaces=True,
                  args=None, name=None, msg=None, max_points=1):
         
-        if args is not None and not isinstance(args, list): args = [args] 
+        if args is not None:
+            if not isinstance(args, list): args = [args]
+            args = list(map(str, args))
         
         if name is None and input is not None:
             name = 'Test with input "%s"' % ' '.join(input.splitlines())

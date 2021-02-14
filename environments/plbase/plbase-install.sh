@@ -1,5 +1,7 @@
 #!/bin/bash
 
+yum install -y tmux
+
 yum update -y
 
 amazon-linux-extras install -y \
@@ -10,16 +12,17 @@ amazon-linux-extras install -y \
 
 yum -y install \
     postgresql-server \
+    postgresql-contrib \
     man \
     emacs-nox \
     gcc \
     make \
     openssl \
     dos2unix \
-    tmux \
     tar \
-    ImageMagick           `# for PrairieDraw label images` \
-    texlive               `# for PrairieDraw label images` \
+    ImageMagick \
+    texlive \
+    texlive-dvipng \
     git \
     graphviz \
     graphviz-devel
@@ -52,4 +55,7 @@ echo "installing Python packages..."
 python3 -m pip install --no-cache-dir -r /python-requirements.txt
 
 echo "installing R packages..."
-Rscript /r-requirements.R
+echo "set SKIP_R_PACKAGS=yes to skip this step"
+if [[ "${SKIP_R_PACKAGES}" != "yes" ]] ; then
+    Rscript /r-requirements.R
+fi

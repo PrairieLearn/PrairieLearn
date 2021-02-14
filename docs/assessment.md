@@ -15,7 +15,8 @@ Each assessment is a single directory in the `assessments` folder or any subfold
     "set": "Quiz",
     "number": "2",
     "allowAccess": [],
-    "zones": []
+    "zones": [],
+    "comment": "You can add comments to JSON files using this property."
 }
 ```
 
@@ -31,7 +32,7 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 
 * Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
 
-You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets). 
+You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets).
 
 ## Assessment types
 
@@ -56,6 +57,7 @@ An assessment is broken down in to a list of zones, like this:
 "zones": [
     {
         "title": "Easy questions",
+        "comment": "These are new questions created for this exam",
         "questions": [
             {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
             {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
@@ -63,6 +65,7 @@ An assessment is broken down in to a list of zones, like this:
     },
     {
         "title": "Hard questions",
+        "comment": "These are new questions created for this exam",
         "questions": [
             {"id": "hardQV1", "points": 10},
             {"id": "reallyHardQ", "points": [10, 10, 10]},
@@ -235,6 +238,27 @@ For assessments with type "Homework", students will be presented with an unlimit
 ],
 ```
 
+## Limiting the rate at which answers can be graded
+
+Practice is important in learning and there should be room for mistakes and learning from them. Immediate feedback can help as it can give feedback despite the limited human resources. However, to prevent mindless trial-and-error problem solving, controlling resubmissions can be an effective tool ([Ihantola et. al., Review of Recent Systems for Automatic Assessment of Programming Assignments](https://dl.acm.org/doi/pdf/10.1145/1930464.1930480)).
+
+One way to limit the amount of feedback provided to students is to limit the rate at which graded submissions are allowed. This can be done by using the `gradeRateMinutes` setting. If set, this value indicates how long a student needs to wait after grading a question to resubmit a new answer to the same question for grading. Students are still able to save a submission, but are not able to grade until either the waiting time has elapsed, or when they close the assesment. By default, this value is set to 0, which means that there is no limit.
+
+The `gradeRateMinutes` value can be set for each specific question in the assessment. It can also be set for a zone or the full assessment, in which case it will apply individually to each question in the zone or assessment. In other words, if the assessment has a grading rate set, once a student submits an answer for grading in one question, they have to wait to submit new answers to that question, but they are able to grade other questions in the meantime.
+
+```json
+"zones": [
+    {
+        "gradeRateMinutes": 30,
+        "questions": [
+            {"id": "canOnlySubmitEvery30minutes", "points": 10},
+            {"id": "canOnlySubmitEvery60minutes", "points": 10, "gradeRateMinutes": 60},
+            {"id": "canSubmitAnytime", "points": 10, "gradeRateMinutes": 0}
+        ]
+    }
+],
+```
+
 ## Honor code
 
 By default, `Exam` assessments require students to certify their identity and pledge an honor code before starting the assessment:
@@ -245,3 +269,9 @@ By default, `Exam` assessments require students to certify their identity and pl
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://www.studentconduct.umd.edu/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
+
+## Linking to assessments
+
+Some instructors may wish to publish links that point students directly to their assessments on PrairieLearn. These links may be published in course web pages, LMS systems like Compass or Canvas, or sent to students via email or other messaging platforms. Instructors should note that the URL listed on the browser points to the instructor view of an assessment, which is typically not accessible to students.
+
+The appropriate link to provide to students can be found by opening the "Settings" tab of the Assessment. This page includes, among other useful information, a Student Link that can be provided to students. This link points students directly to the specific assessment, enrolling them automatically in the course if they are not yet enrolled.

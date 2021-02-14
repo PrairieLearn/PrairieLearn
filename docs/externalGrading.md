@@ -270,9 +270,9 @@ Running PrairieLearn locally with externally graded question support looks somet
 ```bash
 mkdir "$HOME/pl_ag_jobs"
 ```
-
 - Modify your PL docker run call to include the jobs directory.
 
+##### Shell Command
 On MacOS and Linux, `cd` to your course directory and copy-paste the following command:
 ```sh
 docker run -it --rm -p 3000:3000 \
