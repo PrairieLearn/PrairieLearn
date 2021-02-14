@@ -224,7 +224,8 @@ module.exports = {
             return courseExtensionsCache[course.id].data;
         }
 
-        let extensions = await module.exports.loadExtensionsAsync(path.join(course.path, 'elementExtensions'));
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        let extensions = await module.exports.loadExtensionsAsync(path.join(coursePath, 'elementExtensions'));
         courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
         return extensions;
     },
@@ -870,7 +871,7 @@ module.exports = {
         options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
         options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
         options.server_files_course_path = path.join(context.course_dir, 'serverFilesCourse');
-        options.course_extensions_path = path.join(context.course.path, 'elementExtensions');
+        options.course_extensions_path = path.join(context.course_dir, 'elementExtensions');
         return options;
     },
 
