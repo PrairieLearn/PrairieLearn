@@ -1471,7 +1471,7 @@ module.exports = {
         const context = {
             question,
             course,
-            course_dir: course.path,
+            course_dir: coursePath,
             question_dir: path.join(coursePath, 'questions', question.directory),
             course_elements_dir: path.join(coursePath, 'elements'),
         };
