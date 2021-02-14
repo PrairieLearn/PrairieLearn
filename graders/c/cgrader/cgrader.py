@@ -78,13 +78,13 @@ class CGrader:
             if add_c_file:
                 if not isinstance(add_c_file, list):
                     add_c_file = [add_c_file]
-                    
+
                 # Add new C files that maybe overwrite some existing functions.
                 for added_c_file in add_c_file:
-                    obj_file = re.sub('\.c$', '', c_file) + '.o'
-                    out += self.run_command(['gcc', '-c', c_file, 
-                                            '-o', obj_file] + flags, sandboxed=False)
-                    objs.append(obj_file)
+                    obj_file_for_added_c_file = re.sub('\.c$', '', added_c_file) + '.o'
+                    out += self.run_command(['gcc', '-c', added_c_file, 
+                                            '-o', obj_file_for_added_c_file] + flags, sandboxed=False)
+                    objs.append(obj_file_for_added_c_file)
                 flags.append('-Wl,--allow-multiple-definition')
 
             if main_file:
