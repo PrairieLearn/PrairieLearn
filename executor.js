@@ -99,7 +99,7 @@ function handleInput(line, caller) {
     terminal: false,
   });
 
-  let pc = new PythonCaller({ reportLoad: false, dropPrivileges: true });
+  let pc = new PythonCaller({ dropPrivileges: true });
   pc.ensureChild();
 
   // Safety check: if we receive more input while handling another request,
@@ -116,7 +116,7 @@ function handleInput(line, caller) {
         const { needsFullRestart, ...rest } = results;
         if (needsFullRestart) {
           pc.done();
-          pc = new PythonCaller({ reportLoad: false });
+          pc = new PythonCaller();
           pc.ensureChild();
         }
         console.log(JSON.stringify(rest));
