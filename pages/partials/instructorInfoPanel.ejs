@@ -69,19 +69,20 @@
   <% } %>
   <% } %>
 
-  <% let instructorUrlPrefix = urlPrefix;
+  <% 
      let ip_assessment = null;
      let ip_assessment_instance = null;
-     if (typeof assessment !== "undefined") {
+     if (typeof assessment_instance !== "undefined") {
         ip_assessment = assessment;
         ip_assessment_instance = assessment_instance;
-        instructorUrlPrefix = urlPrefix + '/instructor';
      }
-     if (typeof variant !== "undefined" && variant.assessment) {
+     if (typeof variant !== "undefined" && variant.assessment_instance) {
         ip_assessment = variant.assessment;
         ip_assessment_instance = variant.assessment_instance;
      }
-     if (ip_assessment) { %>
+     if (ip_assessment && ip_assessment_instance) {
+        let instructorUrlPrefix = `${plainUrlPrefix}/course_instance/${ip_assessment.course_instance_id}/instructor`;
+     %>
       <hr>
       <h5 class="card-title">Assessment Instance:</h5>
       <div class="d-flex flex-wrap">
