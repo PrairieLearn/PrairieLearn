@@ -34,8 +34,8 @@ else
     fi
 
     if [[ $NODEMON == "true" ]]; then
-        npm run start-nodemon
+        make start-nodemon
     else
-        npm start --silent
+        make --silent start
     fi
 fi
