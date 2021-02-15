@@ -21,6 +21,7 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const execa = require('execa');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -42,7 +43,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
-const { cleanupMountDirectories, setExecutorImageVersion } = require('./lib/code-caller-docker');
+const { cleanupMountDirectories, updateExecutorImageTag } = require('./lib/code-caller-docker');
 const assets = require('./lib/assets');
 
 
@@ -1180,23 +1181,13 @@ if (config.startServer) {
             load.initEstimator('python_callback_waiting', 1);
             callback(null);
         },
-        function(callback) {
-            // Important: this should happen before `workers.init` below
+        async () => {
             if (config.workersExecutionMode === 'native') {
                 // Executor image will not be used
-                callback(null);
                 return;
             }
-            fs.readFile('EXECUTOR_VERSION', 'utf-8', (err, data) => {
-                if (ERR(err, callback)) return;
-                const version = data.trim();
-                // Sanity check: should only be one line
-                if (version.indexOf('\n') !== -1) {
-                    callback(new Error(''));
-                }
-                setExecutorImageVersion(version);
-                callback(null);
-            });
+            // Important: this should happen before `workers.init` below
+            await updateExecutorImageTag();
         },
         async () => await cleanupMountDirectories(),
         function(callback) {
