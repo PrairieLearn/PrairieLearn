@@ -1464,7 +1464,7 @@ module.exports = {
         // The `*Host` values here refer to the paths relative to PrairieLearn;
         // the other values refer to the paths as they will be seen by the worker
         // that actually executes the question.
-        const courseDirectory = config.workersExecutionMode === 'internal' ? coursePath : '/course';
+        const courseDirectory = config.workersExecutionMode === 'native' ? coursePath : '/course';
         const courseDirectoryHost = coursePath;
         const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
         const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);

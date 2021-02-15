@@ -1182,7 +1182,7 @@ if (config.startServer) {
         },
         function(callback) {
             // Important: this should happen before `workers.init` below
-            if (config.workersExecutionMode === 'internal') {
+            if (config.workersExecutionMode === 'native') {
                 // Executor image will not be used
                 callback(null);
                 return;

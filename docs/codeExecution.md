@@ -25,17 +25,17 @@ For local development, PrairieLearn must be easy to set up; it should not requir
 
 In production, we currently run PrairieLearn outside of Docker directly on an EC2 host.
 
-To account for the variety of contexts in which PrairieLearn is executed, there are two related but distinct ways that PrairieLearn can execute question and element code: `internal` and `native`. These modes correspond to the `workersExecutionMode` config value. They are described in more detail below.
+To account for the variety of contexts in which PrairieLearn is executed, there are two related but distinct ways that PrairieLearn can execute question and element code: `native` and `container`. These modes correspond to the `workersExecutionMode` config value. They are described in more detail below.
 
-### `internal` execution mode
+### `native` execution mode
 
 This is how PrairieLearn functioned historically. PrairieLearn would directly execute Python code with limited isolation from the rest of the system. This is largely the process described again, with a pool of zygotes.
 
 This is still how PrairieLearn functions by default for local development. The `priairelearn/prairielearn` Docker image that is distributed to users includes all of the Python and R dependencies needed by question and element code, and said code is executed in the same container that PrairieLearn executes in. This is obviously bad for security, but doesn't matter for local development.
 
-### `native` execution mode
+### `container` execution mode
 
-The `native` execution mode is currently used when PrairieLearn is running in production. It uses Docker to provide a degree of isolation from both PrairieLearn and other courses.
+The `container` execution mode is currently used when PrairieLearn is running in production. It uses Docker to provide a degree of isolation from both PrairieLearn and other courses.
 
 Instead of using a pool of zygotes as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script (the *executor*), which in turn runs a Python zygote. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the zygote as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we ocasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
 
@@ -49,8 +49,8 @@ So far, this discussion has been pretty abstract. But what about all the actual 
 
 A *code caller* serves as an abstraction on top of the different execution modes above and hides the implementation details of exactly how code is executed. There are currently two different types of code callers, referred to here by the filenames of their implementations.
 
-* `lib/code-caller-docker` handles executing code inside of Docker containers, as required by the `native` execution mode.
-* `lib/code-caller-python` handles executing Python processes directly, as required by the `internal` execution mode.
+* `lib/code-caller-docker` handles executing code inside of Docker containers, as required by the `container` execution mode.
+* `lib/code-caller-python` handles executing Python processes directly, as required by the `native` execution mode.
 
 The primary external interface of these callers is the `call()` function, which takes five arguments:
 
@@ -73,8 +73,8 @@ Let's walk through a typical request to view a question that requires a function
 2. That handler calls `getAndRenderVariant` in `lib/question` (a different function would be called if the user were submitting an answer).
 3. That function calls an internal function that calls `render` in `question-servers/freeform.js`.
 4. That function calls `getPythonCaller` in `lib/workers`. Depending on the active execution mode
-   2. If running in `native` mode, a `lib/code-caller-docker` caller will be "prepared" for the current course (which sets up necessary bind mounts) and returned.
-   3. If running in `internal` mode, any available `lib/code-caller-python` caller will be returned.
+   1. If running in `container` mode, a `lib/code-caller-docker` caller will be "prepared" for the current course (which sets up necessary bind mounts) and returned.
+   2. If running in `native` mode, any available `lib/code-caller-python` caller will be returned.
 5. `call(...)` is then repeatedly invoked on the code caller with the appropriate pieces of code to be executed.
 6. Once the code caller is no longer needed during this request, `done()` is invoked on it. The forked worker is sent a `restart` message, which will cause the worker to exit and return control to the zygote. The zygote will then fork itself again, and the forked worker will wait until it receives more instructions.
 7. Page render completes and the response is sent, thus finishing the request cycle.
