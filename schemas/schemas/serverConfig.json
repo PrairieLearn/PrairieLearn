@@ -178,6 +178,10 @@
         "workersPerCpu": {
             "description": "The number of workers per CPU (if workersCount is null).",
             "type": "number"
+        },
+        "ensureExecutorImageAtStartup": {
+            "description": "If enabled, the server won't start serving traffic until the executor image is present",
+            "type": "boolean"
         }
     }
 }
