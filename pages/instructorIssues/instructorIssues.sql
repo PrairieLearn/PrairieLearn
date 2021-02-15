@@ -27,6 +27,7 @@ SELECT
     CASE WHEN i.assessment_id IS NOT NULL THEN assessments_format(i.assessment_id) ELSE NULL END AS assessment,
     i.question_id,
     i.instance_question_id,
+    iq.assessment_instance_id,
     i.course_instance_id,
     q.directory AS question_qid,
     u.uid AS user_uid,
@@ -53,6 +54,7 @@ FROM
     LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
     LEFT JOIN questions AS q ON (q.id = i.question_id)
     LEFT JOIN users AS u ON (u.user_id = i.user_id)
+    LEFT JOIN instance_questions AS iq ON (iq.id = i.instance_question_id)
 WHERE
     i.course_id = $course_id
     AND i.course_caused
