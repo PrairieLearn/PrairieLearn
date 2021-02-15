@@ -1,6 +1,9 @@
 const execaRaw = require('execa');
+const AWS = require('aws-sdk');
 
 const AWS_REGION = 'us-east-2';
+
+AWS.config.update({ region: AWS_REGION });
 
 /**
  * Wrapper around `execa` that logs commands as they're run.
@@ -27,10 +30,32 @@ const getImageName = async () => {
   return `prairielearn/executor:${tag}`;
 };
 
+const getEcrRegistryUrl = async () => {
+  // ECR registries are tied to account IDs. Determine the account ID dynamically
+  // based on the credentials we're running with.
+  const sts = new AWS.STS();
+  const { Account: accountId } = await sts.getCallerIdentity().promise();
+
+  return `https://${accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com`;
+};
+
+const loginToEcr = async () => {
+  const ecr = new AWS.ECR();
+  const authData = await ecr.getAuthorizationToken().promise();
+  const token = authData.authorizationData[0].authorizationToken;
+  const [user, password] = Buffer.from(token, 'base64').toString().split(':');
+
+  const ecrRegistryUrl = await getEcrRegistryUrl();
+
+  await execa('docker', ['login', '--username', user, '--password-stdin', ecrRegistryUrl], { input: password });
+};
+
 module.exports = {
-  AWS_REGION,
+  AWS,
   execa,
   getImageName,
   getImageTag,
+  loginToEcr,
+  getEcrRegistryUrl,
 };
 

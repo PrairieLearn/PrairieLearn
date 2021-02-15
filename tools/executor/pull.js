@@ -4,17 +4,13 @@ const { execa, getImageName, loginToEcr, getEcrRegistryUrl } = require('./util')
 
 (async () => {
   const imageName = await getImageName();
-
-  console.log('Pushing image to Docker registry');
-  await execa('docker', ['push', imageName]);
-
   const ecrRegistryUrl = await getEcrRegistryUrl();
+
   await loginToEcr();
 
-  console.log('Pushing image to ECR registry');
+  console.log('Pulling image from ECR registry');
   const ecrImageName = `${ecrRegistryUrl}/${imageName}`;
-  await execa('docker', ['tag', imageName, ecrImageName]);
-  await execa('docker', ['push', ecrImageName]);
+  await execa('docker', ['pull', ecrImageName]);
 })().catch(e => {
   console.error(e);
   process.exit(1);
