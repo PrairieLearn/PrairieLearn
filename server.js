@@ -42,7 +42,6 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
-const hostfiles = require('./lib/hostfiles');
 const { cleanupMountDirectories, setExecutorImageVersion } = require('./lib/code-caller-docker');
 const assets = require('./lib/assets');
 
@@ -1200,15 +1199,6 @@ if (config.startServer) {
             });
         },
         async () => await cleanupMountDirectories(),
-        async () => {
-            if (config.workersExecutionMode === 'container') {
-                await Promise.all([
-                    hostfiles.copyElementFiles({ watch: true }),
-                    hostfiles.copyQuestionPythonFiles({ watch: true }),
-                    hostfiles.copyExampleCourseFiles({ watch: true }),
-                ]);
-            }
-        },
         function(callback) {
             workers.init();
             callback(null);

@@ -25,7 +25,7 @@ For local development, PrairieLearn must be easy to set up; it should not requir
 
 In production, we currently run PrairieLearn outside of Docker directly on an EC2 host.
 
-To account for the variety of contexts in which PrairieLearn is executed, there are three related but distinct ways that PrairieLearn can execute question and element code: `internal`, `native`, and `container`. These modes correspond to the `workersExecutionMode` config value. They are described in more detail below.
+To account for the variety of contexts in which PrairieLearn is executed, there are two related but distinct ways that PrairieLearn can execute question and element code: `internal` and `native`. These modes correspond to the `workersExecutionMode` config value. They are described in more detail below.
 
 ### `internal` execution mode
 
@@ -41,40 +41,6 @@ Instead of using a pool of zygotes as described above, it actually maintains a p
 
 This mode also allows us to isolate one course from another so that course A cannot see content from course B, and vice versa. To achieve this, we take advantage of bind mounts. When creating a container, PrairieLearn also creates a special directory on the host, and then mounts that directory to `/course` in the container. To execute content for course A, PrairieLearn first bind mounts that course's directory to the container's host directory. This is transitive to the container, which will now see that course's content at `/course`. In the future, when a different course's code needs to be executed in that container, PrairieLearn will simply update the bind mount to point to the other course.
 
-### `container` execution mode
-
-The `container` execution mode is similar to the `native` mode in that code is executed in a container, but is used where PrairieLearn is *also* running in a container. This is primarily useful for when you're running PrairieLearn locally but want to test running course code in isolated containers.
-
-In this case, we can't use the bind mount trick above, as PrairieLearn can't create mounts on the host from inside its container. Instead, we'll need a couple of things:
-
-* In `config.json`, the user must specify the host path for any courses they're mounting into PrairieLearn in `courseDirsHost`.
-* The user must mount the Docker socket into PrairieLearn's container, similarly to what they must do when running external grading locally.
-* The user must create a "scratch" directory on the host, specify it with the `HOSTFILES_DIR` environment variable, and mount the directory to `/hostfiles` in the PrairieLearn container. PrairieLearn will use this directory to communicate its internal files, including element implementations and the Python zygote, to the host so that they can be mounted into executor containers.
-
-PrairieLearn will then maintain a pool of workers, one per course, with the corresponding host course directory mounted into each container. It will also begin watching the `elements/`, `python/`, and `exampleCourse/` directories and copying their files to `HOSTFILES_DIR` so that they can be accessible to the executor containers. Most of the time, this copy will only take place one time when PrairieLearn boots up, but the continuous copying can be useful if you're running the PrairieLearn container with your own copy of the PrairieLearn code mounted to `/PrairieLearn`. When you edit files in your own copy, they'll magically be copied back to the right place on the host and things will Just Work(tm).
-
-That was a lot of words; let's look at some concrete configs and Docker commands.
-
-Let's assume you have some PrairieLearn course on your machine at `/Users/nathan/git/pl-cs225`. Here's your corresponding config file:
-
-```json
-{
-  "courseDirs": [
-    "/course"
-  ],
-  "courseDirsHost": {
-    "/course": "/Users/nathan/git/pl-cs225"
-  },
-  "workersExecutionMode": "container"
-}
-```
-
-Now, we're ready to run PrairieLearn. Say you saved the above config file in `/Users/nathan/config.json`. You can now run the following Docker command:
-
-```sh
-docker run --rm -it -p 3000:3000 -v /Users/nathan/git/pl-cs225:/course -v /Users/nathan/config.json:/PrairieLearn/config.json -v /Users/nathan/.plhostfiles:/hostfiles -e HOST_JOBS_DIR=/Users/nathan/.pl_ag_jobs -e HOSTFILES_DIR=/Users/nathan/.plhostfiles -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
-```
-
 ## Code execution in practice
 
 So far, this discussion has been pretty abstract. But what about all the actual code that underpins this stuff? Fear not, dear reader, we haven't forgotten about that!
@@ -83,7 +49,7 @@ So far, this discussion has been pretty abstract. But what about all the actual 
 
 A *code caller* serves as an abstraction on top of the different execution modes above and hides the implementation details of exactly how code is executed. There are currently two different types of code callers, referred to here by the filenames of their implementations.
 
-* `lib/code-caller-docker` handles executing code inside of Docker containers, as required by the `container` and `native` execution modes.
+* `lib/code-caller-docker` handles executing code inside of Docker containers, as required by the `native` execution mode.
 * `lib/code-caller-python` handles executing Python processes directly, as required by the `internal` execution mode.
 
 The primary external interface of these callers is the `call()` function, which takes five arguments:
@@ -107,7 +73,6 @@ Let's walk through a typical request to view a question that requires a function
 2. That handler calls `getAndRenderVariant` in `lib/question` (a different function would be called if the user were submitting an answer).
 3. That function calls an internal function that calls `render` in `question-servers/freeform.js`.
 4. That function calls `getPythonCaller` in `lib/workers`. Depending on the active execution mode
-   1. If running in `container` mode, a `lib/code-caller-docker` caller for the appropriate course will be returned.
    2. If running in `native` mode, a `lib/code-caller-docker` caller will be "prepared" for the current course (which sets up necessary bind mounts) and returned.
    3. If running in `internal` mode, any available `lib/code-caller-python` caller will be returned.
 5. `call(...)` is then repeatedly invoked on the code caller with the appropriate pieces of code to be executed.
