@@ -168,6 +168,13 @@
             "description": "The number of workers to use (or null to use workersPerCpu).",
             "type": "integer"
         },
+        "workersExecutionMode": {
+            "description": "The type of worker to use (either native or containerized in Docker)",
+            "enum": [
+                "native",
+                "container"
+            ]
+        },
         "workersPerCpu": {
             "description": "The number of workers per CPU (if workersCount is null).",
             "type": "number"
