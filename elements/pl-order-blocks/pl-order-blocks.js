@@ -2,7 +2,7 @@
 
 const TABWIDTH = 50;      // defines how many px the answer block is indented by, when the student
                           // drags and indents a block
-const INDENT_OFFSET = 10;  // For aesthetic, all answer blocks are offseted to the right by
+const INDENT_OFFSET = 0;  // For aesthetic, all answer blocks are offseted to the right by
                           // 5px, so the answer tiles are not directly touching the dropzone margins
 const MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
 

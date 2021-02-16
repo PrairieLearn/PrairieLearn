@@ -1,19 +1,3 @@
-
-ul.pl-order-blocks-connected-sortable {
-  /* This style applies to the MCQ options table, on the left hand side*/
-  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
-  border-radius: 4px;
-  background-color: #efefff; /* Pale Blue */
-
-  width: 100%;
-
-  margin: 0 40px 0 10px;
-
-  list-style-type: none;
-  padding: 5px 0 20px 0;
-  float: left;
-}
-
 div.pl-order-blocks-right {
   /* This style applies to the DIV that holds each dropzone column */
   /* This particular style renders the dropzones in a single row horizontally */ 
@@ -37,7 +21,7 @@ ul.dropzone {
 }
 
 
-ul.pl-order-blocks-connected-sortable li, ul.dropzone li{
+ul.pl-order-blocks-connected-sortable2 li, ul.dropzone li{
   /* This style applies to the answer draggable tiles themselves */
   background-color: #EFEFEF; /* Grey */
   border: 2px solid #A9A9A9;
@@ -95,7 +79,16 @@ code.user-output {
   padding-right: 7px;
 }
 
-.row:after {
+div.row {
+  margin: inherit;
+}
+
+div.column {
+  border-radius: 4px;
+  background-color: #EFEFEF;
+}
+
+div.row:after {
   /* Clear floats after the columns */
   content: "";
   display: table;

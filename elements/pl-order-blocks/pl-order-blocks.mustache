@@ -1,16 +1,16 @@
 {{#question}}
     <div class="row">
         <div class="column {{dropzone_layout}}">
-            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="pl-order-blocks-connected-sortable">
-                <li class='ui-sortable-handle info info-fixed'>{{source-header}}</li>
+            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable">
+                <li class='list-group-item list-group-item-primary info-fixed'>{{source-header}}</li>
                     {{#options}}
-                        <li string="{{.}}" data-title="{{.}}">{{.}}</li>
+                        <li class="list-group-item list-group-item-action" string="{{.}}" data-title="{{.}}">{{.}}</li>
                     {{/options}}
                 </ul>
         </div>
             <div class="column {{dropzone_layout}}">
-                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="dropzone pl-order-blocks-connected-sortable {{check_indentation}}">
-                    <li class="ui-sortable-handle info info-fixed">{{solution-header}}</li>
+                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group {{check_indentation}} pl-order-blocks-connected-sortable">
+                    <li class="list-group-item list-group-item-info info-fixed">{{solution-header}}</li>
                     {{#submission_dict}}
                         <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;'>{{text}}</li>
                     {{/submission_dict}}
