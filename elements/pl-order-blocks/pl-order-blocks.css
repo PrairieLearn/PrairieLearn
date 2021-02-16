@@ -44,10 +44,17 @@ code.user-output {
     display: inline-block;
 }
 
+li.list-group-item {
+  width: inherit;
+}
+
 div.row {
   margin: inherit;
 }
 
+div.column {
+  display:block;
+}
 
 div.row:after {
   /* Clear floats after the columns */
