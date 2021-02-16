@@ -22,7 +22,7 @@ const execa = (file, args, options) => {
 };
 
 const getImageTag = async () => {
-  return (await execaRaw('get', ['rev-parse', 'HEAD'])).stdout;
+  return (await execaRaw('git', ['rev-parse', 'HEAD'])).stdout;
 };
 
 const getImageName = async () => {
