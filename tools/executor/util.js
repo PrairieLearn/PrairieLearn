@@ -36,7 +36,7 @@ const getEcrRegistryUrl = async () => {
   const sts = new AWS.STS();
   const { Account: accountId } = await sts.getCallerIdentity().promise();
 
-  return `https://${accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com`;
+  return `${accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com`;
 };
 
 const loginToEcr = async () => {
