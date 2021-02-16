@@ -27,6 +27,7 @@ UPDATE grading_jobs
         grading_method_manual   = grading_method = 'Manual';
 
 -- Drop old grading method column
-ALTER TABLE submissions DROP COLUMN grading_method;
-ALTER TABLE questions DROP COLUMN grading_method;
-ALTER TABLE grading_jobs DROP COLUMN grading_method;
+ALTER TABLE submissions DROP COLUMN IF EXISTS grading_method;
+ALTER TABLE questions DROP COLUMN IF EXISTS grading_method;
+ALTER TABLE grading_jobs DROP COLUMN IF EXISTS grading_method;
+DROP TYPE IF EXISTS enum_grading_method;
