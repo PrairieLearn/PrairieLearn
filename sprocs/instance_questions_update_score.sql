@@ -94,10 +94,10 @@ BEGIN
     ) THEN
         INSERT INTO grading_jobs
             (submission_id, auth_user_id,      graded_by, graded_at,
-            grading_method, correct,     score,     feedback)
+            grading_method_manual, correct,     score,     feedback)
         VALUES
             (submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
-            'Manual',   new_correct, new_score, arg_feedback);
+            True,   new_correct, new_score, arg_feedback);
 
         UPDATE submissions AS s
         SET
@@ -109,7 +109,7 @@ BEGIN
                 ELSE arg_feedback
             END,
             graded_at = now(),
-            grading_method = 'External',
+            grading_method_external = True,
             override_score = new_score,
             score = COALESCE(new_score, score),
             correct = COALESCE(new_correct, correct),

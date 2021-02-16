@@ -11,14 +11,16 @@ DECLARE
     variant_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
-    grading_method enum_grading_method;
+    grading_method_internal boolean;
+    grading_method_external boolean;
+    grading_method_manual boolean;
 BEGIN
     -- ######################################################################
     -- get the related objects
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id, q.grading_method,                iq.id,                  ai.id
-    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id, q.grading_method_internal, q.grading_method_external, q.grading_method_manual,                iq.id,                  ai.id
+    INTO     credit, variant_id,   grading_method_internal,   grading_method_external,   grading_method_manual, instance_question_id, assessment_instance_id
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -28,7 +30,7 @@ BEGIN
     WHERE s.id = submission_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
-    IF grading_method != 'External' AND grading_method != 'Manual' THEN
+    IF grading_method_external != True AND grading_method_manual != True THEN
         RAISE EXCEPTION 'grading_method is not External or Manual for submission_id: %', submission_id;
     END IF;
 
@@ -60,9 +62,9 @@ BEGIN
     -- insert the new grading job
 
     INSERT INTO grading_jobs AS gj
-        (submission_id,  auth_user_id, grading_method, grading_requested_at)
+        (submission_id,  auth_user_id, grading_method_internal,   grading_method_external,   grading_method_manual, grading_requested_at)
     VALUES
-        (submission_id, authn_user_id, grading_method, now())
+        (submission_id, authn_user_id, grading_method_internal,   grading_method_external,   grading_method_manual, now())
     RETURNING gj.*
     INTO grading_job;
 
@@ -72,7 +74,9 @@ BEGIN
     UPDATE submissions AS s
     SET
         grading_requested_at = now(),
-        grading_method = main.grading_method
+        grading_method_internal = main.grading_method_internal,
+        grading_method_external = main.grading_method_external,
+        grading_method_manual   = main.grading_method_manual
     WHERE s.id = submission_id;
 
     -- ######################################################################

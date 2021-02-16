@@ -80,7 +80,7 @@
               <th>Assessments</th>
               <td><% if (locals.assessments) { %><%- include('../partials/assessments', {assessments: assessments}); %><% } %></td>
             </tr>
-            <% if (question.type == 'Freeform' && question.grading_method != 'External') { %>
+            <% if (question.type == 'Freeform' && !question.grading_method_external) { %>
             <tr>
               <th class="align-middle">Tests</th>
               <td>

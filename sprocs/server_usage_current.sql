@@ -35,13 +35,13 @@ BEGIN
     FROM grading_jobs
     WHERE
         date > now() - current_interval
-        AND grading_method = 'Internal';
+        AND grading_method_internal = True;
 
     SELECT count(*) / extract(epoch from current_interval)
     INTO external_grading_jobs_per_second
     FROM grading_jobs
     WHERE
         date > now() - current_interval
-        AND grading_method = 'External';
+        AND grading_method_external = True;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -83,7 +83,7 @@ BEGIN
         ungraded_jobs_in_report
     FROM grading_jobs AS gj
     WHERE
-        gj.grading_method = 'External'
+        gj.grading_method_external = True
         AND gj.grading_request_canceled_at IS NULL
         AND gj.graded_at IS NULL
         AND gj.date > now() - interval '1 hour'; -- ignore very old jobs where something went wrong
@@ -123,7 +123,7 @@ BEGIN
         JOIN questions AS q ON (q.id = cp.question_id)
     WHERE
         cp.date > now() - interval '1 hour'
-        AND q.grading_method = 'External';
+        AND q.grading_method_external = True;
 
     -- ######################################################################
     -- load per user

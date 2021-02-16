@@ -20,15 +20,17 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 DECLARE
-    grading_method enum_grading_method;
+    grading_method_internal boolean;
+    grading_method_external boolean;
+    grading_method_manual boolean;
 BEGIN
     PERFORM submissions_lock(submission_id);
 
     -- ######################################################################
     -- get the grading method
 
-    SELECT q.grading_method
-    INTO     grading_method
+    SELECT q.grading_method_internal, q.grading_method_external, q.grading_method_manual
+    INTO     grading_method_internal,   grading_method_external,   grading_method_manual
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -40,15 +42,15 @@ BEGIN
     -- ######################################################################
     -- delegate the call
 
-    IF grading_method = 'Internal' THEN
+    IF grading_method_internal = True THEN
         grading_job := grading_jobs_insert_internal(submission_id, authn_user_id,
                             new_gradable, new_broken, new_format_errors, new_partial_scores,
                             new_score, new_v2_score, new_feedback, new_submitted_answer,
                             new_params, new_true_answer);
-    ELSIF grading_method = 'External' OR grading_method = 'Manual' THEN
+    ELSIF grading_method_external = True OR grading_method_manual = True THEN
         grading_job := grading_jobs_insert_external_manual(submission_id, authn_user_id);
     ELSE
-        RAISE EXCEPTION 'unknown grading_method: %', grading_method;
+        RAISE EXCEPTION 'all grading methods set to false: (internal %s, external %s, manual %s)', grading_method_internal, grading_method_external, grading_method_manual;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
