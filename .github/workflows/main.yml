@@ -43,6 +43,8 @@ jobs:
         with:
           github-token: ${{ secrets.github_token }}
         continue-on-error: true
+      - name: Install dependencies on host
+        run: npm ci
       - name: Build executor image
         run: ./tools/executor/build.js
       - name: Login to DockerHub
