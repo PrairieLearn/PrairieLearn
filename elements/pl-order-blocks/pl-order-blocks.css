@@ -13,42 +13,13 @@ div.pl-order-blocks-bottom {
   margin-bottom: 20px;
 }
 
-
 ul.dropzone {
-  /* This style applies to answer dropzone */
-  background-color: #FFA; /* Yellow */
-  min-height: 30px;
-}
-
-
-ul.pl-order-blocks-connected-sortable2 li, ul.dropzone li{
-  /* This style applies to the answer draggable tiles themselves */
-  background-color: #EFEFEF; /* Grey */
-  border: 2px solid #A9A9A9;
-  border-radius: 4px;
-  margin: 0 10px 10px 10px;
-  padding: 5px;
-  font-size: 1.2em;
-
-  display: block;
-
-  /* Show overflow text in the answer draggable tiles */
-  white-space: normal;
-  height: auto;
-  max-height: none;
-  overflow: visible;
+  background-color: #EFEFEF; 
+  min-height: 100px;
 }
 
 ul.pl-order-blocks-connected-sortable li:hover, ul.dropzone li:hover{
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
-}
-
-
-li.info {
-  /* This styling applies to the instruction text for the dropzones */
-  background-color: transparent !important;
-  border: none !important;
-  cursor: auto !important;
 }
 
 li.ui-state-highlight { 
@@ -69,24 +40,10 @@ code.user-output {
     display: inline-block;
 }
 
-.answer_block {
-  border-style: solid;
-  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
-  background-color: #EFEFEF;
-  border-radius: 4px;
-  padding: 3px;
-  padding-left: 7px;
-  padding-right: 7px;
-}
-
 div.row {
   margin: inherit;
 }
 
-div.column {
-  border-radius: 4px;
-  background-color: #EFEFEF;
-}
 
 div.row:after {
   /* Clear floats after the columns */

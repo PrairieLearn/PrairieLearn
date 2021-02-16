@@ -167,7 +167,7 @@ def render(element_html, data):
         for index, mcq_options_text in enumerate(student_previous_submission):
             # render the answers column (restore the student submission)
             submission_indent = data['submitted_answers'][answer_name]['student_answer_indent'][index]
-            submission_indent = (int(submission_indent) * 50) + 10
+            submission_indent = (int(submission_indent) * 50)
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
 

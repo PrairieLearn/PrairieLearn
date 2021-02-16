@@ -24,7 +24,7 @@ function set_answer(event) {
     var indents = [];
     var answer_json = {'answers': [], 'answer_indent': []};
     for (var i = 0; i < dom_objs.length; i++) {
-        if (!$(dom_objs[i]).hasClass('info')){
+        if (!$(dom_objs[i]).hasClass('info-fixed')){
             var answer_text = dom_objs[i].getAttribute('string');
             var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
             answer_indent = Math.round((answer_indent - INDENT_OFFSET) / TABWIDTH); // get how many times the answer is indented
