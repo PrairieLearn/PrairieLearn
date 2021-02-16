@@ -12,4 +12,6 @@ ENV NO_UPDATE_NOTIFIER=true
 ENV IPYTHONDIR=/tmp/ipython
 ENV YARN_CACHE_FOLDER=/tmp/yarn_cache
 
+RUN pip install --no-cache-dir jupyter_contrib_nbextensions
+
 CMD ["start.sh", "jupyter", "lab"]
