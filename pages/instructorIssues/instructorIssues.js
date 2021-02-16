@@ -12,7 +12,7 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 100;
 
 const commonQueries = {
     allOpenQuery: 'is:open',
