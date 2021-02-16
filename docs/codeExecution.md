@@ -78,3 +78,9 @@ Let's walk through a typical request to view a question that requires a function
 5. `call(...)` is then repeatedly invoked on the code caller with the appropriate pieces of code to be executed.
 6. Once the code caller is no longer needed during this request, `done()` is invoked on it. The forked worker is sent a `restart` message, which will cause the worker to exit and return control to the zygote. The zygote will then fork itself again, and the forked worker will wait until it receives more instructions.
 7. Page render completes and the response is sent, thus finishing the request cycle.
+
+## Operating in production
+
+When new versions of PrairieLearn are deployed, it's important to ensure that the appropriate executor image for the version being deployed is present on the machine. This ensures that PrairieLearn is able to serve traffic immediately instead of waiting for the new version to be pulled. If PrairieLearn is deployed with a `.git` directory present, the `./tools/script/pull.js` script can be used to log in to ECR and pull the appropriate version.
+
+PrairieLearn will automatically determine the correct version of the executor image to use at runtime. However, in an emergency, it's possible to configure PrairieLearn to use a specific image and tag. Set the `workerExecutorImage` config option to the appropriate name/tag combination, such as `prairielearn/executor:12345`. Then, ensure the image is present on the machine. Finally, reboot the server; new requests will be executed in the specified container version. Note that if the `cacheImageRegistry` option is set, PrairieLearn will use the image from that registry.
