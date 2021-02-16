@@ -1,4 +1,3 @@
 #!/bin/bash
 
-cd /PrairieLearn
-npm run lint-python -s
+make -s -C /PrairieLearn lint-python

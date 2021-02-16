@@ -16,6 +16,7 @@
 !executor.js
 !grader_host/
 !lib/
+!Makefile
 !middlewares/
 !migrations/
 !models/

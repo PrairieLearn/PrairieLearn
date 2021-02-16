@@ -46,6 +46,7 @@ require('./testMarkdown');
 require('./testRedirects');
 require('./testIssues');
 require('./testChunks');
+require('./testChunkAssessment');
 require('./testLocalLock');
 require('./testWorkspaceAccess');
 require('./sync');
