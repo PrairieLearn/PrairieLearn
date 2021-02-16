@@ -473,6 +473,11 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 * The prefixes `0b` and `0B` can be used for base-2 values (e.g., `0b1101`);
 * The prefixes `0o` and `0O` can be used for base-8 values (e.g., `0o777`).
 
+#### Integer range
+
+The valid range for integer-input is -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). If you need a larger input it is recommended to use a 
+[`pl-string-input`](#pl-string-input-element) with custom grading for integers outside of that range.
+
 #### Example implementations
 
 - [element/integerInput]
