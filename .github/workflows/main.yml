@@ -1,23 +1,19 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
-  build-base-image:
-    name: Build prairielearn/plbase image
+  build:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v1
       - name: Build the plbase docker image if needed
         run: sh ./tools/build-plbase-if-needed.sh
-
-  build:
-    name: Build and test
-    needs: build-base-image
-    runs-on: ubuntu-latest
-
-    steps:
       - name: Build the testing docker image
         run: docker build -t pltest .
       - name: Start the container
@@ -47,22 +43,13 @@ jobs:
         with:
           github-token: ${{ secrets.github_token }}
         continue-on-error: true
-
-  build-executor:
-    name: Build prairielearn/executor image
-    needs: build-base-image
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Install dependencies on host
-        run: npm ci
+      - name: Build executor image
+        run: ./tools/executor/build.js
       - name: Login to DockerHub
         uses: docker/login-action@v1 
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build executor image
-        run: ./tools/executor/build.js
       - name: Push executor image to registries
         run: ./tools/executor/release.js
 
