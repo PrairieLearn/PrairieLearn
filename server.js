@@ -21,7 +21,6 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const execa = require('execa');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
