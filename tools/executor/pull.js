@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // @ts-check
-const { execa, getImageName, loginToEcr, getEcrRegistryUrl } = require('./util');
+const { execa, getImageTag, getImageName, loginToEcr, getEcrRegistryUrl } = require('./util');
 
 (async () => {
-  const imageName = await getImageName();
+  const tag = await getImageTag();
+  const imageName = getImageName(tag);
   const ecrRegistryUrl = await getEcrRegistryUrl();
 
   await loginToEcr();

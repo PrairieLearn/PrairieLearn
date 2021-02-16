@@ -25,8 +25,7 @@ const getImageTag = async () => {
   return (await execaRaw('git', ['rev-parse', 'HEAD'])).stdout;
 };
 
-const getImageName = async () => {
-  const tag = await getImageTag();
+const getImageName = (tag) => {
   return `prairielearn/executor:${tag}`;
 };
 
