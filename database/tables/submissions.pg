@@ -12,6 +12,7 @@ columns
     grading_method: enum_grading_method
     grading_requested_at: timestamp with time zone
     id: bigint not null default nextval('submissions_id_seq'::regclass)
+    manual_grading_user: bigint
     mode: enum_mode
     override_score: double precision
     params: jsonb
