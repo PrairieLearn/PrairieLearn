@@ -31,6 +31,10 @@ li.ui-state-highlight {
   background-color: #efefff !important; 
 }
 
+li.list-group-item-yellow {
+  background-color: #FFA;
+}
+
 code.user-output {
   border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
   margin-right: 4px;
