@@ -35,7 +35,8 @@ SELECT
     i.student_message,
     i.variant_id,
     i.open,
-    i.manually_reported
+    i.manually_reported,
+    COUNT(*) OVER() AS issue_count
 FROM
     issues_select_with_filter (
         $filter_is_open,
