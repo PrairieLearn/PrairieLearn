@@ -57,7 +57,6 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
         await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.sync(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
     }));
     perf.end('syncAssessments');
-    await freeformServer.reloadElementsForCourse(courseDir, courseId);
     if (config.devMode) {
         logger.info('Flushing course element and extensions cache...');
         freeformServer.flushElementCache();
