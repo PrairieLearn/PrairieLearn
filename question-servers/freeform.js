@@ -137,8 +137,9 @@ module.exports = {
     },
 
     async loadElementsForCourseAsync(course) {
-        if (courseElementsCache[course.id] !== undefined &&
-            courseElementsCache[course.id].commit_hash === course.commit_hash) {
+        if (courseElementsCache[course.id] !== undefined
+            && courseElementsCache[course.id].commit_hash
+            && courseElementsCache[course.id].commit_hash === course.commit_hash) {
             return courseElementsCache[course.id].data;
         }
 
@@ -219,8 +220,9 @@ module.exports = {
     },
 
     async loadExtensionsForCourseAsync(course) {
-        if (courseExtensionsCache[course.id] !== undefined &&
-            courseExtensionsCache[course.id].commit_hash === course.commit_hash) {
+        if (courseExtensionsCache[course.id] !== undefined
+            && courseExtensionsCache[course.id].commit_hash
+            && courseExtensionsCache[course.id].commit_hash === course.commit_hash) {
             return courseExtensionsCache[course.id].data;
         }
 
@@ -236,28 +238,6 @@ module.exports = {
     flushElementCache: function() {
         courseElementsCache = {};
         courseExtensionsCache = {};
-    },
-
-    /**
-     * Reloads all element files from a course.
-     * @param {string} courseDir
-     * @param {any} courseId
-     */
-    reloadElementsForCourse: async function(courseDir, courseId) {
-        let hash = null;
-        try {
-            hash = await courseUtil.getOrUpdateCourseCommitHashAsync({'id': courseId, 'path': courseDir});
-        } catch (err) {
-            /* If we can't get a course hash, this likely isn't a Git repo so fail silently.
-               This usually happens when we're running tests and have manually created a course directory structure */
-            logger.debug(`Could not load course commit hash for course ${courseId} (${courseDir}) - ${err}`);
-        }
-
-        const elements = await util.promisify(module.exports.loadElements)(path.join(courseDir, 'elements'), 'course');
-        courseElementsCache[courseId] = {
-            'commit_hash': hash,
-            'data': elements,
-        };
     },
 
     resolveElement: function(elementName, context) {
