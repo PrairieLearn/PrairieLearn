@@ -3,7 +3,6 @@ const async = require('async');
 const _ = require('lodash');
 const fs = require('fs-extra');
 const path = require('path');
-const util = require('util');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
