@@ -147,6 +147,7 @@ BEGIN
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
+            question_params = (valid_assessment.data->>'question_params')::JSONB,
             group_work = (valid_assessment.data->>'group_work')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings

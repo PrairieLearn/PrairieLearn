@@ -75,6 +75,11 @@
             "type": "boolean",
             "default": true
         },
+        "questionParams": {
+            "description": "Parameters to pass down to questions in this assessment.",
+            "type": "object",
+            "default": {}
+        },
         "zones": {
             "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
             "type": "array",

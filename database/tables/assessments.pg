@@ -15,6 +15,7 @@ columns
     number: text not null default '0'::text
     obj: jsonb
     order_by: integer
+    question_params: jsonb not null default '{}'::jsonb
     require_honor_code: boolean default true
     shuffle_questions: boolean default false
     stats_last_updated: timestamp with time zone

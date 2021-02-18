@@ -22,6 +22,7 @@ BEGIN
         SELECT to_jsonb(q.*) 
             || jsonb_build_object('question_params', pc.question_params) 
             || jsonb_build_object('question_params', ci.question_params) 
+            || jsonb_build_object('question_params', aset.question_params)
         INTO question
         FROM
             instance_questions AS iq
