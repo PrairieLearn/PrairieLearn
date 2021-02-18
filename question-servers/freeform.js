@@ -143,8 +143,6 @@ module.exports = {
         }
 
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        await chunks.ensureChunksForCourseAsync(course.id, [{'type': 'elements'}, {'type': 'elementExtensions'}]);
-
         const elements = await module.exports.loadElementsAsync(path.join(coursePath, 'elements'), 'course');
         courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};
         return elements;
@@ -225,7 +223,8 @@ module.exports = {
             return courseExtensionsCache[course.id].data;
         }
 
-        let extensions = await module.exports.loadExtensionsAsync(path.join(course.path, 'elementExtensions'));
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        let extensions = await module.exports.loadExtensionsAsync(path.join(coursePath, 'elementExtensions'));
         courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
         return extensions;
     },
@@ -849,7 +848,7 @@ module.exports = {
         options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
         options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
         options.server_files_course_path = path.join(context.course_dir, 'serverFilesCourse');
-        options.course_extensions_path = path.join(context.course.path, 'elementExtensions');
+        options.course_extensions_path = path.join(context.course_dir, 'elementExtensions');
         return options;
     },
 
@@ -1436,6 +1435,9 @@ module.exports = {
                 'questionId': question.id,
             },
             {
+                'type': 'clientFilesCourse',
+            },
+            {
                 'type': 'serverFilesCourse',
             },
             {
@@ -1450,7 +1452,7 @@ module.exports = {
         const context = {
             question,
             course,
-            course_dir: course.path,
+            course_dir: coursePath,
             question_dir: path.join(coursePath, 'questions', question.directory),
             course_elements_dir: path.join(coursePath, 'elements'),
         };
