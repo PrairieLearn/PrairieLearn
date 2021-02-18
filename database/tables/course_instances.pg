@@ -4,9 +4,9 @@ columns
     display_timezone: text
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     long_name: text
+    question_params: jsonb not null default '{}'::jsonb
     ps_linked: boolean not null default true
     short_name: text
-    question_params: jsonb not null default '{}'::jsonb
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
