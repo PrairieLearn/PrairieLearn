@@ -65,7 +65,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         text: assessment.text,
         constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         group_work: !!assessment.groupWork,
-        question_params: assessment.questionParams || {}
+        question_params: assessment.questionParams || {},
     };
 
     const allowAccess = assessment.allowAccess || [];
@@ -95,7 +95,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             number_choose: zone.numberChoose,
             max_points: zone.maxPoints,
             best_questions: zone.bestQuestions,
-            question_params: zone.questionParams || {}
+            question_params: zone.questionParams || {},
         };
     });
 
@@ -117,7 +117,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                             : (_.has(question, 'forceMaxPoints') ? question.forceMaxPoints : false),
                         triesPerVariant: _.has(alternative, 'triesPerVariant') ? alternative.triesPerVariant : (_.has(question, 'triesPerVariant') ? question.triesPerVariant : 1),
                         gradeRateMinutes: _.has(alternative, 'gradeRateMinutes') ? alternative.gradeRateMinutes : questionGradeRateMinutes,
-                        question_params: alternative.questionParams || {}
+                        question_params: alternative.questionParams || {},
                     };
                 });
             } else if (_(question).has('id')) {
@@ -128,7 +128,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     forceMaxPoints: question.forceMaxPoints || false,
                     triesPerVariant: question.triesPerVariant || 1,
                     gradeRateMinutes: questionGradeRateMinutes,
-                    question_params: question.questionParams || {}
+                    question_params: question.questionParams || {},
                 }];
             }
 
@@ -162,7 +162,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             const alternativeGroupParams = {
                 number: alternativeGroupNumber,
                 number_choose: question.numberChoose,
-                question_params: question.questionParams || {}
+                question_params: question.questionParams || {},
             };
 
             alternativeGroupParams.questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
@@ -178,7 +178,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
                     grade_rate_minutes: alternative.gradeRateMinutes,
                     question_id: questionId,
                     number_in_alternative_group: alternativeIndex + 1,
-                    question_params: alternative.question_params || {}
+                    question_params: alternative.question_params || {},
                 };
 
             });
