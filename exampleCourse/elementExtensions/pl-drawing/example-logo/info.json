@@ -1,0 +1,6 @@
+{
+    "controller": "example-logo.py",
+    "dependencies": {
+        "extensionScripts": ["example-logo.js"]
+    }
+}
