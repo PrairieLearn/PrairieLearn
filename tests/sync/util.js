@@ -67,6 +67,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} [timezone]
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} [userRoles]
  * @property {CourseInstanceAllowAccess[]} [allowAccess]
+ * @property {Object} questionParams
  */
 
 /**
@@ -96,7 +97,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
   * @property {numer | number[]} maxPoints
   * @property {string} id
   * @property {boolean} forceMaxPoints
-  * @property {number} triesPerVariant
+  * @property {Object} questionParams
   */
 
 /**
@@ -108,6 +109,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {QuestionAlternative[]} alternatives
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {Object} questionParams
  */
 
 /**
@@ -116,7 +118,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {number} maxPoints
  * @property {number} maxChoose
  * @property {number} bestQuestions
- * @property {ZoneQuestion[]} questions
+ * @property {Object} questionParams
  */
 
 /**
@@ -138,6 +140,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
  * @property {boolean} groupWork
+ * @property {Object} questionParams
  */
 
 /**
