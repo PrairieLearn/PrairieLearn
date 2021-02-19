@@ -1,6 +1,7 @@
 -- BLOCK assessment_instance_stats
 SELECT
     iq.id AS instance_question_id,
+    ai.id AS assessment_instance_id,
     q.title,
     q.qid,
     q.id AS question_id,
