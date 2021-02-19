@@ -142,7 +142,7 @@
               <div class="modal-body">
                 <form name="copy-assessment-group-form" method="POST" enctype="multipart/form-data">
                   <div class="input-group mb-3">
-                    <select class="custom-select" name="inputGroupSelect01">
+                    <select class="custom-select" name="copy_assessment_id">
                       <option selected>Choose Assessment...</option>
                       <% assessment_list_rows.forEach(function(row, iRow) {%>
                       <option value=<%= row.id %>><%= row.tid %>: <%= row.title %></option>
@@ -172,7 +172,7 @@
                 <div class="modal-body">
                   <div class="form-group">
                     <label for="formName">Group Name</label>
-                    <input type="text" class="form-control" id="formName" name="groupname">  
+                    <input type="text" class="form-control" id="formName" name="group_name">  
                   </div>
                 <br>
                   <div class="form-group">
@@ -184,7 +184,7 @@
                   </div>
                 </div>
                 <div class="modal-footer">
-                  <input type="hidden" name="__action" value="addGroup">
+                  <input type="hidden" name="__action" value="add_group">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                   <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                   <button type="submit" class="btn btn-primary">Add</button>
