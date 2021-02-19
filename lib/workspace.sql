@@ -10,7 +10,7 @@ SELECT *
 FROM workspaces
 WHERE id = $workspace_id;
 
--- BLOCK select_workspace_paths
+-- BLOCK select_workspace_data
 SELECT
     c.id AS course_id,
     q.id AS question_id,
