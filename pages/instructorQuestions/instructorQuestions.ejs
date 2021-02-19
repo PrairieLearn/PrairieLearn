@@ -100,16 +100,16 @@
                             filter_functions: {
                                 3: {
                                     <% all_tags.forEach(function(tag) { %>
-                                    "<%= tag.name %>": function(e, n, f, i, $r, c, data) {
-                                        return /\b<%= tag.name %>\b/.test(e);
+                                    "<%= escapeRegExp(tag.name) %>": function(e, n, f, i, $r, c, data) {
+                                        return /\b<%= escapeRegExp(tag.name) %>\b/.test(e);
                                     },
                                     <% }); %>
                                 },
                                 <% if (locals.course_instance) { %>
                                 5: {
                                     <% all_assessments.forEach(function(assessment) { %>
-                                    "<%= assessment.label %>": function(e, n, f, i, $r, c, data) {
-                                        return /\b<%= assessment.label %>\b/.test(e);
+                                    "<%= escapeRegExp(assessment.label) %>": function(e, n, f, i, $r, c, data) {
+                                        return /\b<%= escapeRegExp(assessment.label) %>\b/.test(e);
                                     },
                                     <% }); %>
                                 },

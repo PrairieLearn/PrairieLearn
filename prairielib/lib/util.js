@@ -22,3 +22,13 @@ module.exports.sanitizeObject = function sanitizeObject(value) {
         return value;
     }
 };
+
+/**
+ * Escape special characters in a RegExp string
+ * Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Using_special_characters
+ * @param {string} string A literal string to act as a match for RegExp objects
+ * @return {string} A string literal ready to match
+ */
+module.exports.escapeRegExp = function escapeRegExp(string) {
+    return string.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
+};

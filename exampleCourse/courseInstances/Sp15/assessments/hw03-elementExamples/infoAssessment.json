@@ -48,7 +48,8 @@
                 {"id": "element/pythonVariable",           "points": 2, "maxPoints": 10},
                 {"id": "element/graph",                    "points": 2, "maxPoints": 10},
                 {"id": "element/overlay",                  "points": 2, "maxPoints": 10},
-                {"id": "element/figure",                   "points": 2, "maxPoints": 10}
+                {"id": "element/figure",                   "points": 2, "maxPoints": 10},
+                {"id": "element/orderBlocks",              "points": 2, "maxPoints": 10}
             ]
         }
     ]

@@ -4,6 +4,7 @@ import chevron
 import base64
 import hashlib
 import os
+from text_unidecode import unidecode
 
 
 EDITOR_CONFIG_FUNCTION_DEFAULT = None
@@ -16,6 +17,7 @@ AUTO_RESIZE_DEFAULT = True
 PREVIEW_DEFAULT = None
 FOCUS_DEFAULT = False
 DIRECTORY_DEFAULT = '.'
+NORMALIZE_TO_ASCII_DEFAULT = False
 
 
 def get_answer_name(file_name):
@@ -31,7 +33,7 @@ def add_format_error(data, error_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize', 'preview', 'focus', 'directory']
+    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize', 'preview', 'focus', 'directory', 'normalize-to-ascii']
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
 
@@ -128,12 +130,22 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, 'file-name', '')
     answer_name = get_answer_name(file_name)
+    normalize_to_ascii = pl.get_boolean_attrib(element, 'normalize-to-ascii', NORMALIZE_TO_ASCII_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     file_contents = data['submitted_answers'].get(answer_name, None)
     if not file_contents:
         add_format_error(data, 'No submitted answer for {0}'.format(file_name))
         return
+
+    if normalize_to_ascii:
+        try:
+            decoded_contents = base64.b64decode(file_contents).decode('utf-8')
+            normalized = unidecode(decoded_contents)
+            file_contents = base64.b64encode(normalized.encode('UTF-8').strip()).decode()
+            data['submitted_answers'][answer_name] = file_contents
+        except UnicodeError:
+            add_format_error(data, 'Submitted answer is not a valid UTF-8 string.')
 
     if data['submitted_answers'].get('_files', None) is None:
         data['submitted_answers']['_files'] = []
