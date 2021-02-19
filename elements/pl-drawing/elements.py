@@ -968,11 +968,13 @@ class Rectangle(BaseElement):
             'fill': color,
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
-            'strokeUniform': True
+            'strokeUniform': True,
+            'selectable': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
+            'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable'])
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'height', 'width', 'angle', 'color', 'stroke-color', 'stroke-width']
+        return ['x1', 'y1', 'height', 'width', 'angle', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Triangle(BaseElement):
@@ -988,11 +990,13 @@ class Triangle(BaseElement):
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'strokeUniform': True,
             'originX': 'center',
-            'originY': 'center'
+            'originY': 'center',
+            'selectable': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
+            'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable'])
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color', 'stroke-color', 'stroke-width']
+        return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Circle(BaseElement):
@@ -1018,7 +1022,7 @@ class Circle(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'color', 'stroke-color', 'stroke-width', 'label', 'offsetx', 'offsety']
+        return ['x1', 'y1', 'radius', 'color', 'stroke-color', 'stroke-width', 'label', 'offsetx', 'offsety', 'selectable']
 
 
 class Polygon(BaseElement):
@@ -1037,7 +1041,7 @@ class Polygon(BaseElement):
         }
 
     def get_attributes():
-        return ['plist', 'color', 'stroke-color', 'stroke-width']
+        return ['plist', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Spring(BaseElement):
