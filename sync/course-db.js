@@ -224,6 +224,11 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
  * @property {boolean} groupWork
+ * @property {number} groupMaxSize
+ * @property {number} groupMinSize
+ * @property {boolean} studentGroupCreate
+ * @property {boolean} studentGroupJoin
+ * @property {boolean} studentGroupLeave
  * @property {number} gradeRateMinutes
  */
 
