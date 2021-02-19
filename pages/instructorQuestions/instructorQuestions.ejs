@@ -3,9 +3,9 @@
 
 <head>
     <%- include('../partials/head'); %>
-    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <script src="/javascripts/jquery.tablesorter.min.js"></script>
-    <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <link href="<%= node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
 </head>
 
 <body>
@@ -100,16 +100,16 @@
                             filter_functions: {
                                 3: {
                                     <% all_tags.forEach(function(tag) { %>
-                                    "<%= tag.name %>": function(e, n, f, i, $r, c, data) {
-                                        return /\b<%= tag.name %>\b/.test(e);
+                                    "<%= escapeRegExp(tag.name) %>": function(e, n, f, i, $r, c, data) {
+                                        return /\b<%= escapeRegExp(tag.name) %>\b/.test(e);
                                     },
                                     <% }); %>
                                 },
                                 <% if (locals.course_instance) { %>
                                 5: {
                                     <% all_assessments.forEach(function(assessment) { %>
-                                    "<%= assessment.label %>": function(e, n, f, i, $r, c, data) {
-                                        return /\b<%= assessment.label %>\b/.test(e);
+                                    "<%= escapeRegExp(assessment.label) %>": function(e, n, f, i, $r, c, data) {
+                                        return /\b<%= escapeRegExp(assessment.label) %>\b/.test(e);
                                     },
                                     <% }); %>
                                 },

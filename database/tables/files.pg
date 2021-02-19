@@ -9,6 +9,7 @@ columns
     id: bigint not null default nextval('files_id_seq'::regclass)
     instance_question_id: bigint
     storage_filename: text not null
+    storage_type: enum_file_storage_type default 'FileSystem'::enum_file_storage_type
     type: text not null
     user_id: bigint
 

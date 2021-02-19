@@ -61,49 +61,54 @@ class CGrader:
 
     def test_compile_file(self, c_file, exec_file, main_file=None, add_c_file=None,
                           points=1, field=None, flags=None, name='Compilation',
+                          add_warning_result_msg=True,
                           ungradable_if_failed=True):
 
         if flags and not isinstance(flags, list):
             flags = shlex.split(flags)
         elif not flags:
             flags = []
-        
-        obj_file = re.sub('\.c$', '', c_file) + '.o'
-        out = self.run_command(['gcc', '-c', c_file, '-o', obj_file] + flags, sandboxed=False)
-        if os.path.isfile(obj_file):
 
+        if not add_c_file:
+            add_c_file = []
+        elif not isinstance(add_c_file, list):
+            add_c_file = [add_c_file]
+        if main_file: # Kept for compatibility reasons, but could be set as an added file
+            add_c_file.append(main_file)
+        if add_c_file:
+            flags.append('-Wl,--allow-multiple-definition')
+
+        out = ''
+        std_obj_files = []
+        for std_c_file in (c_file if isinstance(c_file, list) else [c_file]):
+            obj_file = re.sub('\.c$', '', std_c_file) + '.o'
+            out += self.run_command(['gcc', '-c', std_c_file, '-o', obj_file] + flags,
+                                    sandboxed=False)
+            std_obj_files.append(obj_file)
+
+        if all(os.path.isfile(obj) for obj in std_obj_files):
             objs = []
             
-            if add_c_file:
-                # Add new C file that maybe overwrites some existing functions.
-                add_obj_file = re.sub('\.c$', '', add_c_file) + '.o'
-                out += self.run_command(['gcc', '-c', add_c_file,
-                                         '-o', add_obj_file] + flags, sandboxed=False)
-                objs.append(add_obj_file)
-                flags.append('-Wl,--allow-multiple-definition')
+            # Add new C files that maybe overwrite some existing functions.
+            for added_c_file in add_c_file:
+                obj_file = re.sub('\.c$', '', added_c_file) + '.o'
+                out += self.run_command(['gcc', '-c', added_c_file, 
+                                         '-o', obj_file] + flags, sandboxed=False)
+                objs.append(obj_file)
 
-            if main_file:
-                main_obj_file = re.sub('\.c$', '', main_file) + '.o'
-                out += self.run_command(['strip', '-N', 'main', obj_file], sandboxed=False)
-                out += self.run_command(['gcc', '-c', main_file,
-                                         '-o', main_obj_file] + flags, sandboxed=False)
-                objs.append(main_obj_file)
-                flags.append('-Wl,--allow-multiple-definition')
-
-            # The main C file must be the last so its functions can be
-            # overwritten
-            objs.append(obj_file)
-            
-            out += self.run_command(['gcc'] + objs +
+            # The student C files must be the last so its functions can be overwritten
+            out += self.run_command(['gcc'] + objs + std_obj_files +
                                     ['-o', exec_file, '-lm'] + flags, sandboxed=False)
         
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, '755')
         elif ungradable_if_failed:
-            self.result['message'] = 'Compilation errors, please fix and try again.\n\n' + out
+            self.result['message'] += f'Compilation errors, please fix and try again.\n\n{out}\n'
             raise UngradableException()
+        if out and add_warning_result_msg:
+            self.result['message'] += f'Compilation warnings:\n\n{out}\n'
         return self.add_test_result(name, output=out,
-                                    points=os.path.isfile(exec_file),
+                                    points=points if os.path.isfile(exec_file) else 0,
                                     max_points=points, field=field)
 
     def change_mode(self, file, mode='744'):
@@ -121,30 +126,39 @@ class CGrader:
     def test_run(self, command, input=None, exp_output=None,
                  must_match_all_outputs=False,
                  reject_output=None, field=None,
-                 ignore_case=True, timeout=1,
+                 ignore_case=True, timeout=1, size_limit=10240,
                  ignore_consec_spaces=True,
                  args=None, name=None, msg=None, max_points=1):
         
-        if args is not None and not isinstance(args, list): args = [args] 
+        if args is not None:
+            if not isinstance(args, list): args = [args]
+            args = list(map(str, args))
         
         if name is None and input is not None:
             name = 'Test with input "%s"' % ' '.join(input.splitlines())
-        if name is None and args is not None:
+        elif name is None and args is not None:
             name = 'Test with arguments "%s"' % ' '.join(args)
+        elif name is None and isinstance(command, list):
+            name = 'Test command: %s' % command[0]
+        elif name is None:
+            name = 'Test command: %s' % command
         
         if exp_output is not None and not isinstance(exp_output, list):
             exp_output = [exp_output] 
         if reject_output is not None and not isinstance(reject_output, list):
             reject_output = [reject_output]
         if msg is None and exp_output is not None:
-            msg = 'Expected "%s"' % ('" AND "' if must_match_all_outputs \
-                                     else '" OR "').join([str(t) for t in exp_output]) + \
+            msg = 'Expected: %s' % (' AND ' if must_match_all_outputs \
+                                     else ' OR ').join([f'\n{t}\n' if '\n' in str(t) else f'"{t}"' for t in exp_output]) + \
                   (' but not "%s"' % '"/"'.join([str(t) for t in reject_output]) if reject_output else '')
+        elif msg is None:
+            msg = ''
 
         out = self.run_command(command if args is None else ([command] + args),
                                input, sandboxed=True, timeout=timeout)
         outcmp = out
-        if not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
+        if not out: out = '(NO OUTPUT)'
+        elif not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
 
         if ignore_case:
             outcmp = outcmp.lower()
@@ -162,19 +176,22 @@ class CGrader:
                 reject_output = [re.sub(r'\s+', ' ', str(t)) for t in reject_output]
 
         points = True
-        if exp_output is not None and must_match_all_outputs \
-           and [t for t in exp_output if str(t) not in outcmp]:
-            points = False
-        if exp_output is not None and not must_match_all_outputs \
-           and not [t for t in exp_output if str(t) in outcmp]:
-            points = False
-        if reject_output is not None \
-           and [t for t in reject_output if str(t) in outcmp]:
-            points = False
         if timeout and 'TIMEOUT' in out:
             points = False
+        elif size_limit and len(out) > size_limit:
+            out = out[0:size_limit] + '\nTRUNCATED: Output too long.'
+            points = False
+        elif exp_output is not None and must_match_all_outputs \
+           and [t for t in exp_output if str(t) not in outcmp]:
+            points = False
+        elif exp_output is not None and not must_match_all_outputs \
+           and not [t for t in exp_output if str(t) in outcmp]:
+            points = False
+        elif reject_output is not None \
+           and [t for t in reject_output if str(t) in outcmp]:
+            points = False
 
-        return self.add_test_result(name, points=points, msg=msg,
+        return self.add_test_result(name, points=max_points if points else 0, msg=msg,
                                     output=out, max_points=max_points,
                                     field=field)
 
@@ -195,7 +212,7 @@ class CGrader:
             'name': name, 'description': description,
             'points': points,
             'max_points': max_points,
-            'output': output, 'message': msg
+            'output': output, 'message': msg if msg else ''
         }
         if images and isinstance(images, list):
             test['images'] = images
@@ -262,8 +279,6 @@ class CGrader:
         except UngradableException:
             self.result['gradable'] = False
         finally:
-            if self.result['gradable']:
-                self.result['message'] = 'Tests completed'
             self.save_results()
 
     def tests(self):

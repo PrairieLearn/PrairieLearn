@@ -50,3 +50,10 @@ WHERE
     w.id = $workspace_id
 RETURNING
     heartbeat_at;
+
+-- BLOCK update_workspace_homedir_location
+UPDATE workspaces AS W
+SET
+    homedir_Location = $homedir_location
+WHERE
+    w.id = $workspace_id;

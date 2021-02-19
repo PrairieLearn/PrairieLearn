@@ -6,6 +6,8 @@ const namedLocks = require('../lib/named-locks');
 const courseDB = require('./course-db');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
+const config = require('../lib/config');
+
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
 const syncTopics = require('./fromDisk/topics');
@@ -29,15 +31,16 @@ const { promisify } = require('util');
  */
 
 /**
- * 
- * @param {string} courseDir 
- * @param {any} courseId 
- * @param {any} logger 
+ *
+ * @param {string} courseDir
+ * @param {any} courseId
+ * @param {any} logger
  * @returns Promise<SyncResults>
  */
 async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     logger.info('Loading info.json files from course repository');
     perf.start('sync');
+
     const courseData = await perf.timedAsync('loadCourseData', () => courseDB.loadFullCourseNew(courseDir));
     // Write any errors and warnings to sync log
     courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, line => logger.info(line || ''));
@@ -54,7 +57,10 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
         await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.sync(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
     }));
     perf.end('syncAssessments');
-    await freeformServer.reloadElementsForCourse(courseDir, courseId);
+    if (config.devMode) {
+        logger.info('Flushing course element and extensions cache...');
+        freeformServer.flushElementCache();
+    }
     const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
     const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
     if (courseDataHasErrors) {

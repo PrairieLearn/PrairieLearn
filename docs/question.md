@@ -54,7 +54,8 @@ The `info.json` file for each question defines properties of the question. For e
     "title": "Newton's third law",
     "topic": "Forces",
     "tags": ["secret", "Fa18"],
-    "type": "v3"
+    "type": "v3",
+    "comment": "You can add comments to JSON files using this property."
 }
 ```
 
@@ -113,7 +114,7 @@ Property | Description
 `clientFilesQuestionStyles` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
 `clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
 `clientFilesCourseStyles` | The styles required by this question relative to `[course directory]/clientFilesCourse`.
-`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`. 
+`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`.
 
 ## Question `question.html`
 
@@ -133,7 +134,7 @@ The `question.html` is regular HTML, with four special features:
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
-   
+
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
@@ -216,6 +217,20 @@ def grade(data):
             data["score"] = 0.5
 ```
 
+## Accessing files on disk
+
+From within `server.py` functions, directories can be accessed as:
+
+```python
+data["options"]["question_path"]                      # on-disk location of the current question directory
+data["options"]["client_files_question_path"]         # on-disk location of clientFilesQuestion/
+data["options"]["client_files_question_url"]          # URL location of clientFilesQuestion/ (only in render() function)
+data["options"]["client_files_question_dynamic_url"]  # URL location of dynamically-generated question files (only in render() function)
+data["options"]["client_files_course_path"]           # on-disk location of clientFilesCourse/
+data["options"]["client_files_course_url"]            # URL location of clientFilesCourse/ (only in render() function)
+data["options"]["server_files_course_path"]           # on-disk location of serverFilesCourse/
+```
+
 ## Generating dynamic files
 
 You can dynamically generate file objects in `server.py`. These files never appear physically on the disk. They are generated in `file()` and returned as strings, bytes-like objects, or file-like objects. A complete `question.html` and `server.py` example using a dynamically generated `fig.png` looks like:
@@ -264,6 +279,12 @@ By default, all questions award partial credit. For example, if there are two nu
 To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct. Some [question elements](elements.md) also provide more fine-grained control over partial credit.
 
 In general, it is strongly recommended to leave partial credit enabled for all questions.
+
+## Preventing questions from locking when full credit is achieved
+
+Currently, PrairieLearn will lock a question and prevent students from submitting revised answers as soon as they score 100% on the problem. This may have negative side effects for questions where students would like to continue to refine their answer (for example, by adding additional comments to their code for staff reviewers to see). A workaround for this is to enable partial credit and only award at most 99% in your grader configuration for the question. You can explain to students that the last 1% of the grade will come from staff reviews for integrity.
+
+In the future, PrairieLearn may add an option to prevent this lock from occurring even with a 100% grade. Refer to this issue: https://github.com/PrairieLearn/PrairieLearn/issues/3191
 
 ## Using Markdown in questions
 
@@ -431,4 +452,3 @@ For most [elements] there are four different ways of grading the student answer.
 4. Write an [external grader](externalGrading), though this is typically applied to more complex questions like coding.
 
 If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements/#pl-answer-panel-element) that any correct answer would be accepted and this displayed answer is only an example.
-
