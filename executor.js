@@ -99,7 +99,14 @@ function handleInput(line, caller) {
     terminal: false,
   });
 
-  let pc = new PythonCaller({ dropPrivileges: true });
+  let questionTimeoutMilliseconds;
+  try {
+    questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
+  } catch (e) {
+    questionTimeoutMilliseconds = 10000;
+  }
+
+  let pc = new PythonCaller({ dropPrivileges: true, questionTimeoutMilliseconds });
   pc.ensureChild();
 
   // Safety check: if we receive more input while handling another request,
