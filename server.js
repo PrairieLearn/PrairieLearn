@@ -43,11 +43,6 @@ const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
 const codeCallerDocker = require('./lib/code-caller-docker');
-const {
-    cleanupMountDirectories,
-    updateExecutorImageTag,
-    ensureExecutorImage,
-} = require('./lib/code-caller-docker');
 const assets = require('./lib/assets');
 
 
