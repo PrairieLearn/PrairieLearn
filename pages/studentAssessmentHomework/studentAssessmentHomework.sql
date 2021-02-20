@@ -12,43 +12,11 @@ WHERE
 
 -- BLOCK get_config_info
 SELECT
-    gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave, gc.maximum, gc.minimum
+    gc.*
 FROM
     group_configs gc
 WHERE
     gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL;
-
--- BLOCK check_group_size
-SELECT
-    COUNT(gu) AS cur_size, AVG(gc.maximum) AS maximum
-FROM
-    groups gr
-    JOIN group_configs gc ON gr.group_config_id = gc.id
-    LEFT JOIN group_users gu ON gu.group_id = gr.id
-WHERE
-    gr.name = $group_name
-    AND gr.join_code = $join_code
-    AND gc.assessment_id = $assessment_id
-    AND gr.deleted_at IS NULL
-    AND gc.deleted_at IS NULL
-GROUP BY
-    gr.id;
-
--- BLOCK join_group
-WITH log AS (
-    INSERT INTO
-        group_users (user_id, group_id)
-    VALUES
-        ($user_id, (SELECT id
-                    FROM groups
-                    WHERE name = $group_name AND join_code = $join_code AND deleted_at IS NULL))
-    RETURNING group_id
-)
-INSERT INTO group_logs
-    (authn_user_id, user_id, group_id, action)
-SELECT $authn_user_id, $user_id, group_id, 'join'
-FROM log;
-
 
 -- BLOCK create_group
 WITH
@@ -78,22 +46,22 @@ join_group AS (
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
-SELECT $authn_user_id, $user_id, cg.id, 'create' FROM create_group AS cg;
+SELECT $authn_user_id, $user_id, cg.id, 'join' FROM create_group AS cg;
 
 -- BLOCK get_group_info
 SELECT
-    gu.group_id, gr.name, gr.join_code, us.uid, gc.minimum, gc.maximum
+    gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum
 FROM
-    assessments ass
-    JOIN group_configs gc ON gc.assessment_id = ass.id
-    JOIN groups gr ON gr.group_config_id = gc.id
-    JOIN group_users gu ON gu.group_id = gr.id
-    JOIN group_users gu2 ON gu2.group_id = gu.group_id
-    JOIN users us ON us.user_id = gu2.user_id
+    assessments AS a
+    JOIN group_configs AS gc ON gc.assessment_id = a.id
+    JOIN groups AS g ON g.group_config_id = gc.id
+    JOIN group_users AS gu ON gu.group_id = g.id
+    JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
+    JOIN users AS u ON u.user_id = gu2.user_id
 WHERE
-    ass.id = $assessment_id
+    a.id = $assessment_id
     AND gu.user_id = $user_id
-    AND gr.deleted_at IS NULL
+    AND g.deleted_at IS NULL
     AND gc.deleted_at IS NULL;
 
 -- BLOCK leave_group
@@ -102,12 +70,12 @@ WITH log AS (
         group_users
     WHERE
         user_id = $user_id
-        AND group_id IN (SELECT gr.id
-                        FROM assessments ass
-                        JOIN group_configs gc ON gc.assessment_id = ass.id
-                        JOIN groups gr ON gr.group_config_id = gc.id
-                        WHERE ass.id = $assessment_id
-                        AND gr.deleted_at IS NULL
+        AND group_id IN (SELECT g.id
+                        FROM assessments AS a
+                        JOIN group_configs AS gc ON gc.assessment_id = a.id
+                        JOIN groups AS g ON g.group_config_id = gc.id
+                        WHERE a.id = $assessment_id
+                        AND g.deleted_at IS NULL
                         AND gc.deleted_at IS NULL)
     RETURNING group_id
 )
