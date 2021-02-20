@@ -15,6 +15,8 @@ jobs:
         with:
           # Checkout the PR HEAD commit instead of merge commit
           ref: ${{ github.event.pull_request.head.sha }}
+      - name: Git fetch everything
+        run: git fetch
       - name: Build the plbase docker image if needed
         run: sh ./tools/build-plbase-if-needed.sh
       - name: Build the testing docker image
