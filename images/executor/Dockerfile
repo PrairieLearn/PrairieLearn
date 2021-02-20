@@ -8,4 +8,4 @@ RUN groupadd executor \
     && echo "executor soft nofile 2048" >> /etc/security/limits.conf \
     && echo "executor hard nofile 2048" >> /etc/security/limits.conf
 
-CMD npm run --silent start-executor
+CMD make -s start-executor
