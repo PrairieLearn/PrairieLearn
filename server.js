@@ -42,6 +42,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
+const codeCallerDocker = require('./lib/code-caller-docker');
 const {
     cleanupMountDirectories,
     updateExecutorImageTag,
@@ -1185,17 +1186,8 @@ if (config.startServer) {
             callback(null);
         },
         async () => {
-            if (config.workersExecutionMode === 'native') {
-                // Executor image will not be used
-                return;
-            }
-            // Important: this should happen before `workers.init` below
-            await updateExecutorImageTag();
-        },
-        async () => await cleanupMountDirectories(),
-        async () => {
-            if (config.ensureExecutorImageAtStartup) {
-                await ensureExecutorImage();
+            if (config.workersExecutionMode === 'container') {
+                await codeCallerDocker.init();
             }
         },
         function(callback) {
