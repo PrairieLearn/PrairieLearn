@@ -27,9 +27,9 @@ Build the image using the above `build-executor.sh` script. Make note of the nam
 Start the container, using the version of the container that you noted above (the examples below use the Git hash `12345`). Note that we mount in the PrairieLearn `elements` directory so that the examples below can use PrairieLearn's elements:
 
 ```sh
-docker run --rm -it -v /path/to/checked/out/PrairieLearn/elements/:/elements/ prairielearn/executor:12345
+docker run --rm -it prairielearn/executor:12345
 # Optionally, enable debug prints
-docker run --rm -it -e DEBUG='*' -v /path/to/checked/out/PrairieLearn/elements/:/elements/ prairielearn/executor:12345
+docker run --rm -it -e DEBUG='*' prairielearn/executor:12345
 ```
 
 Once the container is running, paste the following and hit `Enter`:
