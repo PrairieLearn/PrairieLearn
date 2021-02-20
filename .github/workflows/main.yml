@@ -20,9 +20,9 @@ jobs:
       - name: Build the plbase docker image if needed
         run: sh ./tools/build-plbase-if-needed.sh
       - name: Build the testing docker image
-        run: docker build -t pltest .
+        run: docker build -t prairielearn/prairielearn .
       - name: Start the container
-        run: docker run -td --name=test_container pltest /bin/bash
+        run: docker run -td --name=test_container prairielearn/prairielearn /bin/bash
       - name: Run the JavaScript linter
         run: docker exec test_container /PrairieLearn/docker/lint_js.sh
       - name: Run the Python linter
