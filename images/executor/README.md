@@ -35,19 +35,19 @@ docker run --rm -it -e DEBUG='*' -v /path/to/checked/out/PrairieLearn/elements/:
 Once the container is running, paste the following and hit `Enter`:
 
 ```json
-{"type":"element","directory":"pl-checkbox","file":"pl-checkbox","fcn":"prepare","args":["<pl-checkbox answers-name=\"ans\"><pl-answer correct=\"true\">correct</pl-answer></pl-checkbox>",{"params":{},"correct_answers":{}}]}
+{"type":"core-element","directory":"pl-checkbox","file":"pl-checkbox","fcn":"prepare","args":["<pl-checkbox answers-name=\"ans\"><pl-answer correct=\"true\">correct</pl-answer></pl-checkbox>",{"params":{},"correct_answers":{}}]}
 ```
 
 You should see the following printed to the console:
 
 ```json
-{"data":{"params":{"wig":[{"key":"a","html":"wig"}]},"correct_answers":{"wig":[{"key":"a","html":"wig"}]}},"output":"","functionMissing":false}
+{"data":{"params":{"ans":[{"key":"a","html":"correct"}]},"correct_answers":{"ans":[{"key":"a","html":"correct"}]}},"output":"","functionMissing":false}
 ```
 
 Now, try to render the element:
 
 ```json
-{"type":"element","directory":"pl-checkbox","file":"pl-checkbox","fcn":"render","args":["<pl-checkbox answers-name=\"ans\"><pl-answer correct=\"true\">correct</pl-answer></pl-checkbox>",{"editable":true,"params":{},"correct_answers":{},"submitted_answers":{},"panel":"question","partial_scoress":{}}]}
+{"type":"core-element","directory":"pl-checkbox","file":"pl-checkbox","fcn":"render","args":["<pl-checkbox answers-name=\"ans\"><pl-answer correct=\"true\">correct</pl-answer></pl-checkbox>",{"editable":true,"params":{},"correct_answers":{},"submitted_answers":{},"panel":"question","partial_scoress":{}}]}
 ```
 
 You should see the following printed to the console:
