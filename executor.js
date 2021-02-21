@@ -14,6 +14,7 @@ const { PythonCaller, FunctionMissingError } = require('./lib/code-caller-python
 /**
  * @typedef {Object} Results
  * @property {string} [error]
+ * @property {import('./lib/code-caller-python').ErrorData} [errorData]
  * @property {any} [data]
  * @property {string} [output]
  * @property {boolean} [functionMissing]
@@ -79,6 +80,7 @@ function handleInput(line, caller) {
             // TODO: `error.data` contains valuable information - we should try
             // to shuttle it back up to the parent process so it can be displayed.
             error: err && !functionMissing ? err.message : undefined,
+            errorData: err && !functionMissing ? err.data : undefined,
             data,
             output,
             functionMissing,
