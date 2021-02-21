@@ -40,7 +40,7 @@ BEGIN
     
      -- get basic data about existing objects
     SELECT
-        c.id,      gr.id,   u.user_id,            a.id,          a.type,
+        c.id,      g.id,   u.user_id,            a.id,          a.type,
         a.max_points,          ai.max_points,
         ai.open
     INTO
@@ -52,7 +52,7 @@ BEGIN
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN pl_courses AS c ON (c.id = ci.course_id)
-        LEFT JOIN groups AS gr ON (gr.id = ai.group_id AND gr.deleted_at IS NULL)
+        LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
         ai.id = assessment_instance_id;

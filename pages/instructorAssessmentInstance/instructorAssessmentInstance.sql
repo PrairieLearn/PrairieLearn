@@ -83,15 +83,15 @@ ORDER BY qo.row_order;
 
 -- BLOCK select_group_info
 SELECT
-    gr.name, gr.id AS gid, gr.deleted_at,
+    g.name, g.id AS group_id,
     array_agg(u.uid) AS uid_list
 FROM
     assessment_instances AS ai
-    JOIN groups AS gr ON (gr.id = ai.group_id)
-    LEFT JOIN group_users AS gu ON (gu.group_id = gr.id)
+    JOIN groups AS g ON (g.id = ai.group_id)
+    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
     LEFT JOIN users AS u ON (u.user_id = gu.user_id)
 WHERE 
     ai.id = $assessment_instance_id
-    AND gr.deleted_at IS NULL
+    AND g.deleted_at IS NULL
 GROUP BY
-    gr.id;
+    g.id;
