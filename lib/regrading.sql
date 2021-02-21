@@ -4,7 +4,8 @@ SELECT
     assessment_instance_label(ai, a, aset),
     a.id AS assessment_id,
     u.uid AS user_uid,
-    gr.id AS group_id,
+    g.id AS group_id,
+    g.name AS group_name,
     ci.id AS course_instance_id,
     c.id AS course_id
 FROM
@@ -14,10 +15,10 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     LEFT JOIN users AS u USING (user_id)
-    LEFT JOIN groups AS gr ON (gr.id = ai.group_id)
+    LEFT JOIN groups AS g ON (g.id = ai.group_id)
 WHERE
     ai.id = $assessment_instance_id
-    AND gr.deleted_at IS NULL;
+    AND g.deleted_at IS NULL;
 
 -- BLOCK select_regrade_assessment_info
 SELECT
