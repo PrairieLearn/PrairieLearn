@@ -24,9 +24,9 @@
           <p class="text-center">
              This is a group assessment.
           </p>
-          <% if (typeof usedjoincode !== 'undefined') { %>
+          <% if (typeof used_join_code !== 'undefined') { %>
             <div class="alert alert-danger" role="alert">
-              Failed to join the group with joincode <span class="badge badge-secondary"><%= usedjoincode %></span>. It is already full or does not exist. Please try to join another one.
+              Failed to join the group with join code <span class="badge badge-secondary"><%= used_join_code %></span>. It is already full or does not exist. Please try to join another one.
             </div>
           <% } %>
           <% if (typeof invalidGroupName !== 'undefined') { %>
@@ -42,10 +42,10 @@
           <%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
           <% } %>
           <% } else {%>
-            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, groupinfo: groupinfo}); %>
+            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
             <% if (start) { %>
             <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
-              <input type="hidden" name="__action" value="newInstance">
+              <input type="hidden" name="__action" value="new_instance">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
             </form>

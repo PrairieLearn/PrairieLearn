@@ -657,11 +657,20 @@ module.exports.initExpress = function() {
     ]);
 
     // legacy client file paths
+    // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/file', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/text', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/text', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionText/legacyQuestionText'),
     ]);
@@ -923,11 +932,20 @@ module.exports.initExpress = function() {
     ]);
 
     // legacy client file paths
+    // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
     app.use('/pl/course/:course_id/question/:question_id/file', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
+    app.use('/pl/course/:course_id/question/:question_id/preview/file', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]);
     app.use('/pl/course/:course_id/question/:question_id/text', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]);
+    app.use('/pl/course/:course_id/question/:question_id/preview/text', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionText/legacyQuestionText'),
     ]);
