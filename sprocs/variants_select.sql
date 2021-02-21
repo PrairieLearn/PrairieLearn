@@ -16,10 +16,11 @@ BEGIN
         to_jsonb(ai.*) AS assessment_instance,
         ai.date AS assessment_instance_date
     INTO variant_with_id
-    FROM variants as v
-    LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-    LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
+    FROM
+        variants as v
+        LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE v.id = variants_select.variant_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id: %', variant_id; END IF;
