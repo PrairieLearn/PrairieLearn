@@ -171,21 +171,14 @@
               <i class="fa fa-check-circle text-success issue-status-icon"></i>
               <% } %>
               <div class="d-block">
-                <a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">
-                  <%= row.question_qid %>
-                </a>
-                <button class="btn btn-xs dropdown-toggle" type="button" id="issue-link-menu-<%= row.issue_id %>"
-                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
-                <div class="dropdown-menu" aria-labelledby="issue-link-menu-<%= row.issue_id %>">
-                  <a class="dropdown-item" href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">Instructor view</a>
-                  <% if (row.instance_question_id) { %>
-                  <a class="dropdown-item" href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instance_question/<%= row.instance_question_id %>/?variant_id=<%= row.variant_id %>">Student view</a>
-                    <% if (course.manual_grading_visible) { %>
-                    <a class="dropdown-item" href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/instance_question/<%= row.instance_question_id %>/manual_grading">Manual grading</a>
-                    <% } %>
-                  <a class="dropdown-item" href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/assessment_instance/<%= row.assessment_instance_id %>">Assessment instance log</a>
-                  <% } %>
-                </div>
+                <strong><%= row.question_qid %></strong>
+                (<a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">instructor
+                  view</a><% if (row.instance_question_id) { %>,
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instance_question/<%= row.instance_question_id %>/?variant_id=<%= row.variant_id %>">student view</a>,
+                <% if (course.manual_grading_visible) { %>
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/instance_question/<%= row.instance_question_id %>/manual_grading">manual grading</a>,
+                <% } %>
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/assessment_instance/<%= row.assessment_instance_id %>">assessment details</a><% } %>)
               </div>
               <p class="mb-0">
                 <%= getFormattedMessage(row) %>
