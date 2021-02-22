@@ -2,7 +2,7 @@
 
 const TABWIDTH = 50;      // defines how many px the answer block is indented by, when the student
                           // drags and indents a block
-const INDENT_OFFSET = 0;  // For aesthetic, all answer blocks are offseted to the right by
+const INDENT_OFFSET = 7;  // For aesthetic, all answer blocks are offseted to the right by
                           // 5px, so the answer tiles are not directly touching the dropzone margins
 const MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
 
@@ -45,9 +45,11 @@ function set_answer(event) {
 
 
 function update_indent(leftDiff, id, ui) {
+    console.log(ui);
     if (!ui.item.parent()[0].classList.contains('dropzone') || !ui.item.parent()[0].classList.contains('enableIndentation')){
         // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
         ui.item[0].style.marginLeft = INDENT_OFFSET + 'px';
+        console.log('Abort');
         return;
     }
     leftDiff = ui.position.left - ui.item.parent().position().left;
@@ -107,13 +109,9 @@ $( document ).ready(function() {
             // when the user stops interacting with the list
             update_indent(ui.position.left - ui.item.parent().position().left, ui.item[0].id, ui);
             set_answer(event);
-        },
-    }).disableSelection();
-    $('.dropzone').each(function () {
-        if ($(this).hasClass('enableIndentation')) {
-            // only enable grid snapping for dropzones that chooses to enable indentation
-            $(this).sortable({grid: [TABWIDTH, 1]});
         }
     });
+
+    $('.enableIndentation').sortable("option", "grid", [TABWIDTH, 1]);
     $('[data-toggle="popover"]').popover();
 });

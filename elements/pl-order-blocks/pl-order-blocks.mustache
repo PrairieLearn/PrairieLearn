@@ -2,21 +2,24 @@
     <div class="row">
         <div class="column {{dropzone_layout}}">
             <ul id="{{answer_name}}-options" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable">
-                <li class='list-group-item list-group-item-primary info-fixed'>{{source-header}}
+                <li class='list-group-item list-group-item-primary info-fixed list-group-item-header'>{{source-header}}
                     <span class="badge badge-primary badge-pill"></span>
                 </li>
                     {{#options}}
-                        <li class="list-group-item list-group-item-action" string="{{.}}" data-title="{{.}}">{{.}}</li>
+                        <li class="list-group-item shadow list-group-item-darkmode list-group-item-action" string="{{.}}" data-title="{{.}}">
+                            <div>
+                                <span>{{.}}</span>
+                            </div>
+                        </li>
                     {{/options}}
                 </ul>
         </div>
-            <div class="column {{dropzone_layout}}">
+            <div class="column  {{dropzone_layout}}">
                 <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group {{check_indentation}} pl-order-blocks-connected-sortable dropzone">
-                    <li class="list-group-item list-group-item-yellow info-fixed">{{solution-header}}
-                        <span class="badge badge-primary badge-pill"></span>
+                    <li class="list-group-item info-fixed list-group-item-header-dropzone">{{solution-header}}
                     </li>
                     {{#submission_dict}}
-                        <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;' class="list-group-item list-group-item-action">{{text}}</li>
+                        <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;' class="list-group-item list-group-item-darkmode list-group-item-action">{{text}}</li>
                     {{/submission_dict}}
                 </ul>
             </div>
@@ -28,7 +31,7 @@
 {{#submission}}
     {{^parse-error}}
         </p>
-        <ul class="list-group answer_block_container">
+        <ul class="list-group answer_block_container shadow list-group-item-darkmode">
             <li class="list-group-item"><strong>Your answer: </strong>
         {{#perfect_score}}
             <span class="badge {{color}}"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
@@ -46,7 +49,7 @@
 
     {{#parse-error}}
         <strong>Your answer: </strong>
-        <div id="pl-order-blocks-{{uuid}}" class="d-inline-block">
+        <div id="pl-order-blocks-{{uuid}}" class="d-inline-block shadow">
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
             <a role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
         </div>
@@ -55,10 +58,10 @@
 {{/submission}}
 
 {{#true_answer}}
-        <ul class="list-group answer_block_container">
+        <ul class="list-group answer_block_container shadow">
             <li class="list-group-item list-group-item-info"><strong>Correct answer ({{grading_mode}}{{check_indentation}}):</strong></li>
         {{#question_solution}}
-            <li class="list-group-item list-group-item-action">{{text}}</li>
+            <li class="list-group-item list-group-item-action list-group-item-darkmode">{{text}}</li>
         {{/question_solution}}
         </ul>
 {{/true_answer}}
