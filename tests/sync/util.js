@@ -67,7 +67,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} [timezone]
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} [userRoles]
  * @property {CourseInstanceAllowAccess[]} [allowAccess]
- * @property {Object} questionParams
+ * @property {Object} [questionParams]
  */
 
 /**
