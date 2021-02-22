@@ -26,13 +26,14 @@
             </div>
             <div class="text-right">
               <button type="submit" class="btn btn-primary">Submit and Next</button>
-              <button type="submit" class="btn btn-danger" onclick="((e) => {
-                e.preventDefault();
-                console.log('<%= urlPrefix %>');
-                const thing = '<%= urlPrefix %>';
-                // $.post('<%= urlPrefix %>/abort_grading');
-              })">Skip and Leave Grading</button>
             </div>
+        </form>
+        <form name="instance_question-manual-grade-update-form-abort" method="POST">
+          <input type="hidden" name="__action" value="abort_manual_grading">
+          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+          <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
+          <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
+          <button type="submit" class="btn btn-danger">Skip and Leave Grading</button>
         </form>
       </div>
       <div class="card-footer small">

@@ -10,7 +10,8 @@ CREATE OR REPLACE FUNCTION
         OUT question jsonb,
         OUT variant jsonb,
         OUT submission jsonb,
-        OUT grading_user jsonb
+        OUT grading_user jsonb,
+        OUT assessment_question jsonb
     )
 AS $$
 DECLARE
@@ -38,7 +39,7 @@ BEGIN
         WHERE id = temp.id;
     END IF;
 
-    SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*)
+    SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(aq.*)
     INTO question, variant, submission, grading_user
     FROM
         instance_questions AS iq

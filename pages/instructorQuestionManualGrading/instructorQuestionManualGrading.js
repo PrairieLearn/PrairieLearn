@@ -6,8 +6,10 @@ const async = require('async');
 const question = require('../../lib/question');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { error, sqlDb } = require('@prairielearn/prairielib');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-// Other cases to figure out later: grading in progress, question is broken...
+// Other cases to figure out later: question is broken...
 router.get('/', (req, res, next) => {
     async.series([
         // Should we move this block into question.js? getAndRenderVariantForGrading
@@ -66,10 +68,16 @@ router.post('/', function(req, res, next) {
         sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
 
-            const {question, variant, submission, grading_user} = result.rows[0];
-            if (!question || !variant || !submission || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
+            const {question, variant, submission, assessment_question, grading_user} = result.rows[0];
+            if (!question || !variant || !submission || assessment_question || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
 
-            Object.assign(res.locals, {question, variant, submission, grading_user});
+            Object.assign(res.locals, {
+                question,
+                variant,
+                submission,
+                assessment_question,
+                grading_user,
+            });
 
             const params = [
                 submission.id,
@@ -99,9 +107,16 @@ router.post('/', function(req, res, next) {
             });
 
         });
-    } else if (req.body.__action == 'update_manual_grade') {
-        // TODO: Update grade in DB?
-
+    } else if (req.body.__action == 'abort_manual_grading') {
+        const params = {
+            instance_question_id: res.locals.instance_question.id,
+        };
+        const url = `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`;
+    
+        sqlDb.queryOneRow(sql.instance_question_abort_manual_grading, params, function(err, result) {
+            if (ERR(err, next)) return next(error.make(500, `Cannot find instance question: ${res.locals.instance_question_id}`));
+            if (result.rowCount > 0) { res.redirect(url); }
+        });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
