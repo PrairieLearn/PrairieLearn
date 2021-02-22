@@ -146,7 +146,7 @@
                    id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
-                   data-content="<%= include('editQuestionPointsForm',
+                   data-content="<%= include('../partials/editQuestionPointsForm',
                                  {id: 'editQuestionPoints' + i_instance_question,
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
@@ -163,7 +163,7 @@
                    id="editQuestionScorePerc<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> percentage score"
-                   data-content="<%= include('editQuestionScorePercForm',
+                   data-content="<%= include('../partials/editQuestionScorePercForm',
                                  {id: 'editQuestionScorePerc' + i_instance_question,
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">

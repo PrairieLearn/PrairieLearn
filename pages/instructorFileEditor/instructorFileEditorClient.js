@@ -83,6 +83,14 @@ window.InstructorFileEditor = function(options) {
     }
     this.setEditorContents(this.originalContents);
 
+    this.editor.commands.addCommand({
+        name: 'saveAndSync',
+        bindKey: {win: 'Ctrl-s', mac: 'Command-s'},
+        exec: function() {
+            $(`#${options.saveElementId}`).click();
+        },
+    });
+
     this.editor.getSession().on('change', this.onChange.bind(this));
 };
 

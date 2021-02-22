@@ -10,16 +10,18 @@ SELECT *
 FROM workspaces
 WHERE id = $workspace_id;
 
--- BLOCK select_workspace_paths
+-- BLOCK select_workspace_data
 SELECT
-    c.path AS course_path,
-    q.qid
+    to_jsonb(w.*) AS workspace,
+    to_jsonb(q.*) AS question,
+    to_jsonb(c.*) AS course
 FROM
-    pl_courses AS c
-    JOIN questions AS q ON (q.course_id = c.id)
-    JOIN variants AS v ON (v.question_id = q.id)
+    workspaces AS w
+    JOIN variants AS v ON (v.workspace_id = w.id)
+    JOIN questions AS q ON (q.id = v.question_id)
+    JOIN pl_courses AS c ON (c.id = q.course_id)
 WHERE
-    v.workspace_id = $workspace_id;
+    w.id = $workspace_id;
 
 -- BLOCK select_workspace_state
 SELECT w.state
@@ -50,3 +52,10 @@ WHERE
     w.id = $workspace_id
 RETURNING
     heartbeat_at;
+
+-- BLOCK update_workspace_homedir_location
+UPDATE workspaces AS W
+SET
+    homedir_Location = $homedir_location
+WHERE
+    w.id = $workspace_id;
