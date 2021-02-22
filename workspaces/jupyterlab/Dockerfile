@@ -12,4 +12,9 @@ ENV NO_UPDATE_NOTIFIER=true
 ENV IPYTHONDIR=/tmp/ipython
 ENV YARN_CACHE_FOLDER=/tmp/yarn_cache
 
+USER root
+COPY install.sh /
+RUN /bin/bash /install.sh
+USER jovyan
+
 CMD ["start.sh", "jupyter", "lab"]

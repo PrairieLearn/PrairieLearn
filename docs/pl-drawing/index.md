@@ -34,9 +34,9 @@ Attribute | Type | Default | Description
 `tol` | float | `0.5*grid-size` | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
 `show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.
-`tolerance-hint` | text | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
+`tolerance-hint` | string | "The expected tolerance is 1/2 square grid." | Hint explaining tolerance used when grading objects.
 `disregard-extra-elements` | boolean | false | If true, extra elements are ignored if they match the same reference object.  Otherwise, multiple matching elements will reduce the awarded points.
-`hide-answer-panel` | boolean | true | If true, the correct answer is not displayed in the answer panel. 
+`hide-answer-panel` | boolean | true | If true, the correct answer is not displayed in the answer panel.
 
 
 ### `pl-drawing-initial` element
@@ -944,9 +944,9 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demo/drawing/simpleTutorial]: Tutorial example that includes arc vectors 
+- [demo/drawing/simpleTutorial]: Tutorial example that includes arc vectors
 
-- [demo/drawing/collarRod]: Example that includes arc vectors 
+- [demo/drawing/collarRod]: Example that includes arc vectors
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -995,7 +995,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demo/drawing/simpleTutorial]: Tutorial example that includes distributed loads 
+- [demo/drawing/simpleTutorial]: Tutorial example that includes distributed loads
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1031,9 +1031,9 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demo/drawing/graphs]: Example that includes controlled lines for graph sketching 
+- [demo/drawing/graphs]: Example that includes controlled lines for graph sketching
 
-- [demo/drawing/vMDiagrams]: Example that includes controlled lines for graph sketching 
+- [demo/drawing/vMDiagrams]: Example that includes controlled lines for graph sketching
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1071,9 +1071,9 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demo/drawing/graphs]: Example that includes controlled curved lines for graph sketching 
+- [demo/drawing/graphs]: Example that includes controlled curved lines for graph sketching
 
-- [demo/drawing/vMDiagrams]: Example that includes controlled curved lines for graph sketching 
+- [demo/drawing/vMDiagrams]: Example that includes controlled curved lines for graph sketching
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1123,7 +1123,7 @@ The element `pl-drawing-group` combines several elements as a group, to allow gr
       </pl-drawing-group>
 
       <pl-drawing-group visible="false">
-          <!-- objects here will not be displayed -->       
+          <!-- objects here will not be displayed -->
       </pl-drawing-group>
 </pl-drawing>
 ```
@@ -1208,10 +1208,15 @@ The element `pl-controls` will add the buttons that allows students to place obj
 </pl-controls>
 ```
 
+The `pl-controls` element requires only one attribute, `type`, which corresponds with an element name defined above.  When a user clicks on the control button, the element will be generated with all of its default values.  To override any default, any attribute that can be set on the element to be created (that which is specified in `type`) can be added to `pl-controls` as an optional attribute.  (See `demoDrawingCustomizedButtons` below for an example)
+
 #### Example implementations
 
-The example [demo/drawing/gradeVector] illustrates all the `pl-drawing-button`
-that are currently implemented.
+The example [demo/drawing/gradeVector] illustrates all the `pl-drawing-button`s that have grading routines implemented.
+
+The example [demo/drawing/buttons] illustrates all the `pl-drawing-button`s that can create placeable objects.
+
+The example [demo/drawing/customizedButtons] illustrates how custom objects can be generated via buttons.
 
 <img src="pl-all-buttons.png" width=70%>
 
@@ -1321,7 +1326,7 @@ This button deletes objects that were previously placed on the canvas.
 
 #### Example implementations
 
-- [demo/drawing/graphs]: Example that highlights graph sketching 
+- [demo/drawing/graphs]: Example that highlights graph sketching
 
 ### `pl-axes` element
 
@@ -1366,6 +1371,267 @@ Attribute | Type | Default | Description
 `color` | string | red | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).
 `stroke-width` | float | 4 | Set the width of the stroke.
 
+## Extension API
+
+Custom elements for `pl-drawing` can be added with [element extensions](../elementExtensions.md).  Elements are defined in two places: in serverside Python to handle generation and reading of attributes from HTML, and in clientside JavaScript to enable user interaction and serializing back to the server.  Your extension should thus contain at minimum a Python file and a JavaScript file.
+
+### Python
+
+Each element is defined as a Python class, and inherits from `BaseElement`.  You can import all relevant element functions and classes with the following:
+
+```python
+elements = pl.load_host_script('elements.py')
+```
+
+This will load the `BaseElement` class, which contains the following method definitions:
+
+```python
+class BaseElement:
+    def generate(element)
+    def is_gradable()
+    def grade(ref, student, tol, angtol)
+    def grading_name(element)
+    def validate_attributes()
+    def get_attributes()
+```
+
+Any element is free to define any of the above methods, and a description for each is given here:
+
+- `generate(element, data)`
+  Generates the representation of the element that is sent to the clientside JavaScript.  This function should parse element attributes using `prairielearn.get_x_attrib(el)` and return a dictionary that describes the element.  The exact format of this dictionary is unimportant, as only the JavaScript implementation of your element will later be using this.  `data` is a dictionary that currently contains `clientFilesUrl`, the base URL in which all client files can be loaded from.
+- `is_gradable()`
+  Returns `True` if the current element is gradable, other it returns `False` if the element is not gradable and should be skipped in the grading stage.
+- `grade(ref, student, tol, angtol)`
+  The grading method for this element, checks the `student` submission against the given `ref`erence.  This should return `True` if the element is placed correctly, and `False` otherwise.  `tol` specifies the spatial tolerance in pixels, while `angtol` specifies rotational tolerance in degrees.  The `ref` and `student` submissions will match the format given in `generate()`.
+- `grading_name(element)`
+  Returns the grading name of this element as a string.  Usually you do not need to define this unless you know what you are doing.
+- `validate_attributes()`
+  Returns `True` if this element's attributes should be validated, `False` otherwise.  It's recommended that you keep this as the default `True` unless you have a clear reason otherwise.
+- `get_attributes()`
+  Returns a list of strings representing the possible attributes that this element may have defined in the `question.html`.
+
+Here is an example definition of the `pl-point` element:
+
+```python
+class Point(BaseElement):
+    def generate(el, data):
+        color = pl.get_color_attrib(el, 'color', 'black')
+
+        return {
+            'left': pl.get_float_attrib(el, 'x1', 20),
+            'top': pl.get_float_attrib(el, 'y1', 20),
+            'radius': pl.get_float_attrib(el, 'radius', drawing_defaults['point-size']),
+            'originX': 'center',
+            'originY': 'center',
+            'fill': color,
+            'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable']
+        }
+
+    def is_gradable():
+        return True
+
+    def grade(ref, st, tol, angtol):
+        epos = np.array([st['left'], st['top']]).astype(np.float64)
+        rpos = np.array([ref['left'], ref['top']])
+        relx, rely = epos - rpos
+        if relx > tol or relx < -tol or rely > tol or rely < -tol:
+            return False
+        return True
+
+    def get_attributes():
+        return ['x1', 'y1', 'radius', 'label', 'offsetx', 'offsety', 'color']
+```
+
+Each of these classes should then be placed into a global `elements` dictionary, mapping the name of the element to its class.  This `elements` dictionary will be automatically picked up by `pl-drawing` when the extension is loaded:
+
+```python
+elements = {}
+elements['pl-point'] = Point
+```
+
+### JavaScript
+
+The clientside JavaScript portion of `pl-drawing` is built on [Fabric.js](http://fabricjs.com/docs/), any elements should therefore be built on top of Fabric's shapes and those that are defined in the included [`mechanicsObjects.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-drawing/mechanicsObjects.js) file.
+
+Similarly to the Python code, each element inherits from a base JavaScript class:
+
+```javascript
+class PLDrawingBaseElement {
+    static generate(canvas, options, submittedAnswer);
+    static button_press(canvas, options, submittedAnswer);
+    static get_button_icon(options);
+    static get_button_tooltip(options);
+}
+```
+
+Any element is free to define any of the above methods, and a description for each is given here:
+
+- `generate(canvas, options, submittedAnswer)`
+  Creates a Fabric.js representation of the element and places it onto the canvas.  The options dictionary that is passed in
+  is the same one that is generated in the Python `generate()` function.  This function should also register the element with
+  the answer state (see example below, and definition of answer state class).
+- `button_press(canvas, options, submittedAnswer)`
+  This function will be run whenever the sidebar control button for this element is pressed.  By default this will call `generate()`,
+  so in most cases you do not need to implement this.
+- `get_button_icon(options)`
+  Returns the path as a string for this button's icon relative to `clientFilesElement` (or `clientFilesExtension`).  By default, this will resolve to the same filename as the element's name, so if your image has the same name you do not need to implement this.
+- `get_button_tooltip(options)`
+  Returns the tooltip that is displayed when the mouse hovers over this element's button.
+
+Here is an example definition of the `pl-point` element:
+
+```javascript
+class Point extends PLDrawingBaseElement {
+    static generate(canvas, options, submittedAnswer) {
+        let obj = new fabric.Circle(options);
+
+        /* Disable all of the fabric resizing and rotating buttons for this element */
+        obj.setControlVisible('bl', false);
+        obj.setControlVisible('tl', false);
+        obj.setControlVisible('br', false);
+        obj.setControlVisible('tr', false);
+        obj.setControlVisible('mt', false);
+        obj.setControlVisible('mb', false);
+        obj.setControlVisible('ml', false);
+        obj.setControlVisible('mr', false);
+        obj.setControlVisible('mtr', false);
+
+        /* Generate a numeric ID for this element if it does not have one yet.  Each element
+           is identified by a unique ID, this is important for answer submissions. */
+        if (!('id' in obj)) {
+            obj.id = window.PLDrawingApi.generateID();
+        }
+        canvas.add(obj);
+
+        /* Selectable is automatically set to true if it is spawned with a button.
+           If the object is not selectable (i.e. it is static and part of the background),
+           then we do not need to register it with the submitted answer. */
+        if (options.selectable) {
+            /* Register the object with the submitted answer state */
+            submittedAnswer.registerAnswerObject(options, obj);
+        }
+
+        return obj;
+    }
+
+    static get_button_tooltip() {
+        return 'Add point';
+    }
+};
+```
+
+Afterwards, all elements must be explicitly registered with the `pl-drawing` element before they can be used.  This can be achieved with the following code snippet:
+
+```javascript
+/* This should exactly match the folder in elementExtensions/ */
+const my_extension_name = 'extension';
+const my_extensions = {
+    'pl-point': Point
+};
+PLDrawingApi.registerElements(my_extension_name, my_extension);
+```
+
+#### JavaScript API
+
+The `pl-drawing` element has some helper functions pre-defined and can be accessed with `PLDrawingApi`.  A list of them is given here:
+
+```javascript
+window.PLDrawingApi = {
+    /**
+     * Generates a new numeric ID for a submission object.
+     * Each submitted object is uniquely identified by its ID.
+     */
+    generateID: function();
+
+    /**
+     * Register a dictionary of elements.  These should map element names
+     * to a static class corresponding to the element itself.
+     * @param extensionName Name of the extension/group of elements.
+     * @param dictionary Dictionary of elements to register.
+     */
+    registerElements: function(extensionName, dictionary);
+
+    /**
+     * Generate an element from an options dictionary.
+     * @param canvas Canvas to create the element on.
+     * @param options Element options.  Must contain a 'type' key.
+     * @param submittedAnswer Answer state object.
+     */
+    createElement: function(canvas, options, submittedAnswer);
+
+    /**
+     * Get an element definition by its name.
+     * @param name Name of the element to look up.
+     * @returns The element, if found.  Silently fails with the base element otherwise.
+     */
+    getElement: function(name);
+
+    /**
+     * Restore the drawing canvas state from a submitted answer.
+     * @param canvas Canvas to restore state onto.
+     * @param submittedAnswer Answer state to restore from.
+     */
+    restoreAnswer: function(canvas, submittedAnswer);
+
+    /**
+     * Main entrypoint for the drawing element.
+     * Creates canvas at a given root element.
+     * @param root_elem DIV that holds the canvas.
+     * @param elem_options Any options to give to the element
+     * @param existing_answer_submission Existing submission to place on the canvas.
+     */
+    setupCanvas: function(root_elem, elem_options, existing_answer_submission);
+}
+```
+
+The definition for the answer drawing state (`submittedAnswer`) is given here.  In most cases, only `registerAnswerObject()` is needed, but `updateObject()` may be used if your object is sufficiently complex.  (See `pl-controlled-line` in `mechanicsObjects.js` for an example of this.)
+
+```javascript
+class PLDrawingAnswerState {
+    /**
+     * Update an object in the submitted answer state.
+     * @param object Object to update.
+     */
+    updateObject(object);
+
+    /**
+     * Find an object by its ID.
+     * @param id Numeric id to search by.
+     * @returns The object, if found.  Null otherwise.
+     */
+    getObject(id);
+
+    /**
+     * Remove an object from the submitted answer.
+     * @param object The object to delete, or its ID.
+     */
+    deleteObject(object);
+
+    /**
+     * Registers an object to save to the answer when modified.
+     * This maintains a "submission" object that is separate from the canvas object.
+     * By default, all properties from the canvas object are copied to the submission object.
+     *
+     * @options options Options that were passed to the 'generate()' function.
+     * @options object Canvas object that was created and should be saved.
+     * @modifyHandler {optional} Function that is run whenever the canvas object is modified.
+     * This has the signature of (submitted_object, canvas_object).
+     * Any properties that should be saved should be copied from canvas_object into
+     * submitted_object.  If this is omitted, all properties from the canvas object
+     * are copied as-is.
+     * @removeHandler {optional} Function that is run whenever the canvas object is deleted.
+     */
+    registerAnswerObject(options, object, modifyHandler, removeHandler);
+}
+```
+
+### Button Icons
+
+Button icons should be 38px&times;38px `.svg` files and placed in the `clientFilesExtension` directory of your extension.  If you do not have an SVG editor installed, [Inkscape](https://inkscape.org/) can produce reasonable results.
+
+These button icons can then be attached to your elements by setting the `get_button_icon()` function in your element's JavaScript class.  This function returns a string containing the filename of the button icon _relative to `clientFilesElement`_.
+
 <!-- Reference links -->
 [demo/drawing/liftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/liftingMechanism
 [demo/drawing/pulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/pulley
@@ -1374,4 +1640,6 @@ Attribute | Type | Default | Description
 [demo/drawing/collarRod]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/collarRod
 [demo/drawing/simpleTutorial]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/simpleTutorial
 [demo/drawing/graphs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/graphs
-[demo/drawing/gradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/gradeVector 
+[demo/drawing/gradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/gradeVector
+[demo/drawing/buttons](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/buttons)
+[demo/drawing/customizedButtons](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/customizedButtons)

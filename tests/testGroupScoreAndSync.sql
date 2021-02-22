@@ -28,13 +28,13 @@ SELECT
     *
 FROM 
     group_configs AS gc
-    LEFT JOIN groups AS gr ON (gr.group_config_id = gc.id)
-    LEFT JOIN group_users AS gu ON (gu.group_id = gr.id)
+    LEFT JOIN groups AS g ON (g.group_config_id = gc.id)
+    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
 WHERE 
     gc.assessment_id = $assessment_id 
     AND gc.deleted_at IS NULL 
-    AND gr.deleted_at IS NULL
-    AND gr.name = $groupname;
+    AND g.deleted_at IS NULL
+    AND g.name = $group_name;
 
 -- BLOCK select_all_assessment_instance
 SELECT
