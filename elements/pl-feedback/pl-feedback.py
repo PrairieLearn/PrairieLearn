@@ -1,13 +1,11 @@
 import prairielearn as pl
 import lxml.html
-from html import escape, unescape
 import chevron
-import os
 import markdown
 
-LANGUAGE_DEFAULT = "markdown"
-FIELD_DEFAULT = "manual"
-PROMPT_DEFAULT = "Feedback from course staff"
+LANGUAGE_DEFAULT = 'markdown'
+FIELD_DEFAULT = 'manual'
+PROMPT_DEFAULT = 'Feedback from course staff'
 
 
 def prepare(element_html, data):
