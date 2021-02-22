@@ -65,6 +65,7 @@ code.user-output {
 
 .answer_block_container {
     display: inline-block;
+    border: 1px solid #BDBDBD;
 }
 
 li.list-group-item {

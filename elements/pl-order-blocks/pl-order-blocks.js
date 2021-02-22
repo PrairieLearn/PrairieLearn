@@ -109,9 +109,9 @@ $( document ).ready(function() {
             // when the user stops interacting with the list
             update_indent(ui.position.left - ui.item.parent().position().left, ui.item[0].id, ui);
             set_answer(event);
-        }
+        },
     });
 
-    $('.enableIndentation').sortable("option", "grid", [TABWIDTH, 1]);
+    $('.enableIndentation').sortable('option', 'grid', [TABWIDTH, 1]);
     $('[data-toggle="popover"]').popover();
 });
