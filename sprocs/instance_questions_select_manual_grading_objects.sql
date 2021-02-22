@@ -5,8 +5,8 @@ DROP FUNCTION IF EXISTS instance_questions_select_manual_grading_objects(bigint,
 
 CREATE OR REPLACE FUNCTION
     instance_questions_select_manual_grading_objects(
-        IN iq_id bigint,
-        IN user_id bigint,
+        IN arg_instance_question_id bigint,
+        IN arg_user_id bigint,
         OUT question jsonb,
         OUT variant jsonb,
         OUT submission jsonb,
@@ -25,16 +25,16 @@ BEGIN
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE iq.id = iq_id
+    WHERE iq.id = arg_instance_question_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1
     FOR UPDATE;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no submission found for instance question: %', iq_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no submission found for instance question: %', arg_instance_question_id; END IF;
 
     IF temp.manual_grading_user IS NULL THEN
         UPDATE submissions
-        SET manual_grading_user = user_id
+        SET manual_grading_user = arg_user_id
         WHERE id = temp.id;
     END IF;
 
@@ -47,7 +47,7 @@ BEGIN
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
         JOIN users AS u ON (u.user_id = s.manual_grading_user)
-    WHERE iq.id = iq_id
+    WHERE iq.id = arg_instance_question_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
