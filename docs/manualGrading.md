@@ -22,14 +22,10 @@ Any [elements](elements/) can be used in the [`question.html`](question.md#quest
 To show manual feedback the `question.html` file should contain an element to display the feedback next to student submissions. A basic template for this is:
 ```html
 <pl-submission-panel>
-  {{#feedback.manual}}
-  <p>Feedback from course staff:</p>
-  <markdown>{{{feedback.manual}}}</markdown>
-  {{/feedback.manual}}
+  <pl-feedback></pl-feedback>
 </pl-submission-panel>
 ```
-
-This example template formats the feedback as Markdown.
+This example template formats the feedback as Markdown by default. For more details, check the documentation for [`pl-feedback`](elements.md#pl-feedback-element).
 
 
 ## Downloading the students' submitted answers

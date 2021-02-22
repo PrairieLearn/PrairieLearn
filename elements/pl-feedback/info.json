@@ -1,0 +1,8 @@
+{
+    "controller": "pl-feedback.py",
+    "dependencies": {
+        "elementStyles": [
+            "pl-feedback.css"
+        ]
+    }
+}

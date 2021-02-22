@@ -74,6 +74,7 @@ The following **Conditional** elements are available:
 - [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
+- [`pl-feedback`](#pl-feedback-element): Displays feedback text from manual grading.
 
 Note: PrairieLearn Elements listed next have been
 **deprecated**. These elements are still supported for backwards
@@ -1709,6 +1710,37 @@ It expects results to follow [the reference schema for external grading results]
 #### See also
 
 - [External Grading Reference Schema](externalGrading.md#grading-result)
+
+
+-----
+
+
+### `pl-feedback` element
+
+Displays grader-submitted feedback from manual grading or grade uploads. This element is only shown if there is any feedback; if there is no feedback, no output will be created.
+
+#### Sample element
+
+```html
+<pl-feedback></pl-feedback>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`field` | string | `manual` | Which `data["feedback"]` field should be printed.
+`prompt` | boolean | "Feedback from course staff" | The header text to be shown
+`language` | boolean | `markdown` | The language to be used to interpret the feedback. Either `markdown` or `html`.
+
+#### Example Implementations
+
+- [demo/autograder/codeUpload]
+- [demo/markdownEditorLivePreview]
+
+#### See also
+
+- [Manual Grading](manualGrading.md)
 
 ----------
 

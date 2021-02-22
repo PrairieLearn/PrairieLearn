@@ -1,0 +1,7 @@
+.pl-code-highlighted-line {
+    margin-left: -0.5em;
+    margin-right: -0.5em;
+    padding-right: 0.5em;
+    padding-left: 0.5em;
+    display: block;
+}
