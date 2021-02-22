@@ -35,7 +35,7 @@ def prepare(element_html, data):
     incorrect_answers = []
     index = 0
     for child in element:
-        if child.tag in ['pl-answer', 'pl_answer', 'pl-feedback']:
+        if child.tag in ['pl-answer', 'pl_answer', 'pl-feedback' ]:
             pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
             correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child)
