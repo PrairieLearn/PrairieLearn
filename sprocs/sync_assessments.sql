@@ -167,13 +167,35 @@ BEGIN
 
         -- if it is a group work try to insert a group_config
         IF (valid_assessment.data->>'group_work')::boolean THEN
-            INSERT INTO group_configs
-                (course_instance_id,
-                assessment_id
+            INSERT INTO group_configs (
+                course_instance_id,
+                assessment_id,
+                maximum,
+                minimum,
+                student_authz_create,
+                student_authz_join,
+                student_authz_leave
             ) VALUES (
                 syncing_course_instance_id,
-                new_assessment_id
-            ) ON CONFLICT DO NOTHING;
+                new_assessment_id,
+                (valid_assessment.data->>'group_max_size')::bigint,
+                (valid_assessment.data->>'group_min_size')::bigint,
+                (valid_assessment.data->>'student_group_create')::boolean,
+                (valid_assessment.data->>'student_group_join')::boolean,
+                (valid_assessment.data->>'student_group_leave')::boolean
+            ) ON CONFLICT (assessment_id)
+            DO UPDATE
+            SET 
+                maximum = EXCLUDED.maximum,
+                minimum = EXCLUDED.minimum,
+                student_authz_create = EXCLUDED.student_authz_create,
+                student_authz_join = EXCLUDED.student_authz_join,
+                student_authz_leave = EXCLUDED.student_authz_leave,
+                deleted_at = NULL;
+        ELSE
+            UPDATE group_configs
+            SET deleted_at = now()
+            WHERE assessment_id = new_assessment_id;
         END IF;
 
         -- Now process all access rules for this assessment
