@@ -28,7 +28,7 @@
           <div class="col-lg-12 col-sm-12">
             <div class="card mb-4">
               <div class="card-header bg-warning text-blue">
-                <% if (authn_user.uid === user.uid) { %>
+                <% if (authn_user.id === user.id) { %>
                   You are currently grading this question
                 <% } else { %>
                   <%=  user.name + ' (' + user.uid + ')'%> is currently grading this question
