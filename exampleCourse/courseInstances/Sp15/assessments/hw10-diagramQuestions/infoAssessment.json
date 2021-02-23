@@ -36,11 +36,6 @@
                     "id": "demo/diagram/testDiagram",
                     "points": 1,
                     "maxPoints": 5
-                },
-                {
-                    "id": "demo/randomPlot",
-                    "points": 1,
-                    "maxPoints": 5
                 }
             ]
         }
