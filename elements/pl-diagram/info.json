@@ -1,0 +1,11 @@
+{
+    "controller": "pl-diagram.py",
+    "dependencies": {
+        "elementStyles": [
+            "pl-diagram.css"
+        ],
+        "elementScripts": [
+            "diagram-editor.js"
+        ]
+    }
+}
