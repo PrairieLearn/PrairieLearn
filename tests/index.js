@@ -25,6 +25,7 @@ require('./testInstructorAssessment');
 require('./testInstructorAssessmentDownloads');
 require('./testHomework');
 require('./testExam');
+require('./testQuestionParams');
 require('./testRealTimeGradingDisabled');
 require('./testShowClosedAssessmentScore');
 require('./testGradeRate');
@@ -53,3 +54,4 @@ require('./sync');
 require('./testGroupGenerateAndDelete');
 require('./testGroupStudent');
 require('./testGroupScoreAndSync');
+

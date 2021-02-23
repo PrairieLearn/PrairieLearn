@@ -1,0 +1,66 @@
+{
+    "uuid": "41499e02-127e-4370-befd-6f071ea98f42",
+    "type": "Homework",
+    "title": "Homework to test question parameters",
+    "set": "Homework",
+    "number": "7",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100,
+            "timeLimitMin": 50
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "startDate": "1900-07-07T23:59:59",
+            "endDate": "2300-07-10T23:59:59",
+            "timeLimitMin": 50
+        }
+    ],
+    "zones": [
+        {
+            "title": "Parameters inherited from course instance",
+            "questions": [
+                {"id": "addNumbersParameterized/1", "points": 1}
+            ]
+        },
+        {
+            "title": "Parameters inherited from zone",
+            "questionParams": {
+                "lower_bound": 0,
+                "upper_bound": 10
+            },
+            "questions": [
+                {"id": "addNumbersParameterized/2", "points": 1}
+            ]
+        },
+        {
+            "title": "Parameters inherited from alternatives group",
+            "questions": [
+                {
+                    "questionParams": {
+                        "lower_bound": 10,
+                        "upper_bound": 20
+                    },
+                    "alternatives": [{"id": "addNumbersParameterized/3", "points": 1}]
+                }
+            ]
+        },
+        {
+            "title": "Parameters inherited from assessment",
+            "questions": [
+                {
+                    "id": "addNumbersParameterized/4", 
+                    "points": 1,
+                    "questionParams": {
+                        "lower_bound": 20,
+                        "upper_bound": 30
+                    }
+                }
+            ]
+        }
+    ],
+    "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+}
