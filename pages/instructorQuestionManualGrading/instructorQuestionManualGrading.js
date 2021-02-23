@@ -111,7 +111,7 @@ router.post('/', function(req, res, next) {
         const params = {
             instance_question_id: res.locals.instance_question.id,
         };
-        const url = `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`;
+        const url = `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`;
     
         sqlDb.queryOneRow(sql.instance_question_abort_manual_grading, params, function(err, result) {
             if (ERR(err, next)) return next(error.make(500, `Cannot find instance question: ${res.locals.instance_question_id}`));

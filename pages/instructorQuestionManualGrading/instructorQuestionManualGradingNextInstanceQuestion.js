@@ -17,7 +17,7 @@ router.get('/', (req, res, next) => {
 
         // If we have no more instance questions with gradable submissions, then redirect back to manual grading page
         if (!result.rows[0].instance_question) {
-            res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`);
+            res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
             return;
         }
         const instance_question_id = result.rows[0].instance_question.id;
