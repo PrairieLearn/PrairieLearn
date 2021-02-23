@@ -1,0 +1,49 @@
+{
+    "uuid": "7fbf0360-d301-4083-aecf-32895718208b",
+    "type": "Homework",
+    "title": "Diagram examples",
+    "set": "Homework",
+    "number": "10",
+    "allowAccess": [
+        {
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2019-01-18T00:00:01",
+            "endDate": "2019-01-28T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2019-01-28T00:00:01",
+            "endDate": "2019-01-30T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 0,
+            "startDate": "2019-01-30T00:00:01"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Example zone 1",
+            "bestQuestions": 3,
+            "questions": [
+                {
+                    "id": "demo/diagram/testDiagram",
+                    "points": 1,
+                    "maxPoints": 5
+                },
+                {
+                    "id": "demo/randomPlot",
+                    "points": 1,
+                    "maxPoints": 5
+                }
+            ]
+        }
+    ],
+    "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+}
