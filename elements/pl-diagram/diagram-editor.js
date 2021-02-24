@@ -400,15 +400,17 @@ DiagramEditor.prototype.initializeEditor = function()
 DiagramEditor.prototype.save = function(data, draft, elt)
 {
 	this.done(data, draft, elt);
+
 };
 
 /**
  * Invoked after save.
  */
-DiagramEditor.prototype.done = function()
+DiagramEditor.prototype.done = function(data)
 {
 	// hook for subclassers
-	parseDiagram(3);
+	parseDiagram(data);
+	
 };
 
 /**
