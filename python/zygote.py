@@ -20,6 +20,18 @@ from inspect import signature
 
 saved_path = copy.copy(sys.path)
 
+drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
+
+# If we're configured to drop privileges, matplotlib won't be able to write to
+# its default config/cache dir. To keep it fast, we'll create a cache dir for
+# it and provide it with config via the `MPLCONFIGDIR` environment variable.
+if drop_privileges:
+    config_dir_path = '/tmp/matplotlib'
+    oldmask = os.umask(000)
+    os.mkdir(config_dir_path, mode=0o777)
+    os.umask(oldmask)
+    os.environ['MPLCONFIGDIR'] = config_dir_path
+
 # pre-loading imports
 sys.path.insert(0, os.path.abspath('../question-servers/freeformPythonLib'))
 import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib
@@ -168,8 +180,6 @@ def terminate_worker(signum, stack):
 
 signal.signal(signal.SIGTERM, terminate_worker)
 signal.signal(signal.SIGINT, terminate_worker) # Ctrl-C case
-
-drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 
 with open(4, 'w', encoding='utf-8') as exitf:
     while True:
