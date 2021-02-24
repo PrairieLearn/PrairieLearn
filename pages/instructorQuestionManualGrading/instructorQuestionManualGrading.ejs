@@ -23,30 +23,15 @@
     <div id="content" class="container">
       <div class="row">
 
-        <% if (typeof submission != null) { %>
-          <% if (submission.score == null && submission.manual_grading_user != null) { %>
-          <div class="col-lg-12 col-sm-12">
-            <div class="card mb-4">
-              <div class="card-header bg-warning text-blue">
-                <% if (authn_user.id === user.id) { %>
-                  You are currently grading this question
-                <% } else { %>
-                  <%=  user.name + ' (' + user.uid + ')'%> is currently grading this question
-                <% } %>
-              </div>
+        <% if (submission.score == null && submission.manual_grading_user != grading_user.user_id) { %>
+        <div class="col-lg-12 col-sm-12">
+          <div class="card mb-4">
+            <div class="card-header bg-warning text-blue">
+              <%=  grading_user.name + ' (' + grading_user.uid + ')'%> is currently grading this question
             </div>
           </div>
-          <% } else { %>
-          <div class="col-lg-12 col-sm-12">
-            <div class="card mb-4">
-              <div class="card-header bg-success text-blue">
-                Question graded by <%=  user.name + ' (' + user.uid + ')'%>
-              </div>
-            </div>
-          </div>
-          <%} %>
+        </div>
         <% } %>
-
 
           <div class="col-lg-9 col-sm-12">
               <%- include('../partials/question', {question_context: 'instructor'}); %>
