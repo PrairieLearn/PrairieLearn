@@ -7,11 +7,9 @@ SELECT
     admin_assessment_question_number(aq.id) as number,
     ag.number AS alternative_group_number,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
-    (SELECT COUNT(DISTINCT iq.id)
+    (SELECT COUNT(s.id)
      FROM 
          submissions AS s
-         JOIN variants AS v ON (s.variant_id = v.id)
-         JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
      WHERE (s.auth_user_id, s.date) 
         IN (
              SELECT s.auth_user_id, MAX(s.date)
@@ -23,13 +21,10 @@ SELECT
                  iq.assessment_question_id = aq.id
              GROUP BY s.auth_user_id
          )
-         AND manual_grading_user IS NOT NULL
-         AND graded_at IS NOT NULL) AS num_graded_submissions,
-    (SELECT COUNT(DISTINCT iq.id)
+         AND graded_at IS NULL) AS num_ungraded,
+    (SELECT COUNT(s.id)
      FROM 
          submissions AS s
-         JOIN variants AS v ON (s.variant_id = v.id)
-         JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
      WHERE (s.auth_user_id, s.date) 
         IN (
              SELECT s.auth_user_id, MAX(s.date)
@@ -41,8 +36,7 @@ SELECT
                  iq.assessment_question_id = aq.id
              GROUP BY s.auth_user_id
          )
-         AND manual_grading_user IS NULL
-         AND graded_at IS NULL) AS num_ungraded_submissions,
+         AND graded_at IS NOT NULL) AS num_graded,
     (SELECT array_agg(DISTINCT u.uid)
      FROM
          instance_questions AS iq
