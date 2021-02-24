@@ -40,7 +40,7 @@ BEGIN
     END IF;
 
     SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(aq.*)
-    INTO question, variant, submission, grading_user
+    INTO question, variant, submission, grading_user, assessment_question
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
