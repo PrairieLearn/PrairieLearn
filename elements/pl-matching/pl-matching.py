@@ -4,7 +4,6 @@ import random
 import math
 import chevron
 
-
 WEIGHT_DEFAULT = 1
 FIXED_ANSWER_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
@@ -17,10 +16,35 @@ HIDE_SCORE_BADGE_DEFAULT = False
 BLANK_DEFAULT = False
 BLANK_ANSWER = ' '
 NOTA_DEFAULT = False
+COUNTER_TYPE_DEFAULT = 'decimal'
 
 
 def get_form_name(answers_name, index):
     return f'{answers_name}-dropdown-{index}'
+
+
+def get_counter(i, counter_type):
+    """Converts an integer counter to the specified CSS counter type"""
+    if counter_type == 'lower-alpha':
+        return chr(ord('a') + i - 1)
+    elif counter_type == 'upper-alpha':
+        return chr(ord('A') + i - 1)
+    elif counter_type == 'decimal':
+        return str(i)
+    else:
+        raise Exception('Illegal counter_type in pl-matching element.')
+
+
+def legal_answer(answer, counter_type, options):
+    """Checks that the given answer is within the range of the given counter type."""
+    if counter_type == 'lower-alpha':
+        return 'a' <= answer <= chr(ord('a') + len(options))
+    elif counter_type == 'upper-alpha':
+        return 'A' <= answer <= chr(ord('A') + len(options))
+    elif counter_type == 'decimal':
+        return 1 <= answer <= len(options)
+    else:
+        raise Exception('Illegal counter_type in pl-matching element.')
 
 
 def get_select_options(options_list, selected_value):
@@ -73,7 +97,7 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['fixed-order', 'number-answers', 'number-options', 'none-of-the-above', 'blank']
+    optional_attribs = ['fixed-order', 'number-answers', 'number-options', 'none-of-the-above', 'blank', 'counter-type']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
     options, answers = categorize_matches(element, data)
@@ -138,6 +162,7 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     display_answers, display_options = data['params'].get(name)
     submitted_answers = data['submitted_answers']
+    counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
 
     for i in range(len(display_answers)):
         expected_html_name = get_form_name(name, i)
@@ -150,8 +175,7 @@ def parse(element_html, data):
             data['format_errors'][expected_html_name] = 'No answer was submitted.'
         else:
             try:
-                int_val = int(student_answer)
-                if int_val not in range(1, len(display_options) + 1):
+                if not legal_answer(student_answer, counter_type, display_options):
                     data['format_errors'][expected_html_name] = 'The submitted answer is invalid.'
             except Exception:
                 data['format_errors'][expected_html_name] = 'The submitted answer is invalid.'
@@ -162,13 +186,13 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     display_answers, display_options = data['params'].get(name)
     submitted_answers = data['submitted_answers']
-    dropdown_options = [str(i + 1) for i in range(len(display_options))]
-
+    counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     hide_score_badge = pl.get_boolean_attrib(element, 'hide-score-badge', HIDE_SCORE_BADGE_DEFAULT)
     blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
     editable = data['editable']
 
+    dropdown_options = [get_counter(i + 1, counter_type) for i in range(len(display_options))]
     if blank_start:
         dropdown_options.insert(0, BLANK_ANSWER)
 
@@ -189,7 +213,7 @@ def render(element_html, data):
         for i, answer in enumerate(display_answers):
             form_name = get_form_name(name, answer['key'])
             student_answer = submitted_answers.get(form_name, None)
-            correct_answer = str(data['correct_answers'].get(name)[i])
+            correct_answer = get_counter(data['correct_answers'].get(name)[i], counter_type)
 
             answer_html = {
                 'html': answer['html'].strip(),
@@ -214,8 +238,21 @@ def render(element_html, data):
             'name': name,
             'uuid': pl.get_uuid(),
             'answers': answerset,
-            'options': optionset
+            'options': optionset,
+            'counter_type': counter_type,
         }
+
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partial'] = math.floor(score * 100)
+                else:
+                    html_params['incorrect'] = True
+            except Exception:
+                raise ValueError('invalid score' + score)
 
         with open('pl-matching.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -228,7 +265,7 @@ def render(element_html, data):
             for i, answer in enumerate(display_answers):
                 form_name = get_form_name(name, answer['key'])
                 student_answer = submitted_answers.get(form_name, None)
-                correct_answer = str(data['correct_answers'].get(name)[i])
+                correct_answer = get_counter(data['correct_answers'].get(name)[i], counter_type)
 
                 parse_error = data['format_errors'].get(form_name, None)
                 display_score_badge = parse_error is None and score is not None and show_answer_feedback
@@ -256,7 +293,8 @@ def render(element_html, data):
                 'answers': answerset,
                 'options': optionset,
                 'display_score_badge': score is not None,
-                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT),
+                'counter_type': counter_type,
             }
 
             if html_params['display_score_badge']:
@@ -280,11 +318,11 @@ def render(element_html, data):
             answerset = []
             for i, answer in enumerate(display_answers):
                 form_name = get_form_name(name, answer['key'])
-                correct_answer = str(correct_answer_list[i])
+                correct_answer = correct_answer_list[i]
 
                 answer_html = {
                     'html': answer['html'].strip(),
-                    'options': [{'value': correct_answer}]
+                    'options': [{'value': get_counter(correct_answer, counter_type)}],
                 }
                 answerset.append(answer_html)
 
@@ -300,7 +338,8 @@ def render(element_html, data):
                 'answer': True,
                 'answers': answerset,
                 'options': optionset,
-                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT),
+                'counter_type': counter_type,
             }
             with open('pl-matching.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
@@ -313,7 +352,7 @@ def grade(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
-
+    counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
     display_answers, _ = data['params'][name]
     number_answers = len(display_answers)
 
@@ -325,7 +364,7 @@ def grade(element_html, data):
     for i in range(number_answers):
         expected_html_name = get_form_name(name, i)
         student_answer = submitted_answers.get(expected_html_name, None)
-        correct_answer = str(correct_answers[i])
+        correct_answer = get_counter(correct_answers[i], counter_type)
         if student_answer == correct_answer:
             num_correct += 1
 

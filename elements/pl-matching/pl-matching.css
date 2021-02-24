@@ -32,5 +32,4 @@
     padding-right: 0.5em;
     font-weight: bold;
     text-align: right;
-    content: counter(item) ".";
-  }
+}
