@@ -1,0 +1,37 @@
+<% if (authz_data.has_instructor_view || authz_data.has_course_permission_view) { %>
+    <div class="card mb-4 border-success">
+      <div class="card-header bg-success">Grading Panel</div>
+      <div class="card-body">
+        <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
+            <blockquote style="color: red">Submission updated</blockquote>
+        <% } %>
+        <form name="instance_question-manual-grade-update-form" method="POST">
+            <input type="hidden" name="__action" value="add_manual_grade">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
+            <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
+            <div class="form-group">
+              <label for="submissionScore">Score:</label>
+              <div class="input-group">
+                <input type="number" min="0" max="100" step="5" class="form-control" id="submissionScore" name="submission_score" value="<%= score_perc %>" aria-describedby="scoreHelpBlock"/>  
+                <span class="input-group-addon">%</span>
+              </div>
+              <small id="scoreHelpBlock" class="form-text text-muted">
+                This percentage will override the most recent submission score.
+              </small>
+            </div>
+            <div class="form-group">
+              <label for="submission-feedback">Feedback:</label>
+              <textarea name="submission_note" class="form-control" id="submission-feedback"><% if (submission.feedback) {%><%= submission.feedback.manual %><% } %></textarea>
+            </div>
+            <div class="text-right">
+              <button type="submit" class="btn btn-primary">Submit and Next</button>
+            </div>
+        </form>
+      </div>
+      <div class="card-footer small">
+          This box is not visible to students.
+      </div>
+    </div>
+<% } %>
+    

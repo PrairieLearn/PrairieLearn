@@ -33,6 +33,7 @@ pages:
   - 'External grading': 'externalGrading.md'
   - 'Python autograder': 'python-grader/index.md'
   - 'C autograder': 'c-grader/index.md'
+  - 'Java autograder': 'java-grader/index.md'
   - 'Workspaces': 'workspaces/index.md'
   - 'Manual grading': 'manualGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'

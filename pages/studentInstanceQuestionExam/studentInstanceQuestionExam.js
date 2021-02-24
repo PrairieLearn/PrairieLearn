@@ -40,7 +40,8 @@ function processSubmission(req, res, callback) {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
         if (req.body.__action == 'grade') {
-            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            const overrideRateLimits = false;
+            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
@@ -72,7 +73,8 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'timeLimitFinish') {
         const closeExam = true;
-        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
+        const overrideGradeRate = false;
+        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, overrideGradeRate, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });

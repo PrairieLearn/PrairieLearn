@@ -104,12 +104,14 @@ module.exports = {
             'instance_questions_ensure_open.sql',
             'instance_questions_select_variant.sql',
             'instance_questions_update_score.sql',
+            'instance_questions_next_allowed_grade.sql',
             'submissions_lock.sql',
             'submissions_select.sql',
             'submissions_insert.sql',
             'submissions_update_parsing.sql',
             'assessment_instances_update.sql',
             'instance_questions_update_in_grading.sql',
+            'instance_question_select_manual_grading_objects.sql',
             'assessment_instances_close.sql',
             'grading_job_status.sql',
             'grading_jobs_lock.sql',
@@ -177,6 +179,7 @@ module.exports = {
             'workspace_hosts_drain_extra.sql',
             'workspace_hosts_find_terminable.sql',
             'chunks_insert.sql',
+            'group_users_insert.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

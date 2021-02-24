@@ -3,7 +3,6 @@ const async = require('async');
 const _ = require('lodash');
 const fs = require('fs-extra');
 const path = require('path');
-const util = require('util');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
@@ -21,6 +20,7 @@ const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
+const assets = require('../lib/assets');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -136,14 +136,13 @@ module.exports = {
     },
 
     async loadElementsForCourseAsync(course) {
-        if (courseElementsCache[course.id] !== undefined &&
-            courseElementsCache[course.id].commit_hash === course.commit_hash) {
+        if (courseElementsCache[course.id] !== undefined
+            && courseElementsCache[course.id].commit_hash
+            && courseElementsCache[course.id].commit_hash === course.commit_hash) {
             return courseElementsCache[course.id].data;
         }
 
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        await chunks.ensureChunksForCourseAsync(course.id, [{'type': 'elements'}, {'type': 'elementExtensions'}]);
-
         const elements = await module.exports.loadElementsAsync(path.join(coursePath, 'elements'), 'course');
         courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};
         return elements;
@@ -218,12 +217,14 @@ module.exports = {
     },
 
     async loadExtensionsForCourseAsync(course) {
-        if (courseExtensionsCache[course.id] !== undefined &&
-            courseExtensionsCache[course.id].commit_hash === course.commit_hash) {
+        if (courseExtensionsCache[course.id] !== undefined
+            && courseExtensionsCache[course.id].commit_hash
+            && courseExtensionsCache[course.id].commit_hash === course.commit_hash) {
             return courseExtensionsCache[course.id].data;
         }
 
-        let extensions = await module.exports.loadExtensionsAsync(path.join(course.path, 'elementExtensions'));
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        let extensions = await module.exports.loadExtensionsAsync(path.join(coursePath, 'elementExtensions'));
         courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
         return extensions;
     },
@@ -235,28 +236,6 @@ module.exports = {
     flushElementCache: function() {
         courseElementsCache = {};
         courseExtensionsCache = {};
-    },
-
-    /**
-     * Reloads all element files from a course.
-     * @param {string} courseDir
-     * @param {any} courseId
-     */
-    reloadElementsForCourse: async function(courseDir, courseId) {
-        let hash = null;
-        try {
-            hash = await courseUtil.getOrUpdateCourseCommitHashAsync({'id': courseId, 'path': courseDir});
-        } catch (err) {
-            /* If we can't get a course hash, this likely isn't a Git repo so fail silently.
-               This usually happens when we're running tests and have manually created a course directory structure */
-            logger.debug(`Could not load course commit hash for course ${courseId} (${courseDir}) - ${err}`);
-        }
-
-        const elements = await util.promisify(module.exports.loadElements)(path.join(courseDir, 'elements'), 'course');
-        courseElementsCache[courseId] = {
-            'commit_hash': hash,
-            'data': elements,
-        };
     },
 
     resolveElement: function(elementName, context) {
@@ -498,7 +477,7 @@ module.exports = {
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);                   if (err) return err;
+        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade']);          if (err) return err;
         err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']); if (err) return err;
         err = checkProp('variant_seed',          'integer', allPhases,                            []);                                        if (err) return err;
         err = checkProp('options',               'object',  allPhases,                            []);                                        if (err) return err;
@@ -869,7 +848,7 @@ module.exports = {
         options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
         options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
         options.server_files_course_path = path.join(context.course_dir, 'serverFilesCourse');
-        options.course_extensions_path = path.join(context.course.path, 'elementExtensions');
+        options.course_extensions_path = path.join(context.course_dir, 'elementExtensions');
         return options;
     },
 
@@ -1227,10 +1206,10 @@ module.exports = {
                         const coreScriptUrls = [];
                         const scriptUrls = [];
                         const styleUrls = [];
-                        dependencies.coreStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
-                        dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
-                        dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(`/node_modules/${file}`));
-                        dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
+                        dependencies.coreStyles.forEach((file) => styleUrls.push(assets.assetPath(`stylesheets/${file}`)));
+                        dependencies.coreScripts.forEach((file) => coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)));
+                        dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(assets.nodeModulesAssetPath(file)));
+                        dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(assets.nodeModulesAssetPath(file)));
                         dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesQuestionStyles.forEach((file) => styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
@@ -1456,6 +1435,9 @@ module.exports = {
                 'questionId': question.id,
             },
             {
+                'type': 'clientFilesCourse',
+            },
+            {
                 'type': 'serverFilesCourse',
             },
             {
@@ -1470,7 +1452,7 @@ module.exports = {
         const context = {
             question,
             course,
-            course_dir: course.path,
+            course_dir: coursePath,
             question_dir: path.join(coursePath, 'questions', question.directory),
             course_elements_dir: path.join(coursePath, 'elements'),
         };

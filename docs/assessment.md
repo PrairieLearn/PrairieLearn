@@ -109,6 +109,27 @@ For practice exams it is often desirable to make a *multiple instance* assessmen
 ## Enabling group work for collaborative assessments
 
 By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
+Information about the group configuration can be set in the `infoAssessment.json` file. For example: 
+```json
+{
+        "groupWork": true,
+        "groupMaxSize": 6,
+        "groupMinSize": 2,
+        "studentGroupCreate": true,
+        "studentGroupJoin": true,
+        "studentGroupLeave": true,
+}
+```
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`groupWork` | boolean | false | Enable the group work for the assessment.
+`groupMaxSize` | integer | - | The maximum size of a group (default: no minimum).
+`groupMinSize` | integer | - | The minimum size of a group (default: no maximum).
+`studentGroupCreate` | boolean | false | Allow students to create groups.
+`studentGroupJoin` | boolean | false | Allow students to join other groups by join code.
+`studentGroupLeave` | boolean | false | Allow students to leave groups.
+
+Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
 
 ### Instructor options for groupWork
 
@@ -238,6 +259,27 @@ For assessments with type "Homework", students will be presented with an unlimit
 ],
 ```
 
+## Limiting the rate at which answers can be graded
+
+Practice is important in learning and there should be room for mistakes and learning from them. Immediate feedback can help as it can give feedback despite the limited human resources. However, to prevent mindless trial-and-error problem solving, controlling resubmissions can be an effective tool ([Ihantola et. al., Review of Recent Systems for Automatic Assessment of Programming Assignments](https://dl.acm.org/doi/pdf/10.1145/1930464.1930480)).
+
+One way to limit the amount of feedback provided to students is to limit the rate at which graded submissions are allowed. This can be done by using the `gradeRateMinutes` setting. If set, this value indicates how long a student needs to wait after grading a question to resubmit a new answer to the same question for grading. Students are still able to save a submission, but are not able to grade until either the waiting time has elapsed, or when they close the assesment. By default, this value is set to 0, which means that there is no limit.
+
+The `gradeRateMinutes` value can be set for each specific question in the assessment. It can also be set for a zone or the full assessment, in which case it will apply individually to each question in the zone or assessment. In other words, if the assessment has a grading rate set, once a student submits an answer for grading in one question, they have to wait to submit new answers to that question, but they are able to grade other questions in the meantime.
+
+```json
+"zones": [
+    {
+        "gradeRateMinutes": 30,
+        "questions": [
+            {"id": "canOnlySubmitEvery30minutes", "points": 10},
+            {"id": "canOnlySubmitEvery60minutes", "points": 10, "gradeRateMinutes": 60},
+            {"id": "canSubmitAnytime", "points": 10, "gradeRateMinutes": 0}
+        ]
+    }
+],
+```
+
 ## Honor code
 
 By default, `Exam` assessments require students to certify their identity and pledge an honor code before starting the assessment:
@@ -248,3 +290,9 @@ By default, `Exam` assessments require students to certify their identity and pl
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://www.studentconduct.umd.edu/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
+
+## Linking to assessments
+
+Some instructors may wish to publish links that point students directly to their assessments on PrairieLearn. These links may be published in course web pages, LMS systems like Compass or Canvas, or sent to students via email or other messaging platforms. Instructors should note that the URL listed on the browser points to the instructor view of an assessment, which is typically not accessible to students.
+
+The appropriate link to provide to students can be found by opening the "Settings" tab of the Assessment. This page includes, among other useful information, a Student Link that can be provided to students. This link points students directly to the specific assessment, enrolling them automatically in the course if they are not yet enrolled.

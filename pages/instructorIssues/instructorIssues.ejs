@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <link href="/stylesheets/issues.css" rel="stylesheet" />
+    <link href="<%= asset_path('stylesheets/issues.css') %>" rel="stylesheet" />
   </head>
   <body>
     <%- include('../partials/navbar'); %>
@@ -170,9 +170,16 @@
               <% } else { %>
               <i class="fa fa-check-circle text-success issue-status-icon"></i>
               <% } %>
-              <a class="d-block" href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">
-                <%= row.question_qid %>
-              </a>
+              <div class="d-block">
+                <strong><%= row.question_qid %></strong>
+                (<a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">instructor
+                  view</a><% if (row.instance_question_id) { %>,
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instance_question/<%= row.instance_question_id %>/?variant_id=<%= row.variant_id %>">student view</a>,
+                <% if (course.manual_grading_visible) { %>
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/instance_question/<%= row.instance_question_id %>/manual_grading">manual grading</a>,
+                <% } %>
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/assessment_instance/<%= row.assessment_instance_id %>">assessment details</a><% } %>)
+              </div>
               <p class="mb-0">
                 <%= getFormattedMessage(row) %>
               </p>
