@@ -8,13 +8,6 @@ SELECT
     ag.number AS alternative_group_number,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
     (SELECT COUNT(s.id)
-     FROM
-         instance_questions AS iq
-         JOIN variants AS v ON (v.instance_question_id = iq.id)
-         JOIN submissions AS s ON (s.variant_id = v.id)
-     WHERE
-         iq.assessment_question_id = aq.id) AS num_submissions,
-    (SELECT COUNT(s.id)
      FROM 
          submissions AS s
          JOIN variants AS v ON (s.variant_id = v.id)
@@ -30,7 +23,7 @@ SELECT
                  iq.assessment_question_id = aq.id
              GROUP BY s.auth_user_id
          )
-    ) AS num_submissions_eligible,
+    ) AS num_need_grading,
     (SELECT COUNT(DISTINCT iq.id)
      FROM 
          submissions AS s
@@ -49,24 +42,6 @@ SELECT
          )
          AND manual_grading_user IS NOT NULL
          AND graded_at IS NOT NULL) AS num_graded,
-    (SELECT COUNT(DISTINCT iq.id)
-     FROM 
-         submissions AS s
-         JOIN variants AS v ON (s.variant_id = v.id)
-         JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
-     WHERE (s.auth_user_id, s.date) 
-        IN (
-             SELECT s.auth_user_id, MAX(s.date)
-             FROM
-                 submissions AS s
-                 JOIN variants AS v ON (s.variant_id = v.id)
-                 JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
-             WHERE
-                 iq.assessment_question_id = aq.id
-             GROUP BY s.auth_user_id
-         )
-         AND manual_grading_user IS NOT NULL
-         AND graded_at IS NULL) AS num_locked_submissions,
     (SELECT COUNT(DISTINCT iq.id)
      FROM 
          submissions AS s

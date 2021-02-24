@@ -26,9 +26,8 @@
                 <th></th>
                 <th>QID</th>
                 <th>Points</th>
-                <th>Total Submissions</th>
-                <th>Last Submissions for Manual Grading</th>
-                <th>Manually Graded</th>
+                <th>Need Grading</th>
+                <th>Graded</th>
                 <th>Locked Submissions</th>
                 <th>Grading Users</th>
                 <th></th>
@@ -54,16 +53,10 @@
                   <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
                 </td>
                 <td class="text-center">
-                  <%= question.num_submissions %>
-                </td>
-                <td class="text-center">
-                  <%= question.num_submissions_eligible %>
+                  <%= question.num_need_grading %>
                 </td>
                 <td class="text-center">
                   <%= question.num_graded %>
-                </td>
-                <td class="text-center">
-                  <%= question.num_locked_submissions %>
                 </td>
                 <td class="text-center">
                   <%= question.manual_grading_users %>
