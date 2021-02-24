@@ -28,7 +28,6 @@
                 <th>Points</th>
                 <th>Need Grading</th>
                 <th>Graded</th>
-                <th>Locked Submissions</th>
                 <th>Grading Users</th>
                 <th></th>
                 <th></th>
@@ -60,13 +59,6 @@
                 </td>
                 <td class="text-center">
                   <%= question.manual_grading_users %>
-                </td>
-                <td class="text-center">
-                  <% if (question.num_locked_submissions > 0) { %>
-                    <a class="btn btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/unlock_ungraded">
-                      Unlock <%= question.num_locked_submissions %> submission<% if (question.num_locked_submissions > 1) { %>s<% } %>
-                    </a>
-                    <% } %>
                 </td>
                 <td>
                   <% if (question.num_ungraded_submissions > 0) { %>
