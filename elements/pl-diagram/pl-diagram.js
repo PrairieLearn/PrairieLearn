@@ -40,7 +40,6 @@ function parseDiagram(data) {
 
         // Process XML representing graph into graph data structure
         var graphModelNode = stringToXML(compressedXML);
-        console.log(graphModelNode);
         var graphRoot = graphModelNode.getElementsByTagName("root")[0]
         var graphComponentList = graphRoot.getElementsByTagName("mxCell"); // Get all mxCell objects to process into graph
         var graph = {
@@ -57,7 +56,7 @@ function parseDiagram(data) {
             var styleAttrs = parseMxCellStyle(component.getAttribute("style"));
             var nodeInID = component.getAttribute("source");
             var nodeOutID = component.getAttribute("target");
-            if (nodeInID || nodeOutID) { // Then is an edge
+            if (nodeInID || nodeOutID) { // Is an edge
                 graph.edges.push([nodeInID, nodeOutID]);
             } else if (styleAttrs) { // Is a node
                 let node = {}
