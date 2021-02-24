@@ -7,14 +7,14 @@ SELECT
     admin_assessment_question_number(aq.id) as number,
     ag.number AS alternative_group_number,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
-    (SELECT COUNT(DISTINCT s.id)
+    (SELECT COUNT(s.id)
      FROM
          instance_questions AS iq
          JOIN variants AS v ON (v.instance_question_id = iq.id)
          JOIN submissions AS s ON (s.variant_id = v.id)
      WHERE
          iq.assessment_question_id = aq.id) AS num_submissions,
-    (SELECT COUNT(DISTINCT s.id)
+    (SELECT COUNT(s.id)
      FROM 
          submissions AS S
          JOIN variants AS V ON (s.variant_id = v.id)
