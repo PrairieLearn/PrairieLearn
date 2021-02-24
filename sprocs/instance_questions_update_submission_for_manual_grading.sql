@@ -20,7 +20,6 @@ BEGIN
     INTO submission_id
     WHERE (auth_user_id, date) 
         IN (
-            -- If we can group and add the respective ID here somehow, we can do a safer query
             SELECT s.auth_user_id, MAX(s.date)
             FROM
                 submissions AS s
@@ -33,7 +32,6 @@ BEGIN
                 AND a.id = a_id
             GROUP BY s.auth_user_id
         )
-        AND manual_grading_user IS NULL
         AND graded_at IS NULL
     LIMIT 1
     FOR UPDATE;
