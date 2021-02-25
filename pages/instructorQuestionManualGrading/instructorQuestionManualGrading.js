@@ -34,6 +34,7 @@ router.get('/', (req, res, next) => {
                     return callback(error.make(404, 'No gradable submissions found.', {locals: res.locals, body: req.body}));
                 }
 
+                res.locals.instance_question = result.rows[0].instance_question;
                 res.locals.question = result.rows[0].question;
                 res.locals.variant = result.rows[0].variant;
                 res.locals.submission = result.rows[0].submission;

@@ -7,6 +7,7 @@ CREATE OR REPLACE FUNCTION
     instance_questions_select_manual_grading_objects(
         IN arg_instance_question_id bigint,
         IN arg_user_id bigint,
+        OUT instance_question jsonb,
         OUT question jsonb,
         OUT variant jsonb,
         OUT submission jsonb,
@@ -15,26 +16,26 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 DECLARE
-    temp instance_questions%rowtype;
+    iq_temp instance_questions%rowtype;
 BEGIN
 
     SELECT iq.*
-    INTO temp
+    INTO iq_temp
     FROM
         instance_questions AS iq
     WHERE iq.id = arg_instance_question_id
     FOR UPDATE;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no submission found for instance question: %', arg_instance_question_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
 
-    IF temp.manual_grading_user IS NULL THEN
+    IF iq_temp.manual_grading_user IS NULL THEN
         UPDATE instance_questions
         SET manual_grading_user = arg_user_id
-        WHERE id = temp.id;
+        WHERE id = instance_question.id;
     END IF;
 
-    SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(aq.*)
-    INTO question, variant, submission, grading_user, assessment_question
+    SELECT to_jsonb(iq.*), to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(aq.*)
+    INTO instance_question, question, variant, submission, grading_user, assessment_question
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
