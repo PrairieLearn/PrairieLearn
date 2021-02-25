@@ -69,7 +69,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
 
             const {question, variant, submission, assessment_question, grading_user} = result.rows[0];
-            if (!question || !variant || !submission || assessment_question || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
+            if (!question || !variant || !submission || !assessment_question || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
 
             Object.assign(res.locals, {
                 question,

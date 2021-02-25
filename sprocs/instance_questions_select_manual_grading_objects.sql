@@ -15,26 +15,20 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 DECLARE
-    temp submissions%rowtype;
+    temp instance_questions%rowtype;
 BEGIN
 
-    SELECT s.*
+    SELECT iq.*
     INTO temp
     FROM
         instance_questions AS iq
-        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        JOIN questions AS q ON (q.id = aq.question_id)
-        JOIN variants AS v ON (v.instance_question_id = iq.id)
-        JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE iq.id = arg_instance_question_id
-    ORDER BY s.date DESC, s.id DESC
-    LIMIT 1
     FOR UPDATE;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no submission found for instance question: %', arg_instance_question_id; END IF;
 
     IF temp.manual_grading_user IS NULL THEN
-        UPDATE submissions
+        UPDATE instance_questions
         SET manual_grading_user = arg_user_id
         WHERE id = temp.id;
     END IF;
@@ -47,7 +41,7 @@ BEGIN
         JOIN questions AS q ON (q.id = aq.question_id)
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
-        JOIN users AS u ON (u.user_id = s.manual_grading_user)
+        JOIN users AS u ON (u.user_id = iq.manual_grading_user)
     WHERE iq.id = arg_instance_question_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;

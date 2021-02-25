@@ -40,9 +40,7 @@ SELECT
     (SELECT array_agg(DISTINCT u.uid)
      FROM
          instance_questions AS iq
-         JOIN variants AS v ON (v.instance_question_id = iq.id)
-         JOIN submissions AS s ON (s.variant_id = v.id)
-         JOIN users AS u ON (u.user_id = s.manual_grading_user)
+         JOIN users AS u ON (u.user_id = iq.manual_grading_user)
      WHERE
          iq.assessment_question_id = aq.id) AS manual_grading_users
 FROM

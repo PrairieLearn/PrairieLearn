@@ -18,16 +18,7 @@ FROM
 WHERE iq.id = $instance_question_id;
 
 -- BLOCK instance_question_abort_manual_grading
-UPDATE submissions
+UPDATE instance_questions
     SET manual_grading_user = NULL
-    WHERE id = (
-        SELECT s.id
-        FROM
-            instance_questions AS iq
-            JOIN variants AS v ON (iq.id = v.instance_question_id)
-            JOIN submissions AS s ON (s.variant_id = v.id)
-        WHERE iq.id = $instance_question_id
-        ORDER BY s.date DESC, s.id DESC
-        LIMIT 1
-    )
+    WHERE id = $instance_question_id
 RETURNING *;
