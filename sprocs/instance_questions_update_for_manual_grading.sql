@@ -5,9 +5,9 @@ DROP FUNCTION IF EXISTS instance_questions_update_for_manual_grading(bigint, big
 
 CREATE OR REPLACE FUNCTION
     instance_questions_update_for_manual_grading(
-        IN a_id bigint, -- for endpoint auth
-        IN aq_id bigint, -- for query
-        IN user_id bigint, -- to mark submission as being graded by
+        IN arg_assessment_id bigint, -- for endpoint auth
+        IN arg_assessment_question_id bigint, -- for query
+        IN arg_user_id bigint, -- to mark submission as being graded by
         OUT instance_question jsonb
     )
 AS $$
@@ -31,17 +31,24 @@ BEGIN
                 JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
                 JOIN assessments AS a ON (a.id = aq.assessment_id)
             WHERE
-                iq.assessment_question_id = aq_id
-                AND a.id = a_id
+                iq.assessment_question_id = arg_assessment_question_id
+                AND a.id = arg_assessment_id
             GROUP BY s.auth_user_id
         )
         AND s.graded_at IS NULL
+    ORDER BY RANDOM()
     LIMIT 1
     FOR UPDATE;
 
     UPDATE instance_questions
-    SET manual_grading_user = user_id
+    SET manual_grading_user = arg_user_id
     WHERE id = instance_question_id;
+
+    UPDATE instance_questions
+    SET manual_grading_user = NULL
+    WHERE
+        assessment_question_id = arg_assessment_question_id
+        AND id != instance_question_id;
 
     SELECT to_jsonb(iq.*)
     INTO instance_question
