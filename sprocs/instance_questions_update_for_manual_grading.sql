@@ -1,26 +1,25 @@
 DROP FUNCTION IF EXISTS instance_questions_update_for_manual_grading(bigint, bigint, bigint);
 
--- Use an assessment question ID to get an instance question.
--- LOCK, UPDATE instance question for manual grading, RETURN submission's instance question.
+-- RETURN next instance question for grading from assessment question ID
 
 CREATE OR REPLACE FUNCTION
     instance_questions_update_for_manual_grading(
-        IN arg_assessment_id bigint, -- for endpoint auth
-        IN arg_assessment_question_id bigint, -- for query
-        IN arg_user_id bigint, -- to mark submission as being graded by
+        IN arg_assessment_id bigint, -- endpoint auth redundancy
+        IN arg_assessment_question_id bigint,
+        IN arg_user_id bigint,
         OUT instance_question jsonb
     )
 AS $$
 DECLARE
-    instance_question_id bigint;
+    iq_id bigint;
 BEGIN
 
-    -- Only LAST, aka. MAX(date), submission qualifies for Manual Grading
+    -- Get LAST submissions, filter for ungraded, then return instance question
     SELECT iq.id
         FROM instance_questions AS iq
             JOIN variants AS v ON (v.instance_question_id = iq.id)
             JOIN submissions AS s ON (s.variant_id = v.id)
-    INTO instance_question_id
+    INTO iq_id
     WHERE (s.auth_user_id, s.date) 
         IN (
             SELECT s.auth_user_id, MAX(s.date)
@@ -40,21 +39,34 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
+    -- Mark instance question as being graded by user
     UPDATE instance_questions
     SET manual_grading_user = arg_user_id
-    WHERE id = instance_question_id;
-
-    UPDATE instance_questions
-    SET manual_grading_user = NULL
-    WHERE
-        assessment_question_id = arg_assessment_question_id
-        AND id != instance_question_id;
+    WHERE id = iq_id;
 
     SELECT to_jsonb(iq.*)
     INTO instance_question
-    FROM 
+    FROM
         instance_questions AS iq
-    WHERE id = instance_question_id;
+    WHERE id = iq_id;
+
+    -- Reset manual_grading_user field for any abandoned/ungraded iqs for current user
+    WITH ungraded_instance_questions AS (
+        SELECT DISTINCT ON (iq.id) iq.id
+        FROM instance_questions AS iq
+            JOIN variants AS v ON (v.instance_question_id = iq.id)
+            JOIN submissions AS s ON (s.variant_id = v.id)
+        WHERE
+            iq.assessment_question_id = arg_assessment_question_id
+            AND iq.manual_grading_user = arg_user_id
+            AND iq.id != iq_id
+            AND s.graded_at IS NULL
+        ORDER BY iq.id ASC, s.date DESC, s.id DESC
+    )
+    UPDATE instance_questions AS iq
+    SET manual_grading_user = NULL
+    FROM ungraded_instance_questions
+    WHERE iq.id = ungraded_instance_questions.id;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
