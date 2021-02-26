@@ -59,6 +59,7 @@ module.exports = {
             'assessment_instances_duration.sql',
             'assessment_instances_update_points.sql',
             'assessment_instances_update_score_perc.sql',
+            'assessment_question_assign_manual_grading_user.sql',
             'assessments_duration_stats.sql',
             'assessments_stats.sql',
             'assessments_format.sql',

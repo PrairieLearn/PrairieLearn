@@ -31,8 +31,10 @@ BEGIN
     IF iq_temp.manual_grading_user IS NULL THEN
         UPDATE instance_questions
         SET manual_grading_user = arg_user_id
-        WHERE id = instance_question.id;
+        WHERE id = iq_temp.id;
     END IF;
+
+    PERFORM assessment_question_assign_manual_grading_user(iq_temp.assessment_question_id, iq_temp.id, arg_user_id);
 
     SELECT to_jsonb(iq.*), to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(aq.*)
     INTO instance_question, question, variant, submission, grading_user, assessment_question
