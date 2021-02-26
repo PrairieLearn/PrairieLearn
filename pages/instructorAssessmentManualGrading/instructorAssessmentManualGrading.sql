@@ -1,4 +1,15 @@
 -- BLOCK select_questions_manual_grading
+WITH instance_questions_last_submission AS (
+    SELECT DISTINCT ON (iq.id) iq.id, s.graded_at, iq.assessment_question_id, iq.manual_grading_user
+    FROM
+        assessment_questions AS aq
+        JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
+        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
+    WHERE
+        aq.assessment_id = $assessment_id
+    ORDER BY iq.id ASC, s.date DESC, s.id DESC
+)
 SELECT
     aq.*,
     q.qid,
@@ -7,42 +18,24 @@ SELECT
     admin_assessment_question_number(aq.id) as number,
     ag.number AS alternative_group_number,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
-    (SELECT COUNT(s.id)
+    (SELECT COUNT(iqls.id)
      FROM 
-         submissions AS s
-     WHERE (s.auth_user_id, s.date) 
-        IN (
-             SELECT s.auth_user_id, MAX(s.date)
-             FROM
-                 submissions AS s
-                 JOIN variants AS v ON (s.variant_id = v.id)
-                 JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
-             WHERE
-                 iq.assessment_question_id = aq.id
-             GROUP BY s.auth_user_id
-         )
-         AND graded_at IS NULL) AS num_ungraded,
-    (SELECT COUNT(s.id)
+         instance_questions_last_submission AS iqls
+     WHERE 
+        iqls.assessment_question_id = aq.id
+        AND iqls.graded_at IS NULL) AS num_ungraded,
+    (SELECT COUNT(iqls.id)
      FROM 
-         submissions AS s
-     WHERE (s.auth_user_id, s.date) 
-        IN (
-             SELECT s.auth_user_id, MAX(s.date)
-             FROM
-                 submissions AS s
-                 JOIN variants AS v ON (s.variant_id = v.id)
-                 JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
-             WHERE
-                 iq.assessment_question_id = aq.id
-             GROUP BY s.auth_user_id
-         )
-         AND graded_at IS NOT NULL) AS num_graded,
+         instance_questions_last_submission AS iqls
+     WHERE 
+         iqls.assessment_question_id = aq.id
+         AND iqls.graded_at IS NOT NULL) AS num_graded,
     (SELECT array_agg(DISTINCT u.uid)
      FROM
-         instance_questions AS iq
-         JOIN users AS u ON (u.user_id = iq.manual_grading_user)
+        instance_questions_last_submission AS iqls
+        LEFT JOIN users AS u ON (u.user_id = iqls.manual_grading_user)
      WHERE
-         iq.assessment_question_id = aq.id) AS manual_grading_users
+         iqls.assessment_question_id = aq.id) AS manual_grading_users
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
