@@ -20,17 +20,4 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.post('/', function(req, res, next) {
-    const params = {
-        'assessment_id': res.locals.assessment.id,
-        'assessment_question_id': res.locals.assessment_question_id,
-    };
-    sqlDb.query(sql.unlock_locked_instance_questions, params, (err) => {
-        if (ERR(err, next)) return;
-
-        res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
-    });
-
-});
-
 module.exports = router;
