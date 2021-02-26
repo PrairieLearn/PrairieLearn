@@ -19,7 +19,7 @@ BEGIN
 
     -- Reset manual_grading_user field for any abandoned/ungraded iqs for current user
     WITH ungraded_instance_questions AS (
-        SELECT DISTINCT ON (iq.id) iq.id
+        SELECT DISTINCT ON (iq.id) iq.id, s.graded_at
         FROM instance_questions AS iq
             JOIN variants AS v ON (v.instance_question_id = iq.id)
             JOIN submissions AS s ON (s.variant_id = v.id)
@@ -34,7 +34,7 @@ BEGIN
     FROM ungraded_instance_questions
     WHERE
         iq.id = ungraded_instance_questions.id
-        AND s.graded_at IS NULL;
+        AND ungraded_instance_questions.graded_at IS NULL;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
