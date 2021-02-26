@@ -27,13 +27,14 @@ BEGIN
             iq.assessment_question_id = arg_assessment_question_id
             AND iq.manual_grading_user = arg_user_id
             AND iq.id != arg_instance_question_id
-            AND s.graded_at IS NULL
         ORDER BY iq.id ASC, s.date DESC, s.id DESC
     )
     UPDATE instance_questions AS iq
     SET manual_grading_user = NULL
     FROM ungraded_instance_questions
-    WHERE iq.id = ungraded_instance_questions.id;
+    WHERE
+        iq.id = ungraded_instance_questions.id
+        AND s.graded_at IS NULL;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
