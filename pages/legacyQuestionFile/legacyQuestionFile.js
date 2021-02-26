@@ -1,4 +1,5 @@
 var ERR = require('async-stacktrace');
+var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
@@ -25,16 +26,24 @@ router.get('/:filename', function(req, res, next) {
         if (!result.rows[0].access_allowed) return next(error.make(403, 'Access denied', {locals: res.locals, filename: filename}));
 
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        const chunk = {
-            'type': 'question',
-            'questionId': question.id,
-        };
-        chunks.ensureChunksForCourse(course.id, chunk, (err) => {
+
+        sqldb.call('questions_select_templates', [question.id], (err, result) => {
             if (ERR(err, next)) return;
 
-            filePaths.questionFilePath(filename, question.directory, coursePath, question, function(err, fullPath, effectiveFilename, rootPath) {
+            const templateQuestionChunks = _.map(result.rows, row => ({'type': 'question', questionId: row.id}));
+            const chunksToLoad = [
+                {
+                    'type': 'question',
+                    'questionId': question.id,
+                },
+            ].concat(templateQuestionChunks);
+            chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
                 if (ERR(err, next)) return;
-                res.sendFile(effectiveFilename, {root: rootPath});
+
+                filePaths.questionFilePath(filename, question.directory, coursePath, question, function(err, fullPath, effectiveFilename, rootPath) {
+                    if (ERR(err, next)) return;
+                    res.sendFile(effectiveFilename, {root: rootPath});
+                });
             });
         });
     });

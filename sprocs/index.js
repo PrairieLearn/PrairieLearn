@@ -71,6 +71,7 @@ module.exports = {
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',
             'questions_select.sql',
+            'questions_select_templates.sql',
             'assessment_instance_label.sql',
             'assessment_label.sql',
             'admin_assessment_question_number.sql',
