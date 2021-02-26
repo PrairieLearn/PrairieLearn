@@ -18,7 +18,7 @@ BEGIN
     WHERE id = arg_instance_question_id;
 
     -- Reset manual_grading_user field for any abandoned/ungraded iqs for current user
-    WITH ungraded_instance_questions AS (
+    WITH instance_questions_graded_at AS (
         SELECT DISTINCT ON (iq.id) iq.id, s.graded_at
         FROM instance_questions AS iq
             JOIN variants AS v ON (v.instance_question_id = iq.id)
@@ -31,10 +31,10 @@ BEGIN
     )
     UPDATE instance_questions AS iq
     SET manual_grading_user = NULL
-    FROM ungraded_instance_questions
+    FROM instance_questions_graded_at
     WHERE
-        iq.id = ungraded_instance_questions.id
-        AND ungraded_instance_questions.graded_at IS NULL;
+        iq.id = instance_questions_graded_at.id
+        AND instance_questions_graded_at.graded_at IS NULL;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
