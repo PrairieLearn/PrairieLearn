@@ -6,16 +6,15 @@ var error = require('@prairielearn/prairielib/error');
 var chunks = require('../lib/chunks');
 var filePaths = require('../lib/file-paths');
 var requireFrontend = require('../lib/require-frontend');
-const sqldb = require('@prairielearn/prairielib/sql-db');
 
 module.exports = {
     loadServer: function(question, course, callback) {
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
 
-        sqldb.call('questions_select_templates', [question.id], (err, result) => {
+        chunks.getTemplateQuestionIds(question, (err, questionIds) => {
             if (ERR(err, callback)) return;
 
-            const templateQuestionChunks = _.map(result.rows, row => ({'type': 'question', questionId: row.id}));
+            const templateQuestionChunks = questionIds.map(id => ({'type': 'question', questionId: id}));
             const chunksToLoad = [
                 {
                     'type': 'question',

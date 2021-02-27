@@ -1,9 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
-var sqldb = require('@prairielearn/prairielib/sql-db');
 const chunks = require('../../lib/chunks');
 var filePaths = require('../../lib/file-paths');
 
@@ -13,10 +11,10 @@ router.get('/:filename', function(req, res, next) {
     const filename = 'text/' + req.params.filename;
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
 
-    sqldb.call('questions_select_templates', [question.id], (err, result) => {
+    chunks.getTemplateQuestionIds(question, (err, questionIds) => {
         if (ERR(err, next)) return;
 
-        const templateQuestionChunks = _.map(result.rows, row => ({'type': 'question', questionId: row.id}));
+        const templateQuestionChunks = questionIds.map(id => ({'type': 'question', questionId: id}));
         const chunksToLoad = [
             {
                 'type': 'question',
