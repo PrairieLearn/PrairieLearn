@@ -38,3 +38,21 @@ WHERE
 SELECT c.path
 FROM pl_courses AS c
 WHERE c.id = $course_id;
+
+-- BLOCK select_template_question_ids
+WITH RECURSIVE template_questions AS (
+    -- non-recursive term that finds the ID of the template question (if any) for question_id
+    SELECT tq.id, tq.qid, tq.course_id, tq.template_directory
+    FROM
+        questions AS q
+        JOIN questions AS tq ON (tq.qid = q.template_directory AND tq.course_id = q.course_id)
+    WHERE q.id = $question_id
+    -- required UNION for a recursive WITH statement
+    UNION
+    -- recursive term that references template_questions again
+    SELECT tq.id, tq.qid, tq.course_id, tq.template_directory
+    FROM
+        template_questions AS q
+        JOIN questions AS tq ON (tq.qid = q.template_directory AND tq.course_id = q.course_id)
+)
+SELECT id FROM template_questions LIMIT 100; -- LIMIT prevents infinite recursion on circular templates
