@@ -35,7 +35,8 @@ SELECT
         instance_questions_last_submission AS iqls
         LEFT JOIN users AS u ON (u.user_id = iqls.manual_grading_user)
      WHERE
-         iqls.assessment_question_id = aq.id) AS manual_grading_users
+         iqls.manual_grading_user IS NOT NULL
+         AND iqls.assessment_question_id = aq.id) AS manual_grading_users
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
