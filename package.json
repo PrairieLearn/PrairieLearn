@@ -111,7 +111,7 @@
         "tablesorter": "^2.31.3",
         "tar": "^6.0.5",
         "terminal-link": "^2.1.1",
-        "three": "^0.124.0",
+        "three": "^0.125.0",
         "tmp-promise": "^3.0.2",
         "unified": "^9.2.0",
         "unified-stream": "^1.0.6",
