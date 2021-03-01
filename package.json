@@ -126,7 +126,7 @@
     },
     "devDependencies": {
         "@types/chai": "^4.2.14",
-        "@types/fs-extra": "^9.0.6",
+        "@types/fs-extra": "^9.0.8",
         "@types/mocha": "^8.2.0",
         "@types/node": "^14.14.19",
         "@types/pg": "^7.14.7",
