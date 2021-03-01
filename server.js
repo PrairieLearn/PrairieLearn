@@ -477,7 +477,7 @@ module.exports.initExpress = function() {
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded', [
         function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
-        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
+        require('./pages/instructorQuestionManualGradingNextUngraded/instructorQuestionManualGradingNextUngraded'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/manual_grading', [
         function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
