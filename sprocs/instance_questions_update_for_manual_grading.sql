@@ -14,38 +14,31 @@ DECLARE
     iq_id bigint;
 BEGIN
 
-    -- Get LAST submissions, filter for ungraded entries to find next ungraded instance question
-    SELECT iq.id
+    -- Get LAST submission that is ungraded
+    WITH iq_with_last_submission AS (
+        SELECT DISTINCT ON (iq.id) iq.*, s.graded_at
         FROM instance_questions AS iq
+            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+            JOIN assessments AS a ON (a.id = aq.assessment_id)
             JOIN variants AS v ON (v.instance_question_id = iq.id)
             JOIN submissions AS s ON (s.variant_id = v.id)
+        WHERE
+            iq.assessment_question_id = arg_assessment_question_id
+            AND a.id = arg_assessment_id
+        ORDER BY iq.id ASC, s.date DESC, s.id DESC
+    )
+    SELECT iqwls.id
     INTO iq_id
-    WHERE (s.auth_user_id, s.date) 
-        IN (
-            SELECT s.auth_user_id, MAX(s.date)
-            FROM
-                submissions AS s
-                JOIN variants AS v ON (s.variant_id = v.id)
-                JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
-                JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-                JOIN assessments AS a ON (a.id = aq.assessment_id)
-            WHERE
-                iq.assessment_question_id = arg_assessment_question_id
-                AND a.id = arg_assessment_id
-            GROUP BY s.auth_user_id
-        )
-        AND s.graded_at IS NULL
+    FROM iq_with_last_submission AS iqwls
+    WHERE iqwls.graded_at IS NULL
     ORDER BY RANDOM()
     LIMIT 1
     FOR UPDATE;
 
-    PERFORM assessment_question_assign_manual_grading_user(arg_assessment_question_id, iq_id, arg_user_id);
+    IF iq_id IS NOT NULL THEN
+        instance_question := to_jsonb(assessment_question_assign_manual_grading_user(arg_assessment_question_id, iq_id, arg_user_id));
+    END IF;
 
-    SELECT to_jsonb(iq.*)
-    INTO instance_question
-    FROM
-        instance_questions AS iq
-    WHERE id = iq_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
 
