@@ -35,9 +35,13 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
-    IF iq_id IS NOT NULL THEN
-        instance_question := to_jsonb(assessment_question_assign_manual_grading_user(arg_assessment_question_id, iq_id, arg_user_id));
-    END IF;
+    PERFORM assessment_question_assign_manual_grading_user(arg_assessment_question_id, iq_id, arg_user_id);
+
+    SELECT to_jsonb(iq.*)
+    INTO instance_question
+    FROM
+        instance_questions AS iq
+    WHERE id = iq_id;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
