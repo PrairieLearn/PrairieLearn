@@ -57,7 +57,7 @@
         "filesize": "^6.1.0",
         "folder-hash": "^4.0.0",
         "fs-extra": "^9.0.1",
-        "googleapis": "^66.0.0",
+        "googleapis": "^67.1.0",
         "handlebars": "^4.7.6",
         "highlight.js": "^10.6.0",
         "http-proxy-middleware": "^1.0.6",
