@@ -137,6 +137,11 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
  * @property {boolean} groupWork
+ * @property {number} groupMaxSize
+ * @property {number} groupMinSize
+ * @property {boolean} studentGroupCreate
+ * @property {boolean} studentGroupJoin
+ * @property {boolean} studentGroupLeave
  */
 
 /**

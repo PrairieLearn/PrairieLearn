@@ -1,4 +1,3 @@
 #!/bin/bash
 
-cd /PrairieLearn
-npm run lint-js -s
+make -s -C /PrairieLearn lint-js

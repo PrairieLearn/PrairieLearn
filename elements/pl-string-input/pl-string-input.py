@@ -3,6 +3,7 @@ from html import escape
 import chevron
 import math
 import prairielearn as pl
+from text_unidecode import unidecode
 import random
 
 
@@ -18,12 +19,13 @@ ALLOW_BLANK_DEFAULT = False
 IGNORE_CASE_DEFAULT = False
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+NORMALIZE_TO_ASCII_DEFAULT = False
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'allow-blank', 'ignore-case', 'placeholder', 'size', 'show-help-text']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'allow-blank', 'ignore-case', 'placeholder', 'size', 'show-help-text', 'normalize-to-ascii']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, 'answers-name')
@@ -176,6 +178,7 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     # Get allow-blank option
     allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+    normalize_to_ascii = pl.get_boolean_attrib(element, 'normalize-to-ascii', NORMALIZE_TO_ASCII_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -183,6 +186,10 @@ def parse(element_html, data):
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
         return
+
+    if normalize_to_ascii:
+        a_sub = unidecode(a_sub)
+        data['submitted_answers'][name] = a_sub
 
     if not a_sub and not allow_blank:
         data['format_errors'][name] = 'Invalid format. The submitted answer was left blank.'
