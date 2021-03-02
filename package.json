@@ -113,7 +113,7 @@
         "terminal-link": "^2.1.1",
         "three": "^0.125.0",
         "tmp-promise": "^3.0.2",
-        "unified": "^9.2.0",
+        "unified": "^9.2.1",
         "unified-stream": "^1.0.6",
         "unist-util-visit": "^2.0.3",
         "unzipper": "^0.10.11",
