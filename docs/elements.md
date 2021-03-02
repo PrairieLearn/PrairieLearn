@@ -475,8 +475,7 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 
 #### Integer range
 
-The valid range for integer-input is -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). If you need a larger input it is recommended to use a 
-[`pl-string-input`](#pl-string-input-element) with custom grading for integers outside of that range.
+The valid range of values accepted by pl-integer-input is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). If you need a larger input, one option you can consider is a [`pl-string-input`](#pl-string-input-element) with a [custom grade function](question.md#question-serverpy).
 
 #### Example implementations
 

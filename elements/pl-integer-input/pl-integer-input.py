@@ -41,13 +41,14 @@ def prepare(element_html, data):
 
     if correct_answer is None:
         correct_answer = pl.from_json(data['correct_answers'].get(name, None))
-    try:
-        if not isinstance(correct_answer, int):
-            correct_answer = int(correct_answer, base)
-    except Exception:
-        raise Exception('correct answer is not a valid input: %s' % name)
-    if correct_answer > 2**53 - 1 or correct_answer < -((2**53) - 1):
-        raise Exception('correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1)).')
+    if correct_answer is not None:
+        try:
+            if not isinstance(correct_answer, int):
+                correct_answer = int(correct_answer, base)
+        except Exception:
+            raise Exception('correct answer is not a valid input: %s' % name)
+        if correct_answer > 2**53 - 1 or correct_answer < -((2**53) - 1):
+            raise Exception('correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1)).')
 
 
 def render(element_html, data):
