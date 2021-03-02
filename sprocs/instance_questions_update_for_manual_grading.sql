@@ -17,7 +17,8 @@ BEGIN
     -- Get LAST submission that is ungraded
     WITH iq_with_last_submission AS (
         SELECT DISTINCT ON (iq.id) iq.*, s.graded_at
-        FROM instance_questions AS iq
+        FROM
+            instance_questions AS iq
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
             JOIN assessments AS a ON (a.id = aq.assessment_id)
             JOIN variants AS v ON (v.instance_question_id = iq.id)
@@ -29,8 +30,10 @@ BEGIN
     )
     SELECT iqwls.id
     INTO iq_id
-    FROM iq_with_last_submission AS iqwls
-    WHERE iqwls.graded_at IS NULL
+    FROM
+        iq_with_last_submission AS iqwls
+    WHERE
+        iqwls.graded_at IS NULL
     ORDER BY RANDOM()
     LIMIT 1
     FOR UPDATE;
