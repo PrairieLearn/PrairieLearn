@@ -473,6 +473,10 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 * The prefixes `0b` and `0B` can be used for base-2 values (e.g., `0b1101`);
 * The prefixes `0o` and `0O` can be used for base-8 values (e.g., `0o777`).
 
+#### Integer range
+
+The valid range of values accepted by pl-integer-input is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). If you need a larger input, one option you can consider is a [`pl-string-input`](#pl-string-input-element) with a [custom grade function](question.md#question-serverpy).
+
 #### Example implementations
 
 - [element/integerInput]
@@ -587,6 +591,7 @@ Attribute | Type | Default | Description
 `remove-spaces` | boolean | false | Whether or not to remove blank spaces from the input string.
 `allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 `ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
+`normalize-to-ascii` | boolean | false | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading.
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
@@ -775,6 +780,7 @@ Attribute | Type | Default | description
 `auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
 `preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
 `focus` | boolean | false | Specifies that the editor should begin with the cursor captured and the editing pane focused. See Details below for notes.
+`normalize-to-ascii` | boolean | false | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading.
 
 #### Details
 

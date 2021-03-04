@@ -63,7 +63,7 @@ PrairieLearn
 ```sh
 # make sure you are in the top-level PrairieLearn/ directory
 npm test
-npm run lint -s
+make lint
 ```
 
 * The above tests are run by the CI server on every push to GitHub.
@@ -876,7 +876,7 @@ router.post('/', function(req, res, next) {
 app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
 ```
 
-* To lint the code, use `npm run lint -s`. This is also run by the CI tests.
+* To lint the code, use `make lint`. This is also run by the CI tests.
 
 
 ## Question-rendering control flow

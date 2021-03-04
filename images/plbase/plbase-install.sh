@@ -21,6 +21,7 @@ yum -y install \
     dos2unix \
     tar \
     ImageMagick \
+    fontconfig-devel \
     texlive \
     texlive-dvipng \
     git \
