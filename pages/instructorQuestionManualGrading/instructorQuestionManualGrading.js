@@ -66,39 +66,18 @@ router.post('/', function(req, res, next) {
             Object.assign(res.locals, {question, variant, submission});
 
             const params = [
-                submission.id,
+                0, // TODO: bubble through grading_job id
                 res.locals.authn_user.user_id,
-                submission.gradable,
-                submission.broken,
-                submission.format_errors,
-                submission.partial_scores,
-                score / 100, // overwrite submission score
-                submission.v2_score,
-                {manual:note}, // overwrite feedback
-                submission.submitted_answer,
-                submission.params,
-                submission.true_answer,
+                score / 100,
+                {manual:note},
             ];
             
-            // TODO: Do we need to insert a grading job here? If we're using grading jobs to keep track of what we need to grade, then no need.
-            // We should be updating the manual grading status to complete, rather than inserting a job.
-            sqlDb.callOneRow('grading_jobs_insert', params, (err, result) => {
+            sqlDb.callOneRow('grading_jobs_process_manual', params, (err) => {
                 if (ERR(err, next)) return;
-
-                /* If the submission was marked invalid during grading the grading job will
-                   be marked ungradable and we should bail here to prevent LTI updates. */
-                res.locals['grading_job'] = result.rows[0];
-                if (!res.locals['grading_job'].gradable) return next(error.make(400, 'Invalid submission error'));
-
-                res.locals['submission_updated'] = true;
-                debug('_gradeVariantWithClient()', 'inserted', 'grading_job.id:', res.locals['grading_job'].id);
                 res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
             });
 
         });
-    } else if (req.body.__action == 'update_manual_grade') {
-        // TODO: Update grade in DB?
-
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
