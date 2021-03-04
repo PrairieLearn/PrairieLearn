@@ -79,8 +79,10 @@ router.post('/', function(req, res, next) {
                 submission.params,
                 submission.true_answer,
             ];
-
-            sqlDb.callOneRow('grading_jobs_insert_internal', params, (err, result) => {
+            
+            // TODO: Do we need to insert a grading job here? If we're using grading jobs to keep track of what we need to grade, then no need.
+            // We should be updating the manual grading status to complete, rather than inserting a job.
+            sqlDb.callOneRow('grading_jobs_insert', params, (err, result) => {
                 if (ERR(err, next)) return;
 
                 /* If the submission was marked invalid during grading the grading job will

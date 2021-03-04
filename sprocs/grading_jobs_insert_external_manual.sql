@@ -36,6 +36,8 @@ BEGIN
 
     -- ######################################################################
     -- cancel any outstanding grading jobs
+    -- TODO: w/ the new workflows, check how to prevent deleteing other grading job types
+    --          Do we re-introduce a grading_job_enum to help
 
     FOR grading_job IN
         UPDATE grading_jobs AS gj
@@ -51,6 +53,7 @@ BEGIN
             AND gj.graded_at IS NULL
             AND gj.grading_requested_at IS NOT NULL
             AND gj.grading_request_canceled_at IS NULL
+            -- TODO: possible add gj.grading_job_type in here
         RETURNING gj.*
     LOOP
         UPDATE submissions AS s
@@ -74,6 +77,7 @@ BEGIN
     UPDATE submissions AS s
     SET
         grading_requested_at = now(),
+        -- TODO: Do we need to update the grading methods here? Why are we doing this?
         grading_method_internal = main.grading_method_internal,
         grading_method_external = main.grading_method_external,
         grading_method_manual   = main.grading_method_manual

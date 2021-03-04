@@ -2,7 +2,9 @@
 DROP FUNCTION IF EXISTS instance_question_select_manual_grading_objects(bigint);
 
 -- Retrieves the last variant for an instance question and last submission for the variant.
-
+-- TODO: Move this query to grab the most recent manual grading job for a given submission?
+--       Should we add the variant_id onto the grading_jobs table, and then query the variant ID
+--          off of that?   
 CREATE OR REPLACE FUNCTION
     instance_question_select_manual_grading_objects(
         IN iq_id bigint,
