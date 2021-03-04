@@ -12,10 +12,12 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
 
-    -- Mark instance question as being graded by user
+    -- Mark instance question with grading user when not already grading
     UPDATE instance_questions
     SET manual_grading_user = arg_user_id
-    WHERE id = arg_instance_question_id;
+    WHERE
+        id = arg_instance_question_id
+        AND manual_grading_user IS NULL;
 
     -- Reset manual_grading_user field for any abandoned/ungraded iqs for current user
     WITH instance_questions_graded_at AS (
