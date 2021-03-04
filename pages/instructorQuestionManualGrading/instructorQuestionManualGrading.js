@@ -39,7 +39,6 @@ router.get('/', (req, res, next) => {
                 res.locals.variant = result.rows[0].variant;
                 res.locals.submission = result.rows[0].submission;
                 res.locals.grading_user = result.rows[0].grading_user;
-                res.locals.score_perc = res.locals.submission.score * 100;
                 callback(null);
             });
         },
@@ -62,6 +61,7 @@ router.post('/', function(req, res, next) {
     if (req.body.__action == 'add_manual_grade') {
         const note = req.body.submission_note;
         const score = req.body.submission_score;
+        const modifiedAt = req.body.instance_question_modified_at;
         const params = [
             res.locals.instance_question.id,
             res.locals.authn_user.user_id,
@@ -69,8 +69,8 @@ router.post('/', function(req, res, next) {
         sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
             if (ERR(err, next)) return;
 
-            const {question, variant, submission, assessment_question, grading_user} = result.rows[0];
-            if (!question || !variant || !submission || !assessment_question || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
+            const {instance_question, question, variant, submission, assessment_question, grading_user} = result.rows[0];
+            if (!instance_question || !question || !variant || !submission || !assessment_question || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
 
             Object.assign(res.locals, {
                 question,
@@ -79,6 +79,26 @@ router.post('/', function(req, res, next) {
                 assessment_question,
                 grading_user,
             });
+
+            // someone has beat user to submitting manual grade
+            if (instance_question.modified_at != modifiedAt) {
+
+                const diff = JSON.stringify({
+                    current: {
+                        graded_by: `${grading_user.name}: (${grading_user.uid})`,
+                        feedback: submission.feedback,
+                        score: submission.score,
+                    },
+                    incoming: {
+                        graded_by: `${res.locals.authn_user.name}: (${res.locals.authn_user.uid})`,
+                        feedback: {manual: note},
+                        score,
+                    },
+                });
+
+                // no way to redirect with a payload and want to avoid storing this information in new database table
+                return res.redirect(302, `${res.locals.urlPrefix}/instance_question/${instance_question.id}/manual_grading/select_submission?diff=${encodeURIComponent(diff)}`);
+            }
 
             const params = [
                 submission.id,
