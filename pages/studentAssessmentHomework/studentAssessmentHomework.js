@@ -69,7 +69,13 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    if (req.body.__action == 'new_instance') {
+    // If user selects role
+    if (req.body.__action == 'claim_role') {
+        console.log('request body role name: ', req.body.roleName);
+        // TODO: handle role claim in database
+        // TODO: return result (redirect)
+    }
+    else if (req.body.__action == 'new_instance') {
         var params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
