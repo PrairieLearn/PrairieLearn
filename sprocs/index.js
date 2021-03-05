@@ -105,6 +105,7 @@ module.exports = {
             'instance_questions_ensure_open.sql',
             'instance_questions_select_variant.sql',
             'instance_questions_update_score.sql',
+            'instance_questions_manually_grade_submission.sql',
             'instance_questions_next_allowed_grade.sql',
             'instance_questions_select_manual_grading_objects.sql',
             'instance_questions_update_for_manual_grading.sql',

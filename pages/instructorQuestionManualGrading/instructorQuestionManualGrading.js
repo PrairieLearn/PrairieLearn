@@ -65,23 +65,18 @@ router.post('/', function(req, res, next) {
         const params = [
             res.locals.instance_question.id,
             res.locals.authn_user.user_id,
+            score / 100,
+            modifiedAt,
+            {manual: note},
         ];
-        sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
+        sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err, result) => {
             if (ERR(err, next)) return;
+            const {instance_question, submission, grading_user, instance_question_modified} = result.rows[0];
 
-            const {instance_question, question, variant, submission, assessment_question, grading_user} = result.rows[0];
-            if (!instance_question || !question || !variant || !submission || !assessment_question || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
-
-            Object.assign(res.locals, {
-                question,
-                variant,
-                submission,
-                assessment_question,
-                grading_user,
-            });
-
+            if (instance_question_modified == true) {
             // someone has beat user to submitting manual grade
-            if (instance_question.modified_at != modifiedAt) {
+
+                if (!instance_question || !submission || !grading_user) return next(error.make('500', 'Manual grading dependencies missing'));
 
                 const diff = JSON.stringify({
                     current: {
@@ -99,34 +94,7 @@ router.post('/', function(req, res, next) {
                 // no way to redirect with a payload and want to avoid storing this information in new database table
                 return res.redirect(302, `${res.locals.urlPrefix}/instance_question/${instance_question.id}/manual_grading/select_submission?diff=${encodeURIComponent(diff)}`);
             }
-
-            const params = [
-                submission.id,
-                res.locals.authn_user.user_id,
-                submission.gradable,
-                submission.broken,
-                submission.format_errors,
-                submission.partial_scores,
-                score / 100, // overwrite submission score
-                submission.v2_score,
-                {manual:note}, // overwrite feedback
-                submission.submitted_answer,
-                submission.params,
-                submission.true_answer,
-            ];
-            sqlDb.callOneRow('grading_jobs_insert_internal', params, (err, result) => {
-                if (ERR(err, next)) return;
-
-                /* If the submission was marked invalid during grading the grading job will
-                   be marked ungradable and we should bail here to prevent LTI updates. */
-                res.locals['grading_job'] = result.rows[0];
-                if (!res.locals['grading_job'].gradable) return next(error.make(400, 'Invalid submission error'));
-
-                res.locals['submission_updated'] = true;
-                debug('_gradeVariantWithClient()', 'inserted', 'grading_job.id:', res.locals['grading_job'].id);
-                res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
-            });
-
+            res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
         });
     } else if (req.body.__action == 'abort_manual_grading') {
         const params = {
