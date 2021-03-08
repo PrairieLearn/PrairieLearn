@@ -490,7 +490,7 @@ module.exports.initExpress = function() {
         require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading/select_submission', [
-        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; res.locals.diff = JSON.parse(decodeURIComponent(req.query.diff)); next();},
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; res.locals.diff = req.query.diff; next();},
         require('./middlewares/selectAndAuthzInstanceQuestion'),
         require('./pages/instructorQuestionManualGradingSelectSubmission/instructorQuestionManualGradingSelectSubmission'),
     ]);

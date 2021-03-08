@@ -10,43 +10,34 @@ const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
-    const {current, incoming} = res.locals.diff;
+    const {current, incoming} = JSON.parse(decodeURIComponent(res.locals.diff));
     Object.assign(res.locals, {current, incoming});
 
-    // res.locals.instance_question = result.rows[0].instance_question;
-    // res.locals.question = result.rows[0].question;
-    // res.locals.variant = result.rows[0].variant;
-    // res.locals.submission = res.locals.diff.current;
     res.locals.grading_user = 1;
-    // res.locals.score_perc = res.locals.diff.current.score * 100;
-    // sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
-    //     if (ERR(err, next)) return;
-
-    //     // Instance question doesn't exist (redirect to config page)
-    //     if (result.rowCount == 0) {
-    //         return callback(error.make(404, 'Instance question not found.', {locals: res.locals, body: req.body}));
-    //     }
-
-    //     /**
-    //      * Student never loaded question (variant and submission is null)
-    //      * Student loaded question but did not submit anything (submission is null)
-    //      */
-    //     if (!result.rows[0].variant || !result.rows[0].submission) {
-    //         return callback(error.make(404, 'No gradable submissions found.', {locals: res.locals, body: req.body}));
-    //     }
-
-    //     res.locals.instance_question = result.rows[0].instance_question;
-    //     res.locals.question = result.rows[0].question;
-    //     res.locals.variant = result.rows[0].variant;
-    //     res.locals.submission = result.rows[0].submission;
-    //     res.locals.grading_user = result.rows[0].grading_user;
-    //     res.locals.score_perc = res.locals.submission.score * 100;
-    // });
-    // if (ERR(err, next)) return;   
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 
     debug('GET /');
 });
 
-module.exports = router;
 
+router.post('/', (req, res, next) => {
+
+    const note = req.body.submission_note;
+    const score = req.body.submission_score;
+    const modifiedAt = req.body.instance_question_modified_at;
+    const params = [
+        res.locals.instance_question.id,
+        res.locals.authn_user.user_id,
+        score / 100,
+        modifiedAt,
+        {manual: note},
+    ];
+    sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err, result) => {
+        if (ERR(err, next)) return;
+
+        res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
+    debug('POST /');
+    });
+});
+
+module.exports = router;
