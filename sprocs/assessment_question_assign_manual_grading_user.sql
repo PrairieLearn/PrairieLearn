@@ -25,15 +25,17 @@ BEGIN
         FROM instance_questions AS iq
             JOIN variants AS v ON (v.instance_question_id = iq.id)
             JOIN submissions AS s ON (s.variant_id = v.id)
+        WHERE
+            iq.assessment_question_id = arg_assessment_question_id
         ORDER BY iq.id ASC, s.date DESC, s.id DESC
     )
     UPDATE instance_questions AS iq
     SET manual_grading_user = NULL
     FROM instance_questions_graded_at as iqga
     WHERE
-        iqga.manual_grading_user = arg_user_id
-        AND iqga.id != arg_instance_question_id
-        AND iqga.assessment_question_id = arg_assessment_question_id
+        iq.manual_grading_user = arg_user_id
+        AND iq.id != arg_instance_question_id
+        AND iqga.id = iq.id
         AND iqga.graded_at IS NULL;
 
 END;

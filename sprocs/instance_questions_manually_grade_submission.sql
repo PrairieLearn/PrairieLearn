@@ -50,12 +50,7 @@ BEGIN
         RETURN;
     END IF;
 
-    IF iq_temp.manual_grading_user IS NULL THEN
-        UPDATE instance_questions
-        SET manual_grading_user = arg_user_id
-        WHERE id = iq_temp.id;
-    END IF;
-
+    -- Grade if instance question has NOT been modified since grading user loaded page
     SELECT s.*
     INTO s_temp
     FROM
