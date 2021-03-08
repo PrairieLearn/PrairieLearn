@@ -2,16 +2,16 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const async = require('async');
-const question = require('../../lib/question');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { error, sqlDb } = require('@prairielearn/prairielib');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const { sqlDb } = require('@prairielearn/prairielib');
 
 router.get('/', (req, res, next) => {
-    const {current, incoming} = JSON.parse(decodeURIComponent(res.locals.diff));
-    Object.assign(res.locals, {current, incoming});
+    try {
+        const {current, incoming} = JSON.parse(decodeURIComponent(res.locals.diff));
+        Object.assign(res.locals, {current, incoming});
+    } catch (err) {
+        if (ERR(err, next)) return;
+    }
 
     res.locals.grading_user = 1;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -32,7 +32,7 @@ router.post('/', (req, res, next) => {
         modifiedAt,
         {manual: note},
     ];
-    sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err, result) => {
+    sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, err => {
         if (ERR(err, next)) return;
 
         res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
