@@ -72,15 +72,9 @@ router.post('/', function(req, res, next) {
 
     // If user selects role
     if (req.body.__action == 'claim_role') {
-        var params = {
-            assessment_id: res.locals.assessment.id,
-            user_id: res.locals.user.user_id,
-        };
-
         console.log('request body role name: ', req.body.roleName);
-        // TODO: handle role claim in database
-        // TODO: return result (redirect)
 
+        // Checks whether the role name was valid or invalid
         const validRoles = ["Manager", "Reflector", "Contributor", "Recorder"];
         let invalidRoleName = true;
         if (validRoles.includes(req.body.roleName)) {
@@ -88,29 +82,34 @@ router.post('/', function(req, res, next) {
             invalidRoleName = false;
             // TODO: Change DB to assign group role to user
         }
-        if (invalidRoleName) {
-            sqldb.query(sql.get_config_info, params, function(err, result) {
+
+        var params = {
+            assessment_id: res.locals.assessment.id,
+            user_id: res.locals.user.user_id,
+        };
+
+        sqldb.query(sql.get_config_info, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.locals.permissions = result.rows[0];
+            res.locals.minsize = result.rows[0].minimum || 0;
+            res.locals.maxsize = result.rows[0].maximum || 999;
+            res.locals.invalidRoleName = invalidRoleName;
+
+            sqldb.query(sql.get_group_info, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.permissions = result.rows[0];
-                res.locals.minsize = result.rows[0].minimum || 0;
-                res.locals.maxsize = result.rows[0].maximum || 999;
-                res.locals.invalidRoleName = invalidRoleName;
-                sqldb.query(sql.get_group_info, params, function(err, result) {
-                    if (ERR(err, next)) return;
-                    res.locals.groupsize = result.rowCount;
-                    res.locals.group_info = result.rows;
-                    res.locals.needsize = res.locals.minsize - res.locals.groupsize;
-                    if (res.locals.groupsize > 0) {
-                        res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
-                        res.locals.start = false;
-                        if (res.locals.needsize <= 0) {
-                            res.locals.start = true;
-                        }
+                res.locals.groupsize = result.rowCount;
+                res.locals.group_info = result.rows;
+                res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+                if (res.locals.groupsize > 0) {
+                    res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+                    res.locals.start = false;
+                    if (res.locals.needsize <= 0) {
+                        res.locals.start = true;
                     }
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                });
+                }
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
-        }
+        });
     }
 
     else if (req.body.__action == 'new_instance') {
