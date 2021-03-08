@@ -519,6 +519,8 @@
 
   * Fix hljs syntax highlighting compatibility issue in `pl-code.py` (Eric Huber).
 
+  * Fix emulating uid in devMode (Dave Mussulman).
+
   * Fix JSON format when dumping DB subsets with `dump_filter.sh` (Matt West).
 
   * Fix vulnerabilities in node packages (Dave Mussulman).
