@@ -45,7 +45,7 @@
       <% } %>
       <span id='group-member'><b>Group members: </b></span>
       <% group_info.forEach(function(row) {%>
-      <li><%= row.uid %></li>
+      <li><%= row.uid %> - <%= row.pogil_role %></li> <!-- Changed to add pogil role -->
       <% }); %>
     </div>
   </div>

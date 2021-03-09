@@ -70,17 +70,14 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
 
-    // If user selects role
+    // NEW CASE: HANDLES USER CLAIMING GROUP ROLE
     if (req.body.__action == 'claim_role') {
-        console.log('request body role name: ', req.body.roleName);
 
         // Checks whether the role name was valid or invalid
-        const validRoles = ["Manager", "Reflector", "Contributor", "Recorder"];
+        const validRoles = ["manager", "reflector", "contributor", "recorder"];
         let invalidRoleName = true;
-        if (validRoles.includes(req.body.roleName)) {
-            console.log("That's a valid role!");
+        if (validRoles.includes(req.body.roleName.toLowerCase())) {
             invalidRoleName = false;
-            // TODO: Change DB to assign group role to user
         }
 
         var params = {
@@ -88,6 +85,24 @@ router.post('/', function(req, res, next) {
             user_id: res.locals.user.user_id,
         };
 
+        // Update the SQL database by changing the user's group role
+        // TODO: Figure out how to get this block to always run first
+        if (!invalidRoleName) {
+            sqldb.query(sql.get_group_info, params, function(err, result) {
+                if (ERR(err, next)) return;
+                let params = [
+                    req.body.roleName,
+                    res.locals.user.user_id,
+                    result.rows[0].group_id
+                ];
+                console.log(`Updating ${params[1]} in group ${params[2]} to ${params[0]}.`);
+                sqldb.call('update_group_pogil_role', params, function(err, _result) {
+                    if (err) console.log("Error updating pogil role!");
+                });
+            });
+        }
+
+        // Reload the page with updated group roles or error message
         sqldb.query(sql.get_config_info, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.permissions = result.rows[0];
@@ -107,6 +122,8 @@ router.post('/', function(req, res, next) {
                         res.locals.start = true;
                     }
                 }
+
+                console.log("Refreshing page") // TODO: This needs to happen after group info is updated with new role
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         });
@@ -191,6 +208,7 @@ router.post('/', function(req, res, next) {
             invalidGroupName = false;
             //try to create a group
             sqldb.query(sql.create_group, params, function(err, _result) {
+                //console.log(`Creating group with ${params.user_id}.`);
                 if (!err) {
                     res.redirect(req.originalUrl);
                 } else {

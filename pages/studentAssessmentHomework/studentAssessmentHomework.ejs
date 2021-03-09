@@ -46,7 +46,7 @@
 
             <!-- Form to select group role -->
             <div class="col-sm bg-light py-4 px-4 border">
-              <% if (invalidRoleName) { %>
+              <% if (typeof invalidRoleName !== 'undefined' && invalidRoleName) { %>
                 <div class="alert alert-danger" role="alert">
                   Please input a valid role name!
                 </div>
