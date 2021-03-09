@@ -91,8 +91,9 @@ router.post('/', function(req, res, next) {
                     },
                 });
 
+                return res.status(409).json(diff);
                 // no way to redirect with a payload and want to avoid storing this information in new database table
-                return res.redirect(302, `${res.locals.urlPrefix}/instance_question/${instance_question.id}/manual_grading/select_submission?diff=${encodeURIComponent(diff)}`);
+                // return res.redirect(302, `${res.locals.urlPrefix}/instance_question/${instance_question.id}/manual_grading/select_submission?diff=${encodeURIComponent(diff)}`);
             }
             res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
         });
