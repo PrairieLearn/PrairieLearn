@@ -51,10 +51,9 @@
           </div>
       </div>
 
-        <!-- Hidden Modal: Conflicting Submission Panel -->
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target=".bd-example-modal-lg">Large modal</button>
-
-        <div class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+      <!-- Hidden Modal: Conflicting Submission Panel -->
+      <% if (typeof diff !== 'undefined') { %>
+        <div id="submission-modal" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
           <div class="modal-dialog modal-lg">
             <div class="modal-header" style="background-color: #fff">
               <h4>Conflicting Submissions</h4>
@@ -66,31 +65,19 @@
               <div id="content" class="container">
                 <div class="row">
                     <div class="col-lg-6 col-sm-12">
-                        <%- include('../partials/instructorGradingPanel', {diff: 'Current', submission: {graded_by: '', feedback: '', score: 0}, question_context: 'instructor'}); %>
+                      <%- include('../partials/instructorGradingPanel', {diff: 'Current', submission: diff.current, question_context: 'instructor'}); %>
                     </div>
                     <div class="col-lg-6 col-sm-12">
-                      <%- include('../partials/instructorGradingPanel', {diff: 'Incoming', submission: {graded_by: '', feedback: '', score: 0}, question_context: 'instructor'}); %>
+                      <%- include('../partials/instructorGradingPanel', {diff: 'Incoming', submission: diff.incoming, question_context: 'instructor'}); %>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        <script>$('#submission-modal').modal('show')</script>
+      <% } %>
+
     </div>
-    <script>
-      $('form').submit((e) => {
-        e.preventDefault();
-        $.ajax({
-          type: 'POST',
-          url: './manual_grading',
-          data: $('form').serialize(),
-          statusCode: {
-            409: () => {
-              console.log('the data', data)
-            }
-          }
-        });        
-      })
-    </script>
   </body>
 </html>
