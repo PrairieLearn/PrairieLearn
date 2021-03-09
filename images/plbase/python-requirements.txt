@@ -17,10 +17,10 @@ ansi2html==1.6.0
 scikit-learn==0.24.1
 nltk==3.5
 tzlocal==2.1
-Pygments==2.8.0
-sphinx==3.5.1
+Pygments==2.8.1
+sphinx==3.5.2
 sphinx-markdown-builder==0.5.4
 recommonmark==0.7.1
-mkdocs-material==7.0.3
+mkdocs-material==7.0.5
 PuLP==2.4
 text-unidecode==1.3
