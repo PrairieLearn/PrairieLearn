@@ -13,6 +13,7 @@ CREATE OR REPLACE FUNCTION
         OUT instance_question jsonb,
         OUT submission jsonb,
         OUT grading_user jsonb,
+        OUT variant jsonb,
         OUT grading_job grading_jobs,
         OUT instance_question_modified boolean
     )
@@ -34,8 +35,8 @@ BEGIN
     IF arg_modified_at::timestamp < iq_temp.modified_at THEN
         instance_question_modified = TRUE;
 
-        SELECT to_jsonb(iq.*), to_jsonb(s.*), to_jsonb(u.*)
-        INTO instance_question, submission, grading_user
+        SELECT to_jsonb(iq.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(v.*)
+        INTO instance_question, submission, grading_user, variant
         FROM
             instance_questions AS iq
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
