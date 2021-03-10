@@ -1,4 +1,4 @@
--- BLOCK instance_question_select_last_variant_with_submission
+-- BLOCK instance_questions_manually_grade_submission
 DROP FUNCTION IF EXISTS instance_questions_manually_grade_submission(bigint, bigint, double precision, text, jsonb);
 
 -- Retrieves the last variant for an instance question and last submission for the variant.
@@ -49,7 +49,7 @@ BEGIN
 
     PERFORM assessment_question_assign_manual_grading_user(iq_temp.assessment_question_id, iq_temp.id, arg_user_id);
     PERFORM grading_jobs_insert_internal(s_temp.id, arg_user_id, s_temp.gradable, s_temp.broken, s_temp.format_errors, 
-        s_temp.partial_scores, arg_score, s_temp.v2_score, arg_manual_note, s_temp.submitted_answer, s_temp.params, s_temp.true_answer);
+        s_temp.partial_scores, arg_score, s_temp.v2_score, arg_manual_note, s_temp.submitted_answer, s_temp.params, s_temp.true_answer, 'ManualBeta');
 
     UPDATE instance_questions AS iq
     SET

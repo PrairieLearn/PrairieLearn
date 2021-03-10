@@ -71,49 +71,14 @@ router.post('/', function(req, res, next) {
     ];
 
     if (req.body.__action == 'add_manual_grade') {
-        async.series([
-            (callback) => {
-                sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err, result) => {
-                    if (ERR(err, next)) return;
-                    const {instance_question, submission, grading_user, instance_question_modified, variant} = result.rows[0];
-                    if (!instance_question || !submission || !grading_user || !variant) return next(error.make('500', 'Manual grading dependencies missing'));
-                    Object.assign(res.locals, {instance_question, submission, grading_user, instance_question_modified, variant});
-                    
-                if (instance_question_modified == true) {
-                    // someone has beat user to submitting manual grade
-    
-                    Object.assign(res.locals, {
-                        diff: {
-                            current: {
-                                graded_by: `${res.locals.grading_user.name}: (${res.locals.grading_user.uid})`,
-                                feedback: res.locals.submission.feedback,
-                                score: res.locals.submission.score,
-                            },
-                            incoming: {
-                                graded_by: `${res.locals.authn_user.name}: (${res.locals.authn_user.uid})`,
-                                feedback: {manual: note},
-                                score,
-                            },
-                        },
-                    });
-                }
-
-                callback(null);
-                });
-            },
-           (callback) => {
-                res.locals.overlayGradingInterface = true;
-                question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
-                  if (ERR(err, next)) return;
-                  callback(null);
-                });
-            },
-        ], (err) => {
-            if (ERR(err, next)) return;   
-            if (res.locals.instance_question_modified == true) {
-                return res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err, result) => {
+            if (ERR(err, next)) return;
+            if (result.rows[0].instance_question.manual_grading_conflict) {
+                return res.redirect(`${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/manual_grading`);
             }
+            res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
         });
+
     } else if (req.body.__action == 'abort_manual_grading') {
         const params = {
             instance_question_id: res.locals.instance_question.id,

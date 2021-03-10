@@ -1,4 +1,4 @@
--- BLOCK instance_question_select_last_variant_with_submission
+-- BLOCK instance_questions_select_manual_grading_objects
 DROP FUNCTION IF EXISTS instance_questions_select_manual_grading_objects(bigint, bigint);
 
 -- Retrieves the last variant for an instance question and last submission for the variant.
@@ -12,7 +12,8 @@ CREATE OR REPLACE FUNCTION
         OUT variant jsonb,
         OUT submission jsonb,
         OUT grading_user jsonb,
-        OUT assessment_question jsonb
+        OUT assessment_question jsonb,
+        OUT grading_job_conflict jsonb
     )
 AS $$
 DECLARE
@@ -23,7 +24,8 @@ BEGIN
     INTO iq_temp
     FROM
         instance_questions AS iq
-    WHERE iq.id = arg_instance_question_id
+    WHERE 
+        iq.id = arg_instance_question_id
     FOR UPDATE;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
@@ -32,6 +34,26 @@ BEGIN
         UPDATE instance_questions
         SET manual_grading_user = arg_user_id
         WHERE id = iq_temp.id;
+    END IF;
+    
+    -- gj conflict is two grading_jobs submitted for same submission by two manual grading users 
+    IF iq_temp.manual_grading_conflict IS TRUE THEN
+        SELECT json_agg(row_to_json(gj.*))
+        INTO grading_job_conflict
+        FROM
+            grading_jobs AS gj
+        WHERE
+            gj.submission_id = (
+                SELECT s.id
+                FROM submissions AS s
+                    JOIN variants AS v ON (v.id = s.variant_id)
+                    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+                WHERE iq.id = arg_instance_question_id
+                ORDER BY s.date DESC, s.id DESC
+                LIMIT 1
+            )
+            AND gj.grading_method = 'ManualBeta'::enum_grading_method
+        LIMIT 2;
     END IF;
 
     PERFORM assessment_question_assign_manual_grading_user(iq_temp.assessment_question_id, iq_temp.id, arg_user_id);
