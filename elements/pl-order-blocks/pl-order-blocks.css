@@ -26,6 +26,7 @@ li.ui-state-highlight {
   /*This styling applies to the placeholder answer tile that appears when the user is dragging */
   height: 3em !important; 
   border: none !important;
+  list-style-type: none;
   background-color: #90a4ae !important; 
 }
 
@@ -45,6 +46,8 @@ li.list-group-item-darkmode {
     margin: 4px 7px 0px 7px;
     background-color: #f5f5f5;
     border: 1px solid grey !important;
+    font-size: 1.2em;
+    line-height: 1.1em;
 }
 
 li.list-group-item-darkmode:last-child  {
@@ -54,6 +57,7 @@ li.list-group-item-darkmode:last-child  {
 
 li.list-group-item-header {
     background-color: #7C4DFF;
+    border-radius: 7px;
     font-weight: 600;
     color: #ffffff;
 }

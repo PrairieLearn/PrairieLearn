@@ -18,6 +18,7 @@ SOLUTION_HEADER_DEFAULT = 'Drop blocks here:'
 FILE_NAME_DEFAULT = 'user_code.py'
 SOLUTION_PLACEMENT_DEFAULT = 'right'
 WEIGHT_DEFAULT = 1
+INDENT_OFFSET = 7
 
 
 def render_html_color(score):
@@ -167,7 +168,7 @@ def render(element_html, data):
         for index, mcq_options_text in enumerate(student_previous_submission):
             # render the answers column (restore the student submission)
             submission_indent = data['submitted_answers'][answer_name]['student_answer_indent'][index]
-            submission_indent = (int(submission_indent) * 50)
+            submission_indent = (int(submission_indent) * 50) + INDENT_OFFSET
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
 
