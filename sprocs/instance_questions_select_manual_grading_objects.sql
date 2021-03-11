@@ -18,45 +18,43 @@ CREATE OR REPLACE FUNCTION
 AS $$
 DECLARE
     iq_temp instance_questions%rowtype;
+    s_temp submissions%rowtype;
 BEGIN
 
     SELECT iq.*
     INTO iq_temp
     FROM
         instance_questions AS iq
-    WHERE 
+    WHERE
         iq.id = arg_instance_question_id
     FOR UPDATE;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
 
-    IF iq_temp.manual_grading_user IS NULL THEN
-        UPDATE instance_questions
-        SET manual_grading_user = arg_user_id
-        WHERE id = iq_temp.id;
-    END IF;
-    
-    -- gj conflict is two grading_jobs submitted for same submission by two manual grading users 
-    IF iq_temp.manual_grading_conflict IS TRUE THEN
-        SELECT json_agg(row_to_json(gj.*))
-        INTO grading_job_conflict
-        FROM
-            grading_jobs AS gj
-        WHERE
-            gj.submission_id = (
-                SELECT s.id
-                FROM submissions AS s
-                    JOIN variants AS v ON (v.id = s.variant_id)
-                    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-                WHERE iq.id = arg_instance_question_id
-                ORDER BY s.date DESC, s.id DESC
-                LIMIT 1
-            )
-            AND gj.grading_method = 'ManualBeta'::enum_grading_method
-        LIMIT 2;
-    END IF;
-
     PERFORM assessment_question_assign_manual_grading_user(iq_temp.assessment_question_id, iq_temp.id, arg_user_id);
+
+    -- conflict df: when two grading_jobs created by two manual grading users near simaltaneously
+    IF iq_temp.manual_grading_conflict IS TRUE THEN
+        SELECT json_agg(grading_jobs.*) FROM (
+            SELECT gj.*
+            INTO grading_job_conflict
+            FROM
+                grading_jobs AS gj
+            WHERE
+                gj.submission_id = (
+                    SELECT s.id
+                    FROM submissions AS s
+                        JOIN variants AS v ON (v.id = s.variant_id)
+                        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+                    WHERE
+                        iq.id = arg_instance_question_id
+                    ORDER BY s.date DESC, s.id DESC
+                    LIMIT 1
+                )
+                AND gj.grading_method = 'ManualBeta'::enum_grading_method
+            LIMIT 2
+        ) grading_jobs;
+    END IF;
 
     SELECT to_jsonb(iq.*), to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(aq.*)
     INTO instance_question, question, variant, submission, grading_user, assessment_question

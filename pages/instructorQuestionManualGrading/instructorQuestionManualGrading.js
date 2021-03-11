@@ -39,6 +39,8 @@ router.get('/', (req, res, next) => {
                 res.locals.variant = result.rows[0].variant;
                 res.locals.submission = result.rows[0].submission;
                 res.locals.grading_user = result.rows[0].grading_user;
+                res.locals.grading_job_conflict = result.rows[0].grading_job_conflict;
+                console.log(res.locals.grading_job_conflict);
                 callback(null);
             });
         },
