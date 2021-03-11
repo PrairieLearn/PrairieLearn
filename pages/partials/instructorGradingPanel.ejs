@@ -1,7 +1,7 @@
 <% if (authz_data.has_instructor_view || authz_data.has_course_permission_view) { %>
     <div class="card mb-4 border-success">
       <% if (typeof diff !== 'undefined') { %>
-        <div class="card-header bg-success"><%= diff %> Submission</div>
+        <div class="card-header bg-success"><%= diff %> Grade</div>
       <% } else {%>
         <div class="card-header bg-success">Grading Panel</div>
       <% } %>

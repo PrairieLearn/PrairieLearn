@@ -35,7 +35,7 @@ BEGIN
     WHERE
         iq.manual_grading_user = arg_user_id
         AND iq.id != arg_instance_question_id
-        AND iqga.id = iq.id
+        AND iq.assessment_question_id = iqga.assessment_question_id
         AND iqga.graded_at IS NULL;
 
 END;
