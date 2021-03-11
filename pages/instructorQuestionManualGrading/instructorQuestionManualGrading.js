@@ -40,7 +40,12 @@ router.get('/', (req, res, next) => {
                 res.locals.submission = result.rows[0].submission;
                 res.locals.grading_user = result.rows[0].grading_user;
                 res.locals.grading_job_conflict = result.rows[0].grading_job_conflict;
-                console.log(res.locals.grading_job_conflict);
+
+                // TO DO: Integrate grading_job graded_by user so we do not have to do this:
+                if (res.locals.grading_job_conflict != null) {
+                    res.locals.grading_job_conflict[1].graded_by = res.locals.authn_user.name + ' (' + res.locals.authn_user.uid + ')';
+                }
+
                 callback(null);
             });
         },

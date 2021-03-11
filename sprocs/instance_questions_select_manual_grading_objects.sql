@@ -33,25 +33,33 @@ BEGIN
 
     PERFORM assessment_question_assign_manual_grading_user(iq_temp.assessment_question_id, iq_temp.id, arg_user_id);
 
+    -- TO DO: get graded_by on grading_job table working. migrate from instance question
+
     -- conflict df: when two grading_jobs created by two manual grading users near simaltaneously
     IF iq_temp.manual_grading_conflict IS TRUE THEN
         SELECT json_agg(grading_jobs.*) FROM (
-            SELECT gj.*
+            SELECT gj.score, gj.feedback, CONCAT(u.name, ' (', u.uid, ')') AS graded_by
             INTO grading_job_conflict
             FROM
                 grading_jobs AS gj
+                JOIN submissions AS s ON (gj.submission_id = s.id)
+                JOIN variants AS v ON (v.id = s.variant_id)
+                JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+                JOIN users AS u ON (u.user_id = iq.manual_grading_user)
             WHERE
                 gj.submission_id = (
                     SELECT s.id
                     FROM submissions AS s
                         JOIN variants AS v ON (v.id = s.variant_id)
                         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+                        JOIN users AS u ON (u.user_id = iq.manual_grading_user)
                     WHERE
                         iq.id = arg_instance_question_id
                     ORDER BY s.date DESC, s.id DESC
                     LIMIT 1
                 )
                 AND gj.grading_method = 'ManualBeta'::enum_grading_method
+            ORDER BY gj.date DESC, gj.id DESC
             LIMIT 2
         ) grading_jobs;
     END IF;
