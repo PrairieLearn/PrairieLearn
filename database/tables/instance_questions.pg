@@ -13,8 +13,8 @@ columns
     incremental_submission_points_array: double precision[]
     incremental_submission_score_array: double precision[]
     last_submission_score: double precision
-    manual_grading_user: bigint
     manual_grading_conflict: boolean
+    manual_grading_user: bigint
     max_submission_score: double precision
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     number: integer
