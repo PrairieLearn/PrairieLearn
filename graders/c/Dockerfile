@@ -7,6 +7,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN apt update
 RUN apt install -y python3 gcc make python3-pip && apt clean
 RUN apt install -y python3.8
+RUN apt install -y valgrind
 
 RUN ln -sf /usr/bin/python3.8 /usr/bin/python3
 

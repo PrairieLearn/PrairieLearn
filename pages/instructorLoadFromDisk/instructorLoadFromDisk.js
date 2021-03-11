@@ -56,19 +56,15 @@ var update = function(locals, callback) {
                             if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
                             debug('successfully loaded course', {courseDir});
                             if (config.chunksGenerator) {
-                                util.callbackify(chunks.createChunksSymlinks)({ coursePath: courseDir, courseId: result.courseId, courseData: result.courseData }, (err) => {
+                                util.callbackify(chunks.updateChunksForCourse)({
+                                    coursePath: courseDir,
+                                    courseId: result.courseId,
+                                    courseData: result.courseData,
+                                    oldHash: 'HEAD~1',
+                                    newHash: 'HEAD',
+                                }, (err) => {
                                     if (ERR(err, callback)) return;
-                                    // NOTE: Just for testing
-                                    util.callbackify(chunks.updateChunksForCourse)({
-                                        coursePath: courseDir,
-                                        courseId: result.courseId,
-                                        courseData: result.courseData,
-                                        oldHash: 'HEAD~1',
-                                        newHash: 'HEAD',
-                                    }, (err) => {
-                                        if (ERR(err, callback)) return;
-                                        callback(null);
-                                    });
+                                    callback(null);
                                 });
                             } else {
                                 callback(null);
