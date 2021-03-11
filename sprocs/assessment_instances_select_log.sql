@@ -1,8 +1,10 @@
 DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint);
+DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint,boolean);
 
 CREATE OR REPLACE FUNCTION
     assessment_instances_select_log ( 
-        ai_id bigint
+        ai_id bigint,
+        include_files boolean
     ) 
     RETURNS TABLE(
         event_name text,
@@ -93,7 +95,7 @@ BEGIN
                     v.number AS variant_number,
                     s.id AS submission_id,
                     jsonb_build_object(
-                      'submitted_answer', s.submitted_answer,
+                      'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                       'correct', s.correct
                     ) AS data
                 FROM
@@ -154,7 +156,7 @@ BEGIN
                         'correct', gj.correct,
                         'score', gj.score,
                         'feedback', gj.feedback,
-                        'submitted_answer', s.submitted_answer,
+                        'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                         'submission_id', s.id
                     ) AS data
                 FROM
@@ -189,7 +191,7 @@ BEGIN
                         'correct', gj.correct,
                         'score', gj.score,
                         'feedback', gj.feedback,
-                        'submitted_answer', s.submitted_answer,
+                        'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                         'true_answer', v.true_answer
                     ) AS data
                 FROM
