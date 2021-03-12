@@ -1,7 +1,6 @@
 DROP FUNCTION IF EXISTS assessment_question_assign_manual_grading_user(bigint, bigint, bigint);
 
--- Adds respective user to instance question in arg, removes user from any stale/abandoned manual grading fields
-
+-- Adds grading user data to instance question, removes user from any stale/abandoned manual grading fields
 CREATE OR REPLACE FUNCTION
     assessment_question_assign_manual_grading_user(
         IN arg_assessment_question_id bigint,
@@ -35,7 +34,7 @@ BEGIN
     WHERE
         iq.manual_grading_user = arg_user_id
         AND iq.id != arg_instance_question_id
-        AND iq.assessment_question_id = iqga.assessment_question_id
+        AND iqga.id = iq.id
         AND iqga.graded_at IS NULL;
 
 END;
