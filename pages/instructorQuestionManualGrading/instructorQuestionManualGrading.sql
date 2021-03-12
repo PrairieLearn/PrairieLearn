@@ -13,7 +13,7 @@ UPDATE instance_questions AS iq
 SET manual_grading_user = NULL
 FROM last_submission AS ls
 WHERE
-    -- NOTE: Do remove user from already graded items
+    -- NOTE: Do not remove user from already graded items
     iq.id = $instance_question_id
     AND ls.graded_at IS NULL
 RETURNING *;
