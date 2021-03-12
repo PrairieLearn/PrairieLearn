@@ -14,7 +14,7 @@ DECLARE
     iq_id bigint;
 BEGIN
 
-    -- Get LAST submission that is ungraded
+    -- Get LAST submission that is ungraded including manual grading conflicts
     WITH iq_with_last_submission AS (
         SELECT DISTINCT ON (iq.id) iq.*, s.graded_at
         FROM
@@ -33,7 +33,7 @@ BEGIN
     FROM
         iq_with_last_submission AS iqwls
     WHERE
-        iqwls.graded_at IS NULL
+        iqwls.graded_at IS NULL OR iqwls.manual_grading_conflict = TRUE
     ORDER BY RANDOM()
     LIMIT 1
     FOR UPDATE;

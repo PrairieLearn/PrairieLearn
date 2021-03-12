@@ -1,6 +1,10 @@
 -- BLOCK select_questions_manual_grading
 WITH instance_questions_last_submission AS (
-    SELECT DISTINCT ON (iq.id) iq.id, s.graded_at, iq.assessment_question_id, iq.manual_grading_user
+    SELECT DISTINCT ON (iq.id)
+        iq.id, s.graded_at,
+        iq.assessment_question_id,
+        iq.manual_grading_user,
+        iq.manual_grading_conflict
     FROM
         assessment_questions AS aq
         JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
@@ -23,7 +27,7 @@ SELECT
          instance_questions_last_submission AS iqls
      WHERE 
         iqls.assessment_question_id = aq.id
-        AND iqls.graded_at IS NULL) AS num_ungraded,
+        AND (iqls.graded_at IS NULL OR iqls.manual_grading_conflict = TRUE)) AS num_ungraded,
     (SELECT COUNT(iqls.id)
      FROM 
          instance_questions_last_submission AS iqls
