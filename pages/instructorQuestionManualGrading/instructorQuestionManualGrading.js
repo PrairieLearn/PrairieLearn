@@ -41,11 +41,6 @@ router.get('/', (req, res, next) => {
                 res.locals.grading_user = result.rows[0].grading_user;
                 res.locals.grading_job_conflict = result.rows[0].grading_job_conflict;
 
-                // TO DO: Integrate grading_job graded_by user so we do not have to do this:
-                if (res.locals.grading_job_conflict != null) {
-                    res.locals.grading_job_conflict[1].graded_by = res.locals.authn_user.name + ' (' + res.locals.authn_user.uid + ')';
-                }
-
                 callback(null);
             });
         },
@@ -92,9 +87,9 @@ router.post('/', function(req, res, next) {
         };
         const url = `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`;
     
-        sqlDb.queryOneRow(sql.instance_question_abort_manual_grading, params, function(err, result) {
+        sqlDb.queryZeroOrOneRow(sql.instance_question_abort_manual_grading, params, function(err) {
             if (ERR(err, next)) return next(error.make(500, `Cannot find instance question: ${res.locals.instance_question_id}`));
-            if (result.rowCount > 0) { res.redirect(url); }
+            res.redirect(url);
         });
     } else if (req.body.__action == 'accept_manual_grade_conflict') {
         sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err) => {
