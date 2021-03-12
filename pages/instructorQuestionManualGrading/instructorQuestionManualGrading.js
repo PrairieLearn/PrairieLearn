@@ -46,7 +46,7 @@ router.get('/', (req, res, next) => {
         },
        (callback) => {
             res.locals.overlayGradingInterface = true;
-            question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
+            question.getAndRenderVariant(res.locals.variant.id, null, res.locals, (err) => {
               if (ERR(err, next)) return;
               callback(null);
             });
@@ -60,10 +60,11 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', function(req, res, next) {
-
-    const note = req.body.submission_note;
-    const score = req.body.submission_score;
-    const modifiedAt = req.body.instance_question_modified_at;
+    const note = req.body.submissionNote;
+    const score = req.body.submissionScore;
+    const modifiedAt = req.body.instanceQuestionModifiedAt;
+    const assessmentId = req.body.assessmentId;
+    const assessmentQuestionId = req.body.assessmentQuestionId;
     const params = [
         res.locals.instance_question.id,
         res.locals.authn_user.user_id,
@@ -78,23 +79,19 @@ router.post('/', function(req, res, next) {
             if (result.rows[0].instance_question.manual_grading_conflict) {
                 return res.redirect(`${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/manual_grading`);
             }
-            res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
+            res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
         });
-
     } else if (req.body.__action == 'abort_manual_grading') {
-        const params = {
-            instance_question_id: res.locals.instance_question.id,
-        };
-        const url = `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`;
-    
-        sqlDb.queryZeroOrOneRow(sql.instance_question_abort_manual_grading, params, function(err) {
+        const params = {instance_question_id: res.locals.instance_question.id};
+
+        sqlDb.queryZeroOrOneRow(sql.instance_question_abort_manual_grading, params, (err) => {
             if (ERR(err, next)) return next(error.make(500, `Cannot find instance question: ${res.locals.instance_question_id}`));
-            res.redirect(url);
+            res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
         });
     } else if (req.body.__action == 'accept_manual_grade_conflict') {
         sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err) => {
             if (ERR(err, next)) return;
-            res.redirect(`${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`);
+            res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
