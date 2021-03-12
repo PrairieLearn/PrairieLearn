@@ -21,7 +21,7 @@
               <label for="submission-score">Score:</label>
               <div class="input-group">
                 <input type="number" min="0" max="100" step="5" class="form-control" id="submission-score" class="submission-score" name="submissionScore" value="<%= submission.score % 5 > 0 ? submission.score * 100 : submission.score %>" aria-describedby="score-help-block"/>
-                <span class="input-group-addon">%</span>
+                <span class="input-group-addon" style="display: flex; align-items: center">%</span>
               </div>
               <small id="score-help-block" class="form-text text-muted">
                 This percentage will override the most recent submission score.
@@ -34,8 +34,8 @@
             <div class="text-right">
 
               <% if (typeof diff == 'undefined') { %>
-                <button name="__action" value="add_manual_grade" class="btn btn-primary">Submit and Next</button>
-                <button name="__action" value="abort_manual_grading" class="btn btn-danger">Skip and Leave Grading</button>  
+                <button style="width: 100%; margin-bottom: 15px" name="__action" value="add_manual_grade" class="btn btn-primary">Submit and Next</button>
+                <button style="width: 100%" name="__action" value="abort_manual_grading" class="btn btn-danger">Skip and Leave Grading</button>
               <% } else { %>
                 <button name="__action" value="accept_manual_grade_conflict" class="btn btn-primary">Accept <%= diff %> Grade</button>
               <% }%>
