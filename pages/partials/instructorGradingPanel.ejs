@@ -12,7 +12,7 @@
         <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
             <blockquote style="color: red">Submission updated</blockquote>
         <% } %>
-        <form name="instance_question-manual-grade-update-form" method="POST">
+        <form name="instance-question-manual-grade-update-form" method="POST">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
             <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
@@ -20,12 +20,12 @@
             <input type="hidden" name="diff_submission" value="<%= !!typeof diff %>">
             <!--TO DO: Fix camel, pascal case inconsistencies-->
             <div class="form-group">
-              <label for="submissionScore">Score:</label>
+              <label for="submission-score">Score:</label>
               <div class="input-group">
-                <input type="number" min="0" max="100" step="5" class="form-control" id="submissionScore" class="submission-score" name="submission_score" value="<%= submission.score % 5 > 0 ? submission.score * 100 : submission.score %>" aria-describedby="scoreHelpBlock"/>  
+                <input type="number" min="0" max="100" step="5" class="form-control" id="submission-score" class="submission-score" name="submission_score" value="<%= submission.score % 5 > 0 ? submission.score * 100 : submission.score %>" aria-describedby="score-help-block"/>
                 <span class="input-group-addon">%</span>
               </div>
-              <small id="scoreHelpBlock" class="form-text text-muted">
+              <small id="score-help-block" class="form-text text-muted">
                 This percentage will override the most recent submission score.
               </small>
             </div>
