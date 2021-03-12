@@ -31,7 +31,7 @@ BEGIN
     )
     UPDATE instance_questions AS iq
     SET manual_grading_user = NULL
-    FROM instance_questions_graded_at as iqga
+    FROM instance_questions_graded_at AS iqga
     WHERE
         iq.manual_grading_user = arg_user_id
         AND iq.id != arg_instance_question_id
