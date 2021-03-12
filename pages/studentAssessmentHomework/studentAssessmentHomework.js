@@ -86,7 +86,7 @@ router.post('/', function(req, res, next) {
         };
 
         // Update the SQL database by changing the user's group role
-        // TODO: Figure out how to get this block to always run first
+        // TODO: Figure out how to get this block to always run first with async-await
         if (!invalidRoleName) {
             sqldb.query(sql.get_group_info, params, function(err, result) {
                 if (ERR(err, next)) return;
