@@ -937,6 +937,10 @@ module.exports.initExpress = function() {
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
+    app.use('/pl/course/:course_id/question/:question_id/file', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]);
     app.use('/pl/course/:course_id/question/:question_id/preview/file', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
@@ -948,6 +952,12 @@ module.exports.initExpress = function() {
     app.use('/pl/course/:course_id/question/:question_id/preview/text', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]);
+    // added for manual grading view:
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/file', [
+        require('./middlewares/selectAndAuthzInstanceQuestion'),
+        require('./middlewares/studentAssessmentAccess'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
 
     //////////////////////////////////////////////////////////////////////
