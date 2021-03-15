@@ -102,6 +102,29 @@
             "type": "boolean",
             "default": false
         },
+        "groupMaxSize": {
+            "description": "Maximum number of students in a group.",
+            "type": "number"
+        },
+        "groupMinSize": {
+            "description": "Minimum number of students in a group.",
+            "type": "number"
+        },
+        "studentGroupCreate": {
+            "description": "Whether students can create groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "studentGroupJoin": {
+            "description": "Whether students can join groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "studentGroupLeave": {
+            "description": "Whether students can leave groups.",
+            "type": "boolean",
+            "default": false
+        },
         "gradeRateMinutes": {
             "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
             "type": "number",

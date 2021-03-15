@@ -17,7 +17,7 @@ SELECT
 FROM 
     assessments AS a
     JOIN enrollments AS e ON e.course_instance_id = a.course_instance_id
-    JOIN users u ON u.user_id = e.user_id
+    JOIN users AS u ON u.user_id = e.user_id
 WHERE 
     a.id = $assessment_id AND e.role = 'Student';
 
@@ -37,9 +37,9 @@ FROM
         user_id
     FROM
         group_configs AS gc
-        JOIN groups as gr ON (gc.id = gr.group_config_id)
-        JOIN group_users as gu ON (gu.group_id = gr.id)
+        JOIN groups AS g ON (gc.id = g.group_config_id)
+        JOIN group_users AS gu ON (gu.group_id = g.id)
     WHERE 
-        gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL AND gr.deleted_at IS NULL)) temp
+        gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL AND g.deleted_at IS NULL)) temp
 JOIN
     users u ON u.user_id = temp.user_id;
