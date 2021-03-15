@@ -1,7 +1,6 @@
 DROP FUNCTION IF EXISTS instance_questions_update_for_manual_grading(bigint, bigint, bigint);
 
--- RETURN next instance question for grading from assessment question ID
-
+-- Determines next eligible instance question for grading
 CREATE OR REPLACE FUNCTION
     instance_questions_update_for_manual_grading(
         IN arg_assessment_id bigint, -- endpoint auth redundancy
@@ -14,7 +13,7 @@ DECLARE
     iq_id bigint;
 BEGIN
 
-    -- Get LAST submission that is ungraded including manual grading conflicts
+    -- Get LAST submission that is ungraded (include manual grading conflicts as eligible)
     WITH iq_with_last_submission AS (
         SELECT DISTINCT ON (iq.id) iq.*, s.graded_at
         FROM
