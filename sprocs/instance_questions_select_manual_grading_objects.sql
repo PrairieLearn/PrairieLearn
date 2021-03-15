@@ -33,7 +33,7 @@ BEGIN
 
     PERFORM assessment_question_assign_manual_grading_user(iq_temp.assessment_question_id, iq_temp.id, arg_user_id);
 
-    -- conflict df: when two grading_jobs created by two manual grading users near simaltaneously
+    -- conflict df: when TA 'x' submits manual grade while TA 'y' is grading same submission
     IF iq_temp.manual_grading_conflict IS TRUE THEN
         SELECT json_agg(grading_jobs.*) FROM (
             SELECT gj.score, gj.feedback, CONCAT(u.name, ' (', u.uid, ')') AS graded_by
