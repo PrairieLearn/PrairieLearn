@@ -1,8 +1,6 @@
 -- BLOCK instance_questions_select_manual_grading_objects
 DROP FUNCTION IF EXISTS instance_questions_select_manual_grading_objects(bigint, bigint);
 
--- Retrieves the last variant for an instance question and last submission for the variant.
-
 CREATE OR REPLACE FUNCTION
     instance_questions_select_manual_grading_objects(
         IN arg_instance_question_id bigint,
