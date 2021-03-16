@@ -2,7 +2,7 @@
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name, coalesce(e.role, 'None'::enum_role) AS role,
-    gi.id AS gid, gi.name AS group_name, gi.uid_list,
+    gi.id AS group_id, gi.name AS group_name, gi.uid_list,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,

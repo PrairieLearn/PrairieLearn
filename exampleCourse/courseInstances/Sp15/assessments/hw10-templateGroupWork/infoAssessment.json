@@ -3,8 +3,13 @@
     "type": "Homework",
     "title": "Group Activity Template",
     "set": "Homework",
-    "number": "9",
+    "number": "10",
     "groupWork": true,
+    "groupMaxSize": 2,
+    "groupMinSize": 5,
+    "studentGroupCreate": true,
+    "studentGroupJoin": true,
+    "studentGroupLeave": true,
     "allowAccess": [
         {
             "role": "TA",
