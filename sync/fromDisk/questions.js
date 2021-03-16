@@ -5,6 +5,28 @@ const infofile = require('../infofile');
 const perf = require('../performance')('question');
 
 /**
+ * Based upon the passed question and a grading type,
+ *  returns a boolean if the question has the given grading method type 
+ * @param {import('../course-db').Question} q 
+ * @param {import('../course-db').gradingMethod} gradingMethodType 
+ * @returns {boolean}
+ */
+ function hasGradingMethod(q, gradingMethodType) {
+    const { gradingMethod } = q;
+    return gradingMethodType === gradingMethod || (Array.isArray(gradingMethod) && gradingMethod.indexOf(gradingMethodType) > -1);
+}
+
+/**
+ * Returns true iff the given question is an internal grading question
+ * @param {import('../course-db').Question} q 
+ * @returns {boolean}
+ */
+function hasInternalGrading(q) {
+    return !q.gradingMethod || (Array.isArray(q.gradingMethod) && !q.gradingMethod.length) || hasGradingMethod(q, 'Internal');
+}
+
+
+/**
  * @param {import('../course-db').Question} q
  */
 function getParamsForQuestion(q) {
@@ -28,9 +50,9 @@ function getParamsForQuestion(q) {
         options: q.options,
         client_files: q.clientFiles || [],
         topic: q.topic,
-        grading_method_internal: !q.gradingMethod || q.gradingMethod === 'Internal',
-        grading_method_external: q.gradingMethod === 'External',
-        grading_method_manual: q.gradingMethod === 'Manual',
+        grading_method_internal: hasInternalGrading(q),
+        grading_method_external: hasGradingMethod(q, 'External'),
+        grading_method_manual: hasGradingMethod(q, 'Manual'),
         single_variant: !!q.singleVariant,
         external_grading_enabled: (q.externalGradingOptions && q.externalGradingOptions.enabled),
         external_grading_image: (q.externalGradingOptions && q.externalGradingOptions.image),

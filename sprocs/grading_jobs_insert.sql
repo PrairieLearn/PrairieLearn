@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION
         IN new_submitted_answer jsonb DEFAULT NULL,
         IN new_params jsonb DEFAULT NULL,
         IN new_true_answer jsonb DEFAULT NULL,
-        OUT grading_job grading_jobs
+        OUT grading_jobs grading_jobs[]
     )
 AS $$
 DECLARE
@@ -40,17 +40,25 @@ BEGIN
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
 
     -- ######################################################################
-    -- delegate the call
-
+    -- build up all grading jobs
+    IF grading_method_internal = False AND grading_method_external = False AND grading_method_manual = False THEN
+        RAISE EXCEPTION 'all grading methods set to false: (internal %s, external %s, manual %s)', grading_method_internal, grading_method_external, grading_method_manual;
+    END IF;
+    
+    grading_jobs = []
+    
+    -- delegate internal grading job ()
     IF grading_method_internal = True THEN
-        grading_job := grading_jobs_insert_internal(submission_id, authn_user_id,
+        grading_jobs = grading_jobs || grading_jobs_insert_internal(submission_id, authn_user_id,
                             new_gradable, new_broken, new_format_errors, new_partial_scores,
                             new_score, new_v2_score, new_feedback, new_submitted_answer,
                             new_params, new_true_answer);
-    ELSIF grading_method_external = True OR grading_method_manual = True THEN
-        grading_job := grading_jobs_insert_external_manual(submission_id, authn_user_id);
-    ELSE
-        RAISE EXCEPTION 'all grading methods set to false: (internal %s, external %s, manual %s)', grading_method_internal, grading_method_external, grading_method_manual;
-    END IF;
+    
+    -- delegate external/manual grading job
+    IF grading_method_external = True OR grading_method_manual = True THEN
+        grading_job_external = grading_jobs || grading_jobs_insert_external_manual(submission_id, authn_user_id, 'External');
+
+    IF grading_method_manual = TRUE THEN
+        grading_job = grading_jobs || grading_jobs_insert_external_manual(submission_id, authn_user_id, 'Manual');
 END;
 $$ LANGUAGE plpgsql VOLATILE;
