@@ -81,8 +81,8 @@ router.get('/:filename', function(req, res, next) {
     const usernameColumn = [
         ['Username', 'username'],
     ];
-    const groupnameColumn = [
-        ['Groupname', 'groupname'],
+    const groupNameColumn = [
+        ['Group name', 'group_name'],
         ['Usernames', 'uid_list'],
     ];
     const scoreColumn = [
@@ -104,8 +104,8 @@ router.get('/:filename', function(req, res, next) {
     ];
     let scoresColumns = studentColumn.concat(scoreColumn);
     let pointsColumns = studentColumn.concat(pointColumn);
-    let scoresGroupColumns = groupnameColumn.concat(scoreColumn);
-    let pointsGroupColumns = groupnameColumn.concat(pointColumn);
+    let scoresGroupColumns = groupNameColumn.concat(scoreColumn);
+    let pointsGroupColumns = groupNameColumn.concat(pointColumn);
     let scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
     let pointsByUsernameColumns = usernameColumn.concat(pointColumn);
     let identityColumn = studentColumn.concat(
@@ -114,7 +114,7 @@ router.get('/:filename', function(req, res, next) {
         ['Role', 'role'],
     ]));
     if(res.locals.assessment.group_work){
-        identityColumn = groupnameColumn;
+        identityColumn = groupNameColumn;
     }
     let instancesColumns = identityColumn.concat(instanceColumn);
     
