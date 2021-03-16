@@ -31,4 +31,4 @@ FROM
 WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = $instance_number
-    AND g.name = $groupname;
+    AND g.name = $group_name;
