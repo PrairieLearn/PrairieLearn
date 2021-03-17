@@ -121,6 +121,7 @@ module.exports = {
             'grading_jobs_insert.sql',
             'grading_jobs_insert_external_manual.sql',
             'grading_jobs_insert_internal.sql',
+            'grading_jobs_insert_manual.sql',
             'grading_jobs_process_external.sql',
             'ip_to_mode.sql',
             'config_select.sql',
