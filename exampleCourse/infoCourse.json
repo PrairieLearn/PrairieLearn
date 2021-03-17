@@ -6,12 +6,17 @@
         "useNewQuestionRenderer": true
     },
     "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
-    "assessmentSets": [],
+    "assessmentSets": [
+      {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
+      {"abbreviation": "MP", "name": "Machine Problem", "heading": "Machine Problems", "color": "green3"},
+      {"abbreviation": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "pink1"},
+      {"abbreviation": "GW",  "name": "GroupWork", "heading": "Group Work", "color": "red1"}
+    ],
     "topics": [
-        {"name": "Template", "color": "orange1", "description": "Templates to copy as the start for a new question."},
+        {"name": "Template", "heading": "Template Questions", "color": "orange1", "description": "Templates to copy as the start for a new question."},
         {"name": "Autograder", "color": "orange2", "description": "Questions using the external code grading feature."},
         {"name": "Element", "color": "orange3", "description": "Overviews for each feature available within an element."},
-        {"name": "Demo", "color": "purple1", "description": "Demonstration questions showcasing PrairieLearn Features."},
+        {"name": "Demo", "heading" : "Demo Questions", "color": "purple1", "description": "Demonstration questions showcasing PrairieLearn Features."},
         {"name": "Workshop Demo", "color": "pink2", "description": "Demonstration questions from the PrairieLearn workshop."},
         {"name": "Drawing", "color": "purple2", "description": "Create interactive drawings."},
         {"name": "Custom", "color": "gray1", "description": "Generate custom elements or styles within PrairieLearn."},
