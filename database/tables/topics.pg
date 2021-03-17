@@ -1,6 +1,7 @@
 columns
     color: text
     course_id: bigint not null
+    heading: text
     description: text
     id: bigint not null default nextval('topics_id_seq'::regclass)
     name: text
@@ -15,3 +16,4 @@ foreign-key constraints
 
 referenced by
     questions: FOREIGN KEY (topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessments: FOREIGN KEY (assessment_topic_id) REFERENCES assessment_topics(id) ON UPDATE CASCADE ON DELETE SET NULL
