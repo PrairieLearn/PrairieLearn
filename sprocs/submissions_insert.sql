@@ -1,5 +1,6 @@
 DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,integer,enum_mode,bigint,bigint,bigint);
 DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,boolean,integer,enum_mode,bigint,bigint,bigint);
+DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,boolean,integer,enum_mode,bigint,bigint,boolean,bigint);
 
 CREATE OR REPLACE FUNCTION
     submissions_insert(
@@ -12,6 +13,7 @@ CREATE OR REPLACE FUNCTION
         IN mode enum_mode,
         IN variant_id bigint,
         IN authn_user_id bigint,
+        IN autosave boolean,
         OUT submission_id bigint
     )
 AS $$
@@ -80,13 +82,20 @@ BEGIN
             END);
 
     -- ######################################################################
+    -- delete old autosave submissions
+    DELETE FROM submissions s
+    WHERE s.variant_id = variant.id
+    AND s.auth_user_id = authn_user_id
+    AND s.autosave = TRUE;
+
+    -- ######################################################################
     -- actually insert the submission
 
     INSERT INTO submissions
             (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, duration,         params,         true_answer, gradable, broken)
+            credit, mode, duration,         params,         true_answer, gradable, broken, autosave)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta,    variant.params, variant.true_answer, gradable, broken)
+            credit, mode, delta,    variant.params, variant.true_answer, gradable, broken, autosave)
     RETURNING id
     INTO submission_id;
 
