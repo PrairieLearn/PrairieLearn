@@ -36,6 +36,10 @@
             "description": "Which assessmentSet this one belongs to (e.g., 'Homework', 'Practice Quiz').",
             "type": "string"
         },
+        "topic": {
+            "description": "Which topics this one belongs to (this is usually specific to each course, e.g., 'Chapter 2', 'Chapter 2').",
+            "type": "string"
+        },
         "number": {
             "description": "The number of this assessment within the set (e.g., '1', '2R', '3B').",
             "type": "string"
