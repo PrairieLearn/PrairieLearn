@@ -1,3 +1,6 @@
+// usage:
+// $ node dump-anonymize.js <data-dump-folder> <anonymous-output-folder>
+
 const fs = require('fs');
 const async = require("async");
 const { v4: uuidv4 } = require('uuid');
@@ -17,20 +20,7 @@ newUserIds = {};
 newUserUids = {};
 newUserNames = {};
 
-// function replaceUserId() {
-
-// }
-// function replaceUserUid() {
-    
-// }
-// function replaceUserName() {
-    
-// }
-
-function anonymizeAssessmentInstances(contents) {
-    // TODO: the course I'm currently dealing with doesn't have an 
-    // IDs here but is that always true?
-    // console.log(contents);
+function anonymizeJSON(contents) {
     for (let instance of contents) {
         if (instance["user_id"]) {
             instance.user_id = getUUID(newUserIds, instance.user_id);
@@ -51,57 +41,29 @@ function anonymizeAssessmentInstances(contents) {
         if (instance["uids"]) {
             let newUids = [];
             for (uid of instance.uids) {
-                // console.log(uid)
                 newUids.push(getUUID(newUserUids, uid));
             }
             instance.uids = newUids;
-            // console.log(instance.uids)
-            // console.log(contents);
-
         }
     }
-    // console.log(contents);
-    return contents;
-}
-
-function anonymizeInstanceQuestions(contents) {
-    console.log(contents);
-    // process.exit()
-    return contents;
-}
-
-function anonymizeAccessRules(contents) {
-    return contents;
-}
-
-function anonymizeSubmissions(contents) {
-    // console.log(contents);
-    // process.exit()
-    return contents;
-}
-
-function anonymizeLog(contents) {
-    // console.log(contents);
-    // process.exit()
     return contents;
 }
 
 function anonymizeFile(filename, contents) {
     if (filename.endsWith("_instances.json")) {
-        // console.log(filename);
-        return anonymizeAssessmentInstances(contents);
+        return anonymizeJSON(contents);
     } else if (filename.endsWith("_instance_questions.json")) {
-        return anonymizeAssessmentInstances(contents);
+        return anonymizeJSON(contents);
     } else if (filename.endsWith("_access_rules.json")) {
-        return anonymizeAssessmentInstances(contents);
+        return anonymizeJSON(contents);
     } else if (filename.endsWith("_submissions.json")) {
-        return anonymizeAssessmentInstances(contents);
+        return anonymizeJSON(contents);
     } else if (filename.endsWith("_log.json")) {
-        return anonymizeAssessmentInstances(contents);
+        return anonymizeJSON(contents);
     } else if (filename === "assessments.json") {
-        return anonymizeAssessmentInstances(contents);
+        return anonymizeJSON(contents);
     } else if (filename === "gradebook.json") {
-        return anonymizeAssessmentInstances(contents);
+        return anonymizeJSON(contents);
     } else if (filename === "download_log.txt") {
         return contents;
     } else {
@@ -110,21 +72,22 @@ function anonymizeFile(filename, contents) {
 }
 
 function processFile(filename, callback) {
-    fullpath = path.join(infolder, filename);
-    outpath = path.join(outfolder, filename);
-    // console.log(fullpath)
-    // callback()
+    const fullpath = path.join(infolder, filename);
+    const outpath = path.join(outfolder, filename);
+    
     fs.readFile(fullpath, (err, data) => {
+        if (err) {
+            console.error(err);
+        }
         let outstring;
         if (filename.endsWith(".json")) {
             data = JSON.parse(data);
-            anonymizedContents = anonymizeFile(filename, data);
+            const anonymizedContents = anonymizeFile(filename, data);
             outstring = JSON.stringify(anonymizedContents, null, 2);
         } else {
             outstring = anonymizeFile(filename, data);
         }
 
-        // callback(); // skip actually writing the files while debugging
         fs.writeFile(outpath, outstring, err => {
             if (err) {
               console.error(err);
