@@ -20,6 +20,7 @@ module.exports.sync = async function(courseId, courseData) {
         courseTopics = courseData.course.data.topics.map(t => JSON.stringify([
             t.name,
             t.description,
+            t.heading,
             t.color,
         ]));
     }

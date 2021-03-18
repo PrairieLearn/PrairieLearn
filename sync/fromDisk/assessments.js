@@ -11,7 +11,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 /**
  * SYNCING PROCESS:
- * 
+ *
  * 1. Assign order_by number to every assessment
  * 2. Check that no UUIDs are duplicated within this course instance
  * 3. Check that no UUIDS are duplicated in any other course instance
@@ -38,7 +38,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  */
 
  /**
-  * 
+  *
   * @param {import('../infofile').InfoFile<import('../course-db').Assessment>} assessmentInfoFile
   * @param {{ [qid: string]: any }} questionIds
   */
@@ -62,6 +62,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         auto_close: !!_.get(assessment, 'autoClose', true),
         max_points: assessment.maxPoints,
         set_name: assessment.set,
+        topic_name: assessment.topic,
         text: assessment.text,
         constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         group_work: !!assessment.groupWork,
