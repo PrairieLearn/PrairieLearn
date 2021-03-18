@@ -2,56 +2,108 @@ const fs = require('fs');
 const async = require("async");
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const { content } = require('googleapis/build/src/apis/content');
 
 infolder = process.argv[2];
 outfolder = process.argv[3];
 
-newIds = {};
-newUids = {};
+function getUUID(map, key){
+    if (!map[key]) {
+        map[key] = uuidv4();
+    }
+    return map[key];
+}
+
+newUserIds = {};
+newUserUids = {};
+newUserNames = {};
+
+// function replaceUserId() {
+
+// }
+// function replaceUserUid() {
+    
+// }
+// function replaceUserName() {
+    
+// }
 
 function anonymizeAssessmentInstances(contents) {
-    console.log(contents);
-    process.exit()
+    // TODO: the course I'm currently dealing with doesn't have an 
+    // IDs here but is that always true?
+    // console.log(contents);
+    for (let instance of contents) {
+        if (instance["user_id"]) {
+            instance.user_id = getUUID(newUserIds, instance.user_id);
+        }
+
+        if (instance["user_uid"]) {
+            instance.user_uid = getUUID(newUserUids, instance.user_uid);
+        }
+
+        if (instance["user_name"]) {
+            instance.user_name = getUUID(newUserNames, instance.user_name);
+        }
+
+        if (instance["auth_user_uid"]) {
+            instance.auth_user_uid = getUUID(newUserUids, instance.auth_user_uid);
+        }
+
+        if (instance["uids"]) {
+            let newUids = [];
+            for (uid of instance.uids) {
+                // console.log(uid)
+                newUids.push(getUUID(newUserUids, uid));
+            }
+            instance.uids = newUids;
+            // console.log(instance.uids)
+            // console.log(contents);
+
+        }
+    }
+    // console.log(contents);
+    return contents;
 }
 
 function anonymizeInstanceQuestions(contents) {
     console.log(contents);
-    process.exit()
+    // process.exit()
+    return contents;
 }
 
 function anonymizeAccessRules(contents) {
-    console.log(contents);
-    process.exit()
+    return contents;
 }
 
 function anonymizeSubmissions(contents) {
-    console.log(contents);
-    process.exit()
+    // console.log(contents);
+    // process.exit()
+    return contents;
 }
 
 function anonymizeLog(contents) {
-    console.log(contents);
-    process.exit()
+    // console.log(contents);
+    // process.exit()
+    return contents;
 }
 
 function anonymizeFile(filename, contents) {
     if (filename.endsWith("_instances.json")) {
+        // console.log(filename);
         return anonymizeAssessmentInstances(contents);
     } else if (filename.endsWith("_instance_questions.json")) {
-        return anonymizeInstanceQuestions(contents)
+        return anonymizeAssessmentInstances(contents);
     } else if (filename.endsWith("_access_rules.json")) {
-        return anonymizeInstanceQuestions(contents)
+        return anonymizeAssessmentInstances(contents);
     } else if (filename.endsWith("_submissions.json")) {
-        return anonymizeInstanceQuestions(contents)
+        return anonymizeAssessmentInstances(contents);
     } else if (filename.endsWith("_log.json")) {
-        return anonymizeInstanceQuestions(contents)
+        return anonymizeAssessmentInstances(contents);
     } else if (filename === "assessments.json") {
-        return content;
+        return anonymizeAssessmentInstances(contents);
     } else if (filename === "gradebook.json") {
-        return content;
+        return anonymizeAssessmentInstances(contents);
     } else if (filename === "download_log.txt") {
-        return content;
+        return contents;
     } else {
         console.error("Unrecognized File Type: ", filename);
     }
@@ -63,16 +115,22 @@ function processFile(filename, callback) {
     // console.log(fullpath)
     // callback()
     fs.readFile(fullpath, (err, data) => {
-        contents = JSON.parse(data);
+        let outstring;
+        if (filename.endsWith(".json")) {
+            data = JSON.parse(data);
+            anonymizedContents = anonymizeFile(filename, data);
+            outstring = JSON.stringify(anonymizedContents, null, 2);
+        } else {
+            outstring = anonymizeFile(filename, data);
+        }
 
-        anonymizedContents = anonymizeFile(filename, contents);
-        outstring = JSON.stringify(anonymizedContents, null, 2)
-        fs.writeFile(outpath, content, err => {
+        // callback(); // skip actually writing the files while debugging
+        fs.writeFile(outpath, outstring, err => {
             if (err) {
               console.error(err);
             }
             callback();
-        })
+        });
     });
 
 }
@@ -83,4 +141,4 @@ if (!fs.existsSync(outfolder)){
     fs.mkdirSync(outfolder);
 }
 
-async.mapLimit(files, 5, processFile);
+async.mapLimit(files, 12, processFile);
