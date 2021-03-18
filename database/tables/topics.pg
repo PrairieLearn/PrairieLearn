@@ -16,4 +16,4 @@ foreign-key constraints
 
 referenced by
     questions: FOREIGN KEY (topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL
-    assessments: FOREIGN KEY (assessment_topic_id) REFERENCES assessment_topics(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessments: FOREIGN KEY (assessment_topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL
