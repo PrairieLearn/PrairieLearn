@@ -50,7 +50,7 @@ BEGIN
     END IF;
 
     -- ######################################################################
-    -- DO we want to cancel any outstanding grading jobs here?
+    -- Do we need to cancel all grading jobs so manual grade is NOT overwritten?
 
     -- FOR grading_job IN
     --     UPDATE grading_jobs AS gj
@@ -107,15 +107,18 @@ BEGIN
     -- overwrite internal grading logic instance question scoring
     -- as we only calc perc on current score out of max assessment instance score, all other
     -- grading machinery data is moot. It should be cleaned out OR re-integrated on manual grading.
+    -- grading stat data can be disabled if `instance_questions_calculate_stats(instance_question_id)` does not run
+    --
+
     UPDATE instance_questions
     SET
-        points = manual_grade_score * 100,
-        score_perc = (manual_grade_score * 100) / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100
+        points = manual_grade_score * aq.max_points,
+        score_perc = manual_grade_score * 100 -- Manual grade score always a decimal perc
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
         instance_questions.id = iq.id
-        AND iq.id = 2;
+        AND iq.id = instance_question_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
