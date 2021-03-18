@@ -2,12 +2,12 @@
 // $ node dump-anonymize.js <data-dump-folder> <anonymous-output-folder>
 
 const fs = require('fs');
-const async = require("async");
+const async = require('async');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
-infolder = process.argv[2];
-outfolder = process.argv[3];
+const infolder = process.argv[2];
+const outfolder = process.argv[3];
 
 function getUUID(map, key){
     if (!map[key]) {
@@ -16,31 +16,31 @@ function getUUID(map, key){
     return map[key];
 }
 
-newUserIds = {};
-newUserUids = {};
-newUserNames = {};
+const newUserIds = {};
+const newUserUids = {};
+const newUserNames = {};
 
 function anonymizeJSON(contents) {
     for (let instance of contents) {
-        if (instance["user_id"]) {
+        if (instance['user_id']) {
             instance.user_id = getUUID(newUserIds, instance.user_id);
         }
 
-        if (instance["user_uid"]) {
+        if (instance['user_uid']) {
             instance.user_uid = getUUID(newUserUids, instance.user_uid);
         }
 
-        if (instance["user_name"]) {
+        if (instance['user_name']) {
             instance.user_name = getUUID(newUserNames, instance.user_name);
         }
 
-        if (instance["auth_user_uid"]) {
+        if (instance['auth_user_uid']) {
             instance.auth_user_uid = getUUID(newUserUids, instance.auth_user_uid);
         }
 
-        if (instance["uids"]) {
+        if (instance['uids']) {
             let newUids = [];
-            for (uid of instance.uids) {
+            for (let uid of instance.uids) {
                 newUids.push(getUUID(newUserUids, uid));
             }
             instance.uids = newUids;
@@ -50,24 +50,24 @@ function anonymizeJSON(contents) {
 }
 
 function anonymizeFile(filename, contents) {
-    if (filename.endsWith("_instances.json")) {
+    if (filename.endsWith('_instances.json')) {
         return anonymizeJSON(contents);
-    } else if (filename.endsWith("_instance_questions.json")) {
+    } else if (filename.endsWith('_instance_questions.json')) {
         return anonymizeJSON(contents);
-    } else if (filename.endsWith("_access_rules.json")) {
+    } else if (filename.endsWith('_access_rules.json')) {
         return anonymizeJSON(contents);
-    } else if (filename.endsWith("_submissions.json")) {
+    } else if (filename.endsWith('_submissions.json')) {
         return anonymizeJSON(contents);
-    } else if (filename.endsWith("_log.json")) {
+    } else if (filename.endsWith('_log.json')) {
         return anonymizeJSON(contents);
-    } else if (filename === "assessments.json") {
+    } else if (filename === 'assessments.json') {
         return anonymizeJSON(contents);
-    } else if (filename === "gradebook.json") {
+    } else if (filename === 'gradebook.json') {
         return anonymizeJSON(contents);
-    } else if (filename === "download_log.txt") {
+    } else if (filename === 'download_log.txt') {
         return contents;
     } else {
-        console.error("Unrecognized File Type: ", filename);
+        console.error('Unrecognized File Type: ', filename);
     }
 }
 
@@ -80,7 +80,7 @@ function processFile(filename, callback) {
             console.error(err);
         }
         let outstring;
-        if (filename.endsWith(".json")) {
+        if (filename.endsWith('.json')) {
             data = JSON.parse(data);
             const anonymizedContents = anonymizeFile(filename, data);
             outstring = JSON.stringify(anonymizedContents, null, 2);
