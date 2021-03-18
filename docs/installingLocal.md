@@ -17,7 +17,7 @@ git clone https://github.com/PrairieLearn/PrairieLearn.git
 docker run -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /usr/local/bin/npm ci
 ```
 
-The path `/path/to/PrairieLearn` should be replaced with the *absolute* path to the PrairieLearn source on your computer.  If you're in the root of the source directory already, you can substitute `%cd%` (on Windows) or `$PWD` (Linux and MacOS) for `/path/to/PrairieLearn`.
+The path `/path/to/PrairieLearn` should be replaced with the *absolute* path to the PrairieLearn source on your computer.  If you're in the root of the source directory already, you can substitute `%cd%` (on Windows cmd), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
 
 By default, PrairieLearn will load `exampleCourse`, `testCourse`, and any courses mounted at `/course` and `/course[2-9]` in the Docker container.  To override this behavior, you can create a custom [`config.json` file](configJson.md).
 
