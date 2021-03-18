@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION
     grading_jobs_insert_manual (
         IN submission_id bigint,
         IN authn_user_id bigint,
-        IN manual_grade_score double precision,
+        IN manual_grade_score double precision, -- decimal percent divisble by 5
         IN manual_grade_feedback jsonb,
         OUT grading_job grading_jobs
     )
@@ -99,26 +99,10 @@ BEGIN
     -- update all parent objects
 
     IF assessment_instance_id IS NOT NULL THEN
-        PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
+        -- PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
+        PERFORM instance_questions_update_in_manual_grading(instance_question_id, grading_job.score, grading_job.auth_user_id);
         PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit, FALSE, TRUE);
     END IF;
 
-    -- ######################################################################
-    -- overwrite internal grading logic instance question scoring
-    -- as we only calc perc on current score out of max assessment instance score, all other
-    -- grading machinery data is moot. It should be cleaned out OR re-integrated on manual grading.
-    -- grading stat data can be disabled if `instance_questions_calculate_stats(instance_question_id)` does not run
-    --
-
-    UPDATE instance_questions
-    SET
-        points = manual_grade_score * aq.max_points,
-        score_perc = manual_grade_score * 100 -- Manual grade score always a decimal perc
-    FROM
-        instance_questions AS iq
-        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-    WHERE
-        instance_questions.id = iq.id
-        AND iq.id = instance_question_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
