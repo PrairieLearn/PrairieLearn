@@ -67,7 +67,7 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', async function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
 
     // NEW CASE: HANDLES USER CLAIMING GROUP ROLE
@@ -86,20 +86,22 @@ router.post('/', function(req, res, next) {
         };
 
         // Update the SQL database by changing the user's group role
-        // TODO: Figure out how to get this block to always run first with async-await
         if (!invalidRoleName) {
-            sqldb.query(sql.get_group_info, params, function(err, result) {
-                if (ERR(err, next)) return;
-                let params = [
-                    req.body.roleName,
-                    res.locals.user.user_id,
-                    result.rows[0].group_id
-                ];
-                console.log(`Updating ${params[1]} in group ${params[2]} to ${params[0]}.`);
-                sqldb.call('update_group_pogil_role', params, function(err, _result) {
-                    if (err) console.log("Error updating pogil role!");
-                });
-            });
+            try {
+              let result = await sqldb.queryAsync(sql.get_group_info, params);
+              let queryParams = [
+                  req.body.roleName,
+                  res.locals.user.user_id,
+                  result.rows[0].group_id
+              ];
+              console.log(`Updating ${queryParams[1]} in group ${queryParams[2]} to ${queryParams[0]}.`);
+              
+              // Update role
+              await sqldb.callAsync('update_group_pogil_role', queryParams);
+
+            } catch (err) {
+              ERR(err, next);
+            }
         }
 
         // Reload the page with updated group roles or error message
@@ -123,7 +125,7 @@ router.post('/', function(req, res, next) {
                     }
                 }
 
-                console.log("Refreshing page") // TODO: This needs to happen after group info is updated with new role
+                console.log("Refreshing page");
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         });
