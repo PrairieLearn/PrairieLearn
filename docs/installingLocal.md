@@ -35,13 +35,20 @@ docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/Prair
 
 ### Running a specific branch
 
-By default, the above command will run PrairieLearn from the `master` branch on GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
+By default, the above command will run PrairieLearn from the branch that is currently checked out in the directory `/path/to/PrairieLearn`. So, to run a different branch, just use commands like `git checkout BRANCH_NAME` or equivalent.
+
+It is also possible to run a branch other than `master` without cloning or checking out the code for that branch, as long as the branch has been pushed to GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
 
 ```sh
-docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn:BRANCH_NAME
+docker run -it --rm -p 3000:3000 prairielearn/prairielearn:BRANCH_NAME
 ```
 
-Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`).
+Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`). Also note that docker does not pull branch changes by default, so you are encouraged to update the local docker cached image by using this command before starting the container above:
+
+```sh
+docker pull prairielearn/prairielearn:BRANCH_NAME
+docker run -it --rm -p 3000:3000 prairielearn/prairielearn:BRANCH_NAME
+```
 
 ### Running commands in Docker
 
@@ -57,7 +64,7 @@ This can be used to, e.g., run scripts distributed with PrairieLearn by opening 
 docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 ```
 
-#### Server from shell
+#### Restarting the node server
 
 When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container. This can be done either
 
