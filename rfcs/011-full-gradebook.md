@@ -19,7 +19,7 @@ The existing instructor gradebook and assessment pages would be extended to add 
 - In each assessment, a new flag `scoreOnly` will determine if the assessment is only for score upload.
 - Assessment-level `grade()` functions, as described in #3605.
 - A course-level `grade()` function for computing a student's cumulative grade
-- Potentially, a page to use commonly-used grading functions without writing Python
+- A python library of commonly-used grading functions
 
 ## Score Upload
 
@@ -40,3 +40,26 @@ A number of other features from #3606 could be combined into a course-level grad
 A course-level `grade()` function would receive assessment score information and potentially aggregated statistics to facilitate curving. This data can be grouped into assessment sets, to allow for example dropping the lowest X assignments. 
 
 # Implementation Plan
+
+## Phase 1: Add Score Upload
+
+- [ ] 1. Find how assessment flags are processed
+- [ ] 2. Add a dummy `scoreOnly` flag for assessments
+- [ ] 3. Modify the behaviour of assessments to honour the `scoreOnly` flag
+
+## Phase 2: Add Assessment-level Grading Functions
+
+- [ ] 1. Modify assessment grading routine to retrieve additional data
+- [ ] 2. Modify assessment grading routine to call grade function
+- [ ] 3. Add interface to write `grade()` functions for assessments
+
+## Phase 3: Add Course-level Grading Functions
+
+- [ ] 1. Add interface to the course's instructor view to add `grade()` function
+
+## Phase 4: Add Library of Grading Functions
+
+- [ ] 1. Gather common grading functions
+- [ ] 2. Design interfaces for grading functions
+- [ ] 3. Implement library functionality and tests
+- [ ] 4. Add documentation for library
