@@ -15,20 +15,11 @@ DECLARE
     variant_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
-    grading_job grading_jobs%rowtype;
+    grading_jobs grading_jobs%rowtype;
     grading_method enum_grading_method;
 BEGIN
 
-    -- What do we have to do? 
-    -- We have to 1) update the submission score and feedback (but we may consider just updating this info
-    -- in a new grading_job later)
-
-    -- 2) Update the given score for the instance question (make sure the score can go lower)
-    --   a. Consider an internal grading, external grading,a nd manual grading score. #
-    --   if those three values existed, perhaps only the manual grade score should go lower.
-    --   why is the score going lower? It is possible for dual score conflicts to sometimes take the lower
-    --   of the two scores.
-    -- 3) Update the given score for the assessment.
+    -- Update the given score for the assessment.
 
     -- ######################################################################
     -- get the related objects
@@ -50,28 +41,24 @@ BEGIN
     END IF;
 
     -- ######################################################################
-    -- Do we need to cancel all grading jobs so manual grade is NOT overwritten?
+    -- Manual grading jobs MUST occur after external jobs have finished
 
-    -- FOR grading_job IN
-    --     UPDATE grading_jobs AS gj
-    --     SET
-    --         grading_request_canceled_at = now(),
-    --         grading_request_canceled_by = grading_jobs_insert_external_manual.authn_user_id
-    --     FROM
-    --         variants AS v
-    --         JOIN submissions AS s ON (s.variant_id = v.id)
-    --     WHERE
-    --         v.id = main.variant_id
-    --         AND gj.submission_id = s.id
-    --         AND gj.graded_at IS NULL
-    --         AND gj.grading_requested_at IS NOT NULL
-    --         AND gj.grading_request_canceled_at IS NULL
-    --     RETURNING gj.*
-    -- LOOP
-    --     UPDATE submissions AS s
-    --     SET grading_requested_at = NULL
-    --     WHERE s.id = grading_job.submission_id;
-    -- END LOOP;
+    SELECT *
+    INTO
+        main.grading_jobs
+    FROM
+        grading_jobs AS gj
+        JOIN submissions AS s ON (s.id = gj.submission_id)
+        JOIN variants AS v ON (v.id = s.variant_id)
+    WHERE
+        v.id = main.variant_id
+        AND gj.submission_id = s.id
+        AND gj.graded_at IS NULL
+        AND gj.grading_requested_at IS NOT NULL
+        AND gj.grading_request_canceled_at IS NULL
+        AND gj.grading_method = 'External'::enum_grading_method;
+
+    IF FOUND THEN RAISE EXCEPTION 'manual grading cannot occur with % incomplete external grading jobs', COUNT(main.grading_jobs); END IF;
 
     -- ######################################################################
     -- insert the new grading job
@@ -99,7 +86,6 @@ BEGIN
     -- update all parent objects
 
     IF assessment_instance_id IS NOT NULL THEN
-        -- PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
         PERFORM instance_questions_manually_grade(instance_question_id, grading_job.score, grading_job.auth_user_id);
         PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit, FALSE, TRUE);
     END IF;
