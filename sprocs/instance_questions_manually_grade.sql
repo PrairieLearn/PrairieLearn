@@ -1,7 +1,7 @@
-DROP FUNCTION IF EXISTS instance_questions_update_in_manual_grading(bigint,double precision,bigint);
+DROP FUNCTION IF EXISTS instance_questions_manually_grade(bigint,double precision,bigint);
 
 CREATE OR REPLACE FUNCTION
-    instance_questions_update_in_manual_grading (
+    instance_questions_manually_grade (
         instance_question_id bigint,
         manual_grade_score double precision,
         authn_user_id bigint
@@ -9,14 +9,11 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
 
-    -- Do we need to implement max points logic for manual grading jobs? Does it make sense?
-
     -- ######################################################################
-    -- overwrite internal grading logic instance question scoring
-    -- as we only calc perc on current score out of max assessment instance score, all other
-    -- grading machinery data is moot. It should be cleaned out OR re-integrated on manual grading.
-    -- grading stat data can be disabled if `instance_questions_calculate_stats(instance_question_id)` does not run
-    --
+    -- write/overwrite internal grading logic instance question scoring
+    -- NOTE: We bypass:
+    --   `instance_questions_calculate_stats.sql` (ie. stats are not produced)
+    --   homework or exam grading sub-routines from `instance_questions_grade.sql` (ie. max points logic)
 
     UPDATE instance_questions
     SET
@@ -29,7 +26,7 @@ BEGIN
         instance_questions.id = iq.id
         AND iq.id = instance_question_id;
 
-    -- Start to use `points_in_grading` fields when final grade is pending for all grading to be completed
+    -- TO DO: Integrate with update in grading (points_in_grading) logic once booleans merged and logic clarified
     -- UPDATE instance_questions AS iq
     -- SET
     --     status = 'grading',
@@ -37,6 +34,7 @@ BEGIN
     --     score_perc_in_grading = new_values.score_perc,
     --     modified_at = now()
     -- WHERE
-    --     iq.id = instance_question_id;
+    --     iq.id = instance_question_id
+
 END;
 $$ LANGUAGE plpgsql VOLATILE;

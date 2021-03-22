@@ -107,7 +107,7 @@ module.exports = {
             // Can we rename instance_questions_grade.sql to be instance_questions_update_in_internal_grading.sql?
             // Note: instance_questions_grade might be intended as final grading job versus others that are "grading_in_progress" jobs
             'instance_questions_update_in_external_manual_grading.sql',
-            'instance_questions_update_in_manual_grading.sql',
+            'instance_questions_manually_grade.sql',
             'instance_questions_update_score.sql',
             'instance_questions_manually_grade_submission.sql',
             'instance_questions_next_allowed_grade.sql',
