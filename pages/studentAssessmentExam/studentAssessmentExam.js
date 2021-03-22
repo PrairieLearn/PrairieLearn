@@ -32,7 +32,7 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-    if (req.body.__action == 'newInstance') {
+    if (req.body.__action == 'new_instance') {
         assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.req_date, (err, assessment_instance_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);

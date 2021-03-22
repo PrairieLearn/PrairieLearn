@@ -21,7 +21,7 @@
     "zones": [
         {
             "questions": [
-                {"id": "element/drawingGallery",                 "points": 2, "maxPoints": 6},
+                {"id": "element/drawingGallery",                  "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/simpleTutorial",             "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/gradeVector",                "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/liftingMechanism",           "points": 2, "maxPoints": 6},
@@ -30,10 +30,10 @@
                 {"id": "demo/drawing/pulley",                     "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/graphs",                     "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/inclinedPlane",              "points": 2, "maxPoints": 6},
-                {"id": "demo/drawing/vmDiagrams",                 "points": 2, "maxPoints": 6}
-
-
-
+                {"id": "demo/drawing/vmDiagrams",                 "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/buttons",                    "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/customizedButtons",          "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/extensions",                 "points": 2, "maxPoints": 6}
             ]
         }
     ]
