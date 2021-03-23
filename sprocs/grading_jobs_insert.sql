@@ -44,7 +44,7 @@ BEGIN
         grading_job := grading_jobs_insert_internal(submission_id, authn_user_id,
                             new_gradable, new_broken, new_format_errors, new_partial_scores,
                             new_score, new_v2_score, new_feedback, new_submitted_answer,
-                            new_params, new_true_answer;
+                            new_params, new_true_answer);
     ELSIF grading_method = 'External' OR grading_method = 'Manual' THEN
         grading_job := grading_jobs_insert_external_manual(submission_id, authn_user_id);
     ELSE
