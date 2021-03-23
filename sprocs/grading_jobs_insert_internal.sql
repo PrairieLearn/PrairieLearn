@@ -90,12 +90,12 @@ BEGIN
     INSERT INTO grading_jobs AS gj
         (submission_id,     score,     v2_score, correct,     feedback,
             partial_scores, auth_user_id,  
-            grading_method_internal, grading_method_external, grading_method_manual,
+            'Internal',
             gradable)
     VALUES
         (submission_id, new_score, new_v2_score, new_correct, new_feedback,
         new_partial_scores, authn_user_id, 
-        grading_method_internal, grading_method_external, grading_method_manual,
+        grading_method,
         new_gradable)
     RETURNING gj.*
     INTO grading_job;
