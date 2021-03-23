@@ -15,7 +15,7 @@
             <%= file.display_filename %>
           </a>
         </td>
-        <% if (assessment_instance.open && !authz_result.view_only) { %>
+        <% if (assessment_instance.open && authz_result.submittable) { %>
           <td style="width:1%; text-align:right;">
             <% if (file.type == 'student_upload') { %>
             <a id="attachFileDeleteButton<%= iFile %>"
@@ -39,7 +39,7 @@
   </table>
 
   <div class="card-footer">
-    <% if (!assessment_instance.open || authz_result.view_only) { %>
+    <% if (!assessment_instance.open || !authz_result.submittable) { %>
       <p class="small mb-0">
         Attachments can't be added or deleted because the assessment is closed.
       </p>

@@ -227,8 +227,8 @@
                     "type": "boolean",
                     "default": true
                 },
-                "viewOnly": {
-                    "description": "If set to true, the student can see the assessment on the Assessments page but cannot answer questions.",
+                "submittable": {
+                    "description": "If set to true, the student can see the assessment on the Assessments page but cannot submit answers to questions.",
                     "type": "boolean",
                     "default": true
                 }

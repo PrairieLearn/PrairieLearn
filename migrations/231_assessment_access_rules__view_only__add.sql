@@ -1,1 +1,1 @@
-ALTER TABLE assessment_access_rules ADD COLUMN view_only boolean NOT NULL DEFAULT false;
+ALTER TABLE assessment_access_rules ADD COLUMN submittable boolean NOT NULL DEFAULT true;

@@ -83,7 +83,7 @@
                 Total points: <%= getStringFromFloat(assessment_instance.max_points) %>
               </div>
               <div class="col-md-9 col-sm-12">
-                  <% if (assessment_instance.open && !authz_result.view_only) { %>
+                  <% if (assessment_instance.open && authz_result.submittable) { %>
                       Assessment is <strong>open</strong> and you can answer questions.
                       <br>
                       Available credit: <%= authz_result.credit_date_string %>
@@ -105,7 +105,7 @@
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
               </div>
               <div class="col-md-6 col-sm-12">
-                  <% if (assessment_instance.open && !authz_result.view_only) { %>
+                  <% if (assessment_instance.open && authz_result.submittable) { %>
                       Assessment is <strong>open</strong> and you can answer questions.
                       <p>
                       Available credit: <%= authz_result.credit_date_string %>

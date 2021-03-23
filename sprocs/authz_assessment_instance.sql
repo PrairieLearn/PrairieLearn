@@ -21,7 +21,7 @@ CREATE OR REPLACE FUNCTION
         OUT seb_config JSONB,
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
-        OUT view_only boolean,       -- If the assessment is visible but not submittable
+        OUT submittable boolean,     -- If the assessment is visible but not submittable
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -48,7 +48,7 @@ BEGIN
     seb_config := assessment_result.seb_config;
     show_closed_assessment := assessment_result.show_closed_assessment;
     show_closed_assessment_score := assessment_result.show_closed_assessment_score;
-    view_only := assessment_result.view_only;
+    submittable := assessment_result.submittable;
 
     time_limit_expired := FALSE;
     IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < req_date THEN

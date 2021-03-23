@@ -22,7 +22,7 @@
 
             <div class="card-body">
 
-                <% if (typeof assessment_instance !== 'undefined' && (assessment_instance.open === false || authz_result.view_only === true) && prompt !== 'closedAssessmentNotViewableHiddenGrade') { %>
+                <% if (typeof assessment_instance !== 'undefined' && (assessment_instance.open === false || authz_result.submittable === false) && prompt !== 'closedAssessmentNotViewableHiddenGrade') { %>
 
                     <div class="row align-items-center">
                       <div class="col-md-3 col-sm-6">
@@ -53,7 +53,7 @@
                         Launch into the Safe Exam Browser
                     </a>
                 
-                <% } else if (prompt == 'assessmentNotStartedViewOnly') { %>
+                <% } else if (prompt == 'assessmentNotStartedNotSubmittable') { %>
 
                     <div class="test-suite-assessment-closed-message">
                         Assessment is not available at this time.

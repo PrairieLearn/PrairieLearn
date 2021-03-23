@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION
         OUT seb_config JSONB,         -- SEBKeys (if any) for this assessment.
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
-        OUT view_only boolean,       -- If the assessment is visible but not submittable
+        OUT submittable boolean,     -- If the assessment is visible but not submittable
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
@@ -54,7 +54,7 @@ BEGIN
         aar.seb_config,
         aar.show_closed_assessment,
         aar.show_closed_assessment_score,
-        aar.view_only,
+        aar.submittable,
         aar.id,
         aar.start_date,
         aar.end_date
@@ -68,7 +68,7 @@ BEGIN
         seb_config,
         show_closed_assessment,
         show_closed_assessment_score,
-        view_only,
+        submittable,
         active_access_rule_id,
         assessment_start_date,
         assessment_end_date
@@ -95,7 +95,7 @@ BEGIN
         seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
-        view_only = FALSE;
+        submittable = TRUE;
     END IF;
 
     -- Override if we are an Instructor
@@ -110,7 +110,7 @@ BEGIN
         seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
-        view_only = FALSE;
+        submittable = TRUE;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
