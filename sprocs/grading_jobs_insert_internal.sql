@@ -92,7 +92,7 @@ BEGIN
             partial_scores, auth_user_id, grading_method, gradable)
     VALUES
         (submission_id, new_score, new_v2_score, new_correct, new_feedback,
-        new_partial_scores, authn_user_id, "Internal", new_gradable)
+        new_partial_scores, authn_user_id, 'Internal', new_gradable)
     RETURNING gj.*
     INTO grading_job;
 

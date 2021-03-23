@@ -2,6 +2,8 @@ DROP FUNCTION IF EXISTS grading_jobs_insert(bigint,bigint,boolean,jsonb,jsonb,do
 
 DROP FUNCTION IF EXISTS grading_jobs_insert(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
 
+DROP FUNCTION IF EXISTS grading_jobs_insert(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,double precision,jsonb,jsonb,jsonb,jsonb);
+
 CREATE OR REPLACE FUNCTION
     grading_jobs_insert (
         IN submission_id bigint,
@@ -15,9 +17,9 @@ CREATE OR REPLACE FUNCTION
         IN new_feedback jsonb DEFAULT NULL,
         IN new_submitted_answer jsonb DEFAULT NULL,
         IN new_params jsonb DEFAULT NULL,
-        IN new_true_answer jsonb DEFAULT NULL,
-        OUT grading_jobs grading_jobs[]
+        IN new_true_answer jsonb DEFAULT NULL
     )
+RETURNS SETOF grading_jobs
 AS $$
 DECLARE
     grading_method_internal boolean;
@@ -47,7 +49,7 @@ BEGIN
         
     -- delegate internal grading job ()
     IF grading_method_internal = True THEN
-        grading_jobs = grading_jobs || grading_jobs_insert_internal(submission_id, authn_user_id,
+        RETURN NEXT grading_jobs_insert_internal(submission_id, authn_user_id,
                             new_gradable, new_broken, new_format_errors, new_partial_scores,
                             new_score, new_v2_score, new_feedback, new_submitted_answer,
                             new_params, new_true_answer);
@@ -55,11 +57,11 @@ BEGIN
     
     -- delegate external/manual grading job
     IF grading_method_external = True OR grading_method_manual = True THEN
-        grading_method_external = grading_jobs || grading_jobs_insert_external_manual(submission_id, authn_user_id, 'External');
+        RETURN NEXT grading_jobs_insert_external_manual(submission_id, authn_user_id, 'External');
     END IF;
 
     IF grading_method_manual = TRUE THEN
-        grading_jobs = grading_jobs || grading_jobs_insert_external_manual(submission_id, authn_user_id, 'Manual');
+        RETURN NEXT grading_jobs_insert_external_manual(submission_id, authn_user_id, 'Manual');
     END IF;
 
 END;
