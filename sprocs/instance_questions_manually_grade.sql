@@ -1,10 +1,9 @@
-DROP FUNCTION IF EXISTS instance_questions_manually_grade(bigint,double precision,bigint);
+DROP FUNCTION IF EXISTS instance_questions_manually_grade(bigint,double precision);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_manually_grade (
-        instance_question_id bigint,
-        manual_grade_score double precision,
-        authn_user_id bigint
+        arg_instance_question_id bigint,
+        arg_manual_grade_score double precision
     ) RETURNS VOID
 AS $$
 BEGIN
@@ -23,18 +22,18 @@ BEGIN
 
     UPDATE instance_questions
     SET
-        points = manual_grade_score * aq.max_points,
-        score_perc = manual_grade_score * 100
+        points = arg_manual_grade_score * aq.max_points,
+        score_perc = arg_manual_grade_score * 100
         -- TO DO: Integrate with update in grading (points_in_grading) logic once booleans merged and logic clarified
         -- status = 'grading',
-        -- points_in_grading = manual_grade_score * aq.max_points,
-        -- score_perc_in_grading = manual_grade_score * 100
+        -- points_in_grading = arg_manual_grade_score * aq.max_points,
+        -- score_perc_in_grading = arg_manual_grade_score * 100
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
         instance_questions.id = iq.id
-        AND iq.id = instance_question_id;
+        AND iq.id = arg_instance_question_id;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
