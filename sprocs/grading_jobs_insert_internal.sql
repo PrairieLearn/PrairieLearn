@@ -1,6 +1,6 @@
-DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb,text);
+DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
 
-DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb,text);
+DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
 
 CREATE OR REPLACE FUNCTION
     grading_jobs_insert_internal (
@@ -16,7 +16,6 @@ CREATE OR REPLACE FUNCTION
         IN new_submitted_answer jsonb,
         IN new_params jsonb,
         IN new_true_answer jsonb,
-        IN beta_grading_method text,
         OUT grading_job grading_jobs
     )
 AS $$
@@ -44,10 +43,6 @@ BEGIN
     WHERE s.id = submission_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
-
-    IF beta_grading_method IS NOT NULL THEN
-        grading_method = beta_grading_method::enum_grading_method;
-    END IF;
 
     -- ######################################################################
     -- update the submission
