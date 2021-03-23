@@ -51,12 +51,16 @@ BEGIN
                             new_gradable, new_broken, new_format_errors, new_partial_scores,
                             new_score, new_v2_score, new_feedback, new_submitted_answer,
                             new_params, new_true_answer);
+    END IF;
     
     -- delegate external/manual grading job
     IF grading_method_external = True OR grading_method_manual = True THEN
         grading_method_external = grading_jobs || grading_jobs_insert_external_manual(submission_id, authn_user_id, 'External');
+    END IF;
 
     IF grading_method_manual = TRUE THEN
-        grading_job = grading_jobs || grading_jobs_insert_external_manual(submission_id, authn_user_id, 'Manual');
+        grading_jobs = grading_jobs || grading_jobs_insert_external_manual(submission_id, authn_user_id, 'Manual');
+    END IF;
+
 END;
 $$ LANGUAGE plpgsql VOLATILE;
