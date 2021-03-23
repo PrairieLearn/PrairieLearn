@@ -2,10 +2,10 @@ DROP FUNCTION IF EXISTS grading_jobs_insert_manual(bigint, bigint, double precis
 
 CREATE OR REPLACE FUNCTION
     grading_jobs_insert_manual (
-        IN submission_id bigint,
-        IN authn_user_id bigint,
-        IN manual_grade_score double precision, -- decimal percent divisble by 5
-        IN manual_grade_feedback jsonb,
+        IN arg_submission_id bigint,
+        IN arg_authn_user_id bigint,
+        IN arg_manual_grade_score double precision, -- decimal percent divisble by 5
+        IN arg_manual_grade_feedback jsonb,
         OUT grading_job grading_jobs
     )
 AS $$
@@ -33,9 +33,9 @@ BEGIN
         JOIN questions AS q ON (q.id = v.question_id)
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    WHERE s.id = submission_id;
+    WHERE s.id = arg_submission_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such arg_submission_id: %', arg_submission_id; END IF;
     IF grading_method != 'ManualBeta'::enum_grading_method THEN
         RAISE EXCEPTION 'This logic is intended only for Manual Beta grading: %', submission_id;
     END IF;
@@ -66,7 +66,7 @@ BEGIN
     INSERT INTO grading_jobs AS gj
         (submission_id,  score, feedback, auth_user_id, grading_method, grading_requested_at)
     VALUES
-        (submission_id, manual_grade_score, manual_grade_feedback, authn_user_id, 'ManualBeta'::enum_grading_method, now())
+        (arg_submission_id, arg_manual_grade_score, arg_manual_grade_feedback, arg_authn_user_id, 'ManualBeta'::enum_grading_method, now())
     RETURNING gj.*
     INTO grading_job;
 
@@ -76,18 +76,18 @@ BEGIN
     UPDATE submissions AS s
     SET
         graded_at = now(),
-        score = manual_grade_score,
-        feedback = manual_grade_feedback,
+        score = arg_manual_grade_score,
+        feedback = arg_manual_grade_feedback,
         grading_method = 'ManualBeta'::enum_grading_method
     WHERE
-        s.id = submission_id;
+        s.id = arg_submission_id;
 
     -- ######################################################################
     -- update all parent objects
 
     IF assessment_instance_id IS NOT NULL THEN
         PERFORM instance_questions_manually_grade(instance_question_id, grading_job.score, grading_job.auth_user_id);
-        PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit, FALSE, TRUE);
+        PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit, FALSE, TRUE);
     END IF;
 
 END;
