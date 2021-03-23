@@ -15,9 +15,15 @@ router.all('/', function(req, res, next) {
         checkUserAgent(res, req.headers['user-agent']);
     }
 
+    if (typeof res.locals.assessment_instance === 'undefined' && !!_.get(res.locals, 'authz_result.view_only', false)) {
+        // Student did not start the assessment and view_only is true
+        assessmentNotStartedViewOnly(res);
+        return;
+    }
+
     if (
         !_.get(res.locals, 'authz_result.show_closed_assessment', true) &&
-        !_.get(res.locals, 'assessment_instance.open', true)
+        (!_.get(res.locals, 'assessment_instance.open', true) || !!_.get(res.locals, 'authz_result.view_only', false))
     ) {
         // This assessment instance is closed and can no longer be viewed
         if (!_.get(res.locals, 'authz_result.show_closed_assessment_score', true)){
@@ -127,5 +133,10 @@ function closedAssessmentNotViewable(res) {
 
 function closedAssessmentNotViewableHiddenGrade(res) {
     res.locals.prompt = 'closedAssessmentNotViewableHiddenGrade';
+    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+}
+
+function assessmentNotStartedViewOnly(res) {
+    res.locals.prompt = 'assessmentNotStartedViewOnly';
     res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }

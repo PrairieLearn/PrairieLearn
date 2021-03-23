@@ -20,10 +20,13 @@ CREATE OR REPLACE FUNCTION
         OUT seb_config JSONB,         -- SEBKeys (if any) for this assessment.
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
+        OUT view_only boolean,       -- If the assessment is visible but not submittable
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
     active_access_rule_id bigint;
+    assessment_start_date TIMESTAMP WITH TIME ZONE;
+    assessment_end_date TIMESTAMP WITH TIME ZONE;
 BEGIN
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
@@ -51,7 +54,10 @@ BEGIN
         aar.seb_config,
         aar.show_closed_assessment,
         aar.show_closed_assessment_score,
-        aar.id
+        aar.view_only,
+        aar.id,
+        aar.start_date,
+        aar.end_date
     INTO
         authorized,
         credit,
@@ -62,7 +68,10 @@ BEGIN
         seb_config,
         show_closed_assessment,
         show_closed_assessment_score,
-        active_access_rule_id
+        view_only,
+        active_access_rule_id,
+        assessment_start_date,
+        assessment_end_date
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
@@ -74,7 +83,7 @@ BEGIN
         aar.credit DESC NULLS LAST,
         aar.number
     LIMIT 1;
-
+    
     -- Fill in data if there were no access rules found
     IF active_access_rule_id IS NULL THEN
         authorized = FALSE;
@@ -86,6 +95,7 @@ BEGIN
         seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
+        view_only = FALSE;
     END IF;
 
     -- Override if we are an Instructor
@@ -100,6 +110,7 @@ BEGIN
         seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
+        view_only = FALSE;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),

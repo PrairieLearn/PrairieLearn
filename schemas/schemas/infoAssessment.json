@@ -226,6 +226,11 @@
                     "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
                     "type": "boolean",
                     "default": true
+                },
+                "viewOnly": {
+                    "description": "If set to true, the student can see the assessment on the Assessments page but cannot answer questions.",
+                    "type": "boolean",
+                    "default": true
                 }
             }
         },
