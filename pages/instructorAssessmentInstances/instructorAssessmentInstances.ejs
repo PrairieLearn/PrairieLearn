@@ -189,6 +189,8 @@
                 
               </div>
             </div>
+            <input type="checkbox" id="refreshCheck" checked>
+            <label for="refreshCheck"> Auto-Refresh </label><br>
           </div>
         </div>
 
@@ -319,7 +321,14 @@
               <% }); %>
             </tbody>
           </table>
-          
+          <script>
+            $(function () {
+            setInterval(() => {
+              if ($("#refreshCheck").prop("checked")){
+                $('#usersTable').load('instances #usersTable')}
+            }, 30000);
+          })
+          </script>
           <div class="card-footer">
             <small>
               <strong>Roles:</strong>
