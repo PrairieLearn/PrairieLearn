@@ -46,8 +46,6 @@ BEGIN
     LIMIT 1;
 
     PERFORM assessment_question_assign_manual_grading_user(iq_temp.assessment_question_id, iq_temp.id, arg_user_id);
-    -- PERFORM grading_jobs_insert_internal(s_temp.id, arg_user_id, s_temp.gradable, s_temp.broken, s_temp.format_errors, 
-    --     s_temp.partial_scores, arg_score, s_temp.v2_score, arg_manual_note, s_temp.submitted_answer, s_temp.params, s_temp.true_answer, 'ManualBeta');
     PERFORM grading_jobs_insert_manual(s_temp.id, arg_user_id, arg_score, arg_manual_note);
 
     -- Mark instance question to resolve conflict in GET of instructorQuestionManualGrading.js
