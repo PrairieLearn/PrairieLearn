@@ -31,7 +31,7 @@ BEGIN
         is_conflict = TRUE;
     END IF;
 
-    -- Grade even if instance question has been modified since grading user loaded page
+    -- Create grading job even if a grading job spin-lock conflict will exist
     SELECT s.*
     INTO s_temp
     FROM
