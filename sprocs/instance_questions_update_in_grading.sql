@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    instance_questions_update_in_external_manual_grading (
+    instance_questions_update_in_grading (
         instance_question_id bigint,
         authn_user_id bigint
     ) RETURNS VOID
