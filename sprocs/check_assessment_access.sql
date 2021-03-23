@@ -25,8 +25,6 @@ CREATE OR REPLACE FUNCTION
     ) AS $$
 DECLARE
     active_access_rule_id bigint;
-    assessment_start_date TIMESTAMP WITH TIME ZONE;
-    assessment_end_date TIMESTAMP WITH TIME ZONE;
 BEGIN
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
@@ -55,9 +53,7 @@ BEGIN
         aar.show_closed_assessment,
         aar.show_closed_assessment_score,
         aar.submittable,
-        aar.id,
-        aar.start_date,
-        aar.end_date
+        aar.id
     INTO
         authorized,
         credit,
@@ -69,9 +65,7 @@ BEGIN
         show_closed_assessment,
         show_closed_assessment_score,
         submittable,
-        active_access_rule_id,
-        assessment_start_date,
-        assessment_end_date
+        active_access_rule_id
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
