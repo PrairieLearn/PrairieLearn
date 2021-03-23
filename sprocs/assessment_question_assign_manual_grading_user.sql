@@ -11,7 +11,7 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
 
-    -- Mark instance question with grading user when not already grading
+    -- Label instance question with grading user when not already grading
     UPDATE instance_questions
     SET manual_grading_user = arg_user_id
     WHERE
