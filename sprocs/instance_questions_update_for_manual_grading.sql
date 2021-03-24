@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 DECLARE
-    iq_id bigint;
+    instance_question_id bigint;
 BEGIN
 
     -- Get LAST submission that is ungraded (include manual grading conflicts as eligible)
@@ -28,7 +28,7 @@ BEGIN
         ORDER BY iq.id ASC, s.date DESC, s.id DESC
     )
     SELECT iqwls.id
-    INTO iq_id
+    INTO instance_question_id
     FROM
         iq_with_last_submission AS iqwls
     WHERE
@@ -37,13 +37,13 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
-    PERFORM assessment_question_assign_manual_grading_user(arg_assessment_question_id, iq_id, arg_user_id);
+    PERFORM assessment_question_assign_manual_grading_user(arg_assessment_question_id, instance_question_id, arg_user_id);
 
     SELECT to_jsonb(iq.*)
     INTO instance_question
     FROM
         instance_questions AS iq
-    WHERE id = iq_id;
+    WHERE id = instance_question_id;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
