@@ -57,7 +57,7 @@
                   <%= question.num_graded %>
                 </td>
                 <td class="text-center">
-                  <%= question.manual_grading_users %>
+                  <%= question.manual_grading_users && question.manual_grading_users.join(', ') %>
                 </td>
                 <td>
                   <% if (question.num_ungraded > 0) { %>
