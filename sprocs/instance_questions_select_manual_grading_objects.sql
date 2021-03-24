@@ -15,12 +15,13 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 DECLARE
-    iq_temp instance_questions%rowtype;
-    s_temp submissions%rowtype;
+    instance_question_id bigint;
+    assessment_question_id bigint;
+    manual_grading_conflict boolean;
 BEGIN
 
-    SELECT iq.*
-    INTO iq_temp
+    SELECT iq.id, iq.assessment_question_id, iq.manual_grading_conflict
+    INTO instance_question_id, assessment_question_id, manual_grading_conflict
     FROM
         instance_questions AS iq
     WHERE
@@ -29,10 +30,10 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
 
-    PERFORM assessment_question_assign_manual_grading_user(iq_temp.assessment_question_id, iq_temp.id, arg_user_id);
+    PERFORM assessment_question_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
 
     -- conflict df: when TA 'x' submits manual grade while TA 'y' is grading same submission
-    IF iq_temp.manual_grading_conflict IS TRUE THEN
+    IF manual_grading_conflict IS TRUE THEN
         SELECT json_agg(grading_jobs.*) FROM (
             SELECT gj.score, gj.feedback, CONCAT(u.name, ' (', u.uid, ')') AS graded_by
             INTO grading_job_conflict
