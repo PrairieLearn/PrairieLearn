@@ -19,7 +19,7 @@ BEGIN
         AND manual_grading_user IS NULL;
 
     -- Remove current user id on other assumed abandoned & ungraded iqs
-    WITH instance_questions_graded_at AS (
+    WITH iqs_with_last_submission AS (
         SELECT DISTINCT ON (iq.id) iq.*, s.graded_at
         FROM instance_questions AS iq
             JOIN variants AS v ON (v.instance_question_id = iq.id)
@@ -30,12 +30,12 @@ BEGIN
     )
     UPDATE instance_questions AS iq
     SET manual_grading_user = NULL
-    FROM instance_questions_graded_at AS iqga
+    FROM iqs_with_last_submission AS iqwls
     WHERE
         iq.manual_grading_user = arg_user_id
         AND iq.id != arg_instance_question_id
-        AND iqga.id = iq.id
-        AND iqga.graded_at IS NULL;
+        AND iqwls.id = iq.id
+        AND iqwls.graded_at IS NULL;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
