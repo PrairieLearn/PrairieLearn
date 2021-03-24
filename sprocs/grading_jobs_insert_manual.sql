@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION
     grading_jobs_insert_manual (
         IN arg_submission_id bigint,
         IN arg_authn_user_id bigint,
-        IN arg_manual_grade_score double precision, -- decimal percent divisble by 5
+        IN arg_manual_grade_score double precision, -- decimal percent divisible by 5
         IN arg_manual_grade_feedback jsonb,
         OUT grading_job grading_jobs
     )
