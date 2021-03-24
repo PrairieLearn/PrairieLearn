@@ -1,5 +1,5 @@
 -- BLOCK instance_question_abort_manual_grading
-WITH last_submission AS (
+WITH iq_with_last_submission AS (
     SELECT iq.*, s.graded_at
     FROM
         instance_questions AS iq
@@ -14,9 +14,9 @@ UPDATE
 SET
     manual_grading_user = NULL
 FROM
-    last_submission AS ls
+    iq_with_last_submission AS iqwls
 WHERE
     -- NOTE: Do not remove user from already graded items
     iq.id = $instance_question_id
-    AND ls.graded_at IS NULL;
+    AND iqwls.graded_at IS NULL;
 
