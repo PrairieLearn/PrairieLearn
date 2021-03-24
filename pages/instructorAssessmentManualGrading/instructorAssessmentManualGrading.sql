@@ -1,5 +1,5 @@
 -- BLOCK select_questions_manual_grading
-WITH instance_questions_last_submission AS (
+WITH iq_with_last_submission AS (
     SELECT DISTINCT ON (iq.id)
         iq.id, s.graded_at,
         iq.assessment_question_id,
@@ -22,25 +22,25 @@ SELECT
     admin_assessment_question_number(aq.id) as number,
     ag.number AS alternative_group_number,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
-    (SELECT COUNT(iqls.id)
+    (SELECT COUNT(iqwls.id)
      FROM 
-         instance_questions_last_submission AS iqls
+         iq_with_last_submission AS iqwls
      WHERE 
-        iqls.assessment_question_id = aq.id
-        AND (iqls.graded_at IS NULL OR iqls.manual_grading_conflict = TRUE)) AS num_ungraded,
-    (SELECT COUNT(iqls.id)
+        iqwls.assessment_question_id = aq.id
+        AND (iqwls.graded_at IS NULL OR iqwls.manual_grading_conflict = TRUE)) AS num_ungraded,
+    (SELECT COUNT(iqwls.id)
      FROM 
-         instance_questions_last_submission AS iqls
+         iq_with_last_submission AS iqwls
      WHERE 
-         iqls.assessment_question_id = aq.id
-         AND iqls.graded_at IS NOT NULL) AS num_graded,
+         iqwls.assessment_question_id = aq.id
+         AND iqwls.graded_at IS NOT NULL) AS num_graded,
     (SELECT array_agg(DISTINCT u.uid)
      FROM
-        instance_questions_last_submission AS iqls
-        LEFT JOIN users AS u ON (u.user_id = iqls.manual_grading_user)
+        iq_with_last_submission AS iqwls
+        LEFT JOIN users AS u ON (u.user_id = iqwls.manual_grading_user)
      WHERE
-         iqls.manual_grading_user IS NOT NULL
-         AND iqls.assessment_question_id = aq.id) AS manual_grading_users
+         iqwls.manual_grading_user IS NOT NULL
+         AND iqwls.assessment_question_id = aq.id) AS manual_grading_users
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
