@@ -12,7 +12,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 // Other cases to figure out later: question is broken...
 router.get('/', (req, res, next) => {
     async.series([
-        // Should we move this block into question.js? getAndRenderVariantForGrading
         (callback) => {
             const params = [
                 res.locals.instance_question.id,
