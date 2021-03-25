@@ -20,3 +20,15 @@ FROM
     LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
     gj.id = $grading_job_id;
+
+-- BLOCK select_and_lock_instances_to_grade
+SELECT
+    ai.id AS assessment_instance_id,
+    assessment_instances_lock(ai.id)
+FROM
+    assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+WHERE
+    a.id = $assessment_id
+    AND ai.open;
+

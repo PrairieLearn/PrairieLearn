@@ -165,6 +165,30 @@
         </div>
       </div>
 
+      <div class="modal fade" id="gradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="gradeAllAssessmentInstances">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="gradeAllAssessmentInstancesModalLabel">Grade all assessment instances</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to grade pending submissions for all assessment instances
+              for <strong><%= assessment_set.name %>
+              <%= assessment.number %></strong>? This cannot be
+              undone.
+            </div>
+            <div class="modal-footer">
+              <form name="grade-all-form" method="POST">
+                <input type="hidden" name="__action" value="grade_all">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Grade all</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Students
@@ -180,10 +204,15 @@
                 <a class="dropdown-item"
                    role="button" tabindex="0"
                    data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
-                  <i class="fa fa-times" aria-hidden="true"></i> Delete all instances
+                  <i class="fas fa-times" aria-hidden="true"></i> Delete all instances
                 </a>
                 <a role="button" tabindex="0" class="dropdown-item time-limit-edit-button" data-row="<%= JSON.stringify(time_limit_totals) %>">
                   <i class="far fa-clock" aria-hidden="true"></i> Change time limit for all instances
+                </a>
+                <a class="dropdown-item"
+                   role="button" tabindex="0"
+                   data-toggle="modal" data-target="#gradeAllAssessmentInstancesModal">
+                  <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade all instances
                 </a>
                 <% } %>
                 

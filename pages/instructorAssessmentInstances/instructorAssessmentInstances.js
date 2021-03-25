@@ -105,6 +105,14 @@ router.post('/', function(req, res, next) {
                 res.redirect(req.originalUrl);
             });
         });
+    } else if (req.body.__action == 'grade_all') {
+        const assessment_id = res.locals.assessment.id;
+        const close = false;
+        const overrideGradeRate = true;
+        assessment.gradeAllAssessmentInstances(assessment_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else if (req.body.__action == 'delete_all') {
         const params = [
             res.locals.assessment.id,
