@@ -24,6 +24,7 @@ DECLARE
     submission_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
+    found_uid text;
     max_points double precision;
     new_score_perc double precision;
     new_points double precision;
@@ -33,8 +34,8 @@ BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT        s.id,                iq.id,                  ai.id, aq.max_points
-    INTO submission_id, instance_question_id, assessment_instance_id,    max_points
+    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, u.uid
+    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -61,6 +62,10 @@ BEGIN
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%, assessment_instance_id=%', arg_submission_id, arg_instance_question_id, arg_uid, arg_assessment_instance_number, arg_qid, arg_assessment_id, arg_assessment_instance_id;
+    END IF;
+
+    IF arg_uid IS NOT NULL AND found_uid != arg_uid THEN
+        RAISE EXCEPTION 'found submission with id=% that does not belong to uid=%', arg_submission_id, arg_uid;
     END IF;
 
     -- ##################################################################
