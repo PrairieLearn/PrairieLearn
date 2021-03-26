@@ -1,7 +1,7 @@
-DROP FUNCTION IF EXISTS group_users_insert(bigint,bigint,bigint,text,text);
+DROP FUNCTION IF EXISTS update_group_pogil_role(enum_pogil_role,bigint,bigint);
 CREATE OR REPLACE FUNCTION
     update_group_pogil_role (
-        arg_group_role text, -- This is the new POGIL role!
+        arg_group_role enum_pogil_role, -- This is the new POGIL role!
         arg_user_id bigint,
         arg_group_id bigint
     ) RETURNS void
