@@ -1,6 +1,7 @@
 columns
     group_id: bigint not null
     user_id: bigint not null
+    pogil_role: text default 'none'
 
 indexes
     group_users_pkey: PRIMARY KEY (group_id, user_id) USING btree (group_id, user_id)

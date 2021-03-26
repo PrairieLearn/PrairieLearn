@@ -50,7 +50,7 @@ SELECT $authn_user_id, $user_id, cg.id, 'join' FROM create_group AS cg;
 
 -- BLOCK get_group_info
 SELECT
-    gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum
+    gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum, gu.pogil_role
 FROM
     assessments AS a
     JOIN group_configs AS gc ON gc.assessment_id = a.id
