@@ -25,6 +25,7 @@ DECLARE
     instance_question_id bigint;
     assessment_instance_id bigint;
     found_uid_or_group text;
+    found_qid text;
     max_points double precision;
     new_score_perc double precision;
     new_points double precision;
@@ -34,8 +35,8 @@ BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid)
-    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group
+    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid), q.qid
+    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group, found_qid
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -66,7 +67,11 @@ BEGIN
     END IF;
 
     IF arg_uid_or_group IS NOT NULL AND (found_uid_or_group IS NULL OR found_uid_or_group != arg_uid_or_group) THEN
-        RAISE EXCEPTION 'found submission with id=% that is not associated to %', arg_submission_id, arg_uid_or_group;
+        RAISE EXCEPTION 'found submission with id=%, but user/group does not match %', arg_submission_id, arg_uid_or_group;
+    END IF;
+
+    IF arg_qid IS NOT NULL AND (found_qid IS NULL OR found_qid != arg_qid) THEN
+        RAISE EXCEPTION 'found submission with id=%, but question does not match %', arg_submission_id, arg_qid;
     END IF;
 
     -- ##################################################################
