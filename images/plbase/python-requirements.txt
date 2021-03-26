@@ -12,7 +12,7 @@ regex==2021.3.17
 scipy==1.6.2
 sympy==1.7.1
 rpy2==3.4.3
-pygraphviz==1.6
+pygraphviz==1.7
 ansi2html==1.6.0
 scikit-learn==0.24.1
 nltk==3.5
