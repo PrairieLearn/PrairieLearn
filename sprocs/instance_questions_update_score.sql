@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION
         -- identify the instance_question/submission
         IN arg_submission_id bigint,        -- must provide submission_id
         IN arg_instance_question_id bigint, -- OR instance_question_id
-        IN arg_uid text,                    -- OR (uid, assessment_instance_number, qid)
+        IN arg_uid_or_group text,           -- OR (uid/group, assessment_instance_number, qid)
         IN arg_assessment_instance_number integer,
         IN arg_qid text,
 
@@ -24,7 +24,7 @@ DECLARE
     submission_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
-    found_uid text;
+    found_uid_or_group text;
     max_points double precision;
     new_score_perc double precision;
     new_points double precision;
@@ -34,8 +34,8 @@ BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, u.uid
-    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid
+    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid)
+    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -56,16 +56,17 @@ BEGIN
             (s.id = arg_submission_id)
             OR (arg_submission_id IS NULL AND iq.id = arg_instance_question_id)
             OR (arg_submission_id IS NULL AND arg_instance_question_id IS NULL
-                AND u.uid = arg_uid AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
+                AND (g.name = arg_uid_or_group OR u.uid = arg_uid_or_group)
+                AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
         )
     ORDER BY s.date DESC, ai.number DESC;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%, assessment_instance_id=%', arg_submission_id, arg_instance_question_id, arg_uid, arg_assessment_instance_number, arg_qid, arg_assessment_id, arg_assessment_instance_id;
+        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%, assessment_instance_id=%', arg_submission_id, arg_instance_question_id, arg_uid_or_group, arg_assessment_instance_number, arg_qid, arg_assessment_id, arg_assessment_instance_id;
     END IF;
 
-    IF arg_uid IS NOT NULL AND found_uid != arg_uid THEN
-        RAISE EXCEPTION 'found submission with id=% that does not belong to uid=%', arg_submission_id, arg_uid;
+    IF arg_uid_or_group IS NOT NULL AND (found_uid_or_group IS NULL OR found_uid_or_group != arg_uid_or_group) THEN
+        RAISE EXCEPTION 'found submission with id=% that is not associated to %', arg_submission_id, arg_uid_or_group;
     END IF;
 
     -- ##################################################################
