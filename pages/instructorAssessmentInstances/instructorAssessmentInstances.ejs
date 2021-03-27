@@ -189,6 +189,30 @@
         </div>
       </div>
 
+      <div class="modal fade" id="closeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllAssessmentInstances">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="closeAllAssessmentInstancesModalLabel">Grade and Close all assessment instances</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to grade and close all assessment instances
+              for <strong><%= assessment_set.name %>
+              <%= assessment.number %></strong>? This cannot be
+              undone.
+            </div>
+            <div class="modal-footer">
+              <form name="grade-all-form" method="POST">
+                <input type="hidden" name="__action" value="close_all">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Grade and Close all</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Students
@@ -213,6 +237,11 @@
                    role="button" tabindex="0"
                    data-toggle="modal" data-target="#gradeAllAssessmentInstancesModal">
                   <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade all instances
+                </a>
+                <a class="dropdown-item"
+                   role="button" tabindex="0"
+                   data-toggle="modal" data-target="#closeAllAssessmentInstancesModal">
+                  <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all instances
                 </a>
                 <% } %>
                 
