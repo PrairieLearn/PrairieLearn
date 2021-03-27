@@ -21,11 +21,7 @@ SELECT
     (z.max_points IS NOT NULL) AS zone_has_max_points,
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
-    (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count,
-    qo.sequence_locked AS sequence_locked,
-    (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
-    (lag(qo.question_number) OVER w) AS prev_title,
-    (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked
+    (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -41,37 +37,40 @@ WINDOW
 ORDER BY qo.row_order;
 
 -- BLOCK get_group_info
-SELECT
-    gu.group_id, gr.name, gr.join_code, us.uid, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
+SELECT 
+    gu.group_id, g.name, g.join_code, u.uid, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
 FROM
     assessment_instances ai
-    JOIN group_configs gc ON ai.assessment_id = gc.assessment_id
-    JOIN groups gr ON gr.group_config_id = gc.id
-    JOIN group_users gu ON gu.group_id = gr.id
-    JOIN group_users gu2 ON gu2.group_id = gu.group_id
-    JOIN users us ON us.user_id = gu2.user_id
-WHERE
-    ai.id = $assessment_instance_id
-    AND gu.user_id = $user_id
-    AND gr.deleted_at IS NULL
+    JOIN group_configs AS gc ON ai.assessment_id = gc.assessment_id
+    JOIN groups AS g ON g.group_config_id = gc.id
+    JOIN group_users AS gu ON gu.group_id = g.id
+    JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
+    JOIN users AS u ON u.user_id = gu2.user_id
+WHERE 
+    ai.id = $assessment_instance_id 
+    AND gu.user_id = $user_id 
+    AND g.deleted_at IS NULL 
     AND gc.deleted_at IS NULL;
 
 -- BLOCK leave_group
 WITH log AS (
-    DELETE FROM
+    DELETE FROM 
         group_users
-    WHERE
-        user_id = $user_id
-        AND group_id IN (SELECT gr.id
-                        FROM assessment_instances ai
-                        JOIN group_configs gc ON gc.assessment_id = ai.assessment_id
-                        JOIN groups gr ON gr.group_config_id = gc.id
-                        WHERE ai.id = $assessment_instance_id
-                        AND gr.deleted_at IS NULL
-                        AND gc.deleted_at IS NULL)
+    WHERE 
+        user_id = $user_id 
+        AND group_id IN (SELECT 
+                            g.id
+                        FROM 
+                            assessment_instances ai
+                            JOIN group_configs AS gc ON gc.assessment_id = ai.assessment_id
+                            JOIN groups AS g ON g.group_config_id = gc.id
+                        WHERE 
+                            ai.id = $assessment_instance_id
+                            AND g.deleted_at IS NULL
+                            AND gc.deleted_at IS NULL)
     RETURNING group_id
-)
-INSERT INTO group_logs
+) 
+INSERT INTO group_logs 
     (authn_user_id, user_id, group_id, action)
-SELECT $user_id, $user_id, group_id, 'leave'
+SELECT $authn_user_id, $user_id, group_id, 'leave'
 FROM log;

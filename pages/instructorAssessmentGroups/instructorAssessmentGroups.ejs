@@ -142,7 +142,7 @@
               <div class="modal-body">
                 <form name="copy-assessment-group-form" method="POST" enctype="multipart/form-data">
                   <div class="input-group mb-3">
-                    <select class="custom-select" name="inputGroupSelect01">
+                    <select class="custom-select" name="copy_assessment_id">
                       <option selected>Choose Assessment...</option>
                       <% assessment_list_rows.forEach(function(row, iRow) {%>
                       <option value=<%= row.id %>><%= row.tid %>: <%= row.title %></option>
@@ -172,7 +172,7 @@
                 <div class="modal-body">
                   <div class="form-group">
                     <label for="formName">Group Name</label>
-                    <input type="text" class="form-control" id="formName" name="groupname">  
+                    <input type="text" class="form-control" id="formName" name="group_name">  
                   </div>
                 <br>
                   <div class="form-group">
@@ -184,52 +184,10 @@
                   </div>
                 </div>
                 <div class="modal-footer">
-                  <input type="hidden" name="__action" value="addGroup">
+                  <input type="hidden" name="__action" value="add_group">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                   <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                   <button type="submit" class="btn btn-primary">Add</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-        <div class="modal fade" id="configModal" tabindex="-1" role="dialog" aria-labelledby="configModalLabel">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h1 class="h4 modal-title" id="configModalLabel">Group Config</h1>
-              </div>
-              <form name="config-group-form" method="POST">
-                <div class="modal-body">
-                  <div class="form-min">
-                    <label for="formmin">Minimum group size</label>
-                    <input type="number" value=<%= config_info.defaultMin %> class="form-control" id="formmin" name="minsize">
-                  </div>
-                  <br>
-                  <div class="form-max">
-                    <label for="formman">Maximum group size</label>
-                    <input type="number" value=<%= config_info.defaultMax %> class="form-control" id="formmax" name="maxsize">
-                  </div>
-                  <br>
-                  <label for="formman">Student Permissions</label> <br>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="joincheck" <%= config_info.student_authz_join ? "checked" : "" %>>
-                    <label class="form-check-label" for="inlineCheckbox1">Join Groups</label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="createcheck" <%= config_info.student_authz_create ? "checked" : "" %>>
-                    <label class="form-check-label" for="inlineCheckbox2">Create Groups</label>
-                  </div>
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="checkbox" name="leavecheck" <%= config_info.student_authz_leave ? "checked" : "" %>>
-                    <label class="form-check-label" for="inlineCheckbox3">Leave Groups</label>
-                  </div>                   
-                </div>
-                <div class="modal-footer">
-                  <input type="hidden" name="__action" value="configGroup">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                  <button type="submit" class="btn btn-primary">Change</button>
                 </div>
               </form>
             </div>
@@ -268,10 +226,6 @@
           <button type="button" class="btn btn-sm btn-light" tabindex="0" data-toggle="modal"
             data-target="#addGroupModal">
             <i class="fa fa-plus" aria-hidden="true"></i> Add a group
-          </button>
-          <button type="button" class="btn btn-sm btn-secondary" tabindex="0" data-toggle="modal"
-            data-target="#configModal">
-            <i class="fa fa-cog" aria-hidden="true"></i> Config
           </button>
           <button type="button" class="btn btn-sm btn-danger" tabindex="0" data-toggle="modal"
             data-target="#deleteAllGroupsModal">

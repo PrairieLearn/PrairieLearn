@@ -42,8 +42,8 @@ router.get('/', function(req, res, next) {
                         res.locals.groupsize = result.rowCount;
                         res.locals.needsize = res.locals.minsize - res.locals.groupsize;
                         if (res.locals.groupsize > 0) {
-                            res.locals.groupinfo = result.rows;
-                            res.locals.joincode = res.locals.groupinfo[0].name + '-' + res.locals.groupinfo[0].join_code;
+                            res.locals.group_info = result.rows;
+                            res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
                             res.locals.start = false;
                             if (res.locals.needsize <= 0) {
                                 res.locals.start = true;
@@ -69,7 +69,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    if (req.body.__action == 'newInstance') {
+    if (req.body.__action == 'new_instance') {
         var params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
@@ -88,47 +88,41 @@ router.post('/', function(req, res, next) {
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
             }
         });
-    } else if (req.body.__action == 'joinGroup') {
+    } else if (req.body.__action == 'join_group') {
         try{
-            const group_name = req.body.joinCode.split('-')[0];
-            const join_code = req.body.joinCode.split('-')[1].toUpperCase();
+            const group_name = req.body.join_code.split('-')[0];
+            const join_code = req.body.join_code.split('-')[1].toUpperCase();
             if (join_code.length != 4) {
                 throw 'invalid length of join code';
             }
-            const params = {
-                assessment_id: res.locals.assessment.id,
-                user_id: res.locals.user.user_id,
-                authn_user_id: res.locals.authn_user.user_id,
+            let params = [
+                res.locals.assessment.id,
+                res.locals.user.user_id,
+                res.locals.authn_user.user_id,
                 group_name,
                 join_code,
-            };
-            sqldb.query(sql.check_group_size, params, function(err, result) {
-                let joinError = true;
-                //students may have invalid input here, no need to log the error information
-                if (!ERR(err, next) && typeof result.rows[0] != 'undefined'){
-                    if (parseInt(result.rows[0].cur_size) < parseInt(result.rows[0].maximum)) {
-                        //sucessfully find a exist and not full group
-                        joinError = false;
-                        sqldb.query(sql.join_group, params, function(err, _result) {
-                            if (ERR(err, next)) return;
-                            res.redirect(req.originalUrl);
-                        });
-                    }
-                }
-                if (joinError) {
+            ];
+            sqldb.call('group_users_insert', params, function(err, _result) {
+                if (err) {
+                    let params = {
+                        assessment_id: res.locals.assessment.id,
+                    };        
                     sqldb.query(sql.get_config_info, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.permissions = result.rows[0];            
                         res.locals.groupsize = 0;
                         //display the error on frontend
-                        res.locals.usedjoincode = req.body.joinCode;
+                        res.locals.used_join_code = req.body.join_code;
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        return;
                     });
+                } else {
+                    res.redirect(req.originalUrl);
                 }
             });
         } catch (err) {
             // the join code input by user is not valid (not in format of groupname+4-character)
-            const params = {
+            let params = {
                 assessment_id: res.locals.assessment.id,
             };
             sqldb.query(sql.get_config_info, params, function(err, result) {
@@ -136,11 +130,11 @@ router.post('/', function(req, res, next) {
                 res.locals.permissions = result.rows[0];            
                 res.locals.groupsize = 0;
                 //display the error on frontend
-                res.locals.usedjoincode = req.body.joinCode;
+                res.locals.used_join_code = req.body.join_code;
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         }
-    } else if (req.body.__action == 'createGroup') {
+    } else if (req.body.__action == 'create_group') {
         const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
@@ -176,13 +170,13 @@ router.post('/', function(req, res, next) {
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         }
-    } else if (req.body.__action == 'leaveGroup') {
-        var params2 = {
+    } else if (req.body.__action == 'leave_group') {
+        const params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
             authn_user_id: res.locals.authn_user.user_id,
         };
-        sqldb.query(sql.leave_group, params2, function(err, _result) {
+        sqldb.query(sql.leave_group, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

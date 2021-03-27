@@ -102,8 +102,28 @@
             "type": "boolean",
             "default": false
         },
-        "advanceScorePerc": {
-            "$ref": "#/definitions/advanceScorePerc"
+        "groupMaxSize": {
+            "description": "Maximum number of students in a group.",
+            "type": "number"
+        },
+        "groupMinSize": {
+            "description": "Minimum number of students in a group.",
+            "type": "number"
+        },
+        "studentGroupCreate": {
+            "description": "Whether students can create groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "studentGroupJoin": {
+            "description": "Whether students can join groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "studentGroupLeave": {
+            "description": "Whether students can leave groups.",
+            "type": "boolean",
+            "default": false
         },
         "gradeRateMinutes": {
             "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
@@ -242,9 +262,6 @@
                         "$ref": "#/definitions/zoneQuestion"
                     }
                 },
-                "advanceScorePerc": {
-                    "$ref": "#/definitions/advanceScorePerc"
-                },
                 "gradeRateMinutes": {
                     "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
                     "type": "number",
@@ -293,9 +310,6 @@
                     "type": "number",
                     "default": 1
                 },
-                "advanceScorePerc": {
-                    "$ref": "#/definitions/advanceScorePerc"
-                },
                 "gradeRateMinutes": {
                     "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
                     "type": "number",
@@ -326,9 +340,6 @@
                     "description": "The maximum number of graded submissions allowed for each question instance.",
                     "type": "number",
                     "default": 1
-                },
-                "advanceScorePerc": {
-                    "$ref": "#/definitions/advanceScorePerc"
                 },
                 "gradeRateMinutes": {
                     "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
@@ -369,12 +380,6 @@
             "description": "Whether to force this question to be awarded maximum points on a regrade.",
             "type": "boolean",
             "default": false
-        },
-        "advanceScorePerc": {
-            "description": "Minimum score percentage to unlock access to subsequent questions",
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
         }
     }
 }

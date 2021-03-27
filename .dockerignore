@@ -15,6 +15,7 @@
 !exampleCourse/
 !grader_host/
 !lib/
+!Makefile
 !middlewares/
 !migrations/
 !models/

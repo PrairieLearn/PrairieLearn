@@ -2,17 +2,9 @@
 WITH instance_questions_info AS (
     SELECT
         iq.id,
-        -- prev and next instance questions are JSON objects to pass directly 
-        -- to partials that render links inside of instance question pages.
-        jsonb_build_object(
-            'id', (lag(iq.id) OVER w)
-        ) AS prev_instance_question,
-        jsonb_build_object(
-            'id', (lead(iq.id) OVER w),
-            'sequence_locked', (lead(qo.sequence_locked) OVER w)
-        ) AS next_instance_question,
-        qo.question_number,
-        qo.sequence_locked
+        (lag(iq.id) OVER w) AS prev_instance_question_id,
+        (lead(iq.id) OVER w) AS next_instance_question_id,
+        qo.question_number
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -47,16 +39,14 @@ SELECT
     to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
-        'prev_instance_question', iqi.prev_instance_question,
-        'next_instance_question', iqi.next_instance_question,
-        'question_number', iqi.question_number,
+        'prev_instance_question_id', iqi.prev_instance_question_id,
+        'next_instance_question_id', next_instance_question_id,
+        'question_number', question_number,
         'max_points', CASE
             WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
             ELSE aq.max_points
         END,
-        'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
-        'advance_score_perc', aq.effective_advance_score_perc,
-        'sequence_locked', iqi.sequence_locked
+        'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)]
     ) AS instance_question_info,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(q) AS question,
@@ -85,5 +75,4 @@ FROM
 WHERE
     iq.id = $instance_question_id
     AND ci.id = $course_instance_id
-    AND aai.authorized
-    AND NOT iqi.sequence_locked;
+    AND aai.authorized;

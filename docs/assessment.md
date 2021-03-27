@@ -109,6 +109,27 @@ For practice exams it is often desirable to make a *multiple instance* assessmen
 ## Enabling group work for collaborative assessments
 
 By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
+Information about the group configuration can be set in the `infoAssessment.json` file. For example: 
+```json
+{
+        "groupWork": true,
+        "groupMaxSize": 6,
+        "groupMinSize": 2,
+        "studentGroupCreate": true,
+        "studentGroupJoin": true,
+        "studentGroupLeave": true,
+}
+```
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`groupWork` | boolean | false | Enable the group work for the assessment.
+`groupMaxSize` | integer | - | The maximum size of a group (default: no minimum).
+`groupMinSize` | integer | - | The minimum size of a group (default: no maximum).
+`studentGroupCreate` | boolean | false | Allow students to create groups.
+`studentGroupJoin` | boolean | false | Allow students to join other groups by join code.
+`studentGroupLeave` | boolean | false | Allow students to leave groups.
+
+Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
 
 ### Instructor options for groupWork
 
@@ -144,38 +165,6 @@ When calculating a student's grade for a group assessment, PrairieLearn will alw
 ![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
 
 Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with eachother outside of PrairieLearn. They are also able to leave their group to join a different one.
-
-## Forcing students to complete questions in-order
-
-**WARNING:** We **strongly** discourage the use of this option during exams, as it can be very detrimental to student success. See below for more details.
-
-Certain assessments might be designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but assessments can be configured to not allow students to view future unsolved questions.
-
-To enable these features, set `advanceScorePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
-
-```js
-{
-    "advanceScorePerc": 100,
-    "zones": [
-        {
-            "advanceScorePerc": 80,
-            "questions": [
-                {"id": "page1", "advanceScorePerc": 50},
-                {"id": "page2"},
-                {"id": "page3"}
-            ]
-        }
-    ]
-}
-```
-
-In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `advanceScorePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80 in order to unlock `page3`. Because `advanceScorePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
-
-If a student uses all of their attempts on a question and cannot submit any more attempts, the next question will automatically unlock, no matter what score they earned on the previous question. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
-
-### Note about exam-type assessments and in-order questions
-
-The `advanceScorePerc` attribute is intended to be used in [groupwork](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in actual exams.
 
 ## Auto-closing Exam assessments
 
