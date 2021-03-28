@@ -109,9 +109,9 @@ router.post('/', function(req, res, next) {
         const assessment_id = res.locals.assessment.id;
         const close = req.body.__action == 'close_all';
         const overrideGradeRate = true;
-        assessment.gradeAllAssessmentInstances(assessment_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err) {
+        assessment.gradeAllAssessmentInstances(assessment_id, res.locals.user.user_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'delete_all') {
         const params = [
