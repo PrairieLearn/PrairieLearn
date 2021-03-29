@@ -8,111 +8,104 @@ During timed assessments such as exams or quizzes, instructors currently have to
 
 At the same time, while this does allow instructors to view students' grades while an exam is ongoing, there is no current way to see how far through an exam a student has progressed. Feedback is only available to instructors once the student has finished and submitted their exam for grading.
 
-This RFC proposes a real-time dashboard for assessments allowing instructors to see students' progress as they answer questions on an exam. This will provide a singular, live point of access which eliminates the need to reload everything on the page.
+This RFC proposes a real-time dashboard as a new tab on assessment pages, allowing instructors to see students' progress as they answer questions on an exam. This will provide a singular, live point of access which eliminates the need to reload everything on the page.
 
-As part of this, also proposed is a new metric called "Progress", similar to the "Score" metric, which would encapsulate the number of questions a student has hit the "save" button on in an exam. Additional data associated with this field would be available under the "Statistics" tab.
+This dashboard would port over select metrics from the existing "Students" tab which would be useful to have live, as well as introduce new metrics for real-time per-question progress for students taking exams, data which currently isn't encapsulated in numerical form.
 
-Proposed as well is a potential auxiliary dashboard separate from the students page displaying per-question progress data. This would indicate specifically where in an exam students are, as well as what order students are attempting questions in and if any questions have not yet been attempted.
 
 # Design
 
-The real-time progress dashboard would be created by upgrading the existing "Students" tab on the instructor view of a particular assessment (`instructorAssessmentInstances`). From the current implementation, the following three to four changes would be made:
+The real-time progress dashboard would be created by creating a new optional assessment overview tab, perhaps called `Progress`, which would contain relevant data to be updated in real-time. The following features are proposed:
+- Overall structure similar to that of the `Students` tab, containing per-student identification data at minimum
+- A column labeled `Completion` containing a summary metric of students' non-graded progress in an assessment
+- A column labeled `Progress` containing a visual or numeric representation of per-question progress; see `Open Debates` at the end of this RFC
+- A data header above the main table containing summary values for average progress, total number of students who've started an assessment, total number of students finished, and possibly average grade of specifically those who have finished depending on whether grades are included
+- Automatic data refresh at a set interval
 
-- A new column labeled `Progress` located between `Duration` and `Remaining`
-- A new data header under the "Students" tab containing the percentage number of students that have engaged with the assessment, and the percentage average progress
-- Adjustment such that the SQL database is re-polled every few seconds, the page automatically refreshing with the new data
-- Potential auxiliary dashboard in a new tab with a name TBD containing per-question progress data (potentially also named `Progress`)
+## Summary Completion Metric
 
-## Progress Metric
+`Completion` would be a new field associated with an assessment instance similar to the way `Score` is handled.
 
-`Progress` would be a new field associated with an assessment instance similar to the way `Score` is handled.
+This field, when queried, would return the number of questions on an assessment where the save button has been clicked. This can be done by querying a count on the number of instance questions with one submission or more.
 
-This field, when queried, would return the number of questions on an assessment where the save button has been clicked. Internally, this can be accumulated one of two ways:
+Similar to `Score`, `Completion` would also permit the computation of central tendency measures. Data such as average, standard deviation, median and maximum can be computed for `Completion` the way they are computed for `Score`, and perhaps displayed using similar charts under the "Statistics" tab of an assessment.
 
-- Incrementing the field every time a question is marked as "saved" for the first time. This would make the field capture the number of validly complete questions
-- Incrementing the field every time a question is unmarked from "unanswered" for the first time. This would make the field capture the number of questions a student has attempted overall instead of just those which are wholly complete
+On the dashboard page, the metric would display using the same percent and bar formatting as the `Score` column on the `Students` tab, though potentially with a different color scheme to differentiate it from `Score` and the fact that this is not a metric corresponding to a graded valuation.
 
-Unlike `Score`, `Progress` is a continuously increasing metric independent of any attempts framework. That is, once progress has incremented, it is not possible to achieve lower progress in any further attempt. This means subfields for maximum and minimum progress will not be necessary; rather, a single field which increases as a student moves through an assessment will be sufficient.
+Ultimately, this field allows instructors to see a quick summary of the extent to which students have interacted with an assessment in one place. This will be useful for both observing student progress during exams, as well as for homework assignments which do not get graded until the entire assessment has been submitted.
 
-Similar to `Score`, `Progress` would also permit the computation of central tendency measures. Data such as average, standard deviation, median and maximum can be computed for `Progress` the way they are computed for `Score`, and displayed using similar charts under the "Statistics" tab of an assessment. For convenience, average progress could be provided as a header metric at the top of the revised "Students" dashboard page which could also update in real-time.
+## Data Header
 
-On the dashboard page, the metric would be located between the `Duration` and `Remaining` columns in a column labeled `Progress`. The metric would display using the same percent and bar formatting as the `Score` column, though potentially with a different color scheme to differentiate it from `Score` and the fact that this is not a metric corresponding to a graded valuation.
+The data header is meant to be a small addition to the dashboard to provide additional summary metrics. Currently, three pieces of data are proposed for this header:
 
-Ultimately, this field allows instructors to see the extent to which students have interacted with an assessment in one place. This will be useful for both observing student progress during exams, as well as for homework assignments which do not get graded until the entire assessment has been submitted.
+- Raw number of students in a class that have started an assessment
+- Raw or percentage (out of raw total who've started) number that have finished an assessment
+- Percentage average completion in the assessment
 
-## Students Tab Data Header
-
-The data header is meant to be a small addition to the "Students" tab for readability and to avoid having to switch between tabs to access data regarding an ongoing exam. Currently, only two pieces of data are proposed for this header:
-
-- Percentage number of students in a class that have started an assessment
-- Percentage average progress in the assessment
-
-These two metrics inform instructors both how much of a class is actually present, as well as show overall how well students are getting through an assessment. The metrics would update in real-time, like the rest of the revised dashboard, allowing a more in-depth look at student progress.
+These three metrics inform instructors both how much of a class is actually present, as well as show overall how well students are getting through an assessment. The metrics would update in real-time, like the rest of the dashboard, allowing a more in-depth look at student progress.
 
 Average grade is not proposed for inclusion as in the main use case, exams, grades are not available until close to the end of the exam when students submit their work.
 
 ## Real-Time Engine
 
-Next, the "Students" tab would be modified such that all or at least dynamic metrics, notably those relating to time and progress including the entire new data header, would refresh every few seconds. This allows the tab to be used as a one-stop-shop for progress information without having to constantly refresh the page. The following three options are possible:
+Next, the new dashboard would be set to have specific metrics refresh every few seconds. This allows the tab to be used as a one-stop-shop for progress information without having to constantly refresh the page. The following three options are possible:
 
 - Full HTML-based webpage refresh every few seconds. This is the simplest to implement, but also resource-intensive as everything on the page would be regenerated.
 - While loop in the JS source for loading data into the HTML elements. This would likely be faster but still intensive in terms of having to repeat the entire data-processing process.
 - Websocket-based feed for the metrics. This is the most complex and also the fastest option, as only updated metrics need to be piped through the socket after an initial data load.
 
-## Potential Per-Question Progress Dashboard
+Option 1 is currently being trialled as part of [PR #3992](https://github.com/PrairieLearn/PrairieLearn/pull/3992/) on the existing `Students` tab and should inform implementation trajectories.
 
-Depending on how it would turn out, it may also be possible to create a secondary dashboard containing specialized per-question progress metrics. These metrics would be separate from the overall progress metric and might be capable of containing the following data, inheriting from existing assessment events or potentially just being a display of those events directly:
+## Visual or Numeric Progress Data
 
-- Timestamp when students click into or click out of a particular question
-- Timestamp when students have clicked save on a question (though this may be redundant)
-- Other metrics TBD based on further required analysis and demand
+In addition to the summary completion metric, it is possible to introduce more detailed metrics corresponding to per-question student interactions. These would introduce the ability for instructors to observe how students are navigating through exams, particularly question order and time spent per question. 
 
-This would allow a new dashboard containing row-by-row overviews relating to each question in an assessment. The setup would be similar to that of the students page, but the physical size of the proposed charts prohibit inclusion of the metric on the students page without it becoming visibly larger.
+The majority of this should be possible by collecting timestamps when students click into or click out of a particular question, but it may also be useful to include question-save events as these indicate when a student has tentatively completed a question.
 
-Each row would correspond to a single student, and there would only be columns for student info and the timescale charts.
+Using this metric, it is possible to create a student-by-student visualization, or a "timescale chart", of how one is interacting with an assessment.
 
-These timescale charts are a timeline, bounded by the start and end of an assessment, along which events would be marked. On the y-axis of the chart would be the list of question numbers, in increasing order bottom to top or top to bottom.
+These timescale charts are a timeline, bounded by the start and end of an assessment, along which events would be marked.
 
-Question-save events could be marked as single markers, but events involving clicking into and out of a question can be represented as continuous bars from the click-in timestamp to the click-out timestamp. This allows the chart to show how long a student has attempted a question for and when.
+Question-save events could be marked as single markers, but events involving clicking into and out of a question can be represented as continuous bars from the click-in timestamp to the click-out timestamp. This allows the chart to show how long a student has attempted a question for and when. The timescale should also indicate any special parameters for multi-instance questions, if applicable.
 
-Two alternatives are possible. One option is to have this stacked per-question display where events for a particular question are in different rows of the chart. This would make it easier to visualize question-specific events.
-
-Alternatively, since time is linear, a singular row containing all the events and separate labels for question-specific events would fit in a smaller space, but at the same time it would be more difficult to view question-specific progress. The first option is recommended.
-
-Finally, an overall summary chart contiaining perhaps a heatmap-style version of the option 1 chart averaged over all students could be placed at the top of this dashboard. The heatmap-like color scaling would indicate how many students are inside a particular question at a particular moment in time, with redder or greyer colors for zero and bluer colors for higher concentrations of students. At any moment, it is possible to compute how many students are on a specific question by reading the question number of the most recent click-in event for that student.
+Additionally, an overall summary chart contiaining perhaps a heatmap-style version of the chart (with different questions on different lines) averaged over all students could be placed at the top or bottom of this dashboard. The heatmap-like color scaling would indicate how many students are inside a particular question at a particular moment in time, with redder or greyer colors for zero and bluer colors for higher concentrations of students. At any moment, it is possible to compute how many students are on a specific question by reading the question number of the most recent click-in event for that student.
 
 The idea is that by having this dashboard, anomalies such as questions immediately skipped or questions spent more time on than expected would then be trackable by professors and perhaps indicative of something wrong.
 
 ## Additional Options
 
-A toggle switch for the real-time dashboards disabling real-time feeds could be included. This would be easier to look at and process when outside of an exam scenario.
+A button to disable real-time updating would allow for a less visually dynamic dashboard and should be considered for cases when a simple static dashboard checked only from time to time would be more useful. This is also being tested in [PR #3992](https://github.com/PrairieLearn/PrairieLearn/pull/3992/).
 
-The original Progress metric may not need to be stored as a physical variable if the current setup is capable of reading off question-save events from a student's event history in a fast-enough time. If not, these events should be stored in a variable for faster access. Instead of progress being a numerical value, its possible for progress to contain references to the original events, which provides access to timestamp data, but this is not required.
+## Open Debates
+
+The following components of the RFC should be put under close evaluation:
+
+- **Data to include in the dashboard.** Aside from progress metrics, it may be useful to include grades and time length data as well. However, as it has been indicated in the past that select metrics on the existing `Students` tab are computationally intensive, specifics of what to port should be discussed further based on needs.
+
+- **Structure of timescales in the dashboard.** Having a separate timescale per student may be too computationally intensive to include and update in real-time. It may therefore be better to only include the single average summary chart containing data for question-interaction events instead. Additionally, if per-student timescales are included, consideration should be taken towards their appearance; a single timeline would fit better on the screen, whereas a stacked timeline with a different question represented on each line would be easier to read but take more space to display.
 
 # Implementation plan
 
-Phases can be implemented largely in parallel, except step 9 and Phase 4 which require Phase 1 to be complete.
+Phases 1 and 2 can be implemented in parallel.
 
-## Phase 1: Implement Progress
+## Phase 1: Implement Completion
 - [ ]  1. Figure out how Score data is handled
-- [ ]  2. Create a dummy entry for Progress in assessment instance structure
-- [ ]  3. Determine which of the two measures of Progress to use
-- [ ]  4. Modify the behaviour of Save in assessments to increment the Progress metric for an assessment instance
-- [ ]  5. Add a column to the Students tab containing Progress as a percent bar
-- [ ]  6. Add central tendency metrics for Progress to the Statistics tab
+- [ ]  2. Create a dummy entry for Completion in assessment instance structure
+- [ ]  3. Modify the behaviour of Save in assessments to increment the Completion metric for an assessment instance
+- [ ]  4. Add central tendency metrics for Completion to the Statistics tab
   
+## Phase 2: Implement Real-Time Engine
+- [ ]  5. Determine which of the three refresh methods to use
+- [ ]  6. Test drive the method with just one metric, if applicable
+- [ ]  7. Finish full implementation of the engine
+
+## Phase 3: Implement Progress Dashboard
+- [ ]  8. Create per-question progress metrics including timestamps
+- [ ]  9. Create dummy layout for dashboard
+- [ ] 10. Add data parser and displayer
+- [ ] 11. Add summary timescale graph to tab
+
 ## Phase 2: Implement Data Header
-- [ ]  7. Create a blank header space above the columns in the Students tab
-- [ ]  8. Add percentage number of student instances to header
-- [ ]  9. Add average Progress to header
-
-## Phase 3: Implement Real-Time Engine
-- [ ] 10. Determine which of the three refresh methods to use
-- [ ] 11. Test drive the method with just one metric, if applicable
-- [ ] 12. Finish full implementation of the engine
-
-## Phase 4: Potentially Implement Progress Dashboard
-- [ ] 13. Create per-question progress metrics including timestamps
-- [ ] 14. Create dummy layout for tab
-- [ ] 15. Add data parser and displayer
-- [ ] 16. Add summary timescale graph to tab
+- [ ] 12. Create a blank header space on the dashboard
+- [ ] 13. Add student start/finish metrics
+- [ ] 14. Add average Completion, potentially average grade
