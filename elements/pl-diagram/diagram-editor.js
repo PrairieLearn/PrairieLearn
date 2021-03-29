@@ -3,7 +3,7 @@ function DiagramEditor() {
 	this.config = {
 		// "enabledLibraries": [],
 		"defaultLibraries": "general;uml;er;bpmn;flowchart;basic;FFSM_DIAG_LIB.xml",
-		"defaultCustomLibraries": ["U%2FclientFilesElement%2FFSM_DIAG_LIB.xml"]
+		"defaultCustomLibraries": ["https%3A%2F%2Fraw.githubusercontent.com%2FPrairieLearn%2FPrairieLearn%2Fpl-diagram%2Felements%2Fpl-diagram%2FclientFilesElement%2FFSM_DIAG_LIB.xml"]
 		// "autosaveDelay": 1000,
 		// "libraries":["general"]	,
 		// "defaultLibraries":""
@@ -194,10 +194,10 @@ DiagramEditor.prototype.getFrameUrl = function () {
 	url += '&libraries=1';
 	url += '&libs=;'
 	url += "&saveAndExit=0&noSaveBtn=1&noExitBtn=1"; // Disable save and exit buttons
-	url += "&clibs=Uhttps%3A%2F%2Fjgraph.github.io%2Fdrawio-libs%2Flibs%2Ftemplates.xml;U.%2FclientFilesElement%2FFSM_DIAG_LIB.xml"
 	if (this.config != null) {
 		url += '&configure=1';
 	}
+	url += "&clibs=Uhttps%3A%2F%2Fraw.githubusercontent.com%2FPrairieLearn%2FPrairieLearn%2Fpl-diagram%2Felements%2Fpl-diagram%2FclientFilesElement%2FFSM_DIAG_LIB.xml;"
 	console.log(this.config);
 	return url;
 };
