@@ -1,9 +1,7 @@
 window.onload = function () { DiagramEditor.staticInit() }
 function DiagramEditor() {
 	this.config = {
-		// "enabledLibraries": [],
-		"defaultLibraries": "general;uml;er;bpmn;flowchart;basic;FFSM_DIAG_LIB.xml",
-		"defaultCustomLibraries": ["https%3A%2F%2Fraw.githubusercontent.com%2FPrairieLearn%2FPrairieLearn%2Fpl-diagram%2Felements%2Fpl-diagram%2FclientFilesElement%2FFSM_DIAG_LIB.xml"]
+		"enabledLibraries": [],
 		// "autosaveDelay": 1000,
 		// "libraries":["general"]	,
 		// "defaultLibraries":""
@@ -54,11 +52,6 @@ DiagramEditor.prototype.xml = null;
  * Format to use.
  */
 DiagramEditor.prototype.format = 'xml';
-
-/**
- * Specifies if libraries should be enabled.
- */
-DiagramEditor.prototype.libraries = true;
 
 
 /**
@@ -185,7 +178,6 @@ DiagramEditor.prototype.getFrameStyle = function () {
 /**
  * Returns the URL for the iframe.
  */
-//TODO: Edit this url with special parameters
 DiagramEditor.prototype.getFrameUrl = function () {
 	var url = this.drawDomain + '?proto=json&spin=1&embed=1';
 
@@ -197,7 +189,7 @@ DiagramEditor.prototype.getFrameUrl = function () {
 	if (this.config != null) {
 		url += '&configure=1';
 	}
-	url += "&clibs=Uhttps%3A%2F%2Fraw.githubusercontent.com%2FPrairieLearn%2FPrairieLearn%2Fpl-diagram%2Felements%2Fpl-diagram%2FclientFilesElement%2FFSM_DIAG_LIB.xml;"
+	url += "&clibs=Uhttps%3A%2F%2Fraw.githubusercontent.com%2Fgemeln%2Fstaticfiles%2Fmain%2Fbar.xml;"
 	console.log(this.config);
 	return url;
 };
