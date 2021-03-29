@@ -7,13 +7,27 @@ import numpy as np
 import random
 import json
 
+element_defaults = {
+    'answers-name': '',
+}
+
+def parseInitialFSM(fsmElement):
+    # print(fsmElement)
+    return
+
 def prepare(element_html, data):
     pass
 
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers-name', '')
+    for child in element:
+        if(child.tag=="pl-diagram-initial"):
+            for initialComponent in child:
+                if initialComponent.tag=="pl-fsm":
+                    parseInitialFSM(initialComponent)
+
+    name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     # Hardcoded diagram for testing, remove later for a diagram specified in question
     import base64
     with open('clientFilesElement/testDiag.svg','r') as f:
@@ -27,12 +41,13 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers-name', '')
+    name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     try:
         data['submitted_answers'][name] = json.loads(data['submitted_answers'][name])
         if 'nodes' not in data['submitted_answers'][name] or 'edges' not in data['submitted_answers'][name]:
             data['format_errors'][name] = 'No submitted answer.'
             data['submitted_answers'][name] = {}
+        print(data['submitted_answers'][name])
     except json.JSONDecodeError:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = {}

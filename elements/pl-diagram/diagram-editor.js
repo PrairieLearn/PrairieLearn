@@ -1,37 +1,27 @@
-/**
- * Copyright (c) 2006-2020, JGraph Ltd
- * Copyright (c) 2006-2020, Gaudenz Alder
- *
- * Usage: DiagramEditor.editElement(elt) where elt is an img or object with
- * a data URI src or data attribute or an svg node with a content attribute.
- *
- * See https://jgraph.github.io/drawio-integration/javascript.html
- */
-function DiagramEditor(config, ui, done, initialized)
-{
-	this.config = (config != null) ? config : this.config;
-	this.ui = (ui != null) ? ui : this.ui;
-	this.done = (done != null) ? done : this.done;
-  this.initialized = (initialized != null) ? initialized : this.initialized;
+window.onload = function () { DiagramEditor.staticInit() }
+function DiagramEditor() {
+	this.config = {
+		// "enabledLibraries": [],
+		"defaultLibraries": "general;uml;er;bpmn;flowchart;basic;FFSM_DIAG_LIB.xml",
+		"defaultCustomLibraries": ["U%2FclientFilesElement%2FFSM_DIAG_LIB.xml"]
+		// "autosaveDelay": 1000,
+		// "libraries":["general"]	,
+		// "defaultLibraries":""
+	};
 
 	var self = this;
 
-	this.handleMessageEvent = function(evt)
-	{
+	this.handleMessageEvent = function (evt) {
 		if (self.frame != null && evt.source == self.frame.contentWindow &&
-			evt.data.length > 0)
-		{
-			try
-			{
+			evt.data.length > 0) {
+			try {
 				var msg = JSON.parse(evt.data);
 
-				if (msg != null)
-				{
+				if (msg != null) {
 					self.handleMessage(msg);
 				}
 			}
-			catch (e)
-			{
+			catch (e) {
 				console.error(e);
 			}
 		}
@@ -41,17 +31,8 @@ function DiagramEditor(config, ui, done, initialized)
 /**
  * Static method to edit the diagram in the given img or object.
  */
-DiagramEditor.editElement = function(elt, config, ui, done)
-{
-  if (!elt.diagramEditorStarting)
-  {
-    elt.diagramEditorStarting = true;
-
-    return new DiagramEditor(config, ui, done, function()
-    {
-        delete elt.diagramEditorStarting;
-    }).editElement(elt);
-   }
+DiagramEditor.staticInit = function () {
+	return new DiagramEditor().editElement();
 };
 
 /**
@@ -63,11 +44,6 @@ DiagramEditor.prototype.config = null;
  * Protocol and domain to use.
  */
 DiagramEditor.prototype.drawDomain = 'https://embed.diagrams.net/';
-
-/**
- * UI theme to be use.
- */
-DiagramEditor.prototype.ui = 'min';
 
 /**
  * Contains XML for pending image export.
@@ -84,31 +60,13 @@ DiagramEditor.prototype.format = 'xml';
  */
 DiagramEditor.prototype.libraries = true;
 
-/**
- * CSS style for the iframe.
- */
-DiagramEditor.prototype.frameStyle = 'position:absolute;border:0;width:100%;height:100%;';
 
 /**
  * Adds the iframe and starts editing.
  */
-DiagramEditor.prototype.editElement = function(elem)
-{
-	var src = this.getElementData(elem);
-	this.startElement = elem;
+DiagramEditor.prototype.editElement = function () {
 	var fmt = this.format;
-
-	if (src.substring(0, 15) === 'data:image/png;')
-	{
-		fmt = 'xmlpng';
-	}
-	else if (src.substring(0, 19) === 'data:image/svg+xml;' ||
-		elem.nodeName.toLowerCase() == 'svg')
-	{
-		fmt = 'xmlsvg';
-	}
-
-	this.startEditing(src, fmt);
+	this.startEditing(fmt);
 
 	return this;
 };
@@ -116,49 +74,25 @@ DiagramEditor.prototype.editElement = function(elem)
 /**
  * Adds the iframe and starts editing.
  */
-DiagramEditor.prototype.getElementData = function(elem)
-{
+DiagramEditor.prototype.getElementData = function (elem) {
 	var name = elem.nodeName.toLowerCase();
 
 	return elem.getAttribute((name == 'svg') ? 'content' :
 		((name == 'img') ? 'src' : 'data'));
 };
 
-/**
- * Adds the iframe and starts editing.
- */
-DiagramEditor.prototype.setElementData = function(elem, data)
-{
-	var name = elem.nodeName.toLowerCase();
-
-	if (name == 'svg')
-	{
-		elem.outerHTML = atob(data.substring(data.indexOf(',') + 1));
-	}
-	else
-	{
-		elem.setAttribute((name == 'img') ? 'src' : 'data', data);
-	}
-
-	return elem;
-};
 
 /**
  * Starts the editor for the given data.
  */
-DiagramEditor.prototype.startEditing = function(data, format, title)
-{
-	if (this.frame == null)
-	{
+DiagramEditor.prototype.startEditing = function (format, title) {
+	if (this.frame == null) {
 		window.addEventListener('message', this.handleMessageEvent);
 		this.format = (format != null) ? format : this.format;
 		this.title = (title != null) ? title : this.title;
-		this.data = data;
 
-		this.frame = this.createFrame(
-			this.getFrameUrl(),
-			this.getFrameStyle());
-		document.body.appendChild(this.frame);
+		this.frame = document.getElementById('diagramFrame');
+		this.frame.setAttribute('src', this.getFrameUrl());
 		this.setWaiting(true);
 	}
 };
@@ -166,29 +100,23 @@ DiagramEditor.prototype.startEditing = function(data, format, title)
 /**
  * Updates the waiting cursor.
  */
-DiagramEditor.prototype.setWaiting = function(waiting)
-{
-	if (this.startElement != null)
-	{
+DiagramEditor.prototype.setWaiting = function (waiting) {
+	if (this.startElement != null) {
 		// Redirect cursor to parent for SVG and object
 		var elt = this.startElement;
 		var name = elt.nodeName.toLowerCase();
 
-		if (name == 'svg' || name == 'object')
-		{
+		if (name == 'svg' || name == 'object') {
 			elt = elt.parentNode;
 		}
 
-		if (elt != null)
-		{
-			if (waiting)
-			{
+		if (elt != null) {
+			if (waiting) {
 				this.frame.style.pointerEvents = 'none';
 				this.previousCursor = elt.style.cursor;
 				elt.style.cursor = 'wait';
 			}
-			else
-			{
+			else {
 				elt.style.cursor = this.previousCursor;
 				this.frame.style.pointerEvents = '';
 			}
@@ -199,15 +127,12 @@ DiagramEditor.prototype.setWaiting = function(waiting)
 /**
  * Updates the waiting cursor.
  */
-DiagramEditor.prototype.setActive = function(active)
-{
-	if (active)
-	{
+DiagramEditor.prototype.setActive = function (active) {
+	if (active) {
 		this.previousOverflow = document.body.style.overflow;
 		document.body.style.overflow = 'hidden';
 	}
-	else
-	{
+	else {
 		document.body.style.overflow = this.previousOverflow;
 	}
 };
@@ -215,12 +140,10 @@ DiagramEditor.prototype.setActive = function(active)
 /**
  * Removes the iframe.
  */
-DiagramEditor.prototype.stopEditing = function()
-{
-	if (this.frame != null)
-	{
+DiagramEditor.prototype.stopEditing = function () {
+	console.log("STOP EDITING")
+	if (this.frame != null) {
 		window.removeEventListener('message', this.handleMessageEvent);
-		document.body.removeChild(this.frame);
 		this.setActive(false);
 		this.frame = null;
 	}
@@ -229,10 +152,8 @@ DiagramEditor.prototype.stopEditing = function()
 /**
  * Send the given message to the iframe.
  */
-DiagramEditor.prototype.postMessage = function(msg)
-{
-	if (this.frame != null)
-	{
+DiagramEditor.prototype.postMessage = function (msg) {
+	if (this.frame != null) {
 		this.frame.contentWindow.postMessage(JSON.stringify(msg), '*');
 	}
 };
@@ -240,135 +161,101 @@ DiagramEditor.prototype.postMessage = function(msg)
 /**
  * Returns the diagram data.
  */
-DiagramEditor.prototype.getData = function()
-{
+DiagramEditor.prototype.getData = function () {
 	return this.data;
 };
 
 /**
  * Returns the title for the editor.
  */
-DiagramEditor.prototype.getTitle = function()
-{
+DiagramEditor.prototype.getTitle = function () {
 	return this.title;
 };
 
 /**
  * Returns the CSS style for the iframe.
  */
-DiagramEditor.prototype.getFrameStyle = function()
-{
-	return this.frameStyle + ';left:' +
+DiagramEditor.prototype.getFrameStyle = function () {
+	return 'border:0;left:' +
 		document.body.scrollLeft + 'px;top:' +
-		document.body.scrollTop + 'px;';
+		document.body.scrollTop + 'px;' +
+		"width:8000;height:8000;";
 };
 
 /**
  * Returns the URL for the iframe.
  */
-DiagramEditor.prototype.getFrameUrl = function()
-{
-	var url = this.drawDomain + '?proto=json&spin=1';
+//TODO: Edit this url with special parameters
+DiagramEditor.prototype.getFrameUrl = function () {
+	var url = this.drawDomain + '?proto=json&spin=1&embed=1';
 
-	if (this.ui != null)
-	{
-		url += '&ui=' + this.ui;
-	}
-
-	if (this.libraries != null)
-	{
-		url += '&libraries=1';
-	}
-
-	if (this.config != null)
-	{
+	url += "&hide-pages=1"; //Disable format
+	url += '&ui=min';
+	url += '&libraries=1';
+	url += '&libs=;'
+	url += "&saveAndExit=0&noSaveBtn=1&noExitBtn=1"; // Disable save and exit buttons
+	url += "&clibs=Uhttps%3A%2F%2Fjgraph.github.io%2Fdrawio-libs%2Flibs%2Ftemplates.xml;U.%2FclientFilesElement%2FFSM_DIAG_LIB.xml"
+	if (this.config != null) {
 		url += '&configure=1';
 	}
-
+	console.log(this.config);
 	return url;
-};
-
-/**
- * Creates the iframe.
- */
-DiagramEditor.prototype.createFrame = function(url, style)
-{
-	var frame = document.createElement('iframe');
-	frame.setAttribute('frameborder', '0');
-	frame.setAttribute('style', style);
-	frame.setAttribute('src', url);
-
-	return frame;
 };
 
 /**
  * Sets the status of the editor.
  */
-DiagramEditor.prototype.setStatus = function(messageKey, modified)
-{
-	this.postMessage({action: 'status', messageKey: messageKey, modified: modified});
+DiagramEditor.prototype.setStatus = function (messageKey, modified) {
+	this.postMessage({ action: 'status', messageKey: messageKey, modified: modified });
 };
 
 /**
  * Handles the given message.
  */
-DiagramEditor.prototype.handleMessage = function(msg)
-{
-	if (msg.event == 'configure')
-	{
+DiagramEditor.prototype.handleMessage = function (msg) {
+	if (msg.event == 'configure') {
 		this.configureEditor();
 	}
-	else if (msg.event == 'init')
-	{
+	else if (msg.event == 'init') {
 		this.initializeEditor();
 	}
-	else if (msg.event == 'autosave')
-	{
+	else if (msg.event == 'autosave') {
 		this.save(msg.xml, true, this.startElement);
 	}
-	else if (msg.event == 'export')
-	{
-    this.setElementData(this.startElement, msg.data);
+	else if (msg.event == 'export') {
 		this.stopEditing();
-    this.xml = null;
+		this.xml = null;
 	}
-	else if (msg.event == 'save')
-	{
-    this.save(msg.xml, false, this.startElement);
-    this.xml = msg.xml;
+	else if (msg.event == 'save') {
+		this.save(msg.xml, false, this.startElement);
+		this.xml = msg.xml;
 
-		if (msg.exit)
-		{
+		if (msg.exit) {
 			msg.event = 'exit';
 		}
-    else
-    {
-      this.setStatus('allChangesSaved', false);
-    }
+		else {
+			this.setStatus('allChangesSaved', false);
+		}
 	}
 
-	if (msg.event == 'exit')
-	{
-		if (this.format != 'xml')
-		{
-      if (this.xml != null)
-      {
-			  this.postMessage({action: 'export', format: this.format,
-          xml: this.xml, spinKey: 'export'});
-      }
-      else
-      {
-      	this.stopEditing(msg);
-      }
+	if (msg.event == 'exit') {
+		if (this.format != 'xml') {
+			if (this.xml != null) {
+				this.postMessage({
+					action: 'export', format: this.format,
+					xml: this.xml, spinKey: 'export'
+				});
+			}
+			else {
+				this.stopEditing(msg);
+			}
 		}
-		else
-		{
-      if (msg.modified == null || msg.modified)
-      {
-			  this.save(msg.xml, false, this.startElement);
-      }
+		else {
+			if (msg.modified == null || msg.modified) {
+				this.save(msg.xml, false, this.startElement);
+			}
 
-      this.stopEditing(msg);
+			this.stopEditing(msg);
 		}
 	}
 };
@@ -376,29 +263,29 @@ DiagramEditor.prototype.handleMessage = function(msg)
 /**
  * Posts configure message to editor.
  */
-DiagramEditor.prototype.configureEditor = function()
-{
-	this.postMessage({action: 'configure', config: this.config});
+DiagramEditor.prototype.configureEditor = function () {
+	this.postMessage({ action: 'configure', config: this.config });
 };
 
 /**
  * Posts load message to editor.
  */
-DiagramEditor.prototype.initializeEditor = function()
-{
-	this.postMessage({action: 'load',autosave: 1, saveAndExit: '1',
+DiagramEditor.prototype.initializeEditor = function () {
+	this.postMessage({
+		action: 'load', autosave: 1, saveAndExit: '1',
 		modified: 'unsavedChanges', xml: this.getData(),
-		title: this.getTitle()});
+		title: this.getTitle()
+	});
 	this.setWaiting(false);
 	this.setActive(true);
-  this.initialized();
+	this.initialized();
 };
 
 /**
  * Saves the given data.
  */
-DiagramEditor.prototype.save = function(data, draft, elt)
-{
+DiagramEditor.prototype.save = function (data, draft, elt) {
+	console.log("save")
 	this.done(data, draft, elt);
 
 };
@@ -406,17 +293,15 @@ DiagramEditor.prototype.save = function(data, draft, elt)
 /**
  * Invoked after save.
  */
-DiagramEditor.prototype.done = function(data)
-{
+DiagramEditor.prototype.done = function (data) {
 	// hook for subclassers
 	parseDiagram(data);
-	
+
 };
 
 /**
  * Invoked after the editor has sent the init message.
  */
-DiagramEditor.prototype.initialized = function()
-{
+DiagramEditor.prototype.initialized = function () {
 	// hook for subclassers
 };
