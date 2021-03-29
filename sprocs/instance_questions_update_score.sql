@@ -112,7 +112,6 @@ BEGIN
 
         UPDATE submissions AS s
         SET
-            auth_user_id = arg_authn_user_id,
             feedback = CASE
                 WHEN feedback IS NULL THEN arg_feedback
                 WHEN arg_feedback IS NULL THEN feedback
