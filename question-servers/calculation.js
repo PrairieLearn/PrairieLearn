@@ -16,6 +16,9 @@ module.exports = {
                 'questionId': question.id,
             },
             {
+                'type': 'clientFilesCourse',
+            },
+            {
                 'type': 'serverFilesCourse',
             },
         ];
