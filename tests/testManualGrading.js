@@ -34,7 +34,7 @@ describe('Manual grading', function() {
     let hm1Body = null;
     let hm1AutomaticTestSuiteUrl = null;
     let hm1AddTwoNumbersUrl = null;
-    let hm1AddVectorsCatesianUrl = null;
+    let hm1AddVectorsCartesianUrl = null;
     let hm1AdvantagesFossilFuelsUrl = null;
 
     const mockStudents = [
@@ -52,6 +52,10 @@ describe('Manual grading', function() {
         config.authUin = '0000000X';
     });
 
+    after('remove submissions from db', async () => {
+        // await sqldb.queryAsync(sql.remove_all_submissions, []);
+    });
+
     const saveSubmission = async (student, instanceQuestionUrl, payload) => {
         
         // scrape each variant id and csrf token for each homework instance question
@@ -63,23 +67,29 @@ describe('Manual grading', function() {
 
         // ensure href URLs were found
         assert.notInclude(hm1AddTwoNumbersUrl, 'undefined');
-        assert.notInclude(hm1AddVectorsCatesianUrl, 'undefined');
+        assert.notInclude(hm1AddVectorsCartesianUrl, 'undefined');
         assert.notInclude(hm1AdvantagesFossilFuelsUrl, 'undefined');
 
-        const res2 = await fetch(instanceQuestionUrl, {
+        // HACK: __variant_id should exist inside postData on some instance questions
+        if (payload && payload.postData && payload.postData) {
+            payload.postData = JSON.parse(payload.postData);
+            payload.postData.variant.id = variantId;
+            payload.postData = JSON.stringify(payload.postData);
+        }
+
+        const res = await fetch(instanceQuestionUrl, {
             method: 'POST',
             headers: {
                 'Content-type': 'application/x-www-form-urlencoded',
             },
             body: [
-                querystring.encode(payload),
                 '__variant_id=' + variantId,
                 '__action=save',
                 '__csrf_token=' + token,
+                querystring.encode(payload),
             ].join('&'),
         });
-
-        console.log(res2.status);
+        assert.equal(res.status, 200);
     };
 
     describe('Students should find hw1 assessments in QA 101, Sp15 course instance', () => {
@@ -106,14 +116,13 @@ describe('Manual grading', function() {
 
             const $hm1Body = cheerio.load(hm1Body);
             hm1AddTwoNumbersUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(1) > td:nth-child(1) > a').attr('href');
-            hm1AddVectorsCatesianUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
+            hm1AddVectorsCartesianUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
             hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(3) > td:nth-child(1) > a').attr('href');
         });
     });
 
     describe('Saving and viewing submissions for manual grading', () => {
         this.timeout(20000);
-
         it('Students should be able to save a submission for given users and questions', async () => {
             // 'save' an answer for each three questions unique students
             for await(const student of mockStudents) {
@@ -129,17 +138,33 @@ describe('Manual grading', function() {
 
                 const $hm1Body = cheerio.load(hm1Body);
                 hm1AddTwoNumbersUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(1) > td:nth-child(1) > a').attr('href');
-                hm1AddVectorsCatesianUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
+                hm1AddVectorsCartesianUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
                 hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(3) > td:nth-child(1) > a').attr('href');
                 
-                await saveSubmission(student, hm1AddTwoNumbersUrl, {c: Math.random()});
+                // each student (3 students) submit 1 submission
+                await saveSubmission(student, hm1AddTwoNumbersUrl, {c: 9999999});
+                await saveSubmission(student, hm1AddVectorsCartesianUrl, {postData:
+                    JSON.stringify({
+                        submittedAnswer: { wx: '999999', wy: '999999' },
+                        variant: { id: null },
+                      },
+                    ),
+                });
+                await saveSubmission(student, hm1AdvantagesFossilFuelsUrl, {postData:
+                    JSON.stringify(
+                        {
+                            variant: { id: null },
+                            submittedAnswer: { key: 'c' },
+                        },
+                    ),
+                });
 
                 const context = await sqldb.queryAsync(sql.get_all_submissions, []);
                 assert(context.rowCount, 3);
             }
         });
-        it('Instructors should be able to view saved submissions for manual greading', () => {
-
+        it('Instructors should be able to see saved student submissions for manual greding', () => {
+            
         });
     });
 });
