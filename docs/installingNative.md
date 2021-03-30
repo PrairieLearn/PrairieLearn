@@ -50,8 +50,8 @@ python3.6 --version   # should return "Python 3.6" or higher
 * Install the Python libraries:
 
 ```sh
-cd PrairieLearn
-python3 -m pip install -r requirements.txt
+cd PrairieLearn/images/plbase
+python3 -m pip install -r python-requirements.txt
 ```
 
 * Create the database (one time only):
