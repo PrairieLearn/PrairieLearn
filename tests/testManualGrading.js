@@ -1,4 +1,3 @@
-// const util = require('util');
 const assert = require('chai').assert;
 // const { step } = require('mocha-steps');
 
@@ -6,9 +5,11 @@ const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
 const config = require('../lib/config');
+const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -88,6 +89,8 @@ const saveSubmission = async (student, instanceQuestionUrl, payload) => {
 
 describe('Manual grading', function() {
     this.timeout(20000);
+
+    before('set up testing server', helperServer.before());
 
     before('set authenticated user to student kind', () => {
         setStudent(mockStudents[0]);
