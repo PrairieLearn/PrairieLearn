@@ -7,7 +7,7 @@ columns
     graded_at: timestamp with time zone
     graded_by: bigint
     grading_finished_at: timestamp with time zone
-    grading_method: enum_grading_method not null
+    grading_method: enum_grading_method
     grading_received_at: timestamp with time zone
     grading_request_canceled_at: timestamp with time zone
     grading_request_canceled_by: bigint
