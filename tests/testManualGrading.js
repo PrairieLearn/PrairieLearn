@@ -13,28 +13,19 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-// student views
+// student flow entry points
 const courseInstanceUrl = baseUrl + '/course_instance/1';
 let hm1AutomaticTestSuiteUrl = null;
 
-// instructor views
+// instructor flow entry points
 const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
 let manualGradingUrl = null;
-
 
 let storedConfig = null;
 let ciBody = null;
 let iciBody = null;
 let hm1Body = null;
 let manualGradingBody = null;
-
-let hm1AddTwoNumbersUrl = null;
-let hm1AddVectorsCartesianUrl = null;
-let hm1AdvantagesFossilFuelsUrl = null;
-
-let manualHm1AddTwoNumbersUrl = null;
-let manualHm1AddVectorsCartesianUrl = null;
-let manualHm1AdvantagesFossilFuelsUrl = null;
 
 const mockStudents = [
     {authUid: 'student1', authName: 'Student User 1', authUin: '00000001'},
@@ -154,9 +145,9 @@ describe('Manual grading', function() {
                 assert.isString(hm1Body);
 
                 const $hm1Body = cheerio.load(hm1Body);
-                hm1AddTwoNumbersUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(1) > td:nth-child(1) > a').attr('href');
-                hm1AddVectorsCartesianUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
-                hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(3) > td:nth-child(1) > a').attr('href');
+                const hm1AddTwoNumbersUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(1) > td:nth-child(1) > a').attr('href');
+                const hm1AddVectorsCartesianUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
+                const hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(3) > td:nth-child(1) > a').attr('href');
                 
                 await saveSubmission(student, hm1AddTwoNumbersUrl, {c: 9999999});
                 await saveSubmission(student, hm1AddVectorsCartesianUrl, {
@@ -205,5 +196,9 @@ describe('Manual grading', function() {
             assert.equal($addVectorsRow('.graded-value').text(), 0);
             assert.equal($fossilFuelsRow('.graded-value').text(), 0);
         });
+    });
+
+    describe('Instructors can navigate through manual grading submissions', () => {
+
     });
 });
