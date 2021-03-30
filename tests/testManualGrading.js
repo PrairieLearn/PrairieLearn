@@ -14,11 +14,11 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-// student flow entry points
+// student role pages
 const courseInstanceUrl = baseUrl + '/course_instance/1';
 let hm1AutomaticTestSuiteUrl = null;
 
-// instructor flow entry points
+// instructor role pages
 const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
 let manualGradingUrl = null;
 
@@ -91,14 +91,9 @@ describe('Manual grading', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
+    after('shut down testing server', helperServer.after);
 
-    before('set authenticated user to student kind', () => {
-        setStudent(mockStudents[0]);
-    });
-
-    after('remove submissions from db', async () => {
-        await sqldb.queryAsync(sql.remove_all_submissions, []);
-    });
+    before('set any student as default user role', () => setStudent(mockStudents[0]));
 
     describe('Students should find hw1 assessments in QA 101, Sp15 course instance', () => {
         it('should have access to the assessments page', async () => {
