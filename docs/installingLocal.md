@@ -14,10 +14,10 @@ git clone https://github.com/PrairieLearn/PrairieLearn.git
 * Install the Node.js packages.  This will use the version of `npm` that is pre-installed in the Docker image, so you don't need your own copy installed.
 
 ```sh
-docker run -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /usr/local/bin/npm ci
+docker run --rm -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /usr/local/bin/npm ci
 ```
 
-The path `/path/to/PrairieLearn` should be replaced with the *absolute* path to the PrairieLearn source on your computer.  If you're in the root of the source directory already, you can substitute `%cd%` (on Windows) or `$PWD` (Linux and MacOS) for `/path/to/PrairieLearn`.
+The path `/path/to/PrairieLearn` should be replaced with the *absolute* path to the PrairieLearn source on your computer.  If you're in the root of the source directory already, you can substitute `%cd%` (on Windows cmd), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
 
 By default, PrairieLearn will load `exampleCourse`, `testCourse`, and any courses mounted at `/course` and `/course[2-9]` in the Docker container.  To override this behavior, you can create a custom [`config.json` file](configJson.md).
 
@@ -35,13 +35,20 @@ docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/Prair
 
 ### Running a specific branch
 
-By default, the above command will run PrairieLearn from the `master` branch on GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
+By default, the above command will run PrairieLearn from the branch that is currently checked out in the directory `/path/to/PrairieLearn`. So, to run a different branch, just use commands like `git checkout BRANCH_NAME` or equivalent.
+
+It is also possible to run a branch other than `master` without cloning or checking out the code for that branch, as long as the branch has been pushed to GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
 
 ```sh
-docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn:BRANCH_NAME
+docker run -it --rm -p 3000:3000 prairielearn/prairielearn:BRANCH_NAME
 ```
 
-Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`).
+Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`). Also note that docker does not pull branch changes by default, so you are encouraged to update the local docker cached image by using this command before starting the container above:
+
+```sh
+docker pull prairielearn/prairielearn:BRANCH_NAME
+docker run -it --rm -p 3000:3000 prairielearn/prairielearn:BRANCH_NAME
+```
 
 ### Running commands in Docker
 
@@ -57,7 +64,7 @@ This can be used to, e.g., run scripts distributed with PrairieLearn by opening 
 docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 ```
 
-#### Server from shell
+#### Restarting the node server
 
 When making local changes to server-side code, it is faster to restart only the node server instead of the whole docker container. This can be done either
 
