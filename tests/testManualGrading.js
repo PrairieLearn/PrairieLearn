@@ -13,6 +13,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseInstanceUrl = baseUrl + '/course_instance/1';
+const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
 const hm1ManualGradingUrl = baseUrl + '/course_instance/1/';
 
 let storedConfig = null;
@@ -55,12 +56,13 @@ const getQuestionRow = ($, question, className) => {
 };
 
 const saveSubmission = async (student, instanceQuestionUrl, payload) => {
-    // scrape each variant id and csrf token for each homework instance question
-    const token = cheerio.load(await (await fetch(instanceQuestionUrl)).text())('form > input[name="__csrf_token"]').val();
-    const variantId = cheerio.load(await (await fetch(instanceQuestionUrl)).text())('form > input[name="__variant_id"]').val();
+    // scrape each variant id and csrf token for homework instance question
+    const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
+    const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
+    const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
 
-    assert(token);
-    assert(variantId);
+    assert.isString(token);
+    assert.isString(variantId);
 
     // ensure href URLs were found
     assert.notInclude(hm1AddTwoNumbersUrl, 'undefined');
@@ -138,7 +140,7 @@ describe('Manual grading', function() {
                 setStudent(student);
 
                 const res = await fetch(hm1AutomaticTestSuiteUrl);
-                assert(res.ok);
+                assert.equal(res.ok, true);
         
                 const hm1Body = await res.text();
                 assert.isString(hm1Body);
@@ -169,11 +171,8 @@ describe('Manual grading', function() {
             assert.equal(context.rowCount, 9);
         });
         it('Instructors should be able to see saved student submissions for manual grading', () => {
-            //           graded - ungraded
-            // addNumbers   0    -     3
-            // addVectors   0    -     3
-            // fossilFuelsRadio  0    -     3
-
+            setInstructor();
+            
 
         });
     });
