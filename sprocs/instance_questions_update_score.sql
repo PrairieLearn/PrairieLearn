@@ -105,10 +105,10 @@ BEGIN
     ) THEN
         INSERT INTO grading_jobs
             (submission_id, auth_user_id,      graded_by, graded_at,
-            grading_method_manual, correct,     score,     feedback)
+            grading_method, correct,     score,     feedback)
         VALUES
             (submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
-            True,   new_correct, new_score, arg_feedback);
+            'Manual',   new_correct, new_score, arg_feedback);
 
         UPDATE submissions AS s
         SET
