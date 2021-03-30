@@ -105,7 +105,7 @@ Phases 1 and 2 can be implemented in parallel.
 - [ ] 10. Add data parser and displayer
 - [ ] 11. Add summary timescale graph to tab
 
-## Phase 2: Implement Data Header
+## Phase 4: Implement Data Header
 - [ ] 12. Create a blank header space on the dashboard
 - [ ] 13. Add student start/finish metrics
 - [ ] 14. Add average Completion, potentially average grade
