@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS void
 AS $$
 BEGIN
-    -- update the user's pogil role
+    -- Update the user's pogil role
     UPDATE
         group_users as gu
     SET
