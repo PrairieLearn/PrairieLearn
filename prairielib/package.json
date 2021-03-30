@@ -23,13 +23,13 @@
     "debug": "4.3.1",
     "fs-extra": "9.1.0",
     "js-yaml": "4.0.0",
-    "lodash": "4.17.20",
+    "lodash": "4.17.21",
     "logform": "^2.1.2",
     "pg": "8.5.1",
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "eslint": "7.20.0",
+    "eslint": "7.22.0",
     "jest": "26.6.3"
   }
 }
