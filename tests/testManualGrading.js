@@ -12,9 +12,15 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
+
+// student views
 const courseInstanceUrl = baseUrl + '/course_instance/1';
+let hm1AutomaticTestSuiteUrl = null;
+
+// instructor views
 const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
-const hm1ManualGradingUrl = baseUrl + '/course_instance/1/';
+let manualGradingUrl = null;
+
 
 let storedConfig = null;
 let ciBody = null;
@@ -22,12 +28,10 @@ let iciBody = null;
 let hm1Body = null;
 let manualGradingBody = null;
 
-let hm1AutomaticTestSuiteUrl = null;
 let hm1AddTwoNumbersUrl = null;
 let hm1AddVectorsCartesianUrl = null;
 let hm1AdvantagesFossilFuelsUrl = null;
 
-let manualGradingUrl = null;
 let manualHm1AddTwoNumbersUrl = null;
 let manualHm1AddVectorsCartesianUrl = null;
 let manualHm1AdvantagesFossilFuelsUrl = null;
@@ -59,15 +63,6 @@ const setStudent = (student) => {
     config.authUin = student.authUin;
 };
 
-const getQuestionRow = ($page, question, className) => {
-    const rows = $page('#instance-question-grading-table > tbody > tr');
-    const questionRow = rows.filter(() => $page(this).find('.question-title-value').text().includes('question'))[0];
-    if (!questionRow) {
-        throw new Error('Question row not found');
-    }
-    return questionRow;
-};
-
 const saveSubmission = async (student, instanceQuestionUrl, payload) => {
     // scrape each variant id and csrf token for homework instance question
     const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
@@ -77,12 +72,7 @@ const saveSubmission = async (student, instanceQuestionUrl, payload) => {
     assert.isString(token);
     assert.isString(variantId);
 
-    // ensure href URLs were found
-    assert.notInclude(hm1AddTwoNumbersUrl, 'undefined');
-    assert.notInclude(hm1AddVectorsCartesianUrl, 'undefined');
-    assert.notInclude(hm1AdvantagesFossilFuelsUrl, 'undefined');
-
-    // HACK: __variant_id should exist inside postData on some instance questions
+    // HACK: __variant_id should exist inside postData on only some instance questions submissions
     if (payload && payload.postData && payload.postData) {
         payload.postData = JSON.parse(payload.postData);
         payload.postData.variant.id = variantId;
@@ -113,7 +103,7 @@ describe('Manual grading', function() {
     });
 
     after('remove submissions from db', async () => {
-        // await sqldb.queryAsync(sql.remove_all_submissions, []);
+        await sqldb.queryAsync(sql.remove_all_submissions, []);
     });
 
     describe('Students should find hw1 assessments in QA 101, Sp15 course instance', () => {
@@ -138,10 +128,15 @@ describe('Manual grading', function() {
             assert.include(hm1Body, 'HW1.2. Addition of vectors in Cartesian coordinates');
             assert.include(hm1Body, 'HW1.3. Advantages of fossil fuels (radio)');
 
-            const $hm1Body = cheerio.load(hm1Body);
-            hm1AddTwoNumbersUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(1) > td:nth-child(1) > a').attr('href');
-            hm1AddVectorsCartesianUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
-            hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(3) > td:nth-child(1) > a').attr('href');
+            const $hm1Page = cheerio.load(hm1Body);
+            const hm1AddTwoNumbersUrl = siteUrl + $hm1Page('table > tbody > tr:nth-child(1) > td:nth-child(1) > a').attr('href');
+            const hm1AddVectorsCartesianUrl = siteUrl + $hm1Page('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
+            const hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Page('table > tbody > tr:nth-child(3) > td:nth-child(1) > a').attr('href');
+
+            // ensure href URLs were found
+            assert.notInclude(hm1AddTwoNumbersUrl, 'undefined');
+            assert.notInclude(hm1AddVectorsCartesianUrl, 'undefined');
+            assert.notInclude(hm1AdvantagesFossilFuelsUrl, 'undefined');
         });
     });
 
@@ -202,7 +197,7 @@ describe('Manual grading', function() {
             const $fossilFuelsRow = cheerio.load(
                 $manualGradingPage('.qid-value:contains("fossilFuelsRadio")').parent().html(),
             );
-            console.log('ungradedAddNumbersRow', $addNumbersRow.html());
+
             assert.equal($addNumbersRow('.ungraded-value').text(), 3);
             assert.equal($addVectorsRow('.ungraded-value').text(), 3);
             assert.equal($fossilFuelsRow('.ungraded-value').text(), 3);
