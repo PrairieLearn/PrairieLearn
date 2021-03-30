@@ -134,7 +134,7 @@ BEGIN
                     LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
                 WHERE
                     iq.assessment_instance_id = ai_id
-                    AND gj.grading_method_external = True
+                    AND gj.grading_method = 'External'
                     AND gj.graded_at IS NOT NULL
             )
             UNION
@@ -169,7 +169,7 @@ BEGIN
                     LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
                 WHERE
                     iq.assessment_instance_id = ai_id
-                    AND gj.grading_method_manual = True
+                    AND gj.grading_method = 'Manual'
                     AND gj.graded_at IS NOT NULL
             )
             UNION
@@ -204,7 +204,7 @@ BEGIN
                     LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
                 WHERE
                     iq.assessment_instance_id = ai_id
-                    AND gj.grading_method_internal = True
+                    AND gj.grading_method = 'Internal'
                     AND gj.graded_at IS NOT NULL
             )
             UNION

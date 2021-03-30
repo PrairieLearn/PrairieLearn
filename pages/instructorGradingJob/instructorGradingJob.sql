@@ -24,5 +24,5 @@ FROM
     LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
 WHERE
     gj.id = $job_id
-    AND gj.grading_method_external = True
+    AND gj.grading_method = 'External'
     AND ci.id = $course_instance_id;

@@ -32,7 +32,7 @@ BEGIN
             grading_jobs as gj
         WHERE
             gj.date >= now() - '1 day'::interval
-            AND gj.grading_method_external = True
+            AND gj.grading_method = 'External'
     )
     SELECT
         count(*)::bigint,
