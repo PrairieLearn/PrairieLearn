@@ -118,9 +118,9 @@ describe('Manual grading', function() {
             assert.include(hm1Body, 'HW1.3. Advantages of fossil fuels (radio)');
 
             const $hm1Page = cheerio.load(hm1Body);
-            const hm1AddTwoNumbersUrl = siteUrl + $hm1Page('table > tbody > tr:nth-child(1) > td:nth-child(1) > a').attr('href');
-            const hm1AddVectorsCartesianUrl = siteUrl + $hm1Page('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
-            const hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Page('table > tbody > tr:nth-child(3) > td:nth-child(1) > a').attr('href');
+            const hm1AddTwoNumbersUrl = siteUrl + $hm1Page('a:contains("HW1.1. Add two numbers")').attr('href');
+            const hm1AddVectorsCartesianUrl = siteUrl + $hm1Page('a:contains("HW1.2. Addition of vectors in Cartesian coordinates")').attr('href');
+            const hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Page('a:contains("HW1.3. Advantages of fossil fuels (radio)")').attr('href');
 
             // ensure href URLs were found
             assert.notInclude(hm1AddTwoNumbersUrl, 'undefined');
@@ -143,9 +143,9 @@ describe('Manual grading', function() {
                 assert.isString(hm1Body);
 
                 const $hm1Body = cheerio.load(hm1Body);
-                const hm1AddTwoNumbersUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(1) > td:nth-child(1) > a').attr('href');
-                const hm1AddVectorsCartesianUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(2) > td:nth-child(1) > a').attr('href');
-                const hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Body('table > tbody > tr:nth-child(3) > td:nth-child(1) > a').attr('href');
+                const hm1AddTwoNumbersUrl = siteUrl + $hm1Body('a:contains("HW1.1. Add two numbers")').attr('href');
+                const hm1AddVectorsCartesianUrl = siteUrl + $hm1Body('a:contains("HW1.2. Addition of vectors in Cartesian coordinates")').attr('href');
+                const hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Body('a:contains("HW1.3. Advantages of fossil fuels (radio)")').attr('href');
                 
                 await saveSubmission(student, hm1AddTwoNumbersUrl, {c: 9999999});
                 await saveSubmission(student, hm1AddVectorsCartesianUrl, {
@@ -172,7 +172,6 @@ describe('Manual grading', function() {
             iciBody = await (await fetch(instructorCourseInstanceUrl)).text();
             assert.isString(iciBody);
 
-            console.log(iciBody);
             manualGradingUrl = siteUrl + cheerio.load(iciBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
             manualGradingBody = await (await fetch(manualGradingUrl)).text();
             const $manualGradingPage = cheerio.load(manualGradingBody);
