@@ -169,7 +169,9 @@ describe('Manual grading', function() {
         });
         it('Instructors should be able to see the 9 ungraded student submissions for manual grading', async () => {
             setInstructor();
+            console.log('debug', instructorCourseInstanceUrl);
             iciBody = await (await fetch(instructorCourseInstanceUrl)).text();
+            console.log('debug', iciBody);
             assert.isString(iciBody);
 
             manualGradingUrl = siteUrl + cheerio.load(iciBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
