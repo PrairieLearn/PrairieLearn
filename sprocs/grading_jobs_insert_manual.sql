@@ -86,7 +86,7 @@ BEGIN
     -- update all parent objects
 
     IF assessment_instance_id IS NOT NULL THEN
-        PERFORM instance_questions_manually_grade(instance_question_id, grading_job.score, grading_job.auth_user_id);
+        PERFORM instance_questions_manually_grade(instance_question_id, grading_job.score);
         PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit, FALSE, TRUE);
     END IF;
 
