@@ -83,7 +83,6 @@ const saveSubmission = async (student, instanceQuestionUrl, payload) => {
             querystring.encode(payload),
         ].join('&'),
     });
-    console.log(res.status);
     assert.equal(res.status, 200);
 };
 
