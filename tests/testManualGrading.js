@@ -20,11 +20,9 @@ let hm1AutomaticTestSuiteUrl = null;
 
 // instructor role pages
 const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
-let manualGradingUrl = null;
 
 let storedConfig = null;
 let ciBody = null;
-let iciBody = null;
 let hm1Body = null;
 let manualGradingBody = null;
 
@@ -182,26 +180,34 @@ describe('Manual grading', function() {
     });
 
     describe('Instructors can grade submissions', () => {
-        it('instructors should be able to see 9 ungraded submissions', async () => {
-            setInstructor();
+        let iciBody = null;
+        let manualGradingUrl = null;
+        let $manualGradingPage = null;
+        let $addNumbersRow = null;
+        let $addVectorsRow = null;
+        let $fossilFuelsRow = null;
+
+        before('set instructor user role', () => setInstructor());
+        before('get instructor URLS and rows', async () => {
             iciBody = await (await fetch(instructorCourseInstanceUrl)).text();
             assert.isString(iciBody);
-
             manualGradingUrl = siteUrl + cheerio.load(iciBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
             manualGradingBody = await (await fetch(manualGradingUrl)).text();
-            const $manualGradingPage = cheerio.load(manualGradingBody);
+            $manualGradingPage = cheerio.load(manualGradingBody);
 
             // get manual grading table row for each question
-            const $addNumbersRow = cheerio.load(
+            $addNumbersRow = cheerio.load(
                 $manualGradingPage('.qid-value:contains("addNumbers")').parent().html(),
             );
-            const $addVectorsRow = cheerio.load(
+            $addVectorsRow = cheerio.load(
                 $manualGradingPage('.qid-value:contains("addVectors")').parent().html(),
             );
-            const $fossilFuelsRow = cheerio.load(
+            $fossilFuelsRow = cheerio.load(
                 $manualGradingPage('.qid-value:contains("fossilFuelsRadio")').parent().html(),
             );
+        });
 
+        it('instructors should be able to see 9 ungraded submissions', async () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 3);
             assert.equal($addVectorsRow('.ungraded-value').text(), 3);
             assert.equal($fossilFuelsRow('.ungraded-value').text(), 3);
@@ -209,8 +215,28 @@ describe('Manual grading', function() {
             assert.equal($addVectorsRow('.graded-value').text(), 0);
             assert.equal($fossilFuelsRow('.graded-value').text(), 0);
         });
-    });
-    it('instructor should be able to grade a submission', () => {
-        
+        it('instructor should see "Grade Next" option for 3 testing questions', () => {
+            assert.isNotNull($addNumbersRow('.grade-next-value').attr('href'));
+            assert.isNotNull($addVectorsRow('.grade-next-value').attr('href'));
+            assert.isNotNull($fossilFuelsRow('.grade-next-value').attr('href'));
+        });
+        it('instructor user id should be added to instance question when submission opened for manual grading', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const redirectUrl = (await fetch(gradeNextAddNumbersURL)).url;
+
+            const instanceQuestionId = parseInt(
+                // get param following 'instance_question/'
+                redirectUrl.match(/instance_question\/(\d+)/)[1],
+            );
+            assert.isNumber(instanceQuestionId);
+
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const user = (await sqldb.queryOneRowAsync(sql.get_user_by_uin, {uin: storedConfig.authUin})).rows[0];
+            assert.equal(instanceQuestion.manual_grading_user, user.user_id);
+        });
+        it('instructor should see grading conflict view if view open for both users and both users submit manual grade', () => {
+            const redirectUrl = (await fetch(gradeNextAddNumbersURL)).url;
+
+        });
     });
 });
