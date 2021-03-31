@@ -11,51 +11,62 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-        with:
-          # Checkout the PR HEAD commit instead of merge commit
-          ref: ${{ github.event.pull_request.head.sha }}
-          # We need the whole history so we can diff against `master` in `build-plbase-if-needed.sh`
-          fetch-depth: 0
-      - name: Build the plbase docker image if needed
-        run: sh ./tools/build-plbase-if-needed.sh
-      - name: Build the testing docker image
-        run: docker build -t prairielearn/prairielearn .
-      - name: Start the container
-        run: docker run -td --name=test_container prairielearn/prairielearn /bin/bash
-      - name: Run the JavaScript linter
-        run: docker exec test_container /PrairieLearn/docker/lint_js.sh
-      - name: Run the Python linter
-        run: docker exec test_container /PrairieLearn/docker/lint_python.sh
-      - name: Run typechecker
-        run: docker exec test_container /PrairieLearn/docker/typecheck.sh
-      - name: Run the PrairieLib tests
-        run: docker exec test_container /PrairieLearn/docker/test_prairielib.sh
-      - name: Run the grader_host tests
-        run: docker exec test_container /PrairieLearn/docker/test_grader_host.sh
-      - name: Run the JavaScript tests
-        run: docker exec test_container /PrairieLearn/docker/test_js.sh
-      - name: Run the Python tests
-        run: docker exec test_container /PrairieLearn/docker/test_python.sh
-      - name: Copy code-coverage data out of container
-        run: docker cp test_container:/PrairieLearn/coverage coverage
-      - name: Send code-coverage data to Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.github_token }}
-        continue-on-error: true
-      - name: Install dependencies on host
-        run: npm ci
-      - name: Build executor image
-        run: ./tools/executor/build.js
-      - name: Login to DockerHub
-        uses: docker/login-action@v1 
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Push executor image to registries
-        run: ./tools/executor/release.js
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
+    - uses: actions/checkout@v2
+      with:
+        # Checkout the PR HEAD commit instead of merge commit
+        ref: ${{ github.event.pull_request.head.sha }}
+        # We need the whole history so we can diff against `master` in `build-plbase-if-needed.sh`
+        fetch-depth: 0
+    - name: Build the plbase docker image if needed
+      run: sh ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase
+    - name: Build the grader-c docker image if needed
+      run: sh ./tools/build-image-if-needed.sh graders/c prairielearn/grader-c
+    - name: Build the grader-java docker image if needed
+      run: sh ./tools/build-image-if-needed.sh graders/java prairielearn/grader-java
+    - name: Build the grader-python docker image if needed
+      run: sh ./tools/build-image-if-needed.sh graders/python prairielearn/grader-python
+    - name: Build the grader-r docker image if needed
+      run: sh ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r
+    - name: Build the workspace-jupyterlab docker image if needed
+      run: sh ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab
+    - name: Build the workspace-xtermjs docker image if needed
+      run: sh ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs
+    - name: Build the testing docker image
+      run: docker build -t pltest .
+    - name: Start the container
+      run: docker run -td --name=test_container pltest /bin/bash
+    - name: Run the JavaScript linter
+      run: docker exec test_container /PrairieLearn/docker/lint_js.sh
+    - name: Run the Python linter
+      run: docker exec test_container /PrairieLearn/docker/lint_python.sh
+    - name: Run typechecker
+      run: docker exec test_container /PrairieLearn/docker/typecheck.sh
+    - name: Run the PrairieLib tests
+      run: docker exec test_container /PrairieLearn/docker/test_prairielib.sh
+    - name: Run the grader_host tests
+      run: docker exec test_container /PrairieLearn/docker/test_grader_host.sh
+    - name: Run the JavaScript tests
+      run: docker exec test_container /PrairieLearn/docker/test_js.sh
+    - name: Run the Python tests
+      run: docker exec test_container /PrairieLearn/docker/test_python.sh
+    - name: Copy code-coverage data out of container
+      run: docker cp test_container:/PrairieLearn/coverage coverage
+    - name: Send code-coverage data to Coveralls
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.github_token }}
+      continue-on-error: true
+    - name: Install dependencies on host
+      run: npm ci
+    - name: Build executor image
+      run: ./tools/executor/build.js
+    - name: Login to DockerHub
+      uses: docker/login-action@v1 
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Push executor image to registries
+      run: ./tools/executor/release.js
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
