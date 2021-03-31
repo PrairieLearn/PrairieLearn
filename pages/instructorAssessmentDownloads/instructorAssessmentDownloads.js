@@ -59,9 +59,6 @@ var sendInstancesCsv = function(res, req, columns, options, callback) {
         if (options.only_highest) {
             rows = _.filter(rows, 'highest_score');
         }
-        if (options.group_work) {
-            rows = _.filter(rows, 'unique_group');
-        }
         csvMaker.rowsToCsv(rows, columns, function(err, csv) {
             if (ERR(err, callback)) return;
             res.attachment(req.params.filename);

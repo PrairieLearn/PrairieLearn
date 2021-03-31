@@ -16,7 +16,6 @@ SELECT
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
     EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,
     (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score,
-    (row_number() OVER (PARTITION BY g.id)) = 1 AS unique_group,
     g.name AS group_name,
     groups_uid_list(g.id) AS uid_list
 FROM
@@ -26,8 +25,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
-    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-    JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
+    LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
 WHERE
     a.id = $assessment_id
@@ -36,51 +34,41 @@ ORDER BY
 
 
 -- BLOCK select_instance_questions
-WITH instance_questions AS (
-    SELECT
-        u.uid,
-        u.uin,
-        u.name,
-        e.role,
-        (aset.name || ' ' || a.number) AS assessment_label,
-        ai.number AS assessment_instance_number,
-        q.qid,
-        iq.number AS instance_question_number,
-        iq.points,
-        iq.score_perc,
-        aq.max_points,
-        format_date_iso8601(iq.created_at, ci.display_timezone) AS date_formatted,
-        iq.highest_submission_score,
-        iq.last_submission_score,
-        iq.number_attempts,
-        extract(epoch FROM iq.duration) AS duration_seconds,
-        (row_number() OVER (PARTITION BY g.id, q.id)) = 1 AS unique_group,
-        g.name AS group_name,
-        groups_uid_list(g.id) AS uid_list
-    FROM
-        instance_questions AS iq
-        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        JOIN questions AS q ON (q.id = aq.question_id)
-        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-        JOIN assessments AS a ON (a.id = ai.assessment_id)
-        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-        LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-    WHERE
-        a.id = $assessment_id
-    ORDER BY
-        u.uid, u.uin, group_name, ai.number, q.qid, iq.number, iq.id
-)
-SELECT 
-    *
-FROM 
-    instance_questions 
-WHERE 
-    ($group_work AND unique_group) OR $group_work = false;
+SELECT
+    u.uid,
+    u.uin,
+    u.name,
+    e.role,
+    (aset.name || ' ' || a.number) AS assessment_label,
+    ai.number AS assessment_instance_number,
+    q.qid,
+    iq.number AS instance_question_number,
+    iq.points,
+    iq.score_perc,
+    aq.max_points,
+    format_date_iso8601(iq.created_at, ci.display_timezone) AS date_formatted,
+    iq.highest_submission_score,
+    iq.last_submission_score,
+    iq.number_attempts,
+    extract(epoch FROM iq.duration) AS duration_seconds,
+    g.name AS group_name,
+    groups_uid_list(g.id) AS uid_list
+FROM
+    instance_questions AS iq
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
+    LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
+    LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+WHERE
+    a.id = $assessment_id
+ORDER BY
+    u.uid, u.uin, group_name, ai.number, q.qid, iq.number, iq.id;
 
 
 -- BLOCK submissions_for_manual_grading
@@ -157,7 +145,6 @@ WITH all_submissions AS (
         s.feedback,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC NULLS LAST, s.date DESC, s.id DESC)) = 1 AS best_submission_per_variant,
-        (row_number() OVER (PARTITION BY g.id, v.id, s.id)) = 1 AS unique_group,
         g.name AS group_name,
         groups_uid_list(g.id) AS uid_list,
         su.uid AS submission_user
@@ -168,8 +155,7 @@ WITH all_submissions AS (
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
         LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -188,7 +174,6 @@ WHERE
     ($include_all
         OR ($include_final AND final_submission_per_variant)
         OR ($include_best AND best_submission_per_variant))
-        AND (($group_work AND unique_group) OR ($group_work = false))
 ORDER BY
     uid, group_name, assessment_instance_number, qid, instance_question_number, variant_number, date;
 
@@ -301,14 +286,12 @@ WITH all_submissions_with_files AS (
         row_number() OVER (PARTITION BY v.id ORDER BY s.date) AS submission_number,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC NULLS LAST, s.date DESC, s.id DESC)) = 1 AS best_submission_per_variant,
-        (row_number() OVER (PARTITION BY g.id, v.id, s.id)) = 1 AS unique_group,
         g.name AS group_name
     FROM
         assessments AS a
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
         JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -329,7 +312,6 @@ use_submissions_with_files AS (
         ($include_all
         OR ($include_final AND final_submission_per_variant)
         OR ($include_best AND best_submission_per_variant))
-        AND (($group_work AND unique_group) OR ($group_work = false))
 ),
 all_files AS (
     SELECT
