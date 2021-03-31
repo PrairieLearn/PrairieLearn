@@ -172,6 +172,7 @@ describe('Manual grading', function() {
             iciBody = await (await fetch(instructorCourseInstanceUrl)).text();
             assert.isString(iciBody);
 
+            console.log(iciBody);
             manualGradingUrl = siteUrl + cheerio.load(iciBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
             manualGradingBody = await (await fetch(manualGradingUrl)).text();
             const $manualGradingPage = cheerio.load(manualGradingBody);
