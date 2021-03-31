@@ -302,7 +302,7 @@ WITH all_submissions_with_files AS (
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
-        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
+        JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
