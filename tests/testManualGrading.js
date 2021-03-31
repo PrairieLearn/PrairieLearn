@@ -31,9 +31,14 @@ const mockStudents = [
     {authUid: 'student2', authName: 'Student User 2', authUin: '00000002'},
     {authUid: 'student3', authName: 'Student User 3', authUin: '00000003'},
 ];
+const mockInstructor = {authUid: 'mwest@illinois.edu', authName: '', uin: ''};
 
-const setInstructor = () => {
-    if (storedConfig) {
+const setInstructor = (instructor) => {
+    if (instructor) {
+        config.authUid = instructor.authUid;
+        config.authName = instructor.authName;
+        config.authUin = instructor.authUin;
+    } else {
         config.authUid = storedConfig.authUid;
         config.authName = storedConfig.authName;
         config.authUin = storedConfig.authUin;
@@ -234,8 +239,17 @@ describe('Manual grading', function() {
             const user = (await sqldb.queryOneRowAsync(sql.get_user_by_uin, {uin: storedConfig.authUin})).rows[0];
             assert.equal(instanceQuestion.manual_grading_user, user.user_id);
         });
-        it('instructor should see grading conflict view if view open for both users and both users submit manual grade', () => {
-            const redirectUrl = (await fetch(gradeNextAddNumbersURL)).url;
+        it('instructor should see warning message when loading instance_question being manually graded by another instructor', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+
+            // iq is set with manual grading user (Dev User) on open
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
+
+            setInstructor(mockInstructor);
+            const iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
+            assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
+        });
+        it('instructor should see grading conflict view if view open for both users and both users submit manual grade', async () => {
 
         });
     });
