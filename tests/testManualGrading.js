@@ -94,8 +94,8 @@ describe('Manual grading', function() {
 
     before('set any student as default user role', () => setStudent(mockStudents[0]));
 
-    describe('Students should find hw1 assessments in QA 101, Sp15 course instance', () => {
-        it('should have access to the assessments page', async () => {
+    describe('students should find hw1 assessments in QA 101, Sp15 course instance', () => {
+        it('students should have access to the assessments page', async () => {
             const res = await fetch(courseInstanceUrl);
             assert.equal(res.ok, true);
 
@@ -103,7 +103,7 @@ describe('Manual grading', function() {
             assert.isString(ciBody);
             assert.include(ciBody, 'Homework for automatic test suite');
         });
-        it('should find all hw1 "Homework for automatic test suite" testing links', async () => {
+        it('students should find all hw1 "Homework for automatic test suite" testing links', async () => {
             const $ciPage = cheerio.load(ciBody);
             hm1AutomaticTestSuiteUrl = siteUrl + $ciPage('a:contains("Homework for automatic test suite")').attr('href');
             
@@ -128,9 +128,9 @@ describe('Manual grading', function() {
         });
     });
 
-    describe('Students can save and instructors can view manual grading submissions', () => {
+    describe('students can save and instructors can view manual grading submissions', () => {
         this.timeout(20000);
-        it('Students should be able to save a submission for given users and questions', async () => {
+        it('students should be able to save submissions on instance questions', async () => {
             // 'save' 1 answer for each question for each mock students; 1 x 3 x 3 = 9 submissions
             for await(const student of mockStudents) {
                 setStudent(student);
@@ -163,10 +163,26 @@ describe('Manual grading', function() {
                     ),
                 });
             }
-            const context = await sqldb.queryAsync(sql.get_all_submissions, []);
-            assert.equal(context.rowCount, 9);
         });
-        it('Instructors should be able to see the 9 ungraded student submissions for manual grading', async () => {
+        it('submissions table should contain 9x ungraded student submissions', async () => {
+            const context = await sqldb.queryAsync(sql.get_all_submissions, []);
+            const groupedByStudent = {};
+
+            context.rows.forEach((submission) => {
+                assert.isNull(submission.graded_at);
+
+                if (!groupedByStudent[submission.auth_user_id]) {groupedByStudent[submission.auth_user_id] = [];}
+                groupedByStudent[submission.auth_user_id].push(submission);
+            });
+
+            assert.equal(context.rowCount, 9);
+            assert.lengthOf(Object.keys(groupedByStudent), 3);
+            Object.keys(groupedByStudent).forEach((student) => assert.lengthOf(groupedByStudent[student], 3, 'array has length of 3'));
+        });
+    });
+
+    describe('Instructors can grade submissions', () => {
+        it('instructors should be able to see 9 ungraded submissions', async () => {
             setInstructor();
             iciBody = await (await fetch(instructorCourseInstanceUrl)).text();
             assert.isString(iciBody);
@@ -194,8 +210,7 @@ describe('Manual grading', function() {
             assert.equal($fossilFuelsRow('.graded-value').text(), 0);
         });
     });
-
-    describe('Instructors can navigate through manual grading submissions', () => {
-
+    it('instructor should be able to grade a submission', () => {
+        
     });
 });
