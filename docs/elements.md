@@ -1,3 +1,5 @@
+
+
 # PrairieLearn Elements for use in `question.html`
 
 When writing questions, there exists a core pool of elements that provides
@@ -17,6 +19,7 @@ PrairieLearn presently provides the following templated **input field** elements
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
+- [`pl-order-blocks`](#pl-order-blocks-element): Select and arrange given blocks of code or text.
 - [`pl-number-input`](#pl-number-input-element): Fill in a **numerical** value
   within a specific tolerance level such as 3.14, -1.921, and so on.
 - [`pl-integer-input`](#pl-integer-input-element): Fill in an **integer** value
@@ -268,6 +271,8 @@ Attribute | Type | Default | Description
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-complex` | boolean | false | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
+`allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
+`blank-value` | string | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 `show-placeholder` | boolean | true | Show the placeholder text that shows the default comparison.
 `size` | integer | 35 | Size of the input box.
@@ -347,6 +352,75 @@ Attribute | Type | Default | Description
 
 -----
 
+### `pl-order-blocks` element
+
+Element to arrange given blocks of code or text that are displayed initially in the *source area*. The blocks can be moved to the *solution area* to construct the solution of the problem.  In the example below, the source area is denoted by the header "Drag from here" and the solution area is denoted with the header "Construct your solution here".
+
+#### Sample element
+
+![](elements/pl-order-blocks.png)
+
+**question.html**
+
+```html
+<p> List all the even numbers in order:</p>
+<pl-order-blocks answers-name="order-numbers" >
+  <pl-answer correct="false">1</pl-answer>
+  <pl-answer correct="true">2</pl-answer>
+  <pl-answer correct="false">3</pl-answer>
+  <pl-answer correct="true">4</pl-answer>
+</pl-order-blocks>
+```
+
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
+`grading-method` | string | "ordered" | One of the following: `ordered`, `unordered`, `ranking`, `external`. See more details below.
+`file-name` | string | `user_code.py`  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
+`source-blocks-order` | string | "random" | The order of the blocks in the source area. One of the following: `random` or `ordered`. See more details below.
+`indentation` | boolean | false | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).
+`max-incorrect` | integer | special | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
+`min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
+`source-header` | string | "Drag from here" | The text that appears at the start of the source area.
+`solution-header` | string| "Construct your solution here" |  The text that appears at the start of the solution area.
+`solution-placement` | string | "right" | "right" shows the source and solution areas aligned side-by-side. "bottom" shows the solution area below the source area.
+
+Within the `pl-order-blocks` element, each answer block must be specified with a `pl-answer` that has the following attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
+`ranking` | positive integer | — | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
+`indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.
+
+#### Details
+
+Different grading options are defined via the attribute `grading-method`:
+
+* `ordered`: in this method, the correct ordering of the blocks is defined by the ordering in which
+the correct answers (defined in `pl-answer`) appear in the HTML file. There is no partial credit for this option.
+* `unordered`: in this method, if `n` is the total number of correct blocks, each correct block moved to the solution area is given `1/n` points, and each incorrect block moved to the solution area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only moving incorrect answers). Note the ordering of the blocks does not matter. That is, any permutation of the answers within the solution area is accepted. There is partial credit for this option.
+* `ranking`: in this method, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block *X* should have a `ranking` integer that is less than or equal to the answer block immediately below *X*. That is, the sequence of `ranking` integers of all the answer blocks should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer. There is partial credit for this option.
+* `external`: in this method, the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader. Depending on the external grader grading code logic, it may be possible to enable or disable partial credit. The attribute `correct` for `pl-answer` can still be used in conjunction with `min-incorrect` and `max-incorrect` for display purposes only, but not used for grading purposes. The attributes `ranking` and `indent` are not allowed for this grading method.
+
+Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
+
+* `ordered`:  the blocks appear in the source area in the same order they appear in the HTML file.
+* `random`:  the blocks are shuffled.
+
+
+#### Example implementations
+
+- [element/orderBlocks]
+- [demo/autograder/python/orderBlocksRandomParams]
+- [demo/autograder/python/orderBlocksAddNumpy]
+
+-----
+
 ### `pl-integer-input` element
 
 Fill in the blank field that requires an **integer** input.
@@ -379,12 +453,29 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.
+`allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
+`blank-value` | float | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
+`base` | integer | 10 | The base used to parse and represent the answer, or the special value 0 (see below).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
+
+#### Specifying a non-trivial base
+
+By default, the values are interpreted in base 10. The `base` argument may also be used, with a value between 2 and 36, to indicate a different base to interpret the student input, as well as to print the final result.
+
+The `base` argument can also accept a special value of 0. In this case, the values will by default be interpreted in base 10, however the student has the option of using different prefixes to indicate a value in a different format:
+
+* The prefixes `0x` and `0X` can be used for base-16 values (e.g., `0x1a`);
+* The prefixes `0b` and `0B` can be used for base-2 values (e.g., `0b1101`);
+* The prefixes `0o` and `0O` can be used for base-8 values (e.g., `0o777`).
+
+#### Integer range
+
+The valid range of values accepted by pl-integer-input is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). If you need a larger input, one option you can consider is a [`pl-string-input`](#pl-string-input-element) with a [custom grade function](question.md#question-serverpy).
 
 #### Example implementations
 
@@ -440,6 +531,8 @@ Attribute | Type | Default | Description
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
 `allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
+`allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).
+`blank-value` | string | 0 (zero) | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
 
@@ -498,6 +591,7 @@ Attribute | Type | Default | Description
 `remove-spaces` | boolean | false | Whether or not to remove blank spaces from the input string.
 `allow-blank` | boolean | false | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 `ignore-case` | boolean | false | Whether or not to enforce case sensitivity (e.g. "hello" != "HELLO").
+`normalize-to-ascii` | boolean | false | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading.
 `placeholder` | text | None | Hint displayed inside the input box describing the expected type of input.
 `size` | integer | 35 | Size of the input box.
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
@@ -558,10 +652,12 @@ Attribute | Type | Default | Description
 `allow-partial-credit` | boolean | false | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
 `allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
 `allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
+`allow-blank` | boolean | false |  Whether or not empty input boxes are allowed. By default, matrices with at least one empty input box will not be graded (invalid format).
+`blank-value` | string | 0 (zero) | Value to be used as an answer for each individual component if the component is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, etc.).
 
 #### Details
 
-The question will only be graded when all matrix components are entered.
+The question will only be graded when all matrix components are entered, unless the `allow-blank` attribute is enabled.
 
 #### Example implementations
 
@@ -678,11 +774,13 @@ Attribute | Type | Default | description
 `ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 `source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
+`directory` | string | special | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory.
 `min-lines` | integer | None | Minimum number of lines the editor should show initially.
 `max-lines` | integer | None | Maximum number of lines the editor should display at once. Must be greater than `min-lines`.
 `auto-resize` | boolean | true | Automatically expand the editor panel to ensure all lines are present. Overrides any value set by `max-lines` and establishes a default of 18 lines for `min-lines` if not supplied. See Details below for notes.
 `preview` | string | None | If set, provides a live preview mode for editing markup languages.  Currently supports `html` or `markdown`.
 `focus` | boolean | false | Specifies that the editor should begin with the cursor captured and the editing pane focused. See Details below for notes.
+`normalize-to-ascii` | boolean | false | Whether non-English characters (accents, non-latin alphabets, fancy quotes) should be normalized to equivalent English characters before submitting the file for grading.
 
 #### Details
 
@@ -1279,6 +1377,7 @@ Attribute | Type | Default | Description
 `engine` | string | dot | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.
 `params-name-matrix` | string | `None` | The the name of a parameter containing the adjacency matrix to use as input for the graph.
 `params-name-labels` | string | `None` | When using an adjacency matrix, the parameter that contains the labels for each node.
+`params-type` | string | `adjacency-matrix` | How to interpret the input data in `params-name-matrix`.  By default, only `adjacency-matrix` exists but custom types can be added through extensions.
 `weights` | boolean | `None` | When using an adjacency matrix, whether or not to show the edge weights.  By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).
 `weights-digits` | integer | `"2"` | When using an adjacency matrix, how many digits to show for the weights.
 `weights-presentation-type` | string | `'f'` | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`.
@@ -1287,6 +1386,29 @@ Attribute | Type | Default | Description
 #### Example implementations
 
 - [element/graph]
+
+#### Extension API
+
+Custom values for `params-type` can be added with [element extensions](elementExtensions.md).  Each custom type is defined as a function that takes as input the `element` and `data` values and returns processed DOT syntax as output.
+
+A minimal type function can look something like:
+
+```
+def custom_type(element, data):
+    return "graph { a -- b; }"
+```
+
+In order to register these custom types, your extension should define the global `backends` dictionary.  This will map a value of `params-type` to your function above:
+
+```
+backends = {
+    'my-custom-type': custom_type
+}
+```
+
+This will automatically get picked up when the extension gets imported.  If your extension needs extra attributes to be defined, you may optionally define the global `optional_attribs` array that contains a list of attributes that the element may use.
+
+For a full implementation, check out the `edge-inc-matrix` extension in the exampleCourse.
 
 #### See also
 
@@ -1657,9 +1779,9 @@ The provided `script-name` corresponds to a file located within the director for
 
 
 
+<!-- Reference style links for element implementations -->
 
-
-<!-- Switch to using reference style links for elements -->
+<!-- External Grade Questions -->
 [demo/autograder/ansiOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/ansiOutput
 [demo/autograder/codeEditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor
 [demo/autograder/codeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload
@@ -1668,12 +1790,13 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/autograder/python/pandas]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/pandas
 [demo/autograder/python/plots]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/plots
 [demo/autograder/python/random]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/random
+[demo/autograder/python/orderBlocksRandomParams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/orderBlocksRandomParams
+[demo/autograder/python/orderBlocksAddNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/orderBlocksAddNumpy
 
+<!-- Manual grading examples --> 
 [demo/manualGrade/codeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/manualGrade/codeUpload
 
-[demo/custom/element]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/element
-[demo/custom/gradeFunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction
-
+<!-- High quality questions -->
 [demo/calculation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/calculation
 [demo/fixedCheckbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/fixedCheckbox
 [demo/matrixAlgebra]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/matrixAlgebra
@@ -1685,9 +1808,8 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/randomPlot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomPlot
 [demo/randomSymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomSymbolic
 
-[demo/studentFaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentFaces
-[demo/studentNames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentNames
-
+<!-- Element option overview questions -->
+[element/orderBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/checkbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/checkbox
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
@@ -1711,3 +1833,12 @@ The provided `script-name` corresponds to a file located within the director for
 [element/symbolicInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
 [element/threeJS]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
 [element/variableOutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
+
+<!-- Advanced uses of PL features -->
+[demo/custom/element]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/element
+[demo/custom/gradeFunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction
+
+<!-- Misc application questions -->
+[demo/studentFaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentFaces
+[demo/studentNames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentNames
+

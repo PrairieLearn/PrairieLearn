@@ -78,7 +78,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode",
+        "image": "codercom/code-server",
         "port": 8080,
         "home": "/home/coder",
         "args": "--auth none",
@@ -102,7 +102,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode",
+        "image": "codercom/code-server",
         "port": 8080,
         "home": "/home/coder",
         "args": "--auth none",

@@ -254,7 +254,7 @@ describe('Access control', function() {
 
     var postAssessment = function(cookies, includePassword, expectedStatusCode, callback) {
         var form = {
-            __action: 'newInstance',
+            __action: 'new_instance',
             __csrf_token: __csrf_token,
         };
         if (includePassword) form.password = 'secret';

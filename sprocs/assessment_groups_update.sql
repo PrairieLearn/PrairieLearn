@@ -26,18 +26,21 @@ BEGIN
     FOREACH group_user SLICE 1 IN ARRAY update_list LOOP
         BEGIN
         -- get user_id from uid
-        SELECT user_id
+        -- make sure this user is enrolled in the course instance
+        SELECT u.user_id
         INTO arg_user_id
-        FROM users
-        WHERE uid = group_user[2];
+        FROM users AS u
+        JOIN enrollments AS e ON e.user_id = u.user_id
+        JOIN assessments AS a ON a.course_instance_id = e.course_instance_id AND a.id = arg_assessment_id
+        WHERE u.uid = group_user[2];
         -- make sure this user does not belong to another group in the same assessment
         IF EXISTS (
                     SELECT 1
                     FROM group_users AS gu
-                    JOIN groups AS gr ON gu.group_id = gr.id
+                    JOIN groups AS g ON gu.group_id = g.id
                     WHERE gu.user_id = arg_user_id
-                    AND gr.group_config_id = arg_group_config_id
-                    AND gr.deleted_at IS NULL
+                    AND g.group_config_id = arg_group_config_id
+                    AND g.deleted_at IS NULL
                   ) THEN
             SELECT array_append(already_in_group, group_user[2])
             INTO already_in_group;

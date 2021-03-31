@@ -12,7 +12,7 @@ if [[ ! -z "$CONTAINERS" ]] ; then
 fi
 
 export DONT_START_WORKSPACE_HOST_IN_INIT=true
-[[ $NODEMON == true ]] && HOST_NODE="npx nodemon -L" || HOST_NODE=node
+[[ $NODEMON == true ]] && HOST_NODE="/PrairieLearn/node_modules/.bin/nodemon -L" || HOST_NODE=node
 
 cd /PrairieLearn
 tmux "${args[@]}" new-session \; \

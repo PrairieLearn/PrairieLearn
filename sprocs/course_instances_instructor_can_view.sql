@@ -14,7 +14,7 @@ BEGIN
         course_instances_instructor_can_view.course_instances
     FROM
         course_instances AS ci
-        LEFT JOIN LATERAL authz_course_instance(user_id, ci.id, is_administrator, req_date) AS aci ON TRUE,
+        LEFT JOIN LATERAL authz_course_instance(user_id, ci.id, is_administrator, req_date, FALSE) AS aci ON TRUE,
         LATERAL (SELECT min(ar.start_date) AS start_date, max(ar.end_date) AS end_date FROM course_instance_access_rules AS ar WHERE ar.course_instance_id = ci.id) AS d
     WHERE
         ci.course_id = course_instances_instructor_can_view.course_id

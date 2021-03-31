@@ -49,7 +49,7 @@
             </div>
           </div>
           <% if (assessment.group_work) { %>
-            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: groupinfo[0], groupinfo: groupinfo}); %>
+            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: group_info[0], group_info: group_info}); %>
           <% } %>
           <% if (assessment_text_templated) { %>
           <div class="alert alert-secondary mb-0">

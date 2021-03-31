@@ -3,15 +3,15 @@
   <head>
     <%- include('../partials/head'); %>
     <%- include('../partials/mathjax'); %>
-    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/require.js"></script>
-    <script src="/localscripts/question.js"></script>
-    <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= asset_path('javascripts/require.js') %>"></script>
+    <script src="<%= asset_path('localscripts/question.js') %>"></script>
+    <script src="<%= asset_path(`localscripts/question${effectiveQuestionType}.js`) %>"></script>
     <% } %>
     <%- extraHeadersHtml %>
   </head>
@@ -79,6 +79,6 @@
       </div>
     </div>
     <!-- Needs to be located below element scripts -->
-    <script src="/localscripts/questionPageScripts.js"></script>
+    <script src="<%= asset_path('localscripts/questionPageScripts.js') %>"></script>
   </body>
 </html>

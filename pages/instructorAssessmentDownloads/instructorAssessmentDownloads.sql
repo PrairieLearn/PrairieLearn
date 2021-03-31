@@ -17,7 +17,7 @@ SELECT
     EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,
     (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score,
     (row_number() OVER (PARTITION BY g.id)) = 1 AS unique_group,
-    g.name AS groupname,
+    g.name AS group_name,
     groups_uid_list(g.id) AS uid_list
 FROM
     assessments AS a
@@ -32,7 +32,7 @@ FROM
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC, u.uid, groupname, u.uin, u.user_id, ai.number, ai.id;
+    e.role DESC, u.uid, group_name, u.uin, u.user_id, ai.number, ai.id;
 
 
 -- BLOCK select_instance_questions
@@ -55,7 +55,7 @@ WITH instance_questions AS (
         iq.number_attempts,
         extract(epoch FROM iq.duration) AS duration_seconds,
         (row_number() OVER (PARTITION BY g.id, q.id)) = 1 AS unique_group,
-        g.name AS groupname,
+        g.name AS group_name,
         groups_uid_list(g.id) AS uid_list
     FROM
         instance_questions AS iq
@@ -73,7 +73,7 @@ WITH instance_questions AS (
     WHERE
         a.id = $assessment_id
     ORDER BY
-        u.uid, u.uin, groupname, ai.number, q.qid, iq.number, iq.id
+        u.uid, u.uin, group_name, ai.number, q.qid, iq.number, iq.id
 )
 SELECT 
     *
@@ -90,7 +90,7 @@ WITH final_assessment_instances AS (
         g.id AS group_id,
         ai.id,
         assessment_id,
-        g.name AS groupname,
+        g.name AS group_name,
         groups_uid_list(g.id) AS uid_list
     FROM
         assessment_instances AS ai
@@ -104,12 +104,13 @@ SELECT DISTINCT ON (ai.id, q.qid)
     u.uin,
     q.qid,
     iq.score_perc AS old_score_perc,
+    s.feedback AS old_feedback,
     s.id AS submission_id,
     v.params,
     v.true_answer,
     (s.submitted_answer - '_files') AS submitted_answer,
     s.partial_scores,
-    ai.groupname,
+    ai.group_name,
     ai.uid_list
 FROM
     submissions AS s
@@ -157,7 +158,7 @@ WITH all_submissions AS (
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC NULLS LAST, s.date DESC, s.id DESC)) = 1 AS best_submission_per_variant,
         (row_number() OVER (PARTITION BY g.id, v.id, s.id)) = 1 AS unique_group,
-        g.name AS groupname,
+        g.name AS group_name,
         groups_uid_list(g.id) AS uid_list,
         su.uid AS submission_user
     FROM
@@ -189,7 +190,7 @@ WHERE
         OR ($include_best AND best_submission_per_variant))
         AND (($group_work AND unique_group) OR ($group_work = false))
 ORDER BY
-    uid, groupname, assessment_instance_number, qid, instance_question_number, variant_number, date;
+    uid, group_name, assessment_instance_number, qid, instance_question_number, variant_number, date;
 
 
 -- BLOCK files_for_manual_grading
@@ -199,7 +200,7 @@ final_assessment_instances AS (
         u.user_id,
         g.id AS group_id,
         ai.id,
-        g.name AS groupname
+        g.name AS group_name
     FROM
         assessment_instances AS ai
         LEFT JOIN groups AS g ON (g.id = ai.group_id)
@@ -215,7 +216,7 @@ submissions_with_files AS (
         s.id AS submission_id,
         s.submitted_answer,
         v.params,
-        ai.groupname
+        ai.group_name
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -232,7 +233,7 @@ submissions_with_files AS (
 all_files AS (
     SELECT
         uid,
-        groupname,
+        group_name,
         uin,
         qid,
         submission_id,
@@ -257,7 +258,7 @@ all_files AS (
 SELECT
     (
         (CASE 
-            WHEN $group_work THEN groupname
+            WHEN $group_work THEN group_name
             ELSE uid || '_' || uin
         END )
         || '_' || qid
@@ -272,7 +273,7 @@ WHERE
     AND contents IS NOT NULL
 ORDER BY
     (CASE 
-        WHEN $group_work THEN groupname
+        WHEN $group_work THEN group_name
         ELSE uid
      END), 
     (CASE 
@@ -301,7 +302,7 @@ WITH all_submissions_with_files AS (
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC NULLS LAST, s.date DESC, s.id DESC)) = 1 AS best_submission_per_variant,
         (row_number() OVER (PARTITION BY g.id, v.id, s.id)) = 1 AS unique_group,
-        g.name AS groupname
+        g.name AS group_name
     FROM
         assessments AS a
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
@@ -333,7 +334,7 @@ use_submissions_with_files AS (
 all_files AS (
     SELECT
         uid,
-        groupname,
+        group_name,
         assessment_instance_number,
         qid,
         variant_number,
@@ -360,7 +361,7 @@ all_files AS (
 )
 SELECT
     (
-        (CASE WHEN $group_work THEN groupname 
+        (CASE WHEN $group_work THEN group_name 
               ELSE uid
         END)
         || '_' || assessment_instance_number
@@ -377,7 +378,7 @@ WHERE
     filename IS NOT NULL
     AND contents IS NOT NULL
 ORDER BY
-    (CASE WHEN $group_work THEN groupname 
+    (CASE WHEN $group_work THEN group_name 
           ELSE uid
     END), assessment_instance_number, qid, variant_number, date
 LIMIT

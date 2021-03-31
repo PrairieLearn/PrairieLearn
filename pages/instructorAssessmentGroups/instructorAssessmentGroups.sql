@@ -19,32 +19,32 @@ ORDER BY tid;
 
 -- BLOCK select_group_users
 SELECT
-    gr.id AS gid,
-    gr.name AS name,
+    g.id AS group_id,
+    g.name AS name,
     COUNT(u.uid) AS size,
     array_agg(u.uid) AS uid_list
 FROM
-    groups AS gr
-    LEFT JOIN group_users AS gu ON gu.group_id = gr.id
+    groups AS g
+    LEFT JOIN group_users AS gu ON gu.group_id = g.id
     LEFT JOIN users AS u ON u.user_id = gu.user_id
 WHERE
-    gr.deleted_at IS NULL
-    AND gr.group_config_id = $group_config_id
+    g.deleted_at IS NULL
+    AND g.group_config_id = $group_config_id
 GROUP BY
-    gr.id
+    g.id
 ORDER BY
-    gr.id;
+    g.id;
 
 -- BLOCK select_not_in_group
 SELECT
     u.uid
 FROM
-    groups AS gr
-    JOIN group_users AS gu ON gu.group_id = gr.id AND gr.group_config_id = $group_config_id AND gr.deleted_at IS NULL
+    groups AS g
+    JOIN group_users AS gu ON gu.group_id = g.id AND g.group_config_id = $group_config_id AND g.deleted_at IS NULL
     RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id
     JOIN users AS u ON u.user_id = e.user_id
 WHERE
-    gr.id IS NULL
+    g.id IS NULL
     AND e.course_instance_id = $course_instance_id
     AND e.role = 'Student'
 ORDER BY u.uid;

@@ -1,0 +1,16 @@
+<pl-question-panel>
+    <p>
+        By creating custom extensions in your course, custom drawing elements can be created.  This example implements the element <code class="user-output">pl-prairielearn-logo</code> which loads an image of the PrairieLearn logo and displays it on the canvas.
+    </p>
+</pl-question-panel>
+
+<pl-hide-in-answer-panel>
+    <pl-drawing width="500" height="500" gradable="true" answers-name="answer">
+        <pl-drawing-answer></pl-drawing-answer>
+        <pl-controls>
+            <pl-controls-group label="PrairieLearn Logo">
+                <pl-drawing-button type="pl-prairielearn-logo" x="250" y="250"></pl-drawing-button>
+            </pl-controls-group>
+        </pl-controls>
+    </pl-drawing>
+</pl-hide-in-answer-panel>

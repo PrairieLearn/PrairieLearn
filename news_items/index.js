@@ -11,6 +11,7 @@ const namedLocks = require('../lib/named-locks');
 
 async function loadNewsItems() {
     const news_items = [];
+    const regex = /^([0-9]+)_.+$/;
     const dirs = await fsPromises.readdir(__dirname);
     await async.each(dirs, async (dir) => {
         const infoFilename = path.join(__dirname, dir, 'info.json');
@@ -22,6 +23,7 @@ async function loadNewsItems() {
             throw err;
         }
         info.directory = dir;
+        info.index = regex.exec(dir)[1];
         news_items.push(info);
     });
 
@@ -32,6 +34,16 @@ async function loadNewsItems() {
             if (aList.length > 1) {
                 const directories = aList.map(a => a.directory).join(', ');
                 throw new Error(`UUID ${uuid} is used in multiple news items: ${directories}`);
+            }
+        });
+
+    // Check for duplicate UUIDs
+    _(news_items)
+        .groupBy('index')
+        .each(function(aList, index) {
+            if (aList.length > 1) {
+                const directories = aList.map(a => a.directory).join(', ');
+                throw new Error(`News item index ${index} is used in multiple news items: ${directories}`);
             }
         });
 

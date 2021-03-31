@@ -1,0 +1,102 @@
+
+ul.pl-order-blocks-connected-sortable {
+  /* This style applies to the MCQ options table, on the left hand side*/
+  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
+  border-radius: 4px;
+  background-color: #efefff; /* Pale Blue */
+
+  width: 100%;
+
+  margin: 0 40px 0 10px;
+
+  list-style-type: none;
+  padding: 5px 0 20px 0;
+  float: left;
+}
+
+div.pl-order-blocks-right {
+  /* This style applies to the DIV that holds each dropzone column */
+  /* This particular style renders the dropzones in a single row horizontally */ 
+  width: 46%;
+  margin-right: 20px;
+}
+
+div.pl-order-blocks-bottom {
+  /* This style applies to the DIV that holds each dropzone column */
+  /* This particular style renders the dropzones in a single column vertically */ 
+  width: 100%;
+  margin-right: 20px;
+  margin-bottom: 20px;
+}
+
+
+ul.dropzone {
+  /* This style applies to answer dropzone */
+  background-color: #FFA; /* Yellow */
+  min-height: 30px;
+}
+
+
+ul.pl-order-blocks-connected-sortable li, ul.dropzone li{
+  /* This style applies to the answer draggable tiles themselves */
+  background-color: #EFEFEF; /* Grey */
+  border: 2px solid #A9A9A9;
+  border-radius: 4px;
+  margin: 0 10px 10px 10px;
+  padding: 5px;
+  font-size: 1.2em;
+
+  display: block;
+
+  /* Show overflow text in the answer draggable tiles */
+  white-space: normal;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+ul.pl-order-blocks-connected-sortable li:hover, ul.dropzone li:hover{
+  cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
+}
+
+
+li.info {
+  /* This styling applies to the instruction text for the dropzones */
+  background-color: transparent !important;
+  border: none !important;
+  cursor: auto !important;
+}
+
+li.ui-state-highlight { 
+  /*This styling applies to the placeholder answer tile that appears when the user is dragging */
+  height: 2em !important; 
+  line-height: 1.5em !important;
+  border: none !important;
+  color: #efefff !important; 
+  background-color: #efefff !important; 
+}
+
+code.user-output {
+  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
+  margin-right: 4px;
+}
+
+
+.answer_block {
+  display: inline-block;
+  border-style: solid;
+  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
+  background-color: #EFEFEF;
+  border-radius: 4px;
+  margin-right: 10px;
+  padding: 3px;
+  padding-left: 7px;
+  padding-right: 7px;
+}
+
+.row:after {
+  /* Clear floats after the columns */
+  content: "";
+  display: table;
+  clear: both;
+}
