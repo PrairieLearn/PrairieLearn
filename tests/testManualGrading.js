@@ -1,6 +1,4 @@
 const assert = require('chai').assert;
-// const { step } = require('mocha-steps');
-
 const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
