@@ -10,3 +10,8 @@ WHERE id = $id;
 SELECT *
 FROM users
 WHERE uin = $uin;
+
+-- BLOCK get_assessment_question
+SELECT *
+FROM assessment_questions
+WHERE id = $id;
