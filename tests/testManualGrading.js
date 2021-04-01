@@ -28,7 +28,6 @@ const setUser = (user) => {
 };
 
 const saveSubmission = async (student, instanceQuestionUrl, payload) => {
-    // scrape each variant id and csrf token for homework instance question
     const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
     const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
     const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
