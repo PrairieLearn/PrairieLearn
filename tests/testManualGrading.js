@@ -305,7 +305,7 @@ describe('Manual grading', function() {
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
 
-            // back end will divide payload score by 100
+            // application layer back-end will divide payload score by 100
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
