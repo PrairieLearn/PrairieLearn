@@ -312,7 +312,7 @@ describe('Manual grading', function() {
             const gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });
-        it('grading conflict should count as ungraded on main Manual Grading View', () => {
+        it('grading conflict should count as ungraded on main Assessment Manual Grading View', () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 3);
         });
         it('grading conflict can be resolved by any instructor', async () => {
@@ -351,7 +351,7 @@ describe('Manual grading', function() {
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
-        it('grading conflict resolution should count as graded on main Manual Grading view', () => {
+        it('grading conflict resolution should count as graded on Assessment Manual Grading view', () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 2);
             assert.equal($addNumbersRow('.graded-value').text(), 1);
         });
