@@ -144,7 +144,6 @@ describe('Manual grading', function() {
             const manualGradingBody = await (await fetch(manualGradingUrl)).text();
             const $manualGradingPage = cheerio.load(manualGradingBody);
 
-            // testing against same 3 questions with 9 student submissions above
             $addNumbersRow = cheerio.load(
                 $manualGradingPage('.qid-value:contains("addNumbers")').parent().html(),
             );
@@ -156,7 +155,7 @@ describe('Manual grading', function() {
             );
         });
 
-        it('Instructor role should see 9 ungraded submissions', async () => {
+        it('Instructor role should see 9 ungraded submissions from student role tests', async () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 3);
             assert.equal($addVectorsRow('.ungraded-value').text(), 3);
             assert.equal($fossilFuelsRow('.ungraded-value').text(), 3);
