@@ -210,6 +210,49 @@ describe('Manual grading', function() {
         it('instructor should NOT see "Grade Next" option when "Ungraded" column is 0', () => {
             assert.isUndefined($fossilFuelsRow('.grade-next-value').attr('href'));
         });
+        it('instructor(s) should appear in "Grading Contributors" column if opened or submitted grade', async () => {
+            const ungradedVal = parseInt($addVectorsRow('.ungraded-value').text());
+            assert.equal(ungradedVal, 3);
+
+            const contributorsCell = $addVectorsRow('.grading-contributors-value').text();
+            
+            assert.notInclude(contributorsCell, mockInstructors[0].authUid);
+            assert.notInclude(contributorsCell, mockInstructors[1].authUid);
+
+            for (const instructor of mockInstructors) {
+                setUser(instructor);
+                const gradeNextAddVectorsUrl = siteUrl + $addVectorsRow('.grade-next-value').attr('href');
+                const iqManualGradingUrl = (await fetch(gradeNextAddVectorsUrl)).url;
+                const $iqManualGradingPage = cheerio.load(
+                    await (await fetch(iqManualGradingUrl)).text(),
+                );
+                const payload1 = {
+                    submissionScore: 90,
+                    submissionNote: 'Amazing work!',
+                    instanceQuestionModifiedAt: $iqManualGradingPage('form > input[name="instanceQuestionModifiedAt"]').val(),
+                    __csrf_token: $iqManualGradingPage('form > input[name="__csrf_token"]').val(),
+                    __action: $iqManualGradingPage('form > div > button[name="__action"]').attr('value'),
+                    assessmentId: $iqManualGradingPage('form > input[name="assessmentId"]').val(),
+                    assessmentQuestionId: $iqManualGradingPage('form > input[name="assessmentQuestionId"]').val(),
+                };
+                const nextPage = await fetch(iqManualGradingUrl, {
+                    method: 'POST',
+                    headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                    body: querystring.encode(payload1),
+                });
+                assert.equal(nextPage.status, 200);
+                const $manualGradingPage = cheerio.load(
+                    await (await fetch(manualGradingUrl)).text(),
+                );
+                $addVectorsRow = cheerio.load(
+                    $manualGradingPage('.qid-value:contains("addVectors")').parent().html(),
+                );
+                const contributorsCell = $addVectorsRow('.grading-contributors-value').text().trim();
+                assert.include(contributorsCell, instructor.authUid);
+            }
+            const contributorUids = $addVectorsRow('.grading-contributors-value').text().trim().split(',');
+            assert.lengthOf(contributorUids, 2);
+        });
         it('instructor user id should be added to instance question when submission opened for grading', async () => {
             const gradeNextAddNumbersUrl = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const redirectUrl = (await fetch(gradeNextAddNumbersUrl)).url;
