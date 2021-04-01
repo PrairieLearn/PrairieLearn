@@ -10,7 +10,6 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
@@ -21,7 +20,6 @@ let hm1AutomaticTestSuiteUrl = null;
 // instructor role pages
 const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
 
-let storedConfig = null;
 let ciBody = null;
 let hm1Body = null;
 let manualGradingBody = null;
@@ -31,28 +29,19 @@ const mockStudents = [
     {authUid: 'student2', authName: 'Student User 2', authUin: '00000002'},
     {authUid: 'student3', authName: 'Student User 3', authUin: '00000003'},
 ];
-const mockInstructor = {authUid: 'mwest@illinois.edu', authName: '', uin: ''};
+const mockInstructors = [
+    {authUid: config.authUid, authName: config.authName, authUin: config.authUin},
+    {authUid: 'mwest@illinois.edu', authName: '', uin: ''},
+];
 
 const setInstructor = (instructor) => {
-    if (instructor) {
-        config.authUid = instructor.authUid;
-        config.authName = instructor.authName;
-        config.authUin = instructor.authUin;
-    } else {
-        config.authUid = storedConfig.authUid;
-        config.authName = storedConfig.authName;
-        config.authUin = storedConfig.authUin;
-    }
+    config.authUid = instructor.authUid;
+    config.authName = instructor.authName;
+    config.authUin = instructor.authUin;
+
 };
 
 const setStudent = (student) => {
-    if (!storedConfig) {
-        storedConfig = {
-            authUid: config.authUid,
-            authName: config.authName, 
-            authUin: config.authUin,
-        };
-    }
     config.authUid = student.authUid;
     config.authName = student.authName;
     config.authUin = student.authUin;
@@ -76,9 +65,7 @@ const saveSubmission = async (student, instanceQuestionUrl, payload) => {
 
     const res = await fetch(instanceQuestionUrl, {
         method: 'POST',
-        headers: {
-            'Content-type': 'application/x-www-form-urlencoded',
-        },
+        headers: {'Content-type': 'application/x-www-form-urlencoded'},
         body: [
             '__variant_id=' + variantId,
             '__action=save',
@@ -93,7 +80,7 @@ describe('Manual grading', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
-    after('shut down testing server', helperServer.after);
+    // after('shut down testing server', helperServer.after);
 
     before('set any student as default user role', () => setStudent(mockStudents[0]));
 
@@ -192,8 +179,9 @@ describe('Manual grading', function() {
         let $addVectorsRow = null;
         let $fossilFuelsRow = null;
 
-        before('set instructor user role', () => setInstructor());
+        beforeEach('set instructor user role', () => setInstructor(mockInstructors[0]));
         before('get instructor URLS and rows', async () => {
+            setInstructor(mockInstructors[0]);
             iciBody = await (await fetch(instructorCourseInstanceUrl)).text();
             assert.isString(iciBody);
             manualGradingUrl = siteUrl + cheerio.load(iciBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
@@ -230,13 +218,12 @@ describe('Manual grading', function() {
             const redirectUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
             const instanceQuestionId = parseInt(
-                // get param following 'instance_question/'
                 redirectUrl.match(/instance_question\/(\d+)/)[1],
             );
             assert.isNumber(instanceQuestionId);
 
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
-            const user = (await sqldb.queryOneRowAsync(sql.get_user_by_uin, {uin: storedConfig.authUin})).rows[0];
+            const user = (await sqldb.queryOneRowAsync(sql.get_user_by_uin, {uin: mockInstructors[0].authUin})).rows[0];
             assert.equal(instanceQuestion.manual_grading_user, user.user_id);
         });
         it('instructor should see warning message when loading instance_question being manually graded by another instructor', async () => {
@@ -245,12 +232,82 @@ describe('Manual grading', function() {
             // iq is set with manual grading user (Dev User) on open
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
-            setInstructor(mockInstructor);
+            // open with different user
+            setInstructor(mockInstructors[1]);
             const iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
             assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
         });
-        it('instructor should see grading conflict view if view open for both users and both users submit manual grade', async () => {
+        it('instructor should see grading conflict view if view open for two users and both users submit manual grade', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
+            // instructor 1 loads page
+            const iqManualGradingBody1 = await (await fetch(iqManualGradingUrl)).text();
+            const $iqManualGradingPage1 = cheerio.load(iqManualGradingBody1);
+
+            // instructor 2 loads page
+            setInstructor(mockInstructors[1]);
+            const iqManualGradingBody2 = await (await fetch(iqManualGradingUrl)).text();
+            const $iqManualGradingPage2 = cheerio.load(iqManualGradingBody2);
+
+            const payload1 = {
+                submissionScore: 5,
+                submissionNote: 'First submission score of 5%',
+                instanceQuestionModifiedAt: $iqManualGradingPage1('form > input[name="instanceQuestionModifiedAt"]').val(),
+                __csrf_token: $iqManualGradingPage1('form > input[name="__csrf_token"]').val(),
+                __action: $iqManualGradingPage1('form > div > button[name="__action"]').attr('value'),
+                assessmentId: $iqManualGradingPage1('form > input[name="assessmentId"]').val(),
+                assessmentQuestionId: $iqManualGradingPage1('form > input[name="assessmentQuestionId"]').val(),
+            };
+            const payload2 = {
+                submissionScore: 95,
+                submissionNote: 'Second submission score of 95%',
+                instanceQuestionModifiedAt: $iqManualGradingPage2('form > input[name="instanceQuestionModifiedAt"]').val(),
+                __csrf_token: $iqManualGradingPage2('form > input[name="__csrf_token"]').val(),
+                __action: $iqManualGradingPage2('form > div > button[name="__action"]').attr('value'),
+                assessmentId: $iqManualGradingPage2('form > input[name="assessmentId"]').val(),
+                assessmentQuestionId: $iqManualGradingPage2('form > input[name="assessmentQuestionId"]').val(),
+            };
+
+            // this submission results in a modified_at iq update 
+            setInstructor(mockInstructors[0]);
+            const submission1 = await fetch(iqManualGradingUrl, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload1),
+            });
+
+            // as iq.modified_at happened after this grading job is submitted, grading conflict exists
+            setInstructor(mockInstructors[1]);
+            const submission2 = await fetch(iqManualGradingUrl, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload2),
+            });
+
+            const instanceQuestionId = parseInt(
+                submission2.url.match(/instance_question\/(\d+)/)[1],
+            );
+
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            assert.isTrue(instanceQuestion.manual_grading_conflict);
+
+            // first instructor submits and redirects away from page
+            const submission1Body = await submission1.text();
+            assert.equal(submission1.status, 200);
+            assert.notEqual(submission1.url, iqManualGradingUrl);
+            assert.include(submission1Body, 'Grading Panel');
+            assert.notInclude(submission1Body, 'Current Grade');
+            assert.notInclude(submission1Body, 'Previous Grade');
+
+            // second instructor submits and redirects back to same page to resolve conflict
+            const submission2Body = await submission2.text();
+            assert.equal(submission2.status, 200);
+            assert.equal(submission2.url, iqManualGradingUrl);
+            assert.notInclude(submission2Body, 'Grading Panel');
+            assert.include(submission2Body, 'Current Grade');
+            assert.include(submission2Body, 'Previous Grade');
+            assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });
     });
 });
