@@ -60,6 +60,8 @@ router.get('/', function(req, res, next) {
                 if (res.locals.assessment.group_work) {
                     sqldb.query(sql.get_group_info, params, function(err, result) {
                         if (ERR(err, next)) return;
+                        // result.rows is a JS array of "rows", with each row containing
+                        // gu.group_id, g.name, g.join_code, u.uid, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
                         res.locals.group_info = result.rows;
                         if (res.locals.group_info[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));
                         res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;

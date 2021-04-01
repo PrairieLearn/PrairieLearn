@@ -12,7 +12,7 @@
     <%- include('../partials/navbar', {navPage: 'assessments'}); %>
     <div id="content" class="container">
 
-      <%- include('../partials/advertisement'); %>
+      <%- include('../partials/advertisement'); %> <!-- Renders the content on the page specific to res.locals -->
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Assessments</div>
@@ -50,7 +50,7 @@
                 <% if (row.multiple_instance_header) { %>
                 <%= row.title %>
                 <% } else { %>
-                <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %>
+                <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %> <!-- This navigates to the assessment instance page -->
                 <% if (row.group_work) { %>
                   <i class="fas fa-users" aria-label="Group work"></i>
                 <% } %>

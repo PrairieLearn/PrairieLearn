@@ -23,7 +23,7 @@
           <input type="text" class="form-control" id="joinCodeInput" name="join_code" placeholder="abcd-1234">
           <div class="mt-4 d-flex justify-content-center">
             <div class="form-group mb-0">
-              <input type="hidden" name="__action" value="join_group">
+              <input type="hidden" name="__action" value="join_group"> <!-- This is how form actions are submitted? -->
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <button type="submit" class="btn btn-primary">Join group</button>
             </div>

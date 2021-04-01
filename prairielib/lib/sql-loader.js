@@ -20,6 +20,7 @@ module.exports.load = function(filename) {
             sql[blockName] += '\n' + line;
         }
     });
+    console.log("hi!");
     return sql;
 };
 
