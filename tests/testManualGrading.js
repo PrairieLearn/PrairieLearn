@@ -226,10 +226,10 @@ describe('Manual grading', function() {
         it('instructor should see warning message when grading question also being graded by another instructor', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
 
-            // instructor 1 opens question
+            // instructor 1 opens question for grading
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
-            // instructor 2 opens question
+            // instructor 2 opens question for grading
             setUser(mockInstructors[1]);
             const iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
             assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
@@ -238,11 +238,11 @@ describe('Manual grading', function() {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
-            // instructor 1 loads page
+            // instructor 1 loads page for grading
             const iqManualGradingBody1 = await (await fetch(iqManualGradingUrl)).text();
             const $iqManualGradingPage1 = cheerio.load(iqManualGradingBody1);
 
-            // instructor 2 loads page
+            // instructor 2 loads page for grading
             setUser(mockInstructors[1]);
             const iqManualGradingBody2 = await (await fetch(iqManualGradingUrl)).text();
             const $iqManualGradingPage2 = cheerio.load(iqManualGradingBody2);
