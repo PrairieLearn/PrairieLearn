@@ -134,12 +134,13 @@ describe('Manual grading', function() {
         let $addVectorsRow = null;
         let $fossilFuelsRow = null;
         let gradingConflictUrl = null;
-
+        let manualGradingUrl = null;
         beforeEach('set instructor user role', () => setUser(mockInstructors[0]));
         beforeEach('load manual grading page URL and get testing question rows', async () => {
             const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
             const instructorCourseInstanceBody = await (await fetch(instructorCourseInstanceUrl)).text();
-            const manualGradingUrl = siteUrl + cheerio.load(instructorCourseInstanceBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
+
+            manualGradingUrl = siteUrl + cheerio.load(instructorCourseInstanceBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
             const manualGradingBody = await (await fetch(manualGradingUrl)).text();
             const $manualGradingPage = cheerio.load(manualGradingBody);
 
@@ -167,9 +168,51 @@ describe('Manual grading', function() {
             assert.isNotNull($addVectorsRow('.grade-next-value').attr('href'));
             assert.isNotNull($fossilFuelsRow('.grade-next-value').attr('href'));
         });
+        it('instructor sees "Ungraded" and "Graded" columns increment -/+ by one for each manual grading job', async () => {
+            assert.equal($fossilFuelsRow('.ungraded-value').text(), 3);
+            const gradeNextFossilFuelsUrl = siteUrl + $fossilFuelsRow('.grade-next-value').attr('href');
+
+            for (let i = 1; i <= 3; i++) {
+                const nextPage = await fetch(gradeNextFossilFuelsUrl);
+                let $nextGradingPage = cheerio.load(
+                    await (nextPage).text(),
+                );
+                const payload = {
+                    submissionScore: 95,
+                    submissionNote: 'Any note about the grade',
+                    instanceQuestionModifiedAt: $nextGradingPage('form > input[name="instanceQuestionModifiedAt"]').val(),
+                    __csrf_token: $nextGradingPage('form > input[name="__csrf_token"]').val(),
+                    __action: $nextGradingPage('form > div > button[name="__action"]').attr('value'),
+                    assessmentId: $nextGradingPage('form > input[name="assessmentId"]').val(),
+                    assessmentQuestionId: $nextGradingPage('form > input[name="assessmentQuestionId"]').val(),
+                };
+                $nextGradingPage = cheerio.load(
+                    await (await fetch(nextPage.url, {
+                        method: 'POST',
+                        headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                        body: querystring.encode(payload),
+                    })).text(),
+                );
+
+                const $manualGradingPage = cheerio.load(
+                    await (await fetch(manualGradingUrl)).text(),
+                );
+                $fossilFuelsRow = cheerio.load(
+                    $manualGradingPage('.qid-value:contains("fossilFuelsRadio")').parent().html(),
+                );
+
+                const ungradedVal = parseInt($fossilFuelsRow('.ungraded-value').text());
+                const gradedVal = parseInt($fossilFuelsRow('.graded-value').text());
+                assert.equal(ungradedVal, 3 - i);
+                assert.equal(gradedVal, i);
+            }
+        });
+        it('instructor should NOT see "Grade Next" option when "Ungraded" column is 0', () => {
+            assert.isUndefined($fossilFuelsRow('.grade-next-value').attr('href'));
+        });
         it('instructor user id should be added to instance question when submission opened for grading', async () => {
-            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
-            const redirectUrl = (await fetch(gradeNextAddNumbersURL)).url;
+            const gradeNextAddNumbersUrl = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const redirectUrl = (await fetch(gradeNextAddNumbersUrl)).url;
 
             const instanceQuestionId = parseInt(
                 redirectUrl.match(/instance_question\/(\d+)/)[1],
