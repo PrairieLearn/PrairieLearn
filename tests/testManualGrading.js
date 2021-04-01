@@ -13,28 +13,20 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-let manualGradingBody = null;
-
 const mockStudents = [
     {authUid: 'student1', authName: 'Student User 1', authUin: '00000001'},
     {authUid: 'student2', authName: 'Student User 2', authUin: '00000002'},
     {authUid: 'student3', authName: 'Student User 3', authUin: '00000003'},
 ];
 const mockInstructors = [
-    {authUid: config.authUid, authName: config.authName, authUin: config.authUin},
+    {authUid: config.authUid, authName: config.authName, authUin: config.authUin}, // testing default
     {authUid: 'mwest@illinois.edu', authName: '', uin: ''},
 ];
 
-const setInstructor = (instructor) => {
-    config.authUid = instructor.authUid;
-    config.authName = instructor.authName;
-    config.authUin = instructor.authUin;
-};
-
-const setStudent = (student) => {
-    config.authUid = student.authUid;
-    config.authName = student.authName;
-    config.authUin = student.authUin;
+const setUser = (user) => {
+    config.authUid = user.authUid;
+    config.authName = user.authName;
+    config.authUin = user.authUin;
 };
 
 const saveSubmission = async (student, instanceQuestionUrl, payload) => {
@@ -46,7 +38,7 @@ const saveSubmission = async (student, instanceQuestionUrl, payload) => {
     assert.isString(token);
     assert.isString(variantId);
 
-    // HACK: __variant_id should exist inside postData on only some instance questions submissions
+    // NOTE: __variant_id should exist inside postData on only some instance questions submissions
     if (payload && payload.postData && payload.postData) {
         payload.postData = JSON.parse(payload.postData);
         payload.postData.variant.id = variantId;
@@ -72,7 +64,7 @@ describe('Manual grading', function() {
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
-    before('set any student as default user role', () => setStudent(mockStudents[0]));
+    before('set any student as default user role', () => setUser(mockStudents[0]));
 
 
     describe('Student role: saving student submissions', () => {
@@ -88,7 +80,7 @@ describe('Manual grading', function() {
         it('Students should be able to save submissions on instance questions', async () => {
             // 'save' 1 answer for each question for each mock students; 1 x 3 x 3 = 9 submissions
             for await(const student of mockStudents) {
-                setStudent(student);
+                setUser(student);
 
                 const res = await fetch(hm1AutomaticTestSuiteUrl);
                 assert.equal(res.ok, true);
@@ -144,22 +136,23 @@ describe('Manual grading', function() {
         const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
 
         let iciBody = null;
+        let manualGradingBody = null;
         let manualGradingUrl = null;
         let $manualGradingPage = null;
         let $addNumbersRow = null;
         let $addVectorsRow = null;
         let $fossilFuelsRow = null;
 
-        beforeEach('set instructor user role', () => setInstructor(mockInstructors[0]));
+        beforeEach('set instructor user role', () => setUser(mockInstructors[0]));
         before('get instructor URLS and rows', async () => {
-            setInstructor(mockInstructors[0]);
+            setUser(mockInstructors[0]);
             iciBody = await (await fetch(instructorCourseInstanceUrl)).text();
             assert.isString(iciBody);
             manualGradingUrl = siteUrl + cheerio.load(iciBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
             manualGradingBody = await (await fetch(manualGradingUrl)).text();
             $manualGradingPage = cheerio.load(manualGradingBody);
 
-            // get manual grading table row for each question
+            // testing against same 3 questions with 9 student submissions above
             $addNumbersRow = cheerio.load(
                 $manualGradingPage('.qid-value:contains("addNumbers")').parent().html(),
             );
@@ -204,7 +197,7 @@ describe('Manual grading', function() {
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
             // instructor 2 opens question
-            setInstructor(mockInstructors[1]);
+            setUser(mockInstructors[1]);
             const iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
             assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
         });
@@ -217,7 +210,7 @@ describe('Manual grading', function() {
             const $iqManualGradingPage1 = cheerio.load(iqManualGradingBody1);
 
             // instructor 2 loads page
-            setInstructor(mockInstructors[1]);
+            setUser(mockInstructors[1]);
             const iqManualGradingBody2 = await (await fetch(iqManualGradingUrl)).text();
             const $iqManualGradingPage2 = cheerio.load(iqManualGradingBody2);
 
@@ -241,7 +234,7 @@ describe('Manual grading', function() {
             };
 
             // instructor 1 submits a grade
-            setInstructor(mockInstructors[0]);
+            setUser(mockInstructors[0]);
             const submission1 = await fetch(iqManualGradingUrl, {
                 method: 'POST',
                 headers: {'Content-type': 'application/x-www-form-urlencoded'},
@@ -249,7 +242,7 @@ describe('Manual grading', function() {
             });
 
             // instructor 2 submits a grade
-            setInstructor(mockInstructors[1]);
+            setUser(mockInstructors[1]);
             const submission2 = await fetch(iqManualGradingUrl, {
                 method: 'POST',
                 headers: {'Content-type': 'application/x-www-form-urlencoded'},
