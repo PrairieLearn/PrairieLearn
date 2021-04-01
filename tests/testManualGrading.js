@@ -65,17 +65,17 @@ describe('Manual grading', function() {
     before('set any student as default user role', () => setUser(mockStudents[0]));
     after('reset to default instructor user', () => setUser(mockInstructors[0]));
 
-    describe('Student role: saving student submissions', () => {
+    describe('student role: saving student submissions', () => {
         const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
         let hm1AutomaticTestSuiteUrl = null;
 
-        before('Fetch student "HW1: Homework for automatic test suite" URL', async () => {
+        before('fetch student "HW1: Homework for automatic test suite" URL', async () => {
             const courseInstanceBody = await (await fetch(studentCourseInstanceUrl)).text();
             const $courseInstancePage = cheerio.load(courseInstanceBody);
             hm1AutomaticTestSuiteUrl = siteUrl + $courseInstancePage('a:contains("Homework for automatic test suite")').attr('href');
         });
 
-        it('Students should be able to save submissions on instance questions', async () => {
+        it('students should be able to save submissions on instance questions', async () => {
             // 'save' 1 answer for each question for each mock students; 1 x 3 x 3 = 9 submissions
             for await(const student of mockStudents) {
                 setUser(student);
@@ -113,7 +113,7 @@ describe('Manual grading', function() {
                 });
             }
         });
-        it('DB should contain 9 submissions (1 per question x 3 students for 3 questions = 9 submissions)', async () => {
+        it('db should contain 9 submissions (1 per question x 3 students for 3 questions = 9 submissions)', async () => {
             const context = await sqldb.queryAsync(sql.get_all_submissions, []);
             const groupedByStudent = {};
 
@@ -130,7 +130,7 @@ describe('Manual grading', function() {
         });
     });
 
-    describe('Instructor role: grading student submissions', () => {
+    describe('instructor role: grading student submissions', () => {
         let $addNumbersRow = null;
         let $addVectorsRow = null;
         let $fossilFuelsRow = null;
@@ -155,7 +155,7 @@ describe('Manual grading', function() {
             );
         });
 
-        it('Instructor role should see 9 ungraded submissions from student role tests', async () => {
+        it('instructor role should see 9 ungraded submissions from student role tests', async () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 3);
             assert.equal($addVectorsRow('.ungraded-value').text(), 3);
             assert.equal($fossilFuelsRow('.ungraded-value').text(), 3);
@@ -163,12 +163,12 @@ describe('Manual grading', function() {
             assert.equal($addVectorsRow('.graded-value').text(), 0);
             assert.equal($fossilFuelsRow('.graded-value').text(), 0);
         });
-        it('Instructor can see "Grade Next" option for the 3 questions with submissions', () => {
+        it('instructor can see "Grade Next" option for the 3 questions with submissions', () => {
             assert.isNotNull($addNumbersRow('.grade-next-value').attr('href'));
             assert.isNotNull($addVectorsRow('.grade-next-value').attr('href'));
             assert.isNotNull($fossilFuelsRow('.grade-next-value').attr('href'));
         });
-        it('Instructor user id should be added to instance question when submission opened for grading', async () => {
+        it('instructor user id should be added to instance question when submission opened for grading', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const redirectUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
@@ -181,7 +181,7 @@ describe('Manual grading', function() {
             const user = (await sqldb.queryOneRowAsync(sql.get_user_by_uin, {uin: mockInstructors[0].authUin})).rows[0];
             assert.equal(instanceQuestion.manual_grading_user, user.user_id);
         });
-        it('Instructor should see warning message when grading question also being graded by another instructor', async () => {
+        it('instructor should see warning message when grading question also being graded by another instructor', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
 
             // instructor 1 opens question
@@ -192,7 +192,7 @@ describe('Manual grading', function() {
             const iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
             assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
         });
-        it('Instructor should get grading conflict view if two instructors submit grades to same question when being graded by two instructors', async () => {
+        it('instructor should get grading conflict view if two instructors submit grades to same question when being graded by two instructors', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
@@ -266,14 +266,14 @@ describe('Manual grading', function() {
             assert.include(submission2Body, 'Previous Grade');
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });
-        it('Grading conflict should persist when loaded by any instructor', async () => {
+        it('grading conflict should persist when loaded by any instructor', async () => {
             const gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });
-        it('Grading conflict should count as ungraded on main Manual Grading View', () => {
+        it('grading conflict should count as ungraded on main Manual Grading View', () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 3);
         });
-        it('Grading conflict can be resolved by any instructor', async () => {
+        it('grading conflict can be resolved by any instructor', async () => {
             const $gradingConflictPage = cheerio.load(
                 await (await fetch(gradingConflictUrl)).text(),
             );
@@ -309,7 +309,7 @@ describe('Manual grading', function() {
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
-        it('Grading conflict resolution should count as graded on main Manual Grading view', () => {
+        it('grading conflict resolution should count as graded on main Manual Grading view', () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 2);
             assert.equal($addNumbersRow('.graded-value').text(), 1);
         });
