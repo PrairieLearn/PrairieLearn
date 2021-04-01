@@ -36,7 +36,7 @@ const saveSubmission = async (student, instanceQuestionUrl, payload) => {
     assert.isString(token);
     assert.isString(variantId);
 
-    // NOTE: __variant_id should exist inside postData on only some instance questions submissions
+    // __variant_id should exist inside postData on only some instance questions submissions
     if (payload && payload.postData && payload.postData) {
         payload.postData = JSON.parse(payload.postData);
         payload.postData.variant.id = variantId;
@@ -63,7 +63,7 @@ describe('Manual grading', function() {
     after('shut down testing server', helperServer.after);
 
     before('set any student as default user role', () => setUser(mockStudents[0]));
-
+    after('reset to default instructor user', () => setUser(mockInstructors[0]));
 
     describe('Student role: saving student submissions', () => {
         const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
@@ -131,24 +131,19 @@ describe('Manual grading', function() {
     });
 
     describe('Instructor role: grading student submissions', () => {
-        const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
-
-        let iciBody = null;
-        let manualGradingBody = null;
-        let manualGradingUrl = null;
-        let $manualGradingPage = null;
         let $addNumbersRow = null;
         let $addVectorsRow = null;
         let $fossilFuelsRow = null;
 
         beforeEach('set instructor user role', () => setUser(mockInstructors[0]));
-        before('get instructor URLS and rows', async () => {
+        before('load manual grading page URL and get testing question rows', async () => {
             setUser(mockInstructors[0]);
-            iciBody = await (await fetch(instructorCourseInstanceUrl)).text();
-            assert.isString(iciBody);
-            manualGradingUrl = siteUrl + cheerio.load(iciBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
-            manualGradingBody = await (await fetch(manualGradingUrl)).text();
-            $manualGradingPage = cheerio.load(manualGradingBody);
+
+            const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
+            const instructorCourseInstanceBody = await (await fetch(instructorCourseInstanceUrl)).text();
+            const manualGradingUrl = siteUrl + cheerio.load(instructorCourseInstanceBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
+            const manualGradingBody = await (await fetch(manualGradingUrl)).text();
+            const $manualGradingPage = cheerio.load(manualGradingBody);
 
             // testing against same 3 questions with 9 student submissions above
             $addNumbersRow = cheerio.load(
