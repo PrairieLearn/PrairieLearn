@@ -13,15 +13,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-// student role pages
-const courseInstanceUrl = baseUrl + '/course_instance/1';
-let hm1AutomaticTestSuiteUrl = null;
-
-// instructor role pages
-const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
-
-let ciBody = null;
-let hm1Body = null;
 let manualGradingBody = null;
 
 const mockStudents = [
@@ -38,7 +29,6 @@ const setInstructor = (instructor) => {
     config.authUid = instructor.authUid;
     config.authName = instructor.authName;
     config.authUin = instructor.authUin;
-
 };
 
 const setStudent = (student) => {
@@ -80,47 +70,22 @@ describe('Manual grading', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
-    // after('shut down testing server', helperServer.after);
+    after('shut down testing server', helperServer.after);
 
     before('set any student as default user role', () => setStudent(mockStudents[0]));
 
-    describe('students should find hw1 assessments in QA 101, Sp15 course instance', () => {
-        it('students should have access to the assessments page', async () => {
-            const res = await fetch(courseInstanceUrl);
-            assert.equal(res.ok, true);
 
-            ciBody = await res.text();
-            assert.isString(ciBody);
-            assert.include(ciBody, 'Homework for automatic test suite');
-        });
-        it('students should find all hw1 "Homework for automatic test suite" testing links', async () => {
+    describe('Student role: saving student submissions', () => {
+        const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
+        let hm1AutomaticTestSuiteUrl = null;
+
+        before('Fetch student course instance and "HW1: Homework for automatic test suite" URLs', async () => {
+            const ciBody = await (await fetch(studentCourseInstanceUrl)).text();
             const $ciPage = cheerio.load(ciBody);
             hm1AutomaticTestSuiteUrl = siteUrl + $ciPage('a:contains("Homework for automatic test suite")').attr('href');
-            
-            const res = await fetch(hm1AutomaticTestSuiteUrl);
-            assert(res.ok);
 
-            hm1Body = await res.text();
-            assert.isString(hm1Body);
-            assert.include(hm1Body, 'HW1.1. Add two numbers');
-            assert.include(hm1Body, 'HW1.2. Addition of vectors in Cartesian coordinates');
-            assert.include(hm1Body, 'HW1.3. Advantages of fossil fuels (radio)');
-
-            const $hm1Page = cheerio.load(hm1Body);
-            const hm1AddTwoNumbersUrl = siteUrl + $hm1Page('a:contains("HW1.1. Add two numbers")').attr('href');
-            const hm1AddVectorsCartesianUrl = siteUrl + $hm1Page('a:contains("HW1.2. Addition of vectors in Cartesian coordinates")').attr('href');
-            const hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Page('a:contains("HW1.3. Advantages of fossil fuels (radio)")').attr('href');
-
-            // ensure href URLs were found
-            assert.notInclude(hm1AddTwoNumbersUrl, 'undefined');
-            assert.notInclude(hm1AddVectorsCartesianUrl, 'undefined');
-            assert.notInclude(hm1AdvantagesFossilFuelsUrl, 'undefined');
         });
-    });
-
-    describe('students can save and instructors can view manual grading submissions', () => {
-        this.timeout(20000);
-        it('students should be able to save submissions on instance questions', async () => {
+        it('Students should be able to save submissions on instance questions', async () => {
             // 'save' 1 answer for each question for each mock students; 1 x 3 x 3 = 9 submissions
             for await(const student of mockStudents) {
                 setStudent(student);
@@ -130,6 +95,10 @@ describe('Manual grading', function() {
         
                 const hm1Body = await res.text();
                 assert.isString(hm1Body);
+
+                assert.include(hm1Body, 'HW1.1. Add two numbers');
+                assert.include(hm1Body, 'HW1.2. Addition of vectors in Cartesian coordinates');
+                assert.include(hm1Body, 'HW1.3. Advantages of fossil fuels (radio)');
 
                 const $hm1Body = cheerio.load(hm1Body);
                 const hm1AddTwoNumbersUrl = siteUrl + $hm1Body('a:contains("HW1.1. Add two numbers")').attr('href');
@@ -154,7 +123,7 @@ describe('Manual grading', function() {
                 });
             }
         });
-        it('submissions table should contain 9x ungraded student submissions', async () => {
+        it('DB should contain 9 submissions (1 per question x 3 students for 3 questions = 9 submissions)', async () => {
             const context = await sqldb.queryAsync(sql.get_all_submissions, []);
             const groupedByStudent = {};
 
@@ -171,7 +140,9 @@ describe('Manual grading', function() {
         });
     });
 
-    describe('Instructors can grade submissions', () => {
+    describe('Instructor role: grading student submissions', () => {
+        const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
+
         let iciBody = null;
         let manualGradingUrl = null;
         let $manualGradingPage = null;
@@ -200,7 +171,7 @@ describe('Manual grading', function() {
             );
         });
 
-        it('instructors should be able to see 9 ungraded submissions', async () => {
+        it('Instructor role should see 9 ungraded submissions', async () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 3);
             assert.equal($addVectorsRow('.ungraded-value').text(), 3);
             assert.equal($fossilFuelsRow('.ungraded-value').text(), 3);
@@ -208,12 +179,12 @@ describe('Manual grading', function() {
             assert.equal($addVectorsRow('.graded-value').text(), 0);
             assert.equal($fossilFuelsRow('.graded-value').text(), 0);
         });
-        it('instructor should see "Grade Next" option for 3 testing questions', () => {
+        it('Instructor can see "Grade Next" option for the 3 questions with submissions', () => {
             assert.isNotNull($addNumbersRow('.grade-next-value').attr('href'));
             assert.isNotNull($addVectorsRow('.grade-next-value').attr('href'));
             assert.isNotNull($fossilFuelsRow('.grade-next-value').attr('href'));
         });
-        it('instructor user id should be added to instance question when submission opened for manual grading', async () => {
+        it('Instructor user id should be added to instance question when submission opened for grading', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const redirectUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
@@ -226,18 +197,18 @@ describe('Manual grading', function() {
             const user = (await sqldb.queryOneRowAsync(sql.get_user_by_uin, {uin: mockInstructors[0].authUin})).rows[0];
             assert.equal(instanceQuestion.manual_grading_user, user.user_id);
         });
-        it('instructor should see warning message when loading instance_question being manually graded by another instructor', async () => {
+        it('Instructor should see warning message when grading question also being graded by another instructor', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
 
-            // iq is set with manual grading user (Dev User) on open
+            // instructor 1 opens question
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
-            // open with different user
+            // instructor 2 opens question
             setInstructor(mockInstructors[1]);
             const iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
             assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
         });
-        it('instructor should see grading conflict view if view open for two users and both users submit manual grade', async () => {
+        it('Instructor should get grading conflict view if two instructors submit grades to same question when being graded by two instructors', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
@@ -269,7 +240,7 @@ describe('Manual grading', function() {
                 assessmentQuestionId: $iqManualGradingPage2('form > input[name="assessmentQuestionId"]').val(),
             };
 
-            // this submission results in a modified_at iq update 
+            // instructor 1 submits a grade
             setInstructor(mockInstructors[0]);
             const submission1 = await fetch(iqManualGradingUrl, {
                 method: 'POST',
@@ -277,7 +248,7 @@ describe('Manual grading', function() {
                 body: querystring.encode(payload1),
             });
 
-            // as iq.modified_at happened after this grading job is submitted, grading conflict exists
+            // instructor 2 submits a grade
             setInstructor(mockInstructors[1]);
             const submission2 = await fetch(iqManualGradingUrl, {
                 method: 'POST',
@@ -292,7 +263,7 @@ describe('Manual grading', function() {
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             assert.isTrue(instanceQuestion.manual_grading_conflict);
 
-            // first instructor submits and redirects away from page
+            // instructor 1 sees a new question to grade
             const submission1Body = await submission1.text();
             assert.equal(submission1.status, 200);
             assert.notEqual(submission1.url, iqManualGradingUrl);
@@ -300,7 +271,7 @@ describe('Manual grading', function() {
             assert.notInclude(submission1Body, 'Current Grade');
             assert.notInclude(submission1Body, 'Previous Grade');
 
-            // second instructor submits and redirects back to same page to resolve conflict
+            // instructor 2 redirects back to same page to resolve conflict
             const submission2Body = await submission2.text();
             assert.equal(submission2.status, 200);
             assert.equal(submission2.url, iqManualGradingUrl);
