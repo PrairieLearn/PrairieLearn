@@ -80,6 +80,5 @@
                 }
             ]
         }
-    ],
-    "text": "For this quiz you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+    ]
 }
