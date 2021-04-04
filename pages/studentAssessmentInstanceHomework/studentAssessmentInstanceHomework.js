@@ -49,7 +49,7 @@ router.get('/', asyncHandler(async (req, res, next) => {
         assessment_instance_id: res.locals.assessment_instance.id,
         user_id: res.locals.user.user_id,
     };
-    const result = sqldb.queryAsync(sql.get_questions, params);
+    const result = await sqldb.queryAsync(sql.get_questions, params);
     res.locals.questions = result.rows;
     debug('number of questions:', res.locals.questions.length);
 
