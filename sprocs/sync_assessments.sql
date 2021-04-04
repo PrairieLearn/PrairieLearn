@@ -142,6 +142,7 @@ BEGIN
             max_points = (valid_assessment.data->>'max_points')::double precision,
             auto_close = (valid_assessment.data->>'auto_close')::boolean,
             text = valid_assessment.data->>'text',
+            html = valid_assessment.data->>'html',
             assessment_set_id = aggregates.assessment_set_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,

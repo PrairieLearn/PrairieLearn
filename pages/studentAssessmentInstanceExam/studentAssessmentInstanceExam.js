@@ -1,6 +1,7 @@
 const util = require('util');
 const ERR = require('async-stacktrace');
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const router = express.Router();
 
 const error = require('@prairielearn/prairielib/error');
@@ -59,34 +60,27 @@ router.post('/', function(req, res, next) {
     }
 });
 
-router.get('/', function(req, res, next) {
+router.get('/', asyncHandler(async (req, res, next) => {
     if (res.locals.assessment.type !== 'Exam') return next();
 
-    var params = {assessment_instance_id: res.locals.assessment_instance.id};
-    sqldb.query(sql.select_instance_questions, params, function(err, result) {
-        if (ERR(err, next)) return;
-        res.locals.instance_questions = result.rows;
-
-        assessment.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
-            if (ERR(err, next)) return;
-            res.locals.assessment_text_templated = assessment_text_templated;
-
-            res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
-            res.locals.savedAnswers = 0;
-            res.locals.suspendedSavedAnswers = 0;
-            res.locals.instance_questions.forEach((question) => {
-                if (question.status == 'saved') {
-                    if (question.allow_grade_left_ms > 0) {
-                        res.locals.suspendedSavedAnswers++;
-                    } else {
-                        res.locals.savedAnswers++;
-                    }
-                }
-            });
-            
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        });
+    const params = {assessment_instance_id: res.locals.assessment_instance.id};
+    const result = await sqldb.queryAsync(sql.select_instance_questions, params);
+    res.locals.instance_questions = result.rows;
+    res.locals.assessment_text_templated = assessment.renderHtmlOrText(res.locals.assessment, res.locals.urlPrefix);
+    res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
+    res.locals.savedAnswers = 0;
+    res.locals.suspendedSavedAnswers = 0;
+    res.locals.instance_questions.forEach((question) => {
+        if (question.status == 'saved') {
+            if (question.allow_grade_left_ms > 0) {
+                res.locals.suspendedSavedAnswers++;
+            } else {
+                res.locals.savedAnswers++;
+            }
+        }
     });
-});
+    
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+}));
 
 module.exports = router;

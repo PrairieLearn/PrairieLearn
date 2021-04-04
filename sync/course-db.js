@@ -220,6 +220,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {boolean} shuffleQuestions
  * @property {AssessmentAllowAccess[]} allowAccess
  * @property {string} text
+ * @property {string} html
  * @property {number} maxPoints
  * @property {boolean} autoClose
  * @property {Zone[]} zones
@@ -286,6 +287,11 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {InfoFile<Course>} course
  * @property {{ [qid: string]: InfoFile<Question> }} questions
  * @property {{ [ciid: string]: CourseInstanceData }} courseInstances
+ */
+
+/**
+ * @template T
+ * @typedef {(options: { info: InfoFile<T>, coursePath: string, filePath: string }) => Promise<void>} TransformFunction
  */
 
 /**
@@ -686,11 +692,20 @@ module.exports.loadCourseInfo = async function(coursePath) {
  * @param {string} options.filePath
  * @param {any} options.defaults
  * @param {any} options.schema
- * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
+ * @param {TransformFunction<T>} [options.transform]
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
+ * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
  * @returns {Promise<InfoFile<T>>}
  */
-async function loadAndValidateJson({ coursePath, filePath, defaults, schema, validate, tolerateMissing }) {
+async function loadAndValidateJson({
+    coursePath,
+    filePath,
+    defaults,
+    schema,
+    transform,
+    validate,
+    tolerateMissing,
+}) {
     // perf.start(`loadandvalidate:${filePath}`);
     const loadedJson = await module.exports.loadInfoFile({
         coursePath,
@@ -707,6 +722,10 @@ async function loadAndValidateJson({ coursePath, filePath, defaults, schema, val
     }
     if (infofile.hasErrors(loadedJson)) {
         return loadedJson;
+    }
+
+    if (transform) {
+        await transform({ info: loadedJson, coursePath, filePath });
     }
 
     const validationResult = await validate(loadedJson.data);
@@ -729,11 +748,21 @@ async function loadAndValidateJson({ coursePath, filePath, defaults, schema, val
  * @param {string} options.infoFilename
  * @param {any} options.defaultInfo
  * @param {object} options.schema
- * @param {boolean} [options.recursive] - Whether or not info files should be searched for recursively
+ * @param {TransformFunction<T>} [options.transform] - Optional function to transform the loaded info
  * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
+ * @param {boolean} [options.recursive] - Whether or not info files should be searched for recursively
  * @returns {Promise<{ [id: string]: InfoFile<T> }>}
  */
-async function loadInfoForDirectory({ coursePath, directory, infoFilename, defaultInfo, schema, validate, recursive = false }) {
+async function loadInfoForDirectory({
+    coursePath,
+    directory,
+    infoFilename,
+    defaultInfo,
+    schema,
+    transform,
+    validate,
+    recursive = false,
+}) {
     // Recursive lookup might not be enabled for some info types - if it's
     // disabled, we'll still utilize the same recursive function, but the
     // recursive function won't actually recurse.
@@ -752,6 +781,7 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
                 filePath: infoFilePath,
                 defaults: defaultInfo,
                 schema,
+                transform,
                 validate,
                 // If we aren't operating in recursive mode, we want to ensure
                 // that missing files are correctly reflected as errors.
@@ -856,6 +886,28 @@ function checkAllowAccessDates(rule) {
         errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
     }
     return errors;
+}
+
+/**
+ * "Tranforms" a loaded assessment by attempting to enrich it with an
+ * `assessment.html` file adjacent to `infoAssesment.json`. If found, it will
+ * be stored in the `html` property of the info file.
+ * 
+ * @type {TransformFunction<Assessment>}
+ */
+async function transformAssessment({ info, coursePath, filePath }) {
+    const assessmentPath = path.parse(filePath).dir;
+    const assessmentHtmlPath = path.join(coursePath, assessmentPath, 'assessment.html');
+    try {
+        info.data.html = await fsPromises.readFile(assessmentHtmlPath, 'utf-8');
+    } catch (e) {
+        if (e.code === 'ENOENT') {
+            // The file wasn't found; this is normal.
+            return;
+        }
+        // Something unusual happened, record it as an error
+        infofile.addError(info, `Could not read assessment.html: ${e}`);
+    }
 }
 
 /**
@@ -1061,6 +1113,7 @@ module.exports.loadAssessments = async function(coursePath, courseInstance, ques
         infoFilename: 'infoAssessment.json',
         defaultInfo: DEFAULT_ASSESSMENT_INFO,
         schema: schemas.infoAssessment,
+        transform: transformAssessment,
         validate: validateAssessmentWithQuestions,
         recursive: true,
     });

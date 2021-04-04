@@ -63,6 +63,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         max_points: assessment.maxPoints,
         set_name: assessment.set,
         text: assessment.text,
+        html: assessment.html,
         constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         group_work: !!assessment.groupWork,
         group_max_size: assessment.groupMaxSize || null,

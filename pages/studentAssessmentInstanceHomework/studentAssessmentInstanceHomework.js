@@ -1,6 +1,7 @@
 const util = require('util');
 const ERR = require('async-stacktrace');
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -34,44 +35,39 @@ const ensureUpToDate = (locals, callback) => {
     });
 };
 
-router.get('/', function(req, res, next) {
+const ensureUpToDateAsync = util.promisify(ensureUpToDate);
+
+router.get('/', asyncHandler(async (req, res, next) => {
     debug('GET');
     if (res.locals.assessment.type !== 'Homework') return next();
     debug('is Homework');
 
-    ensureUpToDate(res.locals, (err) => {
-        if (ERR(err, next)) return;
+    await ensureUpToDateAsync(res.locals);
 
-        debug('selecting questions');
-        var params = {
-            assessment_instance_id: res.locals.assessment_instance.id,
-            user_id: res.locals.user.user_id,
-        };
-        sqldb.query(sql.get_questions, params, function(err, result) {
+    debug('selecting questions');
+    var params = {
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+    };
+    const result = sqldb.queryAsync(sql.get_questions, params);
+    res.locals.questions = result.rows;
+    debug('number of questions:', res.locals.questions.length);
+
+    debug('rendering assessment text');
+    res.locals.assessment_text_templated = assessment.renderHtmlOrText(res.locals.assessment, res.locals.urlPrefix);
+    debug('rendering EJS');
+    if (res.locals.assessment.group_work) {
+        sqldb.query(sql.get_group_info, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.questions = result.rows;
-            debug('number of questions:', res.locals.questions.length);
-
-            debug('rendering assessment text');
-            assessment.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
-                if (ERR(err, next)) return;
-                res.locals.assessment_text_templated = assessment_text_templated;
-                debug('rendering EJS');
-                if (res.locals.assessment.group_work) {
-                    sqldb.query(sql.get_group_info, params, function(err, result) {
-                        if (ERR(err, next)) return;
-                        res.locals.group_info = result.rows;
-                        if (res.locals.group_info[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));
-                        res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
-                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                    });
-                } else {
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                }
-            });
+            res.locals.group_info = result.rows;
+            if (res.locals.group_info[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));
+            res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
-    });
-});
+    } else {
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    }
+}));
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
