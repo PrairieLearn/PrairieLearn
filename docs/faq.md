@@ -138,25 +138,24 @@ To make a cheatsheet available to students, place the cheatsheet inside of eithe
     - Useful if the cheatsheet should only be available for that specific assessment.
     - Located where the `infoAssessment.json` file can be found.
 
-Next, within the `infoAssessment.json` for the exam, add the `text` entry with
-the following:
+Next, within the exam's directory (adjacent to `infoAssessment.json`), create an `assessment.html` file.
 
 For cheatsheets in `clientFilesCourse`, use:
 
-```
-"text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesCourse %>/formulas.pdf\">PDF version</a></li>"
+```html
+For this assessment you can use the <a href="{{ client_files_course }}/formulas.pdf">formula sheet</a>.
 ```
 
 Otherwise, for cheatsheets in `clientFilesAssessment`, use:
 
-```
-"text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
+```html
+For this assessment you can use the <a href="{{ client_files_assessment }}/formulas.pdf">formula sheet</a>.
 ```
 
 To learn more about where files are stored, please see 
 [clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/). 
 For an implementation, please see 
-[Exam 1](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/assessments/exam1/infoAssessment.json#L34) 
+[Exam 1](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/assessments/exam1/assessment.html) 
 in the example course.
 
 ## How can I reference material in `serverFilesQuestion` and `clientFilesQuestion` from the `server.py`?

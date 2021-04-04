@@ -296,3 +296,11 @@ The text of the honor code was based on the University of Maryland's [Honor Pled
 Some instructors may wish to publish links that point students directly to their assessments on PrairieLearn. These links may be published in course web pages, LMS systems like Compass or Canvas, or sent to students via email or other messaging platforms. Instructors should note that the URL listed on the browser points to the instructor view of an assessment, which is typically not accessible to students.
 
 The appropriate link to provide to students can be found by opening the "Settings" tab of the Assessment. This page includes, among other useful information, a Student Link that can be provided to students. This link points students directly to the specific assessment, enrolling them automatically in the course if they are not yet enrolled.
+
+## Providing instructions for an assessment
+
+To provide instructions or other information to students, create an `assessment.html` adjacent to the `infoAssessment.json` for your assessment. This file will be rendered on a student's assessment page. `client_files_course`, `client_files_course_instance`, and `client_files_assessment` variables can be accessed via Mustache templates to construct links to resources in your course. For example, to provide access to a formula sheet located in `clientFilesCourse/formulas.pdf`, you can add the following to your `assessment.html`:
+
+```html
+For this assessment you can use the <a href="{{ client_files_course }}/formulas.pdf">formula sheet</a>.
+```
