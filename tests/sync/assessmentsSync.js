@@ -67,7 +67,7 @@ describe('Assessment syncing', () => {
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
-  it('allows nesting of assessments in subfolders', async() => {
+  it('allows nesting of assessments in subfolders', async () => {
     const courseData = util.getCourseData();
     const nestedAssessmentStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedQuestion'];
     const assessmentId = nestedAssessmentStructure.join('/');
@@ -77,6 +77,32 @@ describe('Assessment syncing', () => {
 
     const syncedData = await findSyncedAssessment(assessmentId);
     assert.isOk(syncedData);
+  });
+
+  it('syncs assessment.html', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+
+    // Add an `assessment.html` file
+    const ASSESSMENT_HTML_CONTENTS = 'test content';
+    await fs.writeFile(
+      path.join(
+        courseDir,
+        'courseInstances',
+        util.COURSE_INSTANCE_ID,
+        'assessments',
+        'newexam',
+        'assessment.html',
+      ),
+      ASSESSMENT_HTML_CONTENTS,
+    );
+    await util.syncCourseData(courseDir);
+
+    const syncedData = await getSyncedAssessmentData('newexam');
+
+    assert.equal(syncedData.assessment.html, ASSESSMENT_HTML_CONTENTS);
   });
 
   it('adds a new zone to an assessment', async () => {
