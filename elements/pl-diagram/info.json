@@ -1,0 +1,15 @@
+{
+    "controller": "pl-diagram.py",
+    "dependencies": {
+        "elementStyles": [
+            "pl-diagram.css"
+        ],
+        "elementScripts": [
+            "pl-diagram.js",
+            "diagram-editor.js",
+            "pako.min.js"
+        ],
+        "nodeModulesScripts": [
+        ]
+    }
+}
