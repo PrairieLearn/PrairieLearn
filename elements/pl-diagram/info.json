@@ -8,6 +8,8 @@
             "pl-diagram.js",
             "diagram-editor.js",
             "pako.min.js"
+        ],
+        "nodeModulesScripts": [
         ]
     }
 }

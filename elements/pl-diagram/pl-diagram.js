@@ -1,6 +1,3 @@
-//  Data for testing
-
-
 /**Parse string into Document */
 function stringToXML(str) {
     var parser = new DOMParser();
@@ -8,15 +5,12 @@ function stringToXML(str) {
     return doc.documentElement;
 }
 
-function parseMxCellStyle(str) {
-    if (str == null) { return null; }
-    var styleDict = {}
-    var entries = str.split(";");
-    for (let entry of entries) {
-        let keyValPair = entry.split("=", 2);
-        styleDict[keyValPair[0]] = keyValPair[1];
+/** Helper to set list value in dictionary if list exists otherwise set as new empty list  */
+function setDictList(dict, dictKey, listIdx, value, isNode) {
+    if (!(dictKey in dict)) {
+        dict[dictKey] = isNode ? [undefined, undefined] : [undefined, undefined, undefined];
     }
-    return styleDict;
+    dict[dictKey][listIdx] = value;
 }
 
 /** Parse encoded XML diagram returned by draw.io */
@@ -29,35 +23,48 @@ function parseDiagram(data) {
         // Process compressed XML to get the XML representing the graph
         var diagramNode = responseRoot.getElementsByTagName("diagram")[0];
         var compressedXML = diagramNode.textContent
-        compressedXML = atob(compressedXML);  // TODO: Use atob from npm
+        compressedXML = atob(compressedXML);
         compressedXML = data = pako.inflateRaw(Uint8Array.from(compressedXML, c => c.charCodeAt(0)), { to: 'string' });
         compressedXML = decodeURIComponent(compressedXML);
 
         // Process XML representing graph into graph data structure
-        var graphModelNode = stringToXML(compressedXML);
-        console.log(graphModelNode)
-        var graphRoot = graphModelNode.getElementsByTagName("root")[0]
-        var graphComponentList = graphRoot.getElementsByTagName("mxCell"); // Get all mxCell objects to process into graph
         var graph = {
-            nodes: [
-                //{nodeID: nodeName}
-            ],
-            edges: [
-                //[nodeInID, nodeOutID]
-            ]
+            nodes: {
+                //nodeID: [name, output] -- the nodeID is the ID of the container of both the node and node label
+            },
+            edges: {
+                //edgeID: [nodeInID, nodeOutID, transition] -- the nodeID is the ID of the container of both the node and label
+            }
         }
+        var graphModelNode = stringToXML(compressedXML);
+        var graphRoot = graphModelNode.getElementsByTagName("root")[0]
+
+        var graphComponentList = graphRoot.getElementsByTagName("object"); // Get all objects to process into graph
+        // First pass to process nodes
         for (let component of graphComponentList) {
-            var idAttr = component.getAttribute("id");
-            var valueAttr = component.getAttribute("value");
-            var styleAttrs = parseMxCellStyle(component.getAttribute("style"));
-            var nodeInID = component.getAttribute("source");
-            var nodeOutID = component.getAttribute("target");
-            if (nodeInID || nodeOutID) { // Is an edge
-                graph.edges.push([nodeInID, nodeOutID]);
-            } else if (styleAttrs) { // Is a node
-                let node = {};
-                node[idAttr] = valueAttr;
-                graph.nodes.push(node);
+            let elementType = component.getAttribute("elemType");
+            let componentMX = component.getElementsByTagName("mxCell")[0];
+            if (elementType == "node") {
+                let nodeID = componentMX.getAttribute("parent");
+                setDictList(graph.nodes, nodeID, 1, component.getAttribute("label"), true);
+            }
+            else if (elementType == "nodeLabel") {
+                let nodeID = componentMX.getAttribute("parent");
+                setDictList(graph.nodes, nodeID, 0, component.getAttribute("label"), true);
+            }
+        }
+        // Second pass to process edges
+        for (let component of graphComponentList) {
+            let elementType = component.getAttribute("elemType");
+            let componentMX = component.getElementsByTagName("mxCell")[0];
+            if (elementType == "edge") {
+                let edgeID = component.getAttribute("id");
+                setDictList(graph.edges, edgeID, 0, componentMX.getAttribute("source"), false);
+                setDictList(graph.edges, edgeID, 1, componentMX.getAttribute("target"), false);
+            }
+            else if (elementType == "edgeLabel") {
+                let edgeID = componentMX.getAttribute("parent");
+                setDictList(graph.edges, edgeID, 2, component.getAttribute("label"), false);
             }
         }
         var inputElement = document.getElementById("diagramHiddenInput");
