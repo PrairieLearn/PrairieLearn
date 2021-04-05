@@ -81,6 +81,7 @@
         "numeric": "^1.2.6",
         "oauth-signature": "^1.5.0",
         "on-finished": "^2.3.0",
+        "pako": "^2.0.3",
         "parse5": "^6.0.1",
         "passport": "^0.4.1",
         "passport-azure-ad": "^4.3.0",

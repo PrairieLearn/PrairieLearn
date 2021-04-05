@@ -6,10 +6,10 @@
         ],
         "elementScripts": [
             "pl-diagram.js",
-            "diagram-editor.js",
-            "pako.min.js"
+            "diagram-editor.js"
         ],
         "nodeModulesScripts": [
+            "pako/dist/pako.min.js"
         ]
     }
 }
