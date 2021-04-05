@@ -134,6 +134,9 @@ FROM
     select_question_render_cache_stats,
     select_institutions;
 
+-- BLOCK select_all_course_ids
+SELECT id FROM pl_courses WHERE deleted_at IS NOT NULL;
+
 -- BLOCK select_course
 SELECT * FROM pl_courses WHERE id = $course_id;
 

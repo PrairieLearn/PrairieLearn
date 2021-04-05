@@ -225,6 +225,12 @@
             </div>
             <button type="submit" class="btn btn-primary">Generate</button>
           </form>
+          <hr>
+          <form name="generate_all_chunks_form" method="POST">
+            <input type="hidden" name="__action" value="generate_all_chunks">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button type="submit" class="btn btn-danger">Generate chunks for all courses</button>
+          </form>
         </div>
       </div>
 
