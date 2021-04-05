@@ -184,7 +184,8 @@ def render(element_html, data):
             'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
-            'check_indentation': 'enableIndentation' if check_indentation is True else None
+            'check_indentation': 'enableIndentation' if check_indentation is True else None,
+            'uuid': pl.get_uuid()
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:

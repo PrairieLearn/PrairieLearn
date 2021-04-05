@@ -32,6 +32,7 @@ li.ui-state-highlight {
 
 ul.pl-order-blocks-connected-sortable {
     height: 100%;
+    vertical-align: middle;
 }
 
 
@@ -60,6 +61,7 @@ li.list-group-item-header {
     border-radius: 7px;
     font-weight: 600;
     color: #ffffff;
+    text-align: left;
 }
 
 code.user-output {
