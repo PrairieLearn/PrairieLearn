@@ -135,7 +135,7 @@ FROM
     select_institutions;
 
 -- BLOCK select_all_course_ids
-SELECT id FROM pl_courses WHERE deleted_at IS NOT NULL;
+SELECT id FROM pl_courses WHERE deleted_at IS NULL;
 
 -- BLOCK select_course
 SELECT * FROM pl_courses WHERE id = $course_id;
