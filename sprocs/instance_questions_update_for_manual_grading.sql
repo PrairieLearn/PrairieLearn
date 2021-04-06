@@ -37,7 +37,7 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
-    PERFORM assessment_question_assign_manual_grading_user(arg_assessment_question_id, instance_question_id, arg_user_id);
+    PERFORM instance_questions_assign_manual_grading_user(arg_assessment_question_id, instance_question_id, arg_user_id);
 
     SELECT to_jsonb(iq.*)
     INTO instance_question

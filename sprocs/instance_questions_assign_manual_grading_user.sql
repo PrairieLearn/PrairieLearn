@@ -1,8 +1,8 @@
-DROP FUNCTION IF EXISTS assessment_question_assign_manual_grading_user(bigint, bigint, bigint);
+DROP FUNCTION IF EXISTS instance_questions_assign_manual_grading_user(bigint, bigint, bigint);
 
 -- Adds user id to instance question, removes id from any stale/abandoned manual grading fields
 CREATE OR REPLACE FUNCTION
-    assessment_question_assign_manual_grading_user(
+    instance_questions_assign_manual_grading_user(
         IN arg_assessment_question_id bigint,
         IN arg_instance_question_id bigint,
         IN arg_user_id bigint,

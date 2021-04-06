@@ -30,7 +30,7 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
 
-    PERFORM assessment_question_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
+    PERFORM instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
 
     -- conflict df: when TA 'x' submits manual grade while TA 'y' is grading same submission
     IF manual_grading_conflict IS TRUE THEN

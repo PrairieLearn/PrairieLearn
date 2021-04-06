@@ -47,7 +47,7 @@ BEGIN
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
-    PERFORM assessment_question_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
+    PERFORM instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
     PERFORM grading_jobs_insert_manual(last_submission.id, arg_user_id, arg_score, arg_manual_note);
 
     -- Mark grading conflict to resolve in next load of instructorQuestionManualGrading view
