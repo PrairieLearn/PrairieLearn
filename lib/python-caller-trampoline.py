@@ -68,7 +68,15 @@ def worker_loop():
                 outf.write(json_outp)
                 outf.write("\n");
                 outf.flush()
-                break
+                # `sys.exit()` allows the process to gracefully shut down. however, that
+                # makes things much slower than necessary, because we can't reuse this
+                # worker until control returns to the parent, and one or more things we
+                # load into the process take on the order of hundreds of milliseconds to
+                # clean themselves up. `os._exit()` is much closer to a POSIX `exit()`
+                # since it will immediately terminate the process - in our case, we don't
+                # care about graceful termination, we just want to get out of here as
+                # fast as possible.
+                os._exit(0)
 
             # re-seed the PRNGs
             if type(args[-1]) is dict:

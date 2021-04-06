@@ -109,6 +109,27 @@ For practice exams it is often desirable to make a *multiple instance* assessmen
 ## Enabling group work for collaborative assessments
 
 By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
+Information about the group configuration can be set in the `infoAssessment.json` file. For example: 
+```json
+{
+        "groupWork": true,
+        "groupMaxSize": 6,
+        "groupMinSize": 2,
+        "studentGroupCreate": true,
+        "studentGroupJoin": true,
+        "studentGroupLeave": true,
+}
+```
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`groupWork` | boolean | false | Enable the group work for the assessment.
+`groupMaxSize` | integer | - | The maximum size of a group (default: no minimum).
+`groupMinSize` | integer | - | The minimum size of a group (default: no maximum).
+`studentGroupCreate` | boolean | false | Allow students to create groups.
+`studentGroupJoin` | boolean | false | Allow students to join other groups by join code.
+`studentGroupLeave` | boolean | false | Allow students to leave groups.
+
+Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
 
 ### Instructor options for groupWork
 

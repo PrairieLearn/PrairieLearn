@@ -33,15 +33,16 @@
     "zones": [
         {
             "questions": [
-                {"id": "demo/autograder/codeEditor",                   "points": 1, "maxPoints": 5},
-                {"id": "demo/autograder/codeUpload",                   "points": 1, "maxPoints": 5},
-                {"id": "demo/autograder/python/square",                "points": 1, "maxPoints": 5},
-                {"id": "demo/autograder/python/numpy",                 "points": 1, "maxPoints": 5},
-                {"id": "demo/autograder/python/pandas",                "points": 1, "maxPoints": 5},
-                {"id": "demo/autograder/python/plots",                 "points": 1, "maxPoints": 5},
-                {"id": "demo/autograder/python/random",                "points": 1, "maxPoints": 5},
-                {"id": "demo/autograder/python/leadingTrailing",       "points": 1, "maxPoints": 5},
-                {"id": "demo/autograder/ansiOutput",                   "points": 2, "maxPoints": 4}
+                {"id": "demo/autograder/codeEditor",            "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/codeUpload",            "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/square",         "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/numpy",          "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/pandas",         "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/plots",          "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/python/random",         "points": 1, "maxPoints": 5},
+                {"id": "demo/autograder/ansiOutput",            "points": 2, "maxPoints": 4},
+                {"id": "demo/autograder/python/orderBlocksRandomParams",     "points": 1, "maxPoints": 2},
+                {"id": "demo/autograder/python/orderBlocksAddNumpy",         "points": 1, "maxPoints": 2}
             ]
         }
     ]

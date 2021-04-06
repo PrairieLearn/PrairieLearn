@@ -60,10 +60,19 @@
 <div class="card my-2">
   <div class="card-body">
     <pl-question-panel>
-      <p>The integer can also be expected to be provided in a different base.</p>
-      <p> Solve for the value of $c$ given $c = {{params.a16}}_{16} + {{params.b16}}_{16}$ (provide your answer in base $16$). </p>
+      <p>This question uses the <code>blank-answer</code> to specify a value to be used if the user leaves it blank.</p>
+      <p>Solve for the value of $c$ given $c = 0^n$ for $n = 1$ (leave the question blank if the value is zero). </p>
     </pl-question-panel>
-    <pl-integer-input answers-name="c_6" base="16"></pl-integer-input>
+    <pl-integer-input answers-name="c_6" allow-blank="true" blank-value="0" correct-answer="0"></pl-integer-input>
   </div>
 </div>
 
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>The integer can also be expected to be provided in a different base.</p>
+      <p> Solve for the value of $c$ given $c = {{params.a16}}_{16} + {{params.b16}}_{16}$ (provide your answer in base $16$). </p>
+    </pl-question-panel>
+    <pl-integer-input answers-name="c_7" base="16"></pl-integer-input>
+  </div>
+</div>

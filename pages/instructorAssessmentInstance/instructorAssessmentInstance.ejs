@@ -146,7 +146,7 @@
                    id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
-                   data-content="<%= include('editQuestionPointsForm',
+                   data-content="<%= include('../partials/editQuestionPointsForm',
                                  {id: 'editQuestionPoints' + i_instance_question,
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
@@ -163,7 +163,7 @@
                    id="editQuestionScorePerc<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> percentage score"
-                   data-content="<%= include('editQuestionScorePercForm',
+                   data-content="<%= include('../partials/editQuestionScorePercForm',
                                  {id: 'editQuestionScorePerc' + i_instance_question,
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
@@ -248,9 +248,10 @@
         </div>
         <div class="card-body">
           <small>
-            Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
-
             Click on a column header to sort. Shift-click on a second header to sub-sort.
+            Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Uploaded student files are not shown above or in the CSV file.
+            Student files can be downloaded on the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads">Downloads</a> tab.
           </small>
         </div>
 
@@ -311,6 +312,8 @@
         <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Uploaded student files are not shown above or in the CSV file.
+            Student files can be downloaded on the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads">Downloads</a> tab.
           </small>
         </div>
       </div>

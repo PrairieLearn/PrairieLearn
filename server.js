@@ -471,6 +471,10 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'regrading'; next();},
         require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
         function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
         require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
@@ -653,11 +657,20 @@ module.exports.initExpress = function() {
     ]);
 
     // legacy client file paths
+    // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/file', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/text', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/text', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionText/legacyQuestionText'),
     ]);
@@ -705,6 +718,20 @@ module.exports.initExpress = function() {
         require('./middlewares/studentAssessmentAccess'),
         require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
         require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded', [
+        function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
+        require('./pages/instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        require('./middlewares/selectAndAuthzInstanceQuestion'),
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
         require('./middlewares/selectAndAuthzInstanceQuestion'),
@@ -905,11 +932,20 @@ module.exports.initExpress = function() {
     ]);
 
     // legacy client file paths
+    // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
     app.use('/pl/course/:course_id/question/:question_id/file', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
+    app.use('/pl/course/:course_id/question/:question_id/preview/file', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]);
     app.use('/pl/course/:course_id/question/:question_id/text', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]);
+    app.use('/pl/course/:course_id/question/:question_id/preview/text', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionText/legacyQuestionText'),
     ]);
