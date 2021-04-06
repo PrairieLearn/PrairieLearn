@@ -55,7 +55,7 @@ BEGIN
                     ORDER BY s.date DESC, s.id DESC
                     LIMIT 1
                 )
-                AND gj.grading_method = 'ManualBeta'::enum_grading_method
+                AND gj.grading_method = 'Manual'::enum_grading_method
             ORDER BY gj.date DESC, gj.id DESC
             LIMIT 2
         ) grading_jobs;

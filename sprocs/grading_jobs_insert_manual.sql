@@ -36,8 +36,8 @@ BEGIN
     WHERE s.id = arg_submission_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such arg_submission_id: %', arg_submission_id; END IF;
-    IF grading_method != 'ManualBeta'::enum_grading_method THEN
-        RAISE EXCEPTION 'This logic is intended only for Manual Beta grading: %', submission_id;
+    IF grading_method != 'Manual'::enum_grading_method THEN
+        RAISE EXCEPTION 'This logic is intended only for Manual grading: %', submission_id;
     END IF;
 
     -- ######################################################################
@@ -66,7 +66,7 @@ BEGIN
     INSERT INTO grading_jobs AS gj
         (submission_id,  score, feedback, auth_user_id, grading_method, grading_requested_at)
     VALUES
-        (arg_submission_id, arg_manual_grade_score, arg_manual_grade_feedback, arg_authn_user_id, 'ManualBeta'::enum_grading_method, now())
+        (arg_submission_id, arg_manual_grade_score, arg_manual_grade_feedback, arg_authn_user_id, 'Manual'::enum_grading_method, now())
     RETURNING gj.*
     INTO grading_job;
 
@@ -78,7 +78,7 @@ BEGIN
         graded_at = now(),
         score = arg_manual_grade_score,
         feedback = arg_manual_grade_feedback,
-        grading_method = 'ManualBeta'::enum_grading_method
+        grading_method = 'Manual'::enum_grading_method
     WHERE
         s.id = arg_submission_id;
 
