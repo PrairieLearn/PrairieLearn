@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    grading_jobs_insert_external_manual (
+    grading_jobs_insert_external (
         IN submission_id bigint,
         IN authn_user_id bigint,
         OUT grading_job grading_jobs
@@ -28,8 +28,8 @@ BEGIN
     WHERE s.id = submission_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
-    IF grading_method != 'External' AND grading_method != 'Manual' THEN
-        RAISE EXCEPTION 'grading_method is not External or Manual for submission_id: %', submission_id;
+    IF grading_method != 'External' THEN
+        RAISE EXCEPTION 'grading_method is not External for submission_id: %', submission_id;
     END IF;
 
     -- ######################################################################
@@ -39,7 +39,7 @@ BEGIN
         UPDATE grading_jobs AS gj
         SET
             grading_request_canceled_at = now(),
-            grading_request_canceled_by = grading_jobs_insert_external_manual.authn_user_id
+            grading_request_canceled_by = grading_jobs_insert_external.authn_user_id
         FROM
             variants AS v
             JOIN submissions AS s ON (s.variant_id = v.id)

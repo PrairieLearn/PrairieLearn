@@ -120,7 +120,7 @@ module.exports = {
             'grading_job_status.sql',
             'grading_jobs_lock.sql',
             'grading_jobs_insert.sql',
-            'grading_jobs_insert_external_manual.sql',
+            'grading_jobs_insert_external.sql',
             'grading_jobs_insert_internal.sql',
             'grading_jobs_insert_manual.sql',
             'grading_jobs_process_external.sql',

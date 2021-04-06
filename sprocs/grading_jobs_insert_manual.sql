@@ -37,7 +37,7 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such arg_submission_id: %', arg_submission_id; END IF;
     IF grading_method != 'Manual'::enum_grading_method THEN
-        RAISE EXCEPTION 'This logic is intended only for Manual grading: %', submission_id;
+        RAISE EXCEPTION 'grading_method is not External for submission_id: %', submission_id;
     END IF;
 
     -- ######################################################################
