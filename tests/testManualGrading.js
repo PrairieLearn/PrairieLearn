@@ -27,13 +27,31 @@ const setUser = (user) => {
     config.authUin = user.authUin;
 };
 
+const gradeSubmission = async (iqManualGradeUrl, submissionScore, submissionNote) => {
+
+    const $gradingPage = cheerio.load(
+        await (await fetch(iqManualGradeUrl)).text(),
+    );
+    const payload = {
+        instanceQuestionModifiedAt: $gradingPage('form > input[name="instanceQuestionModifiedAt"]').val(),
+        __csrf_token: $gradingPage('form > input[name="__csrf_token"]').val(),
+        __action: $gradingPage('form > div > button[name="__action"]').attr('value'),
+        assessmentId: $gradingPage('form > input[name="assessmentId"]').val(),
+        assessmentQuestionId: $gradingPage('form > input[name="assessmentQuestionId"]').val(),
+        submissionNote,
+        submissionScore,
+    };
+    return fetch(iqManualGradeUrl, {
+            method: 'POST',
+            headers: {'Content-type': 'application/x-www-form-urlencoded'},
+            body: querystring.encode(payload),
+        });
+};
+
 const saveSubmission = async (student, instanceQuestionUrl, payload) => {
     const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
     const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
     const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
-
-    assert.isString(token);
-    assert.isString(variantId);
 
     // __variant_id should exist inside postData on only some instance questions submissions
     if (payload && payload.postData && payload.postData) {
@@ -135,6 +153,7 @@ describe('Manual grading', function() {
         let $fossilFuelsRow = null;
         let gradingConflictUrl = null;
         let manualGradingUrl = null;
+
         beforeEach('set instructor user role', () => setUser(mockInstructors[0]));
         beforeEach('load manual grading page URL and get testing question rows', async () => {
             const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
@@ -215,7 +234,6 @@ describe('Manual grading', function() {
             assert.equal(ungradedVal, 3);
 
             const contributorsCell = $addVectorsRow('.grading-contributors-value').text();
-            
             assert.notInclude(contributorsCell, mockInstructors[0].authUid);
             assert.notInclude(contributorsCell, mockInstructors[1].authUid);
 
@@ -223,30 +241,16 @@ describe('Manual grading', function() {
                 setUser(instructor);
                 const gradeNextAddVectorsUrl = siteUrl + $addVectorsRow('.grade-next-value').attr('href');
                 const iqManualGradingUrl = (await fetch(gradeNextAddVectorsUrl)).url;
-                const $iqManualGradingPage = cheerio.load(
-                    await (await fetch(iqManualGradingUrl)).text(),
-                );
-                const payload1 = {
-                    submissionScore: 90,
-                    submissionNote: 'Amazing work!',
-                    instanceQuestionModifiedAt: $iqManualGradingPage('form > input[name="instanceQuestionModifiedAt"]').val(),
-                    __csrf_token: $iqManualGradingPage('form > input[name="__csrf_token"]').val(),
-                    __action: $iqManualGradingPage('form > div > button[name="__action"]').attr('value'),
-                    assessmentId: $iqManualGradingPage('form > input[name="assessmentId"]').val(),
-                    assessmentQuestionId: $iqManualGradingPage('form > input[name="assessmentQuestionId"]').val(),
-                };
-                const nextPage = await fetch(iqManualGradingUrl, {
-                    method: 'POST',
-                    headers: {'Content-type': 'application/x-www-form-urlencoded'},
-                    body: querystring.encode(payload1),
-                });
+                const nextPage = await gradeSubmission(iqManualGradingUrl, '90', 'Amazing work');
                 assert.equal(nextPage.status, 200);
+
                 const $manualGradingPage = cheerio.load(
                     await (await fetch(manualGradingUrl)).text(),
                 );
                 $addVectorsRow = cheerio.load(
                     $manualGradingPage('.qid-value:contains("addVectors")').parent().html(),
                 );
+
                 const contributorsCell = $addVectorsRow('.grading-contributors-value').text().trim();
                 assert.include(contributorsCell, instructor.authUid);
             }
