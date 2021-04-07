@@ -38,16 +38,17 @@
 
 {{#submission}}
     {{^parse-error}}
-        </p>
         <ul class="list-group answer_block_container  list-group-item-darkmode">
             <li class="list-group-item"><strong>Your answer: </strong>
-        {{#perfect_score}}
-            <span class="badge {{color}}"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
-        {{/perfect_score}}
-        {{^perfect_score}}
-                <span class="badge {{color}}"><i class="fa fa-times" aria-hidden="true"></i>
-        {{score}}%</span> {{feedback}}
-        {{/perfect_score}}
+        {{#correct}}
+            <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+        {{/correct}}
+        {{#partially_correct}}
+            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>{{score}}%</span>{{feedback}}
+        {{/partially_correct}}
+        {{#incorrect}}
+            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>0%</span>{{feedback}}
+        {{/incorrect}}
         </li>
         {{#student_submission}}
         		<li class="list-group-item list-group-item-action list-group-item-darkmode"> {{text}} </li>

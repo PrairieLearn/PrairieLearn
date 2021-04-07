@@ -5,6 +5,7 @@ import chevron
 import base64
 import os
 import json
+import math
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
@@ -21,31 +22,22 @@ WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 7
 
 
-def render_html_color(score):
-    # used to render the correct color depending on student score
-    if score == 0:
-        return 'badge-danger'
-    elif score == 1.0:
-        return 'badge-success'
-    else:
-        return 'badge-warning'
-
-
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
-    pl.check_attribs(element,
-                     required_attribs=['answers-name'],
-                     optional_attribs=['source-blocks-order',
-                                       'grading-method',
-                                       'indentation',
-                                       'source-header',
-                                       'solution-header',
-                                       'file-name',
-                                       'solution-placement',
-                                       'max-incorrect',
-                                       'min-incorrect',
-                                       'weight'])
+    required_attribs = ['answers-name']
+    optional_attribs = ['source-blocks-order',
+                        'grading-method',
+                        'indentation',
+                        'source-header',
+                        'solution-header',
+                        'file-name',
+                        'solution-placement',
+                        'max-incorrect',
+                        'min-incorrect',
+                        'weight']
+
+    pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -188,8 +180,7 @@ def render(element_html, data):
             help_text += '<br>Your answer will be autograded; be sure to indent and order your answer properly.'
 
         if check_indentation:
-            help_text += '<br><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area.'  
-
+            help_text += '<br><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area.'
 
         html_params = {
             'question': True,
@@ -214,14 +205,12 @@ def render(element_html, data):
         # render the submission panel
         uuid = pl.get_uuid()
         student_submission = ''
-        color = 'badge-danger'
         score = 0
         feedback = None
 
         if answer_name in data['submitted_answers']:
             student_submission = data['submitted_answers'][answer_name]['student_raw_submission']
         if answer_name in data['partial_scores']:
-            color = render_html_color(data['partial_scores'][answer_name]['score'])
             score = data['partial_scores'][answer_name]['score'] * 100
             feedback = data['partial_scores'][answer_name]['feedback']
 
@@ -230,11 +219,20 @@ def render(element_html, data):
             'uuid': uuid,
             'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': pretty_print(student_submission),
-            'color': color,
             'score': score,
-            'perfect_score': True if score == 100 else None,
             'feedback': feedback
         }
+
+        try:
+            score = float(score)
+            if score >= 100:
+                html_params['correct'] = True
+            elif score > 0:
+                html_params['partially_correct'] = math.floor(score * 100)
+            else:
+                html_params['incorrect'] = True
+        except Exception:
+            raise ValueError('invalid score: ' + str(score))
 
         # Finally, render the HTML
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
