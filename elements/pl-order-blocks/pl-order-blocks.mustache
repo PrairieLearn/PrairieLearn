@@ -44,10 +44,10 @@
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#partially_correct}}
-            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>{{score}}%</span>{{feedback}}
+            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>{{partially_correct}}%</span>{{feedback}}
         {{/partially_correct}}
         {{#incorrect}}
-            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>0%</span>{{feedback}}
+            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i>0%</span>{{feedback}}
         {{/incorrect}}
         </li>
         {{#student_submission}}

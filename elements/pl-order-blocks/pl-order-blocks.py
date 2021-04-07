@@ -38,7 +38,6 @@ def prepare(element_html, data):
                         'weight']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
-
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     mcq_options = []
@@ -54,6 +53,7 @@ def prepare(element_html, data):
     if grading_method not in accepted_grading_method:
         raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
 
+    index = 0
     for html_tags in element:  # iterate through the tags inside pl-order-blocks, should be <pl-answer> tags
         if html_tags.tag == 'pl-answer':
             if grading_method == 'external':
@@ -62,15 +62,10 @@ def prepare(element_html, data):
                 pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
 
             is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
-            if check_indentation is False:
-                try:
-                    answer_indent = pl.get_string_attrib(html_tags, 'indent')
-                except Exception:
-                    answer_indent = -1
-                else:
-                    raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
-            else:
-                answer_indent = pl.get_integer_attrib(html_tags, 'indent', PL_ANSWER_INDENT_DEFAULT)  # get answer indent, and default to -1 (indent level ignored)
+            answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
+
+            if check_indentation is False and answer_indent is not None:
+                raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
             if is_correct is True:
                 # add option to the correct answer array, along with the correct required indent
                 if pl.get_string_attrib(html_tags, 'ranking', '') != '':
@@ -96,7 +91,9 @@ def prepare(element_html, data):
         correct_answers = [x for _, x in sorted(zip(correct_answers_ranking, correct_answers))]
 
     min_incorrect = pl.get_integer_attrib(element, 'min-incorrect', MIN_INCORRECT_DEFAULT)
+    min_correct   = pl.get_integer_attrib(element, 'min-correct', 1)
     max_incorrect = pl.get_integer_attrib(element, 'max-incorrect', MAX_INCORRECT_DEFAULT)
+    max_orrect    = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
     if ((min_incorrect is None) & (max_incorrect is None)):
         mcq_options = correct_answers + incorrect_answers
@@ -219,7 +216,6 @@ def render(element_html, data):
             'uuid': uuid,
             'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': pretty_print(student_submission),
-            'score': score,
             'feedback': feedback
         }
 
@@ -228,7 +224,7 @@ def render(element_html, data):
             if score >= 100:
                 html_params['correct'] = True
             elif score > 0:
-                html_params['partially_correct'] = math.floor(score * 100)
+                html_params['partially_correct'] = math.floor(score)
             else:
                 html_params['incorrect'] = True
         except Exception:
