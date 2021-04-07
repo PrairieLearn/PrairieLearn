@@ -6,7 +6,7 @@
         <div class="card-header bg-success">Grading Panel</div>
       <% } %>
       <div class="card-body">
-        <% if (typeof submission.graded_by !== 'undefined') { %>
+        <% if (typeof diff !== 'undefined') { %>
           <p class="graded-by">Graded by <%= submission.graded_by %></p>
         <% } %>
         <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>

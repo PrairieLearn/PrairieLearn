@@ -8,7 +8,8 @@ CREATE OR REPLACE FUNCTION
         IN arg_score double precision,
         IN arg_modified_at text,
         IN arg_manual_note jsonb,
-        OUT instance_question jsonb
+        OUT instance_question jsonb,
+        OUT grading_job jsonb
     )
 AS $$
 DECLARE
@@ -29,7 +30,7 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
 
-    IF instance_question_modified_at > arg_modified_at::timestamp THEN
+    IF instance_question_modified_at != arg_modified_at::timestamp THEN
         is_conflict = TRUE;
     END IF;
 
@@ -48,7 +49,7 @@ BEGIN
     LIMIT 1;
 
     PERFORM instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
-    PERFORM grading_jobs_insert_manual(last_submission.id, arg_user_id, arg_score, arg_manual_note);
+    grading_job := to_jsonb(grading_jobs_insert_manual(last_submission.id, arg_user_id, arg_score, arg_manual_note, is_conflict));
 
     -- Mark grading conflict to resolve in next load of instructorQuestionManualGrading view
     UPDATE instance_questions AS iq

@@ -1,10 +1,11 @@
 -- BLOCK instance_questions_select_manual_grading_objects
-DROP FUNCTION IF EXISTS instance_questions_select_manual_grading_objects(bigint, bigint);
+DROP FUNCTION IF EXISTS instance_questions_select_manual_grading_objects(bigint, bigint, bigint);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_select_manual_grading_objects(
         IN arg_instance_question_id bigint,
         IN arg_user_id bigint,
+        IN arg_conflicting_grading_job_id bigint,
         OUT instance_question jsonb,
         OUT question jsonb,
         OUT variant jsonb,
@@ -33,32 +34,26 @@ BEGIN
     PERFORM instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
 
     -- conflict df: when TA 'x' submits manual grade while TA 'y' is grading same submission
-    IF manual_grading_conflict IS TRUE THEN
-        SELECT json_agg(grading_jobs.*) FROM (
-            SELECT gj.score, gj.feedback, CONCAT(u.name, ' (', u.uid, ')') AS graded_by
-            INTO grading_job_conflict
-            FROM
-                grading_jobs AS gj
-                JOIN submissions AS s ON (gj.submission_id = s.id)
-                JOIN variants AS v ON (v.id = s.variant_id)
-                JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-                JOIN users AS u ON (u.user_id = gj.auth_user_id)
-            WHERE
-                gj.submission_id = (
-                    SELECT s.id
-                    FROM submissions AS s
-                        JOIN variants AS v ON (v.id = s.variant_id)
-                        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-                        JOIN users AS u ON (u.user_id = iq.manual_grading_user)
-                    WHERE
-                        iq.id = arg_instance_question_id
-                    ORDER BY s.date DESC, s.id DESC
-                    LIMIT 1
-                )
-                AND gj.grading_method = 'Manual'::enum_grading_method
-            ORDER BY gj.date DESC, gj.id DESC
-            LIMIT 2
-        ) grading_jobs;
+    IF arg_conflicting_grading_job_id IS NOT NULL THEN
+        SELECT json_build_object('score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'))
+        INTO grading_job_conflict
+        FROM 
+            grading_jobs AS gj
+            JOIN users as u ON (u.user_id = gj.auth_user_id)
+        WHERE id = arg_conflicting_grading_job_id;
+    ELSE
+        -- always check if grading conflict needs to be resolved
+        SELECT to_jsonb(gj.*)
+        INTO grading_job_conflict
+        FROM
+            grading_jobs AS gj
+            JOIN submissions AS s ON (s.id = gj.id)
+            JOIN variants AS v ON (v.id = s.variant_id)
+            JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        WHERE
+            iq.id = arg_instance_question_id
+            AND gj.manual_grading_conflict IS TRUE
+        LIMIT 1;
     END IF;
 
     SELECT to_jsonb(iq.*), to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(aq.*)

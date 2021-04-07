@@ -48,7 +48,7 @@ const gradeSubmission = async (iqManualGradeUrl, submissionScore, submissionNote
         });
 };
 
-const saveSubmission = async (student, instanceQuestionUrl, payload) => {
+const saveSubmission = async (instanceQuestionUrl, payload) => {
     const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
     const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
     const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
@@ -112,15 +112,15 @@ describe('Manual grading', function() {
                 const hm1AddVectorsCartesianUrl = siteUrl + $hm1Body('a:contains("HW1.2. Addition of vectors in Cartesian coordinates")').attr('href');
                 const hm1AdvantagesFossilFuelsUrl = siteUrl + $hm1Body('a:contains("HW1.3. Advantages of fossil fuels (radio)")').attr('href');
                 
-                await saveSubmission(student, hm1AddTwoNumbersUrl, {c: 9999999});
-                await saveSubmission(student, hm1AddVectorsCartesianUrl, {
+                await saveSubmission(hm1AddTwoNumbersUrl, {c: 9999999});
+                await saveSubmission(hm1AddVectorsCartesianUrl, {
                     postData: JSON.stringify({
                         submittedAnswer: { wx: '999999', wy: '999999' },
                         variant: { id: null },
                       },
                     ),
                 });
-                await saveSubmission(student, hm1AdvantagesFossilFuelsUrl, {
+                await saveSubmission(hm1AdvantagesFossilFuelsUrl, {
                     postData: JSON.stringify(
                         {
                             variant: { id: null },
@@ -343,19 +343,20 @@ describe('Manual grading', function() {
             assert.equal(submission1.status, 200);
             assert.notEqual(submission1.url, gradingConflictUrl);
             assert.include(submission1Body, 'Grading Panel');
-            assert.notInclude(submission1Body, 'Current Grade');
-            assert.notInclude(submission1Body, 'Previous Grade');
+            assert.notInclude(submission1Body, 'Submission Grade');
+            assert.notInclude(submission1Body, 'Grading Job Grade');
 
             // instructor 2 redirects back to same page to resolve conflict
             const submission2Body = await submission2.text();
             assert.equal(submission2.status, 200);
-            assert.equal(submission2.url, gradingConflictUrl);
+            assert.include(submission2.url, gradingConflictUrl);
             assert.notInclude(submission2Body, 'Grading Panel');
-            assert.include(submission2Body, 'Current Grade');
-            assert.include(submission2Body, 'Previous Grade');
+            assert.include(submission2Body, 'Submission Grade');
+            assert.include(submission2Body, 'Grading Job Grade');
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });
         it('grading conflict should persist when loaded by any instructor', async () => {
+            console.log('URL  y', gradingConflictUrl);
             const gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });

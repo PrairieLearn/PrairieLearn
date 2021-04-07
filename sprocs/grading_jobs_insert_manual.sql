@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION
         IN arg_authn_user_id bigint,
         IN arg_manual_grade_score double precision, -- decimal percent divisible by 5
         IN arg_manual_grade_feedback jsonb,
+        IN arg_is_conflict boolean,
         OUT grading_job grading_jobs
     )
 AS $$
@@ -64,14 +65,18 @@ BEGIN
     -- insert the new grading job
 
     INSERT INTO grading_jobs AS gj
-        (submission_id,  score, feedback, auth_user_id, grading_method, grading_requested_at)
+        (submission_id,  score, feedback, auth_user_id, grading_method, grading_requested_at, manual_grading_conflict)
     VALUES
-        (arg_submission_id, arg_manual_grade_score, arg_manual_grade_feedback, arg_authn_user_id, 'Manual'::enum_grading_method, now())
+        (arg_submission_id, arg_manual_grade_score, arg_manual_grade_feedback, arg_authn_user_id, 'Manual'::enum_grading_method, now(), arg_is_conflict)
     RETURNING gj.*
     INTO grading_job;
 
     -- ######################################################################
-    -- update the submission
+    -- update the submission if no conflict
+
+    IF arg_is_conflict IS TRUE THEN
+        RETURN;
+    END IF;
 
     UPDATE submissions AS s
     SET

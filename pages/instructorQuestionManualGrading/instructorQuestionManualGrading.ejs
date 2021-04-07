@@ -42,10 +42,10 @@
             </div>
           </div>
           <div class="col-lg-6 col-sm-12">
-            <%- include('../partials/instructorGradingPanel', {diff: 'Previous', submission: grading_job_conflict[1], question_context: 'instructor'}); %>
+            <%- include('../partials/instructorGradingPanel', {diff: 'Existing', submission: submission, question_context: 'instructor'}); %>
           </div>
           <div class="col-lg-6 col-sm-12">
-            <%- include('../partials/instructorGradingPanel', {diff: 'Current', submission: grading_job_conflict[0], question_context: 'instructor'}); %>
+            <%- include('../partials/instructorGradingPanel', {diff: 'Updated', submission: grading_job_conflict, question_context: 'instructor'}); %>
           </div>
         <% } %>
 

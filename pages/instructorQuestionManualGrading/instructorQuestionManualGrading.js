@@ -16,6 +16,7 @@ router.get('/', (req, res, next) => {
             const params = [
                 res.locals.instance_question.id,
                 res.locals.authn_user.user_id,
+                res.locals.conflicting_grading_job_id,
             ];
             sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
                 if (ERR(err, next)) return;
@@ -39,6 +40,17 @@ router.get('/', (req, res, next) => {
                 res.locals.submission = result.rows[0].submission;
                 res.locals.grading_user = result.rows[0].grading_user;
                 res.locals.grading_job_conflict = result.rows[0].grading_job_conflict;
+
+                if (res.locals.grading_job_conflict) {
+                    res.locals.grading_job_diff = {
+                        submission: {
+                            feedback: result.rows[0].submission.feedback,
+                            score: result.rows[0].submission.score,
+                            graded_by: `${result.rows[0].grading_user.name} ( ${result.rows[0].grading_user.uid} )`,
+                        },
+                        grading_job: result.rows[0].grading_job_conflict,
+                    };
+                }
 
                 callback(null);
             });
@@ -75,8 +87,8 @@ router.post('/', function(req, res, next) {
     if (req.body.__action == 'add_manual_grade') {
         sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err, result) => {
             if (ERR(err, next)) return;
-            if (result.rows[0].instance_question.manual_grading_conflict) {
-                return res.redirect(`${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/manual_grading`);
+            if (result.rows[0].grading_job.manual_grading_conflict) {
+                return res.redirect(`${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/manual_grading?conflicting_grading_job=${result.rows[0].grading_job.id}`);
             }
             res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
         });
