@@ -157,6 +157,8 @@ def render(element_html, data):
         source_header = pl.get_string_attrib(element, 'source-header', SOURCE_HEADER_DEFAULT)
         solution_header = pl.get_string_attrib(element, 'solution-header', SOLUTION_HEADER_DEFAULT)
 
+        grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
+
         student_submission_dict_list = []
 
         mcq_options = data['params'][answer_name]
@@ -176,6 +178,19 @@ def render(element_html, data):
 
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
 
+        help_text = 'Drag answer tiles into the answer area to the ' + dropzone_layout + '. '
+
+        if grading_method == 'unordered':
+            help_text += '<br>Your answer ordering does not matter. '
+        elif grading_method != 'external':
+            help_text += '<br>The ordering of your answer matters and is graded.'
+        else:
+            help_text += '<br>Your answer will be autograded; be sure to indent and order your answer properly.'
+
+        if check_indentation:
+            help_text += '<br><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area.'  
+
+
         html_params = {
             'question': True,
             'answer_name': answer_name,
@@ -185,7 +200,8 @@ def render(element_html, data):
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'enableIndentation' if check_indentation is True else None,
-            'uuid': pl.get_uuid()
+            'uuid': pl.get_uuid(),
+            'help_text': help_text
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
