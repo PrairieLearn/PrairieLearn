@@ -303,11 +303,13 @@ def grade(element_html, data):
         return
 
     if grading_mode == 'unordered':
+        student_answer = filter_keys_from_array(student_answer, 'inner_html')
         correct_selections = list(set(student_answer) & set(true_answer_list))
         incorrect_selections = list(set(student_answer) - set(true_answer_list))
         final_score = float((len(correct_selections) - len(incorrect_selections)) / len(true_answer_list))
         final_score = max(0.0, final_score)  # scores cannot be below 0
     elif grading_mode == 'ordered':
+        student_answer = filter_keys_from_array(student_answer, 'inner_html')
         final_score = 1.0 if student_answer == true_answer_list else 0.0
     elif grading_mode == 'ranking':
         ranking = filter_keys_from_array(data['submitted_answers'][answer_name], 'ranking')
