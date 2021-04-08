@@ -12,121 +12,102 @@ PL_ANSWER_INDENT_DEFAULT = -1
 INDENTION_DEFAULT = False
 SOURCE_BLOCKS_ORDER_DEFAULT = 'random'
 GRADING_METHOD_DEFAULT = 'ordered'
-MIN_INCORRECT_DEFAULT = None
-MAX_INCORRECT_DEFAULT = None
 SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Drop blocks here:'
 FILE_NAME_DEFAULT = 'user_code.py'
 SOLUTION_PLACEMENT_DEFAULT = 'right'
 WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 7
+TAB_SIZE_PX = 50
+
+
+def filter_keys_from_array(data, key):
+    result = []
+    for item in data:
+        result.append(item[key])
+    return result
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-
-    required_attribs = ['answers-name']
-    optional_attribs = ['source-blocks-order',
-                        'grading-method',
-                        'indentation',
-                        'source-header',
-                        'solution-header',
-                        'file-name',
-                        'solution-placement',
-                        'max-incorrect',
-                        'min-incorrect',
-                        'weight']
-
-    pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
-    mcq_options = []
-    html_ordering = []
+    required_attribs = ['answers-name']
+    optional_attribs = ['source-blocks-order', 'grading-method', 'indentation', 'source-header', 'solution-header', 'file-name', 'solution-placement', 'max-incorrect', 'min-incorrect', 'weight']
+
+    pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
+
     correct_answers = []
-    correct_answers_indent = []
-    correct_answers_ranking = []
     incorrect_answers = []
 
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
+
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'external']
     if grading_method not in accepted_grading_method:
         raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
 
     index = 0
-    for html_tags in element:  # iterate through the tags inside pl-order-blocks, should be <pl-answer> tags
-        if html_tags.tag == 'pl-answer':
-            if grading_method == 'external':
-                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
-            else:
-                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
+    for html_tags in element:  # iterate through the html tags inside pl-order-blocks, should be all <pl-answer> tags
+        if html_tags.tag != 'pl-answer':
+            raise Exception('Any html tags nested inside <pl-order-blocks> must be <pl-answer>.')
 
-            is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
-            answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
-
-            if check_indentation is False and answer_indent is not None:
-                raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
-            if is_correct is True:
-                # add option to the correct answer array, along with the correct required indent
-                if pl.get_string_attrib(html_tags, 'ranking', '') != '':
-                    ranking = pl.get_string_attrib(html_tags, 'ranking')
-                    try:
-                        ranking = int(ranking) - 1
-                    except ValueError:
-                        raise Exception('Ranking specified in <pl-answer> is not a number.')
-                    correct_answers_ranking.append(ranking)
-                correct_answers.append(html_tags.text)
-                correct_answers_indent.append(answer_indent)
-            else:
-                incorrect_answers.append(html_tags.text)
-            html_ordering.append(html_tags.text)
+        if grading_method == 'external':
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
         else:
-            raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
+
+        is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
+        answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
+        inner_html = pl.inner_html(html_tags)
+        ranking = pl.get_integer_attrib(html_tags, 'ranking', -1) - 1
+
+        answer_data_dict = {'inner_html': inner_html,
+                            'indent': answer_indent,
+                            'ranking': ranking,
+                            'index': index}
+
+        if check_indentation is False and answer_indent is not None:
+            raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
+
+        if is_correct:
+            correct_answers.append(answer_data_dict)
+        else:
+            incorrect_answers.append(answer_data_dict)
+        index += 1
 
     if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
 
-    if (correct_answers_ranking != sorted(correct_answers_ranking)):
-        # sort correct answers by indices specified in corect_answers_ranking
-        correct_answers = [x for _, x in sorted(zip(correct_answers_ranking, correct_answers))]
+    # default to display all incorrect answers, so min_correct == max_correct
+    max_incorrect = pl.get_integer_attrib(element, 'max-incorrect', len(incorrect_answers))
+    min_incorrect = pl.get_integer_attrib(element, 'min-incorrect', max_incorrect)
 
-    min_incorrect = pl.get_integer_attrib(element, 'min-incorrect', MIN_INCORRECT_DEFAULT)
-    min_correct   = pl.get_integer_attrib(element, 'min-correct', 1)
-    max_incorrect = pl.get_integer_attrib(element, 'max-incorrect', MAX_INCORRECT_DEFAULT)
-    max_orrect    = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
+    # min_correct_WIP = pl.get_integer_attrib(element, 'min-correct', 1)
+    # max_correct_WIP = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
-    if ((min_incorrect is None) & (max_incorrect is None)):
-        mcq_options = correct_answers + incorrect_answers
-    else:
-        # Setting default for min-correct and checking for correct interval
-        if min_incorrect is None:
-            min_incorrect = 1
-        else:
-            if min_incorrect > len(incorrect_answers):
-                raise Exception('min-incorrect must be less than or equal to the number of incorrect <pl-answers>.')
-        # Setting default for max-correct and checking for correct interval
-        if max_incorrect is None:
-            max_incorrect = len(incorrect_answers)
-        else:
-            if max_incorrect > len(incorrect_answers):
-                raise Exception('max-incorrect must be less than or equal to the number of incorrect <pl-answers>.')
-        if min_incorrect > max_incorrect:
-            raise Exception('min-incorrect must be smaller than max-incorrect.')
-        incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
-        mcq_options = correct_answers + random.sample(incorrect_answers, incorrect_answers_count)
+    if min_incorrect > len(incorrect_answers) or max_incorrect > len(incorrect_answers):
+        raise Exception('The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>.')
+    if min_incorrect > max_incorrect:
+        raise Exception('The attribute min-incorrect must be smaller than max-incorrect.')
+
+    incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
+
+    sampled_correct_answers = correct_answers
+    sampled_incorrect_answers = random.sample(incorrect_answers, incorrect_answers_count)
+
+    mcq_options = sampled_correct_answers + sampled_incorrect_answers
 
     source_blocks_order = pl.get_string_attrib(element, 'source-blocks-order', SOURCE_BLOCKS_ORDER_DEFAULT)
-
     if source_blocks_order == 'random':
         random.shuffle(mcq_options)
     elif source_blocks_order == 'ordered':
-        mcq_options = html_ordering
+        mcq_options.sort(key=lambda a: a['index'])
     else:
         raise Exception('the selected option for "source-blocks-order" does not exist.')
 
-    data['params'][answer_name] = mcq_options
-    data['correct_answers'][answer_name] = {'correct_answers': correct_answers,
-                                            'correct_answers_indent': correct_answers_indent}
+    data['params'][answer_name] = filter_keys_from_array(mcq_options, 'inner_html')
+    data['correct_answers'][answer_name] = correct_answers
 
 
 def render(element_html, data):
@@ -134,21 +115,15 @@ def render(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     if data['panel'] == 'question':
-        mcq_options = []   # stores MCQ options
+        mcq_options = []
         student_previous_submission = []
         submission_indent = []
-
-        for html_tags in element:
-            if html_tags.tag == 'pl-answer':
-                mcq_options.append(html_tags.text)   # store the original specified ordering of all the MCQ options
+        student_submission_dict_list = []
 
         answer_name = pl.get_string_attrib(element, 'answers-name')
         source_header = pl.get_string_attrib(element, 'source-header', SOURCE_HEADER_DEFAULT)
         solution_header = pl.get_string_attrib(element, 'solution-header', SOLUTION_HEADER_DEFAULT)
-
         grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
-
-        student_submission_dict_list = []
 
         mcq_options = data['params'][answer_name]
 
@@ -157,14 +132,12 @@ def render(element_html, data):
             mcq_options = list(set(mcq_options) - set(student_previous_submission))
 
         for index, mcq_options_text in enumerate(student_previous_submission):
-            # render the answers column (restore the student submission)
             submission_indent = data['submitted_answers'][answer_name]['student_answer_indent'][index]
-            submission_indent = (int(submission_indent) * 50) + INDENT_OFFSET
+            submission_indent = (int(submission_indent) * TAB_SIZE_PX) + INDENT_OFFSET
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
 
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
-
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
 
         help_text = 'Drag answer tiles into the answer area to the ' + dropzone_layout + '. '
@@ -188,7 +161,6 @@ def render(element_html, data):
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'enableIndentation' if check_indentation is True else None,
-            'uuid': pl.get_uuid(),
             'help_text': help_text
         }
 
@@ -198,9 +170,8 @@ def render(element_html, data):
 
     elif data['panel'] == 'submission':
         if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
-            return ''
-        # render the submission panel
-        uuid = pl.get_uuid()
+            return 'Your result is externally graded. Check the external grader for your score.'
+
         student_submission = ''
         score = 0
         feedback = None
@@ -208,19 +179,18 @@ def render(element_html, data):
         if answer_name in data['submitted_answers']:
             student_submission = data['submitted_answers'][answer_name]['student_raw_submission']
         if answer_name in data['partial_scores']:
-            score = data['partial_scores'][answer_name]['score'] * 100
+            score = data['partial_scores'][answer_name]['score']
             feedback = data['partial_scores'][answer_name]['feedback']
 
         html_params = {
             'submission': True,
-            'uuid': uuid,
             'parse-error': data['format_errors'].get(answer_name, None),
-            'student_submission': pretty_print(student_submission),
+            'student_submission': student_submission,
             'feedback': feedback
         }
 
         try:
-            score = float(score)
+            score = float(score * 100)
             if score >= 100:
                 html_params['correct'] = True
             elif score > 0:
@@ -228,9 +198,8 @@ def render(element_html, data):
             else:
                 html_params['incorrect'] = True
         except Exception:
-            raise ValueError('invalid score: ' + str(score))
+            raise ValueError('invalid score: ' + data['partial_scores'][answer_name]['score'])
 
-        # Finally, render the HTML
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params)
         return html
@@ -255,7 +224,7 @@ def render(element_html, data):
         if answer_name in data['correct_answers']:
             html_params = {
                 'true_answer': True,
-                'question_solution': pretty_print(data['correct_answers'][answer_name]['correct_answers']),
+                'question_solution': filter_keys_from_array(data['correct_answers'][answer_name], 'inner_html'),
                 'grading_mode': grading_mode,
                 'check_indentation': check_indentation
             }
@@ -266,25 +235,13 @@ def render(element_html, data):
             return ''
 
 
-def pretty_print(array):
-    if array is None:
-        return None
-    pretty_print_answer = []
-    for text in array:
-        temp = {'text': text}
-        pretty_print_answer.append(dict(temp))
-    return pretty_print_answer
-
-
 def parse(element_html, data):
+    # FIX ME
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     temp = answer_name
     temp += '-input'
-    # the answer_name textfields that raw-submitted-answer reads from
-    # have '-input' appended to their name attribute
-
     student_answer_temp = ''
     if temp in data['raw_submitted_answers']:
         student_answer_temp = data['raw_submitted_answers'][temp]
@@ -347,10 +304,11 @@ def grade(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     student_answer = data['submitted_answers'][answer_name]['student_raw_submission']
-    student_answer_indent = data['submitted_answers'][answer_name]['student_answer_indent']
     grading_mode = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
-    true_answer = data['correct_answers'][answer_name]['correct_answers']
-    true_answer_indent = data['correct_answers'][answer_name]['correct_answers_indent']
+    check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
+    answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+
+    true_answer_list = filter_keys_from_array(data['correct_answers'][answer_name], 'inner_html')
 
     indent_score = 0
     final_score = 0
@@ -361,35 +319,31 @@ def grade(element_html, data):
         return
 
     if grading_mode == 'unordered':
-        intersection = list(set(student_answer) & set(true_answer))
-        incorrect_answers = list(set(student_answer) - set(true_answer))
-        final_score = float((len(intersection) - len(incorrect_answers)) / len(true_answer))
+        correct_selections = list(set(student_answer) & set(true_answer_list))
+        incorrect_selections = list(set(student_answer) - set(true_answer_list))
+        final_score = float((len(correct_selections) - len(incorrect_selections)) / len(true_answer_list))
         final_score = max(0.0, final_score)  # scores cannot be below 0
     elif grading_mode == 'ordered':
-        final_score = 1.0 if student_answer == true_answer else 0.0
+        final_score = 1.0 if student_answer == true_answer_list else 0.0
     elif grading_mode == 'ranking':
         ranking = data['submitted_answers'][answer_name]['student_submission_ordering']
         correctness = 1 + ranking.count(0)
         partial_credit = 0
-        if len(ranking) != 0 and len(ranking) == len(true_answer):
+        if len(ranking) != 0 and len(ranking) == len(true_answer_list):
             ranking = list(filter(lambda x: x != 0, ranking))
-            if ranking[0] == 1:
-                partial_credit = 1  # student will at least get 1 point for getting first element correct
             for x in range(0, len(ranking) - 1):
                 if int(ranking[x]) == int(ranking[x + 1]) or int(ranking[x]) + 1 == int(ranking[x + 1]):
                     correctness += 1
         else:
             correctness = 0
         correctness = max(correctness, partial_credit)
-        final_score = float(correctness / len(true_answer))
+        final_score = float(correctness / len(true_answer_list))
 
-    check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
-    answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    # check indents, and apply penalty if applicable
-    if check_indentation is True:
+    if check_indentation:
+        student_answer_indent = data['submitted_answers'][answer_name]['student_answer_indent']
+        true_answer_indent = filter_keys_from_array(data['correct_answers'][answer_name], 'indent')
         for i, indent in enumerate(student_answer_indent):
-            indent = int(indent)
-            if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
+            if true_answer_indent[i] == '-1' or int(indent) == true_answer_indent[i]:
                 indent_score += 1
         final_score = final_score * (indent_score / len(true_answer_indent))
     data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight}
