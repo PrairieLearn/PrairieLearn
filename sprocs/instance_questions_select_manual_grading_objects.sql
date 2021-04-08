@@ -34,7 +34,7 @@ BEGIN
 
     -- conflict df: when TA 'x' submits manual grade while TA 'y' is grading same submission
     IF arg_conflicting_grading_job_id IS NOT NULL THEN
-        SELECT json_build_object('score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'))
+        SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'type', 'grading_job')
         INTO incoming_conflict
         FROM 
             grading_jobs AS gj
@@ -42,7 +42,7 @@ BEGIN
         WHERE id = arg_conflicting_grading_job_id;
     ELSE
         -- always check if grading conflict needs to be resolved
-        SELECT json_build_object('score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'))
+        SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'type', 'grading_job')
         INTO incoming_conflict
         FROM
             grading_jobs AS gj

@@ -367,15 +367,20 @@ describe('Manual grading', function() {
                 await (await fetch(gradingConflictUrl)).text(),
             );
             
-            // could use Current Grade if one wanted
+            // could use Existing or Incoming Grade
             const payload = {
-                submissionScore: $gradingConflictPage('div:contains("Previous Grade") > form input[name="submissionScore"]').val(),
-                submissionNote: $gradingConflictPage('div:contains("Previous Grade") > form textarea[name="submissionNote"]').val(),
-                instanceQuestionModifiedAt: $gradingConflictPage('div:contains("Previous Grade") > form > input[name="instanceQuestionModifiedAt"]').val(),
-                __csrf_token: $gradingConflictPage('div:contains("Previous Grade") > form > input[name="__csrf_token"]').val(),
-                __action: $gradingConflictPage('div:contains("Previous Grade") > form > div > button[name="__action"]').attr('value'),
-                assessmentId: $gradingConflictPage('div:contains("Previous Grade") > form > input[name="assessmentId"]').val(),
-                assessmentQuestionId: $gradingConflictPage('div:contains("Previous Grade") > form > input[name="assessmentQuestionId"]').val(),
+                submissionScore: $gradingConflictPage('div:contains("Incoming Grade") > form input[name="submissionScore"]').val(),
+                submissionNote: $gradingConflictPage('div:contains("Incoming Grade") > form textarea[name="submissionNote"]').val(),
+                instanceQuestionModifiedAt: $gradingConflictPage('div:contains("Incoming Grade") > form > input[name="instanceQuestionModifiedAt"]').val(),
+                __csrf_token: $gradingConflictPage('div:contains("Incoming Grade") > form > input[name="__csrf_token"]').val(),
+                __action: $gradingConflictPage('div:contains("Incoming Grade") > form > div > button[name="__action"]').attr('value'),
+                assessmentId: $gradingConflictPage('div:contains("Incoming Grade") > form > input[name="assessmentId"]').val(),
+                assessmentQuestionId: $gradingConflictPage('div:contains("Incoming Grade") > form > input[name="assessmentQuestionId"]').val(),
+
+                // These only appear on conflict resolutions
+                gradingJobId: $gradingConflictPage('div:contains("Incoming Grade") > form > div > input[name="gradingJobId"]').val(),
+                diffType: $gradingConflictPage('div:contains("Incoming Grade") > form > div > input[name="diffType"]').val(),
+
             };
 
             const nextPage = await fetch(gradingConflictUrl, {

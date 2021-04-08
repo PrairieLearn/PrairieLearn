@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION
         IN arg_score double precision,
         IN arg_modified_at text,
         IN arg_manual_note jsonb,
+        IN arg_grading_job_id bigint,
         OUT instance_question jsonb,
         OUT grading_job jsonb
     )
@@ -34,7 +35,7 @@ BEGIN
         is_conflict = TRUE;
     END IF;
 
-    -- Create grading job even if a grading job spin-lock conflict will exist
+    -- Create grading job even if a conflict will exist
     SELECT s.*
     INTO last_submission
     FROM
@@ -50,6 +51,13 @@ BEGIN
 
     instance_question := instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
     grading_job := to_jsonb(grading_jobs_insert_manual(last_submission.id, arg_user_id, arg_score, arg_manual_note, is_conflict));
+
+    -- Resolve original conflict even if a new one occurs
+    IF arg_grading_job_id IS NOT NULL THEN
+        UPDATE grading_jobs
+        SET manual_grading_conflict = FALSE
+        WHERE id = arg_grading_job_id;
+    END IF;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;

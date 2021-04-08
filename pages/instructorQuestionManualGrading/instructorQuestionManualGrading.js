@@ -42,7 +42,9 @@ router.get('/', (req, res, next) => {
 
                 if (result.rows[0].incoming_conflict) {
                     res.locals.conflict_diff = {
+                        grading_job_id: result.rows[0].incoming_conflict.id,
                         existing: {
+                            type: 'submission',
                             feedback: result.rows[0].submission.feedback,
                             score: result.rows[0].submission.score,
                             graded_by: `${result.rows[0].grading_user.name} (${result.rows[0].grading_user.uid})`,
@@ -75,12 +77,14 @@ router.post('/', function(req, res, next) {
     const modifiedAt = req.body.instanceQuestionModifiedAt;
     const assessmentId = req.body.assessmentId;
     const assessmentQuestionId = req.body.assessmentQuestionId;
+    const gradingJobId = req.body.gradingJobId;
     const params = [
         res.locals.instance_question.id,
         res.locals.authn_user.user_id,
         score / 100,
         modifiedAt,
         {manual: note},
+        gradingJobId,
     ];
 
     if (req.body.__action == 'add_manual_grade') {
@@ -98,11 +102,18 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return next(error.make(500, `Cannot find instance question: ${res.locals.instance_question_id}`));
             res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
         });
-    } else if (req.body.__action == 'accept_manual_grade_conflict') {
-        sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err) => {
-            if (ERR(err, next)) return;
-            res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
-        });
+    } else if (req.body.__action == 'resolve_manual_grading_conflict') {
+        if (req.body.diffType === 'submission') {
+            sqlDb.queryOneRow(sql.remove_grading_job_conflict, {id: gradingJobId}, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
+            });
+        } else {
+            sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err) => {
+                if (ERR(err, next)) return;
+                res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
+            });
+        }
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }

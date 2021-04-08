@@ -9,9 +9,6 @@
         <% if (typeof diff !== 'undefined') { %>
           <p class="graded-by">Graded by <%= submission.graded_by %></p>
         <% } %>
-        <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
-            <blockquote style="color: red">Submission updated</blockquote>
-        <% } %>
         <form name="instance-question-manual-grade-update-form" method="POST">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <input type="hidden" name="assessmentId" value="<%= assessment_instance.assessment_id %>">
@@ -33,11 +30,13 @@
             </div>
             <div class="text-right">
 
-              <% if (typeof diff == 'undefined') { %>
+              <% if (typeof conflict_diff == 'undefined') { %>
                 <button style="width: 100%; margin-bottom: 15px" name="__action" value="add_manual_grade" class="btn btn-primary">Submit and Next</button>
                 <button style="width: 100%" name="__action" value="abort_manual_grading" class="btn btn-danger">Skip and Leave Grading</button>
               <% } else { %>
-                <button name="__action" value="accept_manual_grade_conflict" class="btn btn-primary">Accept <%= diff %> Grade</button>
+                <input type="hidden" name="gradingJobId" value="<%= typeof conflict_diff !== 'undefined' && conflict_diff.grading_job_id %>">
+                <input type="hidden" name="diffType" value="<%= submission.type %>">
+                <button name="__action" value="resolve_manual_grading_conflict" class="btn btn-primary">Accept <%= diff %> Grade</button>
               <% }%>
             </div>
         </form>

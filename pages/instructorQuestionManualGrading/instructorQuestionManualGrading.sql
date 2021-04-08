@@ -20,3 +20,7 @@ WHERE
     iq.id = $instance_question_id
     AND iqwls.graded_at IS NULL;
 
+-- BLOCK remove_grading_job_conflict
+UPDATE grading_jobs
+SET manual_grading_conflict = FALSE
+WHERE id = $id;
