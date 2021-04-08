@@ -79,12 +79,9 @@ def prepare(element_html, data):
     if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
 
-    # default to display all incorrect answers, so min_correct == max_correct
-    max_incorrect = pl.get_integer_attrib(element, 'max-incorrect', len(incorrect_answers))
-    min_incorrect = pl.get_integer_attrib(element, 'min-incorrect', max_incorrect)
-
-    # min_correct_WIP = pl.get_integer_attrib(element, 'min-correct', 1)
-    # max_correct_WIP = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
+    all_incorrect_answers = len(incorrect_answers)
+    max_incorrect = pl.get_integer_attrib(element, 'max-incorrect', all_incorrect_answers)
+    min_incorrect = pl.get_integer_attrib(element, 'min-incorrect', all_incorrect_answers)
 
     if min_incorrect > len(incorrect_answers) or max_incorrect > len(incorrect_answers):
         raise Exception('The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>.')
@@ -128,11 +125,11 @@ def render(element_html, data):
         mcq_options = data['params'][answer_name]
 
         if answer_name in data['submitted_answers']:
-            student_previous_submission = data['submitted_answers'][answer_name]['student_raw_submission']
+            student_previous_submission = filter_keys_from_array(data['submitted_answers'][answer_name], 'inner_html')
             mcq_options = list(set(mcq_options) - set(student_previous_submission))
 
         for index, mcq_options_text in enumerate(student_previous_submission):
-            submission_indent = data['submitted_answers'][answer_name]['student_answer_indent'][index]
+            submission_indent = filter_keys_from_array(data['submitted_answers'][answer_name], 'indent')[index]
             submission_indent = (int(submission_indent) * TAB_SIZE_PX) + INDENT_OFFSET
             temp = {'text': mcq_options_text, 'indent': submission_indent}
             student_submission_dict_list.append(dict(temp))
@@ -177,7 +174,7 @@ def render(element_html, data):
         feedback = None
 
         if answer_name in data['submitted_answers']:
-            student_submission = data['submitted_answers'][answer_name]['student_raw_submission']
+            student_submission = filter_keys_from_array(data['submitted_answers'][answer_name], 'inner_html')
         if answer_name in data['partial_scores']:
             score = data['partial_scores'][answer_name]['score']
             feedback = data['partial_scores'][answer_name]['feedback']
@@ -240,41 +237,29 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
-    temp = answer_name
-    temp += '-input'
-    student_answer_temp = ''
-    if temp in data['raw_submitted_answers']:
-        student_answer_temp = data['raw_submitted_answers'][temp]
+    answer_raw_name = answer_name + '-input'
+    student_answer = ''
 
-    if student_answer_temp is None:
-        data['format_errors'][answer_name] = 'NULL was submitted as an answer.'
-        return
-    elif student_answer_temp == '':
+    if answer_raw_name in data['raw_submitted_answers']:
+        student_answer = data['raw_submitted_answers'][answer_raw_name]
+    if student_answer is None or student_answer == '':
         data['format_errors'][answer_name] = 'No answer was submitted.'
         return
 
-    student_answer = []
-    student_answer_indent = []
     grading_mode = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
+    student_answer = json.loads(student_answer)
+    correct_answers = data['correct_answers'][answer_name]
 
-    student_answer_ranking = ['Question grading_mode is not "ranking"']
-
-    student_answer_temp = json.loads(student_answer_temp)
-
-    student_answer = student_answer_temp['answers']
-    student_answer_indent = student_answer_temp['answer_indent']
-
-    if grading_mode.lower() == 'ranking':
-        student_answer_ranking = []
-        pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
+    if grading_mode == 'ranking':
+        index = 0
         for answer in student_answer:
-            e = pl_drag_drop_element.xpath(f'.//pl-answer[text()="{answer}"]')
-            is_correct = pl.get_boolean_attrib(e[0], 'correct', PL_ANSWER_CORRECT_DEFAULT)  # default correctness to True
-            if is_correct:
-                ranking = pl.get_integer_attrib(e[0], 'ranking', 0)
+            search = next((item for item in correct_answers if item["inner_html"] == answer['inner_html']), None)
+            if search is not None:
+                ranking = search['ranking']
             else:
                 ranking = -1   # wrong answers have no ranking
-            student_answer_ranking.append(ranking)
+            student_answer[index]['ranking'] = ranking
+            index += 1
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         for html_tags in element:
@@ -292,18 +277,16 @@ def parse(element_html, data):
         else:
             data['submitted_answers']['_files'] = [{'name': file_name, 'contents': base64.b64encode(answer_code.encode('utf-8')).decode('utf-8')}]
 
-    data['submitted_answers'][answer_name] = {'student_submission_ordering': student_answer_ranking,
-                                              'student_raw_submission': student_answer,
-                                              'student_answer_indent': student_answer_indent}
-    if temp in data['submitted_answers']:
-        del data['submitted_answers'][temp]
+    data['submitted_answers'][answer_name] = student_answer
+    if answer_raw_name in data['submitted_answers']:
+        del data['submitted_answers'][answer_raw_name]
 
 
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
-    student_answer = data['submitted_answers'][answer_name]['student_raw_submission']
+    student_answer = data['submitted_answers'][answer_name]
     grading_mode = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -326,7 +309,7 @@ def grade(element_html, data):
     elif grading_mode == 'ordered':
         final_score = 1.0 if student_answer == true_answer_list else 0.0
     elif grading_mode == 'ranking':
-        ranking = data['submitted_answers'][answer_name]['student_submission_ordering']
+        ranking = filter_keys_from_array(data['submitted_answers'][answer_name], 'ranking')
         correctness = 1 + ranking.count(0)
         partial_credit = 0
         if len(ranking) != 0 and len(ranking) == len(true_answer_list):
@@ -340,7 +323,7 @@ def grade(element_html, data):
         final_score = float(correctness / len(true_answer_list))
 
     if check_indentation:
-        student_answer_indent = data['submitted_answers'][answer_name]['student_answer_indent']
+        student_answer_indent = filter_keys_from_array(data['submitted_answers'][answer_name], 'indent')
         true_answer_indent = filter_keys_from_array(data['correct_answers'][answer_name], 'indent')
         for i, indent in enumerate(student_answer_indent):
             if true_answer_indent[i] == '-1' or int(indent) == true_answer_indent[i]:

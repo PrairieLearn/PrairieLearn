@@ -20,16 +20,15 @@ function set_answer(event) {
     // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds 
     var textfield_name = event.target.getAttribute('name');
     var dom_objs = $('#' + textfield_name + '-dropzone').children();
-    var student_answers = [];
-    var indents = [];
-    var answer_json = {'answers': [], 'answer_indent': []};
+    var student_answers_array = [];
     for (var i = 0; i < dom_objs.length; i++) {
         if (!$(dom_objs[i]).hasClass('info-fixed')){
             var answer_text = dom_objs[i].getAttribute('string');
             var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
             answer_indent = Math.round((answer_indent - INDENT_OFFSET) / TABWIDTH); // get how many times the answer is indented
-            student_answers.push(answer_text);
-            indents.push(answer_indent.toString());
+            
+            var answer_json = {'inner_html': answer_text, 'indent': answer_indent};
+            student_answers_array.push(answer_json)
         }
     }
 
@@ -38,18 +37,14 @@ function set_answer(event) {
         return;
     }
     textfield_name = '#' + textfield_name + '-input';
-    answer_json.answers = student_answers;
-    answer_json.answer_indent = indents;
-    $(textfield_name).val(JSON.stringify(answer_json));
+    $(textfield_name).val(JSON.stringify(student_answers_array));
 }
 
 
 function update_indent(leftDiff, id, ui) {
-    console.log(ui);
     if (!ui.item.parent()[0].classList.contains('dropzone') || !ui.item.parent()[0].classList.contains('enableIndentation')){
         // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
         ui.item[0].style.marginLeft = INDENT_OFFSET + 'px';
-        console.log('Abort');
         return;
     }
     leftDiff = ui.position.left - ui.item.parent().position().left;
