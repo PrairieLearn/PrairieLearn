@@ -33,7 +33,7 @@
         </div>
         <% } %>
 
-        <% if (grading_job_conflict != null) { %>
+        <% if (typeof conflict_diff != 'undefined') { %>
           <div class="col-lg-12 col-sm-12">
             <div class="card mb-4">
               <div class="card-header bg-warning text-blue">
@@ -42,14 +42,14 @@
             </div>
           </div>
           <div class="col-lg-6 col-sm-12">
-            <%- include('../partials/instructorGradingPanel', {diff: 'Existing', submission: submission, question_context: 'instructor'}); %>
+            <%- include('../partials/instructorGradingPanel', {diff: 'Existing', submission: conflict_diff.existing, question_context: 'instructor'}); %>
           </div>
           <div class="col-lg-6 col-sm-12">
-            <%- include('../partials/instructorGradingPanel', {diff: 'Updated', submission: grading_job_conflict, question_context: 'instructor'}); %>
+            <%- include('../partials/instructorGradingPanel', {diff: 'Incoming', submission: conflict_diff.incoming, question_context: 'instructor'}); %>
           </div>
         <% } %>
 
-        <% if (grading_job_conflict === null) { %>
+        <% if (typeof conflict_diff === 'undefined') { %>
           <div class="col-lg-9 col-sm-12">
         <% } else { %>
           <div class="col-lg-12 col-sm-12">
@@ -58,7 +58,7 @@
           </div>
 
           
-          <% if (grading_job_conflict === null) { %>
+          <% if (typeof conflict_diff === 'undefined') { %>
             <div class="col-lg-3 col-sm-12">
                 <%- include('../partials/instructorGradingPanel', {question_context: 'instructor'}); %>
                 <div class="card mb-4">

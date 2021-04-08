@@ -32,7 +32,7 @@ BEGIN
     FROM
         iq_with_last_submission AS iqwls
     WHERE
-        iqwls.graded_at IS NULL OR iqwls.manual_grading_conflict = TRUE
+        iqwls.graded_at IS NULL
     ORDER BY RANDOM()
     LIMIT 1
     FOR UPDATE;

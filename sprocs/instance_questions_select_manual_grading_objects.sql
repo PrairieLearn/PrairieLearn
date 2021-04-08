@@ -12,17 +12,16 @@ CREATE OR REPLACE FUNCTION
         OUT submission jsonb,
         OUT grading_user jsonb,
         OUT assessment_question jsonb,
-        OUT grading_job_conflict jsonb
+        OUT incoming_conflict jsonb
     )
 AS $$
 DECLARE
     instance_question_id bigint;
     assessment_question_id bigint;
-    manual_grading_conflict boolean;
 BEGIN
 
-    SELECT iq.id, iq.assessment_question_id, iq.manual_grading_conflict
-    INTO instance_question_id, assessment_question_id, manual_grading_conflict
+    SELECT iq.id, iq.assessment_question_id
+    INTO instance_question_id, assessment_question_id
     FROM
         instance_questions AS iq
     WHERE
@@ -36,20 +35,21 @@ BEGIN
     -- conflict df: when TA 'x' submits manual grade while TA 'y' is grading same submission
     IF arg_conflicting_grading_job_id IS NOT NULL THEN
         SELECT json_build_object('score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'))
-        INTO grading_job_conflict
+        INTO incoming_conflict
         FROM 
             grading_jobs AS gj
             JOIN users as u ON (u.user_id = gj.auth_user_id)
         WHERE id = arg_conflicting_grading_job_id;
     ELSE
         -- always check if grading conflict needs to be resolved
-        SELECT to_jsonb(gj.*)
-        INTO grading_job_conflict
+        SELECT json_build_object('score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'))
+        INTO incoming_conflict
         FROM
             grading_jobs AS gj
-            JOIN submissions AS s ON (s.id = gj.id)
+            JOIN submissions AS s ON (s.id = gj.submission_id)
             JOIN variants AS v ON (v.id = s.variant_id)
             JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+            JOIN users as u ON (u.user_id = gj.auth_user_id)
         WHERE
             iq.id = arg_instance_question_id
             AND gj.manual_grading_conflict IS TRUE

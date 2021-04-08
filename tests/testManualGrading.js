@@ -335,28 +335,27 @@ describe('Manual grading', function() {
                 submission2.url.match(/instance_question\/(\d+)/)[1],
             );
 
-            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
-            assert.isTrue(instanceQuestion.manual_grading_conflict);
+            const gradingJob = (await sqldb.queryOneRowAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows[0];
+            assert.isTrue(gradingJob.manual_grading_conflict);
 
             // instructor 1 sees a new question to grade
             const submission1Body = await submission1.text();
             assert.equal(submission1.status, 200);
             assert.notEqual(submission1.url, gradingConflictUrl);
             assert.include(submission1Body, 'Grading Panel');
-            assert.notInclude(submission1Body, 'Submission Grade');
-            assert.notInclude(submission1Body, 'Grading Job Grade');
+            assert.notInclude(submission1Body, 'Existing Grade');
+            assert.notInclude(submission1Body, 'Incoming Grade');
 
             // instructor 2 redirects back to same page to resolve conflict
             const submission2Body = await submission2.text();
             assert.equal(submission2.status, 200);
             assert.include(submission2.url, gradingConflictUrl);
             assert.notInclude(submission2Body, 'Grading Panel');
-            assert.include(submission2Body, 'Submission Grade');
-            assert.include(submission2Body, 'Grading Job Grade');
+            assert.include(submission2Body, 'Existing Grade');
+            assert.include(submission2Body, 'Incoming Grade');
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });
         it('grading conflict should persist when loaded by any instructor', async () => {
-            console.log('URL  y', gradingConflictUrl);
             const gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });

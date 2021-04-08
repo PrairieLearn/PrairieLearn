@@ -39,16 +39,15 @@ router.get('/', (req, res, next) => {
                 res.locals.variant = result.rows[0].variant;
                 res.locals.submission = result.rows[0].submission;
                 res.locals.grading_user = result.rows[0].grading_user;
-                res.locals.grading_job_conflict = result.rows[0].grading_job_conflict;
 
-                if (res.locals.grading_job_conflict) {
-                    res.locals.grading_job_diff = {
-                        submission: {
+                if (result.rows[0].incoming_conflict) {
+                    res.locals.conflict_diff = {
+                        existing: {
                             feedback: result.rows[0].submission.feedback,
                             score: result.rows[0].submission.score,
-                            graded_by: `${result.rows[0].grading_user.name} ( ${result.rows[0].grading_user.uid} )`,
+                            graded_by: `${result.rows[0].grading_user.name} (${result.rows[0].grading_user.uid})`,
                         },
-                        grading_job: result.rows[0].grading_job_conflict,
+                        incoming: result.rows[0].incoming_conflict,
                     };
                 }
 

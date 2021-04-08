@@ -62,7 +62,7 @@ BEGIN
     IF FOUND THEN RAISE EXCEPTION 'manual grading cannot occur with % incomplete external grading jobs', COUNT(main.grading_jobs); END IF;
 
     -- ######################################################################
-    -- insert the new grading job
+    -- insert the new grading job; conflict true displays on next grading page load
 
     INSERT INTO grading_jobs AS gj
         (submission_id,  score, feedback, auth_user_id, grading_method, grading_requested_at, manual_grading_conflict)

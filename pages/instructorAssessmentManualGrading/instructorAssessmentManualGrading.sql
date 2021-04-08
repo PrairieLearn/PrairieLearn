@@ -4,15 +4,16 @@ WITH iq_with_last_submission AS (
         iq.id, s.graded_at,
         iq.assessment_question_id,
         iq.manual_grading_user,
-        iq.manual_grading_conflict
+        gj.manual_grading_conflict
     FROM
         assessment_questions AS aq
         JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
+        LEFT JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
         aq.assessment_id = $assessment_id
-    ORDER BY iq.id ASC, s.date DESC, s.id DESC
+    ORDER BY iq.id ASC, s.date DESC, s.id DESC, gj.manual_grading_conflict ASC
 )
 SELECT
     aq.*,

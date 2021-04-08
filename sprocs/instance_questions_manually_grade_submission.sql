@@ -48,17 +48,8 @@ BEGIN
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
-    PERFORM instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
+    instance_question := instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
     grading_job := to_jsonb(grading_jobs_insert_manual(last_submission.id, arg_user_id, arg_score, arg_manual_note, is_conflict));
-
-    -- Mark grading conflict to resolve in next load of instructorQuestionManualGrading view
-    UPDATE instance_questions AS iq
-    SET
-        manual_grading_conflict = is_conflict
-    WHERE
-        id = arg_instance_question_id
-    RETURNING to_json(iq.*)
-    INTO instance_question;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
