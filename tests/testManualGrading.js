@@ -19,8 +19,44 @@ const mockStudents = [
 const mockInstructors = [
     {authUid: config.authUid, authName: config.authName, authUin: config.authUin}, // testing default
     {authUid: 'mwest@illinois.edu', authName: '', uin: ''},
-    // {authUid: 'zilles@illinois.edu', authName: '', uin: ''},
 ];
+
+const getManualGradePayload = ($page, submissionNote, submissionScore) => {
+    return {
+        instanceQuestionModifiedAt: $page('form > input[name="instanceQuestionModifiedAt"]').val(),
+        __csrf_token: $page('form > input[name="__csrf_token"]').val(),
+        __action: $page('form > div > button[name="__action"]').attr('value'),
+        assessmentId: $page('form > input[name="assessmentId"]').val(),
+        assessmentQuestionId: $page('form > input[name="assessmentQuestionId"]').val(),
+        submissionNote,
+        submissionScore,
+    };
+};
+
+const getConflictPayload = ($page, type) => {
+    const wildcard = `${type} Grade`;
+    return {
+        submissionScore: $page(`div:contains("${wildcard}") > form input[name="submissionScore"]`).val(),
+        submissionNote: $page(`div:contains("${wildcard}") > form textarea[name="submissionNote"]`).val(),
+        instanceQuestionModifiedAt: $page(`div:contains("${wildcard}") > form > input[name="instanceQuestionModifiedAt"]`).val(),
+        __csrf_token: $page(`div:contains("${wildcard}") > form > input[name="__csrf_token"]`).val(),
+        __action: $page(`div:contains("${wildcard}") > form > div > button[name="__action"]`).attr('value'),
+        assessmentId: $page(`div:contains("${wildcard}") > form > input[name="assessmentId"]`).val(),
+        assessmentQuestionId: $page(`div:contains("${wildcard}") > form > input[name="assessmentQuestionId"]`).val(),
+
+        // These only appear on conflict resolutions
+        gradingJobId: $page(`div:contains("${wildcard}") > form > div > input[name="gradingJobId"]`).val(),
+        diffType: $page(`div:contains("${wildcard}") > form > div > input[name="diffType"]`).val(),
+    };
+};
+
+const parseInstanceQuestionId = (url) => {
+    const iqId = parseInt(
+        url.match(/instance_question\/(\d+)/)[1],
+    );
+    assert.isNumber(iqId);
+    return iqId;
+};
 
 const setUser = (user) => {
     config.authUid = user.authUid;
@@ -33,15 +69,8 @@ const gradeSubmission = async (iqManualGradeUrl, submissionScore, submissionNote
     const $gradingPage = cheerio.load(
         await (await fetch(iqManualGradeUrl)).text(),
     );
-    const payload = {
-        instanceQuestionModifiedAt: $gradingPage('form > input[name="instanceQuestionModifiedAt"]').val(),
-        __csrf_token: $gradingPage('form > input[name="__csrf_token"]').val(),
-        __action: $gradingPage('form > div > button[name="__action"]').attr('value'),
-        assessmentId: $gradingPage('form > input[name="assessmentId"]').val(),
-        assessmentQuestionId: $gradingPage('form > input[name="assessmentQuestionId"]').val(),
-        submissionNote,
-        submissionScore,
-    };
+    const payload = getManualGradePayload($gradingPage, submissionScore, submissionNote);
+
     return fetch(iqManualGradeUrl, {
             method: 'POST',
             headers: {'Content-type': 'application/x-www-form-urlencoded'},
@@ -247,15 +276,11 @@ describe('Manual grading', function() {
                 let $nextGradingPage = cheerio.load(
                     await (nextPage).text(),
                 );
-                const payload = {
-                    submissionScore: 95,
-                    submissionNote: 'Any note about the grade',
-                    instanceQuestionModifiedAt: $nextGradingPage('form > input[name="instanceQuestionModifiedAt"]').val(),
-                    __csrf_token: $nextGradingPage('form > input[name="__csrf_token"]').val(),
-                    __action: $nextGradingPage('form > div > button[name="__action"]').attr('value'),
-                    assessmentId: $nextGradingPage('form > input[name="assessmentId"]').val(),
-                    assessmentQuestionId: $nextGradingPage('form > input[name="assessmentQuestionId"]').val(),
-                };
+
+                const submissionScore = 95;
+                const submissionNote = 'Any note about the grade';
+                const payload = getManualGradePayload($nextGradingPage, submissionScore, submissionNote);
+
                 $nextGradingPage = cheerio.load(
                     await (await fetch(nextPage.url, {
                         method: 'POST',
@@ -312,11 +337,7 @@ describe('Manual grading', function() {
             const gradeNextAddNumbersUrl = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const redirectUrl = (await fetch(gradeNextAddNumbersUrl)).url;
 
-            const instanceQuestionId = parseInt(
-                redirectUrl.match(/instance_question\/(\d+)/)[1],
-            );
-            assert.isNumber(instanceQuestionId);
-
+            const instanceQuestionId = parseInstanceQuestionId(redirectUrl);
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const user = (await sqldb.queryOneRowAsync(sql.get_user_by_uin, {uin: mockInstructors[0].authUin})).rows[0];
             assert.equal(instanceQuestion.manual_grading_user, user.user_id);
@@ -340,10 +361,7 @@ describe('Manual grading', function() {
 
             gradingConflictUrl = iqManualGradingUrl;
 
-            const instanceQuestionId = parseInt(
-                submission2.url.match(/instance_question\/(\d+)/)[1],
-            );
-
+            const instanceQuestionId = parseInstanceQuestionId(submission2.url);
             const gradingJob = (await sqldb.queryOneRowAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows[0];
             assert.isTrue(gradingJob.manual_grading_conflict);
 
@@ -377,19 +395,7 @@ describe('Manual grading', function() {
             );
             
             // could use Existing or Incoming Grade
-            const payload = {
-                submissionScore: $gradingConflictPage('div:contains("Incoming Grade") > form input[name="submissionScore"]').val(),
-                submissionNote: $gradingConflictPage('div:contains("Incoming Grade") > form textarea[name="submissionNote"]').val(),
-                instanceQuestionModifiedAt: $gradingConflictPage('div:contains("Incoming Grade") > form > input[name="instanceQuestionModifiedAt"]').val(),
-                __csrf_token: $gradingConflictPage('div:contains("Incoming Grade") > form > input[name="__csrf_token"]').val(),
-                __action: $gradingConflictPage('div:contains("Incoming Grade") > form > div > button[name="__action"]').attr('value'),
-                assessmentId: $gradingConflictPage('div:contains("Incoming Grade") > form > input[name="assessmentId"]').val(),
-                assessmentQuestionId: $gradingConflictPage('div:contains("Incoming Grade") > form > input[name="assessmentQuestionId"]').val(),
-
-                // These only appear on conflict resolutions
-                gradingJobId: $gradingConflictPage('div:contains("Incoming Grade") > form > div > input[name="gradingJobId"]').val(),
-                diffType: $gradingConflictPage('div:contains("Incoming Grade") > form > div > input[name="diffType"]').val(),
-            };
+            const payload = getConflictPayload($gradingConflictPage, 'Incoming'); 
 
             const nextPage = await fetch(gradingConflictUrl, {
                 method: 'POST',
@@ -399,11 +405,7 @@ describe('Manual grading', function() {
 
             assert.equal(nextPage.status, 200);
 
-            const instanceQuestionId = parseInt(
-                gradingConflictUrl.match(/instance_question\/(\d+)/)[1],
-            );
-            assert.isNumber(instanceQuestionId);
-
+            const instanceQuestionId = parseInstanceQuestionId(gradingConflictUrl);
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
 
@@ -415,11 +417,11 @@ describe('Manual grading', function() {
             assert.equal($addNumbersRow('.ungraded-value').text(), 2);
             assert.equal($addNumbersRow('.graded-value').text(), 1);
         });
-        it('multiple grading conflicts can occur and display submission against incoming respective grading job', async () => {
+        it('multiple grading conflicts can be resolved on same instance question', async () => {
             // NOTE: Must use user returned URLs to meet CSRF token constraints
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
-
+            
             // user 2 gets conflict
             const {submission2} = await createGradingConflict(iqManualGradingUrl);
             
@@ -448,68 +450,80 @@ describe('Manual grading', function() {
                 submission3Body,
             );
 
-            const user1Payload = {
-                submissionScore: $user1ConflictPage('div:contains("Incoming Grade") > form input[name="submissionScore"]').val(),
-                submissionNote: $user1ConflictPage('div:contains("Incoming Grade") > form textarea[name="submissionNote"]').val(),
-                instanceQuestionModifiedAt: $user1ConflictPage('div:contains("Incoming Grade") > form > input[name="instanceQuestionModifiedAt"]').val(),
-                __csrf_token: $user1ConflictPage('div:contains("Incoming Grade") > form > input[name="__csrf_token"]').val(),
-                __action: $user1ConflictPage('div:contains("Incoming Grade") > form > div > button[name="__action"]').attr('value'),
-                assessmentId: $user1ConflictPage('div:contains("Incoming Grade") > form > input[name="assessmentId"]').val(),
-                assessmentQuestionId: $user1ConflictPage('div:contains("Incoming Grade") > form > input[name="assessmentQuestionId"]').val(),
-
-                // These only appear on conflict resolutions
-                gradingJobId: $user1ConflictPage('div:contains("Incoming Grade") > form > div > input[name="gradingJobId"]').val(),
-                diffType: $user1ConflictPage('div:contains("Incoming Grade") > form > div > input[name="diffType"]').val(),
-            };
-
-            const user2Payload = {
-                submissionScore: $user2ConflictPage('div:contains("Incoming Grade") > form input[name="submissionScore"]').val(),
-                submissionNote: $user2ConflictPage('div:contains("Incoming Grade") > form textarea[name="submissionNote"]').val(),
-                instanceQuestionModifiedAt: $user2ConflictPage('div:contains("Incoming Grade") > form > input[name="instanceQuestionModifiedAt"]').val(),
-                __csrf_token: $user2ConflictPage('div:contains("Incoming Grade") > form > input[name="__csrf_token"]').val(),
-                __action: $user2ConflictPage('div:contains("Incoming Grade") > form > div > button[name="__action"]').attr('value'),
-                assessmentId: $user2ConflictPage('div:contains("Incoming Grade") > form > input[name="assessmentId"]').val(),
-                assessmentQuestionId: $user2ConflictPage('div:contains("Incoming Grade") > form > input[name="assessmentQuestionId"]').val(),
-
-                // These only appear on conflict resolutions
-                gradingJobId: $user2ConflictPage('div:contains("Incoming Grade") > form > div > input[name="gradingJobId"]').val(),
-                diffType: $user2ConflictPage('div:contains("Incoming Grade") > form > div > input[name="diffType"]').val(),
-            };
+            const user1Payload = getConflictPayload($user1ConflictPage, 'Incoming'); 
+            const user2Payload = getConflictPayload($user2ConflictPage, 'Incoming'); 
 
             assert.equal(user1Payload.instanceQuestionModifiedAt, user2Payload.instanceQuestionModifiedAt);
 
             // user 2 submits successfully
             setUser(mockInstructors[1]);
-            const resolution1 = await (await fetch(submission2.url, {
+            const resolution1Body = await (await fetch(submission2.url, {
                 method: 'POST',
                 headers: {'Content-type': 'application/x-www-form-urlencoded'},
                 body: querystring.encode(user2Payload),
             })).text();
 
-            assert.notInclude(resolution1, 'Manual Grading Conflict');
+            assert.notInclude(resolution1Body, 'Manual Grading Conflict');
 
             // user 1 receives new conflict page
             setUser(mockInstructors[0]);
-            const resolution2 = await (await fetch(submission3.url, {
+            const resolution2Body = await (await fetch(submission3.url, {
                 method: 'POST',
                 headers: {'Content-type': 'application/x-www-form-urlencoded'},
                 body: querystring.encode(user1Payload),
             })).text();
 
-            assert.include(resolution2, 'Manual Grading Conflict');
+            assert.include(resolution2Body, 'Manual Grading Conflict');
 
-            const instanceQuestionId = parseInt(
-                iqManualGradingUrl.match(/instance_question\/(\d+)/)[1],
-            );
-            const gradingJobs = (await sqldb.queryAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+            const conflictGradingJobs = (await sqldb.queryAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(conflictGradingJobs, 1);
 
-            assert.lengthOf(gradingJobs, 1);
+            const $resolution2Page = cheerio.load(resolution2Body);
+            const finalPayload = getConflictPayload($resolution2Page, 'Incoming'); 
+
+            await fetch(iqManualGradingUrl, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(user1Payload),
+            });
+
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+
+            assert.equal(instanceQuestion.points, (finalPayload.submissionScore / 100) * assessmentQuestion.max_points);
+            assert.equal(instanceQuestion.score_perc, (finalPayload.submissionScore / 100) * 100);
+
+            const gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 5);
         });
         it('grading conflict `submission` type post should resolve conflict and NOT produce new grading job', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
-        });
-        it('grading conflict `grading_job` type post should resolve conflict and produce new grading job', () => {
+            // two manual grade jobs result in conflict = 2 grading jobs
+            const {submission2} = await createGradingConflict(iqManualGradingUrl);
 
+            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+            let gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 2);
+
+            const $gradingConflictPage = cheerio.load(await submission2.text());
+
+            const payload = getConflictPayload($gradingConflictPage, 'Existing'); 
+
+            setUser(mockInstructors[1]);
+            const response = await fetch(submission2.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload),
+            });
+
+            assert.equal(response.status, 200);
+
+            gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 2);
         });
+
     });
 });

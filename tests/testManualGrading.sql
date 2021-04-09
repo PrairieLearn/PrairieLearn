@@ -17,6 +17,16 @@ WHERE
     iq.id = $id
     AND gj.manual_grading_conflict IS TRUE;
 
+-- BLOCK get_grading_jobs_by_iq
+SELECT *
+FROM
+    grading_jobs AS gj
+    JOIN submissions AS s ON (s.id = gj.submission_id)
+    JOIN variants AS v ON (v.id = s.variant_id)
+    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+WHERE
+    iq.id = $id;
+
 -- BLOCK get_user_by_uin
 SELECT *
 FROM users
