@@ -126,6 +126,7 @@ router.post('/', (req, res, next) => {
             null, // score_perc
             req.body.points,
             null, // feedback
+            null, // partial_scores
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
@@ -147,6 +148,7 @@ router.post('/', (req, res, next) => {
             req.body.score_perc,
             null, // points
             null, // feedback
+            null, // partial_scores
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {

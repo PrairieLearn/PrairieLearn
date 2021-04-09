@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,bigint,bigint,bigint,text,integer,text,double precision,double precision,jsonb,bigint);
+DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,bigint,bigint,bigint,text,integer,text,double precision,double precision,jsonb,jsonb,bigint);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_update_score(
@@ -17,6 +18,7 @@ CREATE OR REPLACE FUNCTION
         IN arg_score_perc double precision,
         IN arg_points double precision,
         IN arg_feedback jsonb,
+        IN arg_partial_scores jsonb,
         IN arg_authn_user_id bigint
     ) RETURNS void
 AS $$
@@ -95,20 +97,28 @@ BEGIN
     new_correct := (new_score > 0.5);
 
     -- ##################################################################
-    -- if we were originally provided a submission_id or we have feedback,
-    -- create a grading job and update the submission
+    -- check if partial_scores is an object
+
+    IF arg_partial_scores IS NOT NULL AND jsonb_typeof(arg_partial_scores) != 'object' THEN
+        RAISE EXCEPTION 'partial_scores is not an object';
+    END IF;
+
+    -- ##################################################################
+    -- if we were originally provided a submission_id or we have feedback
+    -- or partial scores, create a grading job and update the submission
 
     IF submission_id IS NOT NULL
     AND (
         submission_id = arg_submission_id
         OR arg_feedback IS NOT NULL
+        OR arg_partial_scores IS NOT NULL
     ) THEN
         INSERT INTO grading_jobs
             (submission_id, auth_user_id,      graded_by, graded_at,
-            grading_method, correct,     score,     feedback)
+            grading_method, correct,     score,     feedback, partial_scores)
         VALUES
             (submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
-            'Manual',   new_correct, new_score, arg_feedback);
+            'Manual',   new_correct, new_score, arg_feedback, arg_partial_scores);
 
         UPDATE submissions AS s
         SET
@@ -117,6 +127,11 @@ BEGIN
                 WHEN arg_feedback IS NULL THEN feedback
                 WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(arg_feedback) = 'object' THEN feedback || arg_feedback
                 ELSE arg_feedback
+            END,
+            partial_scores = CASE
+                WHEN partial_scores IS NULL THEN arg_partial_scores
+                WHEN arg_partial_scores IS NULL THEN partial_scores
+                ELSE partial_scores || arg_partial_scores
             END,
             graded_at = now(),
             grading_method = 'External',
