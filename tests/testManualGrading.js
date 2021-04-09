@@ -10,11 +10,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-function sleep(ms) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  } 
+
 const mockStudents = [
     {authUid: 'student1', authName: 'Student User 1', authUin: '00000001'},
     {authUid: 'student2', authName: 'Student User 2', authUin: '00000002'},
