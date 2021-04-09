@@ -401,6 +401,39 @@ describe('Manual grading', function() {
             assert.equal($addNumbersRow('.ungraded-value').text(), 2);
             assert.equal($addNumbersRow('.graded-value').text(), 1);
         });
+        it('grading conflict `submission` type post should resolve conflict and NOT produce new grading job', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
+
+            // two manual grade jobs result in conflict = 2 grading jobs
+            const {submission2} = await createGradingConflict(iqManualGradingUrl);
+
+            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+            let gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 2);
+
+            const $gradingConflictPage = cheerio.load(await submission2.text());
+            const payload = getConflictPayload($gradingConflictPage, 'Existing'); 
+            assert.equal(payload.diffType, 'submission');
+
+            setUser(mockInstructors[1]);
+            const response = await fetch(submission2.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload),
+            });
+
+            assert.equal(response.status, 200);
+
+            gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 2);
+
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+
+            assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
+            assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
+        });
         it('multiple grading conflicts can be resolved on same instance question', async () => {
             // NOTE: Must use user returned URLs to meet CSRF token constraints
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
@@ -481,40 +514,5 @@ describe('Manual grading', function() {
             const gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
             assert.lengthOf(gradingJobs, 5);
         });
-        it('grading conflict `submission` type post should resolve conflict and NOT produce new grading job', async () => {
-            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
-            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
-
-            // two manual grade jobs result in conflict = 2 grading jobs
-            const {submission2} = await createGradingConflict(iqManualGradingUrl);
-
-            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
-            let gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
-            assert.lengthOf(gradingJobs, 2);
-
-            const $gradingConflictPage = cheerio.load(await submission2.text());
-            const payload = getConflictPayload($gradingConflictPage, 'Existing'); 
-            assert.equal(payload.diffType, 'submission');
-
-            setUser(mockInstructors[1]);
-            const response = await fetch(submission2.url, {
-                method: 'POST',
-                headers: {'Content-type': 'application/x-www-form-urlencoded'},
-                body: querystring.encode(payload),
-            });
-
-            assert.equal(response.status, 200);
-
-            gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
-            assert.lengthOf(gradingJobs, 2);
-
-            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
-            const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
-
-            assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
-            assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
-
-        });
-
     });
 });
