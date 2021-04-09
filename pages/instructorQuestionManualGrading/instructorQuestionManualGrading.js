@@ -109,8 +109,11 @@ router.post('/', function(req, res, next) {
                 res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
             });
         } else {
-            sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err) => {
+            sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err, result) => {
                 if (ERR(err, next)) return;
+                if (result.rows[0].grading_job.manual_grading_conflict) {
+                    return res.redirect(`${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/manual_grading?conflicting_grading_job=${result.rows[0].grading_job.id}`);
+                }
                 res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
             });
         }
