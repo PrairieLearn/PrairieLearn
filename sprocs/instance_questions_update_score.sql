@@ -33,12 +33,13 @@ DECLARE
     new_points double precision;
     new_score double precision;
     new_correct boolean;
+    current_partial_score jsonb;
 BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid), q.qid
-    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group, found_qid
+    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid), q.qid, s.partial_scores
+    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group, found_qid, current_partial_score
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -77,6 +78,18 @@ BEGIN
     END IF;
 
     -- ##################################################################
+    -- check if partial_scores is an object
+
+    IF arg_partial_scores IS NOT NULL THEN
+        IF jsonb_typeof(arg_partial_scores) != 'object' THEN
+            RAISE EXCEPTION 'partial_scores is not an object';
+        END IF;
+        IF current_partial_score IS NOT NULL THEN
+            arg_partial_scores = current_partial_score || arg_partial_scores;
+        END IF;
+    END IF;
+
+    -- ##################################################################
     -- compute the new score_perc/points
 
     max_points := COALESCE(max_points, 0);
@@ -88,6 +101,13 @@ BEGIN
     ELSIF arg_points IS NOT NULL THEN
         new_points := arg_points;
         new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
+    ELSEIF arg_partial_scores IS NOT NULL THEN
+        SELECT SUM(COALESCE((val->'score')::DOUBLE PRECISION, 0) *
+                   COALESCE((val->'weight')::DOUBLE PRECISION, 1)) * 100 /
+               SUM(COALESCE((val->'weight')::DOUBLE PRECISION, 1))
+          INTO new_score_perc
+          FROM jsonb_each(arg_partial_scores) AS p(k, val);
+        new_points := new_score_perc / 100 * max_points;
     ELSE
         new_points := NULL;
         new_score_perc := NULL;
@@ -95,13 +115,6 @@ BEGIN
 
     new_score := new_score_perc / 100;
     new_correct := (new_score > 0.5);
-
-    -- ##################################################################
-    -- check if partial_scores is an object
-
-    IF arg_partial_scores IS NOT NULL AND jsonb_typeof(arg_partial_scores) != 'object' THEN
-        RAISE EXCEPTION 'partial_scores is not an object';
-    END IF;
 
     -- ##################################################################
     -- if we were originally provided a submission_id or we have feedback
@@ -129,9 +142,8 @@ BEGIN
                 ELSE arg_feedback
             END,
             partial_scores = CASE
-                WHEN partial_scores IS NULL THEN arg_partial_scores
                 WHEN arg_partial_scores IS NULL THEN partial_scores
-                ELSE partial_scores || arg_partial_scores
+                ELSE arg_partial_scores
             END,
             graded_at = now(),
             grading_method = 'External',
