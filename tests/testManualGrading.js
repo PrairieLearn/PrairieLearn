@@ -115,24 +115,8 @@ const createGradingConflict = async (iqManualGradingUrl) => {
     const iqManualGradingBody2 = await (await fetch(iqManualGradingUrl)).text();
     const $iqManualGradingPage2 = cheerio.load(iqManualGradingBody2);
 
-    const payload1 = {
-        submissionScore: 5,
-        submissionNote: 'First submission score of 5%',
-        instanceQuestionModifiedAt: $iqManualGradingPage1('form > input[name="instanceQuestionModifiedAt"]').val(),
-        __csrf_token: $iqManualGradingPage1('form > input[name="__csrf_token"]').val(),
-        __action: $iqManualGradingPage1('form > div > button[name="__action"]').attr('value'),
-        assessmentId: $iqManualGradingPage1('form > input[name="assessmentId"]').val(),
-        assessmentQuestionId: $iqManualGradingPage1('form > input[name="assessmentQuestionId"]').val(),
-    };
-    const payload2 = {
-        submissionScore: 95,
-        submissionNote: 'Second submission score of 95%',
-        instanceQuestionModifiedAt: $iqManualGradingPage2('form > input[name="instanceQuestionModifiedAt"]').val(),
-        __csrf_token: $iqManualGradingPage2('form > input[name="__csrf_token"]').val(),
-        __action: $iqManualGradingPage2('form > div > button[name="__action"]').attr('value'),
-        assessmentId: $iqManualGradingPage2('form > input[name="assessmentId"]').val(),
-        assessmentQuestionId: $iqManualGradingPage2('form > input[name="assessmentQuestionId"]').val(),
-    };
+    const payload1 = getManualGradePayload($iqManualGradingPage1, 'Any message first grading job', 5);
+    const payload2 = getManualGradePayload($iqManualGradingPage2, 'Any message second grading job', 95);
 
     // instructor 1 submits a grade
     setUser(mockInstructors[0]);
@@ -509,8 +493,8 @@ describe('Manual grading', function() {
             assert.lengthOf(gradingJobs, 2);
 
             const $gradingConflictPage = cheerio.load(await submission2.text());
-
             const payload = getConflictPayload($gradingConflictPage, 'Existing'); 
+            assert.equal(payload.diffType, 'submission');
 
             setUser(mockInstructors[1]);
             const response = await fetch(submission2.url, {
@@ -523,6 +507,13 @@ describe('Manual grading', function() {
 
             gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
             assert.lengthOf(gradingJobs, 2);
+
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+
+            assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
+            assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
+
         });
 
     });
