@@ -18,15 +18,22 @@ DECLARE
     instance_question_id bigint;
     assessment_question_id bigint;
     last_submission submissions%rowtype;
+    last_submission_id bigint;
     is_conflict boolean;
 BEGIN
 
-    SELECT iq.id, iq.assessment_question_id, iq.modified_at
-    INTO instance_question_id, assessment_question_id, instance_question_modified_at
+    SELECT iq.id, iq.assessment_question_id, iq.modified_at, s.id
+    INTO instance_question_id, assessment_question_id, instance_question_modified_at, last_submission_id
     FROM
         instance_questions AS iq
-    WHERE
-        iq.id = arg_instance_question_id
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
+        JOIN users AS u ON (u.user_id = iq.manual_grading_user)
+    WHERE iq.id = arg_instance_question_id
+    ORDER BY s.date DESC, s.id DESC
+    LIMIT 1
     FOR UPDATE;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
