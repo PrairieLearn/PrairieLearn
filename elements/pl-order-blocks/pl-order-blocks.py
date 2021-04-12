@@ -233,7 +233,6 @@ def render(element_html, data):
 
 
 def parse(element_html, data):
-    # FIX ME
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
