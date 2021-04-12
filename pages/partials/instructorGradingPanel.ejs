@@ -17,7 +17,11 @@
             <div class="form-group">
               <label for="submission-score">Score:</label>
               <div class="input-group">
-                <input type="number" min="0" max="100" step="5" class="form-control" id="submission-score" class="submission-score" name="submissionScore" value="<%= submission.score % 5 > 0 ? submission.score * 100 : submission.score %>" aria-describedby="score-help-block"/>
+                <input type="number" min="0" max="100" step="5" class="form-control" id="submission-score" class="submission-score" name="submissionScore" value="<%= submission.score % 5 > 0 ? submission.score * 100 : submission.score %>" aria-describedby="score-help-block"
+                  <% if (submission.type != 'undefined' && submission.type == 'submission') { %>
+                    readonly
+                  <% } %>
+                />
                 <span class="input-group-addon" style="display: flex; align-items: center">%</span>
               </div>
               <small id="score-help-block" class="form-text text-muted">
@@ -26,7 +30,11 @@
             </div>
             <div class="form-group">
               <label for="submission-feedback">Feedback:</label>
-              <textarea name="submissionNote" class="form-control" id="submission-feedback" class="submission-feedback"><% if (submission.feedback) {%><%= submission.feedback.manual %><% } %></textarea>
+              <textarea 
+                <% if (submission.type != 'undefined' && submission.type == 'submission') { %>
+                  readonly
+                <% } %>
+                name="submissionNote" class="form-control" id="submission-feedback" class="submission-feedback"><% if (submission.feedback) {%><%= submission.feedback.manual %><% } %></textarea>
             </div>
             <div class="text-right">
 
