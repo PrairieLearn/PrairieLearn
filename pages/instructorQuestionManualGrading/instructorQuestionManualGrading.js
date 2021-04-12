@@ -103,6 +103,7 @@ router.post('/', function(req, res, next) {
             res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
         });
     } else if (req.body.__action == 'resolve_manual_grading_conflict') {
+        // if submission type, do not grade again
         if (req.body.diffType === 'submission') {
             sqlDb.queryOneRow(sql.remove_grading_job_conflict, {id: gradingJobId}, (err) => {
                 if (ERR(err, next)) return;
