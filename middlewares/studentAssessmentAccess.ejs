@@ -32,9 +32,16 @@
                       <div class="col-md-3 col-sm-6">
                         <%- include('../pages/partials/scorebar', {score: assessment_instance.score_perc}) %>
                       </div>
-                      <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
-                          Assessment is <strong>closed</strong> and is no longer available.
-                      </div>
+                      
+                      <% if (assessment_instance.open === false) { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment is <strong>closed</strong> and is no longer available.
+                        </div>
+                      <% } else { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment is not available at this time.
+                        </div>
+                      <% } %>
                     </div>
 
                     <% if (authz_data.mode == 'SEB') { %>
@@ -60,9 +67,15 @@
                     </div>
 
                 <% } else { %>
-                    <div class="test-suite-assessment-closed-message">
-                        Assessment is <strong>closed</strong> and is no longer available.
-                    </div>
+                    <% if (assessment_instance.open === false) { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment is <strong>closed</strong> and is no longer available.
+                        </div>
+                    <% } else { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment is not available at this time.
+                        </div>
+                    <% } %>
                 <% } %>
             </div> <!-- panel-body -->
         </div>
