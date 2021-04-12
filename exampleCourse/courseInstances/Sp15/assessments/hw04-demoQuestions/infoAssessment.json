@@ -53,7 +53,8 @@
                 {"id": "demo/autograder/ansiOutput",           "points": 2, "maxPoints": 4},
                 {"id": "demo/overlayTriangle",                 "points": 2, "maxPoints": 4},
                 {"id": "demo/addHTMLtable",                    "points": 2, "maxPoints": 4},
-                {"id": "demo/insertEmbeddedVideo",             "points": 2, "maxPoints": 4}
+                {"id": "demo/insertEmbeddedVideo",             "points": 2, "maxPoints": 4},
+                {"id": "demo/randomFakeData",                  "points": 2, "maxPoints": 4}
             ]
         }
     ]

@@ -1,4 +1,5 @@
 chevron==0.14.0
+Faker==7.0.1
 flake8==3.9.0
 flake8-quotes==3.2.0
 lxml==4.6.3
