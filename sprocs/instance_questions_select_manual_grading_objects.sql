@@ -36,7 +36,7 @@ BEGIN
     IF arg_conflicting_grading_job_id IS NOT NULL THEN
         SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'type', 'grading_job')
         INTO incoming_conflict
-        FROM 
+        FROM
             grading_jobs AS gj
             JOIN users as u ON (u.user_id = gj.auth_user_id)
         WHERE id = arg_conflicting_grading_job_id;
@@ -64,7 +64,8 @@ BEGIN
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-        JOIN users AS u ON (u.user_id = iq.manual_grading_user)
+        JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
+        JOIN users AS u ON (u.user_id = umg.user_id)
     WHERE iq.id = arg_instance_question_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;

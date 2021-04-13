@@ -6,6 +6,11 @@ SELECT *
 FROM instance_questions
 WHERE id = $id;
 
+-- BLOCK get_users_manual_grading
+SELECT *
+FROM users_manual_grading
+WHERE instance_question_id = $instance_question_id;
+
 -- BLOCK get_conflict_grading_jobs_by_iq
 SELECT *
 FROM

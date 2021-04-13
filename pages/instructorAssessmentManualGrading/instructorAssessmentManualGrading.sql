@@ -3,13 +3,15 @@ WITH iq_with_last_submission AS (
     SELECT DISTINCT ON (iq.id)
         iq.id, s.graded_at,
         iq.assessment_question_id,
-        iq.manual_grading_user,
+        umg.user_id,
         gj.manual_grading_conflict
     FROM
         assessment_questions AS aq
         JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
+        LEFT JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
+        LEFT JOIN users AS u ON (u.user_id = umg.user_id)
         LEFT JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
         aq.assessment_id = $assessment_id
@@ -38,9 +40,9 @@ SELECT
     (SELECT array_agg(DISTINCT u.uid)
      FROM
         iq_with_last_submission AS iqwls
-        LEFT JOIN users AS u ON (u.user_id = iqwls.manual_grading_user)
+        LEFT JOIN users AS u ON (u.user_id = iqwls.user_id)
      WHERE
-         iqwls.manual_grading_user IS NOT NULL
+         iqwls.user_id IS NOT NULL
          AND iqwls.assessment_question_id = aq.id) AS manual_grading_users
 FROM
     assessment_questions AS aq
