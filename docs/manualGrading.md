@@ -75,3 +75,5 @@ You also have the option to set partial scores. These can be based on individual
 ```
 
 If the `partial_scores` column contains a valid value, and there is no value in `score_perc` or `points`, the score will be computed based on the weighted average of the partial scores. For example, the score above will be computed as 80% (the weighted average between 70% with weight 2, and 100% with weight 1).
+
+*WARNING*: note that some elements such as drawings or matrix elements may rely elaborate on partial score values with specific structures and objects. When updating partial scores, make sure you follow the same structure as the original partial scores to avoid any problems. Changing these values could lead to errors on rendering the question pages for these elements.
