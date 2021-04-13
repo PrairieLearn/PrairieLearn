@@ -1,0 +1,13 @@
+columns
+    date_started: timestamp with time zone
+    id: bigint not null default nextval('users_manual_grading_id_seq'::regclass)
+    instance_question_id: bigint
+    user_id: bigint
+
+indexes
+    users_manual_grading_pkey: PRIMARY KEY (id) USING btree (id)
+    users_manual_grading_user_id_key: UNIQUE (user_id) USING btree (user_id)
+
+foreign-key constraints
+    users_manual_grading_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    users_manual_grading_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
