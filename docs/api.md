@@ -83,3 +83,7 @@ In the endpoint list below, path components starting with a colon like
 * **One submission:**
     - `/pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id`
     - One specific submission.
+
+## Python library
+
+An unofficial Python library exists to simplify the process of connecting to any PrairieLearn instance API. It is available at [https://gitlab.com/astrosticks/prairiepy](https://gitlab.com/astrosticks/prairiepy).
