@@ -14,69 +14,47 @@ div.pl-order-blocks-bottom {
 }
 
 
-ul.pl-order-blocks-connected-sortable li:hover:not(:first-child){
+ul.pl-order-blocks-connected-sortable li:hover{
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
-  /*border: 1px solid blue;*/
-  outline: 4px solid blue;
+  outline: 2px solid blue;
   outline-offset: -2px;
 }
-
 
 li.ui-state-highlight { 
   /*This styling applies to the placeholder answer tile that appears when the user is dragging */
   height: 3em !important; 
   border: none !important;
   list-style-type: none;
-  background-color: #90a4ae !important; 
+  background-color: #90a4ae !important;
+  min-width: 3em !important;
 }
 
-ul.pl-order-blocks-connected-sortable {
-    height: 100%;
-    vertical-align: middle;
+ul.header {
+  color: black;
+  list-style-type: none;
+  margin-bottom: 0px;
 }
 
-
-li.list-group-item-header-dropzone {
-    background-color: #1DE9B6;
-    font-weight: 600;
-    color: #000000;
+ul.inline li {
+  display: inline-block;
+  margin-right: 5px;
 }
 
-li.list-group-item-darkmode {
-    border-radius: 7px;
-    margin: 4px 7px 0px 7px;
-    background-color: #f5f5f5;
-    border: 1px solid grey !important;
-    font-size: 1.2em;
-    line-height: 1.1em;
+ul.ui-sortable {
+  padding: 17px 17px 17px 17px;
+  height: 100%;
+  margin-bottom: 0px;
 }
 
-li.list-group-item-darkmode:last-child  {
-    margin-bottom: 8px !important;
+ul.ui-sortable li {
+  margin-bottom: 7px;
+  border: 2px solid grey !important;
+  border-radius: 5px !important;
+  background-color: #f5f5f5;
+  font-size: 1.2em;
+  line-height: 1.1em;
 }
 
-
-li.list-group-item-header {
-    background-color: #7C4DFF;
-    border-radius: 7px;
-    font-weight: 600;
-    color: #ffffff;
-    text-align: left;
-}
-
-code.user-output {
-  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
-  margin-right: 4px;
-}
-
-.answer_block_container {
-    display: inline-block;
-    border: 1px solid #BDBDBD;
-}
-
-li.list-group-item {
-  width: inherit;
-}
 
 div.row {
   margin: inherit;
@@ -90,9 +68,3 @@ div.column {
   border: 1px solid #9e9e9e;
 }
 
-div.row:after {
-  /* Clear floats after the columns */
-  content: "";
-  display: table;
-  clear: both;
-}

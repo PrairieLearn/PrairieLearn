@@ -16,6 +16,7 @@ SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Drop blocks here:'
 FILE_NAME_DEFAULT = 'user_code.py'
 SOLUTION_PLACEMENT_DEFAULT = 'right'
+INLINE_DEFAULT = False
 WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 7
 TAB_SIZE_PX = 50
@@ -33,7 +34,7 @@ def prepare(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     required_attribs = ['answers-name']
-    optional_attribs = ['source-blocks-order', 'grading-method', 'indentation', 'source-header', 'solution-header', 'file-name', 'solution-placement', 'max-incorrect', 'min-incorrect', 'weight']
+    optional_attribs = ['source-blocks-order', 'grading-method', 'indentation', 'source-header', 'solution-header', 'file-name', 'solution-placement', 'max-incorrect', 'min-incorrect', 'weight', 'inline']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
@@ -121,6 +122,7 @@ def render(element_html, data):
         source_header = pl.get_string_attrib(element, 'source-header', SOURCE_HEADER_DEFAULT)
         solution_header = pl.get_string_attrib(element, 'solution-header', SOLUTION_HEADER_DEFAULT)
         grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
+        inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
         mcq_options = data['params'][answer_name]
 
@@ -158,7 +160,8 @@ def render(element_html, data):
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'enableIndentation' if check_indentation is True else None,
-            'help_text': help_text
+            'help_text': help_text,
+            'inline': inline
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -252,7 +255,7 @@ def parse(element_html, data):
     if grading_mode == 'ranking':
         index = 0
         for answer in student_answer:
-            search = next((item for item in correct_answers if item["inner_html"] == answer['inner_html']), None)
+            search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
             if search is not None:
                 ranking = search['ranking']
             else:
