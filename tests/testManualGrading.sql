@@ -6,11 +6,6 @@ SELECT *
 FROM instance_questions
 WHERE id = $id;
 
--- BLOCK get_users_manual_grading
-SELECT *
-FROM users_manual_grading
-WHERE instance_question_id = $instance_question_id;
-
 -- BLOCK get_conflict_grading_jobs_by_iq
 SELECT *
 FROM
@@ -31,11 +26,6 @@ FROM
     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
 WHERE
     iq.id = $id;
-
--- BLOCK get_user_by_uin
-SELECT *
-FROM users
-WHERE uin = $uin;
 
 -- BLOCK get_assessment_question
 SELECT *
