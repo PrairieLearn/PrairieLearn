@@ -217,6 +217,7 @@ describe('Manual grading', function() {
         let $fossilFuelsRow = null;
         let gradingConflictUrl = null;
         let manualGradingUrl = null;
+        let manualGradingWarningUrl = null;
 
         beforeEach('set instructor user role', () => setUser(mockInstructors[0]));
         beforeEach('load manual grading page URL and get testing question rows', async () => {
@@ -317,25 +318,27 @@ describe('Manual grading', function() {
             const contributorUids = $addVectorsRow('.grading-contributors-value').text().trim().split(',');
             assert.lengthOf(contributorUids, 2);
         });
-        it('instructor should see warning message when grading question and also being graded by another instructor', async () => {
+        it('instructor should see "currently grading" warning message when a manual grading user is already assigned/grading instance question', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
 
             // instructor 1 opens question for grading
-            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
+            manualGradingWarningUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
             // instructor 2 opens question for grading
             setUser(mockInstructors[1]);
-            let iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
+            const iqManualGradingBody = await (await fetch(manualGradingWarningUrl)).text();
             assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
-
-            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+        });
+        it('instructor becomes the manual grading user when first within manual grading expiry time range', async () => {
+            setUser(mockInstructors[1]);
+            const instanceQuestionId = parseInstanceQuestionId(manualGradingWarningUrl);
             await sqldb.queryAsync(sql.set_last_date_started_by_user, {
                 instanceQuestionId,
                 uid: mockInstructors[0].authUid,
                 dateTime: new Date('2999-01-01T01:00:00Z').toISOString(),
             });
 
-            iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
+            const iqManualGradingBody = await (await fetch(manualGradingWarningUrl)).text();
             assert.include(iqManualGradingBody, '(mwest@illinois.edu) is currently grading this question');
         });
         it('instructor should get grading conflict view if two instructors submit grades to same question when being graded by two instructors', async () => {

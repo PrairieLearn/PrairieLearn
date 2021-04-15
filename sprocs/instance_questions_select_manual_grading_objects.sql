@@ -78,19 +78,9 @@ BEGIN
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
-        -- Ungraded
-        (
-            s.graded_at IS NULL
-            AND iq.id = arg_instance_question_id
-            AND umg.date_started >= (NOW() - arg_manual_grading_expiry::interval)
-        )
-        OR
-        -- WHEN graded, grading user is last grader
-        (
-            s.graded_at IS NOT NULL
-            AND iq.id = arg_instance_question_id
-            AND umg.date_graded IS NOT NULL
-        )
+        s.graded_at IS NULL
+        AND iq.id = arg_instance_question_id
+        AND umg.date_started >= (NOW() - arg_manual_grading_expiry::interval)
     ORDER BY s.date DESC, s.id DESC, date_started ASC
     LIMIT 1;
 
