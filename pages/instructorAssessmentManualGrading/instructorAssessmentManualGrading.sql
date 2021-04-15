@@ -40,10 +40,23 @@ SELECT
     (SELECT array_agg(DISTINCT u.uid)
      FROM
         iq_with_last_submission AS iqwls
-        LEFT JOIN users AS u ON (u.user_id = iqwls.user_id)
+        LEFT JOIN users_manual_grading AS umg ON (umg.instance_question_id = iqwls.id)
+        LEFT JOIN users AS u ON (umg.user_id = u.user_id)
      WHERE
          iqwls.user_id IS NOT NULL
-         AND iqwls.assessment_question_id = aq.id) AS manual_grading_users
+         AND iqwls.assessment_question_id = aq.id
+         AND (
+                (
+                iqwls.graded_at IS NULL
+                AND umg.date_started >= (NOW() - $manual_grading_expiry_sec::interval)
+                )
+                OR
+                (
+                iqwls.graded_at IS NOT NULL
+                AND umg.date_graded IS NOT NULL
+                )
+            )
+         ) AS manual_grading_users
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)

@@ -141,7 +141,7 @@ describe('Manual grading', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
-    // after('shut down testing server', helperServer.after);
+    after('shut down testing server', helperServer.after);
 
     before('set any student as default user role', () => setUser(mockStudents[0]));
     after('reset to default instructor user', () => setUser(mockInstructors[0]));
@@ -317,202 +317,203 @@ describe('Manual grading', function() {
             const contributorUids = $addVectorsRow('.grading-contributors-value').text().trim().split(',');
             assert.lengthOf(contributorUids, 2);
         });
-        // it('instructor user id should be added to instance question when submission opened for grading', async () => {
-        //     const gradeNextAddNumbersUrl = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
-        //     const redirectUrl = (await fetch(gradeNextAddNumbersUrl)).url;
+        it('instructor should see warning message when grading question and also being graded by another instructor', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
 
-        //     const instanceQuestionId = parseInstanceQuestionId(redirectUrl);
-        //     const usersManualGrading = (await sqldb.queryOneRowAsync(sql.get_users_manual_grading, {instance_question_id: instanceQuestionId})).rows[0];
-        //     const user = (await sqldb.queryOneRowAsync(sql.get_user_by_uin, {uin: mockInstructors[0].authUin})).rows[0];
-        //     assert.equal(usersManualGrading.user_id, user.user_id);
-        // });
-        // it('instructor should see warning message when grading question also being graded by another instructor', async () => {
-        //     const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            // instructor 1 opens question for grading
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
-        //     // instructor 1 opens question for grading
-        //     const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
+            // instructor 2 opens question for grading
+            setUser(mockInstructors[1]);
+            let iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
+            assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
 
-        //     // instructor 2 opens question for grading
-        //     setUser(mockInstructors[1]);
-        //     const iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
-        //     assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
-        // });
-        // it('instructor should get grading conflict view if two instructors submit grades to same question when being graded by two instructors', async () => {
-        //     const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
-        //     const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
+            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+            await sqldb.queryAsync(sql.set_last_date_started_by_user, {
+                instanceQuestionId,
+                uid: mockInstructors[0].authUid,
+                dateTime: new Date('2999-01-01T01:00:00Z').toISOString(),
+            });
 
-        //     const {submission1, submission2} = await createGradingConflict(iqManualGradingUrl);
+            iqManualGradingBody = await (await fetch(iqManualGradingUrl)).text();
+            assert.include(iqManualGradingBody, '(mwest@illinois.edu) is currently grading this question');
+        });
+        it('instructor should get grading conflict view if two instructors submit grades to same question when being graded by two instructors', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
-        //     gradingConflictUrl = iqManualGradingUrl;
+            const {submission1, submission2} = await createGradingConflict(iqManualGradingUrl);
 
-        //     const instanceQuestionId = parseInstanceQuestionId(submission2.url);
-        //     const gradingJob = (await sqldb.queryOneRowAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows[0];
-        //     assert.isTrue(gradingJob.manual_grading_conflict);
+            gradingConflictUrl = iqManualGradingUrl;
 
-        //     // instructor 1 sees a new question to grade
-        //     const submission1Body = await submission1.text();
-        //     assert.equal(submission1.status, 200);
-        //     assert.notEqual(submission1.url, gradingConflictUrl);
-        //     assert.include(submission1Body, 'Grading Panel');
-        //     assert.notInclude(submission1Body, 'Existing Grade');
-        //     assert.notInclude(submission1Body, 'Incoming Grade');
+            const instanceQuestionId = parseInstanceQuestionId(submission2.url);
+            const gradingJob = (await sqldb.queryOneRowAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows[0];
+            assert.isTrue(gradingJob.manual_grading_conflict);
 
-        //     // instructor 2 redirects back to same page to resolve conflict
-        //     const submission2Body = await submission2.text();
-        //     assert.equal(submission2.status, 200);
-        //     assert.include(submission2.url, gradingConflictUrl);
-        //     assert.notInclude(submission2Body, 'Grading Panel');
-        //     assert.include(submission2Body, 'Existing Grade');
-        //     assert.include(submission2Body, 'Incoming Grade');
-        //     assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
-        // });
-        // it('grading conflict should persist when loaded by any instructor', async () => {
-        //     const gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
-        //     assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
-        // });
-        // it('grading conflict should count as ungraded on main Assessment Manual Grading View', () => {
-        //     assert.equal($addNumbersRow('.ungraded-value').text(), 3);
-        // });
-        // it('grading conflict can be resolved by any instructor', async () => {
-        //     const $gradingConflictPage = cheerio.load(
-        //         await (await fetch(gradingConflictUrl)).text(),
-        //     );
+            // instructor 1 sees a new question to grade
+            const submission1Body = await submission1.text();
+            assert.equal(submission1.status, 200);
+            assert.notEqual(submission1.url, gradingConflictUrl);
+            assert.include(submission1Body, 'Grading Panel');
+            assert.notInclude(submission1Body, 'Existing Grade');
+            assert.notInclude(submission1Body, 'Incoming Grade');
+
+            // instructor 2 redirects back to same page to resolve conflict
+            const submission2Body = await submission2.text();
+            assert.equal(submission2.status, 200);
+            assert.include(submission2.url, gradingConflictUrl);
+            assert.notInclude(submission2Body, 'Grading Panel');
+            assert.include(submission2Body, 'Existing Grade');
+            assert.include(submission2Body, 'Incoming Grade');
+            assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
+        });
+        it('grading conflict should persist when loaded by any instructor', async () => {
+            const gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
+            assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
+        });
+        it('grading conflict should count as ungraded on main Assessment Manual Grading View', () => {
+            assert.equal($addNumbersRow('.ungraded-value').text(), 3);
+        });
+        it('grading conflict can be resolved by any instructor', async () => {
+            const $gradingConflictPage = cheerio.load(
+                await (await fetch(gradingConflictUrl)).text(),
+            );
             
-        //     // could use Existing or Incoming Grade
-        //     const payload = getConflictPayload($gradingConflictPage, 'Incoming'); 
+            // could use Existing or Incoming Grade
+            const payload = getConflictPayload($gradingConflictPage, 'Incoming'); 
 
-        //     const nextPage = await fetch(gradingConflictUrl, {
-        //         method: 'POST',
-        //         headers: {'Content-type': 'application/x-www-form-urlencoded'},
-        //         body: querystring.encode(payload),
-        //     });
+            const nextPage = await fetch(gradingConflictUrl, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload),
+            });
 
-        //     assert.equal(nextPage.status, 200);
+            assert.equal(nextPage.status, 200);
 
-        //     const instanceQuestionId = parseInstanceQuestionId(gradingConflictUrl);
-        //     const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
-        //     const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+            const instanceQuestionId = parseInstanceQuestionId(gradingConflictUrl);
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
 
-        //     // application layer back-end will divide payload score by 100
-        //     assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
-        //     assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
-        // });
-        // it('grading conflict resolution should count as graded on Assessment Manual Grading view', () => {
-        //     assert.equal($addNumbersRow('.ungraded-value').text(), 2);
-        //     assert.equal($addNumbersRow('.graded-value').text(), 1);
-        // });
-        // it('grading conflict `submission` type post should resolve conflict and NOT produce new grading job', async () => {
-        //     const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
-        //     const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
+            // application layer back-end will divide payload score by 100
+            assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
+            assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
+        });
+        it('grading conflict resolution should count as graded on Assessment Manual Grading view', () => {
+            assert.equal($addNumbersRow('.ungraded-value').text(), 2);
+            assert.equal($addNumbersRow('.graded-value').text(), 1);
+        });
+        it('grading conflict `submission` type post should resolve conflict and NOT produce new grading job', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
-        //     // two manual grade jobs result in conflict = 2 grading jobs
-        //     const {submission2} = await createGradingConflict(iqManualGradingUrl);
+            // two manual grade jobs result in conflict = 2 grading jobs
+            const {submission2} = await createGradingConflict(iqManualGradingUrl);
 
-        //     const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
-        //     let gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
-        //     assert.lengthOf(gradingJobs, 2);
+            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+            let gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 2);
 
-        //     const $gradingConflictPage = cheerio.load(await submission2.text());
-        //     const payload = getConflictPayload($gradingConflictPage, 'Existing'); 
-        //     assert.equal(payload.diffType, 'submission');
+            const $gradingConflictPage = cheerio.load(await submission2.text());
+            const payload = getConflictPayload($gradingConflictPage, 'Existing'); 
+            assert.equal(payload.diffType, 'submission');
 
-        //     setUser(mockInstructors[1]);
-        //     const response = await fetch(submission2.url, {
-        //         method: 'POST',
-        //         headers: {'Content-type': 'application/x-www-form-urlencoded'},
-        //         body: querystring.encode(payload),
-        //     });
+            setUser(mockInstructors[1]);
+            const response = await fetch(submission2.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload),
+            });
 
-        //     assert.equal(response.status, 200);
+            assert.equal(response.status, 200);
 
-        //     gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
-        //     assert.lengthOf(gradingJobs, 2);
+            gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 2);
 
-        //     const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
-        //     const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
 
-        //     assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
-        //     assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
-        // });
-        // it('multiple grading conflicts can be resolved on same instance question', async () => {
-        //     // NOTE: Must use user returned URLs to meet CSRF token constraints
-        //     const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
-        //     const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
+            assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
+            assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
+        });
+        it('multiple grading conflicts can be resolved on same instance question', async () => {
+            // NOTE: Must use user returned URLs to meet CSRF token constraints
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
             
-        //     // user 2 gets conflict
-        //     const {submission2} = await createGradingConflict(iqManualGradingUrl);
+            // user 2 gets conflict
+            const {submission2} = await createGradingConflict(iqManualGradingUrl);
             
-        //     const submission2Body = await submission2.text();
-        //     assert.equal(submission2.status, 200);
-        //     assert.notInclude(submission2Body, 'Grading Panel');
-        //     assert.include(submission2Body, 'Existing Grade');
-        //     assert.include(submission2Body, 'Incoming Grade');
-        //     assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
+            const submission2Body = await submission2.text();
+            assert.equal(submission2.status, 200);
+            assert.notInclude(submission2Body, 'Grading Panel');
+            assert.include(submission2Body, 'Existing Grade');
+            assert.include(submission2Body, 'Incoming Grade');
+            assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
-        //     const $user2ConflictPage = cheerio.load(
-        //         submission2Body,
-        //     );
+            const $user2ConflictPage = cheerio.load(
+                submission2Body,
+            );
 
-        //     // user 1 loads page with conflict
-        //     setUser(mockInstructors[0]);
-        //     const submission3 = await fetch(iqManualGradingUrl);
-        //     const submission3Body = await submission3.text();
-        //     assert.equal(submission3.status, 200);
-        //     assert.notInclude(submission3Body, 'Grading Panel');
-        //     assert.include(submission3Body, 'Existing Grade');
-        //     assert.include(submission3Body, 'Incoming Grade');
-        //     assert.include(submission3Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
+            // user 1 loads page with conflict
+            setUser(mockInstructors[0]);
+            const submission3 = await fetch(iqManualGradingUrl);
+            const submission3Body = await submission3.text();
+            assert.equal(submission3.status, 200);
+            assert.notInclude(submission3Body, 'Grading Panel');
+            assert.include(submission3Body, 'Existing Grade');
+            assert.include(submission3Body, 'Incoming Grade');
+            assert.include(submission3Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
-        //     const $user1ConflictPage = cheerio.load(
-        //         submission3Body,
-        //     );
+            const $user1ConflictPage = cheerio.load(
+                submission3Body,
+            );
 
-        //     const user1Payload = getConflictPayload($user1ConflictPage, 'Incoming'); 
-        //     const user2Payload = getConflictPayload($user2ConflictPage, 'Incoming'); 
+            const user1Payload = getConflictPayload($user1ConflictPage, 'Incoming'); 
+            const user2Payload = getConflictPayload($user2ConflictPage, 'Incoming'); 
 
-        //     assert.equal(user1Payload.instanceQuestionModifiedAt, user2Payload.instanceQuestionModifiedAt);
+            assert.equal(user1Payload.instanceQuestionModifiedAt, user2Payload.instanceQuestionModifiedAt);
 
-        //     // user 2 submits successfully
-        //     setUser(mockInstructors[1]);
-        //     const resolution1Body = await (await fetch(submission2.url, {
-        //         method: 'POST',
-        //         headers: {'Content-type': 'application/x-www-form-urlencoded'},
-        //         body: querystring.encode(user2Payload),
-        //     })).text();
+            // user 2 submits successfully
+            setUser(mockInstructors[1]);
+            const resolution1Body = await (await fetch(submission2.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(user2Payload),
+            })).text();
 
-        //     assert.notInclude(resolution1Body, 'Manual Grading Conflict');
+            assert.notInclude(resolution1Body, 'Manual Grading Conflict');
 
-        //     // user 1 receives new conflict page
-        //     setUser(mockInstructors[0]);
-        //     const resolution2Body = await (await fetch(submission3.url, {
-        //         method: 'POST',
-        //         headers: {'Content-type': 'application/x-www-form-urlencoded'},
-        //         body: querystring.encode(user1Payload),
-        //     })).text();
+            // user 1 receives new conflict page
+            setUser(mockInstructors[0]);
+            const resolution2Body = await (await fetch(submission3.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(user1Payload),
+            })).text();
 
-        //     assert.include(resolution2Body, 'Manual Grading Conflict');
+            assert.include(resolution2Body, 'Manual Grading Conflict');
 
-        //     const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
-        //     const conflictGradingJobs = (await sqldb.queryAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
-        //     assert.lengthOf(conflictGradingJobs, 1);
+            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+            const conflictGradingJobs = (await sqldb.queryAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(conflictGradingJobs, 1);
 
-        //     const $resolution2Page = cheerio.load(resolution2Body);
-        //     const finalPayload = getConflictPayload($resolution2Page, 'Incoming'); 
+            const $resolution2Page = cheerio.load(resolution2Body);
+            const finalPayload = getConflictPayload($resolution2Page, 'Incoming'); 
 
-        //     await fetch(iqManualGradingUrl, {
-        //         method: 'POST',
-        //         headers: {'Content-type': 'application/x-www-form-urlencoded'},
-        //         body: querystring.encode(user1Payload),
-        //     });
+            await fetch(iqManualGradingUrl, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(user1Payload),
+            });
 
-        //     const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
-        //     const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
 
-        //     assert.equal(instanceQuestion.points, (finalPayload.submissionScore / 100) * assessmentQuestion.max_points);
-        //     assert.equal(instanceQuestion.score_perc, (finalPayload.submissionScore / 100) * 100);
+            assert.equal(instanceQuestion.points, (finalPayload.submissionScore / 100) * assessmentQuestion.max_points);
+            assert.equal(instanceQuestion.score_perc, (finalPayload.submissionScore / 100) * 100);
 
-        //     const gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
-        //     assert.lengthOf(gradingJobs, 5);
-        // });
+            const gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 5);
+        });
     });
 });

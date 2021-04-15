@@ -30,12 +30,12 @@ BEGIN
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-        JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
-        JOIN users AS u ON (u.user_id = umg.user_id)
     WHERE iq.id = arg_instance_question_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1
     FOR UPDATE;
+
+    RAISE WARNING 'iq id grade_submission %', instance_question_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
 
@@ -52,7 +52,6 @@ BEGIN
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-        JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
     WHERE iq.id = arg_instance_question_id
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;

@@ -95,5 +95,12 @@ BEGIN
         PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit, FALSE, TRUE);
     END IF;
 
+    UPDATE users_manual_grading AS umg
+    SET 
+        date_graded = NOW()
+    WHERE
+        umg.user_id = arg_authn_user_id
+        AND umg.instance_question_id = main.instance_question_id;
+
 END;
 $$ LANGUAGE plpgsql VOLATILE;

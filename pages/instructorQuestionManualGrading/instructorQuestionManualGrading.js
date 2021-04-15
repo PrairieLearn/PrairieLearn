@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const async = require('async');
+const config = require('../../lib/config');
 const question = require('../../lib/question');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { error, sqlDb } = require('@prairielearn/prairielib');
@@ -17,6 +18,7 @@ router.get('/', (req, res, next) => {
                 res.locals.instance_question.id,
                 res.locals.authn_user.user_id,
                 res.locals.conflicting_grading_job_id,
+                `${config.manualGradingExpirySec} seconds`,
             ];
             sqlDb.callZeroOrOneRow('instance_questions_select_manual_grading_objects', params, (err, result) => {
                 if (ERR(err, next)) return;

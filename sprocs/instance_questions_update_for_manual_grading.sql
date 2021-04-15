@@ -37,7 +37,10 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
-    PERFORM instance_questions_assign_manual_grading_user(arg_assessment_question_id, instance_question_id, arg_user_id);
+    -- When we are out of ungraded instance questions
+    IF instance_question_id IS NOT NULL THEN
+        PERFORM instance_questions_assign_manual_grading_user(arg_assessment_question_id, instance_question_id, arg_user_id);
+    END IF;
 
     SELECT to_jsonb(iq.*)
     INTO instance_question

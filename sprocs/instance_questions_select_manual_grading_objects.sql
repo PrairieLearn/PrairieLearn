@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION
         IN arg_instance_question_id bigint,
         IN arg_user_id bigint,
         IN arg_conflicting_grading_job_id bigint,
+        IN arg_manual_grading_expiry text,
         OUT instance_question jsonb,
         OUT question jsonb,
         OUT variant jsonb,
@@ -56,18 +57,41 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    SELECT to_jsonb(iq.*), to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*), to_jsonb(aq.*)
-    INTO instance_question, question, variant, submission, grading_user, assessment_question
+    SELECT to_jsonb(iq.*), to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(aq.*)
+    INTO instance_question, question, variant, submission, assessment_question
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-        JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
-        JOIN users AS u ON (u.user_id = umg.user_id)
     WHERE iq.id = arg_instance_question_id
     ORDER BY s.date DESC, s.id DESC
+    LIMIT 1;
+
+    SELECT to_jsonb(u.*)
+    INTO grading_user
+    FROM
+        instance_questions AS iq
+        JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
+        JOIN users as u ON (u.user_id = umg.user_id)
+        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
+    WHERE
+        -- Ungraded
+        (
+            s.graded_at IS NULL
+            AND iq.id = arg_instance_question_id
+            AND umg.date_started >= (NOW() - arg_manual_grading_expiry::interval)
+        )
+        OR
+        -- WHEN graded, grading user is last grader
+        (
+            s.graded_at IS NOT NULL
+            AND iq.id = arg_instance_question_id
+            AND umg.date_graded IS NOT NULL
+        )
+    ORDER BY s.date DESC, s.id DESC, date_started ASC
     LIMIT 1;
 
 END;

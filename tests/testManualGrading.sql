@@ -41,3 +41,16 @@ WHERE uin = $uin;
 SELECT *
 FROM assessment_questions
 WHERE id = $id;
+
+-- BLOCK set_last_date_started_by_user
+WITH specified_user AS (
+	SELECT user_id
+	FROM users
+	WHERE uid = $uid
+)
+UPDATE users_manual_grading AS umg
+SET date_started = $dateTime
+FROM specified_user
+WHERE
+	instance_question_id = $instanceQuestionId
+	AND umg.user_id = specified_user.user_id;
