@@ -289,7 +289,7 @@ describe('Manual grading', function() {
         it('instructor should NOT see "Grade Next" option when "Ungraded" column is 0', () => {
             assert.isUndefined($fossilFuelsRow('.grade-next-value').attr('href'));
         });
-        it('instructor(s) should appear in "Grading Contributors" column if opened or submitted grade', async () => {
+        it('instructor(s) should appear in "Grading Contributors" column if have submitted final grade', async () => {
             const ungradedVal = parseInt($addVectorsRow('.ungraded-value').text());
             assert.equal(ungradedVal, 3);
 
