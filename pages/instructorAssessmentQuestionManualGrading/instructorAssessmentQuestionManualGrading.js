@@ -28,7 +28,7 @@ router.get('/', function(req, res, next) {
 
         var params = {
             assessment_id: res.locals.assessment.id,
-            assessment_question_id: res.locals.assessment_question_id
+            assessment_question_id: res.locals.assessment_question_id,
         };
         sqlDb.query(sql.select_instance_questions_manual_grading, params, function(err, result) {
             if (ERR(err, next)) return;
