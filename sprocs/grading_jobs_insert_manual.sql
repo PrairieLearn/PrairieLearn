@@ -93,14 +93,14 @@ BEGIN
     IF assessment_instance_id IS NOT NULL THEN
         PERFORM instance_questions_manually_grade(instance_question_id, grading_job.score);
         PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit, FALSE, TRUE);
-    END IF;
 
-    UPDATE users_manual_grading AS umg
-    SET 
-        date_graded = NOW()
-    WHERE
-        umg.user_id = arg_authn_user_id
-        AND umg.instance_question_id = main.instance_question_id;
+        UPDATE users_manual_grading AS umg
+        SET 
+            date_graded = NOW()
+        WHERE
+            umg.user_id = arg_authn_user_id
+            AND umg.instance_question_id = main.instance_question_id;
+    END IF;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
