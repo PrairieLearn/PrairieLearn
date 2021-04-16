@@ -5,7 +5,7 @@ function stringToXML(str) {
     return doc.documentElement;
 }
 
-/** Helper to set list value in dictionary if list exists otherwise set as new empty list  */
+/** Helper to set list value in dictionary if list exists, otherwise initalize new list and set value  */
 function setDictList(dict, dictKey, listIdx, value, isNode) {
     if (!(dictKey in dict)) {
         dict[dictKey] = isNode ? [undefined, undefined] : [undefined, undefined, undefined];

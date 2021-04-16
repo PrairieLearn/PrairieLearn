@@ -1,5 +1,8 @@
 window.onload = function () { DiagramEditor.staticInit() }
 function DiagramEditor() {
+	// Set initial XML to be the data pssed in from py render()
+	this.data = document.getElementById("diagramXML").getAttribute("value")
+	console.log(this.data)
 	this.config = {
 		"enabledLibraries": [],
 		// "autosaveDelay": 1000,
@@ -229,7 +232,9 @@ DiagramEditor.prototype.handleMessage = function (msg) {
 			this.setStatus('allChangesSaved', false);
 		}
 	}
-
+	else if(msg.event == "event"){
+		console.error(msg.error)
+	}
 	if (msg.event == 'exit') {
 		if (this.format != 'xml') {
 			if (this.xml != null) {
@@ -263,6 +268,7 @@ DiagramEditor.prototype.configureEditor = function () {
  * Posts load message to editor.
  */
 DiagramEditor.prototype.initializeEditor = function () {
+
 	this.postMessage({
 		action: 'load', autosave: 1, saveAndExit: '1',
 		modified: 'unsavedChanges', xml: this.getData(),
