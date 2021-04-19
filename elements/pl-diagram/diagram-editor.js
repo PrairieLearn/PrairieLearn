@@ -5,9 +5,6 @@ function DiagramEditor() {
 	console.log(this.data)
 	this.config = {
 		"enabledLibraries": [],
-		// "autosaveDelay": 1000,
-		// "libraries":["general"]	,
-		// "defaultLibraries":""
 	};
 
 	var self = this;
