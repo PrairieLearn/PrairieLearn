@@ -338,15 +338,15 @@ describe('Manual grading', function() {
                 dateTime: new Date('2999-01-01T01:00:00Z').toISOString(),
             });
 
+            setUser(mockInstructors[0]);
             const iqManualGradingBody = await (await fetch(manualGradingWarningUrl)).text();
             assert.include(iqManualGradingBody, '(mwest@illinois.edu) is currently grading this question');
         });
-        it('instructor should get grading conflict view if two instructors submit grades to same question when being graded by two instructors', async () => {
+        it('instructor should get grading conflict view if another instructor submits grade to same question first (if both viewing question simaltaneously)', async () => {
             const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
             const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
 
             const {submission1, submission2} = await createGradingConflict(iqManualGradingUrl);
-
             gradingConflictUrl = iqManualGradingUrl;
 
             const instanceQuestionId = parseInstanceQuestionId(submission2.url);
