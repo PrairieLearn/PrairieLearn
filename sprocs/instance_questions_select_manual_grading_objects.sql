@@ -39,8 +39,8 @@ BEGIN
         INTO incoming_conflict
         FROM
             grading_jobs AS gj
-            JOIN users as u ON (u.user_id = gj.auth_user_id)
-        WHERE id = arg_conflicting_grading_job_id;
+            JOIN users AS u ON (u.user_id = gj.auth_user_id)
+        WHERE gj.id = arg_conflicting_grading_job_id;
     ELSE
         -- always check if grading conflict needs to be resolved
         SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'type', 'grading_job')
@@ -50,7 +50,7 @@ BEGIN
             JOIN submissions AS s ON (s.id = gj.submission_id)
             JOIN variants AS v ON (v.id = s.variant_id)
             JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-            JOIN users as u ON (u.user_id = gj.auth_user_id)
+            JOIN users AS u ON (u.user_id = gj.auth_user_id)
         WHERE
             iq.id = arg_instance_question_id
             AND gj.manual_grading_conflict IS TRUE
@@ -74,14 +74,13 @@ BEGIN
     FROM
         instance_questions AS iq
         JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
-        JOIN users as u ON (u.user_id = umg.user_id)
+        JOIN users AS u ON (u.user_id = umg.user_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
-        s.graded_at IS NULL
-        AND iq.id = arg_instance_question_id
+        iq.id = arg_instance_question_id
         AND umg.date_started >= (NOW() - arg_manual_grading_expiry::interval)
-    ORDER BY s.date DESC, s.id DESC, date_started ASC
+    ORDER BY s.date DESC, s.id DESC, umg.date_started ASC
     LIMIT 1;
 
 END;
