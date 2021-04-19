@@ -17,12 +17,12 @@ element_defaults = {
 
 
 def labelFromTransition(i):
-    # TODO: Generate transition label "i+j'" from index
+    # TODO: Generate transition label "i+j'" from index of transition array
     return "label here"
 
 
 def parseInitialFSMToXML(element):
-    """Parse initial FSM into an XML loadable into draw.io"""
+    """Parse initial FSM from <pl-fsm/> into an XML loadable into draw.io"""
     inputs = pl.get_string_attrib(element, 'input', None)
     outputs = pl.get_string_attrib(element, 'output', None)
     if inputs is None or outputs is None:
@@ -36,7 +36,7 @@ def parseInitialFSMToXML(element):
         if len(a) != 1:
             raise Exception('Invalid output for pl-fsm')
     max_transitions = 2**len(outputs)
-    # Beign xml
+    # Begin xml file
     mxFile = Element('mxfile')
     diagramXML = SubElement(mxFile, 'diagram', {"id": "diagram-id"})
     mxGraphModel = SubElement(diagramXML, 'mxGraphModel')
@@ -58,7 +58,7 @@ def parseInitialFSMToXML(element):
                 stateTransitions = [""] * max_transitions
             else:
                 stateTransitions = literal_eval(stateTransitions)
-            # if node doesn't exist, add it to dictionary, if nodename not blank
+            # if node doesn't exist, add it to dictionary
             if stateName not in nodeDict:
                 nodeDict[stateName] = str(id)
                 id += 1
@@ -114,7 +114,7 @@ def parseInitialFSMToXML(element):
                     "target": nodeDict[dest]
                 })
                 edgeGeometry = SubElement(edgeCell, 'mxGeometry', {"width": "50", "height": "50", "relative": "1", "as": "geometry"})
-                # ADD EDGE LABEL
+                # Add edge label
                 edgeObject = SubElement(root, 'object', {"label": labelFromTransition(i), "elemType": "edgeLabel", "id": str(id)})
                 id += 1
                 edgeCell = SubElement(edgeObject, 'mxCell', {
@@ -126,7 +126,8 @@ def parseInitialFSMToXML(element):
                 edgeGeometry = SubElement(edgeCell, 'mxGeometry', {"x": "0.1201", "relative": "1", "as": "geometry"})
                 # Handle self loop
                 if dest == stateName:
-                    #TODO: Handle self loops
+                    # TODO: Handle self loops
+                    pass
     # print(minidom.parseString(ElementTree.tostring(mxFile, 'utf-8')).toprettyxml(indent="  "))
     return ElementTree.tostring(mxFile, 'utf-8')
 
