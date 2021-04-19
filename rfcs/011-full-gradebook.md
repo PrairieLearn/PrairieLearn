@@ -23,11 +23,11 @@ The existing instructor gradebook and assessment pages would be extended to add 
 
 ## Score Upload
 
-Assessments marked for score upload cannot be attempted by students. Instead, as shown in #3606, assessment instances are created by instructors when uploading scores. The `scoreOnly` flag would be available in infoAssessment.json when creating or editing an assessment
+Assessments marked for score upload cannot be attempted by students. Instead, as shown in #3606, assessment instances are created by instructors when uploading scores. The `scoreOnly` flag would be available in infoAssessment.json when creating or editing an assessment.
 
 ## Assessment-level grading functions
 
-Each assessment can be given a `server.py` file which instructors can use to customize how assessments are graded.
+Each assessment can be given a `server.py` file which instructors can use to customize how assessments are graded. The current grading sproc will be split into two sprocs, one for fetching data and one for writing grades back into the database and logs.
 
 ## Course-level grading functions
 
@@ -53,13 +53,13 @@ A course-level `grade()` function would receive assessment score information and
 - [ ] 2. Modify assessment grading routine to call grade function
 - [ ] 3. Add interface to write `grade()` functions for assessments
 
-## Phase 3: Add Course-level Grading Functions
-
-- [ ] 1. Add interface to the course's instructor view to add `grade()` function
-
-## Phase 4: Add Library of Grading Functions
+## Phase 3: Add Library of Grading Functions
 
 - [ ] 1. Gather common grading functions
 - [ ] 2. Design interfaces for grading functions
 - [ ] 3. Implement library functionality and tests
 - [ ] 4. Add documentation for library
+
+## Phase 4: Add Course-level Grading Functions
+
+- [ ] 1. Add interface to the course's instructor view to add `grade()` function
