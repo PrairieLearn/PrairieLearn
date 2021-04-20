@@ -1,0 +1,11 @@
+{
+    "controller": "pl-fingerprint.py",
+    "dependencies": {
+        "elementStyles": [
+            "pl-fingerprint.css"
+        ],
+        "elementScripts": [
+            "pl-fingerprint.js"
+        ]
+    }
+}

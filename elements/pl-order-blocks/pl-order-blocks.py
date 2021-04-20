@@ -138,6 +138,7 @@ def render(element_html, data):
 
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
+        inline_layout = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
         help_text = 'Drag answer tiles into the answer area to the ' + dropzone_layout + '. '
 
@@ -161,7 +162,7 @@ def render(element_html, data):
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'enableIndentation' if check_indentation is True else None,
             'help_text': help_text,
-            'inline': inline
+            'inline': 'inline' if inline_layout is True else None
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -170,7 +171,7 @@ def render(element_html, data):
 
     elif data['panel'] == 'submission':
         if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
-            return 'Your result is externally graded. Check the external grader for your score.'
+            return ''  # external grader is responsible for displaying results screen
 
         student_submission = ''
         score = 0
@@ -273,7 +274,7 @@ def parse(element_html, data):
         for index, answer in enumerate(student_answer):
             student_answer_indent = filter_keys_from_array(student_answer, 'indent')
             indent = int(student_answer_indent[index])
-            answer_code += ('    ' * indent) + answer + '\n'
+            answer_code += ('    ' * indent) + answer['inner_html'] + '\n'
 
         if len(answer_code) == 0:
             data['format_errors']['_files'] = 'The submitted file was empty.'
