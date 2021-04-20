@@ -56,3 +56,11 @@ SELECT *
 FROM users
 WHERE
     uid = $uid;
+
+-- BLOCK get_grading_job_manual_grader
+SELECT u.*
+FROM
+    grading_jobs AS gj
+    JOIN users AS u ON (gj.auth_user_id = u.user_id)
+WHERE
+    gj.id = $gradingJobId;

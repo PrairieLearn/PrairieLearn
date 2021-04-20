@@ -370,26 +370,16 @@ describe('Manual grading', function() {
             assert.include(submission2Body, 'Incoming Grade');
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
-            // existing conflict is grading job user
-            // try {
-            //     console.log('grading job', gradingJob);
-            //     const grading_job_user = (await sqldb.queryOneRowAsync(sql.get_grading_job_manual_grader, {gradingJobId: gradingJob.id})).rows[0];
-            //     console.log('grading user', grading_job_user);
+            const grading_job_user = (await sqldb.queryOneRowAsync(sql.get_grading_job_manual_grader, {gradingJobId: gradingJob.id})).rows[0];
+            const auth_user = (await sqldb.queryOneRowAsync(sql.get_user, {uid: mockInstructors[1].authUid})).rows[0];
 
-            // } catch (err) {
-            //     console.log(err);
-            // }
-            // const auth_user = (await sqldb.queryOneRowAsync(sql.get_user, {uid: mockInstructors[1].authUid})).rows[0];
+            const $gradingConflictPage = cheerio.load(submission2Body);
+            const existingGradePanelBody = $gradingConflictPage('div:contains("Existing Grade")').parent().html();
+            const incomingGradePanelBody = $gradingConflictPage('div:contains("Incoming Grade")').parent().html();
 
-            // console.log('auth user', auth_user);
-
-            // const $gradingConflictPage = cheerio.load(submission2Body);
-            // const existingGradePanelBody = $gradingConflictPage('div:contains("Existing Grade"').parent().html();
-            // const incomingGradePanelBody = $gradingConflictPage('div:contains("Incoming Grade"').parent().html();
-
-            // // each panel draws upon different user sources
-            // assert.include(existingGradePanelBody, grading_job_user.uid);
-            // assert.include(incomingGradePanelBody, auth_user.uid);
+            // each panel draws upon different user sources
+            assert.include(existingGradePanelBody, grading_job_user.uid);
+            assert.include(incomingGradePanelBody, auth_user.uid);
         });
         it('grading conflict should persist when loaded by any instructor (even beyond manual grading expiry time)', async () => {
             let gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
