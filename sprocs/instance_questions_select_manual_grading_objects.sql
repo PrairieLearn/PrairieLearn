@@ -77,9 +77,17 @@ BEGIN
         JOIN users AS u ON (u.user_id = umg.user_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
+        LEFT JOIN grading_jobs AS gj ON (s.id = gj.submission_id)
     WHERE
         iq.id = arg_instance_question_id
-        AND umg.date_started >= (NOW() - arg_manual_grading_expiry::interval)
+        AND
+        -- grading user conflict auth user is still the manual grading user even beyond manual grading expiry time
+        (
+            (gj.manual_grading_conflict IS TRUE
+            AND umg.user_id = gj.auth_user_id)
+            OR
+            (umg.date_started >= (NOW() - arg_manual_grading_expiry::interval))
+        )
     ORDER BY s.date DESC, s.id DESC, umg.date_started ASC
     LIMIT 1;
 

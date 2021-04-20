@@ -44,3 +44,23 @@ FROM specified_user
 WHERE
 	instance_question_id = $instanceQuestionId
 	AND umg.user_id = specified_user.user_id;
+
+-- BLOCK set_all_date_started_by_iq
+UPDATE users_manual_grading
+SET date_started = $dateTime
+WHERE
+	instance_question_id = $instanceQuestionId;
+
+-- BLOCK get_user
+SELECT *
+FROM users
+WHERE
+    uid = $uid;
+
+-- BLOCK get_grading_job_manual_grader
+SELECT u.*
+FROM
+    users_manual_grading AS umg
+    JOIN users AS u ON (umg.user_id = u.user_id)
+WHERE
+    umg.grading_job_id = $gradingJobId;

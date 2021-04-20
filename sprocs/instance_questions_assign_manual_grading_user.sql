@@ -11,13 +11,11 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
 
-    RAISE WARNING 'value of user_id : % on instance question %: %', arg_user_id, arg_instance_question_id, now();
-    
     INSERT INTO users_manual_grading(user_id, instance_question_id, date_started)
     VALUES(arg_user_id, arg_instance_question_id, NOW())
     ON CONFLICT (user_id, instance_question_id)
     DO
-        UPDATE SET last_date_accessed = NOW();
+        UPDATE SET date_last_accessed = NOW();
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;

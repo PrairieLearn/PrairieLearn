@@ -141,7 +141,7 @@ describe('Manual grading', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
-    after('shut down testing server', helperServer.after);
+    // after('shut down testing server', helperServer.after);
 
     before('set any student as default user role', () => setUser(mockStudents[0]));
     after('reset to default instructor user', () => setUser(mockInstructors[0]));
@@ -369,9 +369,38 @@ describe('Manual grading', function() {
             assert.include(submission2Body, 'Existing Grade');
             assert.include(submission2Body, 'Incoming Grade');
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
+
+            // existing conflict is grading job user
+            try {
+                const grading_job_user = (await sqldb.queryOneRowAsync(sql.get_grading_job_manual_grader, {gradingJobId: gradingJob.id})).rows[0];
+                console.log('grading user', grading_job_user);
+
+            } catch (err) {
+                console.log(err);
+            }
+            // const auth_user = (await sqldb.queryOneRowAsync(sql.get_user, {uid: mockInstructors[1].authUid})).rows[0];
+
+            // console.log('auth user', auth_user);
+
+            // const $gradingConflictPage = cheerio.load(submission2Body);
+            // const existingGradePanelBody = $gradingConflictPage('div:contains("Existing Grade"').parent().html();
+            // const incomingGradePanelBody = $gradingConflictPage('div:contains("Incoming Grade"').parent().html();
+
+            // // each panel draws upon different user sources
+            // assert.include(existingGradePanelBody, grading_job_user.uid);
+            // assert.include(incomingGradePanelBody, auth_user.uid);
         });
-        it('grading conflict should persist when loaded by any instructor', async () => {
-            const gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
+        it('grading conflict should persist when loaded by any instructor (even beyond manual grading expiry time)', async () => {
+            let gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
+            assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
+
+            const instanceQuestionId = parseInstanceQuestionId(gradingConflictUrl);
+            await sqldb.queryAsync(sql.set_all_date_started_by_iq, {
+                instanceQuestionId,
+                dateTime: new Date('1900-01-01T01:00:00Z').toISOString(),
+            });
+
+            gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });
         it('grading conflict should count as ungraded on main Assessment Manual Grading View', () => {

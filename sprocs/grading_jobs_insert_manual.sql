@@ -96,6 +96,7 @@ BEGIN
 
         UPDATE users_manual_grading AS umg
         SET 
+            grading_job_id = grading_job.id,
             date_graded = NOW()
         WHERE
             umg.user_id = arg_authn_user_id
