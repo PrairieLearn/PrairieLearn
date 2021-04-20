@@ -9,12 +9,12 @@
                 </li>
             </ul>
             <ul id="{{answer_name}}-options" name="{{answer_name}}" class=" pl-order-blocks-connected-sortable {{inline}}">
-                {{#options}}<li class="list-group-item list-group-item-secondary shadow" string="{{.}}" data-title="{{.}}">{{.}}</li>{{/options}}
+                {{#options}}<li class="list-group-item list-group-item-darkmode shadow" string="{{.}}" data-title="{{.}}">{{.}}</li>{{/options}}
             </ul>
         </div>
             <div class="column {{dropzone_layout}}">
                 <ul class="list-group-item list-group-item-primary header">
-                    <li>{{source-header}}
+                    <li>{{solution-header}}
                         <a role="button" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
                         <i class="fa fa-question-circle" aria-hidden="true"></i>
                     </a>
@@ -22,7 +22,7 @@
                 </ul>
                 <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group {{check_indentation}} pl-order-blocks-connected-sortable dropzone">
                     {{#submission_dict}}
-                        <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;' class="list-group-item list-group-item-darkmode list-group-item-action shadow">{{text}}</li>
+                        <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;' class="list-group-item list-group-item-darkmode shadow">{{text}}</li>
                     {{/submission_dict}}
                 </ul>
             </div>
