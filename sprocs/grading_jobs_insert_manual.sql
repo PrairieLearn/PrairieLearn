@@ -18,6 +18,7 @@ DECLARE
     assessment_instance_id bigint;
     grading_jobs grading_jobs%rowtype;
     grading_method enum_grading_method;
+    debug_stuff users_manual_grading%rowtype;
 BEGIN
 
     -- Update the given score for the assessment.
@@ -96,7 +97,6 @@ BEGIN
 
         UPDATE users_manual_grading AS umg
         SET 
-            grading_job_id = grading_job.id,
             date_graded = NOW()
         WHERE
             umg.user_id = arg_authn_user_id

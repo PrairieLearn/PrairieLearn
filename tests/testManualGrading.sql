@@ -7,7 +7,7 @@ FROM instance_questions
 WHERE id = $id;
 
 -- BLOCK get_conflict_grading_jobs_by_iq
-SELECT *
+SELECT gj.*
 FROM
     grading_jobs AS gj
     JOIN submissions AS s ON (s.id = gj.submission_id)
@@ -56,11 +56,3 @@ SELECT *
 FROM users
 WHERE
     uid = $uid;
-
--- BLOCK get_grading_job_manual_grader
-SELECT u.*
-FROM
-    users_manual_grading AS umg
-    JOIN users AS u ON (umg.user_id = u.user_id)
-WHERE
-    umg.grading_job_id = $gradingJobId;

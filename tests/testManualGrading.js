@@ -371,13 +371,14 @@ describe('Manual grading', function() {
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
             // existing conflict is grading job user
-            try {
-                const grading_job_user = (await sqldb.queryOneRowAsync(sql.get_grading_job_manual_grader, {gradingJobId: gradingJob.id})).rows[0];
-                console.log('grading user', grading_job_user);
+            // try {
+            //     console.log('grading job', gradingJob);
+            //     const grading_job_user = (await sqldb.queryOneRowAsync(sql.get_grading_job_manual_grader, {gradingJobId: gradingJob.id})).rows[0];
+            //     console.log('grading user', grading_job_user);
 
-            } catch (err) {
-                console.log(err);
-            }
+            // } catch (err) {
+            //     console.log(err);
+            // }
             // const auth_user = (await sqldb.queryOneRowAsync(sql.get_user, {uid: mockInstructors[1].authUid})).rows[0];
 
             // console.log('auth user', auth_user);
