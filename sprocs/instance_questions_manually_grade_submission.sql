@@ -35,8 +35,6 @@ BEGIN
     LIMIT 1
     FOR UPDATE;
 
-    RAISE WARNING 'iq id grade_submission %', instance_question_id;
-
     IF NOT FOUND THEN RAISE EXCEPTION 'instance question not found: %', arg_instance_question_id; END IF;
 
     IF instance_question_modified_at != arg_modified_at::timestamp THEN
