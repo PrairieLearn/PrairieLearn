@@ -8,21 +8,23 @@
                     </a>
                 </li>
             </ul>
-            <ul id="{{answer_name}}-options" name="{{answer_name}}" class=" pl-order-blocks-connected-sortable {{inline}}">
-                {{#options}}<li class="list-group-item list-group-item-darkmode shadow" string="{{.}}" data-title="{{.}}">{{.}}</li>{{/options}}
+            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
+                {{#options}}
+                    <li class="list-group-item shadow" uuid="" string="{{.}}" data-title="{{.}}">{{.}}</li>
+                {{/options}}
             </ul>
         </div>
             <div class="column {{dropzone_layout}}">
                 <ul class="list-group-item list-group-item-primary header">
-                    <li>{{solution-header}}
+                    <li><strong>{{solution-header}}</strong>
                         <a role="button" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
                         <i class="fa fa-question-circle" aria-hidden="true"></i>
                     </a>
                     </li>
                 </ul>
-                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group {{check_indentation}} pl-order-blocks-connected-sortable dropzone">
+                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group {{check_indentation}}">
                     {{#submission_dict}}
-                        <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;' class="list-group-item list-group-item-darkmode shadow">{{text}}</li>
+                        <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;' class="list-group-item shadow">{{text}}</li>
                     {{/submission_dict}}
                 </ul>
             </div>
@@ -33,7 +35,7 @@
 
 {{#submission}}
     {{^parse-error}}
-        <ul class="list-group answer_block_container  list-group-item-darkmode">
+        <ul class="list-group answer_block_container  ">
             <li class="list-group-item"><strong>Your answer: </strong>
         {{#correct}}
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
@@ -46,7 +48,7 @@
         {{/incorrect}}
         </li>
         {{#student_submission}}
-        		<li class="list-group-item list-group-item-darkmode">{{.}}</li>
+        		<li class="list-group-item ">{{.}}</li>
         {{/student_submission}}
         </ul>
     {{/parse-error}}

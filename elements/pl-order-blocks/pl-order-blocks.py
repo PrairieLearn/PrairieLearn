@@ -102,9 +102,13 @@ def prepare(element_html, data):
     elif source_blocks_order == 'ordered':
         mcq_options.sort(key=lambda a: a['index'])
     else:
-        raise Exception('the selected option for "source-blocks-order" does not exist.')
+        raise Exception('The specified option for the "source-blocks-order" attribute is invalid.')
 
-    data['params'][answer_name] = filter_keys_from_array(mcq_options, 'inner_html')
+    # data['params'][answer_name] = filter_keys_from_array(mcq_options, 'inner_html')
+    for option in mcq_options:
+        option['uuid'] = pl.get_uuid()
+
+    data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = correct_answers
 
 
@@ -122,13 +126,16 @@ def render(element_html, data):
         source_header = pl.get_string_attrib(element, 'source-header', SOURCE_HEADER_DEFAULT)
         solution_header = pl.get_string_attrib(element, 'solution-header', SOLUTION_HEADER_DEFAULT)
         grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
-        inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
         mcq_options = data['params'][answer_name]
+        mcq_options_inner_html = filter_keys_from_array(mcq_options, 'inner_html')
+        mcq_options_uuid = filter_keys_from_array(mcq_options, 'uuid')
+
+        print(mcq_options_uuid)
 
         if answer_name in data['submitted_answers']:
             student_previous_submission = filter_keys_from_array(data['submitted_answers'][answer_name], 'inner_html')
-            mcq_options = list(set(mcq_options) - set(student_previous_submission))
+            mcq_options_inner_html = [opt for opt in mcq_options_inner_html if opt not in student_previous_submission]
 
         for index, mcq_options_text in enumerate(student_previous_submission):
             submission_indent = filter_keys_from_array(data['submitted_answers'][answer_name], 'indent')[index]
@@ -155,7 +162,8 @@ def render(element_html, data):
         html_params = {
             'question': True,
             'answer_name': answer_name,
-            'options': mcq_options,
+            'options': mcq_options_inner_html,
+            'uuid': mcq_options_uuid,
             'source-header': source_header,
             'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
