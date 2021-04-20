@@ -98,12 +98,7 @@ router.post('/', function(req, res, next) {
             res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);
         });
     } else if (req.body.__action == 'abort_manual_grading') {
-        const params = {instance_question_id: res.locals.instance_question.id};
-
-        sqlDb.queryZeroOrOneRow(sql.instance_question_abort_manual_grading, params, (err) => {
-            if (ERR(err, next)) return next(error.make(500, `Cannot find instance question: ${res.locals.instance_question_id}`));
-            res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
-        });
+        res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
     } else if (req.body.__action == 'resolve_manual_grading_conflict') {
         // if submission type, do not grade again
         if (req.body.diffType === 'submission') {
