@@ -46,7 +46,7 @@ router.get('/', (req, res, next) => {
                     res.locals.conflict_diff = {
                         grading_job_id: result.rows[0].incoming_conflict.id,
                         existing: {
-                            type: 'submission',
+                            diffType: 'submission',
                             feedback: result.rows[0].submission.feedback,
                             score: result.rows[0].submission.score,
                             graded_by: `${result.rows[0].grading_user.name} (${result.rows[0].grading_user.uid})`,
