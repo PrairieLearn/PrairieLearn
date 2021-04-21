@@ -10,7 +10,7 @@
             </ul>
             <ul id="{{answer_name}}-options" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
-                    <li class="list-group-item shadow" uuid="" string="{{.}}" data-title="{{.}}">{{.}}</li>
+                    <li class="list-group-item shadow" uuid="{{uuid}}" string="{{inner_html}}">{{inner_html}}</li>
                 {{/options}}
             </ul>
         </div>
@@ -22,14 +22,14 @@
                     </a>
                     </li>
                 </ul>
-                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group {{check_indentation}}">
+                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone {{check_indentation}}">
                     {{#submission_dict}}
-                        <li string="{{text}}" data-title="{{text}}" style='margin-left: {{indent}}px;' class="list-group-item shadow">{{text}}</li>
+                        <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="list-group-item shadow">{{inner_html}}</li>
                     {{/submission_dict}}
                 </ul>
             </div>
         </div>
-    <input id="{{answer_name}}-input" type="hidden" name="{{answer_name}}-input" value=""/>
+    <input id="{{answer_name}}-input" type="text" name="{{answer_name}}-input" value=""/>
 
 {{/question}}
 
@@ -48,7 +48,7 @@
         {{/incorrect}}
         </li>
         {{#student_submission}}
-        		<li class="list-group-item ">{{.}}</li>
+        		<li class="list-group-item ">{{inner_html}}</li>
         {{/student_submission}}
         </ul>
     {{/parse-error}}
@@ -66,7 +66,7 @@
         <ul class="list-group answer_table">
             <li class="list-group-item list-group-item-info"><strong>Correct answer ({{grading_mode}}{{check_indentation}}):</strong></li>
         {{#question_solution}}
-            <li class="list-group-item list-group-item-dark">{{.}}</li>
+            <li class="list-group-item list-group-item-dark">{{inner_html}}</li>
         {{/question_solution}}
         </ul>
 {{/true_answer}}

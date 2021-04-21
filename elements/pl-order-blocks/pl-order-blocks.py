@@ -22,10 +22,13 @@ INDENT_OFFSET = 0
 TAB_SIZE_PX = 50
 
 
-def filter_keys_from_array(data, key):
+def filter_multiple_from_array(data, keys):
     result = []
     for item in data:
-        result.append(item[key])
+        dic = {}
+        for key in keys:
+            dic[key] = item[key]
+        result.append(dic)
     return result
 
 
@@ -128,19 +131,18 @@ def render(element_html, data):
         grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
         mcq_options = data['params'][answer_name]
-        mcq_options_inner_html = filter_keys_from_array(mcq_options, 'inner_html')
-        mcq_options_uuid = filter_keys_from_array(mcq_options, 'uuid')
-
-        print(mcq_options_uuid)
+        # print(mcq_options)
+        mcq_options = filter_multiple_from_array(mcq_options, ['inner_html', 'uuid', 'indent'])
 
         if answer_name in data['submitted_answers']:
-            student_previous_submission = filter_keys_from_array(data['submitted_answers'][answer_name], 'inner_html')
-            mcq_options_inner_html = [opt for opt in mcq_options_inner_html if opt not in student_previous_submission]
+            student_previous_submission = filter_multiple_from_array(data['submitted_answers'][answer_name], ['inner_html', 'uuid', 'indent'])
+            mcq_options = [opt for opt in mcq_options if opt not in student_previous_submission]
 
-        for index, mcq_options_text in enumerate(student_previous_submission):
-            submission_indent = filter_keys_from_array(data['submitted_answers'][answer_name], 'indent')[index]
-            submission_indent = (int(submission_indent) * TAB_SIZE_PX) + INDENT_OFFSET
-            temp = {'text': mcq_options_text, 'indent': submission_indent}
+        for index, option in enumerate(student_previous_submission):
+            submission_indent = option.get('indent', None)
+            if submission_indent is not None:
+                submission_indent = (int(submission_indent) * TAB_SIZE_PX) + INDENT_OFFSET
+            temp = {'inner_html': option['inner_html'], 'indent': submission_indent, 'uuid': option['uuid']}
             student_submission_dict_list.append(dict(temp))
 
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
@@ -162,8 +164,7 @@ def render(element_html, data):
         html_params = {
             'question': True,
             'answer_name': answer_name,
-            'options': mcq_options_inner_html,
-            'uuid': mcq_options_uuid,
+            'options': mcq_options,
             'source-header': source_header,
             'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
@@ -186,7 +187,7 @@ def render(element_html, data):
         feedback = None
 
         if answer_name in data['submitted_answers']:
-            student_submission = filter_keys_from_array(data['submitted_answers'][answer_name], 'inner_html')
+            student_submission = filter_multiple_from_array(data['submitted_answers'][answer_name], ['inner_html'])
         if answer_name in data['partial_scores']:
             score = data['partial_scores'][answer_name]['score']
             feedback = data['partial_scores'][answer_name]['feedback']
@@ -233,7 +234,7 @@ def render(element_html, data):
         if answer_name in data['correct_answers']:
             html_params = {
                 'true_answer': True,
-                'question_solution': filter_keys_from_array(data['correct_answers'][answer_name], 'inner_html'),
+                'question_solution': filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html']),
                 'grading_mode': grading_mode,
                 'check_indentation': check_indentation
             }
@@ -280,7 +281,7 @@ def parse(element_html, data):
 
         answer_code = ''
         for index, answer in enumerate(student_answer):
-            student_answer_indent = filter_keys_from_array(student_answer, 'indent')
+            student_answer_indent = filter_multiple_from_array(student_answer, ['indent'])
             indent = int(student_answer_indent[index])
             answer_code += ('    ' * indent) + answer['inner_html'] + '\n'
 
@@ -303,7 +304,7 @@ def grade(element_html, data):
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
-    true_answer_list = filter_keys_from_array(data['correct_answers'][answer_name], 'inner_html')
+    true_answer_list = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html'])
 
     indent_score = 0
     final_score = 0
@@ -314,16 +315,19 @@ def grade(element_html, data):
         return
 
     if grading_mode == 'unordered':
-        student_answer = filter_keys_from_array(student_answer, 'inner_html')
+        student_answer = filter_multiple_from_array(student_answer, ['inner_html'])
+        student_answer = list(map(lambda x: x['inner_html'], student_answer))
+        true_answer_list = filter_multiple_from_array(true_answer_list, ['inner_html'])
+        true_answer_list = list(map(lambda x: x['inner_html'], true_answer_list))
         correct_selections = list(set(student_answer) & set(true_answer_list))
         incorrect_selections = list(set(student_answer) - set(true_answer_list))
         final_score = float((len(correct_selections) - len(incorrect_selections)) / len(true_answer_list))
         final_score = max(0.0, final_score)  # scores cannot be below 0
     elif grading_mode == 'ordered':
-        student_answer = filter_keys_from_array(student_answer, 'inner_html')
+        student_answer = filter_multiple_from_array(student_answer, ['inner_html'])
         final_score = 1.0 if student_answer == true_answer_list else 0.0
     elif grading_mode == 'ranking':
-        ranking = filter_keys_from_array(data['submitted_answers'][answer_name], 'ranking')
+        ranking = filter_multiple_from_array(data['submitted_answers'][answer_name], ['ranking'])
         correctness = 1 + ranking.count(0)
         partial_credit = 0
         if len(ranking) != 0 and len(ranking) == len(true_answer_list):
@@ -337,8 +341,8 @@ def grade(element_html, data):
         final_score = float(correctness / len(true_answer_list))
 
     if check_indentation:
-        student_answer_indent = filter_keys_from_array(data['submitted_answers'][answer_name], 'indent')
-        true_answer_indent = filter_keys_from_array(data['correct_answers'][answer_name], 'indent')
+        student_answer_indent = filter_multiple_from_array(data['submitted_answers'][answer_name], ['indent'])
+        true_answer_indent = filter_multiple_from_array(data['correct_answers'][answer_name], ['indent'])
         for i, indent in enumerate(student_answer_indent):
             if true_answer_indent[i] == '-1' or int(indent) == true_answer_indent[i]:
                 indent_score += 1

@@ -24,10 +24,15 @@ function set_answer(event) {
     for (var i = 0; i < dom_objs.length; i++) {
         if (!$(dom_objs[i]).hasClass('info-fixed')){
             var answer_text = dom_objs[i].getAttribute('string');
-            var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
-            answer_indent = Math.round((answer_indent - INDENT_OFFSET) / TABWIDTH); // get how many times the answer is indented
+            var uuid = dom_objs[i].getAttribute('uuid');
+            var answer_indent = null;
+            if (dom_objs[i].parentElement.classList.contains('enableIndentation')) {
+                console.log(dom_objs[i]);
+                answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
+                answer_indent = Math.round((answer_indent - INDENT_OFFSET) / TABWIDTH); // get how many times the answer is indented
+            }
             
-            var answer_json = {'inner_html': answer_text, 'indent': answer_indent};
+            var answer_json = {'inner_html': answer_text, 'indent': answer_indent, 'uuid': uuid};
             student_answers_array.push(answer_json);
         }
     }
