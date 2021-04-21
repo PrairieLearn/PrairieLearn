@@ -15,7 +15,7 @@ WITH iq_with_last_submission AS (
         LEFT JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
     WHERE
         aq.assessment_id = $assessment_id
-    ORDER BY iq.id ASC, s.date DESC, s.id DESC, gj.manual_grading_conflict ASC
+    ORDER BY iq.id ASC, s.date DESC, s.id DESC, gj.id DESC, gj.date DESC
 )
 SELECT
     aq.*,
@@ -30,13 +30,14 @@ SELECT
          iq_with_last_submission AS iqwls
      WHERE 
         iqwls.assessment_question_id = aq.id
-        AND (iqwls.graded_at IS NULL OR iqwls.manual_grading_conflict = TRUE)) AS num_ungraded,
+        AND (iqwls.graded_at IS NULL OR iqwls.manual_grading_conflict IS TRUE)) AS num_ungraded,
     (SELECT COUNT(iqwls.id)
      FROM 
          iq_with_last_submission AS iqwls
      WHERE 
          iqwls.assessment_question_id = aq.id
-         AND iqwls.graded_at IS NOT NULL) AS num_graded,
+         AND iqwls.graded_at IS NOT NULL
+         AND iqwls.manual_grading_conflict IS FALSE) AS num_graded,
     (SELECT array_agg(DISTINCT u.uid)
      FROM
         iq_with_last_submission AS iqwls
