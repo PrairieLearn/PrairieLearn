@@ -19,7 +19,7 @@ DECLARE
     assessment_question_id bigint;
     last_submission submissions%rowtype;
     last_submission_id bigint;
-    is_conflict boolean;
+    is_conflict boolean default false;
 BEGIN
 
     SELECT iq.id, iq.assessment_question_id, iq.modified_at, s.id
