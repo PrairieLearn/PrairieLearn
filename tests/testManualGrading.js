@@ -15,6 +15,7 @@ const mockStudents = [
     {authUid: 'student1', authName: 'Student User 1', authUin: '00000001'},
     {authUid: 'student2', authName: 'Student User 2', authUin: '00000002'},
     {authUid: 'student3', authName: 'Student User 3', authUin: '00000003'},
+    {authUid: 'student4', authName: 'Student User 4', authUin: '00000004'},
 ];
 const mockInstructors = [
     {authUid: config.authUid, authName: config.authName, authUin: config.authUin}, // testing default
@@ -157,7 +158,7 @@ describe('Manual grading', function() {
         });
 
         it('students should be able to save submissions on instance questions', async () => {
-            // 'save' 1 answer for each question for each mock students; 1 x 3 x 3 = 9 submissions
+            // 'save' 1 answer for each question for each mock students; 1 x 4 x 4 = 12 submissions
             for await(const student of mockStudents) {
                 setUser(student);
 
@@ -194,7 +195,7 @@ describe('Manual grading', function() {
                 });
             }
         });
-        it('db should contain 9 submissions (1 per question x 3 students for 3 questions = 9 submissions)', async () => {
+        it('db should contain 12 submissions (1 per question x 4 students for 4 questions = 12 submissions)', async () => {
             const context = await sqldb.queryAsync(sql.get_all_submissions, []);
             const groupedByStudent = {};
 
@@ -205,8 +206,8 @@ describe('Manual grading', function() {
                 groupedByStudent[submission.auth_user_id].push(submission);
             });
 
-            assert.equal(context.rowCount, 9);
-            assert.lengthOf(Object.keys(groupedByStudent), 3);
+            assert.equal(context.rowCount, 12);
+            assert.lengthOf(Object.keys(groupedByStudent), 4);
             Object.keys(groupedByStudent).forEach((student) => assert.lengthOf(groupedByStudent[student], 3, 'array has length of 3'));
         });
     });
@@ -239,10 +240,10 @@ describe('Manual grading', function() {
             );
         });
 
-        it('instructor role should see 9 ungraded submissions from student role tests', async () => {
-            assert.equal($addNumbersRow('.ungraded-value').text(), 3);
-            assert.equal($addVectorsRow('.ungraded-value').text(), 3);
-            assert.equal($fossilFuelsRow('.ungraded-value').text(), 3);
+        it('instructor role should see 12 ungraded submissions from student role tests', async () => {
+            assert.equal($addNumbersRow('.ungraded-value').text(), 4);
+            assert.equal($addVectorsRow('.ungraded-value').text(), 4);
+            assert.equal($fossilFuelsRow('.ungraded-value').text(), 4);
             assert.equal($addNumbersRow('.graded-value').text(), 0);
             assert.equal($addVectorsRow('.graded-value').text(), 0);
             assert.equal($fossilFuelsRow('.graded-value').text(), 0);
@@ -253,10 +254,10 @@ describe('Manual grading', function() {
             assert.isNotNull($fossilFuelsRow('.grade-next-value').attr('href'));
         });
         it('instructor sees "Ungraded" and "Graded" columns increment -/+ by one for each manual grading job', async () => {
-            assert.equal($fossilFuelsRow('.ungraded-value').text(), 3);
+            assert.equal($fossilFuelsRow('.ungraded-value').text(), 4);
             const gradeNextFossilFuelsUrl = siteUrl + $fossilFuelsRow('.grade-next-value').attr('href');
 
-            for (let i = 1; i <= 3; i++) {
+            for (let i = 1; i <= mockStudents.length; i++) {
                 const nextPage = await fetch(gradeNextFossilFuelsUrl);
                 let $nextGradingPage = cheerio.load(
                     await (nextPage).text(),
@@ -283,7 +284,7 @@ describe('Manual grading', function() {
 
                 const ungradedVal = parseInt($fossilFuelsRow('.ungraded-value').text());
                 const gradedVal = parseInt($fossilFuelsRow('.graded-value').text());
-                assert.equal(ungradedVal, 3 - i);
+                assert.equal(ungradedVal, mockStudents.length - i);
                 assert.equal(gradedVal, i);
             }
         });
@@ -292,7 +293,7 @@ describe('Manual grading', function() {
         });
         it('instructor(s) should appear in "Grading Contributors" column if has submitted final grade', async () => {
             const ungradedVal = parseInt($addVectorsRow('.ungraded-value').text());
-            assert.equal(ungradedVal, 3);
+            assert.equal(ungradedVal, 4);
 
             const contributorsCell = $addVectorsRow('.grading-contributors-value').text();
             assert.notInclude(contributorsCell, mockInstructors[0].authUid);
@@ -395,7 +396,7 @@ describe('Manual grading', function() {
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
         });
         it('grading conflict should count as ungraded on main Assessment Manual Grading View', () => {
-            assert.equal($addNumbersRow('.ungraded-value').text(), 3);
+            assert.equal($addNumbersRow('.ungraded-value').text(), 4);
         });
         it('grading conflict can be resolved by any instructor', async () => {
             const $gradingConflictPage = cheerio.load(
@@ -422,7 +423,7 @@ describe('Manual grading', function() {
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
         it('grading conflict resolution should count as graded on Assessment Manual Grading view', () => {
-            assert.equal($addNumbersRow('.ungraded-value').text(), 2);
+            assert.equal($addNumbersRow('.ungraded-value').text(), 3);
             assert.equal($addNumbersRow('.graded-value').text(), 1);
         });
         it('grading conflict `submission` type post should resolve conflict and NOT produce new grading job', async () => {
@@ -451,11 +452,52 @@ describe('Manual grading', function() {
 
             gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
             assert.lengthOf(gradingJobs, 2);
-
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
+        });
+        it('grading conflict `submission` diffType resolution should count as graded on Assessment Manual Grading View', () => {
+            assert.equal($addNumbersRow('.ungraded-value').text(), 2);
+            assert.equal($addNumbersRow('.graded-value').text(), 2);
+        });
+        it('grading conflict `grading_job` type post should resolve conflict AND produce new grading job', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
+
+            // two manual grade jobs result in conflict = 2 grading jobs
+            const {submission2} = await createGradingConflict(iqManualGradingUrl);
+
+            const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+            let gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 2);
+
+            const $gradingConflictPage = cheerio.load(await submission2.text());
+            const payload = getConflictPayload($gradingConflictPage, 'Incoming'); 
+            assert.equal(payload.diffType, 'grading_job');
+
+            setUser(mockInstructors[1]);
+            const response = await fetch(submission2.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload),
+            });
+
+            assert.equal(response.status, 200);
+
+            gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 3);
+            const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+            assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
+            assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
+        });
+        it('grading conflict `grading_job` diffType resolution should count as graded on Assessment Manual Grading View', () => {
+            assert.equal($addNumbersRow('.ungraded-value').text(), 1);
+            assert.equal($addNumbersRow('.graded-value').text(), 3);
+        });
+        it('instructor should be able to abort grading, which redirects to Instructor Assessment Manual Grading view', () => {
+            
         });
         it('multiple grading conflicts can be resolved on same instance question', async () => {
             // NOTE: Must use user returned URLs to meet CSRF token constraints
