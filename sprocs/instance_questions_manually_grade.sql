@@ -7,7 +7,6 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS VOID
 AS $$
 BEGIN
-
     -- Manual Grading
     -- ######################################################################
     -- Write/overwrite internal grading logic instance question scoring
@@ -16,14 +15,10 @@ BEGIN
     --   `instance_questions_calculate_stats.sql` (ie. stats are not produced)
     --   homework or exam grading sub-routines from `instance_questions_grade.sql` (ie. max points, highest grade logic)
     -- If external/internal produced prior grading stats data, we honor and do not modify the stats
-    --
-    -- TO DO: Consider modifying the stats for a special final manual grade operation
-    --   NOTE: Spin-lock double grading job submission would skew stats. Logic may be incompatible unless "in grading" mode implemented.
-
     UPDATE instance_questions
     SET
-        points = arg_manual_grade_score * aq.max_points,
-        score_perc = arg_manual_grade_score * 100,
+        points = ROUND(CAST(FLOAT8 (arg_manual_grade_score * aq.max_points) AS NUMERIC), 2),
+        score_perc = FLOOR(arg_manual_grade_score * 100),
         -- TO DO: Integrate with update in grading (points_in_grading) logic once booleans merged and logic clarified
         -- status = 'grading',
         -- points_in_grading = arg_manual_grade_score * aq.max_points,
