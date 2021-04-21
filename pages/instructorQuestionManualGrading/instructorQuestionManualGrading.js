@@ -80,6 +80,11 @@ router.post('/', function(req, res, next) {
     const assessmentId = req.body.assessmentId;
     const assessmentQuestionId = req.body.assessmentQuestionId;
     const gradingJobId = req.body.gradingJobId;
+
+    if (score % 5 !== 0 || typeof note !== 'string') {
+        return ERR(new Error('score percentage must be divisible by 5; note must be valid string', next));
+    }
+
     const params = [
         res.locals.instance_question.id,
         res.locals.authn_user.user_id,
@@ -100,7 +105,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'abort_manual_grading') {
         res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
     } else if (req.body.__action == 'resolve_manual_grading_conflict') {
-        // if submission type, do not grade again
+        // do not grade submission obj conflicts payloads again
         if (req.body.diffType === 'submission') {
             sqlDb.queryOneRow(sql.remove_grading_job_conflict, {id: gradingJobId}, (err) => {
                 if (ERR(err, next)) return;

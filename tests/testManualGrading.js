@@ -64,12 +64,12 @@ const setUser = (user) => {
     config.authUin = user.authUin;
 };
 
-const gradeSubmission = async (iqManualGradeUrl, submissionScore, submissionNote) => {
+const gradeSubmission = async (iqManualGradeUrl, submissionNote, submissionScore) => {
 
     const $gradingPage = cheerio.load(
         await (await fetch(iqManualGradeUrl)).text(),
     );
-    const payload = getManualGradePayload($gradingPage, submissionScore, submissionNote);
+    const payload = getManualGradePayload($gradingPage, submissionNote, submissionScore);
 
     return fetch(iqManualGradeUrl, {
             method: 'POST',
@@ -141,7 +141,7 @@ describe('Manual grading', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
-    after('shut down testing server', helperServer.after);
+    // after('shut down testing server', helperServer.after);
 
     before('set any student as default user role', () => setUser(mockStudents[0]));
     after('reset to default instructor user', () => setUser(mockInstructors[0]));
@@ -262,9 +262,9 @@ describe('Manual grading', function() {
                     await (nextPage).text(),
                 );
 
-                const submissionScore = 95;
+                const submissionScore = 55;
                 const submissionNote = 'Any note about the grade';
-                const payload = getManualGradePayload($nextGradingPage, submissionScore, submissionNote);
+                const payload = getManualGradePayload($nextGradingPage, submissionNote, submissionScore);
 
                 $nextGradingPage = cheerio.load(
                     await (await fetch(nextPage.url, {
@@ -302,7 +302,7 @@ describe('Manual grading', function() {
                 setUser(instructor);
                 const gradeNextAddVectorsUrl = siteUrl + $addVectorsRow('.grade-next-value').attr('href');
                 const iqManualGradingUrl = (await fetch(gradeNextAddVectorsUrl)).url;
-                const nextPage = await gradeSubmission(iqManualGradingUrl, '90', 'Amazing work');
+                const nextPage = await gradeSubmission(iqManualGradingUrl, 'Amazing work', '90');
                 assert.equal(nextPage.status, 200);
 
                 const $manualGradingPage = cheerio.load(
@@ -454,7 +454,6 @@ describe('Manual grading', function() {
 
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
-
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
