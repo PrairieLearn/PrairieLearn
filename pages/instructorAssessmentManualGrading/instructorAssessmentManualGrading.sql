@@ -46,7 +46,8 @@ SELECT
      WHERE
          iqwls.user_id IS NOT NULL
          AND iqwls.assessment_question_id = aq.id
-         AND iqwls.graded_at IS NOT NULL) AS manual_grading_users
+         AND iqwls.graded_at IS NOT NULL
+         AND iqwls.manual_grading_conflict IS FALSE) AS manual_grading_users
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
