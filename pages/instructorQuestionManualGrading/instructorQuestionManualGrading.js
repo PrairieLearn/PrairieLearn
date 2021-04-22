@@ -81,10 +81,6 @@ router.post('/', function(req, res, next) {
     const assessmentQuestionId = req.body.assessmentQuestionId;
     const gradingJobId = req.body.gradingJobId;
 
-    if (score % 5 !== 0 || typeof note !== 'string') {
-        return ERR(new Error('score percentage must be divisible by 5; note must be valid string', next));
-    }
-
     const params = [
         res.locals.instance_question.id,
         res.locals.authn_user.user_id,
@@ -95,6 +91,9 @@ router.post('/', function(req, res, next) {
     ];
 
     if (req.body.__action == 'add_manual_grade') {
+        if (typeof note !== 'string') { return ERR(new Error('submissionNote must be valid string', next)); }
+        if (score % 5 !== 0) { return ERR(new Error('submissionScore percentage must be divisible by 5', next)); }
+
         sqlDb.callZeroOrOneRow('instance_questions_manually_grade_submission', params, (err, result) => {
             if (ERR(err, next)) return;
             if (result.rows[0].grading_job.manual_grading_conflict) {
