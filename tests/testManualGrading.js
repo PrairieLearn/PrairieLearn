@@ -1,4 +1,4 @@
-const assert = require('chai').assert;
+const {assert, expect} = require('chai');
 const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
@@ -382,6 +382,42 @@ describe('Manual grading', function() {
             assert.include(existingGradePanelBody, grading_job_user.uid);
             assert.include(incomingGradePanelBody, auth_user.uid);
         });
+        it('instructor should be able to abort grading, which redirects to Instructor Assessment Manual Grading view', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const nextPage = await fetch(gradeNextAddNumbersURL);
+            const $nextPage = cheerio.load(await nextPage.text());
+
+            const abortRedirect = await fetch(nextPage.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode({
+                    __csrf_token: $nextPage('form > input[name="__csrf_token"]').val(),
+                    __action: 'abort_manual_grading',
+                }),
+            });
+
+            assert.equal(abortRedirect.url, manualGradingUrl);
+        });
+        it('instructor should get 500 error when invalid score or note payloads are given when adding manual grade', async () => {
+            const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
+            const nextPage = await fetch(gradeNextAddNumbersURL);
+            const $nextPage = cheerio.load(await nextPage.text());
+            const payload = getManualGradePayload($nextPage, 'some valid note', 93);
+            
+            expect(async () => fetch(nextPage.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload),
+            }).to.be.rejected);
+
+            delete payload.submissionNote;
+            payload.submissionScore = 95;
+            expect(async () => fetch(nextPage.url, {
+                method: 'POST',
+                headers: {'Content-type': 'application/x-www-form-urlencoded'},
+                body: querystring.encode(payload),
+            }).to.be.rejected);
+        });
         it('grading conflict should persist when loaded by any instructor (even beyond manual grading expiry time)', async () => {
             let gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
@@ -495,9 +531,6 @@ describe('Manual grading', function() {
         it('grading conflict `grading_job` diffType resolution should count as graded on Assessment Manual Grading View', () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 1);
             assert.equal($addNumbersRow('.graded-value').text(), 3);
-        });
-        it('instructor should be able to abort grading, which redirects to Instructor Assessment Manual Grading view', () => {
-            
         });
         it('multiple grading conflicts can be resolved on same instance question', async () => {
             // NOTE: Must use user returned URLs to meet CSRF token constraints
