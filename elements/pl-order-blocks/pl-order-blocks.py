@@ -304,7 +304,7 @@ def grade(element_html, data):
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
-    true_answer_list = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html'])
+    true_answer_list = data['correct_answers'][answer_name]
 
     indent_score = 0
     final_score = 0
@@ -315,12 +315,9 @@ def grade(element_html, data):
         return
 
     if grading_mode == 'unordered':
-        student_answer = filter_multiple_from_array(student_answer, ['inner_html'])
-        student_answer = list(map(lambda x: x['inner_html'], student_answer))
-        true_answer_list = filter_multiple_from_array(true_answer_list, ['inner_html'])
-        true_answer_list = list(map(lambda x: x['inner_html'], true_answer_list))
-        correct_selections = list(set(student_answer) & set(true_answer_list))
-        incorrect_selections = list(set(student_answer) - set(true_answer_list))
+        true_answer_list = filter_multiple_from_array(true_answer_list, ['uuid', 'indent', 'inner_html'])
+        correct_selections = [opt for opt in student_answer if opt in true_answer_list]
+        incorrect_selections = [opt for opt in student_answer if opt not in true_answer_list]
         final_score = float((len(correct_selections) - len(incorrect_selections)) / len(true_answer_list))
         final_score = max(0.0, final_score)  # scores cannot be below 0
     elif grading_mode == 'ordered':
