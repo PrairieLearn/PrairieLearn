@@ -142,7 +142,7 @@ describe('Manual grading', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
-    // after('shut down testing server', helperServer.after);
+    after('shut down testing server', helperServer.after);
 
     before('set any student as default user role', () => setUser(mockStudents[0]));
     after('reset to default instructor user', () => setUser(mockInstructors[0]));
