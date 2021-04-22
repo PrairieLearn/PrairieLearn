@@ -1,6 +1,5 @@
 columns
     group_id: bigint not null
-    pogil_role: enum_pogil_role default 'None'::enum_pogil_role
     user_id: bigint not null
 
 indexes
