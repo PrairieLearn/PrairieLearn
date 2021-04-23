@@ -281,8 +281,7 @@ def parse(element_html, data):
 
         answer_code = ''
         for index, answer in enumerate(student_answer):
-            student_answer_indent = filter_multiple_from_array(student_answer, ['indent'])
-            indent = int(student_answer_indent[index])
+            indent = int(answer['indent'])
             answer_code += ('    ' * indent) + answer['inner_html'] + '\n'
 
         if len(answer_code) == 0:
