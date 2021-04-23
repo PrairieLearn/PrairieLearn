@@ -131,12 +131,11 @@ def render(element_html, data):
         grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
         mcq_options = data['params'][answer_name]
-        # print(mcq_options)
-        mcq_options = filter_multiple_from_array(mcq_options, ['inner_html', 'uuid', 'indent'])
+        mcq_options = filter_multiple_from_array(mcq_options, ['inner_html', 'uuid'])
 
         if answer_name in data['submitted_answers']:
             student_previous_submission = filter_multiple_from_array(data['submitted_answers'][answer_name], ['inner_html', 'uuid', 'indent'])
-            mcq_options = [opt for opt in mcq_options if opt not in student_previous_submission]
+            mcq_options = [opt for opt in mcq_options if opt not in filter_multiple_from_array(student_previous_submission, ['inner_html', 'uuid'])]
 
         for index, option in enumerate(student_previous_submission):
             submission_indent = option.get('indent', None)
