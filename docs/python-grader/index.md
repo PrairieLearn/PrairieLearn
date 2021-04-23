@@ -141,6 +141,10 @@ Note that `Feedback.set_score()` is used to set the correctness of the test case
 
 The server parameters in `data` can be accessed from within the test cases using `self.data`.
 
+### Leading and Trailing Code
+
+If the optional files `tests/leading_code.py` and/or `tests/trailing_code.py` exist, the autograder will automatically prepend and append the contents to the user's submission before grading.  This can be useful if alternative input methods are used, e.g. for Parson's problem questions to provide python imports or other code that must be run.
+
 #### Multiple Iterations
 
 By setting the `total_iters` class variable, the test suite can be run for multiple iterations.  To prevent a specific test case from being run multiple times, you can add the `@not_repeated` decorator to it.

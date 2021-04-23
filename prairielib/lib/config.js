@@ -38,7 +38,7 @@ module.exports.loadConfigForEnvironment = function (configDir, environment, call
                 (callback) => {
                     fs.readFile(path.join(configDir, `${parent}.yaml`), 'utf-8', (err, data) => {
                         if (ERR(err, callback)) return;
-                        configDescription = yaml.safeLoad(data);
+                        configDescription = yaml.load(data);
                         inheritedConfigs.push(configDescription);
                         parent = configDescription.parent || null;
                         callback(null);

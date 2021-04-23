@@ -2,7 +2,6 @@ const util = require('util');
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const _ = require('lodash');
 
 const error = require('@prairielearn/prairielib/error');
 const assessment = require('../../lib/assessment');
@@ -32,6 +31,7 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
+        const overrideGradeRate = false;
         var closeExam;
         if (req.body.__action == 'grade') {
             if (!res.locals.assessment.allow_real_time_grading) {
@@ -46,7 +46,7 @@ router.post('/', function(req, res, next) {
         } else {
             next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
         }
-        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
+        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, overrideGradeRate, function(err) {
             if (ERR(err, next)) return;
             if (req.body.__action == 'timeLimitFinish') {
                 res.redirect(req.originalUrl + '?timeLimitExpired=true');
@@ -72,11 +72,18 @@ router.get('/', function(req, res, next) {
             res.locals.assessment_text_templated = assessment_text_templated;
 
             res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
-            res.locals.savedAnswers = _.reduce(res.locals.instance_questions, (sum, question) => {
-                if (question.status == 'saved') return sum+1;
-                return sum;
-            }, 0);
-
+            res.locals.savedAnswers = 0;
+            res.locals.suspendedSavedAnswers = 0;
+            res.locals.instance_questions.forEach((question) => {
+                if (question.status == 'saved') {
+                    if (question.allow_grade_left_ms > 0) {
+                        res.locals.suspendedSavedAnswers++;
+                    } else {
+                        res.locals.savedAnswers++;
+                    }
+                }
+            });
+            
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     });

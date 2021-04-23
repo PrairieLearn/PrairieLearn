@@ -326,7 +326,7 @@ When previewing content within a local copy of PrairieLearn, the web version
 is powered by a docker container. At the end of a session, closing out of
 either the web browser or the terminal that launched the docker container
 will **not** stop PrairieLearn from running. Therefore, when relaunching the 
-docker version of PrairieLearn, the existing port my already be taken.
+docker version of PrairieLearn, the existing port may already be taken.
 For example, we would have:
 
 ```bash

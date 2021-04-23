@@ -79,7 +79,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 6);
+            assert.lengthOf(elemList, 5);
             // there are 6 occurrences of the same csrf, we will pick the first one
             assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
@@ -87,30 +87,7 @@ describe('Group based homework assess control on student side', function() {
         });
     });
 
-    describe('3. POST to instructor assessments URL to set MIN/MAX for group', function() {
-        it('should load successfully', function(callback) {
-            var form = {
-                __action: 'configGroup',
-                __csrf_token: locals.__csrf_token,
-                minsize: '3',
-                maxsize: '3',
-                joincheck: true,
-                createcheck: true,
-                leavecheck: true,
-            };
-            locals.preStartTime = Date.now();
-            request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (ERR(error, callback)) return;
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                page = body;
-                callback(null);
-            });
-        });
-        it('should parse', function() {
-            locals.$ = cheerio.load(page);
-        });
+    describe('3. Check if the config is correct', function() {
         it('should create the correct group configuration', function(callback) {
             var params = {
                 assessment_id: locals.assessment_id,
@@ -142,38 +119,14 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 6);
-            // there are 6 occurances of the same csrf, we will pick the first one
+            assert.lengthOf(elemList, 5);
             assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
     });
 
-    describe('5. POST to instructor assessments URL to set MIN/MAX for group', function() {
-        it('should load successfully', function(callback) {
-            var form = {
-                __action: 'configGroup',
-                __csrf_token: locals.__csrf_token,
-                minsize: '3',
-                maxsize: '3',
-                joincheck: true,
-                createcheck: true,
-                leavecheck: true,
-            };
-            locals.preStartTime = Date.now();
-            request.post({url: locals.instructorAssessmentsUrlGroupTab_2, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (ERR(error, callback)) return;
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                page = body;
-                callback(null);
-            });
-        });
-        it('should parse', function() {
-            locals.$ = cheerio.load(page);
-        });
+    describe('5. Check if the config is correct', function() {
         it('should create the correct group configuration', function(callback) {
             var params = {
                 assessment_id: locals.assessment_id_2,
@@ -234,7 +187,7 @@ describe('Group based homework assess control on student side', function() {
         it('should be able to create a group', function(callback) {
             locals.group_name = 'groupBB';
             var form = {
-                __action: 'createGroup',
+                __action: 'create_group',
                 __csrf_token: locals.__csrf_token,
                 groupName: locals.group_name,
             };
@@ -259,8 +212,8 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
-            locals.joinCode = elemList.text();
-            assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
+            locals.join_code = elemList.text();
+            assert.lengthOf(locals.join_code, locals.$('#group-name').text().length + 1 + 4);
         });
         it('should not be able to start assessment', function() {
             elemList = locals.$('#start-assessment');
@@ -302,9 +255,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to join group', function(callback) {
             var form = {
-                __action: 'joinGroup',
+                __action: 'join_group',
                 __csrf_token: locals.__csrf_token,
-                joinCode: locals.joinCode,
+                join_code: locals.join_code,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -327,7 +280,8 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
-            assert.equal(locals.joinCode, elemList.text());
+            assert.equal(locals.join_code, elemList.text());
+            console.log(elemList.text());
         });
         it('should not be able to start assessment', function() {
             elemList = locals.$('#start-assessment');
@@ -369,9 +323,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to join group', function(callback) {
             var form = {
-                __action: 'joinGroup',
+                __action: 'join_group',
                 __csrf_token: locals.__csrf_token,
-                joinCode: locals.joinCode,
+                join_code: locals.join_code,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -401,7 +355,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should contain the 4-character join code', function() {
             elemList = locals.$('#join-code');
-            assert.equal(locals.joinCode, elemList.text());
+            assert.equal(locals.join_code, elemList.text());
         });
     });
     describe('13. the fourth user can not join the already full group', function() {
@@ -434,9 +388,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should NOT be able to join group', function(callback) {
             var form = {
-                __action: 'joinGroup',
+                __action: 'join_group',
                 __csrf_token: locals.__csrf_token,
-                joinCode: locals.joinCode,
+                join_code: locals.join_code,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;
@@ -501,7 +455,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to start the assessment', function(callback) {
             var form = {
-                __action: 'newInstance',
+                __action: 'new_instance',
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -591,7 +545,7 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should be able to Leave the group', function(callback) {
             var form = {
-                __action: 'leaveGroup',
+                __action: 'leave_group',
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentInstanceURL, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -628,7 +582,7 @@ describe('Group based homework assess control on student side', function() {
         it('should be able to create a group', function(callback) {
             locals.group_name_alternative1 = 'groupCC';
             var form = {
-                __action: 'createGroup',
+                __action: 'create_group',
                 __csrf_token: locals.__csrf_token,
                 groupName: locals.group_name_alternative1,
             };
@@ -704,7 +658,7 @@ describe('Group based homework assess control on student side', function() {
         it('should be able to create a group', function(callback) {
             locals.group_name_alternative2 = 'groupBBCC';
             var form = {
-                __action: 'createGroup',
+                __action: 'create_group',
                 __csrf_token: locals.__csrf_token,
                 groupName: locals.group_name_alternative2,
             };
@@ -760,9 +714,9 @@ describe('Group based homework assess control on student side', function() {
         });
         it('should NOT be able to join group using the join code from a different assessment', function(callback) {
             var form = {
-                __action: 'joinGroup',
+                __action: 'join_group',
                 __csrf_token: locals.__csrf_token,
-                joinCode: locals.joinCode,
+                join_code: locals.join_code,
             };
             request.post({url: locals.assessmentUrl_2, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (ERR(error, callback)) return;

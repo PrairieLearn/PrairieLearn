@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Admin Query",
     "description": "Description of an administrator SQL query.",
     "type": "object",
@@ -8,6 +8,10 @@
         "description"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "description": {
             "description": "Brief one-line description of the query.",
             "type": "string"
@@ -28,6 +32,10 @@
                 "additionalProperties": false,
                 "required": ["name", "description"],
                 "properties": {
+                    "comment": {
+                        "description": "Arbitrary comment for reference purposes.",
+                        "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                    },
                     "name": {
                         "description": "Name of the parameter. Must match a $name in the SQL.",
                         "type": "string"

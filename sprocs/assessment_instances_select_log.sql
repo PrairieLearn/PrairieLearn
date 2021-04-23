@@ -1,8 +1,10 @@
 DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint);
+DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint,boolean);
 
 CREATE OR REPLACE FUNCTION
     assessment_instances_select_log ( 
-        ai_id bigint
+        ai_id bigint,
+        include_files boolean
     ) 
     RETURNS TABLE(
         event_name text,
@@ -93,7 +95,7 @@ BEGIN
                     v.number AS variant_number,
                     s.id AS submission_id,
                     jsonb_build_object(
-                      'submitted_answer', s.submitted_answer,
+                      'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                       'correct', s.correct
                     ) AS data
                 FROM
@@ -154,7 +156,7 @@ BEGIN
                         'correct', gj.correct,
                         'score', gj.score,
                         'feedback', gj.feedback,
-                        'submitted_answer', s.submitted_answer,
+                        'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                         'submission_id', s.id
                     ) AS data
                 FROM
@@ -189,7 +191,7 @@ BEGIN
                         'correct', gj.correct,
                         'score', gj.score,
                         'feedback', gj.feedback,
-                        'submitted_answer', s.submitted_answer,
+                        'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                         'true_answer', v.true_answer
                     ) AS data
                 FROM
@@ -279,9 +281,28 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
-                    NULL::JSONB AS data
+                    CASE
+                    WHEN asl.open THEN jsonb_build_object(
+                         'date_limit',
+                         CASE WHEN asl.date_limit IS NULL THEN 'Unlimited'
+                         ELSE format_date_full_compact(asl.date_limit, ci.display_timezone)
+                         END,
+                         'time_limit',
+                         CASE WHEN asl.date_limit IS NULL THEN 'Unlimited'
+                         ELSE format_interval(asl.date_limit - ai.date)
+                         END,
+                         'remaining_time',
+                         CASE WHEN asl.date_limit IS NULL THEN 'Unlimited'
+                         ELSE format_interval(asl.date_limit - asl.date)
+                         END
+                    )
+                    ELSE NULL::JSONB
+                    END AS data
                 FROM
                     assessment_state_logs AS asl
+                    JOIN assessment_instances AS ai ON (ai.id = ai_id)
+                    JOIN assessments AS a ON (a.id = ai.assessment_id)
+                    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
                     LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
                 WHERE
                     asl.assessment_instance_id = ai_id
@@ -338,6 +359,30 @@ BEGIN
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentAssessmentInstance'
                     AND pvl.authn_user_id = ai.user_id
+            )
+            UNION
+            (
+                SELECT
+                    10 AS event_order,
+                    ('Group ' || gl.action)::TEXT AS event_name,
+                    'gray2'::TEXT AS event_color,
+                    gl.date,
+                    u.user_id AS auth_user_id,
+                    u.uid AS auth_user_uid,
+                    NULL::TEXT AS qid,
+                    NULL::INTEGER AS question_id,
+                    NULL::INTEGER AS instance_question_id,
+                    NULL::INTEGER AS variant_id,
+                    NULL::INTEGER AS variant_number,
+                    NULL::INTEGER AS submission_id,
+                    jsonb_build_object('user', gu.uid) AS data
+                FROM
+                    assessment_instances AS ai
+                    JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
+                    JOIN users AS u ON (u.user_id = gl.authn_user_id)
+                    LEFT JOIN users AS gu ON (gu.user_id = gl.user_id)
+                WHERE
+                    ai.id = ai_id
             )
             ORDER BY date, event_order, question_id
         ),

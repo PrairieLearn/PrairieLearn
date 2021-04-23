@@ -16,9 +16,10 @@ module.exports.run = function(callback) {
 
         async.eachSeries(examList, function(examItem, callback) {
             logger.verbose('autoFinishExams: finishing ' + examItem.assessment_instance_id, examItem);
-            var authn_user_id = null; // graded by the system
-            var closeExam = true; // close the exam after grading it
-            assessment.gradeAssessmentInstance(examItem.assessment_instance_id, authn_user_id, closeExam, function(err) {
+            const authn_user_id = null; // graded by the system
+            const closeExam = true; // close the exam after grading it
+            const overrideGradeRate = true; // override submission/grading limits
+            assessment.gradeAssessmentInstance(examItem.assessment_instance_id, authn_user_id, closeExam, overrideGradeRate, function(err) {
                 if (ERR(err, () => {})) {
                     logger.error('Error finishing exam', {examItem, err});
                 }

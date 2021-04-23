@@ -68,34 +68,36 @@ class CGrader:
             flags = shlex.split(flags)
         elif not flags:
             flags = []
-        
-        obj_file = re.sub('\.c$', '', c_file) + '.o'
-        out = self.run_command(['gcc', '-c', c_file, '-o', obj_file] + flags, sandboxed=False)
-        if os.path.isfile(obj_file):
 
+        if not add_c_file:
+            add_c_file = []
+        elif not isinstance(add_c_file, list):
+            add_c_file = [add_c_file]
+        if main_file: # Kept for compatibility reasons, but could be set as an added file
+            add_c_file.append(main_file)
+        if add_c_file:
+            flags.append('-Wl,--allow-multiple-definition')
+
+        out = ''
+        std_obj_files = []
+        for std_c_file in (c_file if isinstance(c_file, list) else [c_file]):
+            obj_file = re.sub('\.c$', '', std_c_file) + '.o'
+            out += self.run_command(['gcc', '-c', std_c_file, '-o', obj_file] + flags,
+                                    sandboxed=False)
+            std_obj_files.append(obj_file)
+
+        if all(os.path.isfile(obj) for obj in std_obj_files):
             objs = []
             
-            if add_c_file:
-                # Add new C file that maybe overwrites some existing functions.
-                add_obj_file = re.sub('\.c$', '', add_c_file) + '.o'
-                out += self.run_command(['gcc', '-c', add_c_file,
-                                         '-o', add_obj_file] + flags, sandboxed=False)
-                objs.append(add_obj_file)
-                flags.append('-Wl,--allow-multiple-definition')
+            # Add new C files that maybe overwrite some existing functions.
+            for added_c_file in add_c_file:
+                obj_file = re.sub('\.c$', '', added_c_file) + '.o'
+                out += self.run_command(['gcc', '-c', added_c_file, 
+                                         '-o', obj_file] + flags, sandboxed=False)
+                objs.append(obj_file)
 
-            if main_file:
-                main_obj_file = re.sub('\.c$', '', main_file) + '.o'
-                out += self.run_command(['strip', '-N', 'main', obj_file], sandboxed=False)
-                out += self.run_command(['gcc', '-c', main_file,
-                                         '-o', main_obj_file] + flags, sandboxed=False)
-                objs.append(main_obj_file)
-                flags.append('-Wl,--allow-multiple-definition')
-
-            # The main C file must be the last so its functions can be
-            # overwritten
-            objs.append(obj_file)
-            
-            out += self.run_command(['gcc'] + objs +
+            # The student C files must be the last so its functions can be overwritten
+            out += self.run_command(['gcc'] + objs + std_obj_files +
                                     ['-o', exec_file, '-lm'] + flags, sandboxed=False)
         
         if os.path.isfile(exec_file):
@@ -106,7 +108,7 @@ class CGrader:
         if out and add_warning_result_msg:
             self.result['message'] += f'Compilation warnings:\n\n{out}\n'
         return self.add_test_result(name, output=out,
-                                    points=os.path.isfile(exec_file),
+                                    points=points if os.path.isfile(exec_file) else 0,
                                     max_points=points, field=field)
 
     def change_mode(self, file, mode='744'):
@@ -128,7 +130,9 @@ class CGrader:
                  ignore_consec_spaces=True,
                  args=None, name=None, msg=None, max_points=1):
         
-        if args is not None and not isinstance(args, list): args = [args] 
+        if args is not None:
+            if not isinstance(args, list): args = [args]
+            args = list(map(str, args))
         
         if name is None and input is not None:
             name = 'Test with input "%s"' % ' '.join(input.splitlines())
@@ -153,7 +157,8 @@ class CGrader:
         out = self.run_command(command if args is None else ([command] + args),
                                input, sandboxed=True, timeout=timeout)
         outcmp = out
-        if not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
+        if not out: out = '(NO OUTPUT)'
+        elif not out.endswith('\n'): out += '\n(NO ENDING LINE BREAK)'
 
         if ignore_case:
             outcmp = outcmp.lower()
@@ -186,7 +191,7 @@ class CGrader:
            and [t for t in reject_output if str(t) in outcmp]:
             points = False
 
-        return self.add_test_result(name, points=points, msg=msg,
+        return self.add_test_result(name, points=max_points if points else 0, msg=msg,
                                     output=out, max_points=max_points,
                                     field=field)
 

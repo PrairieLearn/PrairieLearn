@@ -53,7 +53,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
 
     step('start the exam', async () => {
         const form = {
-            __action: 'newInstance',
+            __action: 'new_instance',
             __csrf_token: context.__csrf_token,
         };
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form , headers});

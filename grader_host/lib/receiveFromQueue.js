@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const fs = require('fs-extra');
 const path = require('path');
-const Ajv = require('ajv');
+const Ajv = require('ajv').default;
 const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
 
 const globalLogger = require('./logger');

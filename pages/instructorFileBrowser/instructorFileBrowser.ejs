@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head', {pageTitle: 'Files'}); %>
-    <link rel="stylesheet" href="/node_modules/highlight.js/styles/default.css">
+    <link href="<%= node_modules_asset_path('highlight.js/styles/default.css') %>" rel="stylesheet">
     <style>
       .popover{
         max-width: 50%;
