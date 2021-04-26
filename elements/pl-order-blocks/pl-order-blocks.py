@@ -323,6 +323,7 @@ def grade(element_html, data):
         final_score = 1.0 if student_answer == true_answer_list else 0.0
     elif grading_mode == 'ranking':
         ranking = filter_multiple_from_array(data['submitted_answers'][answer_name], ['ranking'])
+        ranking = list(map(lambda x: x['ranking'], ranking))
         correctness = 1 + ranking.count(0)
         partial_credit = 0
         if len(ranking) != 0 and len(ranking) == len(true_answer_list):
@@ -337,7 +338,9 @@ def grade(element_html, data):
 
     if check_indentation:
         student_answer_indent = filter_multiple_from_array(data['submitted_answers'][answer_name], ['indent'])
+        student_answer_indent = list(map(lambda x: x['indent'], student_answer_indent))
         true_answer_indent = filter_multiple_from_array(data['correct_answers'][answer_name], ['indent'])
+        true_answer_indent = list(map(lambda x: x['indent'], true_answer_indent))
         for i, indent in enumerate(student_answer_indent):
             if true_answer_indent[i] == '-1' or int(indent) == true_answer_indent[i]:
                 indent_score += 1
