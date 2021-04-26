@@ -9,7 +9,7 @@ pandas==1.2.3
 pycryptodome==3.10.1
 pyquaternion==0.9.9
 regex==2021.4.4
-scipy==1.6.2
+scipy==1.6.3
 sympy==1.7.1
 rpy2==3.4.3
 pygraphviz==1.6
