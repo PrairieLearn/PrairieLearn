@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
@@ -51,17 +50,15 @@ router.get('/', function(req, res, _next) {
 });
 
 var sendInstancesCsv = function(res, req, columns, options, callback) {
-    var params = {assessment_id: res.locals.assessment.id};
+    var params = {
+        assessment_id: res.locals.assessment.id,
+        highest_score: options.only_highest,
+        group_work: options.group_work,
+    };
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, callback)) return;
 
         var rows = result.rows;
-        if (options.only_highest) {
-            rows = _.filter(rows, 'highest_score');
-        }
-        if (options.group_work) {
-            rows = _.filter(rows, 'unique_group');
-        }
         csvMaker.rowsToCsv(rows, columns, function(err, csv) {
             if (ERR(err, callback)) return;
             res.attachment(req.params.filename);
