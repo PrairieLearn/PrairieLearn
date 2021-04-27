@@ -122,6 +122,10 @@ FROM
 -- BLOCK select_course_instance_access_rules
 WITH object_data AS (
     SELECT
+        ci.id AS course_instance_id,
+        ci.short_name AS course_instance_short_name,
+        ci.long_name AS course_instance_long_name,
+        ci.course_id AS course_instance_course_id,
         format_date_iso8601(ciar.end_date, ci.display_timezone) AS end_date,
         ciar.id AS course_instance_access_rule_id,
         ciar.institution,
