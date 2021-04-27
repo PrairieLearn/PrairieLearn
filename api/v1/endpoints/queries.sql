@@ -93,7 +93,6 @@ WITH object_data AS (
         aar.exam_uuid,
         aar.id AS assessment_access_rule_id,
         aar.mode,
-        aar.number,
         aar.number AS assessment_access_rule_number,
         aar.password,
         aar.role,
@@ -116,6 +115,30 @@ SELECT
     coalesce(jsonb_agg(
         to_jsonb(object_data)
         ORDER BY assessment_access_rule_number, assessment_access_rule_id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
+-- BLOCK select_course_instance_access_rules
+WITH object_data AS (
+    SELECT
+        format_date_iso8601(ciar.end_date, ci.display_timezone) AS end_date,
+        ciar.id AS course_instance_access_rule_id,
+        ciar.institution,
+        ciar.number AS course_instance_access_rule_number,
+        ciar.role,
+        format_date_iso8601(ciar.start_date, ci.display_timezone) AS start_date,
+        ciar.uids
+    FROM
+        course_instances AS ci
+        JOIN course_instance_access_rules AS ciar ON (ciar.course_instance_id = ci.id)
+    WHERE
+        ci.id = $course_instance_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY course_instance_access_rule_number, course_instance_access_rule_id
     ), '[]'::jsonb) AS item
 FROM
     object_data;
