@@ -21,7 +21,8 @@ router.post('/', function(req, res, next) {
     if (req.body.__action == 'test_once') {
         const count = 1;
         const showDetails = true;
-        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+        const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
+        question.startTestQuestion(count, showDetails, res.locals.question, assessmentGroupWork, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
@@ -29,7 +30,8 @@ router.post('/', function(req, res, next) {
         if (res.locals.question.grading_method !== 'External') {
             const count = 100;
             const showDetails = false;
-            question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+            const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
+            question.startTestQuestion(count, showDetails, res.locals.question, assessmentGroupWork, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
                 if (ERR(err, next)) return;
                 res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
             });
@@ -39,7 +41,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'change_id') {
         debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
         if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
-        if (!/^[-A-Za-z0-9_]+$/.test(req.body.id)) return next(new Error(`Invalid QID (was not only letters, numbers, dashes, and underscores, with no spaces): ${req.body.id}`));
+        if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) return next(new Error(`Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`));
         let qid_new;
         try {
             qid_new = path.normalize(req.body.id);
@@ -150,7 +152,7 @@ router.get('/', function(req, res, next) {
                 if (GHfound) {
                     res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
                 }
-            } else if (res.locals.course.options.isExampleCourse) {
+            } else if (res.locals.course.example_course) {
                 res.locals.questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
             }
             callback(null);

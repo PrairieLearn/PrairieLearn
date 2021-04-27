@@ -7,14 +7,14 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 module.exports = {};
 
 module.exports.run = function(callback) {
-    if (!config.externalGradingUseAws) return callback(null); // FIXME: replace with config.runningInEc2
+    if (!config.runningInEc2) return callback(null);
     const params = [
         config.serverUsageIntervalSec,
     ];
     sqldb.callOneRow('server_usage_current', params, (err, result) => {
         if (ERR(err, callback)) return;
         const stats = result.rows[0];
-        const cloudwatch = new AWS.CloudWatch();
+        const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
         const dimensions = [
             {Name: 'Server Group', Value: config.groupName},
         ];

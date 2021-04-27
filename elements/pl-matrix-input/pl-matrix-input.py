@@ -303,7 +303,7 @@ def test(element_html, data):
     # Wrap true answer in ndarray (if it already is one, this does nothing)
     a_tru = np.array(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
     if random.choice([True, False]):
         # matlab
         if result == 'correct':
@@ -313,10 +313,50 @@ def test(element_html, data):
             data['raw_submitted_answers'][name] = pl.numpy_to_matlab(a_tru + (random.uniform(1, 10) * random.choice([-1, 1])), ndigits=12, wtype='g')
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
         elif result == 'invalid':
-            # FIXME: add more invalid expressions, make text of format_errors
-            # correct, and randomize
-            data['raw_submitted_answers'][name] = '[1, 2, 3]'
-            data['format_errors'][name] = 'invalid'
+            invalid_cases = {
+                'invalid commas': [
+                    '[,,1, 2, 3]',
+                    '[1,, 2, 3]',
+                    '[1, 2,, 3]',
+                    '[1, 2, 3,,]',
+                    '[, ,1, 2, 3]',
+                    '[1, , 2, 3]',
+                    '[1, 2, , 3]',
+                    '[1, 2, 3, ,]',
+                ],
+                'uneven dimensions': [
+                    '[1; 2 3]',
+                    '[1 2; 3]',
+                    '[1; 2, 3]',
+                    '[1, 2; 3]',
+                ],
+                'unbalanced brackets': [
+                    '[1 2 3',
+                    '1 2 3]',
+                    '[1, 2, 3',
+                    '1, 2, 3]',
+                ],
+                'non-spaces outside brackets': [
+                    '1 [2 3]',
+                    '[1 2] 3',
+                    '1 [2, 3]',
+                    '[1, 2] 3',
+                ],
+                'not finite': [
+                    'np.inf',
+                    '[np.inf]',
+                    '[1 2 np.inf]',
+                    '[1, 2, np.inf]',
+                ],
+                'empty matrix': [
+                    '[]',
+                    '[,]',
+                ],
+            }
+
+            error = random.choice(list(invalid_cases))
+            data['raw_submitted_answers'][name] = random.choice(invalid_cases[error])
+            data['format_errors'][name] = error
         else:
             raise Exception('invalid result: %s' % result)
     else:

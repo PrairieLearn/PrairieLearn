@@ -1,0 +1,10 @@
+properties:
+  testBoolean:
+    default: true
+    envVar: TEST_BOOLEAN
+  testNumber:
+    default: 123
+    envVar: TEST_NUMBER
+  testString:
+    default: 'hello'
+    envVar: TEST_STRING

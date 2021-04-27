@@ -82,6 +82,7 @@ Key | Type | Description
 `data["raw_submitted_answers"]` | dict | The answer submitted by the student before parsing.
 `data["editable"]` | boolean | Whether the question is currently in an editable state.
 `data["panel"]` | string | Which panel is being rendered (`question`, `submission`, or `answer`).
+`data["extensions"]` | dict | A list of extensions that are available to be loaded by this element.  For more information see the [element extensions](elementExtensions.md) page.
 
 So that multiple elements can exist together in one question, the convention is that each element instance is associated with one or more **variables**. These variables are keys in the dictionaries for the data elements. For example, if there are variables `x` and `y` then we might have:
 
@@ -98,11 +99,12 @@ The element functions are:
 
 Function | Return object | modifiable `data` keys | unmodifiable `data` keys | Description
 --- | --- | --- | --- | ---
-`generate()` | | `correct_answers`, `params` | `options`, `variant_seed` | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Return the modified `data` dictionary.
-`prepare()` | | `correct_answers`, `params` | `options`, `variant_seed` | Final question preparation after element code has run. Can modify data as necessary. Return the modified `data` dictionary.
-`render()` | `html` (string) | | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed` | Render the HTML for one panel and return it as a string.
-`parse()` | | `format_errors`, `submitted_answers` | `correct_answers`, `options`, `params`, `raw_submitted_answers`, `variant_seed` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
-`grade()` | | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
+`generate()` | | `correct_answers`, `params` | `options`, `variant_seed`, `extensions` | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Return the modified `data` dictionary.
+`prepare()` | | `correct_answers`, `params` | `options`, `variant_seed`, `extensions` | Final question preparation after element code has run. Can modify data as necessary. Return the modified `data` dictionary.
+`render()` | `html` (string) | | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed`, `extensions` | Render the HTML for one panel and return it as a string.
+`parse()` | | `format_errors`, `submitted_answers`, `correct_answers` | `options`, `params`, `raw_submitted_answers`, `variant_seed`, `extensions` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
+`grade()` | | `correct_answers`, `feedback`, `format_errors`, `partial_scores`, `score`, `submitted_answers` | `params`, `options`, `raw_submitted_answers`, `variant_seed`, `extensions` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
+`test()` | | `format_errors`, `partial_scores`, `score`, `raw_submitted_answers` | `gradable`, `test_type`, `extensions` | Creates a test submission for this element, used when running tests from the "Settings" panel.  Should set a value in `data['raw_submitted_answers'][var]` and expected score in `data['partial_scores'][var]` (or `data['format_errors'][var]` if `invalid`).  The type of input to test is given in `data['test_type']` and can be one of `correct`, `incorrect`, or `invalid`.
 
 The above function descriptions describe the typical variables that will be read and modified by each function. However, any function that returns `data` (i.e., not `parse()`) is allowed to change any of the modifiable values in `data` (see above table) and these changes will be persisted to the database. No function is allowed to add or delete keys in `data`.
 

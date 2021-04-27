@@ -1,0 +1,36 @@
+<pl-question-panel>
+
+  <div class="card my-2">
+      <div class="card-header">
+          An example to show how you can embed a video in a question. For example, if your video is on MediaSpace, you can go to <code>Share</code>, then
+          <code>Embed</code> and copy the text from there.
+      </div>
+      <div class="card-body">
+          <p> This is an awesome video with an introduction to PrairieLearn.
+               Learn about how to create randomized assessments, visualize your course statistics, and more!</p>
+
+          <p>
+             <iframe id="kmsembed-1_e1gprkci" width="640" height="394" src="https://mediaspace.illinois.edu/embed/secure/iframe/entryId/1_e1gprkci/uiConfId/26883701" class="kmsembed" allowfullscreen webkitallowfullscreen mozAllowFullScreen allow="autoplay *; fullscreen *; encrypted-media *" sandbox="allow-forms allow-same-origin allow-scripts allow-top-navigation allow-pointer-lock allow-popups allow-modals allow-orientation-lock allow-popups-to-escape-sandbox allow-presentation allow-top-navigation-by-user-activation" frameborder="0" title="Kaltura Player"></iframe>
+          </p>
+      </div>
+  </div>
+
+  <div class="card my-2">
+      <div class="card-header">
+          This example demonstrates how you can use <code>pl-multiple-choice</code> for survey types of questions, where
+          there is no correct answer.
+          You can use a similar approach for <code>pl-checkbox</code>.
+      </div>
+      <div class="card-body">
+        <p>Did you find this video beneficial?</p>
+
+        <pl-multiple-choice answers-name="survey" weight="1" inline="true" fixed-order="true">
+          <pl-answer correct="true">Yes</pl-answer>
+          <pl-answer correct="false">No</pl-answer>
+        </pl-multiple-choice>
+
+      </div>
+  </div>
+
+
+</pl-question-panel>

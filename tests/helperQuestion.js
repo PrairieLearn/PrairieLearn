@@ -1,5 +1,6 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
+const util = require('util');
 const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
@@ -172,7 +173,7 @@ module.exports = {
                 }
             });
             it('should have or not have tryAgain button', function() {
-                elemList = locals.$('a:contains(Try question again)');
+                elemList = locals.$('a:contains(Try a new variant)');
                 if (locals.shouldHaveButtons.includes('tryAgain')) {
                     assert.lengthOf(elemList, 1);
                 } else {
@@ -680,3 +681,17 @@ module.exports = {
         });
     },
 };
+
+
+module.exports.checkNoIssuesForLastVariant = (callback) => {
+    sqldb.query(sql.select_issues_for_last_variant, [], (err, result) => {
+        if (ERR(err, callback)) return;
+        if (result.rowCount > 0) {
+            callback(new Error(`found ${result.rowCount} issues (expected zero issues):\n`
+                               + JSON.stringify(result.rows, null, '    ')));
+            return;
+        }
+        callback(null);
+    });
+};
+module.exports.checkNoIssuesForLastVariantAsync = util.promisify(module.exports.checkNoIssuesForLastVariant);

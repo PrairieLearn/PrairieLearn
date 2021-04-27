@@ -24,7 +24,8 @@ module.exports = function(req, res, next) {
         var authn_mode = result.rows[0].mode;
         res.locals.course = result.rows[0].course;
         res.locals.course_instance = result.rows[0].course_instance;
-        res.locals.courses = result.rows[0].courses;
+        res.locals.editable_courses = result.rows[0].editable_courses;
+        res.locals.viewable_courses = result.rows[0].viewable_courses;
         res.locals.course_instances = result.rows[0].course_instances;
 
         var permissions_course_instance = result.rows[0].permissions_course_instance;

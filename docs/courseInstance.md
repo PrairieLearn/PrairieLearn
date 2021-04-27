@@ -5,7 +5,7 @@
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added.
+A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added.  A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
 ```text
 exampleCourse
@@ -70,7 +70,7 @@ Role         | Description
 ---          | ---
 `None`       | A user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.
 `Student`    | A student participating in the class. They can only see their own information, and can do assessments. Default permission.
-`TA`         | A teaching assisstant. They can see the data of all users, but can only edit their own information.
+`TA`         | A teaching assistant. They can see the data of all users, but can only edit their own information.
 `Instructor` | A person in charge of the course. They have full permission to see and edit the information of other users.
 
 By default, any user not explicitly mentioned in the `userRoles` list will
@@ -104,6 +104,23 @@ The default timezone for course instances is the timezone of the course. This ca
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
 
+## Enrollment controls
+
+Students can enroll in a course instance through one of two ways:
+
+1. They can use a URL specific to the course instance or [to one of its assessments](assessment.md#linking-to-assessments). The appropriate link to provide to students can be found by opening the "Settings" tab of the Course Instance. This page includes, among other useful information, a Student Link that can be provided to students. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
+
+2. They can use the "Enroll" button in PrairieLearn's main page. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to Add new courses.
+
+Some instructors may wish to hide their course from the list of available course instances in the Enroll page. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances in the Enroll page, even if the instance is available for enrollment.
+
+```json
+{
+    "hideInEnrollPage": true
+}
+```
+
+Note that *this is not a security setting*. Students may still enroll in the course instance if they get access to the URL, either through friends or by [Forced Browing Attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by UIDs, Institution, or through LTI support.
 
 ## LTI support
 

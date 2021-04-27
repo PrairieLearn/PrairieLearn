@@ -1,10 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <%- include('../partials/head'); %>
-        <script src="/javascripts/lodash.min.js"></script>
-        <script src="/javascripts/d3.min.js"></script>
-        <script src="/localscripts/histmini.js"></script>
+        <%- include('../partials/head', {pageTitle: 'Course Instances'}); %>
     </head>
     <body>
         <script>
@@ -19,13 +16,14 @@
         </script>
         <%- include('../partials/navbar'); %>
         <div id="content" class="container-fluid">
+            <%- include('../partials/courseSyncErrorsAndWarnings'); %>
             <div class="card mb-4">
                 <div class="card-header bg-primary">
                     <div class="row align-items-center justify-content-between">
                         <div class="col-auto">
                             <span class="text-white">Course instances</span>
                         </div>
-                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse) && (! locals.needToSync)) { %>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
                         <div class="col-auto">
                             <form name="add-course-instance-form" method="POST">
                                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

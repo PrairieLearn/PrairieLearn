@@ -1,13 +1,20 @@
+DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
+DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint, boolean);
+DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint);
+
 CREATE OR REPLACE FUNCTION
     sync_assessments(
-        IN assessments JSONB,
-        IN course_id bigint,
-        IN new_course_instance_id bigint,
-        IN check_access_rules_exam_uuid boolean
-    ) returns void
+        IN disk_assessments_data JSONB[],
+        IN syncing_course_id bigint,
+        IN syncing_course_instance_id bigint,
+        OUT name_to_id_map JSONB
+    )
 AS $$
 DECLARE
-    assessment JSONB;
+    missing_dest_tids TEXT;
+    missing_src_tids TEXT;
+    mismatched_uuid_tids TEXT;
+    valid_assessment record;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -19,89 +26,182 @@ DECLARE
     new_alternative_group_id bigint;
     new_assessment_question_id bigint;
     new_assessment_question_ids bigint[];
+    bad_assessments text;
 BEGIN
-    -- The outermost structure of the JSON blob is an array of assessments
-    FOR assessment IN SELECT * FROM JSONB_ARRAY_ELEMENTS(sync_assessments.assessments) LOOP
-        new_assessment_question_ids := array[]::bigint[];
+    -- The sync algorithm used here is described in the preprint
+    -- "Preserving identity during opportunistic unidirectional
+    -- synchronization via two-fold identifiers".
 
-        INSERT INTO assessments
-            (uuid,
-            tid,
-            type,
-            number,
-            order_by,
-            title,
-            config,
-            multiple_instance,
-            shuffle_questions,
-            max_points,
-            auto_close,
-            deleted_at,
-            course_instance_id,
-            text,
-            assessment_set_id,
-            constant_question_value,
-            allow_issue_reporting,
-            allow_real_time_grading,
-            require_honor_code)
-        (
-            SELECT
-                (assessment->>'uuid')::uuid,
-                assessment->>'tid',
-                (assessment->>'type')::enum_assessment_type,
-                assessment->>'number',
-                (assessment->>'order_by')::integer,
-                assessment->>'title',
-                assessment->'config',
-                (assessment->>'multiple_instance')::boolean,
-                (assessment->>'shuffle_questions')::boolean,
-                (assessment->>'max_points')::double precision,
-                (assessment->>'auto_close')::boolean,
-                NULL,
-                sync_assessments.new_course_instance_id,
-                assessment->>'text',
-                (SELECT id FROM assessment_sets WHERE name = assessment->>'set_name' AND assessment_sets.course_id = sync_assessments.course_id),
-                (assessment->>'constant_question_value')::boolean,
-                (assessment->>'allow_issue_reporting')::boolean,
-                (assessment->>'allow_real_time_grading')::boolean,
-                (assessment->>'require_honor_code')::boolean
-        )
-        ON CONFLICT (course_instance_id, uuid) DO UPDATE
+    -- Move all our data into a temporary table so it's easier to work with
+
+    CREATE TEMPORARY TABLE disk_assessments (
+        tid TEXT NOT NULL,
+        uuid uuid,
+        errors TEXT,
+        warnings TEXT,
+        data JSONB
+    ) ON COMMIT DROP;
+
+    INSERT INTO disk_assessments (
+        tid,
+        uuid,
+        errors,
+        warnings,
+        data
+    ) SELECT
+        entries->>0,
+        (entries->>1)::uuid,
+        entries->>2,
+        entries->>3,
+        (entries->4)::JSONB
+    FROM UNNEST(disk_assessments_data) AS entries;
+
+    -- Synchronize the dest (assessments) with the src
+    -- (disk_assessments). This soft-deletes, un-soft-deletes, and
+    -- inserts new rows in assessments. No data is synced yet. Only the
+    -- (id, course_instance_id, uuid, tid, deleted_at) columns are used.
+
+    WITH
+    matched_rows AS (
+        SELECT src.tid AS src_tid, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        FROM disk_assessments AS src LEFT JOIN assessments AS dest ON (
+            dest.course_instance_id = syncing_course_instance_id
+            AND (src.uuid = dest.uuid
+                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
+                     AND src.tid = dest.tid AND dest.deleted_at IS NULL)))
+    ),
+    deactivate_unmatched_dest_rows AS (
+        UPDATE assessments AS dest
+        SET deleted_at = now()
+        WHERE dest.id NOT IN (
+            SELECT dest_id FROM matched_rows WHERE dest_id IS NOT NULL
+        ) AND dest.deleted_at IS NULL AND dest.course_instance_id = syncing_course_instance_id
+    ),
+    update_matched_dest_rows AS (
+        UPDATE assessments AS dest
+        SET tid = src_tid, uuid = src_uuid, deleted_at = NULL
+        FROM matched_rows
+        WHERE dest.id = dest_id AND dest.course_instance_id = syncing_course_instance_id
+    ),
+    insert_unmatched_src_rows AS (
+        INSERT INTO assessments AS dest (course_instance_id, tid, uuid, deleted_at)
+        SELECT syncing_course_instance_id, src_tid, src_uuid, NULL
+        FROM matched_rows
+        WHERE dest_id IS NULL
+        RETURNING dest.tid AS src_tid, dest.id AS inserted_dest_id
+    )
+    -- Make a map from TID to ID to return to the caller
+    SELECT jsonb_object_agg(src_tid, COALESCE(dest_id, inserted_dest_id))
+    INTO name_to_id_map
+    FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (src_tid);
+
+    -- Internal consistency checks to ensure that dest (assessments) and
+    -- src (disk_assessments) are in fact synchronized.
+
+    SELECT string_agg(src.tid, ', ')
+    INTO missing_dest_tids
+    FROM disk_assessments AS src
+    WHERE src.tid NOT IN (SELECT dest.tid FROM assessments AS dest WHERE dest.course_instance_id = syncing_course_instance_id AND dest.deleted_at IS NULL);
+    IF (missing_dest_tids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: TIDs on disk but not synced to DB: %', missing_dest_tids;
+    END IF;
+
+    SELECT string_agg(dest.tid, ', ')
+    INTO missing_src_tids
+    FROM assessments AS dest
+    WHERE dest.course_instance_id = syncing_course_instance_id AND dest.deleted_at IS NULL AND dest.tid NOT IN (SELECT src.tid FROM disk_assessments AS src);
+    IF (missing_src_tids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: TIDs in DB but not on disk: %', missing_src_tids;
+    END IF;
+
+    SELECT string_agg(src.tid, ', ')
+    INTO mismatched_uuid_tids
+    FROM disk_assessments AS src JOIN assessments AS dest ON (dest.course_instance_id = syncing_course_instance_id AND dest.tid = src.tid AND dest.deleted_at IS NULL)
+    WHERE NOT (src.uuid = dest.uuid OR src.uuid IS NULL);
+    IF (mismatched_uuid_tids IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: TIDs on disk with mismatched UUIDs in DB: %', mismatched_uuid_tids;
+    END IF;
+
+    -- At this point, there will be exactly one non-deleted row for all tids
+    -- that we loaded from disk. It is now safe to update all those rows with
+    -- the new information from disk (if we have any).
+
+    FOR valid_assessment IN (
+        SELECT tid, data, warnings
+        FROM disk_assessments AS src
+        wHERE (src.errors IS NULL OR src.errors = '')
+    ) LOOP
+        UPDATE assessments AS a
         SET
-            tid = EXCLUDED.tid,
-            type = EXCLUDED.type,
-            number = EXCLUDED.number,
-            order_by = EXCLUDED.order_by,
-            title = EXCLUDED.title,
-            config = EXCLUDED.config,
-            multiple_instance = EXCLUDED.multiple_instance,
-            shuffle_questions = EXCLUDED.shuffle_questions,
-            auto_close = EXCLUDED.auto_close,
-            max_points = EXCLUDED.max_points,
-            deleted_at = EXCLUDED.deleted_at,
-            text = EXCLUDED.text,
-            assessment_set_id = EXCLUDED.assessment_set_id,
-            constant_question_value = EXCLUDED.constant_question_value,
-            allow_issue_reporting = EXCLUDED.allow_issue_reporting,
-            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
-            require_honor_code = EXCLUDED.require_honor_code
+            type = (valid_assessment.data->>'type')::enum_assessment_type,
+            number = valid_assessment.data->>'number',
+            title = valid_assessment.data->>'title',
+            config = valid_assessment.data->'config',
+            multiple_instance = (valid_assessment.data->>'multiple_instance')::boolean,
+            shuffle_questions = (valid_assessment.data->>'shuffle_questions')::boolean,
+            max_points = (valid_assessment.data->>'max_points')::double precision,
+            auto_close = (valid_assessment.data->>'auto_close')::boolean,
+            text = valid_assessment.data->>'text',
+            assessment_set_id = aggregates.assessment_set_id,
+            constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
+            allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
+            allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
+            require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
+            group_work = (valid_assessment.data->>'group_work')::boolean,
+            sync_errors = NULL,
+            sync_warnings = valid_assessment.warnings
+        FROM
+            (
+                SELECT
+                    tid,
+                    (SELECT id FROM assessment_sets WHERE name = da.data->>'set_name' AND course_id = syncing_course_id) AS assessment_set_id
+                FROM disk_assessments AS da
+            ) AS aggregates
         WHERE
-            assessments.course_instance_id = sync_assessments.new_course_instance_id
+            a.tid = valid_assessment.tid
+            AND a.deleted_at IS NULL
+            AND a.tid = aggregates.tid
+            AND a.course_instance_id = syncing_course_instance_id
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
-        -- Now process all access rules for this assessment
-        FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'allowAccess') LOOP
-            -- If exam_uuid is specified, ensure that a corresponding PS exam exists
-            IF access_rule->'exam_uuid' != NULL AND check_access_rules_exam_uuid THEN
-                SELECT 1 FROM exams WHERE uuid = access_rule->>'exam_uuid';
-                IF NOT FOUND THEN
-                    RAISE EXCEPTION 'Assessment % allowAccess: No such examUuid % found in database. Ensure you copied the correct UUID from the scheduler.', assessment->>'tid', access_rule->>'exam_uuid';
-                END IF;
-            END IF;
+        -- if it is a group work try to insert a group_config
+        IF (valid_assessment.data->>'group_work')::boolean THEN
+            INSERT INTO group_configs (
+                course_instance_id,
+                assessment_id,
+                maximum,
+                minimum,
+                student_authz_create,
+                student_authz_join,
+                student_authz_leave
+            ) VALUES (
+                syncing_course_instance_id,
+                new_assessment_id,
+                (valid_assessment.data->>'group_max_size')::bigint,
+                (valid_assessment.data->>'group_min_size')::bigint,
+                (valid_assessment.data->>'student_group_create')::boolean,
+                (valid_assessment.data->>'student_group_join')::boolean,
+                (valid_assessment.data->>'student_group_leave')::boolean
+            ) ON CONFLICT (assessment_id)
+            DO UPDATE
+            SET 
+                maximum = EXCLUDED.maximum,
+                minimum = EXCLUDED.minimum,
+                student_authz_create = EXCLUDED.student_authz_create,
+                student_authz_join = EXCLUDED.student_authz_join,
+                student_authz_leave = EXCLUDED.student_authz_leave,
+                deleted_at = NULL;
+        ELSE
+            UPDATE group_configs
+            SET deleted_at = now()
+            WHERE assessment_id = new_assessment_id;
+        END IF;
 
-            INSERT INTO assessment_access_rules
-                (assessment_id,
+        -- Now process all access rules for this assessment
+        FOR access_rule IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'allowAccess') LOOP
+            INSERT INTO assessment_access_rules (
+                assessment_id,
                 number,
                 mode,
                 role,
@@ -113,7 +213,8 @@ BEGIN
                 exam_uuid,
                 start_date,
                 end_date,
-                show_closed_assessment)
+                show_closed_assessment,
+                show_closed_assessment_score)
             (
                 SELECT
                     new_assessment_id,
@@ -126,12 +227,14 @@ BEGIN
                     access_rule->>'password',
                     access_rule->'seb_config',
                     (access_rule->>'exam_uuid')::uuid,
-                    input_date(access_rule->>'start_date', ci.display_timezone),
-                    input_date(access_rule->>'end_date', ci.display_timezone),
-                    (access_rule->>'show_closed_assessment')::boolean
+                    input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
+                    input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
+                    (access_rule->>'show_closed_assessment')::boolean,
+                    (access_rule->>'show_closed_assessment_score')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+                    JOIN pl_courses AS c ON (c.id = ci.course_id)
                 WHERE
                     a.id = new_assessment_id
             )
@@ -147,18 +250,19 @@ BEGIN
                 seb_config = EXCLUDED.seb_config,
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date,
-                show_closed_assessment = EXCLUDED.show_closed_assessment;
+                show_closed_assessment = EXCLUDED.show_closed_assessment,
+                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score;
         END LOOP;
 
         -- Delete excess access rules
         DELETE FROM assessment_access_rules
         WHERE
             assessment_id = new_assessment_id
-            AND number > jsonb_array_length(assessment->'allowAccess');
+            AND number > jsonb_array_length(valid_assessment.data->'allowAccess');
 
         -- Insert all zones for this assessment
         zone_index := 0;
-        FOR zone IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'zones') LOOP
+        FOR zone IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'zones') LOOP
             INSERT INTO zones (
                 assessment_id,
                 number,
@@ -183,7 +287,7 @@ BEGIN
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
-            FOR alternative_group IN SELECT * FROM JSONB_ARRAY_ELEMENTS(assessment->'alternativeGroups'->zone_index) LOOP
+            FOR alternative_group IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'alternativeGroups'->zone_index) LOOP
                 INSERT INTO alternative_groups (
                     number,
                     number_choose,
@@ -209,6 +313,7 @@ BEGIN
                         points_list,
                         force_max_points,
                         tries_per_variant,
+                        grade_rate_minutes,
                         deleted_at,
                         assessment_id,
                         question_id,
@@ -221,6 +326,7 @@ BEGIN
                         jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
+                        (assessment_question->>'grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
                         (assessment_question->>'question_id')::bigint,
@@ -234,6 +340,7 @@ BEGIN
                         init_points = EXCLUDED.init_points,
                         force_max_points = EXCLUDED.force_max_points,
                         tries_per_variant = EXCLUDED.tries_per_variant,
+                        grade_rate_minutes = EXCLUDED.grade_rate_minutes,
                         deleted_at = EXCLUDED.deleted_at,
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
@@ -249,13 +356,13 @@ BEGIN
         DELETE FROM zones
         WHERE
             assessment_id = new_assessment_id
-            AND number > jsonb_array_length(assessment->'zones');
+            AND number > jsonb_array_length(valid_assessment.data->'zones');
 
         -- Delete excess alternative groups for this assessment
         DELETE FROM alternative_groups
         WHERE
             assessment_id = new_assessment_id
-            AND ((number < 1) OR (number > (assessment->>'lastAlternativeGroupNumber')::integer));
+            AND ((number < 1) OR (number > (valid_assessment.data->>'lastAlternativeGroupNumber')::integer));
 
         -- Soft-delete unused assessment questions
         UPDATE assessment_questions AS aq
@@ -267,14 +374,48 @@ BEGIN
             AND aq.id NOT IN (SELECT unnest(new_assessment_question_ids));
     END LOOP;
 
-    -- Soft-delete unused assessments
+    -- Now that all assessments have numbers, make a second pass over them to
+    -- assign every assessment an order_by attribute. This computes the natural
+    -- ordering over all assessments.
+    -- Source: http://www.rhodiumtoad.org.uk/junk/naturalsort.sql
+    UPDATE assessments AS a
+    SET order_by = assessments_with_ordinality.order_by
+    FROM (
+        SELECT
+            tid,
+            row_number() OVER (ORDER BY (
+                SELECT string_agg(convert_to(coalesce(r[2],
+                    length(length(r[1])::text) || length(r[1])::text || r[1]),
+                    'SQL_ASCII'),'\x00')
+                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r 
+            ) ASC) AS order_by
+        FROM assessments
+        WHERE
+            course_instance_id = syncing_course_instance_id
+            AND deleted_at IS NULL
+    ) AS assessments_with_ordinality
+    WHERE
+        a.tid = assessments_with_ordinality.tid
+        AND a.course_instance_id = syncing_course_instance_id;
+
+    -- Second pass: add errors and warnings where needed
+    -- Also add an assessment_set_id if we don't have one yet, to
+    -- catch cases where we are adding a new assessment set that has
+    -- errors and so was skipped above.
     UPDATE assessments AS a
     SET
-        deleted_at = CURRENT_TIMESTAMP
+        sync_errors = da.errors,
+        sync_warnings = da.warnings,
+        assessment_set_id = COALESCE(a.assessment_set_id,
+            (SELECT id FROM assessment_sets WHERE name = 'Unknown' AND course_id = syncing_course_id))
+    FROM disk_assessments AS da
     WHERE
-        a.course_instance_id = sync_assessments.new_course_instance_id
+        a.tid = da.tid
         AND a.deleted_at IS NULL
-        AND a.id NOT IN (SELECT unnest(new_assessment_ids));
+        AND a.course_instance_id = syncing_course_instance_id
+        AND (da.errors IS NOT NULL AND da.errors != '');
+
+    -- Finally, clean up any other leftover models
 
     -- Soft-delete unused assessment questions
     UPDATE assessment_questions AS aq
@@ -284,9 +425,9 @@ BEGIN
         assessments AS a
     WHERE
         a.id = aq.assessment_id
-        AND a.course_instance_id = sync_assessments.new_course_instance_id
+        AND a.course_instance_id = syncing_course_instance_id
         AND aq.deleted_at IS NULL
-        AND a.id NOT IN (SELECT unnest(new_assessment_ids));
+        AND a.deleted_at IS NOT NULL;
 
     -- Delete unused assessment access rules
     DELETE FROM assessment_access_rules AS aar
@@ -294,7 +435,7 @@ BEGIN
     WHERE
         aar.assessment_id = a.id
         AND a.deleted_at IS NOT NULL
-        AND a.course_instance_id = sync_assessments.new_course_instance_id;
+        AND a.course_instance_id = syncing_course_instance_id;
 
     -- Delete unused zones
     DELETE FROM zones AS z
@@ -302,6 +443,22 @@ BEGIN
     WHERE
         z.assessment_id = a.id
         AND a.deleted_at IS NOT NULL
-        AND a.course_instance_id = sync_assessments.new_course_instance_id;
+        AND a.course_instance_id = syncing_course_instance_id;
+
+    -- Internal consistency check. All assessments should have an
+    -- assessment set and a number.
+    SELECT string_agg(a.id::text, ', ')
+    INTO bad_assessments
+    FROM assessments AS a
+    WHERE
+        a.deleted_at IS NULL
+        AND a.course_instance_id = syncing_course_instance_id
+        AND (
+            a.assessment_set_id IS NULL
+            OR a.number IS NULL
+        );
+    IF (bad_assessments IS NOT NULL) THEN
+        RAISE EXCEPTION 'Assertion failure: Assessment IDs without set or number: %', bad_assessments;
+    END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

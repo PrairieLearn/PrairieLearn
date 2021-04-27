@@ -15,7 +15,7 @@ module.exports.run = (callback) => {
     if (!opsbot.canSendMessages()) return callback(null);
     if (!config.externalGradingUseAws) return callback(null);
 
-    const sqs = new AWS.SQS();
+    const sqs = new AWS.SQS(config.awsServiceGlobalOptions);
     let msg;
     async.series([
         (callback) => {
@@ -85,7 +85,7 @@ function getDeadLetterMsg(sqs, queueName, callback) {
         }
         logger.verbose('cron:sendExternalGraderDeadLetters', {queue: queueName, count: messages.length, messages});
         callback(null, msgDL);
-    });        
+    });
 }
 
 function drainQueue(sqs, queueName, callback) {

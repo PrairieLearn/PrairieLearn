@@ -36,7 +36,7 @@ SELECT
     END AS assessment_instance_time_limit_ms,
     to_jsonb(u) AS instance_user,
     coalesce(to_jsonb(e), '{}'::jsonb) AS instance_enrollment,
-    to_jsonb(iq) AS instance_question,
+    to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
         'prev_instance_question_id', iqi.prev_instance_question_id,
@@ -65,9 +65,12 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
+    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+    JOIN users AS u ON (u.user_id = gu.user_id OR u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-    JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone) AS aai ON TRUE
+    JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
+    JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
     CROSS JOIN file_list AS fl
 WHERE
     iq.id = $instance_question_id

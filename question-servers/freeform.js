@@ -8,8 +8,10 @@ const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { promisify, callbackify } = require('util');
 
 const schemas = require('../schemas');
+const config = require('../lib/config');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const workers = require('../lib/workers');
@@ -17,11 +19,15 @@ const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
+const chunks = require('../lib/chunks');
+const assets = require('../lib/assets');
 
 // Maps core element names to element info
 let coreElementsCache = {};
 // Maps course IDs to course element info
-const courseElementsCache = {};
+let courseElementsCache = {};
+/* Maps course IDs to course element extension info */
+let courseExtensionsCache = {};
 
 module.exports = {
 
@@ -75,14 +81,11 @@ module.exports = {
                     return callback(null, files);
                 });
             },
-            (files, callback) => {
-                // Filter out any non-directories
-                async.filter(files, (file, callback) => fs.lstat(path.join(sourceDir, file), (err, stats) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, stats.isDirectory());
-                }), (err, results) => {
-                    if (ERR(err, callback)) return;
-                    return callback(null, results);
+            async (files) => {
+                /* Filter out any non-directories */
+                return async.filter(files, async (file) => {
+                    const stats = await fs.promises.lstat(path.join(sourceDir, file));
+                    return stats.isDirectory();
                 });
             },
             (elementNames, callback) => {
@@ -128,24 +131,111 @@ module.exports = {
         });
     },
 
-    loadElementsForCourse(course, callback) {
-        if (courseElementsCache[course.id] !== undefined) {
-            return callback(null, courseElementsCache[course.id]);
-        }
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
-            if (ERR(err, callback)) return;
-            courseElementsCache[course.id] = elements;
-            callback(null, courseElementsCache[course.id]);
-        });
+    async loadElementsAsync(sourceDir, elementType) {
+        return promisify(module.exports.loadElements)(sourceDir, elementType);
     },
 
-    // Skips the cache; used when syncing course from GitHub/disk
-    reloadElementsForCourse(course, callback) {
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
-            if (ERR(err, callback)) return;
-            courseElementsCache[course.courseId] = elements;
-            callback(null, courseElementsCache[course.courseId]);
+    async loadElementsForCourseAsync(course) {
+        if (courseElementsCache[course.id] !== undefined
+            && courseElementsCache[course.id].commit_hash
+            && courseElementsCache[course.id].commit_hash === course.commit_hash) {
+            return courseElementsCache[course.id].data;
+        }
+
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        const elements = await module.exports.loadElementsAsync(path.join(coursePath, 'elements'), 'course');
+        courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};
+        return elements;
+    },
+
+    /**
+     * Takes a directory containing an extension directory and returns a new
+     * object mapping element names to each extension, which itself an object
+     * that contains relevant extension scripts and styles.
+     * @param  {String}   sourceDir Absolute path to the directory of extensions
+     */
+    async loadExtensionsAsync(sourceDir) {
+        const readdir = promisify(fs.readdir);
+        const readJson = promisify(fs.readJson);
+
+        /* Load each root element extension folder */
+        let elementFolders;
+        try {
+            elementFolders = await readdir(sourceDir);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                // We don't really care if there are no extensions, just return an empty array.
+                return [];
+            } else {
+                throw err;
+            }
+        }
+
+        /* Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ] */
+        const elementArrays = (await async.map(elementFolders, async (element) => {
+            const extensions = await readdir(path.join(sourceDir, element));
+            return extensions.map(ext => [element, ext]);
+        })).flat();
+
+        /* Populate element map */
+        const elements = {};
+        elementArrays.forEach(extension => {
+            if (!(extension[0] in elements)) {
+                elements[extension[0]] = {};
+            }
         });
+
+        /* Load extensions */
+        await async.each(elementArrays, async (extension) => {
+            const [element, extensionDir] = extension;
+            const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
+
+            let info;
+            try {
+                info = await readJson(infoPath);
+            } catch (err) {
+                if (err.code === 'ENOENT') {
+                    /* Not an extension directory, skip it. */
+                    logger.verbose(`${infoPath} not found, skipping...`);
+                    return;
+                } else if (err.code === 'ENOTDIR') {
+                    /* Random file, skip it as well. */
+                    logger.verbose(`Found stray file ${infoPath}, skipping...`);
+                    return;
+                } else {
+                    throw err;
+                }
+            }
+
+            await jsonLoader.validateJSONAsync(info, schemas.infoElementExtension);
+            info.name = extensionDir;
+            info.directory = path.join(sourceDir, element, extensionDir);
+            elements[element][extensionDir] = info;
+        });
+
+        return elements;
+    },
+
+    async loadExtensionsForCourseAsync(course) {
+        if (courseExtensionsCache[course.id] !== undefined
+            && courseExtensionsCache[course.id].commit_hash
+            && courseExtensionsCache[course.id].commit_hash === course.commit_hash) {
+            return courseExtensionsCache[course.id].data;
+        }
+
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        let extensions = await module.exports.loadExtensionsAsync(path.join(coursePath, 'elementExtensions'));
+        courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
+        return extensions;
+    },
+
+    /**
+     * Wipes the element and extension cache.  This is only needed in
+     * dev mode because each cache tracks Git commit hashes.
+     */
+    flushElementCache: function() {
+        courseElementsCache = {};
+        courseExtensionsCache = {};
     },
 
     resolveElement: function(elementName, context) {
@@ -163,30 +253,51 @@ module.exports = {
         return path.join(element.directory, element.controller);
     },
 
+    /**
+     * Add clientFiles urls for elements and extensions.
+     * Returns a copy of data with the new urls inserted.
+     */
+    getElementClientFiles: function(data, elementName, context) {
+        let dataCopy = _.cloneDeep(data);
+        /* The options field wont contain URLs unless in the 'render' stage, so check
+           if it is populated before adding the element url */
+        if ('base_url' in data.options) {
+            /* Join the URL using Posix join to avoid generating a path with backslashes,
+               as would be the case when running on Windows */
+            dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
+            dataCopy.options.client_files_extensions_url = {};
+
+            if (_.has(context.course_element_extensions, elementName)) {
+                Object.keys(context.course_element_extensions[elementName]).forEach(extension => {
+                    const url = path.posix.join(data.options.base_url, 'elementExtensions', elementName, extension, 'clientFilesExtension');
+                    dataCopy.options.client_files_extensions_url[extension] = url;
+                });
+            }
+        }
+        return dataCopy;
+    },
+
     elementFunction: async function(pc, fcn, elementName, elementHtml, data, context) {
         return new Promise((resolve, reject) => {
             const resolvedElement = module.exports.resolveElement(elementName, context);
             const cwd = resolvedElement.directory;
             const controller = resolvedElement.controller;
+            const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
-            let dataCopy = _.cloneDeep(data);
-            /* The options field will be empty unless in the 'render' stage, so check
-               if it is populated before adding the element url */
-            if ('base_url' in data.options) {
-                /* Join the URL using Posix join to avoid generating a path with backslashes,
-                   as would be the case when running on Windows */
-                dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
-            }
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+            const paths = [path.join(__dirname, 'freeformPythonLib')];
+            if (resolvedElement.type == 'course') {
+                paths.push(path.join(context.course_dir, 'serverFilesCourse'));
+            }
             const opts = {
                 cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
+                paths,
             };
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
-                    return resolve([module.exports.defaultElementFunctionRet(fcn, data), '']);
+                    return resolve([module.exports.defaultElementFunctionRet(fcn, dataCopy), '']);
                 }
                 if (ERR(err, reject)) return;
                 resolve([ret, consoleLog]);
@@ -204,22 +315,27 @@ module.exports = {
 
         const cwd = resolvedElement.directory;
         const controller = resolvedElement.controller;
+        const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
         if (_.isString(controller)) {
             // python module
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-            const pythonArgs = [elementHtml, data];
+            const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+            const paths = [path.join(__dirname, 'freeformPythonLib')];
+            if (resolvedElement.type == 'course') {
+                paths.push(path.join(context.course_dir, 'serverFilesCourse'));
+            }
             const opts = {
                 cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
+                paths,
             };
             debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`elementFunction(): function not present`);
-                    return callback(null, module.exports.defaultElementFunctionRet(fcn, data), '');
+                    return callback(null, module.exports.defaultElementFunctionRet(fcn, dataCopy), '');
                 }
                 if (ERR(err, callback)) return;
                 debug(`elementFunction(): completed`);
@@ -227,7 +343,7 @@ module.exports = {
             });
         } else {
             // JS module (FIXME: delete this block of code in future)
-            const jsArgs = [$, element, null, data];
+            const jsArgs = [$, element, null, dataCopy];
             controller[fcn](...jsArgs, (err, ret) => {
                 if (ERR(err, callback)) return;
                 callback(null, ret, '');
@@ -361,20 +477,21 @@ module.exports = {
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('variant_seed',          'integer', allPhases,                            []);                         if (err) return err;
-        err = checkProp('options',               'object',  allPhases,                            []);                         if (err) return err;
-        err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);         if (err) return err;
-        err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']); if (err) return err;
-        err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);                   if (err) return err;
-        err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);          if (err) return err;
-        err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);          if (err) return err;
-        err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);      if (err) return err;
-        err = checkProp('editable',              'boolean', ['render'],                           []);                         if (err) return err;
-        err = checkProp('panel',                 'string',  ['render'],                           []);                         if (err) return err;
-        err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                         if (err) return err;
-        err = checkProp('filename',              'string',  ['file'],                             []);                         if (err) return err;
+        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade']);          if (err) return err;
+        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']); if (err) return err;
+        err = checkProp('variant_seed',          'integer', allPhases,                            []);                                        if (err) return err;
+        err = checkProp('options',               'object',  allPhases,                            []);                                        if (err) return err;
+        err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);                        if (err) return err;
+        err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']);                if (err) return err;
+        err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);                                  if (err) return err;
+        err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);                         if (err) return err;
+        err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);                         if (err) return err;
+        err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);                     if (err) return err;
+        err = checkProp('editable',              'boolean', ['render'],                           []);                                        if (err) return err;
+        err = checkProp('panel',                 'string',  ['render'],                           []);                                        if (err) return err;
+        err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                                        if (err) return err;
+        err = checkProp('filename',              'string',  ['file'],                             []);                                        if (err) return err;
+        err = checkProp('test_type',             'string',  ['test'],                             []);                                        if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
@@ -395,6 +512,11 @@ module.exports = {
                 if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
                     renderedElementNames.push(elementName);
                 }
+                /* Populate the extensions used by this element */
+                data.extensions = [];
+                if (_.has(context.course_element_extensions, elementName)) {
+                    data.extensions = context.course_element_extensions[elementName];
+                }
                 // We need to wrap it in another node, since only child nodes
                 // are serialized
                 const serializedNode = parse5.serialize({
@@ -410,6 +532,9 @@ module.exports = {
                     // We'll catch this and add it to the course issues list
                     throw courseIssue;
                 }
+                /* We'll be sneaky and remove the extensions, since they're not used elsewhere */
+                delete data.extensions;
+                delete ret_val.extensions;
                 if (_.isString(consoleLog) && consoleLog.length > 0) {
                     const courseIssue = new Error(`${elementFile}: output logged on console during ${phase}()`);
                     courseIssue.data = { outputBoth: consoleLog };
@@ -490,6 +615,11 @@ module.exports = {
                 }
 
                 const elementFile = module.exports.getElementController(elementName, context);
+                /* Populate the extensions used by this element */
+                data.extensions = [];
+                if (_.has(context.course_element_extensions, elementName)) {
+                    data.extensions = context.course_element_extensions[elementName];
+                }
 
                 module.exports.legacyElementFunction(pc, phase, elementName, $, element, data, context, (err, ret_val, consoleLog) => {
                     if (err) {
@@ -499,6 +629,8 @@ module.exports = {
                         courseIssues.push(courseIssue);
                         return callback(courseIssue);
                     }
+                    delete data.extensions;
+                    delete ret_val.extensions;
                     if (_.isString(consoleLog) && consoleLog.length > 0) {
                         const courseIssue = new Error(elementFile + ': output logged on console during ' + phase + '()');
                         courseIssue.data = { outputBoth: consoleLog };
@@ -703,6 +835,23 @@ module.exports = {
         }
     },
 
+    /**
+     * Gets any options that are available in any freeform phase.
+     * These include file paths that are relevant for questions and elements.
+     * URLs are not included here because those are only applicable during 'render'.
+     */
+    getContextOptions: function(context) {
+        /* These options are always available in any phase. */
+
+        let options = {};
+        options.question_path = context.question_dir;
+        options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+        options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
+        options.server_files_course_path = path.join(context.course_dir, 'serverFilesCourse');
+        options.course_extensions_path = path.join(context.course_dir, 'elementExtensions');
+        return options;
+    },
+
     generate: function(question, course, variant_seed, callback) {
         debug('generate()');
         module.exports.getContext(question, course, (err, context) => {
@@ -715,6 +864,7 @@ module.exports = {
                 variant_seed: parseInt(variant_seed, 36),
                 options: _.defaults({}, course.options, question.options),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('generate', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
@@ -748,6 +898,7 @@ module.exports = {
                 variant_seed: parseInt(variant.variant_seed, 36),
                 options: _.get(variant, 'options', {}),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('prepare', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
@@ -764,14 +915,6 @@ module.exports = {
                     });
                 });
             });
-        });
-    },
-
-    _getCacheKey: function(course, data, callback) {
-        courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
-            if (ERR(err, callback)) return;
-            const dataHash = hash('sha1').update(JSON.stringify(data)).digest('base64');
-            callback(null, `${commitHash}-${dataHash}`);
         });
     },
 
@@ -816,68 +959,39 @@ module.exports = {
             data.options.client_files_course_url = locals.clientFilesCourseUrl;
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
             data.options.base_url = locals.baseUrl;
+            data.options.workspace_url = locals.workspaceUrl || null;
 
             // Put key paths in data.options
-            data.options.question_path = context.question_dir;
-            data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+            _.extend(data.options, module.exports.getContextOptions(context));
 
-            // This function will render the panel and then cache the results
-            // if cacheKey is not null
-            const doRender = (cacheKey) => {
-                module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
-                    if (ERR(err, callback)) return;
-                    if (cacheKey) {
-                        cache.set(cacheKey, {
+            module.exports.getCachedDataOrCompute(
+                course,
+                data,
+                context,
+                (callback) => {
+                    // function to do the actual render and return the cachedData
+                    module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
+                        if (ERR(err, callback)) return;
+                        const cachedData = {
                             courseIssues,
                             html,
                             renderedElementNames,
-                        });
-                    }
-                    const cacheHit = false; // Cache miss
+                        };
+                        callback(null, cachedData);
+                    });
+                },
+                (cachedData, cacheHit) => {
+                    // function to process the cachedData, whether we
+                    // just rendered it or whether it came from cache
+                    const {
+                        courseIssues,
+                        html,
+                        renderedElementNames,
+                    } = cachedData;
                     callback(null, courseIssues, html, renderedElementNames, cacheHit);
-                });
-            };
-
-            // This function will check the cache for the specified cache key
-            // and either return the cached render for a cache hit, or render
-            // the panel for a cache miss
-            const getFromCacheOrRender = (cacheKey) => {
-                cache.get(cacheKey, (err, cachedData) => {
-                    // We don't actually want to fail if the cache has an error; we'll
-                    // just render the panel as normal
-                    ERR(err, (e) => logger.error('Error in cache.get()', e));
-                    if (!err && cachedData !== null) {
-                        const {
-                            courseIssues,
-                            html,
-                            renderedElementNames,
-                        } = cachedData;
-
-                        const cacheHit = true;
-                        callback(null, courseIssues, html, renderedElementNames, cacheHit);
-                    } else {
-                        doRender(cacheKey);
-                    }
-                });
-            };
-
-            if (locals.devMode) {
-                // In dev mode, we should skip caching so that we'll immediately
-                // pick up new changes from disk
-                doRender(null);
-            } else {
-                module.exports._getCacheKey(course, data, (err, cacheKey) => {
-                    // If for some reason we failed to get a cache key, don't
-                    // actually fail the request, just skip the cache entirely
-                    // and render as usual
-                    ERR(err, e => logger.error('Error in _getCacheKey()', e));
-                    if (err || !cacheKey) {
-                        doRender(null);
-                    } else {
-                        getFromCacheOrRender(cacheKey);
-                    }
-                });
-            }
+                },
+                callback, // error-handling function
+            );
         });
     },
 
@@ -895,7 +1009,7 @@ module.exports = {
         workers.getPythonCaller((err, pc) => {
             if (ERR(err, callback)) return;
             async.series([
-                // FIXME: suppprt 'header'
+                // FIXME: support 'header'
                 (callback) => {
                     if (!renderSelection.question) return callback(null);
                     module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
@@ -950,6 +1064,7 @@ module.exports = {
                             return callback(new Error(`Error generating options: ${err}`));
                         }
 
+                        const extensions = context.course_element_extensions;
                         const dependencies = {
                             coreStyles: [],
                             coreScripts: [],
@@ -959,6 +1074,8 @@ module.exports = {
                             coreElementScripts: [],
                             courseElementStyles: [],
                             courseElementScripts: [],
+                            extensionStyles: [],
+                            extensionScripts: [],
                             clientFilesCourseStyles: [],
                             clientFilesCourseScripts: [],
                             clientFilesQuestionStyles: [],
@@ -1010,7 +1127,7 @@ module.exports = {
                                 }
                             }
 
-                            let depdendencyTypes = [
+                            const dependencyTypes = [
                                 'coreStyles',
                                 'coreScripts',
                                 'nodeModulesStyles',
@@ -1022,7 +1139,7 @@ module.exports = {
                                 'courseElementStyles',
                                 'courseElementScripts',
                             ];
-                            for (const type of depdendencyTypes) {
+                            for (const type of dependencyTypes) {
                                 if (_.has(elementDependencies, type)) {
                                     if (_.isArray(elementDependencies[type])) {
                                         for (const dep of elementDependencies[type]) {
@@ -1038,16 +1155,61 @@ module.exports = {
                                     }
                                 }
                             }
+
+                            /* Load any extensions if they exist */
+                            if (_.has(extensions, elementName)) {
+                                for (const extensionName of Object.keys(extensions[elementName])) {
+                                    if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
+                                        continue;
+                                    }
+
+                                    const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
+                                    if (_.has(extension, 'extensionStyles')) {
+                                        extension.extensionStyles = extension.extensionStyles.map(dep => `${elementName}/${extensionName}/${dep}`);
+                                    }
+                                    if (_.has(extension, 'extensionScripts')) {
+                                        extension.extensionScripts = extension.extensionScripts.map(dep => `${elementName}/${extensionName}/${dep}`);
+                                    }
+
+                                    const dependencyTypes = [
+                                        'coreStyles',
+                                        'coreScripts',
+                                        'nodeModulesStyles',
+                                        'nodeModulesScripts',
+                                        'clientFilesCourseStyles',
+                                        'clientFilesCourseScripts',
+                                        'extensionStyles',
+                                        'extensionScripts',
+                                    ];
+
+                                    for (const type of dependencyTypes) {
+                                        if (_.has(extension, type)) {
+                                            if (_.isArray(extension[type])) {
+                                                for (const dep of extension[type]) {
+                                                    if (!_.includes(dependencies[type], dep)) {
+                                                        dependencies[type].push(dep);
+                                                    }
+                                                }
+                                            } else {
+                                                const courseIssue = new Error(`Error getting dependencies for extension ${extension.name}: "${type}" is not an array`);
+                                                courseIssue.data = { elementDependencies };
+                                                courseIssue.fatal = true;
+                                                courseIssues.push(courseIssue);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         });
 
                         // Transform dependency list into style/link tags
                         const coreScriptUrls = [];
                         const scriptUrls = [];
                         const styleUrls = [];
-                        dependencies.coreStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
-                        dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
-                        dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(`/node_modules/${file}`));
-                        dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
+                        dependencies.coreStyles.forEach((file) => styleUrls.push(assets.assetPath(`stylesheets/${file}`)));
+                        dependencies.coreScripts.forEach((file) => coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)));
+                        dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(assets.nodeModulesAssetPath(file)));
+                        dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(assets.nodeModulesAssetPath(file)));
                         dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesQuestionStyles.forEach((file) => styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
@@ -1056,6 +1218,9 @@ module.exports = {
                         dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
                         dependencies.courseElementStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elements/${file}`));
                         dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elements/${file}`));
+                        dependencies.extensionStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`));
+                        dependencies.extensionScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`));
+
                         const headerHtmls = [
                             ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                             // It's important that any library-style scripts come first
@@ -1092,17 +1257,36 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
                 filename: filename,
             };
-            workers.getPythonCaller((err, pc) => {
-                if (ERR(err, callback)) return;
-                module.exports.processQuestion('file', pc, data, context, (err, courseIssues, _data, _html, fileData) => {
-                    // don't immediately error here; we have to return the pythonCaller
-                    workers.returnPythonCaller(pc, (pcErr) => {
-                        if (ERR(pcErr, callback)) return;
+
+            module.exports.getCachedDataOrCompute(
+                course,
+                data,
+                context,
+                (callback) => {
+                    // function to compute the file data and return the cachedData
+                    workers.getPythonCaller((err, pc) => {
                         if (ERR(err, callback)) return;
-                        callback(null, courseIssues, fileData);
+                        module.exports.processQuestion('file', pc, data, context, (err, courseIssues, _data, _html, fileData) => {
+                            // don't immediately error here; we have to return the pythonCaller
+                            workers.returnPythonCaller(pc, (pcErr) => {
+                                if (ERR(pcErr, callback)) return;
+                                if (ERR(err, callback)) return;
+                                const fileDataBase64 = (fileData || '').toString('base64');
+                                const cachedData = {courseIssues, fileDataBase64};
+                                callback(null, cachedData);
+                            });
+                        });
                     });
-                });
-            });
+                },
+                (cachedData, _cacheHit) => {
+                    // function to process the cachedData, whether we
+                    // just rendered it or whether it came from cache
+                    const {courseIssues, fileDataBase64} = cachedData;
+                    const fileData = Buffer.from(fileDataBase64, 'base64');
+                    callback(null, courseIssues, fileData);
+                },
+                callback, // error-handling function
+            );
         });
     },
 
@@ -1124,6 +1308,7 @@ module.exports = {
                 raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
                 gradable: _.get(submission, 'gradable', true),
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('parse', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1169,6 +1354,7 @@ module.exports = {
                 raw_submitted_answers: submission.raw_submitted_answer,
                 gradable: submission.gradable,
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('grade', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1195,7 +1381,7 @@ module.exports = {
         });
     },
 
-    test: function(variant, question, course, callback) {
+    test: function(variant, question, course, test_type, callback) {
         debug(`test()`);
         if (variant.broken) return callback(new Error('attemped to test broken variant'));
         module.exports.getContext(question, course, (err, context) => {
@@ -1214,7 +1400,9 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
                 raw_submitted_answers: {},
                 gradable: true,
+                test_type: test_type,
             };
+            _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('test', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
@@ -1239,18 +1427,108 @@ module.exports = {
         });
     },
 
-    getContext(question, course, callback) {
+    async getContextAsync(question, course) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        const chunksToLoad = [
+            {
+                'type': 'question',
+                'questionId': question.id,
+            },
+            {
+                'type': 'clientFilesCourse',
+            },
+            {
+                'type': 'serverFilesCourse',
+            },
+            {
+                'type': 'elements',
+            },
+            {
+                'type': 'elementExtensions',
+            },
+        ];
+        await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
         const context = {
             question,
             course,
-            course_dir: course.path,
-            question_dir: path.join(course.path, 'questions', question.directory),
-            course_elements_dir: path.join(course.path, 'elements'),
+            course_dir: coursePath,
+            question_dir: path.join(coursePath, 'questions', question.directory),
+            course_elements_dir: path.join(coursePath, 'elements'),
         };
-        module.exports.loadElementsForCourse(course, (err, elements) => {
+
+        /* Load elements and any extensions */
+        const elements = await module.exports.loadElementsForCourseAsync(course);
+        const extensions = await module.exports.loadExtensionsForCourseAsync(course);
+
+        context.course_elements = elements;
+        context.course_element_extensions = extensions;
+
+        return context;
+    },
+
+    getContext: function(question, course, callback) {
+        return callbackify(module.exports.getContextAsync)(question, course, (err, context) => {
             if (ERR(err, callback)) return;
-            context.course_elements = elements;
             callback(null, context);
         });
+    },
+
+    getCacheKey: function(course, data, context, callback) {
+        courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
+            if (ERR(err, callback)) return;
+            const dataHash = hash('sha1').update(JSON.stringify({data, context})).digest('base64');
+            callback(null, `${commitHash}-${dataHash}`);
+        });
+    },
+
+    getCachedDataOrCompute: function(course, data, context, computeFcn, processFcn, errorFcn) {
+        // This function will compute the cachedData and cache it if
+        // cacheKey is not null
+        const doCompute = (cacheKey) => {
+            computeFcn((err, cachedData) => {
+                if (ERR(err, errorFcn)) return;
+                if (cacheKey) {
+                    cache.set(cacheKey, cachedData);
+                }
+                const cacheHit = false; // Cache miss
+                processFcn(cachedData, cacheHit);
+            });
+        };
+
+        // This function will check the cache for the specified
+        // cacheKey and either return the cachedData for a cache hit,
+        // or compute the cachedData for a cache miss
+        const getFromCacheOrCompute = (cacheKey) => {
+            cache.get(cacheKey, (err, cachedData) => {
+                // We don't actually want to fail if the cache has an error; we'll
+                // just compute the cachedData as normal
+                ERR(err, (e) => logger.error('Error in cache.get()', e));
+                if (!err && cachedData !== null) {
+                    const cacheHit = true;
+                    processFcn(cachedData, cacheHit);
+                } else {
+                    doCompute(cacheKey);
+                }
+            });
+        };
+
+        if (config.devMode) {
+            // In dev mode, we should skip caching so that we'll immediately
+            // pick up new changes from disk
+            doCompute(null);
+        } else {
+            module.exports.getCacheKey(course, data, context, (err, cacheKey) => {
+                // If for some reason we failed to get a cache key, don't
+                // actually fail the request, just skip the cache entirely
+                // and compute as usual
+                ERR(err, e => logger.error('Error in getCacheKey()', e));
+                if (err || !cacheKey) {
+                    doCompute(null);
+                } else {
+                    getFromCacheOrCompute(cacheKey);
+                }
+            });
+        }
     },
 };

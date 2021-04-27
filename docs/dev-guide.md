@@ -63,7 +63,7 @@ PrairieLearn
 ```sh
 # make sure you are in the top-level PrairieLearn/ directory
 npm test
-npm run lint -s
+make lint
 ```
 
 * The above tests are run by the CI server on every push to GitHub.
@@ -71,6 +71,12 @@ npm run lint -s
 * The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web browser that answers questions on assessments. If a test fails then it is often easiest to debug by recreating the error by doing questions yourself against a locally-running server.
 
 * If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
+
+* Individual tests can be run with:
+
+```sh
+npx mocha tests/[testName].js
+```
 
 ## Debugging server-side JavaScript
 
@@ -98,6 +104,8 @@ debug('func()', 'param:', param);
 
 * As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
 
+* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `npx mocha --trace-warnings tests/index.js`.
+
 ## Debugging client-side JavaScript
 
 * Make sure you have the JavaScript Console open in your browser and reload the page.
@@ -118,6 +126,11 @@ psql postgres
 RAISE NOTICE 'This is logging: % and %', var1, var2;
 ```
 
+* To manually run a function:
+
+```sql
+SELECT the_sql_function(arg1, arg2);
+```
 
 ## HTML page generation
 
@@ -351,6 +364,87 @@ ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
 ```
 
 
+## JSON syncing
+
+* Edit the DB schema; e.g., to add a `require_honor_code` boolean for assessments, modify `database/tables/assessments.pg`:
+
+```diff
+@@ -16,2 +16,3 @@ columns
+     order_by: integer
++    require_honor_code: boolean default true
+     shuffle_questions: boolean default false
+```
+
+* Add a DB migration; e.g., create `migrations/167_assessments__require_honor_code__add.sql`:
+
+```diff
+@@ -0,0 +1 @@
++ALTER TABLE assessments ADD COLUMN require_honor_code boolean DEFAULT true;
+```
+
+* Edit the JSON schema; e.g., modify `schemas/schemas/infoAssessment.json`:
+
+```diff
+@@ -89,2 +89,7 @@
+             "default": true
++        },
++        "requireHonorCode": {
++            "description": "Requires the student to accept an honor code before starting exam assessments.",
++            "type": "boolean",
++            "default": true
+         }
+```
+
+* Edit the sync parser; e.g., modify `sync/fromDisk/assessments.js`:
+
+```diff
+@@ -44,2 +44,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
+         const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
++        const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
+
+@@ -63,2 +64,3 @@ function buildSyncData(courseInfo, courseInstance, questionDB) {
+             allow_real_time_grading: allowRealTimeGrading,
++            require_honor_code: requireHonorCode,
+             auto_close: !!_.get(assessment, 'autoClose', true),
+```
+
+* Edit the sync query; e.g., modify `sprocs/sync_assessments.sql`:
+
+```diff
+@@ -44,3 +44,4 @@ BEGIN
+             allow_issue_reporting,
+-            allow_real_time_grading)
++            allow_real_time_grading,
++            require_honor_code)
+             (
+@@ -64,3 +65,4 @@ BEGIN
+                 (assessment->>'allow_issue_reporting')::boolean,
+-                (assessment->>'allow_real_time_grading')::boolean
++                (assessment->>'allow_real_time_grading')::boolean,
++                (assessment->>'require_honor_code')::boolean
+         )
+@@ -83,3 +85,4 @@ BEGIN
+             allow_issue_reporting = EXCLUDED.allow_issue_reporting,
+-            allow_real_time_grading = EXCLUDED.allow_real_time_grading
++            allow_real_time_grading = EXCLUDED.allow_real_time_grading,
++            require_honor_code = EXCLUDED.require_honor_code
+         WHERE
+```
+
+* Edit the sync tests; e.g., modify `tests/sync/util.js`:
+
+```diff
+@@ -128,2 +128,3 @@ const syncFromDisk = require('../../sync/syncFromDisk');
+  * @property {boolean} allowRealTimeGrading
++ * @property {boolean} requireHonorCode
+  * @property {boolean} multipleInstance
+```
+
+* Add documentation; e.g., the honor code option is described at [Assessments -- Honor code](assessment.md#honor-code).
+
+* Add [tests](#unit-tests-and-integration-tests).
+
+
 ## Database access
 
 * DB access is via the `sqldb.js` module. This wraps the [node-postgres](https://github.com/brianc/node-postgres) library.
@@ -497,6 +591,16 @@ FROM
 
 * Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
 
+## Using async route handlers with ExpressJS
+
+* Express can't directly use async route handlers. Instead we use [express-async-handler](https://www.npmjs.com/package/express-async-handler) like this:
+
+```javascript
+const asyncHandler = require('express-async-handler');
+router.get('/', asyncHandler(async (req, res, next) => {
+    // can use "await" here
+}));
+```
 
 ## Interfacing between callback-style and async/await-style functions
 
@@ -772,14 +876,14 @@ router.post('/', function(req, res, next) {
 app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
 ```
 
-* To lint the code, use `npm run lint -s`. This is also run by the CI tests.
+* To lint the code, use `make lint`. This is also run by the CI tests.
 
 
 ## Question-rendering control flow
 
 * The core files involved in question rendering are [lib/question.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/question.js), [lib/question.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/question.sql), and [pages/partials/question.ejs](https://github.com/PrairieLearn/PrairieLearn/blob/master/pages/partials/question.ejs).
 
-* The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestion`, `pages/studentInstanceQuestionExam`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
+* The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestionExam`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
 
 * For example, the exact control-flow for `pages/instructorQuestion` is:
 

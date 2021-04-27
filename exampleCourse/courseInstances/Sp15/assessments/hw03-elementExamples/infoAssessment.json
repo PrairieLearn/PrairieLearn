@@ -33,20 +33,23 @@
     "zones": [
         {
             "questions": [
-                {"id": "elementPanels",                   "points": 2, "maxPoints": 10},
-                {"id": "elementElementCodeDocumentation", "points": 2, "maxPoints": 10},
-                {"id": "elementCheckbox",                 "points": 2, "maxPoints": 10},
-                {"id": "elementNumberInput",              "points": 2, "maxPoints": 10},
-                {"id": "elementIntegerInput",             "points": 2, "maxPoints": 10},
-                {"id": "elementSymbolicInput",            "points": 2, "maxPoints": 10},
-                {"id": "elementStringInput",              "points": 2, "maxPoints": 10},
-                {"id": "elementMatrixComponentInput",     "points": 2, "maxPoints": 10},
-                {"id": "elementMatrixLatex",              "points": 2, "maxPoints": 10},
-                {"id": "elementPrairieDrawFigure",        "points": 2, "maxPoints": 10},
-                {"id": "elementVariableOutput",           "points": 2, "maxPoints": 10},
-                {"id": "elementFileEditor",               "points": 2, "maxPoints": 10},
-                {"id": "elementPythonVariable",           "points": 2, "maxPoints": 10},
-                {"id": "elementGraph",                    "points": 2, "maxPoints": 10}
+                {"id": "element/panels",                   "points": 2, "maxPoints": 10},
+                {"id": "element/codeDocumentation",        "points": 2, "maxPoints": 10},
+                {"id": "element/checkbox",                 "points": 2, "maxPoints": 10},
+                {"id": "element/dropdown",                 "points": 2, "maxPoints": 10},
+                {"id": "element/numberInput",              "points": 2, "maxPoints": 10},
+                {"id": "element/integerInput",             "points": 2, "maxPoints": 10},
+                {"id": "element/symbolicInput",            "points": 2, "maxPoints": 10},
+                {"id": "element/stringInput",              "points": 2, "maxPoints": 10},
+                {"id": "element/matrixComponentInput",     "points": 2, "maxPoints": 10},
+                {"id": "element/matrixLatex",              "points": 2, "maxPoints": 10},
+                {"id": "element/variableOutput",           "points": 2, "maxPoints": 10},
+                {"id": "element/fileEditor",               "points": 2, "maxPoints": 10},
+                {"id": "element/pythonVariable",           "points": 2, "maxPoints": 10},
+                {"id": "element/graph",                    "points": 2, "maxPoints": 10},
+                {"id": "element/overlay",                  "points": 2, "maxPoints": 10},
+                {"id": "element/figure",                   "points": 2, "maxPoints": 10},
+                {"id": "element/orderBlocks",              "points": 2, "maxPoints": 10}
             ]
         }
     ]

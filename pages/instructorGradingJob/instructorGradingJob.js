@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const AWS = require('aws-sdk');
 
+const config = require('../../lib/config');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
@@ -52,7 +53,7 @@ router.get('/:job_id/file/:file', (req, res, next) => {
             Key: `${grading_job.s3_root_key}/${file}`,
         };
         res.attachment(file);
-        new AWS.S3().getObject(params).createReadStream()
+        new AWS.S3(config.awsServiceGlobalOptions).getObject(params).createReadStream()
         .on('error', (err) => {
             return ERR(err, next);
         }).pipe(res);

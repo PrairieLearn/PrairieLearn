@@ -29,6 +29,10 @@
     <label for="courseAddInputRepository">Repository:</label>
     <input type="text" class="form-control" id="courseAddInputRepository" name="repository" value="git@github.com:PrairieLearn/pl-XXX.git">
   </div>
+  <div class="form-group">
+    <label for="courseAddInputBranch">Branch:</label>
+    <input type="text" class="form-control" id="courseAddInputBranch" name="branch" value="<%= config.courseRepoDefaultBranch %>">
+  </div>
   <div class="text-right">
       <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
       <button type="submit" class="btn btn-primary">Add course</button>

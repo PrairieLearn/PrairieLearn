@@ -14,6 +14,11 @@
     iconClasses:    'fa fa-edit',
     tabLabel:       'Files'}) %>
 <%- include('navTab', {
+    activeSubPage:  'groups',
+    urlSuffix:      '/assessment/'+assessment.id+'/groups',
+    iconClasses:    'fas fa-users',
+    tabLabel:       'Groups'}) %>
+<%- include('navTab', {
     activeSubPage:  'questions',
     urlSuffix:      '/assessment/'+assessment.id+'/questions',
     iconClasses:    'far fa-file-alt',
@@ -23,6 +28,13 @@
     urlSuffix:      '/assessment/'+assessment.id+'/question_statistics',
     iconClasses:    'fas fa-table',
     tabLabel:       'Question stats'}) %>
+<% if (course.manual_grading_visible) { %>
+    <%- include('navTab', {
+        activeSubPage:  'manual_grading',
+        urlSuffix:      '/assessment/'+assessment.id+'/manual_grading',
+        iconClasses:    'fas fa-marker',
+        tabLabel:       'Manual Grading'}) %>
+<% } %>
 <%- include('navTab', {
     activeSubPage:  'regrading',
     urlSuffix:      '/assessment/'+assessment.id+'/regrading',
@@ -41,7 +53,7 @@
 <%- include('navTab', {
     activeSubPage:  'instances',
     urlSuffix:      '/assessment/'+assessment.id+'/instances',
-    iconClasses:    'fas fa-users',
+    iconClasses:    'fas fa-user-graduate',
     tabLabel:       'Students'}) %>
 <%- include('navTab', {
     activeSubPage:  'uploads',

@@ -99,6 +99,7 @@ WITH object_data AS (
         aar.role,
         aar.seb_config,
         aar.show_closed_assessment,
+        aar.show_closed_assessment_score,
         format_date_iso8601(aar.start_date, ci.display_timezone) AS start_date,
         aar.time_limit_min,
         aar.uids
@@ -173,6 +174,7 @@ WITH object_data AS (
         v.options,
         format_date_iso8601(s.date, ci.display_timezone) AS date,
         s.submitted_answer,
+        s.partial_scores,
         s.override_score,
         s.credit,
         s.mode,

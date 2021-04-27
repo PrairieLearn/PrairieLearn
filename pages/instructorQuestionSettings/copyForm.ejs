@@ -4,13 +4,11 @@
   <div class="form-group">
     <label for="to-course-id-select">The copied question will be added to the following course:</label>
     <select class="form-control" id="to-course-id-select" name="to_course_id" required>
-      <% if (course.options.isExampleCourse) { %>
+      <% if (course.example_course) { %>
       <option hidden disabled selected value> -- select a course -- </option>
       <% } %>
-      <% courses.forEach((c) => { %>
-        <% if (! c.options.isExampleCourse) { // cannot copy to example course %>
+      <% editable_courses.forEach((c) => { %>
         <option value="<%= c.id %>" <% if (c.id == course.id) { %>selected<% } %>><%= c.short_name %></option>
-        <% } %>
       <% }); %>
     </select>
     <div class="invalid-feedback" id="invalidIdMessage">

@@ -2,11 +2,11 @@
     <input type="hidden" name="__action" value="change_id">
     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
     <div class="container p-0 mb-4">
-      Use only letters, numbers, dashes, and underscores, with no spaces. <% if (locals.changeIdFormHelpText) { %><%- changeIdFormHelpText %><% } %>
+      Use only letters, numbers, dashes, and underscores, with no spaces.  You may use forward slashes to separate directories.  <% if (locals.changeIdFormHelpText) { %><%- changeIdFormHelpText %><% } %>
     </div>
     <div class="form-group">
         <label for="changeIdInput"><%= id_label %>:</label>
-        <input type="text" class="form-control" id="changeIdInput" name="id" value="<%= id_old %>" pattern="[-A-Za-z0-9_]+" required>
+        <input type="text" class="form-control" id="changeIdInput" name="id" value="<%= id_old %>" pattern="[-A-Za-z0-9_/]+" required>
         <div class="invalid-feedback" id="invalidIdMessage">
         </div>
     </div>

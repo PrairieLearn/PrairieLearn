@@ -49,3 +49,7 @@ From within HTML, `clientFiles` directories can be templated with the following 
 {{ options.client_files_course_url }}/filename.ext
 {{ options.client_files_question_url }}/filename.ext
 ```
+
+## Accessing files from `server.py` question code
+
+See the [accessing files on disk](question.md#accessing-files-on-disk) section for details.

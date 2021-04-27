@@ -1,17 +1,15 @@
 {
-    "parserOptions": {
-        "ecmaVersion": 2018
-    },
     "env": {
         "node": true,
-        "es6": true
+        "es2021": true
     },
     "extends": "eslint:recommended",
     "rules": {
+        "comma-dangle": ["error", "always-multiline"],
         "handle-callback-err": "error",
-        "quotes": ["error", "single", {"avoidEscape": true, "allowTemplateLiterals": true}],
-        "semi": ["error", "always"],
+        "no-tabs": "error",
         "no-unused-vars": ["error", {"args": "after-used", "argsIgnorePattern": "^_"}],
-        "comma-dangle": ["error", "always-multiline"]
+        "quotes": ["error", "single", {"avoidEscape": true, "allowTemplateLiterals": true}],
+        "semi": ["error", "always"]
     }
 }

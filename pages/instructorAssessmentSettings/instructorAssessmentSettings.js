@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const config = require('../../lib/config');
 
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -29,6 +30,8 @@ router.get('/', function(req, res, next) {
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');
+        let host = config.serverCanonicalHost || ('https://' + req.headers.host);
+        res.locals.studentLink = host + res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id + '/assessment/' + res.locals.assessment.id;
         res.locals.infoAssessmentPath = encodePath(path.join('courseInstances', res.locals.course_instance.short_name, 'assessments', res.locals.assessment.tid, 'infoAssessment.json'));
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
@@ -73,7 +76,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'change_id') {
         debug(`Change tid from ${res.locals.assessment.tid} to ${req.body.id}`);
         if (!req.body.id) return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
-        if (!/^[-A-Za-z0-9_]+$/.test(req.body.id)) return next(new Error(`Invalid TID (was not only letters, numbers, dashes, and underscores, with no spaces): ${req.body.id}`));
+        if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) return next(new Error(`Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`));
         let tid_new;
         try {
             tid_new = path.normalize(req.body.id);

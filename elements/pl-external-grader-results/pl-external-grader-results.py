@@ -15,7 +15,7 @@ ansi2html_style.SCHEME['iterm'] = (
     '#0037da', '#c930c7', '#00c5c7', '#c7c7c7',
     '#676767', '#ff6d67', '#5ff967', '#fefb67',
     '#6871ff', '#ff76ff', '#5ffdff', '#feffff',
-) * 2
+)
 conv = Ansi2HTMLConverter(inline=True, scheme='iterm')
 
 
@@ -35,6 +35,10 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
+def round_value(val, digits=2):
+    return format(val, f'.{digits}f').rstrip('0').rstrip('.')
+
+
 def render(element_html, data):
     if data['panel'] == 'submission':
         html_params = {'submission': True, 'graded': True, 'uuid': pl.get_uuid()}
@@ -43,11 +47,12 @@ def render(element_html, data):
         html_params['graded'] = bool(feedback)
         grading_succeeded = bool(feedback.get('succeeded', None))
         html_params['grading_succeeded'] = grading_succeeded
+        results = feedback.get('results', None)
 
         # Gradable
         gradable = True
-        if 'results' in feedback and 'gradable' in feedback['results']:
-            gradable = feedback['results']['gradable']
+        if results is not None and 'gradable' in results:
+            gradable = results['gradable']
         html_params['gradable'] = gradable
 
         # Format Errors
@@ -62,14 +67,16 @@ def render(element_html, data):
             results = feedback.get('results', None)
             if grading_succeeded and results:
                 html_params['succeeded'] = bool(results.get('succeeded', None))
-                html_params['score'] = format(results.get('score', 0) * 100, '.2f').rstrip('0').rstrip('.')
+                html_params['score'] = round_value(results.get('score', 0) * 100)
                 html_params['achieved_max_points'] = (results.get('score', 0) >= 1.0)
                 html_params['results_color'] = '#4CAF50' if (results.get('score', 0) >= 1.0) else '#F44336'
                 html_params['has_message'] = bool(results.get('message', False))
                 html_params['message'] = ansi_to_html(results.get('message', None))
                 html_params['has_output'] = bool(results.get('output', False))
                 html_params['output'] = ansi_to_html(results.get('output', None))
-                html_params['has_message_or_output'] = bool(html_params['has_message'] or html_params['has_output'])
+                html_params['images'] = results.get('images', [])
+                html_params['has_images'] = len(html_params['images']) > 0
+                html_params['has_message_or_output_or_image'] = bool(html_params['has_message'] or html_params['has_output'] or html_params['has_images'])
 
                 results_tests = results.get('tests', None)
                 html_params['has_tests'] = bool(results.get('tests', None))
@@ -86,8 +93,8 @@ def render(element_html, data):
                     html_params['tests_missing_points'] = tests_missing_points
 
                     if not tests_missing_points:
-                        html_params['points'] = sum(test['points'] for test in results_tests)
-                        html_params['max_points'] = sum(test['max_points'] for test in results_tests)
+                        html_params['points'] = round_value(sum(test['points'] for test in results_tests))
+                        html_params['max_points'] = round_value(sum(test['max_points'] for test in results_tests))
 
                     # We need to build a new tests array to massage data a bit
                     tests = []
@@ -101,12 +108,20 @@ def render(element_html, data):
                         test['output'] = ansi_to_html(results_test.get('output', None))
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
+                        test['show_points'] = not tests_missing_points
                         if not tests_missing_points:
-                            test['max_points'] = results_test.get('max_points')
-                            test['points'] = results_test.get('points')
+                            test['points'] = round_value(results_test.get('points'))
+                            test['max_points'] = round_value(results_test.get('max_points'))
                             correct = test['max_points'] == test['points']
+
+                            # Don't show points for test cases that are 0/0
+                            if correct and test['max_points'] == 0:
+                                test['show_points'] = False
+
                             test['results_color'] = '#4CAF50' if correct else '#F44336'
                             test['results_icon'] = 'fa-check' if correct else 'fa-times'
+                        test['images'] = results_test.get('images', [])
+                        test['has_images'] = len(test['images']) > 0
                         tests.append(test)
 
                     html_params['tests'] = tests

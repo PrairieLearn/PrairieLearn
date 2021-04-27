@@ -21,19 +21,19 @@
     "zones": [
         {
             "questions": [
-                {"id": "elementDrawingGallery",                 "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingSimpleTutorial",             "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingGradeVector",                "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingLiftingMechanism",           "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingCentroid",                   "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingCollarRod",                  "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingPulley",                     "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingGraphs",                     "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingInclinedPlane",              "points": 2, "maxPoints": 6},
-                {"id": "demoDrawingVMDiagrams",                 "points": 2, "maxPoints": 6}
-
-
-
+                {"id": "element/drawingGallery",                  "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/simpleTutorial",             "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/gradeVector",                "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/liftingMechanism",           "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/centroid",                   "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/collarRod",                  "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/pulley",                     "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/graphs",                     "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/inclinedPlane",              "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/vmDiagrams",                 "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/buttons",                    "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/customizedButtons",          "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/extensions",                 "points": 2, "maxPoints": 6}
             ]
         }
     ]

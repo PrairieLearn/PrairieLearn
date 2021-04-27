@@ -9,7 +9,7 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 module.exports = {};
 
 module.exports.run = function(callback) {
-    if (!config.externalGradingUseAws) return callback(null);
+    if (!config.runningInEc2) return callback(null);
     getLoadStats((err, stats) => {
         if (ERR(err, callback)) return;
         sendStatsToCloudWatch(stats, (err) => {
@@ -38,7 +38,7 @@ function getLoadStats(callback) {
 }
 
 function sendStatsToCloudWatch(stats, callback) {
-    const cloudwatch = new AWS.CloudWatch();
+    const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
     const dimensions = [{Name: 'By Queue', Value: config.externalGradingJobsQueueName}];
     const params = {
         // AWS limits to 20 items within each MetricData list
@@ -317,6 +317,22 @@ function sendStatsToCloudWatch(stats, callback) {
                     Value: stats.desired_instances_by_history_users,
                 },
                 {
+                    MetricName: 'DesiredInstancesCurrent',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_current,
+                },
+                {
+                    MetricName: 'DesiredInstancesHistory',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_history,
+                },
+                {
                     MetricName: 'DesiredInstances',
                     Dimensions: dimensions,
                     StorageResolution: 1,
@@ -340,7 +356,7 @@ function setAutoScalingGroupCapacity(stats, callback) {
     if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return callback(null);
     if (stats.desired_instances == stats.instance_count) return callback(null);
 
-    const autoscaling = new AWS.AutoScaling();
+    const autoscaling = new AWS.AutoScaling(config.awsServiceGlobalOptions);
     const params = {
         AutoScalingGroupName: config.externalGradingAutoScalingGroupName,
         DesiredCapacity: stats.desired_instances,

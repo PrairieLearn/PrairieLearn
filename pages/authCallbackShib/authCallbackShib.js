@@ -33,7 +33,7 @@ router.get('/:action?/:target(*)?', function(req, res, next) {
             authn_provider_name: 'Shibboleth',
         };
         var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-        res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
+        res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
         if (req.params.action == 'redirect') return res.redirect('/' + req.params.target);
         var redirUrl = res.locals.homeUrl;
         if ('preAuthUrl' in req.cookies) {

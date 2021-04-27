@@ -1,8 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <%- include('../partials/head'); %>
+    <script src="<%= node_modules_asset_path('clipboard/dist/clipboard.min.js') %>"></script>
+    <script>
+      $(() => {
+          let clipboard = new ClipboardJS('.btn-copy');
+          clipboard.on('success', (e) => {
+              $(e.trigger).popover({
+                  content: 'Copied!',
+                  placement: 'bottom',
+              }).popover('show');
+              window.setTimeout(function () {
+                  $(e.trigger).popover('hide');
+              }, 1000);
+
+          });
+      });
+    </script>
     <style>
         .popover{
             max-width: 50%;
@@ -20,9 +36,10 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+        <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
         <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-                Assessment <%= assessment.tid %>
+                <%= assessment_set.name %> <%= assessment.number %>: Settings
             </div>
             <table class="table table-sm table-hover two-column-description">
                 <tbody>
@@ -33,7 +50,7 @@
                     <tr><th>AID</th>
                         <td>
                             <span class="pr-2"><%= assessment.tid %></span>
-                            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                             <button id="changeAidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change AID" data-content="<%= include('../partials/changeIdForm', {id_label: 'AID', buttonID: 'changeAidButton', id_old: assessment.tid, ids: tids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                                 <i class="fa fa-i-cursor"></i>
                                 <span>Change AID</span>
@@ -41,7 +58,7 @@
                             <% } %>
                         </td>
                     </tr>
-                    <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+                    <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                     <tr><th>Configuration</th>
                         <td>
                             <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_view/<%= infoAssessmentPath %>">
@@ -54,9 +71,20 @@
                         </td>
                     </tr>
                     <% } %>
+                    <tr>
+                      <th class="align-middle">Student Link</th>
+                      <td class="form-inline align-middle">
+                        <span class="input-group">
+                          <span readonly class="form-control form-control-sm"><%= studentLink %></span>
+                          <button type="button" class="input-group-prepend btn btn-sm btn-outline-secondary btn-copy" data-clipboard-text="<%= studentLink %>">
+                            <i class="far fa-clipboard"></i>
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
                 </tbody>
             </table>
-            <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse)) { %>
+            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
             <div class="card-footer">
                 <div class="row">
                     <div class="col-auto">

@@ -11,6 +11,10 @@ from python_helper_sympy import json_to_sympy
 import re
 import colors
 import unicodedata
+import importlib
+import importlib.util
+import os
+import collections
 
 
 def to_json(v):
@@ -134,7 +138,7 @@ def inner_html(element):
         inner = ''
     inner = html.escape(str(inner))
     for child in element:
-        inner += lxml.html.tostring(child, method='html', pretty_print=True).decode('utf-8')
+        inner += lxml.html.tostring(child, method='html').decode('utf-8')
     return inner
 
 
@@ -574,22 +578,22 @@ def string_partition_outer_interval(s, left='[', right=']'):
     return s_before_left, s, s_after_right
 
 
-def string_to_integer(s):
-    """string_to_integer(s)
+def string_to_integer(s, base=10):
+    """string_to_integer(s, base=10)
 
     Parses a string that is an integer.
 
     Returns a number with type int, or None on parse error.
     """
+    if s is None:
+        return None
+
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace(u'\u2212', '-').strip()
-    # Check if it is an integer, i.e., if it contains only digits and possibly
-    # hypen minus as the first character
-    if not (s.isdigit() or s[1:].isdigit()):
-        return None
+
     # Try to parse as int
     try:
-        s_int = int(s)
+        s_int = int(s, base)
         return s_int
     except Exception:
         # If that didn't work, return None
@@ -750,9 +754,9 @@ def string_to_2darray(s, allow_complex=True):
     s_before_left = s_before_left.strip()
     s_after_right = s_after_right.strip()
     if s_before_left:
-        return (None, {'format_error': 'Non-empty text "{:s}" before outer brackets.'.format(s_before_left)})
+        return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_before_left)} before outer brackets.'})
     if s_after_right:
-        return (None, {'format_error': 'Non-empty space "{:s}" after outer brackets.'.format(s_after_right)})
+        return (None, {'format_error': f'Non-empty space {escape_invalid_string(s_after_right)} after outer brackets.'})
 
     # If there is only one set of brackets, treat as MATLAB format
     if number_of_left_brackets == 1:
@@ -762,10 +766,6 @@ def string_to_2darray(s, allow_complex=True):
         #   Example:
         #       is '[1 - 2j]' the same as '[1 -2j]' or '[1-2j]'
 
-        # Return error if there are any commas
-        if ',' in s:
-            return (None, {'format_error': 'Commas cannot be used as delimiters in an expression with single brackets.'})
-
         # Split on semicolon
         s = s.split(';')
 
@@ -774,14 +774,24 @@ def string_to_2darray(s, allow_complex=True):
 
         # Return error if there are no rows (i.e., the matrix is empty)
         if (m == 0):
-            return (None, {'format_error': 'Matrix has no rows.'})
+            return (None, {'format_error': 'The matrix has no rows.'})
 
-        # Get number of columns by splitting first row on space
-        n = len(s[0].split())
+        # Regex to split rows a la MATLAB
+        matlab_delimiter_regex = re.compile(r'\s*[\s,]\s*')
+
+        # Get number of columns by splitting first row
+        tokens = re.split(matlab_delimiter_regex, s[0])
+        n = len(tokens)
+
+        # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
+        if n > 0 and not tokens[0]:
+            n -= 1
+        if n > 0 and not tokens[-1]:
+            n -= 1
 
         # Return error if first row has no columns
         if (n == 0):
-            return (None, {'format_error': 'First row of matrix has no columns.'})
+            return (None, {'format_error': 'Row 1 of the matrix has no columns.'})
 
         # Define matrix in which to put result
         A = np.zeros((m, n))
@@ -789,12 +799,18 @@ def string_to_2darray(s, allow_complex=True):
         # Iterate over rows
         for i in range(0, m):
 
-            # Split on space
-            s_row = s[i].split()
+            # Split row
+            s_row = re.split(matlab_delimiter_regex, s[i])
+
+            # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
+            if s_row and not s_row[0]:
+                s_row.pop(0)
+            if s_row and not s_row[-1]:
+                s_row.pop(-1)
 
             # Return error if current row has more or less columns than first row
-            if (len(s_row) != n):
-                return (None, {'format_error': 'Rows 1 and {:d} of matrix have a different number of columns.'.format(i + 1)})
+            if len(s_row) != n:
+                return (None, {'format_error': f'Rows 1 and {i + 1} of the matrix have a different number of columns.'})
 
             # Iterate over columns
             for j in range(0, n):
@@ -816,7 +832,7 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[j])})
+                    return (None, {'format_error': f'Entry {escape_invalid_string(s_row[j])} at location (row={i + 1}, column={j + 1}) in the matrix has an invalid format.'})
 
         # Return resulting ndarray with no error
         return (A, {'format_type': 'matlab'})
@@ -843,37 +859,37 @@ def string_to_2darray(s, allow_complex=True):
 
             # Return error if there is anything but space before left bracket
             if s_before_left:
-                return (None, {'format_error': 'Non-empty text "{:s}" before left bracket in row {:d} of matrix.'.format(s_before_left, len(s_row))})
+                return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_before_left)} before the left bracket in row {len(s_row)} of the matrix.'})
 
             # Return error if there are improperly nested brackets
             if ('[' in s_between_left_and_right) or (']' in s_between_left_and_right):
-                return (None, {'format_error': 'Improperly nested brackets in row {:d} of matrix.'.format(len(s_row))})
+                return (None, {'format_error': f'Improperly nested brackets in row {len(s_row)} of the matrix.'})
 
             # Check if we are in the last row
             if (len(s_row) == number_of_left_brackets - 1):
                 # Return error if it is the last row and there is anything but space after right bracket
                 if s_after_right:
-                    return (None, {'format_error': 'Non-empty text "{:s}" after right bracket in row {:d} of matrix.'.format(s_after_right, len(s_row))})
+                    return (None, {'format_error': f'Non-empty text {escape_invalid_string(s_after_right)} after the right bracket in row {len(s_row)} of the matrix.'})
                 else:
                     s = s_after_right
             else:
                 # Return error if it is not the last row and there is no comma after right bracket
                 if s_after_right[0] != ',':
-                    return (None, {'format_error': 'No comma after row {:d} of matrix.'.format(len(s_row))})
+                    return (None, {'format_error': f'No comma after row {len(s_row)} of the matrix.'})
                 else:
                     s = s_after_right[1:]
         number_of_rows = len(s_row)
 
         # Check that number of rows is what we expected
         if number_of_rows != number_of_left_brackets - 1:
-            raise Exception('Number of rows {:d} should have been one less than the number of brackets {:d}'.format(number_of_rows, number_of_left_brackets))
+            raise Exception(f'Number of rows {number_of_rows} should have been one less than the number of brackets {number_of_left_brackets}')
 
         # Split each row on comma
         number_of_columns = None
         for i in range(0, number_of_rows):
             # Return error if row has no columns
             if not s_row[i]:
-                return (None, {'format_error': 'Row {:d} of matrix has no columns.'.format(i + 1)})
+                return (None, {'format_error': f'Row {i + 1} of the matrix has no columns.'})
 
             # Splitting on a comma always returns a list with at least one element
             s_row[i] = s_row[i].split(',')
@@ -883,7 +899,7 @@ def string_to_2darray(s, allow_complex=True):
             if number_of_columns is None:
                 number_of_columns = n
             elif number_of_columns != n:
-                return (None, {'format_error': 'Rows 1 and {:d} of matrix have a different number of columns.'.format(i + 1)})
+                return (None, {'format_error': f'Rows 1 and {i + 1} of the matrix have a different number of columns.'})
 
         # Define matrix in which to put result
         A = np.zeros((number_of_rows, number_of_columns))
@@ -894,7 +910,7 @@ def string_to_2darray(s, allow_complex=True):
                 try:
                     # Check if entry is empty
                     if not s_row[i][j].strip():
-                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix is empty.'.format(i + 1, j + 1)})
+                        return (None, {'format_error': f'Entry at location (row={i + 1}, column={j + 1}) in the matrix is empty.'})
 
                     # Convert entry to float or (optionally) complex
                     ans = string_to_number(s_row[i][j], allow_complex=allow_complex)
@@ -913,85 +929,13 @@ def string_to_2darray(s, allow_complex=True):
                     A[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
-                    return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[i][j])})
+                    return (None, {'format_error': f'Entry {escape_invalid_string(s_row[i][j])} at location (row={i + 1}, column={j + 1}) of the matrix has an invalid format.'})
 
         # Return result with no error
         return (A, {'format_type': 'python'})
 
     # Should never get here
-    raise Exception('Invalid number of left brackets: {:g}'.format(number_of_left_brackets))
-
-
-def matlab_to_numpy(a):
-    if (('[' in a) and (']' in a)):
-        # Split at first left bracket
-        (a_before_leftbracket, a_leftbracket, a) = a.partition('[')
-
-        # Return error if there was anything but space before left bracket
-        if a_before_leftbracket.strip():
-            return (None, 'Non-empty space before first left bracket.')
-
-        # Split at first right bracket
-        (a, a_rightbracket, a_after_rightbracket) = a.partition(']')
-
-        # Return error if there was anything but space after right bracket
-        if a_after_rightbracket.strip():
-            return (None, 'Non-empty space after first right bracket.')
-
-        # Split on semicolon
-        a = a.split(';')
-
-        # Get number of rows
-        m = len(a)
-
-        # Return error if there are no rows (i.e., the matrix is empty)
-        if (m == 0):
-            return (None, 'Matrix has no rows.')
-
-        # Get number of columns by splitting first row on space
-        n = len(a[0].split())
-
-        # Return error if first row has no columns
-        if (n == 0):
-            return (None, 'First row of matrix has no columns.')
-
-        # Define matrix in which to put result
-        A = np.zeros((m, n))
-
-        # Iterate over rows
-        for i in range(0, m):
-
-            # Split on space
-            s = a[i].split()
-
-            # Return error if current row has more or less columns than first row
-            if (len(s) != n):
-                return (None, 'Rows 1 and %d of matrix have a different number of columns.' % (i + 1))
-
-            # Iterate over columns
-            for j in range(0, n):
-                try:
-                    # Convert entry to float
-                    A[i, j] = float(s[j])
-
-                    # Return error if entry is not finite
-                    if not np.isfinite(A[i, j]):
-                        return (None, 'Entry (%d,%d) of matrix is not finite.' % (i + 1, j + 1))
-                except Exception:
-                    # Return error if entry could not be converted to float
-                    return (None, 'Entry (%d,%d) of matrix has invalid format.' % (i + 1, j + 1))
-
-        # Return resulting ndarray with no error
-        return (A, None)
-    else:
-        try:
-            # Convert submitted answer (assumed to be a scalar) to float
-            A = np.array([[float(a)]])
-            # Return it with no error
-            return (A, None)
-        except Exception:
-            # Return error if submitted answer could not be converted to float
-            return (None, 'Invalid format (missing square brackets and not a real number).')
+    raise Exception(f'Invalid number of left brackets: {number_of_left_brackets}')
 
 
 def latex_from_2darray(A, presentation_type='f', digits=2):
@@ -1033,7 +977,7 @@ def latex_from_2darray(A, presentation_type='f', digits=2):
         raise ValueError('input should be a 2D numpy array')
     lines = np.array2string(A, formatter=formatter).replace('[', '').replace(']', '').splitlines()
     rv = [r'\begin{bmatrix}']
-    rv += ['  ' + ' & '.join(l.split()) + r'\\' for l in lines]
+    rv += ['  ' + ' & '.join(line.split()) + r'\\' for line in lines]
     rv += [r'\end{bmatrix}']
     return ''.join(rv)
 
@@ -1135,3 +1079,128 @@ def escape_unicode_string(string):
             return x
 
     return ''.join(map(escape_unprintable, string))
+
+
+def escape_invalid_string(string):
+    """
+    escape_invalid_string(string)
+
+    Wraps and escapes string in <code> tags.
+    """
+    return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
+
+
+def clean_identifier_name(name):
+    """
+    clean_identifier_name(string)
+
+    Escapes a string so that it becomes a valid Python identifier.
+    """
+
+    # Strip invalid characters and weird leading characters so we have
+    # a decent python identifier
+    name = re.sub('[^a-zA-Z0-9_]', '_', name)
+    name = re.sub('^[^a-zA-Z]+', '', name)
+    return name
+
+
+def load_extension(data, extension_name):
+    """
+    load_extension(data, extension_name)
+
+    Loads a single specific extension by name for an element.
+    Returns a dictionary of defined variables and functions.
+    """
+    if 'extensions' not in data:
+        raise Exception('load_extension() must be called from an element!')
+    if extension_name not in data['extensions']:
+        raise Exception(f'Could not find extension {extension_name}!')
+
+    ext_info = data['extensions'][extension_name]
+    if 'controller' not in ext_info:
+        # Nothing to load, just return an empty dict
+        return {}
+
+    # wrap extension functions so that they execute in their own directory
+    def wrap(f):
+        # If not a function, just return
+        if not callable(f):
+            return f
+
+        def wrapped_function(*args, **kwargs):
+            old_wd = os.getcwd()
+            os.chdir(ext_info['directory'])
+            ret_val = f(*args, **kwargs)
+            os.chdir(old_wd)
+            return ret_val
+        return wrapped_function
+
+    # Load any Python functions and variables from the defined controller
+    script = os.path.join(ext_info['directory'], ext_info['controller'])
+    loaded = {}
+    spec = importlib.util.spec_from_file_location(f'{extension_name}-{script}', script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    # Filter out extra names so we only get user defined functions and variables
+    loaded = {f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__')}
+
+    # Return functions and variables as a namedtuple, so we get the nice dot access syntax
+    module_tuple = collections.namedtuple(clean_identifier_name(extension_name), loaded.keys())
+    return module_tuple(**loaded)
+
+
+def load_all_extensions(data):
+    """
+    load_all_extensions(data)
+
+    Loads all available extensions for a given element.
+    Returns an ordered dictionary mapping the extension name to its defined variables and functions
+    """
+
+    if 'extensions' not in data:
+        raise Exception('load_all_extensions() must be called from an element!')
+    if len(data['extensions']) == 0:
+        return {}
+
+    loaded_extensions = collections.OrderedDict()
+    for name in sorted(data['extensions'].keys()):
+        loaded_extensions[name] = load_extension(data, name)
+
+    return loaded_extensions
+
+
+def load_host_script(script_name):
+    """
+    load_host_script(script_name)
+
+    Small convenience function to load a host element script from an extension.
+    """
+
+    # Chop off the file extension because it's unnecessary here
+    if script_name.endswith('.py'):
+        script_name = script_name[:-3]
+    return __import__(script_name)
+
+
+def index2key(i):
+    """
+    index2key(i)
+
+    Used when generating ordered lists of the form ['a', 'b', ..., 'z', 'aa', 'ab', ..., 'zz', 'aaa', 'aab', ...]
+
+    Returns alphabetic key in the form [a-z]* from a given integer (i = 0, 1, 2, ...).
+    """
+    if i >= 26:
+        n = i
+        base_26_str = ''
+        while not n < 26:
+            base_26_str = '{:02d}'.format(n % 26) + base_26_str
+            n = n // 26 - 1
+        base_26_str = '{:02d}'.format(n) + base_26_str
+        base_26_int = [int(base_26_str[i:i + 2]) for i in range(0, len(base_26_str), 2)]
+        key = ''.join([chr(ord('a') + i) for i in base_26_int])
+    else:
+        key = chr(ord('a') + i)
+
+    return key

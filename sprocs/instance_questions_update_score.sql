@@ -9,7 +9,7 @@ CREATE OR REPLACE FUNCTION
         -- identify the instance_question/submission
         IN arg_submission_id bigint,        -- must provide submission_id
         IN arg_instance_question_id bigint, -- OR instance_question_id
-        IN arg_uid text,                    -- OR (uid, assessment_instance_number, qid)
+        IN arg_uid_or_group text,           -- OR (uid/group, assessment_instance_number, qid)
         IN arg_assessment_instance_number integer,
         IN arg_qid text,
 
@@ -24,6 +24,8 @@ DECLARE
     submission_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
+    found_uid_or_group text;
+    found_qid text;
     max_points double precision;
     new_score_perc double precision;
     new_points double precision;
@@ -33,14 +35,15 @@ BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT        s.id,                iq.id,                  ai.id, aq.max_points
-    INTO submission_id, instance_question_id, assessment_instance_id,    max_points
+    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid), q.qid
+    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group, found_qid
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q on (q.id = aq.question_id)
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
@@ -54,12 +57,21 @@ BEGIN
             (s.id = arg_submission_id)
             OR (arg_submission_id IS NULL AND iq.id = arg_instance_question_id)
             OR (arg_submission_id IS NULL AND arg_instance_question_id IS NULL
-                AND u.uid = arg_uid AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
+                AND (g.name = arg_uid_or_group OR u.uid = arg_uid_or_group)
+                AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
         )
     ORDER BY s.date DESC, ai.number DESC;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%, assessment_instance_id=%', arg_submission_id, arg_instance_question_id, arg_uid, arg_assessment_instance_number, arg_qid, arg_assessment_id, arg_assessment_instance_id;
+        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%, assessment_instance_id=%', arg_submission_id, arg_instance_question_id, arg_uid_or_group, arg_assessment_instance_number, arg_qid, arg_assessment_id, arg_assessment_instance_id;
+    END IF;
+
+    IF arg_uid_or_group IS NOT NULL AND (found_uid_or_group IS NULL OR found_uid_or_group != arg_uid_or_group) THEN
+        RAISE EXCEPTION 'found submission with id=%, but user/group does not match %', arg_submission_id, arg_uid_or_group;
+    END IF;
+
+    IF arg_qid IS NOT NULL AND (found_qid IS NULL OR found_qid != arg_qid) THEN
+        RAISE EXCEPTION 'found submission with id=%, but question does not match %', arg_submission_id, arg_qid;
     END IF;
 
     -- ##################################################################
@@ -100,7 +112,6 @@ BEGIN
 
         UPDATE submissions AS s
         SET
-            auth_user_id = arg_authn_user_id,
             feedback = CASE
                 WHEN feedback IS NULL THEN arg_feedback
                 WHEN arg_feedback IS NULL THEN feedback
@@ -111,7 +122,8 @@ BEGIN
             grading_method = 'External',
             override_score = new_score,
             score = COALESCE(new_score, score),
-            correct = COALESCE(new_correct, correct)
+            correct = COALESCE(new_correct, correct),
+            gradable = CASE WHEN new_score IS NULL THEN gradable ELSE TRUE END
         WHERE s.id = submission_id;
     END IF;
 
@@ -125,6 +137,7 @@ BEGIN
             points_in_grading = 0,
             score_perc = new_score_perc,
             score_perc_in_grading = 0,
+            status = 'complete',
             modified_at = now()
         WHERE iq.id = instance_question_id;
 

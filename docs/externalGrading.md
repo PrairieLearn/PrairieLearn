@@ -107,18 +107,18 @@ All question and student-submitted code will be present in various subdirectorie
 * Files submitted by the student will be copied to `/grade/student`
 * The `data` object that would normally be provided to the `grade` method of your question's server file will be serialized to JSON at `/grade/data/data.json`
 
-In particular, the file system structure of the grader looks like: 
+In particular, the file system structure of the grader looks like:
 
 ```text
 /grade                         # Root directory of the grading job
 +-- /data                      # JSON dump of the data object from server.py
-|   `-- data.json   
+|   `-- data.json
 |
 +-- /results                   # Report of test output formatted for PrairieLearn
-|   `-- results.json   
+|   `-- results.json
 |
 +-- /serverFilesCourse         # Files from serverFilesCourse/ in the course directory
-|   +-- /my_testing_framework 
+|   +-- /my_testing_framework
 |   |   +-- testfile           # Test framework configuration
 |   |   `-- run.sh             # Entrypoint called in the container
 |
@@ -171,6 +171,8 @@ The boolean `gradable` can be added to the results object and set to `false` to 
 
 If `gradable` is set to false, error messages related to the formatting of the answer can be added to the grading results by setting the `format_errors` key.  This can be either a string or an array of strings, depending on the number of error messages.
 
+The optional boolean `gradable` can be added to the results object and indicates that the input was invalid or formatted incorrectly.  For example, `gradable` can be set to false if the student code has a syntax error, in which case the code will not be graded and the student will not be penalised an attempt.  The omission of this field is equivalent to assuming that the input was gradable (`"gradable": true`).
+
 The `<pl-external-grader-results>` element is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here's an example of well-formed results that can be rendered by this element:
 
 ```json
@@ -179,6 +181,16 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
    "score": 0.25,
    "message": "Tests completed successfully.",
    "output": "Running tests...\nTest 1 passed\nTest 2 failed!\n...",
+   "images": [
+      {
+         "label": "First Image",
+         "url": "data:image/png;base64,..."
+      },
+      {
+         "label": "Second Image",
+         "url": "data:image/jpeg;base64,..."
+      }
+   ],
    "tests": [
       {
          "name": "Test 1",
@@ -194,11 +206,23 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
          "points": 0,
          "max_points": 3,
          "message": "Make sure that your code is doing the thing correctly.",
-         "output": "Running test...\nYour output did not match the expected output."
+         "output": "Running test...\nYour output did not match the expected output.",
+         "images": [{
+               "label": "First Image",
+               "url": "data:image/gif;base64,..."
+            },
+            {
+               "label": "First Image",
+               "url": "data:image/png;base64,..."
+            }],
       }
    ]
 }
 ```
+
+Plots or images can be added to either individual test cases or to the main output by adding `base64` encoded images to their respective `images` array.  These values should be formatted as standard HTML base64 images like `"data:[mimetype];base64,[contents]"`.
+
+A reference Python implementation for this can be seen in `PrairieLearn/graders/python/python_autograder`, and relevant documentation [here](python-grader/index.md).
 
 ## Writing questions
 
@@ -239,16 +263,16 @@ We have to do a couple interesting things to run external grading jobs when Prai
 
 Running PrairieLearn locally with externally graded question support looks something like this:
 
-- Create an empty directory to use to share job data between containers. 
-    - This can live anywhere, but needs to be created first and referenced in 
+- Create an empty directory to use to share job data between containers.
+    - This can live anywhere, but needs to be created first and referenced in
       the docker launch command.
-    - This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
+    - This command is copy-pastable for Windows PowerShell, MacOS, and Linux (including WSL2 instances).
 ```bash
 mkdir "$HOME/pl_ag_jobs"
 ```
-
 - Modify your PL docker run call to include the jobs directory.
 
+##### Shell Command
 On MacOS and Linux, `cd` to your course directory and copy-paste the following command:
 ```sh
 docker run -it --rm -p 3000:3000 \
@@ -256,18 +280,38 @@ docker run -it --rm -p 3000:3000 \
     -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
-    prairielearn/prairielearn 
+    prairielearn/prairielearn
 ```
 
 On Windows PowerShell, `cd` to your course directory and copy the following command **except** with your own username in `HOST_JOBS_DIR`:
-```sh
-docker run -it --rm -p 3000:3000 -v $PWD\:/course -v $HOME\pl_ag_jobs:/jobs -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn 
+```powershell
+docker run -it --rm -p 3000:3000 `
+    -v $PWD\:/course `
+    -v $HOME\pl_ag_jobs:/jobs `
+    -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs `
+    -v /var/run/docker.sock:/var/run/docker.sock `
+    prairielearn/prairielearn
 ```
 
 **Note** the following about `HOST_JOBS_DIR` on PowerShell:
 
 * Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Users\Tim\pl_ag_jobs`).
 * Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `$HOME/pl_ag_jobs`).
+
+If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v "$PWD":/course \
+    -v $HOME/pl_ag_jobs:/jobs \
+    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    --add-host=host.docker.internal:172.17.0.1 \
+    prairielearn/prairielearn
+```
+
+Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
+
 
 ##### Windows errors and quirks
 
@@ -282,7 +326,7 @@ standard_init_linux.go:207: exec user process caused "no such file or directory"
 
 One solution for this is to make a `.gitattributes` files in your PL repository with the line
 `*.sh text eol=lf`. This tells the GitHub client to write the script files in native Linux
-format instead of converting them for Windows (which breaks mapping them back into docker). 
+format instead of converting them for Windows (which breaks mapping them back into docker).
 This mimics the [`.gitattributes` file in the main PrairieLearn repo](https://github.com/PrairieLearn/PrairieLearn/blob/master/.gitattributes).
 
 ###### `invalid mode: /grade`
@@ -299,7 +343,7 @@ error: handleGraderErrorUnable to launch Docker container for grading: (HTTP cod
     - Use Unix-style slashes even though you are using PowerShell (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=C:\Users\Tim\pl_ag_jobs`).
     - Spell out the full path without using `$HOME` (i.e., use `-e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs`, **not** `-e HOST_JOBS_DIR=$HOME/pl_ag_jobs`).
 3. Verify your Windows/Docker shared access:
-    _ Redo Docker's access to `C:` drive (or whichever drive your course directory is on) by right-clicking the Docker "whale" icon in the taskbar > clicking "Settings" > unchecking `C:` drive > re-checking `C:` drive.
+    - Redo Docker's access to `C:` drive (or whichever drive your course directory is on) by right-clicking the Docker "whale" icon in the taskbar > clicking "Settings" > unchecking `C:` drive > re-checking `C:` drive.
     - If still not working, restart Docker.
     - If still not working, restart Windows.
 

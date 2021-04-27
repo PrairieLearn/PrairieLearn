@@ -2,3 +2,8 @@
     width: 340px;
     max-width: 100%;
 }
+
+:not(.form-check-inline) > .pl-checkbox-key-label {
+    min-width: 1.25em;
+    overflow-wrap: normal;
+}

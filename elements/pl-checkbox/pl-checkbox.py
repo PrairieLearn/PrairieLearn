@@ -13,13 +13,15 @@ PARTIAL_CREDIT_METHOD_DEFAULT = 'PC'
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
+HIDE_LETTER_KEYS_DEFAULT = False
+HIDE_SCORE_BADGE_DEFAULT = False
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -89,7 +91,7 @@ def prepare(element_html, data):
     display_answers = []
     correct_answer_list = []
     for (i, (index, correct, html)) in enumerate(sampled_answers):
-        keyed_answer = {'key': chr(ord('a') + i), 'html': html}
+        keyed_answer = {'key': pl.index2key(i), 'html': html}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer_list.append(keyed_answer)
@@ -107,12 +109,13 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
+    hide_score_badge = pl.get_boolean_attrib(element, 'hide-score-badge', HIDE_SCORE_BADGE_DEFAULT)
 
     editable = data['editable']
     # answer feedback is not displayed when partial credit is True
     # (unless the question is disabled)
     show_answer_feedback = True
-    if partial_credit and editable:
+    if (partial_credit and editable) or hide_score_badge:
         show_answer_feedback = False
 
     display_answers = data['params'].get(name, [])
@@ -131,27 +134,18 @@ def render(element_html, data):
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
 
-        answerset = ''
+        answerset = []
         for answer in display_answers:
-            item = '<input type="checkbox" class="form-check-input"' \
-                + ' name="' + name + '" value="' + answer['key'] + '"' \
-                + ('' if editable else ' disabled') \
-                + (' checked ' if (answer['key'] in submitted_keys) else '') \
-                + f' id="{name}-{answer["key"]}"' \
-                + ' />\n' \
-                + f'<label class="form-check-label" for="{name}-{answer["key"]}">\n' \
-                + '(' + answer['key'] + ') ' + answer['html'].strip() + '\n'
-            if score is not None and show_answer_feedback:
-                if answer['key'] in submitted_keys:
-                    if answer['key'] in correct_keys:
-                        item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
-                    else:
-                        item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
-            item += '  </label>\n'
-            item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
-            answerset += item
-        if inline:
-            answerset = '<span>\n' + answerset + '</span>\n'
+            answer_html = {
+                'key': answer['key'],
+                'checked': (answer['key'] in submitted_keys),
+                'html': answer['html'].strip(),
+                'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys
+            }
+            if answer_html['display_score_badge']:
+                answer_html['correct'] = (answer['key'] in correct_keys)
+                answer_html['incorrect'] = (answer['key'] not in correct_keys)
+            answerset.append(answer_html)
 
         info_params = {'format': True}
         # Adds decorative help text per bootstrap formatting guidelines:
@@ -200,7 +194,9 @@ def render(element_html, data):
             'editable': editable,
             'uuid': pl.get_uuid(),
             'info': info,
-            'answerset': answerset,
+            'answers': answerset,
+            'inline': inline,
+            'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
         }
 
         if not hide_help_text:
@@ -226,44 +222,42 @@ def render(element_html, data):
         if parse_error is None:
             partial_score = data['partial_scores'].get(name, {'score': None})
             score = partial_score.get('score', None)
-            html_list = []
+
+            answers = []
             for submitted_key in submitted_keys:
-                item = ''
-                submitted_html = next((a['html'] for a in display_answers if a['key'] == submitted_key), None)
-                if submitted_html is None:
-                    # FIXME: escape submitted_key
-                    raise ValueError('invalid submitted_key: {:s}'.format(str(submitted_key)))
-                else:
-                    item = '(%s) %s' % (submitted_key, submitted_html)
-                    if score is not None and show_answer_feedback:
-                        if submitted_key in correct_keys:
-                            item = item + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
-                        else:
-                            item = item + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
-                if inline:
-                    item = '<li class="list-inline-item">' + item + '</li>'
-                else:
-                    item = '<li>' + item + '</li>'
-                html_list.append(item)
-            if inline:
-                html = '<ul class="list-inline mb-0">\n' + '\n'.join(html_list) + '</ul>'
-            else:
-                html = '<ul class="list-unstyled mb-0">\n' + '\n'.join(html_list) + '</ul>'
-            if score is not None:
+                submitted_answer = next(filter(lambda a: a['key'] == submitted_key, display_answers), None)
+                answer_item = {
+                    'key': submitted_key,
+                    'html': submitted_answer['html'],
+                    'display_score_badge': score is not None and show_answer_feedback
+                }
+                if answer_item['display_score_badge']:
+                    answer_item['correct'] = (submitted_key in correct_keys)
+                    answer_item['incorrect'] = (submitted_key not in correct_keys)
+                answers.append(answer_item)
+
+            html_params = {
+                'submission': True,
+                'display_score_badge': (score is not None),
+                'answers': answers,
+                'inline': inline,
+                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
+            }
+
+            if html_params['display_score_badge']:
                 try:
                     score = float(score)
                     if score >= 1:
-                        html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                        html_params['correct'] = True
                     elif score > 0:
-                        html = html + '&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                        html_params['partial'] = math.floor(score * 100)
                     else:
-                        html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                        html_params['incorrect'] = True
                 except Exception:
                     raise ValueError('invalid score' + score)
-            if inline:
-                html = '<span class="d-inline-block">' + html + '</span>'
-            else:
-                html = '<div class="d-block">' + html + '</div>'
+
+            with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
+                html = chevron.render(f, html_params).strip()
         else:
             html_params = {
                 'submission': True,
@@ -281,22 +275,14 @@ def render(element_html, data):
             if len(correct_answer_list) == 0:
                 raise ValueError('At least one option must be true.')
             else:
-                html_list = []
-                for answer in correct_answer_list:
-                    item = '(%s) %s' % (answer['key'], answer['html'])
-                    if inline:
-                        item = '<li class="list-inline-item">' + item + '</li>'
-                    else:
-                        item = '<li>' + item + '</li>'
-                    html_list.append(item)
-                if inline:
-                    html = '<ul class="list-inline mb-0">\n' + '\n'.join(html_list) + '</ul>'
-                else:
-                    html = '<ul class="list-unstyled mb-0">\n' + '\n'.join(html_list) + '</ul>'
-            if inline:
-                html = '<span class="d-inline-block">' + html + '</span>'
-            else:
-                html = '<div class="d-block">' + html + '</div>'
+                html_params = {
+                    'answer': True,
+                    'inline': inline,
+                    'answers': correct_answer_list,
+                    'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT)
+                }
+                with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
+                    html = chevron.render(f, html_params).strip()
         else:
             html = ''
 
@@ -383,9 +369,9 @@ def test(element_html, data):
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
     number_answers = len(data['params'][name])
-    all_keys = [chr(ord('a') + i) for i in range(number_answers)]
+    all_keys = [pl.index2key(i) for i in range(number_answers)]
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = data['test_type']
 
     if result == 'correct':
         if len(correct_keys) == 1:

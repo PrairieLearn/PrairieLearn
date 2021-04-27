@@ -51,7 +51,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
 
     step('start the exam', async () => {
         const form = {
-            __action: 'newInstance',
+            __action: 'new_instance',
             __csrf_token: context.__csrf_token,
         };
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form , headers});
@@ -100,5 +100,6 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         assert.equal(response.status, 403);
 
         assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     });
 });

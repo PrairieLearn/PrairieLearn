@@ -1,16 +1,17 @@
 -- BLOCK select_authz_data
 SELECT
-    coalesce($force_mode, ip_to_mode($ip, $req_date)) AS mode,
+    coalesce($force_mode, ip_to_mode($ip, $req_date, $authn_user_id)) AS mode,
     permissions_course_instance,
     authz_course($authn_user_id, c.id, $is_administrator) AS permissions_course,
     to_jsonb(c.*) AS course,
     to_jsonb(ci.*) AS course_instance,
-    courses_user_can_edit($authn_user_id, $is_administrator) AS courses,
+    courses_user_can_edit($authn_user_id, $is_administrator) AS editable_courses,
+    courses_user_can_view($authn_user_id, $is_administrator) AS viewable_courses,
     course_instances_instructor_can_view($authn_user_id, $is_administrator, $req_date, c.id) AS course_instances
 FROM
     course_instances AS ci
     JOIN pl_courses AS c ON (c.id = ci.course_id)
-    JOIN LATERAL authz_course_instance($authn_user_id, ci.id, $is_administrator, $req_date) AS permissions_course_instance ON TRUE
+    JOIN LATERAL authz_course_instance($authn_user_id, ci.id, $is_administrator, $req_date, TRUE) AS permissions_course_instance ON TRUE
 WHERE
     ci.id = $course_instance_id
     AND ci.deleted_at IS NULL

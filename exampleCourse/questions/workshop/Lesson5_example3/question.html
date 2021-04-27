@@ -1,0 +1,33 @@
+
+<pl-question-panel>
+
+<p>The origin of the drawing canvas below is the <strong>top-left</strong> corner. Each square has unit 20. </p>
+
+<p>Insert a vector with tail at position $({{params.xP}}, {{params.yP}})$.
+  The vector should make an angle $\alpha = {{params.alpha_abs}}^o$ {{params.direction}} with respect to the horizonal axis.</p>
+
+</pl-question-panel>
+<p>
+<pl-drawing grid-size="20" gradable="true" hide-answer-panel="false" answers-name="ans" height="300" width="400" >
+
+    <pl-drawing-answer draw-error-box="true" >
+      <pl-vector x1={{params.xP}} y1={{params.yP}} angle={{params.alpha}}></pl-vector>
+    </pl-drawing-answer>
+    
+    <pl-drawing-initial >
+      <pl-vector x1=20 y1=40 angle=30></pl-vector>
+    </pl-drawing-initial>
+
+    <pl-controls>
+        <pl-controls-group label="Graded objects:" >
+            <pl-drawing-button type="pl-vector"></pl-drawing-button>
+            
+            
+        </pl-controls-group>
+        <pl-controls-group label="Help buttons (not graded):">
+            <pl-drawing-button type="delete"></pl-drawing-button>
+        </pl-controls-group>
+    </pl-controls>
+
+</pl-drawing>
+</p>

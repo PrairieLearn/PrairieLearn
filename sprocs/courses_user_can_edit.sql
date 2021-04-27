@@ -15,6 +15,7 @@ BEGIN
         JOIN authz_course(user_id, c.id, is_administrator) AS permissions_course ON TRUE
     WHERE
         c.deleted_at IS NULL
+        AND c.example_course IS FALSE
         AND (permissions_course->>'has_course_permission_edit')::BOOLEAN IS TRUE;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

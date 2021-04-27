@@ -4,6 +4,64 @@ Have a question or issue that wasn't listed here but you think it should be?
 
 Consider **[adding the question or issue](https://github.com/PrairieLearn/PrairieLearn/edit/master/docs/faq.md)** to the FAQ.
 
+## How do I let a student continue working on an exam or take the exam again?
+
+There are three different ways to let a student re-attempt or continue an exam:
+
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessement is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using the CBTF and have a new reservation, otherwise they will need a custom [access rule](allowAccess) with their UID.
+
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using the CBTF they need to sign up for a new reservation, or outside the CBTF they will need a custom [access rule](allowAccess) with their UID.
+
+3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
+
+## How do I give students access to view their exams after they are over?
+
+To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl) like this:
+
+```json
+"allowAccess": [
+    ...
+    {
+        "startDate": "2015-01-19T00:00:01",
+        "mode": "Public"
+    }
+]
+```
+
+This will give all students public access to their exams after the `startDate` until the end of the course instance. The will not be able to answer questions for further credit (there is no `"credit": 100` line), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing (limited access post-exam under controlled conditions)[#should-students-be-able-to-review-their-exams-after-they-are-over] (although this requires in-person access by students and doesn't work online).
+
+## How can question pool development be managed over semesters?
+
+Writing and maintaining a large pool of questions is a lot of work. There are many strategies for managing this process. The approach taken by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois is:
+
+1. Homework questions are always re-used semester-to-semester. It is assumed that solutions to these will be posted by students on the internet, so they are strictly for practice. Students do get credit for homeworks, but it assumed that any student who puts in the effort will get 100%.
+2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#question-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in the [Computer-Based Testing Facility (CBTF)](https://cbtf.engr.illinois.edu).
+3. Every semester a small number of secret questions are written and some of the older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
+4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
+5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
+
+As an exception to the above strategy, during the COVID-19 semesters all exams were given remotely under conditions that were not as secure as the in-person CBTF. For this reason, all secret questions used on these exams are considered to be immediately "burned" and and moved to the homework pool.
+
+## Should students be able to review their exams after they are over?
+
+Different instructors have different opinions regarding post-exam student access to questions because of the tradeoffs involved. For example, post-exam review allows students to ensure their work is graded correctly and learn from their specific mistakes. On the other hand, releasing questions publicly generally means that new exams need to be written and validated every semester, which takes resources away from other course activities and can lead instructors to use fewer, higher-stakes exams and to avoid the use of strategies such as second-chance exams.
+
+Three strategies that courses adopt in practice are:
+
+1. No access post-exam. This allows exam questions to be re-used semester-to-semester, but is unpopular with students and hinders them from conducting a detailed post-exam analysis of the questions and their performance.
+2. Complete open access post-exam. This is popular with students and easy to implement, but requires a large effort by instructors to write and test new exam questions every semester.
+3. Limited access post-exam under controlled conditions. For example, the TAM 2XX courses (Introductory Mechanics sequence) at Illinois allow students to review their exams inside the secure [Computer-Based Testing Facility (CBTF)](https://cbtf.engr.illinois.edu) during exam review sessions with TAs. This is moderately popular with students ([Chang et al., 2020](https://doi.org/10.18260/1-2--34321)) and still allows exam questions to be reused. A modified form of this method is to have TAs review exams with students during office hours, on the TAs' computers. This is the approach that was used by the TAM 2XX courses prior to the CBTF-based review system.
+
+Note that if exams are taken online, such as during the COVID-19 semesters, then we should assume that the questions are publicly available and so there is little reason not to have open access post-exam.
+
+## How can I view student answers to all variants of a Homework question?
+
+The PrairieLearn interface only shows the most recent `variant` (a particular randomized instance) of a question to students, along with any submissions to that specific variant.
+
+Instructors can see all past variants for students by going to the "Log" table on the view of a student's assessment instance (go to an assessment, then "Students" tab, then "Details" for a student, the scroll down to "Log"). In the Log table there is a column called "Student question" that shows a numbered list of the student views of the question, like `S-1#1`, `S-1#2`, `S-1#3`, etc. These are the first, second, third variants of that question that the student was given. Clicking those numbered links will show the specific variants, along with student answers to them.
+
+The raw history of student answers can also be accessed in the "Data" column of the Log table, from the "XXX_all_submissions.csv" file on the "Downloads" tab, and via the [PrairieLearn API](api).
+
 ## How do I give a student access to homeworks or an exam after the semester is over?
 
 You need to give the student access to both the course instance itself for the completed semester as well as the specific assessments within that course instance.
@@ -268,7 +326,7 @@ When previewing content within a local copy of PrairieLearn, the web version
 is powered by a docker container. At the end of a session, closing out of
 either the web browser or the terminal that launched the docker container
 will **not** stop PrairieLearn from running. Therefore, when relaunching the 
-docker version of PrairieLearn, the existing port my already be taken.
+docker version of PrairieLearn, the existing port may already be taken.
 For example, we would have:
 
 ```bash
@@ -282,3 +340,11 @@ To address this, there are a variety of different ways. In particular, we have:
 - Restart your computer.
 - Stop the process in terminal with <kbd>CNTRL</kbd> + <kbd>C</kbd> and, then, 
   close the terminal application.   
+
+## Why do special characters like (<=) break my question display?
+
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering.  To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more [here](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element).  Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
+
+## Why can't I connect to PrairieLearn with Docker Toolbox?
+
+Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
