@@ -20,7 +20,9 @@ DECLARE
     assessment_instance_open boolean;
     new_instance_questions_count integer;
     assessment_max_points double precision;
+    assessment_max_bonus_points double precision;
     old_assessment_instance_max_points double precision;
+    old_assessment_instance_max_bonus_points double precision;
     new_assessment_instance_max_points double precision;
 BEGIN
     PERFORM assessment_instances_lock(assessment_instance_id);
@@ -42,10 +44,12 @@ BEGIN
     SELECT
         c.id,      g.id,   u.user_id,            a.id,          a.type,
         a.max_points,          ai.max_points,
+        a.max_bonus_points,    ai.max_bonus_points,
         ai.open
     INTO
         course_id, group_id,  user_id,   assessment_id, assessment_type,
         assessment_max_points, old_assessment_instance_max_points,
+        assessment_max_bonus_points, old_assessment_instance_max_bonus_points,
         assessment_instance_open
     FROM
         assessment_instances AS ai
@@ -114,12 +118,13 @@ BEGIN
     END IF;
 
     -- update max_points if necessary and log it
-    IF new_assessment_instance_max_points IS DISTINCT FROM old_assessment_instance_max_points THEN
+    IF new_assessment_instance_max_points IS DISTINCT FROM old_assessment_instance_max_points OR assessment_max_bonus_points IS DISTINCT FROM old_assessment_instance_max_bonus_points THEN
         updated := TRUE;
 
         UPDATE assessment_instances AS ai
         SET
             max_points = new_assessment_instance_max_points,
+            max_bonus_points = assessment_max_bonus_points,
             modified_at = now()
         WHERE
             ai.id = assessment_instance_id;
@@ -132,8 +137,8 @@ BEGIN
         VALUES
             (authn_user_id, course_id, user_id, group_id,
             'assessment_instances', 'max_points', assessment_instance_id,
-            'update', jsonb_build_object('max_points', old_assessment_instance_max_points),
-            jsonb_build_object('max_points', new_assessment_instance_max_points));
+            'update', jsonb_build_object('max_points', old_assessment_instance_max_points, 'max_bonus_points', old_assessment_instance_max_bonus_points),
+            jsonb_build_object('max_points', new_assessment_instance_max_points, 'max_bonus_points', assessment_max_bonus_points));
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
