@@ -1,0 +1,188 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: handlebars
+    versions:
+    - 4.7.7
+  - dependency-name: "@octokit/rest"
+    versions:
+    - 18.0.15
+    - 18.3.0
+  - dependency-name: chai
+    versions:
+    - 4.3.0
+  - dependency-name: aws-sdk
+    versions:
+    - 2.834.0
+    - 2.836.0
+    - 2.853.0
+  - dependency-name: ajv
+    versions:
+    - 7.0.3
+    - 7.0.4
+  - dependency-name: file-type
+    versions:
+    - 16.2.0
+  - dependency-name: "@types/node"
+    versions:
+    - 14.14.22
+  - dependency-name: socket.io
+    versions:
+    - 3.1.0
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+- package-ecosystem: pip
+  directory: "/graders/python"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: scipy
+    versions:
+    - 1.6.1
+  - dependency-name: pandas
+    versions:
+    - 1.2.2
+- package-ecosystem: docker
+  directory: "/graders/python"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+- package-ecosystem: npm
+  directory: "/grader_host"
+  schedule:
+    interval: daily
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: aws-sdk
+    versions:
+    - 2.832.0
+    - 2.834.0
+    - 2.835.0
+    - 2.840.0
+    - 2.843.0
+    - 2.848.0
+    - 2.849.0
+    - 2.850.0
+    - 2.851.0
+    - 2.853.0
+    - 2.856.0
+    - 2.857.0
+    - 2.858.0
+    - 2.859.0
+    - 2.860.0
+    - 2.861.0
+    - 2.862.0
+    - 2.863.0
+    - 2.864.0
+    - 2.865.0
+    - 2.866.0
+    - 2.870.0
+    - 2.871.0
+    - 2.873.0
+    - 2.874.0
+    - 2.876.0
+    - 2.878.0
+    - 2.879.0
+    - 2.880.0
+    - 2.881.0
+    - 2.882.0
+    - 2.883.0
+    - 2.884.0
+    - 2.885.0
+    - 2.886.0
+    - 2.887.0
+    - 2.888.0
+    - 2.889.0
+    - 2.890.0
+    - 2.891.0
+    - 2.892.0
+  - dependency-name: eslint
+    versions:
+    - 7.22.0
+    - 7.24.0
+  - dependency-name: ajv
+    versions:
+    - 8.0.1
+    - 8.0.3
+- package-ecosystem: npm
+  directory: "/prairielib"
+  schedule:
+    interval: daily
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: eslint
+    versions:
+    - 7.19.0
+    - 7.24.0
+- package-ecosystem: docker
+  directory: "/images/plbase"
+  schedule:
+    interval: daily
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+- package-ecosystem: pip
+  directory: "/images/plbase"
+  schedule:
+    interval: daily
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  ignore:
+  - dependency-name: mkdocs-material
+    versions:
+    - 7.0.4
+    - 7.0.7
+    - 7.1.1
+  - dependency-name: nltk
+    versions:
+    - "3.6"
+    - 3.6.1
+  - dependency-name: pycryptodome
+    versions:
+    - 3.10.1
+  - dependency-name: pandas
+    versions:
+    - 1.2.2
+- package-ecosystem: docker
+  directory: "/workspaces/jupyterlab"
+  schedule:
+    interval: daily
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+- package-ecosystem: docker
+  directory: "/workspaces/xtermjs"
+  schedule:
+    interval: daily
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
