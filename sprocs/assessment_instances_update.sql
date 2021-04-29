@@ -44,7 +44,7 @@ BEGIN
     SELECT
         c.id,      g.id,   u.user_id,            a.id,          a.type,
         a.max_points,          ai.max_points,
-        a.max_bonus_points,    ai.max_bonus_points,
+        COALESCE(a.max_bonus_points, 0),    ai.max_bonus_points,
         ai.open
     INTO
         course_id, group_id,  user_id,   assessment_id, assessment_type,
