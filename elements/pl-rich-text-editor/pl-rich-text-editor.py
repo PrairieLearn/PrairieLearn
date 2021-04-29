@@ -19,6 +19,7 @@ def get_answer_name(file_name):
 def element_inner_html(element):
     return (element.text or '') + ''.join([str(lxml.html.tostring(c), 'utf-8') for c in element.iterchildren()])
 
+
 def add_format_error(data, error_string):
     if '_files' not in data['format_errors']:
         data['format_errors']['_files'] = []

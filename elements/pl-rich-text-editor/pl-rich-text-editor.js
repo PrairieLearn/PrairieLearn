@@ -17,9 +17,9 @@ window.PLRTE = function(uuid, options) {
             [{ 'size': ['small', false, 'large'] }],
             [{ 'header': [1, 2, 3, false] }],
             [{ 'color': [] }, { 'background': [] }],
-            ['clean']
-        ]
-    
+            ['clean'],
+        ];
+
     let inputElement = $('#rte-input-' + uuid);
     let quill = new Quill('#rte-' + uuid, options);
 
