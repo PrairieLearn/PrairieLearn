@@ -56,9 +56,9 @@ describe('Exam assessment with bonus points', function() {
 
     step('check assessment points', async () => {
         const results = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, [context.assessmentId]);
-        assert.equal(result.rowCount, 1);
-        assert.equal(result.rows[0].points, 6);
-        assert.equal(result.rows[0].score_perc, 60);
+        assert.equal(results.rowCount, 1);
+        assert.equal(results.rows[0].points, 6);
+        assert.equal(results.rows[0].score_perc, 60);
     });
     
     step('submit an answer to another question', async () => {
@@ -76,10 +76,10 @@ describe('Exam assessment with bonus points', function() {
 
     step('check assessment points', async () => {
         const results = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, [context.assessmentId]);
-        assert.equal(result.rowCount, 1);
+        assert.equal(results.rowCount, 1);
         // 6+8 is 14, but limit should be 10+2 (max plus bonus)
-        assert.equal(result.rows[0].points, 12);
-        assert.equal(result.rows[0].score_perc, 120);
+        assert.equal(results.rows[0].points, 12);
+        assert.equal(results.rows[0].score_perc, 120);
     });
     
 
