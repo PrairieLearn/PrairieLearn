@@ -2,6 +2,7 @@
 $(function() {
     var rte = window.PLRTE('{{editor_uuid}}', {
         readOnly: {{read_only}},
+        placeholder: "Your answer here",
         {{#quill_theme}}
         theme: '{{.}}',
         {{/quill_theme}}
