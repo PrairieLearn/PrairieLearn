@@ -1,0 +1,13 @@
+<script>
+$(function() {
+    var rte = window.PLRTE('{{editor_uuid}}', {
+        readOnly: {{read_only}},
+        {{#quill_theme}}
+        theme: '{{.}}',
+        {{/quill_theme}}
+    });
+});
+</script>
+<input type="hidden" id="rte-input-{{editor_uuid}}"
+       name="{{name}}" value="{{current_file_contents}}"/>
+<div id="rte-{{editor_uuid}}" class="border mathjax_ignore"></div>
