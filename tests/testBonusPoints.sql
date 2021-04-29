@@ -16,4 +16,4 @@ SELECT
 FROM
     assessment_instances AS ai
 WHERE
-    ai.assessment_id = $0;
+    ai.assessment_id = $assessment_id;
