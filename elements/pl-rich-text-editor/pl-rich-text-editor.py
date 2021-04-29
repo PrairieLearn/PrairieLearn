@@ -4,7 +4,6 @@ import chevron
 import base64
 import hashlib
 import os
-from text_unidecode import unidecode
 
 
 QUILL_THEME_DEFAULT = 'snow'
@@ -52,7 +51,7 @@ def render(element_html, data):
     directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
 
     if data['panel'] == 'question' or data['panel'] == 'submission':
-        
+
         html_params = {
             'name': answer_name,
             'file_name': file_name,
@@ -62,7 +61,7 @@ def render(element_html, data):
             'submission': data['panel'] == 'submission',
             'read_only': 'true' if data['panel'] == 'submission' else 'false'
         }
-        
+
         if source_file_name is not None:
             if directory == 'serverFilesCourse':
                 directory = data['options']['server_files_course_path']
