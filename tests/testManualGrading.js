@@ -85,7 +85,7 @@ const saveSubmission = async (instanceQuestionUrl, payload) => {
     const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
 
     // __variant_id should exist inside postData on only some instance questions submissions
-    if (payload && payload.postData && payload.postData) {
+    if (payload && payload.postData) {
         payload.postData = JSON.parse(payload.postData);
         payload.postData.variant.id = variantId;
         payload.postData = JSON.stringify(payload.postData);
@@ -158,7 +158,7 @@ describe('Manual grading', function() {
         });
 
         it('students should be able to save submissions on instance questions', async () => {
-            // 'save' 1 answer for each question for each mock students; 1 x 4 x 4 = 12 submissions
+            // 'save' 1 answer for each question for each mock students; 1 x 4 x 4 = 16 submissions
             for await(const student of mockStudents) {
                 setUser(student);
 
