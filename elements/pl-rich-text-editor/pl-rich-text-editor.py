@@ -7,6 +7,7 @@ import os
 
 
 QUILL_THEME_DEFAULT = 'snow'
+PLACEHOLDER_DEFAULT = 'Your answer here'
 SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = '.'
 
@@ -14,6 +15,9 @@ DIRECTORY_DEFAULT = '.'
 def get_answer_name(file_name):
     return '_rich_text_editor_{0}'.format(hashlib.sha1(file_name.encode('utf-8')).hexdigest())
 
+
+def element_inner_html(element):
+    return (element.text or '') + ''.join([str(lxml.html.tostring(c), 'utf-8') for c in element.iterchildren()])
 
 def add_format_error(data, error_string):
     if '_files' not in data['format_errors']:
@@ -24,9 +28,10 @@ def add_format_error(data, error_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['quill-theme', 'source-file-name', 'directory']
+    optional_attribs = ['quill-theme', 'source-file-name', 'directory', 'placeholder']
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
+    element_text = element_inner_html(element)
 
     file_name = pl.get_string_attrib(element, 'file-name')
     if '_required_file_names' not in data['params']:
@@ -36,8 +41,8 @@ def prepare(element_html, data):
     data['params']['_required_file_names'].append(file_name)
 
     if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
-            raise Exception('Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.')
+        if element_text and not str(element_text).isspace():
+            raise Exception('Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.' + element_text)
 
 
 def render(element_html, data):
@@ -46,9 +51,11 @@ def render(element_html, data):
     file_name = pl.get_string_attrib(element, 'file-name', '')
     answer_name = get_answer_name(file_name)
     quill_theme = pl.get_string_attrib(element, 'quill-theme', QUILL_THEME_DEFAULT)
+    placeholder = pl.get_string_attrib(element, 'placeholder', PLACEHOLDER_DEFAULT)
     uuid = pl.get_uuid()
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
+    element_text = element_inner_html(element)
 
     if data['panel'] == 'question' or data['panel'] == 'submission':
 
@@ -56,6 +63,7 @@ def render(element_html, data):
             'name': answer_name,
             'file_name': file_name,
             'quill_theme': quill_theme,
+            'placeholder': placeholder,
             'editor_uuid': uuid,
             'question': data['panel'] == 'question',
             'submission': data['panel'] == 'submission',
@@ -72,8 +80,8 @@ def render(element_html, data):
             file_path = os.path.join(directory, source_file_name)
             text_display = open(file_path).read()
         else:
-            if element.text is not None:
-                text_display = str(element.text)
+            if element_text is not None:
+                text_display = str(element_text)
             else:
                 text_display = ''
 

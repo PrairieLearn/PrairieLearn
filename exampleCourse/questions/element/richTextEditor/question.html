@@ -21,23 +21,23 @@
     
     <div class="card-body">
       <pl-question-panel>
-      <p>
-        The default behavior for the <code>pl-rich-text-editor</code>
-        element is displayed here.  The only required parameter
-        is <code>file-name</code>, which is the name of the file where
-        the student answer will be saved to.
-      </p>
-
-      <p> 
-        What is the meaning of life?
-      </p>
+        <p>
+          The default behavior for the <code>pl-rich-text-editor</code>
+          element is displayed here.  The only required parameter
+          is <code>file-name</code>, which is the name of the file where
+          the student answer will be saved to.
+        </p>
+        
+        <p> 
+          What is the meaning of life?
+        </p>
       </pl-question-panel>
       
       <pl-rich-text-editor file-name="meaning.html" >
       </pl-rich-text-editor>
     </div>
   </div>
-
+  
   <div class="card my-2">
     <div class="card-header">
       Part 2
@@ -45,22 +45,22 @@
     
     <div class="card-body">
       <pl-question-panel>
-      <p>
-        The rich text editor can be pre-populated with a starter
-        template by adding text into the element, or by
-        using <code>source-file-name="initial.html"</code>.
-      </p>
-
-      <p>
-         How many woodchucks would a woodchuck chuck if a woodchuck could chuck wood?
-      </p>
+        <p>
+          The rich text editor can be pre-populated with a starter
+          template by adding text into the element, or by
+          using <code>source-file-name="initial.html"</code>.
+        </p>
+        
+        <p>
+          How many woodchucks would a woodchuck chuck if a woodchuck could chuck wood? Justify.
+        </p>
       </pl-question-panel>
-
+      
       <pl-rich-text-editor file-name="woodchuck.html" source-file-name="woodchuck-initial.html">
       </pl-rich-text-editor>
     </div>
   </div>
-
+  
   <div class="card my-2">
     <div class="card-header">
       Part 3
@@ -68,21 +68,25 @@
     
     <div class="card-body">
       <pl-question-panel>
-      <p>
-        <a href="https://quilljs.com/docs/themes/">Other themes may
-        also be used</a> by
-        setting <code>quill-theme="bubble"</code>. The <code>bubble</code>
-        theme, for example, hides the toolbar, but opens a tooltip
-        when the user selects some text, with common formatting
-        options.</p>
-      </p>
-
-      <p>
-         How do you fry an egg?
-      </p>
+        <p>
+          <a href="https://quilljs.com/docs/themes/">Other themes may
+            also be used</a> by
+          setting <code>quill-theme="bubble"</code>. The <code>bubble</code>
+          theme, for example, hides the toolbar, but opens a tooltip
+          when the user selects some text, with common formatting
+          options.
+        </p>
+        
+        <p>
+          How do you fry an egg?
+        </p>
       </pl-question-panel>
-
-      <pl-rich-text-editor file-name="recipe.html" quill-theme="bubble">
+      
+      <pl-rich-text-editor file-name="recipe.html"
+                           quill-theme="bubble">
+        <ul>
+          <li>&nbsp;</li>
+        </ul>
       </pl-rich-text-editor>
     </div>
   </div>
