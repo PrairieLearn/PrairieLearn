@@ -53,7 +53,7 @@ describe('Exam assessment with submittable rule', function() {
         await sqldb.queryOneRowAsync(sql.enroll_student_in_course, []);
     });
 
-    step('ensure that the assessment is not visible in the year 1850', async () => {
+    step('ensure that the assessment is not visible on the assessments page when no access rule applies', async () => {
         headers.cookie = 'pl_requested_date=1850-06-01T00:00:01';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
@@ -62,14 +62,14 @@ describe('Exam assessment with submittable rule', function() {
         assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 0);
     });
 
-    step('try to access the assessment in the year 1850', async () => {
+    step('try to access the assessment when no access rule applies', async () => {
         headers.cookie = 'pl_requested_date=1850-06-01T00:00:01';
         
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.equal(response.status, 403);
     });
 
-    step('ensure that the assessment is visible in the year 2000', async () => {
+    step('ensure that the assessment is visible on the assessments page even if submittable is false', async () => {
         headers.cookie = 'pl_requested_date=2000-06-01T00:00:01';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
@@ -78,7 +78,7 @@ describe('Exam assessment with submittable rule', function() {
         assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 1);
     });
 
-    step('try to access the assessment in the year 2000', async () => {
+    step('try to access the assessment when it is not submittable', async () => {
         headers.cookie = 'pl_requested_date=2000-06-01T00:00:01';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
@@ -92,5 +92,98 @@ describe('Exam assessment with submittable rule', function() {
     step('check that an assessment instance was not created', async () => {
         const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
         assert.equal(results.rowCount, 0);
+    });
+
+    step('visit start exam page when the assessment is submittable', async () => {
+        headers.cookie = 'pl_requested_date=2010-01-01T00:45:01';
+
+        const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
+        assert.isTrue(response.ok);
+
+        assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+
+        helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
+    });
+
+    step('start the exam', async () => {
+        const form = {
+            __action: 'new_instance',
+            __csrf_token: context.__csrf_token,
+        };
+        const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form , headers});
+        assert.isTrue(response.ok);
+
+        // We should have been redirected to the assessment instance
+        const assessmentInstanceUrl = response.url;
+        assert.include(assessmentInstanceUrl, '/assessment_instance/');
+        context.assessmentInstanceUrl = assessmentInstanceUrl;
+
+        // save the questionUrl for later
+        const questionUrl = response.$('a:contains("Question 1")').attr('href');
+        context.questionUrl = `${context.siteUrl}${questionUrl}`;
+
+        helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name="time-limit-finish-form"]');
+    });
+
+    step('fast forward to when the exam is no longer submittable', async () => {
+        headers.cookie = 'pl_requested_date=2010-01-01T01:05:01';
+
+        let response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
+        assert.isTrue(response.ok);
+
+        let msg = response.$('p[class="small mb-0"]');
+        assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed./);
+
+        response = await helperClient.fetchCheerio(context.questionUrl, { headers });
+        assert.isTrue(response.ok);
+
+        msg = response.$('div#question-panel-footer');
+        assert.match(msg.text(), /This question is complete and cannot be answered again./);
+    });
+
+    step('simulate a time limit expiration', async () => {
+        const form = {
+            __action: 'timeLimitFinish',
+            __csrf_token: context.__csrf_token,
+        };
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers});
+        assert.equal(response.status, 403);
+
+        // We should have been redirected back to the same assessment instance
+        assert.equal(response.url, context.assessmentInstanceUrl + '?timeLimitExpired=true');
+
+        // we should not have any questions
+        assert.lengthOf(response.$('a:contains("Question 1")'), 0);
+
+        // we should have the "assessment closed" message
+        const msg = response.$('div.test-suite-assessment-closed-message');
+        assert.lengthOf(msg, 1);
+        assert.match(msg.text(), /Assessment .* is no longer available/);
+    });
+
+    step('check that the assessment instance is closed', async () => {
+        const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
+        assert.equal(results.rowCount, 1);
+        assert.equal(results.rows[0].open, false);
+    });
+
+    step('access the assessment when submittable and showClosedAssessment are false', async () => {
+        headers.cookie = 'pl_requested_date=2020-06-01T00:00:01';
+
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
+        assert.equal(response.status, 403);
+
+        assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+    });
+
+    step('access the assessment when submittable, showClosedAssessment, and showClosedAssessmentScore are false', async () => {
+        headers.cookie = 'pl_requested_date=2030-06-01T00:00:01';
+
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
+        assert.equal(response.status, 403);
+
+        assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+        assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
     });
 });

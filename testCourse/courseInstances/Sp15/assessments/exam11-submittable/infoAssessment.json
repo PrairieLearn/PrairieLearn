@@ -9,7 +9,7 @@
             "mode": "Public",
             "timeLimitMin": 50,
             "startDate": "2010-01-01T00:00:01",
-            "endDate": "2011-01-01T00:00:01",
+            "endDate": "2010-01-01T01:00:01",
             "credit": 100
         },
         {
