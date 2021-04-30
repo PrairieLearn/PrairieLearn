@@ -69,7 +69,7 @@ describe('Exam assessment with submittable rule', function() {
         assert.equal(response.status, 403);
     });
 
-    step('ensure that the assessment is visible on the assessments page even if submittable is false', async () => {
+    step('ensure that the assessment is visible on the assessments page if submittable is false', async () => {
         headers.cookie = 'pl_requested_date=2000-06-01T00:00:01';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
@@ -125,19 +125,26 @@ describe('Exam assessment with submittable rule', function() {
         helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name="time-limit-finish-form"]');
     });
 
-    step('fast forward to when the exam is no longer submittable', async () => {
-        headers.cookie = 'pl_requested_date=2010-01-01T01:05:01';
+    step('access assessment when it is no longer submittable', async () => {
+        headers.cookie = 'pl_requested_date=2010-01-01T23:50:01';
 
-        let response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
+        const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.isTrue(response.ok);
+        console.log(response.$.html());
 
-        let msg = response.$('p[class="small mb-0"]');
+        const msg = response.$('p[class="small mb-0"]');
+        assert.lengthOf(msg, 1);
         assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed./);
+    });
 
-        response = await helperClient.fetchCheerio(context.questionUrl, { headers });
+    step('access question when assessment is no longer submittable', async () => {
+        headers.cookie = 'pl_requested_date=2010-01-02T00:00:01';
+
+        const response = await helperClient.fetchCheerio(context.questionUrl, { headers });
         assert.isTrue(response.ok);
 
-        msg = response.$('div#question-panel-footer');
+        const msg = response.$('div#question-panel-footer');
+        assert.lengthOf(msg, 1);
         assert.match(msg.text(), /This question is complete and cannot be answered again./);
     });
 
