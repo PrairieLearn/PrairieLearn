@@ -129,8 +129,9 @@ describe('Exam assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2010-01-01T23:50:01';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
-        assert.isTrue(response.ok);
         console.log(response.$.html());
+        assert.equal(response.$.html(), '');
+        assert.isTrue(response.ok);
 
         const msg = response.$('p[class="small mb-0"]');
         assert.lengthOf(msg, 1);
