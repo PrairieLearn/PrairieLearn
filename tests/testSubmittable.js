@@ -86,7 +86,7 @@ describe('Exam assessment with submittable rule', function() {
 
         const msg = response.$('div.test-suite-assessment-closed-message');
         assert.lengthOf(msg, 1);
-        assert.equal(msg.text(), 'Assessment is not available at this time.');
+        assert.match(msg.text(), /Assessment is not available at this time./);
     });
 
     step('check that an assessment instance was not created', async () => {
