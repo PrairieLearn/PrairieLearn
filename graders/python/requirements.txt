@@ -19,7 +19,7 @@ folium==0.12.1
 Pygments==2.8.0
 PuLP==2.4
 ipython==7.21.0
-nbformat==5.1.2
+nbformat==5.1.3
 nbconvert==6.0.7
 tensorflow==2.4.1
 automata-lib==4.0.0.post1
