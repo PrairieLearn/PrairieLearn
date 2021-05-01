@@ -54,7 +54,7 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('ensure that the assessment is not visible on the assessments page when no access rule applies', async () => {
-        headers.cookie = 'pl_requested_date=1850-06-01T00:00:01';
+        headers.cookie = 'pl_requested_date=1850-06-01T00:00:01Z';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
@@ -63,14 +63,14 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('try to access the assessment when no access rule applies', async () => {
-        headers.cookie = 'pl_requested_date=1850-06-01T00:00:01';
+        headers.cookie = 'pl_requested_date=1850-06-01T00:00:01Z';
         
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.equal(response.status, 403);
     });
 
     step('ensure that the assessment is visible on the assessments page if submittable is false', async () => {
-        headers.cookie = 'pl_requested_date=2000-06-01T00:00:01';
+        headers.cookie = 'pl_requested_date=2000-06-01T00:00:01Z';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
@@ -79,7 +79,7 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('try to access the assessment when it is not submittable', async () => {
-        headers.cookie = 'pl_requested_date=2000-06-01T00:00:01';
+        headers.cookie = 'pl_requested_date=2000-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.equal(response.status, 403);
@@ -95,7 +95,7 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('visit start exam page when the assessment is submittable', async () => {
-        headers.cookie = 'pl_requested_date=2010-01-01T00:45:01';
+        headers.cookie = 'pl_requested_date=2010-01-01T23:50:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.equal(response.text(), 'filler text');
@@ -127,7 +127,7 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('access assessment when it is no longer submittable', async () => {
-        headers.cookie = 'pl_requested_date=2010-01-01T23:50:01';
+        headers.cookie = 'pl_requested_date=2010-01-02T00:00:01';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.isTrue(response.ok);
@@ -138,7 +138,7 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('access question when assessment is no longer submittable', async () => {
-        headers.cookie = 'pl_requested_date=2010-01-02T00:00:01';
+        headers.cookie = 'pl_requested_date=2010-01-02T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.questionUrl, { headers });
         assert.isTrue(response.ok);
@@ -175,7 +175,7 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('access the assessment when submittable and showClosedAssessment are false', async () => {
-        headers.cookie = 'pl_requested_date=2020-06-01T00:00:01';
+        headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
         assert.equal(response.status, 403);
@@ -185,7 +185,7 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('access the assessment when submittable, showClosedAssessment, and showClosedAssessmentScore are false', async () => {
-        headers.cookie = 'pl_requested_date=2030-06-01T00:00:01';
+        headers.cookie = 'pl_requested_date=2030-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
         assert.equal(response.status, 403);

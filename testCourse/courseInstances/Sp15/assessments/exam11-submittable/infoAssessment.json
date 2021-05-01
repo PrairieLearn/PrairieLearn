@@ -8,29 +8,29 @@
         {
             "mode": "Public",
             "timeLimitMin": 50,
-            "startDate": "2010-01-01T00:00:01",
-            "endDate": "2010-01-01T23:59:59",
+            "startDate": "2010-01-01T00:00:01Z",
+            "endDate": "2010-01-01T23:59:59Z",
             "credit": 100
         },
         {
             "mode": "Public",
-            "startDate": "2020-01-01T00:00:01",
-            "endDate": "2021-01-01T00:00:01",
+            "startDate": "2020-01-01T00:00:01Z",
+            "endDate": "2021-01-01T00:00:01Z",
             "submittable": false,
             "showClosedAssessment": false
         },
         {
             "mode": "Public",
-            "startDate": "2030-01-01T00:00:01",
-            "endDate": "2031-01-01T00:00:01",
+            "startDate": "2030-01-01T00:00:01Z",
+            "endDate": "2031-01-01T00:00:01Z",
             "submittable": false,
             "showClosedAssessment": false,
             "showClosedAssessmentScore": false
         },
         {
             "mode": "Public",
-            "startDate": "1900-01-01T00:00:01",
-            "endDate": "2100-01-01T00:00:01",
+            "startDate": "1900-01-01T00:00:01Z",
+            "endDate": "2100-01-01T00:00:01Z",
             "submittable": false
         }
     ],
