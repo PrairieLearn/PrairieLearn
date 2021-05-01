@@ -104,7 +104,7 @@
         "serve-favicon": "^2.5.0",
         "showdown": "^1.9.1",
         "socket.io": "^3.1.2",
-        "socket.io-client": "^3.1.2",
+        "socket.io-client": "^4.0.1",
         "socket.io-redis": "^6.0.1",
         "streamifier": "^0.1.1",
         "supports-color": "^8.1.1",
