@@ -207,11 +207,11 @@ describe('Exam and homework assessment with submittable rule', function() {
 
         // save the hwQuestionUrl for later
         const links = response.$('a:contains("HW")');
-        console.log(links);
         const regex = /HW\d+\.1\./;
-        const hwQuestionUrl = links.find(function (link) {
-            console.log(link);
-            return link.text().match(regex) !== null;
+        const hwQuestionUrl = links.find(function(link) {
+            const linkText = link.text();
+            console.log(linkText);
+            return linkText.match(regex) !== null;
         }).attr('href');
         context.hwQuestionUrl = `${context.siteUrl}${hwQuestionUrl}`;
     });
