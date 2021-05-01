@@ -99,7 +99,6 @@ BEGIN
             AND aar.start_date > check_assessment_access.date
             AND caar.authorized
         ORDER BY
-            aar.submittable,
             aar.start_date,
             aar.credit DESC NULLS LAST,
             aar.number
