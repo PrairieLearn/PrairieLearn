@@ -98,6 +98,7 @@ describe('Exam assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2010-01-01T00:45:01';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
+        assert.equal(response.text(), 'filler text');
         assert.isTrue(response.ok);
 
         assert.equal(response.$('#start-assessment').text(), 'Start assessment');
@@ -129,12 +130,11 @@ describe('Exam assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2010-01-01T23:50:01';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
-        assert.equal(response.text(), 'filler text');
-        // assert.isTrue(response.ok);
+        assert.isTrue(response.ok);
 
-        // const msg = response.$('p[class="small mb-0"]');
-        // assert.lengthOf(msg, 1);
-        // assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed./);
+        const msg = response.$('p[class="small mb-0"]');
+        assert.lengthOf(msg, 1);
+        assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed./);
     });
 
     step('access question when assessment is no longer submittable', async () => {
