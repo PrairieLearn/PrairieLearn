@@ -135,7 +135,6 @@ describe('Exam and homework assessment with submittable rule', function() {
             __csrf_token: context.__csrf_token,
         };
         const response = await helperClient.fetchCheerio(context.examInstanceUrl, { method: 'POST', form , headers});
-        console.log(response.text());
 
         // At this time, showClosedAssessment is true, so the status of the HTTP response should be 200
         assert.isTrue(response.ok);
@@ -159,7 +158,6 @@ describe('Exam and homework assessment with submittable rule', function() {
         const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
         assert.isTrue(response.ok);
 
-        console.log(response.text());
         const msg = response.$('p.small.mb-0');
         assert.lengthOf(msg, 1);
         assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed\./);
@@ -169,7 +167,6 @@ describe('Exam and homework assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
-        console.log(response.text());
         assert.equal(response.status, 403);
 
         assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
@@ -180,7 +177,6 @@ describe('Exam and homework assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2030-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
-        console.log(response.text());
         assert.equal(response.status, 403);
 
         assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
@@ -210,7 +206,9 @@ describe('Exam and homework assessment with submittable rule', function() {
         context.hwInstanceUrl = hwInstanceUrl;
 
         // save the hwQuestionUrl for later
-        const hwQuestionUrl = response.$('a:contains("Question 1")').attr('href');
+        const links = response.$('a:contains("HW")');
+        const regex = /HW\d+\.1\./;
+        const hwQuestionUrl = links.find(link => link.text().match(regex) !== null).attr('href');
         context.hwQuestionUrl = `${context.siteUrl}${hwQuestionUrl}`;
     });
 
@@ -220,7 +218,6 @@ describe('Exam and homework assessment with submittable rule', function() {
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
         assert.isTrue(response.ok);
 
-        console.log(response.text());
         const msg = response.$('p.small.mb-0');
         assert.lengthOf(msg, 1);
         assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed\./);
@@ -230,7 +227,6 @@ describe('Exam and homework assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
-        console.log(response.text());
         assert.isTrue(response.ok);
 
         const msg = response.$('div#question-panel-footer');
