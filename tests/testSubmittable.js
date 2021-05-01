@@ -128,11 +128,11 @@ describe('Exam assessment with submittable rule', function() {
     step('access assessment when it is no longer submittable', async () => {
         headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
 
-        const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
         assert.isTrue(response.ok);
 
+        console.log(response.text());
         const msg = response.$('p.small.mb-0');
-        console.log(msg.text());
         assert.lengthOf(msg, 1);
         assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed./);
     });
@@ -141,6 +141,7 @@ describe('Exam assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2010-01-02T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.questionUrl, { headers });
+        console.log(response.text());
         assert.isTrue(response.ok);
 
         const msg = response.$('div#question-panel-footer');
@@ -154,6 +155,7 @@ describe('Exam assessment with submittable rule', function() {
             __csrf_token: context.__csrf_token,
         };
         const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers});
+        console.log(response.text());
         assert.equal(response.status, 403);
 
         // We should have been redirected back to the same assessment instance
@@ -178,6 +180,7 @@ describe('Exam assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
+        console.log(response.text());
         assert.equal(response.status, 403);
 
         assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
@@ -188,6 +191,7 @@ describe('Exam assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2030-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
+        console.log(response.text());
         assert.equal(response.status, 403);
 
         assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
