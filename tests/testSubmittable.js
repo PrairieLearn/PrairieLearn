@@ -131,7 +131,8 @@ describe('Exam assessment with submittable rule', function() {
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.isTrue(response.ok);
 
-        const msg = response.$('p[class="small mb-0"]');
+        const msg = response.$('p.small.mb-0');
+        console.log(msg.text());
         assert.lengthOf(msg, 1);
         assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed./);
     });
