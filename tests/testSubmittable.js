@@ -132,18 +132,15 @@ describe('Exam assessment with submittable rule', function() {
         };
         const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers});
         console.log(response.text());
-        assert.equal(response.status, 403);
+
+        // at this time, showClosedAssessment is true, so the status of the HTTP response should be 200
+        assert.isTrue(response.ok);
 
         // We should have been redirected back to the same assessment instance
         assert.equal(response.url, context.assessmentInstanceUrl + '?timeLimitExpired=true');
 
-        // we should not have any questions
-        assert.lengthOf(response.$('a:contains("Question 1")'), 0);
-
-        // we should have the "assessment closed" message
-        const msg = response.$('div.test-suite-assessment-closed-message');
-        assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment .* is no longer available/);
+        // Since showClosedAssessment is true, Question 1 is visible.
+        assert.lengthOf(response.$('a:contains("Question 1")'), 1);
     });
 
     step('check that the assessment instance is closed', async () => {
