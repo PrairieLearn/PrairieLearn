@@ -25,13 +25,15 @@ CREATE OR REPLACE FUNCTION
     ) AS $$
 DECLARE
     active_access_rule_id bigint;
+    next_submittable_start_date TIMESTAMP WITH TIME ZONE;
+    next_submittable_credit integer;
 BEGIN
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
         caar.authorized,
         aar.credit,
         CASE
-            WHEN aar.credit > 0 THEN
+            WHEN aar.credit > 0 AND aar.submittable THEN
                 aar.credit::text || '%'
                 || (CASE
                         WHEN aar.end_date IS NOT NULL
@@ -78,6 +80,32 @@ BEGIN
         aar.number
     LIMIT 1;
     
+    -- Select the *next* access rule with submittable = true that gives the user access
+    IF check_assessment_access.date IS NOT NULL THEN
+        SELECT
+            aar.start_date,
+            aar.credit
+        INTO
+            next_submittable_start_date,
+            next_submittable_credit
+        FROM
+            assessment_access_rules AS aar
+            JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
+            check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
+        WHERE
+            aar.assessment_id = check_assessment_access.assessment_id
+            AND aar.start_date IS NOT NULL
+            AND aar.submittable
+            AND aar.start_date > check_assessment_access.date
+            AND caar.authorized
+        ORDER BY
+            aar.submittable,
+            aar.start_date,
+            aar.credit DESC NULLS LAST,
+            aar.number
+        LIMIT 1;
+    END IF;
+
     -- Fill in data if there were no access rules found
     IF active_access_rule_id IS NULL THEN
         authorized = FALSE;
@@ -90,6 +118,15 @@ BEGIN
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         submittable = TRUE;
+    END IF;
+
+    -- Update credit_date_string if the user cannot currently submit the assessment but can do so in the future
+    IF NOT submittable AND next_submittable_start_date IS NOT NULL THEN
+        IF next_submittable_credit IS NOT NULL AND next_submittable_credit > 0 THEN
+            credit_date_string = next_submittable_credit::text || '% starting from ' || format_date_short(next_submittable_start_date, display_timezone);
+        ELSE
+            credit_date_string = 'None starting from ' || format_date_short(next_submittable_start_date, display_timezone);
+        END IF;
     END IF;
 
     -- Override if we are an Instructor
