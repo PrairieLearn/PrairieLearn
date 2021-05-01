@@ -227,8 +227,8 @@ describe('Exam and homework assessment with submittable rule', function() {
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
         assert.isTrue(response.ok);
 
-        const msg = response.$('div#question-panel-footer');
-        assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /This question is complete and cannot be answered again\./);
+        // There should be no save or grade buttons
+        assert.lengthOf(response.$('button.question-save'), 0);
+        assert.lengthOf(response.$('button.question-grade'), 0);
     });
 });
