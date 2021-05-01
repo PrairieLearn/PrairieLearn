@@ -7,7 +7,7 @@ sympy==1.7.1
 Pillow==8.1.1
 pygraphviz==1.7
 defusedxml==0.6.0
-openpyxl==3.0.6
+openpyxl==3.0.7
 scikit-learn==0.24.1
 scikit-image==0.18.1
 requests==2.25.1
