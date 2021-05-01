@@ -98,7 +98,6 @@ describe('Exam assessment with submittable rule', function() {
         headers.cookie = 'pl_requested_date=2010-01-01T23:50:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
-        assert.equal(response.text(), 'filler text');
         assert.isTrue(response.ok);
 
         assert.equal(response.$('#start-assessment').text(), 'Start assessment');
@@ -127,7 +126,7 @@ describe('Exam assessment with submittable rule', function() {
     });
 
     step('access assessment when it is no longer submittable', async () => {
-        headers.cookie = 'pl_requested_date=2010-01-02T00:00:01';
+        headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
         assert.isTrue(response.ok);
