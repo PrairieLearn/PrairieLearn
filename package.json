@@ -107,7 +107,7 @@
         "socket.io-client": "^3.1.2",
         "socket.io-redis": "^6.0.1",
         "streamifier": "^0.1.1",
-        "supports-color": "^8.1.1",
+        "supports-color": "^9.0.0",
         "tablesorter": "^2.31.3",
         "tar": "^6.1.0",
         "terminal-link": "^2.1.1",
