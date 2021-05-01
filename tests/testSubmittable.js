@@ -125,30 +125,6 @@ describe('Exam assessment with submittable rule', function() {
         helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name="time-limit-finish-form"]');
     });
 
-    step('access assessment when it is no longer submittable', async () => {
-        headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
-
-        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
-        assert.isTrue(response.ok);
-
-        console.log(response.text());
-        const msg = response.$('p.small.mb-0');
-        assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed./);
-    });
-
-    step('access question when assessment is no longer submittable', async () => {
-        headers.cookie = 'pl_requested_date=2010-01-02T00:00:01Z';
-
-        const response = await helperClient.fetchCheerio(context.questionUrl, { headers });
-        console.log(response.text());
-        assert.isTrue(response.ok);
-
-        const msg = response.$('div#question-panel-footer');
-        assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /This question is complete and cannot be answered again./);
-    });
-
     step('simulate a time limit expiration', async () => {
         const form = {
             __action: 'timeLimitFinish',
@@ -174,6 +150,30 @@ describe('Exam assessment with submittable rule', function() {
         const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
         assert.equal(results.rowCount, 1);
         assert.equal(results.rows[0].open, false);
+    });
+
+    step('access the assessment when it is no longer submittable', async () => {
+        headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
+
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { headers });
+        assert.isTrue(response.ok);
+
+        console.log(response.text());
+        const msg = response.$('p.small.mb-0');
+        assert.lengthOf(msg, 1);
+        assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed./);
+    });
+
+    step('access a question when assessment is no longer submittable', async () => {
+        headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
+
+        const response = await helperClient.fetchCheerio(context.questionUrl, { headers });
+        console.log(response.text());
+        assert.isTrue(response.ok);
+
+        const msg = response.$('div#question-panel-footer');
+        assert.lengthOf(msg, 1);
+        assert.match(msg.text(), /This question is complete and cannot be answered again./);
     });
 
     step('access the assessment when submittable and showClosedAssessment are false', async () => {
