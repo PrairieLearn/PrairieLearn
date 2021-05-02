@@ -6,12 +6,25 @@
     "number": "7",
     "allowAccess": [
         {
-            "startDate": "2020-01-01T00:00:01",
-            "endDate": "2020-12-31T23:59:59",
+            "startDate": "2020-01-01T00:00:01Z",
+            "endDate": "2021-12-31T23:59:59Z",
             "credit": 100
         },
         {
+            "startDate": "2030-01-01T00:00:01Z",
+            "endDate": "2030-12-31T23:59:59Z",
+            "credit": 100
+        },
+        {
+            "startDate": "1800-01-01T00:00:01Z",
+            "endDate": "2024-12-31T23:59:59Z",
             "submittable": false
+        },
+        {
+            "startDate": "2025-01-01T00:00:01Z",
+            "endDate": "2029-12-31T23:59:59Z",
+            "submittable": false,
+            "showClosedAssessment": false
         }
     ],
     "zones": [

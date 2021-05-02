@@ -90,7 +90,7 @@ describe('Exam and homework assessment with submittable rule', function() {
 
         const msg = response.$('div.test-suite-assessment-closed-message');
         assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment is not available at this time\./);
+        assert.match(msg.text(), /Assessment will become available at 2010-01-01 00:00:01/);
     });
 
     step('check that an assessment instance was not created', async () => {
@@ -191,7 +191,7 @@ describe('Exam and homework assessment with submittable rule', function() {
 
         const msg = response.$('div.test-suite-assessment-closed-message');
         assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment is not available at this time\./);
+        assert.match(msg.text(), /Assessment will become available at 2020-01-01 00:00:01/);
     });
 
     step('access the homework when it is submittable', async () => {
@@ -211,7 +211,7 @@ describe('Exam and homework assessment with submittable rule', function() {
     });
 
     step('access the homework when it is no longer submittable', async () => {
-        headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
+        headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
         assert.isTrue(response.ok);
@@ -230,5 +230,18 @@ describe('Exam and homework assessment with submittable rule', function() {
         // There should be no save or grade buttons
         assert.lengthOf(response.$('button.question-save'), 0);
         assert.lengthOf(response.$('button.question-grade'), 0);
+    });
+
+    step('access the homework when submittable and showClosedAssessment is false, but the homework will be submittable later', async () => {
+        headers.cookie = 'pl_requested_date=2026-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+        assert.equal(response.status, 403);
+
+        const msg = response.$('div.test-suite-assessment-closed-message');
+        assert.lengthOf(msg, 1);
+        assert.match(msg.text(), /Assessment will become available at 2030-01-01 00:00:01/);
+
+        assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     });
 });

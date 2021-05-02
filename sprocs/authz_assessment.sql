@@ -19,6 +19,7 @@ CREATE OR REPLACE FUNCTION
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT submittable boolean,     -- If the assessment is visible but not submittable
+        OUT next_submittable_time text, -- The next time the assessment becomes submittable. This is non-null only if the assessment is not currently submittable but will be later.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -82,5 +83,6 @@ BEGIN
     show_closed_assessment := user_result.show_closed_assessment;
     show_closed_assessment_score := user_result.show_closed_assessment_score;
     submittable := user_result.submittable;
+    next_submittable_time := user_result.next_submittable_time;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

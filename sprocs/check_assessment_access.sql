@@ -21,6 +21,7 @@ CREATE OR REPLACE FUNCTION
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT submittable boolean,     -- If the assessment is visible but not submittable
+        OUT next_submittable_time text, -- The next time the assessment becomes submittable. This is non-null only if the assessment is not currently submittable but will be later.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
@@ -126,6 +127,10 @@ BEGIN
         ELSE
             credit_date_string = 'None starting from ' || format_date_short(next_submittable_start_date, display_timezone);
         END IF;
+
+        next_submittable_time = format_date_full_compact(next_submittable_start_date, display_timezone);
+    ELSE
+        next_submittable_time = NULL;
     END IF;
 
     -- Override if we are an Instructor
