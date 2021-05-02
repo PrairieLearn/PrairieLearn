@@ -228,7 +228,7 @@
                     "default": true
                 },
                 "submittable": {
-                    "description": "If set to true, the student can see the assessment on the Assessments page but cannot submit answers to questions.",
+                    "description": "Whether the student can create a new assessment instance and submit answers to questions",
                     "type": "boolean",
                     "default": true
                 }

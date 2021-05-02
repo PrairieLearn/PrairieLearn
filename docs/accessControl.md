@@ -44,6 +44,7 @@ Access restriction                                          | courseInstance | a
 [`examUuid`](#exam-uuids)                                   |   | ✓ | Exam scheduler UUID that students must register for. | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
 [`showClosedAssessment`](#showinghiding-closed-assessments) |   | ✓ | Whether to allow viewing of assessment contents when closed (default `true`). | `"showClosedAssessment": false`
 [`showClosedAssessmentScore`](#showinghiding-all-score-information) |   | ✓ | Whether to allow viewing of the score of a closed assessment  (default `true`). | `"showClosedAssessmentScore": false`
+[`submittable`](#submittable-assessments) |   | ✓ | Whether the student can create a new assessment instance and submit answers to questions (default `true`). | `"submittable": false`
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -197,6 +198,30 @@ To block students from viewing closed assessment scores, set `"showClosedAssessm
 ```
 
 The `showClosedAssessment` access rule restriction is only useful in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`.
+
+## Submittable assessments
+
+The `submittable` access rule restriction is useful for allowing students to see what assessments they have coming up. If `submittable` is set to `false`, students can see the assessment on the Assessments page, but they cannot create a new assessment instance or submit answers to questions. If an assessment is currently not submittable but will be in the future, students can see when the assessment will become submittable by looking at the `Available credit` column on the Assessments page. Assessments are submittable by default.
+
+An example of the `submittable` access rule restriction is shown below:
+
+```json
+"allowAccess": [
+    {
+        "startDate": "2015-02-16T00:00:01",
+        "endDate": "2015-02-16T23:59:59",
+        "timeLimitMin": 50,
+        "credit": 100
+    },
+    {
+        "startDate": "2015-01-01T00:00:01",
+        "endDate": "2015-02-15T23:59:59",
+        "submittable": false
+    }
+]
+```
+
+From January 1st to February 15th, students can see the assessment on the Assessments page but cannot begin the assessment. If students try to click into the assessment during this time, they will see a message saying that the assessment will be available on February 16th. The first access rule applies on February 16th, and since `submittable` is `true` (by default), students can start the assessment and submit answers to questions on that day.
 
 
 
