@@ -232,7 +232,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.lengthOf(response.$('button.question-grade'), 0);
     });
 
-    step('access the homework when submittable and showClosedAssessment is false, but the homework will be submittable later', async () => {
+    step('access the homework when submittable and showClosedAssessment are false, but the homework will be submittable later', async () => {
         headers.cookie = 'pl_requested_date=2026-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
