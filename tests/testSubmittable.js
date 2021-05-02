@@ -246,7 +246,7 @@ describe('Exam and homework assessment with submittable rule', function() {
     });
 
     step('access the homework when submittable and showClosedAssessment are false, and the homework will never be submittable again', async () => {
-        headers.cookie = 'pl_requested_date=2026-06-01T00:00:01Z';
+        headers.cookie = 'pl_requested_date=2036-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
         assert.equal(response.status, 403);
