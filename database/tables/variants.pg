@@ -1,6 +1,6 @@
 columns
     authn_user_id: bigint
-    broken_at: timestamp with time zone default CURRENT_TIMESTAMP
+    broken_at: timestamp with time zone
     broken_by: bigint
     course_instance_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
