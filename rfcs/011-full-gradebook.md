@@ -45,13 +45,16 @@ A course-level `grade()` function would receive assessment score information and
 
 - [ ] 1. Find how assessment flags are processed
 - [ ] 2. Add a dummy `scoreOnly` flag for assessments
-- [ ] 3. Modify the behaviour of assessments to honour the `scoreOnly` flag
+- [ ] 3. Add an interface for instructors to create assessment instances on behalf of students
+- [ ] 4. Modify sprocs to allow the correct permissions for score-only assignments
+- [ ] 5. Add testing and documentation for score upload
 
 ## Phase 2: Add Assessment-level Grading Functions
 
 - [ ] 1. Modify assessment grading routine to retrieve additional data
 - [ ] 2. Modify assessment grading routine to call grade function
 - [ ] 3. Add interface to write `grade()` functions for assessments
+- [ ] 4. Add testing and documentation for assessment-level grading
 
 ## Phase 3: Add Library of Grading Functions
 
@@ -63,3 +66,4 @@ A course-level `grade()` function would receive assessment score information and
 ## Phase 4: Add Course-level Grading Functions
 
 - [ ] 1. Add interface to the course's instructor view to add `grade()` function
+- [ ] 2. Add testing and documentation for course-level grading
