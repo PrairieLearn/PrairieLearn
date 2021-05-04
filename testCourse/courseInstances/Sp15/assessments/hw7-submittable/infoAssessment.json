@@ -31,9 +31,9 @@
         {
             "title": "Zone 1",
             "questions": [
-                {"id": "addVectors",                 "points": 1, "maxPoints": 5},
-                {"id": "fossilFuelsRadio",           "points": 2, "maxPoints": 10},
-                {"id": "positionTimeGraph",          "points": 2, "maxPoints": 10}
+                {"id": "partialCredit1",    "points": 10},
+                {"id": "fossilFuelsRadio",  "points": 2, "maxPoints": 10},
+                {"id": "positionTimeGraph", "points": 2, "maxPoints": 10}
             ]
         }
     ]

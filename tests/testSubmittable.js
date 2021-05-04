@@ -210,6 +210,16 @@ describe('Exam and homework assessment with submittable rule', function() {
         context.hwQuestionUrl = `${context.siteUrl}${hwQuestionUrl}`;
     });
 
+    step('access a question when homework is submittable', async () => {
+        headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
+        assert.isTrue(response.ok);
+
+        helperClient.extractAndSaveCSRFToken(context, response.$, '.question-form');
+        helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
+    });
+
     step('access the homework when it is no longer submittable', async () => {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
@@ -256,5 +266,139 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.match(msg.text(), /Assessment is no longer available\./);
 
         assert.lengthOf(response.$('div.progress'), 1); // score should be shown
+    });
+
+    step('submit an answer to a question when submittable is false', async () => {
+        headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
+
+        const form = {
+            __action: 'grade',
+            __csrf_token: context.__csrf_token,
+            __variant_id: context.__variant_id,
+            s: '75', // To get 75% of the question
+        };
+
+        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { method: 'POST', form, headers });
+        assert.equal(response.status, 400);
+    });
+
+    step('check that no credit is received for an answer submitted when submittable is false', async () => {
+        const params = {
+            assessment_id: context.hwId,
+        };
+
+        const result = await sqldb.callOneRowAsync(sql.read_assessment_instance_points, params);
+        assert.equal(result.rows[0].points, 0);
+    });
+
+    step('get CRSF token and variant ID for attaching file on question page', async () => {
+        headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
+        assert.isTrue(response.ok);
+
+        helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
+        helperClient.extractAndSaveVariantId(context, response.$, '.attach-file-form');
+    });
+
+    step('try to attach a file to a question when submittable is false', async () => {
+        headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
+
+        const form = {
+            __action: 'attach_file',
+            __csrf_token: context.__csrf_token,
+            __variant_id: context.__variant_id,
+            filename: 'testfile.txt',
+            contents: 'This is the test text',
+        }
+
+        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { method: 'POST', form, headers });
+        assert.equal(response.status, 400);
+    });
+
+    step('get CRSF token and variant ID for attaching file on assessment instance page', async () => {
+        headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+        assert.isTrue(response.ok);
+
+        helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
+        helperClient.extractAndSaveVariantId(context, response.$, '.attach-file-form');
+    });
+
+    step('try to attach a file to the assessment when submittable is false', async () => {
+        headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
+
+        const form = {
+            __action: 'attach_file',
+            __csrf_token: context.__csrf_token,
+            __variant_id: context.__variant_id,
+            filename: 'testfile.txt',
+            contents: 'This is the test text',
+        }
+
+        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { method: 'POST', form, headers });
+        assert.equal(response.status, 400);
+    });
+
+    step('get CRSF token and variant ID for attaching text on question page', async () => {
+        headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
+        assert.isTrue(response.ok);
+
+        helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
+        helperClient.extractAndSaveVariantId(context, response.$, '.attach-text-form');
+    });
+
+    step('try to attach text to a question when submittable is false', async () => {
+        headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
+
+        const form = {
+            __action: 'attach_text',
+            __csrf_token: context.__csrf_token,
+            __variant_id: context.__variant_id,
+            filename: 'testfile.txt',
+            contents: 'This is the test text',
+        }
+
+        const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { method: 'POST', form, headers });
+        assert.equal(response.status, 400);
+    });
+
+    step('get CRSF token and variant ID for attaching text on assessment instance page', async () => {
+        headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+        assert.isTrue(response.ok);
+
+        helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
+        helperClient.extractAndSaveVariantId(context, response.$, '.attach-text-form');
+    });
+
+    step('try to attach text to the assessment when submittable is false', async () => {
+        headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
+
+        const form = {
+            __action: 'attach_text',
+            __csrf_token: context.__csrf_token,
+            __variant_id: context.__variant_id,
+            filename: 'testfile.txt',
+            contents: 'This is the test text',
+        }
+
+        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { method: 'POST', form, headers });
+        assert.equal(response.status, 400);
+    });
+
+    step('check that no files or text were attached', async () => {
+        const params = {
+            assessment_id: context.hwId,
+        };
+
+        const result = await sqldb.callZeroOrOneRowAsync(sql.get_attached_files, params);
+
+        // Inserting text is the same as inserting a file.
+        assert.equal(result.rowCount, 0);
     });
 });

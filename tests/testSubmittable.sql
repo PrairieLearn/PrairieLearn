@@ -29,6 +29,19 @@ WHERE
     AND aset.abbreviation = 'HW'
     AND a.number = '7';
 
+-- BLOCK read_assessment_instance_points
+SELECT
+    ai.points
+FROM
+    assessment_instances AS ai
+WHERE
+    ai.assessment_id = $assessment_id;
+
+-- BLOCK get_attached_files
+SELECT *
+FROM files
+WHERE files.assessment_id = $assessment_id;
+
 -- BLOCK select_assessment_instances
 SELECT *
 FROM assessment_instances;
