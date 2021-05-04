@@ -8,7 +8,7 @@
                     </a>
                 </li>
             </ul>
-            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
+            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}" indent={{max_indent}}>
                 {{#options}}
                     <li class="list-group-item shadow" uuid="{{uuid}}" string="{{inner_html}}">{{inner_html}}</li>
                 {{/options}}
@@ -22,7 +22,7 @@
                     </a>
                     </li>
                 </ul>
-                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone {{check_indentation}}">
+                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone {{check_indentation}}" indent={{max_indent}}>
                     {{#submission_dict}}
                         <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="list-group-item shadow">{{inner_html}}</li>
                     {{/submission_dict}}

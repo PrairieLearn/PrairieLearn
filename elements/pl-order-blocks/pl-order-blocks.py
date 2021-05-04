@@ -10,6 +10,7 @@ import math
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
 INDENTION_DEFAULT = False
+MAX_INDENTION_DEFAULT = 4
 SOURCE_BLOCKS_ORDER_DEFAULT = 'random'
 GRADING_METHOD_DEFAULT = 'ordered'
 SOURCE_HEADER_DEFAULT = 'Drag from here:'
@@ -37,7 +38,12 @@ def prepare(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     required_attribs = ['answers-name']
-    optional_attribs = ['source-blocks-order', 'grading-method', 'indentation', 'source-header', 'solution-header', 'file-name', 'solution-placement', 'max-incorrect', 'min-incorrect', 'weight', 'inline']
+    optional_attribs = ['source-blocks-order', 'grading-method', 
+                        'indentation', 'source-header', 
+                        'solution-header', 'file-name', 
+                        'solution-placement', 'max-incorrect', 
+                        'min-incorrect', 'weight', 
+                        'inline', 'max-indent']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
@@ -146,6 +152,7 @@ def render(element_html, data):
 
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
+        max_indent = pl.get_integer_attrib(element, 'max-indent', MAX_INDENTION_DEFAULT)
         inline_layout = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
         help_text = 'Drag answer tiles into the answer area to the ' + dropzone_layout + '. '
@@ -170,7 +177,8 @@ def render(element_html, data):
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'enableIndentation' if check_indentation is True else None,
             'help_text': help_text,
-            'inline': 'inline' if inline_layout is True else None
+            'inline': 'inline' if inline_layout is True else None,
+            'max_indent': max_indent
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:

@@ -4,7 +4,11 @@ const TABWIDTH = 50;      // defines how many px the answer block is indented by
                           // drags and indents a block
 const INDENT_OFFSET = 0;  // For aesthetic, all answer blocks are offseted to the right by
                           // 5px, so the answer tiles are not directly touching the dropzone margins
-const MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
+var MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
+
+function set_max_indent(event) {
+    MAX_INDENT = event.target.getAttribute('indent');
+}
 
 function check_block(event, ui) {
     var block_parent_name = $(ui.item.parent()[0]).attr('name');
@@ -27,7 +31,7 @@ function set_answer(event) {
             var uuid = dom_objs[i].getAttribute('uuid');
             var answer_indent = null;
             if (dom_objs[i].parentElement.classList.contains('enableIndentation')) {
-                console.log(dom_objs[i]);
+                // console.log(dom_objs[i]);
                 answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
                 answer_indent = Math.round((answer_indent - INDENT_OFFSET) / TABWIDTH); // get how many times the answer is indented
             }
@@ -103,6 +107,7 @@ $( document ).ready(function() {
             // when the sortable is created, we need to put the two functions here
             // to restore progress when the user refresh/submits an answer
             set_answer(event);
+            set_max_indent(event);
         },
         beforeStop: function(event, ui){
             if (!check_block(event, ui)) {
