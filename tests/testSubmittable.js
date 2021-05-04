@@ -11,7 +11,7 @@ const helperClient = require('./helperClient');
 const { step } = require('mocha-steps');
 
 describe('Exam and homework assessment with submittable rule', function() {
-    this.timeout(20000);
+    this.timeout(60000);
 
     const storedConfig = {};
     const context = {};
@@ -287,7 +287,7 @@ describe('Exam and homework assessment with submittable rule', function() {
             assessment_id: context.hwId,
         };
 
-        const result = await sqldb.callOneRowAsync(sql.read_assessment_instance_points, params);
+        const result = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
         assert.equal(result.rows[0].points, 0);
     });
 
@@ -396,7 +396,7 @@ describe('Exam and homework assessment with submittable rule', function() {
             assessment_id: context.hwId,
         };
 
-        const result = await sqldb.callZeroOrOneRowAsync(sql.get_attached_files, params);
+        const result = await sqldb.queryZeroOrOneRowAsync(sql.get_attached_files, params);
 
         // Note: inserting text is really inserting a file in disguise, so we just need to check
         // that the files table is empty.
