@@ -6,18 +6,8 @@
     "number": "7",
     "allowAccess": [
         {
-            "startDate": "2021-04-30T21:45:00",
-            "endDate": "2021-05-01T20:34:30",
+            "mode": "Public",
             "credit": 100
-        },
-        {
-            "startDate": "2021-05-01T20:36:01",
-            "credit": 100
-        },
-        {
-            "startDate": "2020-01-01T00:00:01",
-            "submittable": false,
-            "showClosedAssessment": false
         }
     ],
     "zones": [
