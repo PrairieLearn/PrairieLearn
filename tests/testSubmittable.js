@@ -316,14 +316,13 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(response.status, 500);
     });
 
-    step('get CRSF token and variant ID for attaching file on assessment instance page', async () => {
+    step('get CRSF token for attaching file on assessment instance page', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
         assert.isTrue(response.ok);
 
         helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
-        helperClient.extractAndSaveVariantId(context, response.$, '.attach-file-form');
     });
 
     step('try to attach a file to the assessment when submittable is false', async () => {
@@ -366,14 +365,13 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(response.status, 500);
     });
 
-    step('get CRSF token and variant ID for attaching text on assessment instance page', async () => {
+    step('get CRSF token for attaching text on assessment instance page', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
         assert.isTrue(response.ok);
 
         helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
-        helperClient.extractAndSaveVariantId(context, response.$, '.attach-text-form');
     });
 
     step('try to attach text to the assessment when submittable is false', async () => {
