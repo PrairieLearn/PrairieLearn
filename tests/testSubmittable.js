@@ -313,7 +313,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         };
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { method: 'POST', form, headers });
-        assert.equal(response.status, 400);
+        assert.equal(response.status, 500);
     });
 
     step('get CRSF token and variant ID for attaching file on assessment instance page', async () => {
@@ -338,7 +338,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         };
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { method: 'POST', form, headers });
-        assert.equal(response.status, 400);
+        assert.equal(response.status, 500);
     });
 
     step('get CRSF token and variant ID for attaching text on question page', async () => {
@@ -363,7 +363,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         };
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { method: 'POST', form, headers });
-        assert.equal(response.status, 400);
+        assert.equal(response.status, 500);
     });
 
     step('get CRSF token and variant ID for attaching text on assessment instance page', async () => {
@@ -388,7 +388,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         };
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { method: 'POST', form, headers });
-        assert.equal(response.status, 400);
+        assert.equal(response.status, 500);
     });
 
     step('check that no files or text were attached', async () => {
