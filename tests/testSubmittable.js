@@ -310,7 +310,7 @@ describe('Exam and homework assessment with submittable rule', function() {
             __variant_id: context.__variant_id,
             filename: 'testfile.txt',
             contents: 'This is the test text',
-        }
+        };
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { method: 'POST', form, headers });
         assert.equal(response.status, 400);
@@ -335,7 +335,7 @@ describe('Exam and homework assessment with submittable rule', function() {
             __variant_id: context.__variant_id,
             filename: 'testfile.txt',
             contents: 'This is the test text',
-        }
+        };
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { method: 'POST', form, headers });
         assert.equal(response.status, 400);
@@ -360,7 +360,7 @@ describe('Exam and homework assessment with submittable rule', function() {
             __variant_id: context.__variant_id,
             filename: 'testfile.txt',
             contents: 'This is the test text',
-        }
+        };
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { method: 'POST', form, headers });
         assert.equal(response.status, 400);
@@ -385,7 +385,7 @@ describe('Exam and homework assessment with submittable rule', function() {
             __variant_id: context.__variant_id,
             filename: 'testfile.txt',
             contents: 'This is the test text',
-        }
+        };
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { method: 'POST', form, headers });
         assert.equal(response.status, 400);
@@ -398,7 +398,8 @@ describe('Exam and homework assessment with submittable rule', function() {
 
         const result = await sqldb.callZeroOrOneRowAsync(sql.get_attached_files, params);
 
-        // Inserting text is the same as inserting a file.
+        // Note: inserting text is really inserting a file in disguise, so we just need to check
+        // that the files table is empty.
         assert.equal(result.rowCount, 0);
     });
 });
