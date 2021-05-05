@@ -60,7 +60,7 @@ BEGIN
         RETURN NEXT grading_jobs_insert_external_manual(submission_id, authn_user_id, 'External');
     END IF;
 
-    -- delegate should do nothing here, as manual grading actor submits manual grading job in instance_questions_manually_grade_submission.sql
+    -- delegate should do nothing here; wait for manual grading actor to create manual grading job in instance_questions_manually_grade_submission.sql
     IF grading_method_manual = True THEN
         RETURN;
     END IF;
