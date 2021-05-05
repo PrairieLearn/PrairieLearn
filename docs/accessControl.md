@@ -55,7 +55,7 @@ each accessRule is True if (restriction1 AND restriction2 AND restriction3)
 allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
 ```
 
-If multiple access rules are satisfied then the highest `credit` value is taken from them. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
+If multiple access rules are satisfied, and at least one access rule has `submittable` set to `true`, then the access rule with the highest `credit` value and `submittable` set to `true` is chosen. If all access rules that are satisfied have `submittable` set to `false`, then one of these rules is chosen. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
 
 ## Roles
 
@@ -221,7 +221,7 @@ An example of the `submittable` access rule restriction is shown below:
 ]
 ```
 
-From January 1st to February 15th, students can see the assessment on the Assessments page but cannot begin the assessment. If students try to click into the assessment during this time, they will see a message saying that the assessment will be available on February 16th. The first access rule applies on February 16th, and since `submittable` is `true` (by default), students can start the assessment and submit answers to questions on that day.
+In the example above, from January 1st to February 15th, students can see the assessment on the Assessments page but cannot begin the assessment. If students try to click into the assessment during this time, they will see a message saying that the assessment will be available on February 16th. The first access rule applies on February 16th, and since `submittable` is `true` (by default), students can start the assessment and submit answers to questions on that day.
 
 
 

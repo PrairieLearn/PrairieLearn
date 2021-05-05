@@ -77,6 +77,7 @@ BEGIN
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized
     ORDER BY
+        aar.submittable DESC,
         aar.credit DESC NULLS LAST,
         aar.number
     LIMIT 1;
@@ -120,7 +121,8 @@ BEGIN
         submittable = TRUE;
     END IF;
 
-    -- Update credit_date_string if the user cannot currently submit the assessment but can do so in the future
+    -- Update credit_date_string if the user cannot currently submit the assessment but can do so in the future.
+    -- In addition, assigns next_submittable_time a text representation of the next time the assessment can be submitted.
     IF NOT submittable AND next_submittable_start_date IS NOT NULL THEN
         IF next_submittable_credit IS NOT NULL AND next_submittable_credit > 0 THEN
             credit_date_string = next_submittable_credit::text || '% starting from ' || format_date_short(next_submittable_start_date, display_timezone);
@@ -129,8 +131,6 @@ BEGIN
         END IF;
 
         next_submittable_time = format_date_full_compact(next_submittable_start_date, display_timezone);
-    ELSE
-        next_submittable_time = NULL;
     END IF;
 
     -- Override if we are an Instructor
