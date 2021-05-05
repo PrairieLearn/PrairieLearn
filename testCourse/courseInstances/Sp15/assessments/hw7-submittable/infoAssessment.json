@@ -13,7 +13,7 @@
         {
             "startDate": "2030-01-01T00:00:01Z",
             "endDate": "2030-12-31T23:59:59Z",
-            "credit": 100
+            "credit": 75
         },
         {
             "startDate": "2000-01-01T00:00:01Z",
@@ -24,7 +24,8 @@
             "startDate": "2025-01-01T00:00:01Z",
             "endDate": "2039-12-31T23:59:59Z",
             "submittable": false,
-            "showClosedAssessment": false
+            "showClosedAssessment": false,
+            "credit": 100
         }
     ],
     "zones": [

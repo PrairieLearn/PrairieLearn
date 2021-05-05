@@ -255,6 +255,13 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     });
 
+    step('access the homework when a submittable and a non-submittable access rule are both satisfied, and both have nonzero credit', async () => {
+        headers.cookie = 'pl_requested_date=2030-06-01T00:00:01Z';
+
+        const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+        assert.isTrue(response.ok);
+    });
+
     step('access the homework when submittable and showClosedAssessment are false, and the homework will never be submittable again', async () => {
         headers.cookie = 'pl_requested_date=2036-06-01T00:00:01Z';
 
