@@ -56,11 +56,13 @@ BEGIN
     END IF;
     
     -- delegate external grading job
-    IF grading_method_external = True OR grading_method_manual = True THEN
+    IF grading_method_external = True THEN
         RETURN NEXT grading_jobs_insert_external_manual(submission_id, authn_user_id, 'External');
     END IF;
 
-    -- delegate manual grading job now called independently with instance_questions_manually_grade_submission.sql
-
+    -- delegate should do nothing here, as manual grading actor submits manual grading job in instance_questions_manually_grade_submission.sql
+    IF grading_method_manual = True THEN
+        RETURN;
+    END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
