@@ -475,6 +475,21 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
         require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded', [
+        function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
+        require('./pages/instructorQuestionManualGradingNextUngraded/instructorQuestionManualGradingNextUngraded'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
+        require('./pages/instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        function(req, res, next) {res.locals.conflicting_grading_job_id = req.query.conflicting_grading_job; next();},
+        require('./middlewares/selectAndAuthzInstanceQuestion'),
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
         function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
         require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
@@ -719,20 +734,6 @@ module.exports.initExpress = function() {
         require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
         require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
     ]);
-    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded', [
-        function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
-        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
-    ]);
-    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/manual_grading', [
-        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
-        function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
-        require('./pages/instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading'),
-    ]);
-    app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
-        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
-        require('./middlewares/selectAndAuthzInstanceQuestion'),
-        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
-    ]);
     app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
         require('./middlewares/selectAndAuthzInstanceQuestion'),
         // don't use logPageView here, we load it inside the page so it can get the variant_id
@@ -937,6 +938,10 @@ module.exports.initExpress = function() {
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
+    app.use('/pl/course/:course_id/question/:question_id/file', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]);
     app.use('/pl/course/:course_id/question/:question_id/preview/file', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
@@ -948,6 +953,12 @@ module.exports.initExpress = function() {
     app.use('/pl/course/:course_id/question/:question_id/preview/text', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]);
+    // added for manual grading view:
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/file', [
+        require('./middlewares/selectAndAuthzInstanceQuestion'),
+        require('./middlewares/studentAssessmentAccess'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
 
     //////////////////////////////////////////////////////////////////////

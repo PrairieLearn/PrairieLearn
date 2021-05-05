@@ -20,20 +20,22 @@
         </div>
 
         <div class="table-responsive">
-          <table id="instanceQuestionGradingTable" class="table table-sm table-hover">
+          <table id="instance-question-grading-table" class="table table-sm table-hover">
             <thead>
               <tr>
-                <th></th>
-                <th>QID</th>
-                <th>Points</th>
-                <th>Number of Submissions</th>
-                <th></th>
+                <th class="question-title-header"></th>
+                <th class="qid-header">QID</th>
+                <th class="points-header">Points</th>
+                <th class="ungraded-header">Ungraded</th>
+                <th class="graded-header">Graded</th>
+                <th class="grading-contributors-header">Grading Contributors</th>
+                <th class="grade-next-header"></th>
               </tr>
             </thead>
             <tbody>
               <% questions.forEach(function(question, i) { %>
               <tr>
-                <td>
+                <td class="question-title-value">
                   <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/manual_grading">
                     <% if (question.alternative_group_size == 1) { %>
                     <%= question.alternative_group_number %>.
@@ -43,18 +45,24 @@
                     <%= question.title %>
                   </a>
                 </td>
-                <td><%= question.qid %></td>
-                <td>
+                <td class="qid-value"><%= question.qid %></td>
+                <td class="points-value">
                   <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
                   <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
                 </td>
-                <td class="text-center">
-                  <%= question.num_submissions %>
+                <td class="ungraded-value text-center">
+                  <%= question.num_ungraded %>
+                </td>
+                <td class="graded-value text-center">
+                  <%= question.num_graded %>
+                </td>
+                <td class="grading-contributors-value text-center">
+                  <%= question.manual_grading_users && question.manual_grading_users.join(', ') %>
                 </td>
                 <td>
-                  <% if (question.num_ungraded_submissions > 0) { %>
-                  <a class="btn btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/next_ungraded">
-                    Grade <%= question.num_ungraded_submissions %> submission<% if (question.num_ungraded_submissions > 1) { %>s<% } %>
+                  <% if (question.num_ungraded > 0) { %>
+                  <a class="grade-next-value btn btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/next_ungraded">
+                    Grade Next 
                   </a>
                   <% } %>
                 </td>

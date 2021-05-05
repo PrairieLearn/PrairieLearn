@@ -55,14 +55,12 @@ BEGIN
                             new_params, new_true_answer);
     END IF;
     
-    -- delegate external/manual grading job
+    -- delegate external grading job
     IF grading_method_external = True OR grading_method_manual = True THEN
         RETURN NEXT grading_jobs_insert_external_manual(submission_id, authn_user_id, 'External');
     END IF;
 
-    IF grading_method_manual = TRUE THEN
-        RETURN NEXT grading_jobs_insert_external_manual(submission_id, authn_user_id, 'Manual');
-    END IF;
+    -- delegate manual grading job now called independently with instance_questions_manually_grade_submission.sql
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;

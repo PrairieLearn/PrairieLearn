@@ -22,26 +22,57 @@
     </div>
     <div id="content" class="container">
       <div class="row">
-          <div class="col-lg-9 col-sm-12">
-              <%- include('../partials/question', {question_context: 'instructor'}); %>
-          </div>
 
-          <div class="col-lg-3 col-sm-12">
-              <%- include('../partials/instructorGradingPanel', {question_context: 'instructor'}); %>
-              <div class="card mb-4">
-                  <div class="card-header bg-secondary text-white">Student view placeholder</div>
-                  <div class="card-body">
-                      <div class="d-flex justify-content-center">
-                          In student views this area is used for assessment and score info.
-                      </div>
-                  </div>
+        <% if (typeof conflict_diff == 'undefined' && grading_user != null && grading_user.user_id != null && authn_user.user_id != grading_user.user_id) { %>
+        <div class="col-lg-12 col-sm-12">
+          <div class="card mb-4">
+            <div class="card-header bg-warning text-blue">
+              <%=  grading_user.name + ' (' + grading_user.uid + ')'%> is currently grading this question
+            </div>
+          </div>
+        </div>
+        <% } %>
+
+        <% if (typeof conflict_diff != 'undefined') { %>
+          <div class="col-lg-12 col-sm-12">
+            <div class="card mb-4">
+              <div class="card-header bg-warning text-blue">
+                Manual Grading Conflict: Another Grading Job Was Submitted While Grading
               </div>
-              <%- include('../partials/instructorInfoPanel', {question_context: 'instructor'}); %>
+            </div>
           </div>
-      </div>
+          <div class="col-lg-6 col-sm-12">
+            <%- include('../partials/instructorGradingPanel', {diff: 'Existing', submission: conflict_diff.existing, question_context: 'instructor'}); %>
+          </div>
+          <div class="col-lg-6 col-sm-12">
+            <%- include('../partials/instructorGradingPanel', {diff: 'Incoming', submission: conflict_diff.incoming, question_context: 'instructor'}); %>
+          </div>
+        <% } %>
 
+        <% if (typeof conflict_diff === 'undefined') { %>
+          <div class="col-lg-9 col-sm-12">
+        <% } else { %>
+          <div class="col-lg-12 col-sm-12">
+        <% } %>
+          <%- include('../partials/question', {question_context: 'instructor'}); %>
+          </div>
+
+          
+          <% if (typeof conflict_diff === 'undefined') { %>
+            <div class="col-lg-3 col-sm-12">
+                <%- include('../partials/instructorGradingPanel', {question_context: 'instructor'}); %>
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">Student view placeholder</div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-center">
+                            In student views this area is used for assessment and score info.
+                        </div>
+                    </div>
+                </div>
+                <%- include('../partials/instructorInfoPanel', {question_context: 'instructor'}); %>
+            </div>
+          <% } %>
+      </div>
     </div>
-    <!-- Needs to be located below element scripts -->
-    <script src="/localscripts/questionPageScripts.js"></script>
   </body>
 </html>

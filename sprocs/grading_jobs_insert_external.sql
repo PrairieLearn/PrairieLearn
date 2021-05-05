@@ -1,7 +1,7 @@
 DROP FUNCTION IF EXISTS grading_jobs_insert_external_manual(bigint, bigint);
 
 CREATE OR REPLACE FUNCTION
-    grading_jobs_insert_external_manual (
+    grading_jobs_insert_external (
         IN submission_id bigint,
         IN authn_user_id bigint,
         IN grading_method enum_grading_method,
@@ -15,14 +15,13 @@ DECLARE
     instance_question_id bigint;
     assessment_instance_id bigint;
     grading_method_external boolean;
-    grading_method_manual boolean;
 BEGIN
     -- ######################################################################
     -- get the related objects
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id, q.grading_method_external, q.grading_method_manual,                iq.id,                  ai.id
-    INTO     credit, variant_id,   grading_method_external,   grading_method_manual, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id, q.grading_method_external,  iq.id,                  ai.id
+    INTO     credit, variant_id,   grading_method_external,  instance_question_id, assessment_instance_id
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -32,11 +31,8 @@ BEGIN
     WHERE s.id = submission_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
-
-    IF grading_method_enum = 'External' AND grading_method_external != True THEN
+    IF grading_method_external != 'External' AND grading_method_external != True THEN
         RAISE EXCEPTION 'grading_method is not External for submission_id: %', submission_id;
-    ELSIF grading_method_enum = 'Manual' AND grading_method_internal != True THEN
-        RAISE EXCEPTION 'grading_method is not Manual for submission_id: %', submission_id;
     END IF;
 
     -- ######################################################################
@@ -46,7 +42,7 @@ BEGIN
         UPDATE grading_jobs AS gj
         SET
             grading_request_canceled_at = now(),
-            grading_request_canceled_by = grading_jobs_insert_external_manual.authn_user_id
+            grading_request_canceled_by = grading_jobs_insert_external.authn_user_id
         FROM
             variants AS v
             JOIN submissions AS s ON (s.variant_id = v.id)
