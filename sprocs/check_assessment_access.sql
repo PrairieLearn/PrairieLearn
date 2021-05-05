@@ -118,7 +118,7 @@ BEGIN
         seb_config = NULL;
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
-        submittable = TRUE;
+        submittable = FALSE;
     END IF;
 
     -- Update credit_date_string if the user cannot currently submit the assessment but can do so in the future.
