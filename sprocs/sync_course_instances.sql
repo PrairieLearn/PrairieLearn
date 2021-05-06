@@ -123,6 +123,7 @@ BEGIN
     SET
         long_name = src.data->>'long_name',
         display_timezone = src.data->>'display_timezone',
+        hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM disk_course_instances AS src

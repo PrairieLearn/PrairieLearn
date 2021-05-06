@@ -162,7 +162,7 @@ def render(element_html, data):
 
         if answer_name in data['submitted_answers']:
             student_previous_submission = data['submitted_answers'][answer_name]['student_raw_submission']
-            mcq_options = list(set(mcq_options) - set(student_previous_submission))
+            mcq_options = [opt for opt in mcq_options if opt not in student_previous_submission]
 
         for index, mcq_options_text in enumerate(student_previous_submission):
             # render the answers column (restore the student submission)
