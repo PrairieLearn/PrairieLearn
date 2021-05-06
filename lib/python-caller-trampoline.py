@@ -167,7 +167,8 @@ def terminate_worker(signum, stack):
     try:
         print('terminate_worker: calling sys.exit(0)', file=sys.stderr)
         sys.exit(0)
-    except:
+    except Exception as e:
+        print(e, file=sys.stderr)
         traceback.print_exc()
         print('terminate_worker: calling os._exit(0)', file=sys.stderr)
         os._exit(0)
