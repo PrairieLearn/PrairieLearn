@@ -15,7 +15,7 @@
 # Errors are signaled by exiting with non-zero exit code
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
-import sys, os, json, importlib, copy, base64, io, matplotlib, signal, sklearn, nltk
+import sys, os, json, importlib, copy, base64, io, matplotlib, signal, sklearn, nltk, traceback
 from inspect import signature
 
 saved_path = copy.copy(sys.path)
@@ -168,6 +168,7 @@ def terminate_worker(signum, stack):
         print('terminate_worker: calling sys.exit(0)')
         sys.exit(0)
     except:
+        traceback.print_exc()
         print('terminate_worker: calling os._exit(0)')
         os._exit(0)
 
