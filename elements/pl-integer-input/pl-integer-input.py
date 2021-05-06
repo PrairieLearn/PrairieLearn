@@ -37,9 +37,18 @@ def prepare(element_html, data):
         if name in data['correct_answers']:
             raise Exception('duplicate correct_answers variable name: %s' % name)
         # Test conversion, but leave as string so proper value is shown on answer panel
-        if pl.string_to_integer(correct_answer, base) is None:
-            raise Exception('correct answer is not a valid input: %s' % name)
         data['correct_answers'][name] = correct_answer
+
+    if correct_answer is None:
+        correct_answer = pl.from_json(data['correct_answers'].get(name, None))
+    if correct_answer is not None:
+        try:
+            if not isinstance(correct_answer, int):
+                correct_answer = int(correct_answer, base)
+        except Exception:
+            raise Exception('correct answer is not a valid input: %s' % name)
+        if correct_answer > 2**53 - 1 or correct_answer < -((2**53) - 1):
+            raise Exception('correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1)).')
 
 
 def render(element_html, data):
@@ -215,6 +224,8 @@ def parse(element_html, data):
         a_sub_parsed = pl.string_to_integer(str(a_sub), base)
         if a_sub_parsed is None:
             raise ValueError('invalid submitted answer (wrong type)')
+        if a_sub_parsed > 2**53 - 1 or a_sub_parsed < -((2**53) - 1):
+            data['format_errors'][name] = 'correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1)).'
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
