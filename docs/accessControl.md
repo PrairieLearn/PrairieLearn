@@ -55,7 +55,7 @@ each accessRule is True if (restriction1 AND restriction2 AND restriction3)
 allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
 ```
 
-If multiple access rules are satisfied, and at least one access rule has `submittable` set to `true`, then the access rule with the highest `credit` value and `submittable` set to `true` is chosen. If all access rules that are satisfied have `submittable` set to `false`, then one of these rules is chosen. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
+If multiple access rules are satisfied then the highest `credit` value is taken from them. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
 
 ## Roles
 
@@ -202,6 +202,8 @@ The `showClosedAssessment` access rule restriction is only useful in conjunction
 ## Submittable assessments
 
 The `submittable` access rule restriction is useful for allowing students to see what assessments they have coming up. If `submittable` is set to `false`, students can see the assessment on the Assessments page, but they cannot create a new assessment instance or submit answers to questions. If an assessment is currently not submittable but will be in the future, students can see when the assessment will become submittable by looking at the `Available credit` column on the Assessments page. Assessments are submittable by default.
+
+**Note**: if `submittable` is set to `false` in an access rule, the available `credit` for that access rule must be 0.
 
 An example of the `submittable` access rule restriction is shown below:
 

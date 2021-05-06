@@ -77,13 +77,26 @@ BEGIN
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized
     ORDER BY
-        aar.submittable DESC,
         aar.credit DESC NULLS LAST,
         aar.number
     LIMIT 1;
+
+    -- Fill in data if there were no access rules found
+    IF active_access_rule_id IS NULL THEN
+        authorized = FALSE;
+        credit = 0;
+        credit_date_string = 'None';
+        time_limit_min = NULL;
+        password = NULL;
+        mode = NULL;
+        seb_config = NULL;
+        show_closed_assessment = TRUE;
+        show_closed_assessment_score = TRUE;
+        submittable = FALSE;
+    END IF;
     
     -- Select the *next* access rule with submittable = true that gives the user access
-    IF check_assessment_access.date IS NOT NULL THEN
+    IF NOT submittable AND check_assessment_access.date IS NOT NULL THEN
         SELECT
             aar.start_date,
             aar.credit
@@ -105,20 +118,6 @@ BEGIN
             aar.credit DESC NULLS LAST,
             aar.number
         LIMIT 1;
-    END IF;
-
-    -- Fill in data if there were no access rules found
-    IF active_access_rule_id IS NULL THEN
-        authorized = FALSE;
-        credit = 0;
-        credit_date_string = 'None';
-        time_limit_min = NULL;
-        password = NULL;
-        mode = NULL;
-        seb_config = NULL;
-        show_closed_assessment = TRUE;
-        show_closed_assessment_score = TRUE;
-        submittable = FALSE;
     END IF;
 
     -- Update credit_date_string if the user cannot currently submit the assessment but can do so in the future.
@@ -167,6 +166,7 @@ BEGIN
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
+        AND aar.submittable
         AND caar.authorized;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

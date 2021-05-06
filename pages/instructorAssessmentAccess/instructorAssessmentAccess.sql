@@ -39,7 +39,11 @@ SELECT
         ELSE '<a href="https://cbtf.engr.illinois.edu/sched/course/'
             || ps_c.course_id || '/exam/' || e.exam_id || '">'
             || ps_c.rubric || ': ' || e.exam_string || '</a>'
-    END AS exam
+    END AS exam,
+    CASE
+        WHEN aar.submittable THEN 'True'
+        ELSE 'False'
+    END AS submittable
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)

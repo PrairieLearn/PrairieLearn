@@ -79,7 +79,8 @@ describe('Exam and homework assessment with submittable rule', function() {
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 1);
+        assert.equal(response.$('td:contains("Test Submittable Access Rule")'), 1);
+        assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 0); // there should be no link
     });
 
     step('try to access the exam when it is not submittable', async () => {
@@ -90,12 +91,21 @@ describe('Exam and homework assessment with submittable rule', function() {
 
         const msg = response.$('div.test-suite-assessment-closed-message');
         assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment will become available at 2010-01-01 00:00:01/);
+        assert.match(msg.text(), /Assessment will become available on 2010-01-01 00:00:01/);
     });
 
     step('check that an assessment instance was not created', async () => {
         const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
         assert.equal(results.rowCount, 0);
+    });
+
+    step('ensure that a link to the exam is visible on the assessments page if submittable is true', async () => {
+        headers.cookie = 'pl_requested_date=2010-06-01T00:00:01Z';
+        
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+        assert.isTrue(response.ok);
+
+        assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 1);
     });
 
     step('visit start exam page when the exam is submittable', async () => {
@@ -191,7 +201,7 @@ describe('Exam and homework assessment with submittable rule', function() {
 
         const msg = response.$('div.test-suite-assessment-closed-message');
         assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment will become available at 2020-01-01 00:00:01/);
+        assert.match(msg.text(), /Assessment will become available on 2020-01-01 00:00:01/);
     });
 
     step('access the homework when it is submittable', async () => {
@@ -206,6 +216,8 @@ describe('Exam and homework assessment with submittable rule', function() {
         context.hwInstanceUrl = hwInstanceUrl;
 
         // save the hwQuestionUrl for later
+
+        // the link to the first question begins with "HWX.1." where X is the homework number
         const hwQuestionUrl = response.$('a:contains(".1.")').attr('href');
         context.hwQuestionUrl = `${context.siteUrl}${hwQuestionUrl}`;
     });
@@ -250,7 +262,7 @@ describe('Exam and homework assessment with submittable rule', function() {
 
         const msg = response.$('div.test-suite-assessment-closed-message');
         assert.lengthOf(msg, 1);
-        assert.match(msg.text(), /Assessment will become available at 2030-01-01 00:00:01/);
+        assert.match(msg.text(), /Assessment will become available on 2030-01-01 00:00:01/);
 
         assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     });

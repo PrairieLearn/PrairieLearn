@@ -228,11 +228,34 @@
                     "default": true
                 },
                 "submittable": {
-                    "description": "Whether the student can create a new assessment instance and submit answers to questions",
+                    "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
                     "type": "boolean",
                     "default": true
                 }
-            }
+            },
+            "if": {
+            	"properties": {
+                	"submittable": {
+                  		"const": false
+                	}
+              	},
+               	"required": ["submittable"]
+            },
+           	"then": {
+            	"anyOf": [
+                    {
+                        "not": {
+                            "required": ["credit"]
+                        }
+                    },
+                    {
+                        "properties": {
+                            "credit": { "const": 0 }
+                        },
+                        "required": ["credit"]
+                    }
+                ]
+           	}
         },
         "zone": {
             "type": "object",
