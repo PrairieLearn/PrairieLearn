@@ -1287,7 +1287,6 @@ class GraphLine(BaseElement):
                         'x2': x0 + x3,
                         'y2': y0 - y3,
                         'type': 'pl-controlled-curved-line'})
-
         return obj
 
     def grading_name(element):
@@ -1297,10 +1296,10 @@ class GraphLine(BaseElement):
             n_end_points = len(line)
             if n_end_points == 3:
                 curved_line = True
-        if curved_line:
+        if not curved_line:
             return 'pl-controlled-line'
         else:
-            return 'pl-curved-controlled-line'
+            return 'pl-controlled-curved-line'
 
     def get_attributes():
         return ['origin', 'end-points', 'end-gradients', 'draw-error-box', 'offset-tol-x', 'offset-tol-y', 'offset-control-tol-x', 'offset-control-tol-y', 'color', 'stroke-width']
