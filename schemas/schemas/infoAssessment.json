@@ -241,8 +241,8 @@
               	},
                	"required": ["submittable"]
             },
-           	"then": {
-            	"anyOf": [
+            "then": {
+                "anyOf": [
                     {
                         "not": {
                             "required": ["credit"]
@@ -255,7 +255,7 @@
                         "required": ["credit"]
                     }
                 ]
-           	}
+            }
         },
         "zone": {
             "type": "object",
