@@ -51,7 +51,7 @@ require('./testSubmittable');
 // require('./testChunkAssessment');
 // require('./testLocalLock');
 // require('./testWorkspaceAccess');
-// require('./sync');
+require('./sync');
 // require('./testGroupGenerateAndDelete');
 // require('./testGroupStudent');
 // require('./testGroupScoreAndSync');

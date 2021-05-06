@@ -232,29 +232,6 @@
                     "type": "boolean",
                     "default": true
                 }
-            },
-            "if": {
-                "properties": {
-                    "submittable": {
-                        "const": false
-                    }
-                },
-                "required": ["submittable"]
-            },
-            "then": {
-                "anyOf": [
-                    {
-                        "not": {
-                            "required": ["credit"]
-                        }
-                    },
-                    {
-                        "properties": {
-                            "credit": { "const": 0 }
-                        },
-                        "required": ["credit"]
-                    }
-                ]
             }
         },
         "zone": {

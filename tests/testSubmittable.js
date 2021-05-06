@@ -73,7 +73,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(response.status, 403);
     });
 
-    step('ensure that the exam is visible on the assessments page if submittable is false', async () => {
+    step('ensure that the exam is visible without a link on the assessments page if student has not started the exam and submittable is false', async () => {
         headers.cookie = 'pl_requested_date=2000-06-01T00:00:01Z';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
@@ -160,6 +160,15 @@ describe('Exam and homework assessment with submittable rule', function() {
         const results = await sqldb.queryAsync(sql.select_assessment_instances, []);
         assert.equal(results.rowCount, 1);
         assert.equal(results.rows[0].open, false);
+    });
+
+    step('ensure that a link to the exam is visible on the assessments page if student has started the exam and submittable is false', async () => {
+        headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
+
+        const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+        assert.isTrue(response.ok);
+
+        assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 1);
     });
 
     step('access the exam when it is no longer submittable', async () => {

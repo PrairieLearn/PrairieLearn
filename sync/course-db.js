@@ -170,6 +170,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} credit
  * @property {string} startDate
  * @property {string} endDate
+ * @property {boolean} submittable
  * @property {number} timeLimitMin
  * @property {string} password
  * @property {SEBConfig} SEBConfig
@@ -898,6 +899,11 @@ async function validateAssessment(assessment, questions) {
     // Check assessment access rules
     (assessment.allowAccess || []).forEach(rule => {
         const allowAccessErrors = checkAllowAccessDates(rule);
+
+        if ('submittable' in rule && rule.submittable === false && 'credit' in rule && rule.credit !== 0) {
+            errors.push(`Invalid allowAccess rule: credit must be 0 if submittable is false`);
+        }
+
         errors.push(...allowAccessErrors);
     });
 
