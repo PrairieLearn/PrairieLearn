@@ -5,7 +5,7 @@ const tmp = require('tmp-promise');
 const path = require('path');
 const delay = require('delay');
 const assert = require('chai').assert;
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const debug = console.log; // require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const config = require('../lib/config');
 const load = require('../lib/load');
