@@ -234,12 +234,12 @@
                 }
             },
             "if": {
-            	"properties": {
-                	"submittable": {
-                  		"const": false
-                	}
-              	},
-               	"required": ["submittable"]
+                "properties": {
+                    "submittable": {
+                        "const": false
+                    }
+                },
+                "required": ["submittable"]
             },
             "then": {
                 "anyOf": [

@@ -100,7 +100,7 @@ describe('Exam and homework assessment with submittable rule', function() {
     });
 
     step('ensure that a link to the exam is visible on the assessments page if submittable is true', async () => {
-        headers.cookie = 'pl_requested_date=2010-06-01T00:00:01Z';
+        headers.cookie = 'pl_requested_date=2010-01-01T00:00:01Z';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
