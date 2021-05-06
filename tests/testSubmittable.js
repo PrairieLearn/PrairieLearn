@@ -79,7 +79,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.equal(response.$('td:contains("Test Submittable Access Rule")'), 1);
+        assert.lengthOf(response.$('td:contains("Test Submittable Access Rule")'), 1);
         assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 0); // there should be no link
     });
 
