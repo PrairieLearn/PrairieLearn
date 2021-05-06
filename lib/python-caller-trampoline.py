@@ -166,7 +166,7 @@ def terminate_worker(signum, stack):
         os.kill(worker_pid, signal.SIGKILL)
     try:
         sys.exit(0)
-    except Exception as e:
+    except BaseException as e:
         print(e, file=sys.stderr)
         traceback.print_exc()
         print('terminate_worker: sys.exit(0) failed, calling os._exit(0)', file=sys.stderr)
