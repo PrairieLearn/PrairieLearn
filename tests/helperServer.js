@@ -38,8 +38,6 @@ module.exports = {
         }
         return function(callback) {
             debug('before()');
-            console.log(config.questionTimeoutMilliseconds);
-            config.questionTimeoutMilliseconds = 2000;
             var that = this;
             async.series([
                 async () => {
