@@ -41,6 +41,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         const resultsHomework = await sqldb.queryOneRowAsync(sql.select_homework7, []);
         context.hwId = resultsHomework.rows[0].id;
         context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
+        context.hwNumber = '7';
     });
     after('shut down testing server', helperServer.after);
     after('unset authenticated user', function(callback) {
@@ -224,10 +225,11 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.include(hwInstanceUrl, '/assessment_instance/');
         context.hwInstanceUrl = hwInstanceUrl;
 
-        // save the hwQuestionUrl for later
-
         // the link to the first question begins with "HWX.1." where X is the homework number
-        const hwQuestionUrl = response.$('a:contains(".1.")').attr('href');
+        const questionTitlePrefix = 'HW' + context.hwNumber + '.1.'
+
+        // save the hwQuestionUrl for later
+        const hwQuestionUrl = response.$('a:contains(' + questionTitlePrefix + ')').attr('href');
         context.hwQuestionUrl = `${context.siteUrl}${hwQuestionUrl}`;
     });
 
