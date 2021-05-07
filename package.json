@@ -121,7 +121,7 @@
         "viz.js": "^2.1.2",
         "winston": "^3.3.3",
         "xss": "^1.0.9",
-        "yargs": "^16.2.0",
+        "yargs": "^17.0.1",
         "yargs-parser": "^20.2.6"
     },
     "devDependencies": {
