@@ -56,7 +56,7 @@
         "file-type": "^16.1.0",
         "filesize": "^6.1.0",
         "folder-hash": "^4.0.0",
-        "fs-extra": "^9.1.0",
+        "fs-extra": "^10.0.0",
         "googleapis": "^67.1.1",
         "handlebars": "^4.7.7",
         "highlight.js": "^10.6.0",
