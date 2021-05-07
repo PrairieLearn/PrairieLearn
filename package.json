@@ -34,7 +34,7 @@
         "bowser": "^2.11.0",
         "byline": "^5.0.0",
         "chalk": "^2.4.2",
-        "chart.js": "^2.9.4",
+        "chart.js": "^3.2.1",
         "cheerio": "^0.22.0",
         "chokidar": "^3.5.1",
         "clipboard": "^2.0.6",
