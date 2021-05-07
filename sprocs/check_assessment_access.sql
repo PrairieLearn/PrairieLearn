@@ -96,7 +96,7 @@ BEGIN
     END IF;
     
     -- Select the *next* access rule with submittable = true that gives the user access
-    IF NOT submittable AND check_assessment_access.date IS NOT NULL THEN
+    IF active_access_rule_id IS NOT NULL AND check_assessment_access.date IS NOT NULL AND NOT submittable THEN
         SELECT
             aar.start_date,
             aar.credit
