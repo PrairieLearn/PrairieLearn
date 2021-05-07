@@ -226,7 +226,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         context.hwInstanceUrl = hwInstanceUrl;
 
         // the link to the first question begins with "HWX.1." where X is the homework number
-        const questionTitlePrefix = 'HW' + context.hwNumber + '.1.'
+        const questionTitlePrefix = 'HW' + context.hwNumber + '.1.';
 
         // save the hwQuestionUrl for later
         const hwQuestionUrl = response.$('a:contains(' + questionTitlePrefix + ')').attr('href');
