@@ -262,7 +262,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answers` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
@@ -525,7 +525,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answers` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
@@ -583,7 +583,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answers` | string | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
