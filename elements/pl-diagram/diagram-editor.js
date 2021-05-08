@@ -2,7 +2,6 @@ window.onload = function () { DiagramEditor.staticInit() }
 function DiagramEditor() {
 	// Set initial XML to be the data pssed in from py render()
 	this.data = document.getElementById("diagramXML").getAttribute("value")
-	console.log(this.data)
 	this.config = {
 		"enabledLibraries": [],
 	};
@@ -190,7 +189,7 @@ DiagramEditor.prototype.getFrameUrl = function () {
 		url += '&configure=1';
 	}
 	url += "&clibs=Uhttps%3A%2F%2Fraw.githubusercontent.com%2Fgemeln%2Fstaticfiles%2Fmain%2Fbar.xml;"
-	console.log(this.config);
+	// console.log(this.config);
 	return url;
 };
 
@@ -229,7 +228,7 @@ DiagramEditor.prototype.handleMessage = function (msg) {
 			this.setStatus('allChangesSaved', false);
 		}
 	}
-	else if(msg.event == "event"){
+	else if (msg.event == "event") {
 		console.error(msg.error)
 	}
 	if (msg.event == 'exit') {

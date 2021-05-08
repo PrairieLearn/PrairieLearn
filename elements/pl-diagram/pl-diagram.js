@@ -67,6 +67,16 @@ function parseDiagram(data) {
                 setDictList(graph.edges, edgeID, 2, component.getAttribute("label"), false);
             }
         }
+        // Restructure graph data structure to adjacency list
+        edgeDict = {}
+        for (let key in graph.edges) {
+            let edge = graph.edges[key];
+            let nodeIn = edge[0];
+            if (!(nodeIn in edgeDict)) { edgeDict[nodeIn] = []; }
+            edgeDict[edge[0]].push([edge[1], edge[2]]);
+        }
+        graph.edges = edgeDict;
+        console.log(graph);
         var inputElement = document.getElementById("diagramHiddenInput");
         var graphString = JSON.stringify(graph);
         inputElement.setAttribute("value", graphString);

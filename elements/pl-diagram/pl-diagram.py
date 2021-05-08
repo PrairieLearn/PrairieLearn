@@ -10,6 +10,9 @@ from ast import literal_eval
 from xml.dom import minidom
 from xml.etree.ElementTree import Element, SubElement, Comment
 from xml.etree import ElementTree
+import re
+import booleanParser
+import itertools
 
 element_defaults = {
     'answers-name': '',
@@ -36,6 +39,8 @@ def parseInitialFSMToXML(element):
         if len(a) != 1:
             raise Exception('Invalid output for pl-fsm')
     max_transitions = 2**len(outputs)
+
+    outputTag = ",".join([a + "=?" for a in outputs])
     # Begin xml file
     mxFile = Element('mxfile')
     diagramXML = SubElement(mxFile, 'diagram', {"id": "diagram-id"})
@@ -62,7 +67,6 @@ def parseInitialFSMToXML(element):
             if stateName not in nodeDict:
                 nodeDict[stateName] = str(id)
                 id += 1
-
             # Create node in XML
             nodeID = nodeDict[stateName]
             # Create node container
@@ -75,7 +79,7 @@ def parseInitialFSMToXML(element):
             })
             nodeGeometry = SubElement(nodeCell, 'mxGeometry', {"x": str(x1), "y": str(y1), "width": "90", "height": "120", "as": "geometry"})
             # Create node circle
-            nodeObject = SubElement(root, 'object', {"label": "o=?", "elemType": "node", "id": str(id)})
+            nodeObject = SubElement(root, 'object', {"elemType": "node", "id": str(id), 'label': outputTag})
             id += 1
             nodeCell = SubElement(nodeObject, 'mxCell', {
                 "style": "ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontStyle=0;connectable=0;allowArrows=0;resizable=0;rotatable=0;cloneable=0;deletable=0;movable=0;noLabel=0;editable=1;dropTarget=0;container=0;expand=0;",
@@ -118,7 +122,7 @@ def parseInitialFSMToXML(element):
                 edgeObject = SubElement(root, 'object', {"label": labelFromTransition(i), "elemType": "edgeLabel", "id": str(id)})
                 id += 1
                 edgeCell = SubElement(edgeObject, 'mxCell', {
-                    "style": "edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;movable=0;pointerEvents=0;deletable=0;cloneable=0;rotatable=0;allowArrows=0;",
+                    "style": "edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=11;movable=0;pointerEvents=1;deletable=0;cloneable=0;rotatable=0;allowArrows=0;",
                     "vertex": "1",
                     "connectable": "0",
                     "parent": str(id - 2),
@@ -132,8 +136,48 @@ def parseInitialFSMToXML(element):
     return ElementTree.tostring(mxFile, 'utf-8')
 
 
+def parseAnswerFSMFromXML(element):
+    """Parse answer FSM from <pl-fsm/> into an adjacency list structure"""
+    graph = {"edges": {}, "nodes": {}}
+    inputs = pl.get_string_attrib(element, 'input', None)
+    outputs = pl.get_string_attrib(element, 'output', None)
+    if inputs is None or outputs is None:
+        raise Exception('input and output are required in pl-fsm')
+    inputs = literal_eval(inputs)
+    outputs = literal_eval(outputs)
+    for a in inputs:
+        if len(a) != 1:
+            raise Exception('Invalid input for pl-fsm')
+    for a in outputs:
+        if len(a) != 1:
+            raise Exception('Invalid output for pl-fsm')
+    graph['inputs'] = inputs
+    graph['outputs'] = outputs
+    max_transitions = 2**len(outputs)
+    for pl_state_element in element:
+        if pl_state_element.tag == "pl-fsm-state":
+            stateName = pl.get_string_attrib(pl_state_element, 'name', None)
+            if stateName in graph['nodes']:
+                raise Exception("Duplicate statename in pl-diagram-answer")
+            stateTransitions = pl.get_string_attrib(pl_state_element, 'transitions', None)
+            if stateTransitions is None:
+                stateTransitions = [""] * max_transitions
+            else:
+                stateTransitions = literal_eval(stateTransitions)
+            stateOutputs = pl.get_string_attrib(pl_state_element, 'output', None)
+            stateOutputs = literal_eval(stateOutputs)
+
+            graph['nodes'][stateName] = stateOutputs
+            graph['edges'][stateName] = []
+            for i, dest in enumerate(stateTransitions):
+                graph["edges"][stateName].append([dest, i])
+
+    return graph
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers-name', None)
     for child in element:
         if child.tag == "pl-diagram-initial":
             for initialComponent in child:
@@ -141,7 +185,11 @@ def prepare(element_html, data):
                     xmlString = parseInitialFSMToXML(initialComponent)
                     data['params']['initial-xml'] = xmlString.decode("utf-8")
                     break
-            break
+        elif child.tag == "pl-diagram-answer":
+            for initialComponent in child:
+                if initialComponent.tag == "pl-fsm":
+                    data['correct_answers'][name] = parseAnswerFSMFromXML(initialComponent)
+                    break
 
 
 def render(element_html, data):
@@ -161,15 +209,73 @@ def parse(element_html, data):
         if 'nodes' not in data['submitted_answers'][name] or 'edges' not in data['submitted_answers'][name]:
             data['format_errors'][name] = 'No submitted answer.'
             data['submitted_answers'][name] = {}
-        print(data['submitted_answers'][name])
     except json.JSONDecodeError:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = {}
-    return
+    return data
 
 
 def grade(element_html, data):
-    return
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
+    student = data['submitted_answers'][name]
+    reference = data['correct_answers'][name]
+    outputAlphabet = reference['outputs']
+    inputAlphabet = reference['inputs']
+    # Syntax check node outputs
+    print(student)
+    outputIndices = {k: v for v, k in enumerate(outputAlphabet)}
+    for node in student['nodes']:
+        if node not in student['edges']:
+            data['format_errors'][name] = f"Node has no outoging edges: {student['nodes'][node][0]}"
+            return data
+        nodeStr = re.sub(r'[ \r\n]|(\<br\>)', '', student['nodes'][node][1])  # Strip whitespace
+        nodeOutputs = [None] * len(outputIndices)
+        tokens = nodeStr.split(',')
+        if len(tokens) != len(outputIndices):
+            data['format_errors'][name] = "Too many outputs"
+            return data
+        for token in tokens:
+            if len(token) != 3 or token[0] not in outputIndices or token[1] != '=' or token[2] not in ['0', '1']:
+                data['format_errors'][name] = f"Node output incorrectly formatted: {token}"
+                return data
+            nodeOutputs[outputIndices[token[0]]] = token[2]
+        student['nodes'][node] = (student['nodes'][node][0], nodeOutputs)
+    validChars = {'(', ')', '\'', '*', '+'}
+    for char in inputAlphabet:
+        validChars.add(char)
+    for nodeIn in student['nodes']:
+        for edge in student['edges'][nodeIn]:
+            edgeLabel = re.sub(r'[ \r\n]|(\<br\>)', '', edge[1])  # Strip whitespace
+            for c in edgeLabel:
+                if c not in validChars:
+                    data['format_errors'][name] = f"Edge transition incorrectly formatted: {edgeLabel}"
+                    return data
+            edge[1] = edgeLabel
+    print(student)
+    # Second order checks to make sure only one transition exists for each assignment of input booleans
+    allAssignments = list(itertools.product([True, False], repeat=len(inputAlphabet)))
+    for nodeIn in student['nodes']:
+        numTrue = [0] * len(allAssignments)  # Each entry should be exactly 1 after interating all edges (One entry for each assignment)
+        for edge in student['edges'][nodeIn]:
+            edgeAST = booleanParser.create_ast(edge[1])
+            for i, assignment in enumerate(allAssignments):
+                asDict = {inputAlphabet[j]: assignment[j] for j in range(len(inputAlphabet))}
+                result = booleanParser.eval_ast(edgeAST, asDict)
+                if result:
+                    numTrue[i] = numTrue[i] + 1
+        # Check if any assignments are under/over satisfied
+        for i, x in enumerate(numTrue):
+            if x == 0:
+                data['format_errors'][name] = f"Node {student['nodes'][nodeIn][1]} is missing transition for {allAssignments[i]}"
+                print(data['format_errors'][name])
+                return data
+            if x > 1:
+                data['format_errors'][name] = f"Node {student['nodes'][nodeIn][1]} has too many transitions for {allAssignments[i]}"
+                print(data['format_errors'][name])
+                return data
+    print("ALL G")
+    return data
 
 
 def test(element_html, data):

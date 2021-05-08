@@ -1838,7 +1838,7 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     preview_mode = not pl.get_boolean_attrib(element, 'gradable', element_defaults['gradable'])
-
+    
     if preview_mode:
         return data
 
