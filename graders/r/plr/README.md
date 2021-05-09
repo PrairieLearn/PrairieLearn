@@ -3,7 +3,7 @@
 ### What is it?
 
 Helper functions for [PrairieLearn](https://github.com/PrairieLearn/PrairieLearn) and R as used by
-[STAT430](https://stat430.com)
+[STAT430](https://stat430.com) (during 2018-2020) and now [STAT447](https://stat447.com).
 
 ### Who wrote it?
 
