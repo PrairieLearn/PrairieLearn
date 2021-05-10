@@ -156,7 +156,11 @@ WITH object_data AS (
         iq.number AS instance_question_number,
         aq.max_points AS assessment_question_max_points,
         iq.points AS instance_question_points,
-        iq.score_perc AS instance_question_score_perc
+        iq.score_perc AS instance_question_score_perc,
+        iq.highest_submission_score,
+        iq.last_submission_score,
+        iq.number_attempts,
+        extract(epoch FROM iq.duration) AS duration_seconds
     FROM
         assessment_instances AS ai
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
