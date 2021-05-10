@@ -18,7 +18,7 @@ bokeh==2.3.0
 folium==0.12.1
 Pygments==2.8.0
 PuLP==2.4
-ipython==7.21.0
+ipython==7.23.1
 nbformat==5.1.2
 nbconvert==6.0.7
 tensorflow==2.4.1
