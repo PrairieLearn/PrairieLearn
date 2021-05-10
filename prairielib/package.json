@@ -25,7 +25,7 @@
     "js-yaml": "4.0.0",
     "lodash": "4.17.21",
     "logform": "^2.1.2",
-    "pg": "8.5.1",
+    "pg": "8.6.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {
