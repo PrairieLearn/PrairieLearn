@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2.3.4
     - name: Merge with master
       run: git -c user.name=dev -c user.email=dev@example.com merge origin/master
     - name: Build the plbase docker image if needed
