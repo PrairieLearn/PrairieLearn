@@ -516,7 +516,7 @@ def generate(data):
   z = x + y + 1
 
   # Answer to fill in the blank input stored as JSON.
-  data['correct_answer']['symbolic_math'] = pl.to_json(z)
+  data['correct_answers']['symbolic_math'] = pl.to_json(z)
 ```
 
 #### Customizations
