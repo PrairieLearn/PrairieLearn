@@ -34,6 +34,8 @@ class _Constants:
             'acos': sympy.acos,
             'asin': sympy.asin,
             'atan': sympy.atan,
+            'arctan2': sympy.atan2,
+            'atan2': sympy.atan2,
             'exp': sympy.exp,
             'log': sympy.log,
             'sqrt': sympy.sqrt,
