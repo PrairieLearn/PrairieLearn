@@ -15,7 +15,7 @@ router.get('/', (req, res, next) => {
     };
     sqldb.queryOneRow(sql.select_user_scores, params, (err, result) => {
         if (ERR(err, next)) return;
-        res.status(200).send(result.rows[0].item);
+        res.send(result.rows[0].item);
     });
 });
 
