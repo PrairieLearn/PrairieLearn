@@ -59,7 +59,7 @@ def render(element_html, data):
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    operators = ['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
+    operators = ['cos', 'sin', 'tan', 'arccos', 'arcsin', 'arctan', 'acos', 'asin', 'atan', 'arctan2', 'atan2', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
     constants = ['pi', 'e']
 
     if data['panel'] == 'question':
