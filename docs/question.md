@@ -163,7 +163,7 @@ A complete `question.html` and `server.py` example looks like:
   If $x = {{params.x}}$ and $y$ is {{params.operation}} $x$, what is $y$?
 </pl-question-panel>
 
-<!-- y is defined by data["correct_answer"]["y"] in server.py's `generate()`. -->
+<!-- y is defined by data["correct_answers"]["y"] in server.py's `generate()`. -->
 <pl-number-input answers-name="y" label="$y =$"></pl-number-input>
 ```
 
