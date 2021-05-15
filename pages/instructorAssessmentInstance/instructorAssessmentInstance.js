@@ -40,6 +40,7 @@ router.get('/', (req, res, next) => {
                 sqlDb.call('assessment_instances_select_log', params, (err, result) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
+                    console.log(result.rows);
                     if (res.locals.assessment.group_work) {
                         const params = {assessment_instance_id: res.locals.assessment_instance.id};
                         sqlDb.query(sql.select_group_info, params, (err, result) => {

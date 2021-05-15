@@ -25,7 +25,11 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req,res,next) {
     if (req.body.__action == 'break') {
-        var params = {'assessment_question_id': req.body.__assessment_question_id};
+        var params = {
+          'assessment_question_id': req.body.__assessment_question_id,
+          'authn_uin': Number(res.locals.authn_user.uin),
+        };
+        console.log(params);
         sqldb.query(sql.mark_all_variants_broken, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
