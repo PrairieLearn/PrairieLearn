@@ -349,9 +349,9 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
 
-## How can I add comments in my question.html source that won't be visible to students?
+## How can I add comments in my `question.html` source that won't be visible to students?
 
-Some users may want to write small maintenance notes to staff in the `question.html` source. You can do this using [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process, so they will remain hidden from students in the rendered page source. To be safe, never put sensitive information such as solutions in a comment. Please note that HTML comments or JavaScript comments may be revealed.
+Course staff members may want to write small maintenance comments in the `question.html` source, but HTML or JavaScript comments will remain visible in the rendered page's source (as can be seen in the browser dev tools). To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. To be safe, never put sensitive information such as solutions in a comment.
 
 Example:
 
