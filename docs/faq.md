@@ -356,6 +356,6 @@ Course staff members may want to write small maintenance comments in the `questi
 Example:
 
 ``` html
-<!-- This is an HTML comment. It will be REVEALED in the rendered page source. -->
+<!-- This is an HTML comment. It will not be visible to students in the web page, but *will be included* in the rendered page source, so students may be able to see it by reading the HTML source. -->
 {{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
 ```
