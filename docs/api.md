@@ -44,6 +44,10 @@ at port 3000, the API is accessible via http://localhost:3000/pl/api/v1/.
 In the endpoint list below, path components starting with a colon like
 `:course_instance_id` should be replaced with the integer IDs.
 
+* **Course instance info:**
+    - `/pl/api/v1/course_instances/:course_instance_id/course_instance_info`
+    - Information about the course instance.
+
 * **Gradebook:**
     - `/pl/api/v1/course_instances/:course_instance_id/gradebook`
     - All of the data available in the course gradebook, with one entry per user containing summary data on all assessments.
