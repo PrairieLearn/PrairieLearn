@@ -99,8 +99,8 @@ GROUP BY
 -- BLOCK mark_variant_broken
 UPDATE variants AS v
 SET
-    broken = true,
-    open = false
+    broken_at = CURRENT_TIMESTAMP,
+    broken_by = $authn_uin
 WHERE id IN (
     SELECT v.id
     FROM
@@ -108,7 +108,7 @@ WHERE id IN (
         JOIN instance_questions iq ON v.instance_question_id = iq.id
     WHERE
         v.open = true
-        AND v.broken = false
+        AND v.broken_at IS NULL
         AND iq.id = $instance_question_id
 );
 

@@ -76,8 +76,8 @@ ORDER BY z.number, z.id, aq.number;
 -- BLOCK mark_all_variants_broken
 UPDATE variants AS v
 SET
-    broken = true,
-    open = false
+    broken_at = CURRENT_TIMESTAMP,
+    broken_by = $authn_uin
 WHERE id IN (
     SELECT v.id
     FROM
@@ -86,6 +86,6 @@ WHERE id IN (
         JOIN assessment_questions aq ON iq.assessment_question_id = aq.id
     WHERE
         v.open = true
-        AND v.broken = false
+        AND v.broken_at IS NULL
         AND aq.id = $assessment_question_id
 );
