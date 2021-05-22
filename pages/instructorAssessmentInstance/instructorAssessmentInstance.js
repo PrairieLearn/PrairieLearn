@@ -5,6 +5,9 @@ const express = require('express');
 const router = express.Router();
 const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
 
+var path = require('path');
+var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
 
@@ -157,7 +160,12 @@ router.post('/', (req, res, next) => {
             });
         });
     } else if (req.body.__action == 'break_variant') {
-        var params = {'instance_question_id': req.body.__instance_question_id};
+        var params = {
+            'instance_question_id': req.body.__instance_question_id,
+            'authn_user_id': res.locals.authn_user.user_id,
+        };
+        debug(res.locals);
+        debug('break_variant', {params});
         sqlDb.query(sql.mark_variant_broken, params, (err, _result) => {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);

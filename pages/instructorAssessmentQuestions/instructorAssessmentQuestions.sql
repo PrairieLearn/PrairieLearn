@@ -77,7 +77,7 @@ ORDER BY z.number, z.id, aq.number;
 UPDATE variants AS v
 SET
     broken_at = CURRENT_TIMESTAMP,
-    broken_by = $authn_uin
+    broken_by = $authn_user_id
 WHERE id IN (
     SELECT v.id
     FROM
