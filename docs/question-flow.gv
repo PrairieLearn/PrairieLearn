@@ -25,9 +25,9 @@ digraph question_flow {
 
     node [style=filled, fillcolor=gainsboro];
 
-    broken_variant [label="Broken variant:\l\lvariant.broken = true\lvariant.open = true"];
-    open_variant [label="Open variant:\l\lvariant.broken = false\lvariant.open = true"];
-    closed_variant [label="Closed variant:\l\lvariant.broken = false\lvariant.open = false"];
+    broken_variant [label="Broken variant:\l\lvariant.broken_at != null\lvariant.open = true"];
+    open_variant [label="Open variant:\l\lvariant.broken_at = null\lvariant.open = true"];
+    closed_variant [label="Closed variant:\l\lvariant.broken_at = null\lvariant.open = false"];
     broken_submission [label="Broken submission:\l\lsubmission.broken = true"];
     ungradable_no_grading_job [label="No grading job inserted"];
     ungradable_grading_job [label="Grading job:\l\lgrading_job.gradable = false\lgrading_job.date = <value>\lgrading_job.score = null\lgrading_job.partial_scores = null\lgrading_job.correct = null"];
