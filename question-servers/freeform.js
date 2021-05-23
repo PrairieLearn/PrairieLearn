@@ -886,7 +886,7 @@ module.exports = {
 
     prepare: function(question, course, variant, callback) {
         debug('prepare()');
-        if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
+        if (variant.broken_at) return callback(new Error('attemped to prepare broken variant'));
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
                 return callback(new Error(`Error generating options: ${err}`));
@@ -921,7 +921,7 @@ module.exports = {
     renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
         debug(`renderPanel(${panel})`);
         // broken variant kills all rendering
-        if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
+        if (variant.broken_at) return callback(null, [], 'Broken question due to error in question code');
 
         // broken submission kills the submission panel, but we can
         // proceed with other panels, treating the submission as
@@ -1244,7 +1244,7 @@ module.exports = {
 
     file: function(filename, variant, question, course, callback) {
         debug(`file()`);
-        if (variant.broken) return callback(new Error('attemped to get a file for a broken variant'));
+        if (variant.broken_at) return callback(new Error('attemped to get a file for a broken variant'));
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
                 return callback(new Error(`Error generating options: ${err}`));
@@ -1292,7 +1292,7 @@ module.exports = {
 
     parse: function(submission, variant, question, course, callback) {
         debug(`parse()`);
-        if (variant.broken) return callback(new Error('attemped to parse broken variant'));
+        if (variant.broken_at) return callback(new Error('attemped to parse broken variant'));
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
                 return callback(new Error(`Error generating options: ${err}`));
@@ -1334,7 +1334,7 @@ module.exports = {
 
     grade: function(submission, variant, question, course, callback) {
         debug(`grade()`);
-        if (variant.broken) return callback(new Error('attemped to grade broken variant'));
+        if (variant.broken_at) return callback(new Error('attemped to grade broken variant'));
         if (submission.broken) return callback(new Error('attemped to grade broken submission'));
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
@@ -1383,7 +1383,7 @@ module.exports = {
 
     test: function(variant, question, course, test_type, callback) {
         debug(`test()`);
-        if (variant.broken) return callback(new Error('attemped to test broken variant'));
+        if (variant.broken_at) return callback(new Error('attemped to test broken variant'));
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
                 return callback(new Error(`Error generating options: ${err}`));
