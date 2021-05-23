@@ -120,7 +120,7 @@ module.exports = {
             it('should not be a broken variant if Freeform with grade or save button', function() {
                 if (locals.question.type != 'Freeform') return;
                 if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
-                assert.equal(locals.variant.broken, false);
+                assert.isNull(locals.variant.broken_at);
             });
             it('should have a CSRF token if has grade or save button', function() {
                 if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
