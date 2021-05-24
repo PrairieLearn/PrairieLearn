@@ -3,7 +3,8 @@ SELECT
     assessment_label(a, aset),
     ci.id AS course_instance_id,
     c.id AS course_id,
-    a.score_only AS score_only
+    a.score_only AS score_only,
+    a.mode AS asst_mode
 FROM
     assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
