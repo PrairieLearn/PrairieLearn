@@ -148,6 +148,7 @@ BEGIN
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
+            score_only = (valid_assessment.data->>'score_only')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
