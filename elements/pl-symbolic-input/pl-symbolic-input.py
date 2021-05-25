@@ -39,9 +39,9 @@ def prepare(element_html, data):
 
     correct_answer = pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
     if correct_answer is not None:
-        if name in data['correct-answers']:
-            raise Exception('duplicate correct-answers variable name: %s' % name)
-        data['correct-answers'][name] = correct_answer
+        if name in data['correct_answers']:
+            raise Exception('duplicate correct_answers variable name: %s' % name)
+        data['correct_answers'][name] = correct_answer
 
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     if not (imaginary_unit == 'i' or imaginary_unit == 'j'):
@@ -59,7 +59,7 @@ def render(element_html, data):
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    operators = ['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
+    operators = ['cos', 'sin', 'tan', 'arccos', 'arcsin', 'arctan', 'acos', 'asin', 'atan', 'arctan2', 'atan2', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
     constants = ['pi', 'e']
 
     if data['panel'] == 'question':
