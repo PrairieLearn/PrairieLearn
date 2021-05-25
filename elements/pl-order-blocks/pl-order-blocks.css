@@ -47,15 +47,15 @@ ul.ui-sortable {
 }
 
 ul.ui-sortable li {
-  margin-bottom: 7px;
-  border: 2px solid grey !important;
+  margin-bottom: 5px;
+  border: 1px solid grey !important;
   border-radius: 5px !important;
   background-color: #f5f5f5;
-  font-size: 1.2em;
+  font-size: 1.1em;
   line-height: 1.1em;
 }
 
-ul.answer_tabl li {
+ul.answer_table li {
   margin-bottom: 7px;
   border: 2px solid grey !important;
   border-radius: 5px !important;

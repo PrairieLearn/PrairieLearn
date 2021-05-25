@@ -1,9 +1,7 @@
 /* eslint-env jquery, browser */
 
-const TABWIDTH = 50;      // defines how many px the answer block is indented by, when the student
-                          // drags and indents a block
-const INDENT_OFFSET = 0;  // For aesthetic, all answer blocks are offseted to the right by
-                          // 5px, so the answer tiles are not directly touching the dropzone margins
+const TABWIDTH = 50;    // defines how many px the answer block is indented by, when the student
+                        // drags and indents a block
 var MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
 
 function set_max_indent(event) {
@@ -31,9 +29,8 @@ function set_answer(event) {
             var uuid = dom_objs[i].getAttribute('uuid');
             var answer_indent = null;
             if (dom_objs[i].parentElement.classList.contains('enableIndentation')) {
-                // console.log(dom_objs[i]);
                 answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
-                answer_indent = Math.round((answer_indent - INDENT_OFFSET) / TABWIDTH); // get how many times the answer is indented
+                answer_indent = Math.round(answer_indent / TABWIDTH); // get how many times the answer is indented
             }
             
             var answer_json = {'inner_html': answer_text, 'indent': answer_indent, 'uuid': uuid};
@@ -74,14 +71,14 @@ function update_indent(leftDiff, id, ui) {
     if (currentIndent != ''){
         leftDiff += parseInt(currentIndent); 
     }
-    // limit leftDiff to be in [INDENT_OFFSET, (TABWIDTH * MAX_INDENT) + INDENT_OFFSET], within the bounds of the drag and drop box
+    // limit leftDiff to be in [, (TABWIDTH * MAX_INDENT) + ], within the bounds of the drag and drop box
     // that is, at least indented 0 times, or at most indented by MAX_INDENT times  
-    leftDiff = Math.min(Math.max(leftDiff, INDENT_OFFSET), (TABWIDTH * MAX_INDENT) + INDENT_OFFSET);
+    leftDiff = Math.min(leftDiff, (TABWIDTH * MAX_INDENT));
 
     // when the user drag a tile into the answer box for the first time
     // the snap to grid dragging doesnt apply
     // so we have to manually enforce "snapping the leftDiff number to the nearest grid number" here
-    var remainder = (leftDiff - INDENT_OFFSET) % TABWIDTH;
+    var remainder = leftDiff % TABWIDTH;
     if (remainder != 0) {
         // Manually snap to grid here, by rounding to the nearest multiple of TABWIDTH
         if (remainder > (TABWIDTH / 2)){
@@ -91,7 +88,7 @@ function update_indent(leftDiff, id, ui) {
         }
     }
 
-    ui.item[0].style.marginLeft = Math.max(leftDiff, INDENT_OFFSET) + 'px';
+    ui.item[0].style.marginLeft = leftDiff + 'px';
 }
 
 
