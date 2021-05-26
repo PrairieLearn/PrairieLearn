@@ -35,8 +35,9 @@
 
 {{#submission}}
     {{^parse-error}}
-        <ul class="list-group answer_block_container">
-            <li class="list-group-item list-group-item-secondary"><strong>Your answer: </strong>
+    <div class="submission_container">
+        <ul class="list-group submission_header">
+            <li class="list-group-item"><strong>Your answer: </strong>
         {{#correct}}
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
@@ -50,7 +51,7 @@
         </ul>
         <ul class="list-group submission_table">
             {{#student_submission}}
-            	<li class="list-group-item shadow">{{inner_html}}</li>
+            	<li class="list-group-item">{{inner_html}}</li>
             {{/student_submission}}
         </ul>
     {{/parse-error}}
@@ -62,15 +63,18 @@
             <a role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
         </div>
     {{/parse-error}}
+    </div>
 {{/submission}}
 
 {{#true_answer}}
+    <div class="true_answer_container">
         <ul class="list-group">
-            <li class="list-group-item list-group-item-secondary"><strong>Correct answer ({{grading_mode}}{{check_indentation}}):</strong></li>
+            <li class="list-group-item list-group-item-success"><strong>Correct answer ({{grading_mode}}{{check_indentation}}):</strong></li>
         </ul>
         <ul class="list-group answer_table">
         {{#question_solution}}
-            <li class="list-group-item list-group-item-success shadow">{{inner_html}}</li>
+            <li class="list-group-item">{{inner_html}}</li>
         {{/question_solution}}
         </ul>
+    </div>
 {{/true_answer}}

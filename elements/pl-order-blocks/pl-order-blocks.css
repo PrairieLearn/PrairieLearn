@@ -50,12 +50,26 @@ ul.ui-sortable li, ul.answer_table li, ul.submission_table li {
   margin-bottom: 5px;
   border: 1px solid grey !important;
   border-radius: 5px !important;
-  line-height: 1.1em;
+  line-height: 1.2em;
+}
+
+ul.answer_table li, ul.submission_table li {
+  background-color: #F5F5F5;
+}
+
+ul.submission_header li {
+  border: 1px solid grey;
+  border-bottom: none;
 }
 
 ul.answer_table, ul.submission_table {
-  padding: 10px 17px 10px 17px;
-  background-color: #eeeeee;
+  padding: 5px 5px 5px 5px;
+  border: 1px solid grey;
+  border-radius: 1px;
+}
+
+div.true_answer_container, div.submission_container {
+  display: inline-block;
 }
 
 div.row {
