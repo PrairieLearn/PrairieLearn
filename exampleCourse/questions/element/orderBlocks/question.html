@@ -107,3 +107,19 @@ to display the input area above the output area.</p>
   <pl-answer correct="true" ranking="7">Since $e$ is odd, $2(2al^2 + bl + 2ck^2 + dk) + e$ is odd </pl-answer>
   <pl-answer correct="true" ranking="8">$QED$</pl-answer>
 </pl-order-blocks> 
+
+<pl-question-panel>
+  Let $A, B, C$ be propositions. Prove that $A \land B \land C \rightarrow A \land C$
+</pl-question-panel>
+
+<pl-order-blocks answers-name="prove-a-and-c" shuffle-options="true" check-indentation="false" grading-method="dag">
+  <pl-answer correct="true" id="1"  depends=""  >Assume $A \land B \land C$</pl-answer>
+  <pl-answer correct="true" id="2"  depends="1" > Since $A \land B \land C$ is true, we know $A$ is true </pl-answer>
+  <pl-answer correct="true" id="3"  depends="1" > Since $A \land B \land C$ is true, we know $C$ is true </pl-answer>
+  <pl-answer correct="true" id="4"  depends="2,3" > Since we know both $A$ and $C$ are true, $A \land C$ is true. </pl-answer>
+  <pl-answer correct="true" id="5"  depends="4" > QED </pl-answer>
+
+  <!-- Distractors -->
+  <pl-answer correct="false" >Assume $A \land B$</pl-answer>
+  <pl-answer correct="false" > Since $A \land B \land C$ is true, we know $B$ is true </pl-answer>
+</pl-order-blocks> 

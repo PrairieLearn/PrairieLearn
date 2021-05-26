@@ -5,6 +5,7 @@ import chevron
 import base64
 import os
 import json
+from dag_checker import grade_dag 
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
@@ -57,7 +58,7 @@ def prepare(element_html, data):
 
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
-    accepted_grading_method = ['ordered', 'unordered', 'ranking', 'external']
+    accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
         raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
 
@@ -199,6 +200,7 @@ def render(element_html, data):
         color = 'badge-danger'
         score = 0
         feedback = None
+        first_wrong = -1
 
         if answer_name in data['submitted_answers']:
             student_submission = data['submitted_answers'][answer_name]['student_raw_submission']
@@ -306,6 +308,19 @@ def parse(element_html, data):
             else:
                 ranking = -1   # wrong answers have no ranking
             student_answer_ranking.append(ranking)
+    elif grading_mode.lower() == 'dag':
+        pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
+        children = pl_drag_drop_element.getchildren()
+        stringToId = {}
+
+        for child in children:
+            if not isinstance(child, lxml.html.HtmlElement):
+                continue
+            if pl.get_string_attrib(child, 'correct') != 'true': 
+                continue
+            content = child.text_content().strip()
+            stringToId[content] = pl.get_string_attrib(child, 'id')
+        student_answer_ranking = [stringToId.get(answer) for answer in student_answer]   
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         for html_tags in element:
@@ -343,6 +358,7 @@ def grade(element_html, data):
     indent_score = 0
     final_score = 0
     feedback = ''
+    first_wrong = -1
 
     if len(student_answer) == 0:
         data['format_errors'][answer_name] = 'Your submitted answer was empty.'
@@ -370,7 +386,41 @@ def grade(element_html, data):
             correctness = 0
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
+    elif grading_mode == "dag":
+        order = data['submitted_answers'][answer_name]['student_submission_ordering']
+        dependsGraph = {}
+        subproofBelonging = {}
+        pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
+        children = pl_drag_drop_element.getchildren()
+        for child in children:
+            if not isinstance(child, lxml.html.HtmlElement):
+                continue
+            if pl.get_string_attrib(child, 'correct') != 'true': 
+                continue
 
+            stmtId = pl.get_string_attrib(child, 'id')
+            depends = pl.get_string_attrib(child, 'depends', '')
+            depends = depends.strip().split(',') if depends else []
+            dependsGraph[stmtId] = depends
+
+            subproof = pl.get_string_attrib(child, 'subproof', '')
+            subproofBelonging[stmtId] = subproof if subproof else None
+
+        correctness, first_wrong = grade_dag(order, dependsGraph, subproofBelonging)
+
+        if correctness == len(dependsGraph.keys()):
+            final_score = 1
+        elif correctness < len(dependsGraph.keys()):
+            final_score = float(correctness) / len(dependsGraph.keys())
+            if first_wrong == -1:
+                feedback = "Your proof is correct so far, but it is incomplete."
+            else:
+                feedback = r"""Your Proof is incorrect starting at <span style="color:red;">line number """ + str(first_wrong + 1) + \
+                    r"""</span>. The problem is most likely one of the following:
+                    <ul><li> This line is not a part of the correct solution </li>
+                    <li> This line is not adequately supported by previous lines of the proof </li>
+                    <li> You have attempted to start a new case without finishing the proof of a previously stated case </li></ul>"""
+ 
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     # check indents, and apply penalty if applicable
@@ -380,7 +430,7 @@ def grade(element_html, data):
             if indent == true_answer_indent[i] or true_answer_indent[i] == '-1':
                 indent_score += 1
         final_score = final_score * (indent_score / len(true_answer_indent))
-    data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight}
+    data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight, 'first_wrong': first_wrong}
 
 
 def test(element_html, data):
@@ -395,7 +445,7 @@ def test(element_html, data):
         true_answer_indent = data['correct_answers'][answer_name]['correct_answers_indent']
 
         data['raw_submitted_answers'][answer_name_field] = {'answers': true_answer, 'answer_indent': true_answer_indent}
-        data['partial_scores'][answer_name] = {'score': 1, 'feedback': ''}
+        data['partial_scores'][answer_name] = {'score': 1, 'feedback': '', 'first_wrong': -1}
     elif data['test_type'] == 'incorrect':
         temp = data['correct_answers'][answer_name]['correct_answers'].copy()  # temp array to hold the correct answers
         incorrect_answers = []
@@ -406,7 +456,7 @@ def test(element_html, data):
 
         incorrect_answers_indent = ['0'] * len(incorrect_answers)
         data['raw_submitted_answers'][answer_name_field] = {'answers': incorrect_answers, 'answer_indent': incorrect_answers_indent}
-        data['partial_scores'][answer_name] = {'score': 0, 'feedback': ''}
+        data['partial_scores'][answer_name] = {'score': 0, 'feedback': '', 'first_wrong': -1}
 
     elif data['test_type'] == 'invalid':
         data['raw_submitted_answers'][answer_name] = 'bad input'
