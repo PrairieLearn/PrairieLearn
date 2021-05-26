@@ -399,9 +399,9 @@ def test(element_html, data):
             s += '<br><br><pre>' + phs.point_to_error('1 and 0', 0) + '</pre>'
             data['format_errors'][name] = s
         elif invalid_type == 'function':
-            data['raw_submitted_answers'][name] = 'atan(x)'
-            s = 'Your answer calls an invalid function "' + 'atan' + '". '
-            s += '<br><br><pre>' + phs.point_to_error('atan(x)', 0) + '</pre>'
+            data['raw_submitted_answers'][name] = 'aatan(x)'
+            s = 'Your answer calls an invalid function "' + 'aatan' + '". '
+            s += '<br><br><pre>' + phs.point_to_error('aatan(x)', 0) + '</pre>'
             data['format_errors'][name] = s
         elif invalid_type == 'variable':
             data['raw_submitted_answers'][name] = 'x + y'
