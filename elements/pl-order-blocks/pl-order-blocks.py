@@ -38,11 +38,11 @@ def prepare(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     required_attribs = ['answers-name']
-    optional_attribs = ['source-blocks-order', 'grading-method', 
-                        'indentation', 'source-header', 
-                        'solution-header', 'file-name', 
-                        'solution-placement', 'max-incorrect', 
-                        'min-incorrect', 'weight', 
+    optional_attribs = ['source-blocks-order', 'grading-method',
+                        'indentation', 'source-header',
+                        'solution-header', 'file-name',
+                        'solution-placement', 'max-incorrect',
+                        'min-incorrect', 'weight',
                         'inline', 'max-indent']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
