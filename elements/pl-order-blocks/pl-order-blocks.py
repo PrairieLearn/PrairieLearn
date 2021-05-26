@@ -67,7 +67,7 @@ def prepare(element_html, data):
             if grading_method == 'external':
                 pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
             else:
-                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
+                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent', 'id', 'depends'])
 
             is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
             if check_indentation is False:
@@ -94,7 +94,9 @@ def prepare(element_html, data):
                 incorrect_answers.append(html_tags.text)
             html_ordering.append(html_tags.text)
         else:
-            raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
+            # TODO allow comments, formatting tags, etc.
+            pass 
+            # raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
 
     if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
@@ -308,6 +310,7 @@ def parse(element_html, data):
             else:
                 ranking = -1   # wrong answers have no ranking
             student_answer_ranking.append(ranking)
+
     elif grading_mode.lower() == 'dag':
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
         children = pl_drag_drop_element.getchildren()
@@ -320,6 +323,7 @@ def parse(element_html, data):
                 continue
             content = child.text_content().strip()
             stringToId[content] = pl.get_string_attrib(child, 'id')
+        student_answer = [s.strip() for s in student_answer]
         student_answer_ranking = [stringToId.get(answer) for answer in student_answer]   
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
@@ -388,8 +392,8 @@ def grade(element_html, data):
         final_score = float(correctness / len(true_answer))
     elif grading_mode == "dag":
         order = data['submitted_answers'][answer_name]['student_submission_ordering']
-        dependsGraph = {}
-        subproofBelonging = {}
+        depends_graph = {}
+        subproof_belonging = {}
         pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
         children = pl_drag_drop_element.getchildren()
         for child in children:
@@ -401,25 +405,25 @@ def grade(element_html, data):
             stmtId = pl.get_string_attrib(child, 'id')
             depends = pl.get_string_attrib(child, 'depends', '')
             depends = depends.strip().split(',') if depends else []
-            dependsGraph[stmtId] = depends
+            depends_graph[stmtId] = depends
 
             subproof = pl.get_string_attrib(child, 'subproof', '')
-            subproofBelonging[stmtId] = subproof if subproof else None
+            subproof_belonging[stmtId] = subproof if subproof else None
 
-        correctness, first_wrong = grade_dag(order, dependsGraph, subproofBelonging)
+        correctness, first_wrong = grade_dag(order, depends_graph, subproof_belonging)
 
-        if correctness == len(dependsGraph.keys()):
+        if correctness == len(depends_graph.keys()):
             final_score = 1
-        elif correctness < len(dependsGraph.keys()):
-            final_score = float(correctness) / len(dependsGraph.keys())
+        elif correctness < len(depends_graph.keys()):
+            final_score = float(correctness) / len(depends_graph.keys())
             if first_wrong == -1:
-                feedback = "Your proof is correct so far, but it is incomplete."
+                feedback = "Your answer is correct so far, but it is incomplete."
             else:
-                feedback = r"""Your Proof is incorrect starting at <span style="color:red;">line number """ + str(first_wrong + 1) + \
+                feedback = r"""Your answer is incorrect starting at <span style="color:red;">line number """ + str(first_wrong + 1) + \
                     r"""</span>. The problem is most likely one of the following:
                     <ul><li> This line is not a part of the correct solution </li>
-                    <li> This line is not adequately supported by previous lines of the proof </li>
-                    <li> You have attempted to start a new case without finishing the proof of a previously stated case </li></ul>"""
+                    <li> This line is not adequately supported by previous lines </li>
+                    <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
  
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)

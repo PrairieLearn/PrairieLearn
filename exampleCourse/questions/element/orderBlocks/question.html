@@ -1,5 +1,5 @@
 
-<pl-question-panel>
+<!-- <pl-question-panel>
 <p>
 This question illustrates different use cases for the
 <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element"><code>pl-order-blocks</code></a>.
@@ -80,39 +80,38 @@ This question illustrates different use cases for the
 </pl-order-blocks>
 
 <hr>
-
+-->
 <pl-question-panel>
 <p>
-  <strong>Example 4:</strong> Let $a, b$ be any even numbers. Prove that $a + b$ is always even.
+  <strong>Example 4:</strong> Use a proof by contrapositive to show that if $2m^2 + n + 1$ is even then either $m$ or $n$ are odd.
 </p>
 
-<p>This example uses the attribute <code>grading-method="ranking"</code> to control how the correct solution is ordered.
-When the order of a correct block is not relevant,
- the attribute <code>ranking</code> is not provided. In this example, two of the blocks can be placed at any
-position when constructing the solution. The attribute <code>solution-placement="bottom"</code> is used
+<p>This example uses the attribute <code>grading-method="dag"</code> to control how the correct solution is ordered.
+This is especially useful when you want students to construct a mathematical proof, where the dependency of lines of the 
+proof on one another is given by a directed acyclic graph (DAG) structure. The <code>depends</code> attribute on each 
+line is used to denote which lines of the proof must appear before a particular line. 
+Then a correct answer is a topological sort of the lines of the proof.
+The attribute <code>solution-placement="bottom"</code> is used
 to display the input area above the output area.</p>
 </pl-question-panel>
 
- <pl-order-blocks answers-name="latex_answers" grading-method="ranking" solution-placement="bottom">
-  <pl-answer correct="true" ranking="1" >Proof by Contrapositive:</pl-answer>
-  <pl-answer correct="true" ranking="2" >Take some $m \in \mathbb{Z}$ </pl-answer>
-  <pl-answer correct="true" ranking="2" >Take some $n \in \mathbb{Z}$ </pl-answer>
-  <pl-answer correct="true" >Assume $m$ is even</pl-answer>
-  <pl-answer correct="true" >Assume $n$ is even</pl-answer>
-  <pl-answer correct="true" ranking="3" >$\exists \ell \in \mathbb{Z}$ such that $m = 2l$</pl-answer>
-  <pl-answer correct="true" ranking="3" >$\exists k \in \mathbb{Z}$ such that $n = 2k$</pl-answer>
-  <pl-answer correct="true" ranking="4">$am^2 + bm + cn^2 + dn + e$</pl-answer>
-  <pl-answer correct="true" ranking="5">$= a(2l)^2 + b(2l) + c(2k)^2 + d(2k) + e$ </pl-answer>
-  <pl-answer correct="true" ranking="6">$= 2(2al^2 + bl + 2ck^2 + dk) + e$ </pl-answer>
-  <pl-answer correct="true" ranking="7">Since $e$ is odd, $2(2al^2 + bl + 2ck^2 + dk) + e$ is odd </pl-answer>
-  <pl-answer correct="true" ranking="8">$QED$</pl-answer>
-</pl-order-blocks> 
+<pl-order-blocks answers-name="prime-numbers-unordered" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
+  <pl-answer correct="true" id="1"  depends=""  > Proof by Contrapositive:</pl-answer>
+  <pl-answer correct="true" id="2"  depends="1" > Take some $m \in \mathbb{Z}$ </pl-answer>
+  <pl-answer correct="true" id="3"  depends="1" > Take some $n \in \mathbb{Z}$ </pl-answer>
+  <pl-answer correct="true" id="4"  depends="2" > Assume $m$ is even</pl-answer>
+  <pl-answer correct="true" id="5"  depends="3" > Assume $n$ is even</pl-answer>
+  <pl-answer correct="true" id="6"  depends="4" > $\exists l \in \mathbb{Z}$ such that $m = 2l$</pl-answer>
+  <pl-answer correct="true" id="7"  depends="5" > $\exists k \in \mathbb{Z}$ such that $n = 2k$</pl-answer>
+  <pl-answer correct="true" id="8"  depends="6,7" > $2m^2 + n + 1 = 2(2l)^2 + 2k + 1 = 2(4l^2 + k) + 1$ </pl-answer>
+  <pl-answer correct="true" id="9" depends="8" > Then since $2(4l^2 + k)$ is even, $2(4l^2 + k) + 1$ is odd. </pl-answer>
+</pl-order-blocks>  
 
 <pl-question-panel>
   Let $A, B, C$ be propositions. Prove that $A \land B \land C \rightarrow A \land C$
 </pl-question-panel>
 
-<pl-order-blocks answers-name="prove-a-and-c" shuffle-options="true" check-indentation="false" grading-method="dag">
+<pl-order-blocks answers-name="prove-a-and-c" source-blocks-order="random" indentation="false" grading-method="dag">
   <pl-answer correct="true" id="1"  depends=""  >Assume $A \land B \land C$</pl-answer>
   <pl-answer correct="true" id="2"  depends="1" > Since $A \land B \land C$ is true, we know $A$ is true </pl-answer>
   <pl-answer correct="true" id="3"  depends="1" > Since $A \land B \land C$ is true, we know $C$ is true </pl-answer>
