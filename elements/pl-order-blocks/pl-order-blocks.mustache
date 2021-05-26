@@ -35,8 +35,8 @@
 
 {{#submission}}
     {{^parse-error}}
-        <ul class="list-group answer_block_container  ">
-            <li class="list-group-item"><strong>Your answer: </strong>
+        <ul class="list-group answer_block_container">
+            <li class="list-group-item list-group-item-secondary"><strong>Your answer: </strong>
         {{#correct}}
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
@@ -44,12 +44,14 @@
             <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>{{partially_correct}}%</span>{{feedback}}
         {{/partially_correct}}
         {{#incorrect}}
-            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i>0%</span>{{feedback}}
+            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{feedback}}
         {{/incorrect}}
-        </li>
-        {{#student_submission}}
-        		<li class="list-group-item ">{{inner_html}}</li>
-        {{/student_submission}}
+            </li>
+        </ul>
+        <ul class="list-group submission_table">
+            {{#student_submission}}
+            	<li class="list-group-item shadow">{{inner_html}}</li>
+            {{/student_submission}}
         </ul>
     {{/parse-error}}
 
@@ -63,10 +65,12 @@
 {{/submission}}
 
 {{#true_answer}}
+        <ul class="list-group">
+            <li class="list-group-item list-group-item-secondary"><strong>Correct answer ({{grading_mode}}{{check_indentation}}):</strong></li>
+        </ul>
         <ul class="list-group answer_table">
-            <li class="list-group-item list-group-item-info"><strong>Correct answer ({{grading_mode}}{{check_indentation}}):</strong></li>
         {{#question_solution}}
-            <li class="list-group-item list-group-item-dark">{{inner_html}}</li>
+            <li class="list-group-item list-group-item-success shadow">{{inner_html}}</li>
         {{/question_solution}}
         </ul>
 {{/true_answer}}
