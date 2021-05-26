@@ -25,7 +25,8 @@ course_permissions_for_user AS (
 courses_list AS (
     SELECT
         coalesce(jsonb_agg(jsonb_build_object(
-            'label', c.short_name || ': ' || c.title,
+            'short_name', c.short_name,
+            'title', c.title,
             'id', c.id
         ) ORDER BY c.short_name, c.title, c.id), '[]'::jsonb) AS courses
     FROM
@@ -52,7 +53,9 @@ enrollments_for_user AS (
 course_instances_list AS (
     SELECT
         coalesce(jsonb_agg(jsonb_build_object(
-            'label', c.short_name || ': ' || c.title || ', ' || ci.long_name,
+            'short_name', c.short_name, 
+            'title', c.title, 
+            'instance_long_name', ci.long_name,
             'id', ci.id
         ) ORDER BY c.short_name, c.title, c.id, d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC), '[]'::jsonb) AS course_instances
     FROM

@@ -119,68 +119,65 @@
 
         <%- include('../partials/advertisement'); %>
 
-        <% if (courses && courses.length > 0) { %>
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white">Courses</div>
-          <table class="table table-sm table-hover table-striped">
-            <tbody>
-              <% courses.forEach(function(course) { %>
-              <tr>
-                <td>
-                  <a href="<%= plainUrlPrefix %>/course/<%= course.id %>">
-                    <%= course.label %>
-                  </a>
-                </td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div><!-- card -->
-        <% } %> <!-- courses.length -->
+        <%# If the user doesn't have access to anything except for course instances, don't show multiple sections for courses. %> 
+        <% const showCoursesByCategory = (courses && courses.length > 0); %>
 
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white d-flex align-items-center">
-            <% if (courses && courses.length > 0) { %>
-            Course instances
-            <% } else { %>
-            Courses
-            <% } %>
-            <% if (authn_provider_name !== 'LTI') { %>
-            <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
+        <% if (showCoursesByCategory) { %>
+          <%# The course instances heading becomes an h1 otherwise %> 
+          <h1 class="h2 mb-4 font-weight-normal">Your courses</h1>
+        <% } %>
+
+        <%# Courses that the user is an administrator for %> 
+        <% if (showCoursesByCategory) { %>
+          <div class="border-bottom mb-3">
+            <h2 class="h4 font-weight-normal">
+              Managed courses
+            </h2>
+          </div>
+          <ul class="d-flex flex-wrap pl-0 mb-4">
+            <% courses.forEach(function(course) { %>
+              <%- include('courseListEntry.ejs', {
+                href: `${plainUrlPrefix}/course/${course.id}`,
+                compact: true,
+                course,
+              }); %>
+            <% }); %>
+          </ul>
+        <% } %>
+
+        <div class="d-flex justify-content-between align-items-baseline border-bottom mb-3">
+          <% if (showCoursesByCategory) { %>
+            <h2 class="h4 font-weight-normal">Course instances</h2>
+          <% } else { %>
+            <h1 class="h2 font-weight-normal">Your courses</h1>
+          <% } %>
+          <% if (authn_provider_name !== 'LTI') { %>
+            <a href="<%= plainUrlPrefix %>/enroll" class="ml-auto">
               <i class="fa fa-edit" aria-hidden="true"></i>
               <span class="d-none d-sm-inline">Add or remove courses</span>
             </a>
-            <% } %>
-          </div><!-- card-header -->
-
-          <% if (course_instances && course_instances.length == 0) { %>
+          <% } %>
+        </div>
+        <% if (course_instances && course_instances.length == 0) { %>
           <% if (devMode) { %>
-          <div class="card-body">
-            No courses loaded. Click <strong>“Load from disk”</strong>
-            above and then click <strong>“Home”</strong> to come back to
-            this page.
-          </div>
+            <div>
+              No courses loaded. Click <span class="badge border">Load from disk</span>
+              above and then click <strong>PrairieLearn</strong> to come back to
+              this page.
+            </div>
           <% } else { %> <!-- devMode -->
-          <div class="card-body">
-            No courses found. Use the “Add or remove courses” button to add one.
-          </div>
+            You aren't part of any courses. Use the “Add or remove courses” button to add one.
           <% } %> <!-- devMode -->
-          <% } else { %> <!-- course_instances.length -->
-          <table class="table table-sm table-hover table-striped">
-            <tbody>
-              <% course_instances.forEach(function(course_instance) { %>
-              <tr>
-                <td>
-                  <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
-                    <%= course_instance.label %>
-                  </a>
-                </td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
-          <% } %> <!-- course_instances.length -->
-        </div><!-- card -->
+        <% } else { %> <!-- course_instances.length -->
+          <ul class="d-flex flex-wrap pl-0 mb-4">
+            <% course_instances.forEach(function(course_instance) { %>
+              <%- include('courseInstanceListEntry.ejs', {
+                href: `${plainUrlPrefix}/course/${course_instance.id}`,
+                course_instance,
+              }); %>
+            <% }); %>
+          </ul>
+        <% } %> <!-- course_instances.length -->
       </div><!-- container -->
       <% } else { %> <!-- isAuthenticated -->
       <div class="position-relative bg-students text-white text-center pt-5">
