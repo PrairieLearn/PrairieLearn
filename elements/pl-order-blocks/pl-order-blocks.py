@@ -67,7 +67,7 @@ def prepare(element_html, data):
             if grading_method == 'external':
                 pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
             else:
-                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent', 'id', 'depends'])
+                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent', 'id', 'depends', 'subproof'])
 
             is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
             if check_indentation is False:
@@ -162,6 +162,7 @@ def render(element_html, data):
         student_submission_dict_list = []
 
         mcq_options = data['params'][answer_name]
+        mcq_options = [opt.strip() for opt in mcq_options]
 
         if answer_name in data['submitted_answers']:
             student_previous_submission = data['submitted_answers'][answer_name]['student_raw_submission']
@@ -238,8 +239,12 @@ def render(element_html, data):
                 return 'The reference solution is not provided for this question.'
 
         grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
-        grading_mode = 'in any order' if grading_mode == 'unordered' else 'in the specified order'
-
+        if grading_mode == 'unordered':
+            grading_mode = 'in any order'
+        elif grading_mode == 'dag' or grading_mode == 'ranking':
+            grading_mode = 'one possible correct order'
+        else:
+            grading_mode = 'in the specified order'
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         check_indentation = ', with correct indentation' if check_indentation is True else None
 
