@@ -9,12 +9,12 @@ class ProofState:
         self.current_subproof = subproof_id
 
     def end_subproof(self):
-        self.current_subproof = None 
+        self.current_subproof = None
         self.current_subproof_len = 0
 
     def set_proven(self, stmt_id):
         self.proven.add(stmt_id)
-        if self.current_subproof is not None: 
+        if self.current_subproof is not None:
             self.current_subproof_len += 1
 
     def is_proven(self, stmt_id):
@@ -40,13 +40,13 @@ def grade_dag(order, depends_graph, subproof_belonging):
     for i, line in enumerate(order):
         line_proven = True
         depends = depends_graph.get(line)
-        if depends is None: # statement is not in the proof
+        if depends is None:  # statement is not in the proof
             line_proven = False
         else:
             for depend in depends:
                 if not proof_state.is_proven(depend):
                     line_proven = False
-        
+
         if line_proven:
             subproof_id = subproof_belonging.get(line)
             if subproof_id is None and proof_state.current_subproof is None:
@@ -70,4 +70,3 @@ def grade_dag(order, depends_graph, subproof_belonging):
             break
 
     return len(proof_state.proven), first_wrong
-

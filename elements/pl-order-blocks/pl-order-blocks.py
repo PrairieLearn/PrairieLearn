@@ -5,7 +5,7 @@ import chevron
 import base64
 import os
 import json
-from dag_checker import grade_dag 
+from dag_checker import grade_dag
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
@@ -95,7 +95,7 @@ def prepare(element_html, data):
             html_ordering.append(html_tags.text)
         else:
             # TODO allow comments, formatting tags, etc.
-            pass 
+            pass
             # raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
 
     if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
@@ -202,7 +202,6 @@ def render(element_html, data):
         color = 'badge-danger'
         score = 0
         feedback = None
-        first_wrong = -1
 
         if answer_name in data['submitted_answers']:
             student_submission = data['submitted_answers'][answer_name]['student_raw_submission']
@@ -319,12 +318,12 @@ def parse(element_html, data):
         for child in children:
             if not isinstance(child, lxml.html.HtmlElement):
                 continue
-            if pl.get_string_attrib(child, 'correct') != 'true': 
+            if pl.get_string_attrib(child, 'correct') != 'true':
                 continue
             content = child.text_content().strip()
             stringToId[content] = pl.get_string_attrib(child, 'id')
         student_answer = [s.strip() for s in student_answer]
-        student_answer_ranking = [stringToId.get(answer) for answer in student_answer]   
+        student_answer_ranking = [stringToId.get(answer) for answer in student_answer]
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         for html_tags in element:
@@ -390,7 +389,7 @@ def grade(element_html, data):
             correctness = 0
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer))
-    elif grading_mode == "dag":
+    elif grading_mode == 'dag':
         order = data['submitted_answers'][answer_name]['student_submission_ordering']
         depends_graph = {}
         subproof_belonging = {}
@@ -399,7 +398,7 @@ def grade(element_html, data):
         for child in children:
             if not isinstance(child, lxml.html.HtmlElement):
                 continue
-            if pl.get_string_attrib(child, 'correct') != 'true': 
+            if pl.get_string_attrib(child, 'correct') != 'true':
                 continue
 
             stmtId = pl.get_string_attrib(child, 'id')
@@ -417,14 +416,14 @@ def grade(element_html, data):
         elif correctness < len(depends_graph.keys()):
             final_score = float(correctness) / len(depends_graph.keys())
             if first_wrong == -1:
-                feedback = "Your answer is correct so far, but it is incomplete."
+                feedback = 'Your answer is correct so far, but it is incomplete.'
             else:
                 feedback = r"""Your answer is incorrect starting at <span style="color:red;">line number """ + str(first_wrong + 1) + \
                     r"""</span>. The problem is most likely one of the following:
                     <ul><li> This line is not a part of the correct solution </li>
                     <li> This line is not adequately supported by previous lines </li>
                     <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
- 
+
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     # check indents, and apply penalty if applicable
