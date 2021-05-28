@@ -176,7 +176,7 @@ worker_pid = 0
 def terminate_worker(signum, stack):
     if worker_pid > 0:
         os.kill(worker_pid, signal.SIGKILL)
-    sys.exit(0)
+    os._exit(0)
 
 signal.signal(signal.SIGTERM, terminate_worker)
 signal.signal(signal.SIGINT, terminate_worker) # Ctrl-C case
