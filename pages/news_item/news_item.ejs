@@ -6,36 +6,39 @@
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'news_item'}); %>
-    <article id="content" class="container">
+    <main>
+      <article id="content" class="container">
 
-      <header>
-        <a class="btn btn-primary mb-4" href="<%= urlPrefix %>/news_items" role="button">
-          <i class="fa fa-arrow-left" aria-hidden="true"></i>
-          Back to news list
-        </a>
+        <header>
+          <a class="btn btn-primary mb-4" href="<%= urlPrefix %>/news_items" role="button">
+            <i class="fa fa-arrow-left" aria-hidden="true"></i>
+            Back to news list
+          </a>
 
-        <h1>
-          <%= news_item.title %>
-        </h1>
+          <h1>
+            <%= news_item.title %>
+          </h1>
 
-        <p>
-          <i class="mr-2 text-muted">
-            Posted on <%= news_item.formatted_date %>
-            <% if (news_item.author) { %>
-            by <%- news_item.author %>
+          <p>
+            <i class="mr-2 text-muted">
+              Posted on <%= news_item.formatted_date %>
+              <% if (news_item.author) { %>
+              by <%- news_item.author %>
+              <% } %>
+            </i>
+            <% if (news_item.show_student_badge) { %>
+                <span class="badge badge-secondary">Visible to students</span>
             <% } %>
-          </i>
-          <% if (news_item.show_student_badge) { %>
-              <span class="badge badge-secondary">Visible to students</span>
-          <% } %>
-        </p>
-      </header>
+          </p>
+        </header>
 
-      <%- news_item_html %>
-    </article>
+        <%- news_item_html %>
+      </article>
+    </main>
     <aside class="container">
       <p class="text-right small border-top mt-5 pt-3">
-        Want to help make PrairieLearn better? It's open source and <a href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
+        Want to help make PrairieLearn better? It's open source and contributions are welcome!
+        Visit <a href="https://github.com/PrairieLearn/PrairieLearn"></a>PrairieLearn on GitHub</a> to learn more.
       </p>
     </aside>
   </body>
