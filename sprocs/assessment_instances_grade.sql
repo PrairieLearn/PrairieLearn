@@ -85,7 +85,7 @@ BEGIN
     -- awarded points and score_perc
 
     -- compute the score in points, maxing out at max_points + max_bonus_points
-    points := least(total_points, max_points + max_bonus_points);
+    points := least(total_points, max_points + coalesce(max_bonus_points, 0));
 
     -- compute the score as a percentage, applying credit bonus/limits
     score_perc := points
