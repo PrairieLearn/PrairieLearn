@@ -102,6 +102,4 @@ describe('Exam assessment with bonus points', function() {
         assert.equal(results.rows[0].points, 12);
         assert.equal(results.rows[0].score_perc, 120);
     });
-    
-
 });
