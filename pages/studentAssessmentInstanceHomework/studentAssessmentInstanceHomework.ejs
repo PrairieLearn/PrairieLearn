@@ -35,6 +35,10 @@
             <div class="col-md-3 col-sm-6 col-xs-12">
               <%- include('../partials/pointsFormatter'); %>
               Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= assessment_instance.max_points %>
+              <% if (assessment_instance.max_bonus_points) { %>
+              <br />(<%= assessment_instance.max_bonus_points %> bonus
+              point<% if (assessment_instance.max_bonus_points > 1) { %>s<% } %> possible)
+              <% } %>
             </div>
             <div class="col-md-3 col-sm-6 col-xs-12">
               <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
