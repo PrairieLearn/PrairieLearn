@@ -8,10 +8,10 @@ router.use(require('./prettyPrintJson'));
 router.use('/course_instances/:course_instance_id', [
     require('../../middlewares/authzCourseInstance'),
     require('../../middlewares/authzCourseInstanceHasInstructorView'),
+    require('./endpoints/courseInstanceInfo'),
 ]);
 
 // ROUTES
-router.use('/course_instances/:course_instance_id/course_instance_info', require('./endpoints/courseInstanceInfo'));
 router.use('/course_instances/:course_instance_id/assessments', require('./endpoints/courseInstanceAssessments'));
 router.use('/course_instances/:course_instance_id/assessment_instances', require('./endpoints/courseInstanceAssessmentInstances'));
 router.use('/course_instances/:course_instance_id/submissions', require('./endpoints/courseInstanceSubmissions'));
