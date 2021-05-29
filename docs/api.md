@@ -45,7 +45,7 @@ In the endpoint list below, path components starting with a colon like
 `:course_instance_id` should be replaced with the integer IDs.
 
 * **Course instance info:**
-    - `/pl/api/v1/course_instances/:course_instance_id/course_instance_info`
+    - `/pl/api/v1/course_instances/:course_instance_id`
     - Information about the course instance.
 
 * **Gradebook:**

@@ -467,9 +467,8 @@ describe('API', function() {
 
     describe('15. GET to API for course instance info', function() {
         it('should load successfully', function(callback) {
-            locals.apiCourseInstanceInfoUrl = locals.apiCourseInstanceUrl + `/course_instance_info`;
             const options = {
-                url: locals.apiCourseInstanceInfoUrl,
+                url: locals.apiCourseInstanceUrl,
                 headers: {
                     'Private-Token': locals.api_token,
                 },
