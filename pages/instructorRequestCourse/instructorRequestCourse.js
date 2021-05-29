@@ -96,7 +96,7 @@ router.post('/', function(req, res, next) {
                                 display_timezone: result.rows[0].display_timezone,
                                 path: path.join(config.coursesRoot, repo_short_name),
                                 repo_short_name: repo_short_name,
-                                github_user: github_user.length > 0 ? github_user : null,
+                                github_user,
                                 course_request_id: creq_id,
                             };
                             github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, _job) => {

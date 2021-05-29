@@ -60,7 +60,7 @@ SELECT
     to_jsonb(gj) AS grading_job,
     to_jsonb(s) AS submission,
     to_jsonb(v) AS variant,
-    to_jsonb(iq) AS instance_question,
+    to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
     to_jsonb(q) AS question,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(ai) AS assessment_instance,
@@ -95,6 +95,7 @@ FROM
     LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
+    JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
 WHERE
     s.id = $submission_id
     AND gj.id = (

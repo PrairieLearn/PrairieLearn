@@ -948,26 +948,33 @@ function saveAndSync(fileEdit, locals, callback) {
                 syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err, result) => {
                     if (err) {
                         job.fail(err);
-                    } else if (result.hadJsonErrors) {
-                        job.fail('One or more JSON files contained errors and were unable to be synced');
-                    } else {
-                        if (config.chunksGenerator) {
-                            callbackify(chunks.updateChunksForCourse)({
-                                coursePath: locals.course.path,
-                                courseId: locals.course.id,
-                                courseData: result.courseData,
-                                oldHash: startGitHash,
-                                newHash: endGitHash,
-                            }, (err) => {
-                                if (err) {
-                                    job.fail(err);
-                                    return;
-                                }
-                                job.succeed();
-                            });
+                        return;
+                    }
+
+                    const checkJsonErrors = () => {
+                        if (result.hadJsonErrors) {
+                            job.fail('One or more JSON files contained errors and were unable to be synced');
                         } else {
                             job.succeed();
                         }
+                    };
+
+                    if (config.chunksGenerator) {
+                        callbackify(chunks.updateChunksForCourse)({
+                            coursePath: locals.course.path,
+                            courseId: locals.course.id,
+                            courseData: result.courseData,
+                            oldHash: startGitHash,
+                            newHash: endGitHash,
+                        }, (err) => {
+                            if (err) {
+                                job.fail(err);
+                            } else {
+                                checkJsonErrors();
+                            }
+                        });
+                    } else {
+                        checkJsonErrors();
                     }
                 });
             });

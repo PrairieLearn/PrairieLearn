@@ -33,11 +33,11 @@ window.PLFileEditor = function(uuid, options) {
 
     if (options.minLines) {
         this.editor.setOption('minLines', options.minLines);
-    } 
+    }
 
     if (options.maxLines) {
         this.editor.setOption('maxLines', options.maxLines);
-    } 
+    }
 
     if (options.autoResize) {
         this.editor.setAutoScrollEditorIntoView(true);
@@ -47,7 +47,10 @@ window.PLFileEditor = function(uuid, options) {
     this.plOptionFocus = options.plOptionFocus;
 
     if (options.preview == 'markdown') {
-        let renderer = new showdown.Converter();
+        let renderer = new showdown.Converter({
+            'literalMidWordUnderscores':true,
+            'literalMidWordAsterisks':true,
+        });
 
         this.editor.session.on('change', () => {
             this.updatePreview(renderer.makeHtml(this.editor.getValue()));

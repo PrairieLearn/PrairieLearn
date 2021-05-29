@@ -181,7 +181,16 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
    "score": 0.25,
    "message": "Tests completed successfully.",
    "output": "Running tests...\nTest 1 passed\nTest 2 failed!\n...",
-   "images": ["data:image/png;base64,...", "data:image/jpeg;base64,..."],
+   "images": [
+      {
+         "label": "First Image",
+         "url": "data:image/png;base64,..."
+      },
+      {
+         "label": "Second Image",
+         "url": "data:image/jpeg;base64,..."
+      }
+   ],
    "tests": [
       {
          "name": "Test 1",
@@ -198,7 +207,14 @@ The `<pl-external-grader-results>` element is capable of rendering a list of tes
          "max_points": 3,
          "message": "Make sure that your code is doing the thing correctly.",
          "output": "Running test...\nYour output did not match the expected output.",
-         "images": ["data:image/gif;base64,...", "data:image/png;base64,..."],
+         "images": [{
+               "label": "First Image",
+               "url": "data:image/gif;base64,..."
+            },
+            {
+               "label": "First Image",
+               "url": "data:image/png;base64,..."
+            }],
       }
    ]
 }
@@ -250,13 +266,13 @@ Running PrairieLearn locally with externally graded question support looks somet
 - Create an empty directory to use to share job data between containers.
     - This can live anywhere, but needs to be created first and referenced in
       the docker launch command.
-    - This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
+    - This command is copy-pastable for Windows PowerShell, MacOS, and Linux (including WSL2 instances).
 ```bash
 mkdir "$HOME/pl_ag_jobs"
 ```
-
 - Modify your PL docker run call to include the jobs directory.
 
+##### Shell Command
 On MacOS and Linux, `cd` to your course directory and copy-paste the following command:
 ```sh
 docker run -it --rm -p 3000:3000 \
@@ -281,6 +297,21 @@ docker run -it --rm -p 3000:3000 `
 
 * Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `C:\Users\Tim\pl_ag_jobs`).
 * Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, **not** `$HOME/pl_ag_jobs`).
+
+If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v "$PWD":/course \
+    -v $HOME/pl_ag_jobs:/jobs \
+    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    --add-host=host.docker.internal:172.17.0.1 \
+    prairielearn/prairielearn
+```
+
+Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
+
 
 ##### Windows errors and quirks
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo 'Starting PrairieLearn...'
+
 if [[ -n $DELAYED_START ]]; then
     echo "Waiting $DELAYED_START seconds to start"
     sleep $DELAYED_START
@@ -8,7 +10,9 @@ cd /PrairieLearn
 
 
 # kill any containers with a name like workspace-*
-CONTAINERS=$(docker ps -aq --filter "name=workspace-")
+if [ -e /var/run/docker.sock ] ; then
+    CONTAINERS=$(docker ps -aq --filter "name=workspace-")
+fi
 if [[ ! -z "$CONTAINERS" ]] ; then
     echo Killing existing workspace containers:
     echo $CONTAINERS
@@ -30,8 +34,8 @@ else
     fi
 
     if [[ $NODEMON == "true" ]]; then
-        npm run start-nodemon
+        make start-nodemon
     else
-        npm start
+        make --silent start
     fi
 fi

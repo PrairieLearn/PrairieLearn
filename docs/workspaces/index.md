@@ -78,7 +78,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode",
+        "image": "codercom/code-server",
         "port": 8080,
         "home": "/home/coder",
         "args": "--auth none",
@@ -102,7 +102,7 @@ For an externally graded workspace, a full `info.json` file should look somethin
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode",
+        "image": "codercom/code-server",
         "port": 8080,
         "home": "/home/coder",
         "args": "--auth none",
@@ -216,6 +216,21 @@ docker run -it --rm -p 3000:3000 `
     * Click "Settings"
     * Ensure `C:` is checked
 
+If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+    -v "$PWD":/course \
+    -v $HOME/pl_ag_jobs:/jobs \
+    -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    --add-host=host.docker.internal:172.17.0.1 \
+    prairielearn/prairielearn
+```
+
+Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
+
+
 #### Developing with workspaces
 
 For development, run the docker command with a final extra argument of `/PrairieLearn/docker/start_workspace.sh` to load PL and the workspace host interface in separate tmux panes.
@@ -227,3 +242,15 @@ Set these variables in your `config.json`:
 * `workspaceJobsDirectory`
 * `workspaceMainZipsDirectory`
 * `workspaceHostZipsDirectory`
+
+
+## Permissions in production
+
+When running a workspace container locally the user/group is the default setting for docker, which is typically root. In production, workspaces are run with user:group set to 1001:1001. If the workspace relies on root permissions (e.g., uses a port number below 1024) then it may work locally and fail in production. To test a workspace locally, run it like this:
+```sh
+docker run -it --rm -p HOST_PORT:CLIENT_PORT --user 1001:1001 IMAGE_NAME
+```
+For example, the [example Jupyter workspace](https://www.prairielearn.org/pl/course/108/question/9045312/preview) using the [Jupyter image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab) uses port 8080 and so can be run successfully like this:
+```
+docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyter
+```

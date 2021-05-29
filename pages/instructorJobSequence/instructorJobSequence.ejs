@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head', {pageTitle: `${job_sequence.description} #${job_sequence.number}`}); %>
-    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>

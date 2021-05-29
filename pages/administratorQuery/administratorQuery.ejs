@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/node_modules/highlight.js/styles/default.css">
-    <script src="/javascripts/jquery.tablesorter.min.js"></script>
-    <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <link href="<%= node_modules_asset_path('highlight.js/styles/default.css') %>" rel="stylesheet">
+    <link href="<%= node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'adminQueries'}); %>

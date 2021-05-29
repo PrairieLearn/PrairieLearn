@@ -34,12 +34,21 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();
 
-setInterval(() => {
-    const elapsedSec = (Date.now() - lastAutoUpdateTime) / 1000;
-    if (elapsedSec > 30) {
-        logger.error(`_autoUpdateJobManager() has not run for ${elapsedSec} seconds, update_queue: ${JSON.stringify(update_queue)}`);
-    }
-}, 1000);
+const config = require('../lib/config');
+let configFilename = 'config.json';
+if ('config' in argv) {
+    configFilename = argv['config'];
+}
+config.loadConfig(configFilename);
+
+if (config.workspaceHostWatchJobFiles) {
+    setInterval(() => {
+        const elapsedSec = (Date.now() - lastAutoUpdateTime) / 1000;
+        if (elapsedSec > 30) {
+            logger.error(`_autoUpdateJobManager() has not run for ${elapsedSec} seconds, update_queue: ${JSON.stringify(update_queue)}`);
+        }
+    }, 1000);
+}
 
 setInterval(() => {
     const elapsedSec = (Date.now() - lastPushAllTime) / 1000;
@@ -47,13 +56,6 @@ setInterval(() => {
         logger.error(`_pushAllRunningContainersToS3() has not run for ${elapsedSec} seconds`);
     }
 }, 1000);
-
-const config = require('../lib/config');
-let configFilename = 'config.json';
-if ('config' in argv) {
-    configFilename = argv['config'];
-}
-config.loadConfig(configFilename);
 
 const bodyParser = require('body-parser');
 const docker = new Docker();
@@ -168,7 +170,7 @@ async.series([
     async () => {
         /* Always grab the port from the config */
         workspace_server_settings.port = config.workspaceHostPort;
-        logger.info(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
+        logger.verbose(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
     },
     (callback) => {
         const pgConfig = {
@@ -212,12 +214,16 @@ async.series([
     (callback) => {
         server = http.createServer(app);
         server.listen(workspace_server_settings.port);
-        logger.info(`Listening on port ${workspace_server_settings.port}`);
+        logger.verbose(`Workspace server listening on port ${workspace_server_settings.port}`);
         callback(null);
     },
     async () => {
         /* Set up file watching with chokidar */
         workspacePrefix = config.workspaceJobsDirectory;
+        if (!config.workspaceHostWatchJobFiles) {
+            return;
+        }
+
         watcher = chokidar.watch(workspacePrefix, {
             ignoreInitial: true,
             awaitWriteFinish: true,
@@ -350,7 +356,7 @@ async.series([
         logger.error('Error initializing workspace host:', err, data);
         markSelfUnhealthyAsync(err);
     } else {
-        logger.info('Successfully initialized workspace host');
+        logger.info('Workspace host ready');
     }
 });
 
@@ -361,6 +367,11 @@ async.series([
  * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
  */
 async function pushContainerContentsToS3(workspace) {
+    if (workspace.homedir_location != 'S3') {
+        /* Nothing to do if we're not on S3 */
+        return;
+    }
+
     const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
     const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
     const settings = _getWorkspaceSettingsAsync(workspace.id);
@@ -380,7 +391,7 @@ async function pushAllRunningContainersToS3() {
     lastPushAllTime = Date.now();
     const result = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id: workspace_server_settings.instance_id });
     await async.eachSeries(result.rows, async (ws) => {
-        if (ws.state == 'running') {
+        if (ws.state == 'running' && ws.homedir_location == 'S3') {
             logger.info(`Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
             await pushContainerContentsToS3(ws);
             logger.info(`Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`);
@@ -527,7 +538,7 @@ const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
  * Looks up a workspace object by the workspace id.
  * This object contains all columns in the 'workspaces' table as well as:
  * - local_name (container name)
- * - s3_name (subdirectory name on s3)
+ * - remote_name (subdirectory name on s3)
  * @param {integer} workspace_id Workspace ID to search by.
  * @return {object} Workspace object, as described above.
  */
@@ -535,7 +546,8 @@ async function _getWorkspaceAsync(workspace_id) {
     const result = await sqldb.queryOneRowAsync(sql.get_workspace, { workspace_id, instance_id: workspace_server_settings.instance_id });
     const workspace = result.rows[0];
     workspace.local_name = `workspace-${workspace.launch_uuid}`;
-    workspace.s3_name = `workspace-${workspace.id}-${workspace.version}`;
+    workspace.remote_name = `workspace-${workspace.id}-${workspace.version}`;
+
     return workspace;
 }
 
@@ -684,7 +696,7 @@ async function _autoUpdateJobManager() {
         debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
         const workspace = await _getWorkspaceAsync(workspace_id);
         const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
-        const s3_name = workspace.s3_name;
+        const remote_name = workspace.remote_name;
         const sync_ignore = workspaceSettings.workspace_sync_ignore;
         debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
         debug(`watch: localPath=${local_path}`);
@@ -702,7 +714,7 @@ async function _autoUpdateJobManager() {
             logger.info(`_autoUpdateJobManager: skip ignored`);
             continue;
         } else {
-            s3_path = `${s3_name}/current/${local_path}`;
+            s3_path = `${remote_name}/current/${local_path}`;
             logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
         }
 
@@ -776,7 +788,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
 async function _getInitialZipAsync(workspace) {
     workspaceHelper.updateMessage(workspace.id, 'Loading initial files');
     const localName = workspace.local_name;
-    const s3Name = workspace.s3_name;
+    const s3Name = workspace.remote_name;
     const localPath = `${workspacePrefix}/${localName}`;
     const zipPath = `${config.workspaceHostZipsDirectory}/${localName}-initial.zip`;
     const s3Path = `${s3Name}/initial.zip`;
@@ -789,6 +801,7 @@ async function _getInitialZipAsync(workspace) {
     const isDirectory = false;
     update_queue[[zipPath, isDirectory]] = { action: 'skip' };
     await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, options);
+    await fsPromises.access(zipPath);
 
     debug(`Making directory ${localPath}`);
     await fsPromises.mkdir(localPath, { recursive: true });
@@ -826,8 +839,10 @@ async function _getInitialZipAsync(workspace) {
 
 function _getInitialFiles(workspace, callback) {
     workspaceHelper.updateMessage(workspace.id, 'Loading files');
+
     const localPath = `${workspacePrefix}/${workspace.local_name}`;
-    const s3Path = `${workspace.s3_name}/current`;
+    const s3Path = `${workspace.remote_name}/current`;
+
     _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
         if (ERR(err, callback)) return;
         var jobs = [];
@@ -942,9 +957,27 @@ const _pullImageAsync = util.promisify(_pullImage);
 
 function _createContainer(workspace, callback) {
     const localName = workspace.local_name;
-    const workspaceDir = (process.env.HOST_JOBS_DIR ? path.join(process.env.HOST_JOBS_DIR, 'workspaces') : config.workspaceJobsDirectory);
-    const workspacePath = path.join(workspaceDir, localName); /* Where docker will see the jobs (host path inside docker container) */
-    const workspaceJobPath = path.join(workspacePrefix, localName); /* Where we are putting the job files relative to the server (/jobs inside docker container) */
+    const remoteName = workspace.remote_name;
+    let jobDirectory;
+    let workspacePath; /* Where docker will see the jobs (host path outside docker container) */
+    let workspaceJobPath; /* Where we are putting the job files relative to the server (/jobs inside docker container) */
+
+    if (workspace.homedir_location == 'S3') {
+        jobDirectory = config.workspaceJobsDirectory;
+        const workspaceDir = (process.env.HOST_JOBS_DIR ? path.join(process.env.HOST_JOBS_DIR, 'workspaces') : jobDirectory);
+
+        workspacePath = path.join(workspaceDir, localName);
+        workspaceJobPath = path.join(jobDirectory, localName);
+    } else if (workspace.homedir_location == 'FileSystem') {
+        jobDirectory = config.workspaceHostHomeDirRoot;
+        const workspaceDir = (process.env.HOST_JOBS_DIR ? path.join(process.env.HOST_JOBS_DIR, 'workspaces') : jobDirectory);
+
+        workspacePath = path.join(workspaceDir, remoteName, 'current');
+        workspaceJobPath = path.join(jobDirectory, remoteName, 'current');
+    } else {
+        return callback(new Error(`Unknown backing file storage: ${workspace.homedir_location}`));
+    }
+
     const containerPath = workspace.settings.workspace_home;
     let args = workspace.settings.workspace_args.trim();
     if (args.length == 0) {
@@ -962,6 +995,15 @@ function _createContainer(workspace, callback) {
     debug(`Volume mount: ${workspacePath}:${containerPath}`);
     debug(`Container name: ${localName}`);
     async.series([
+        async () => {
+            if (workspace.homedir_location == 'FileSystem') {
+                try {
+                    await fsPromises.access(workspaceJobPath);
+                } catch (err) {
+                    throw Error('Could not access workspace files.');
+                }
+            }
+        },
         (callback) => {
             debug(`Creating directory ${workspaceJobPath}`);
             fs.mkdir(workspaceJobPath, { recursive: true }, (err) => {
@@ -1046,23 +1088,34 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     };
     await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
 
-    const result = await sqldb.queryOneRowAsync(sql.select_workspace_version, {workspace_id});
-    const { workspace_version } = result.rows[0];
+    const { workspace_version } = (await sqldb.queryOneRowAsync(sql.select_workspace_version, {workspace_id})).rows[0];
+    const { homedir_location } = (await sqldb.queryOneRowAsync(sql.select_workspace_homedir_location, { workspace_id })).rows[0];
     const workspace = {
         'id': workspace_id,
         'launch_uuid': uuid,
         'local_name': `workspace-${uuid}`,
-        's3_name': `workspace-${workspace_id}-${workspace_version}`,
+        'remote_name': `workspace-${workspace_id}-${workspace_version}`,
+        'homedir_location': homedir_location,
     };
 
     logger.info(`Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`);
     try { // only errors at this level will set host to unhealthy
-        if (useInitialZip) {
-            debug(`init: bootstrapping workspace with initial.zip`);
-            await _getInitialZipAsync(workspace);
-        } else {
-            debug(`init: syncing workspace from S3`);
-            await _getInitialFilesAsync(workspace);
+
+        /* We only need to worry about the initial zip or syncing files if we're running on S3.
+           Filesystem-backed workspaces can get away with no initial syncing steps. */
+        if (homedir_location == 'S3') {
+            try {
+                if (useInitialZip) {
+                    debug(`init: bootstrapping workspace with initial.zip`);
+                    await _getInitialZipAsync(workspace);
+                } else {
+                    debug(`init: syncing workspace from S3`);
+                    await _getInitialFilesAsync(workspace);
+                }
+            } catch (err) {
+                workspaceHelper.updateState(workspace_id, 'stopped', 'Error loading workspace files.  Click "Reboot" to try again.');
+                return; /* Don't set host to unhealthy, we've probably bungled something up with S3. */
+            }
         }
 
         try {
@@ -1127,13 +1180,20 @@ function gradeSequence(workspace_id, res) {
             const workspace = await _getWorkspaceAsync(workspace_id);
             const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
             const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
-            const zipName = `${workspace.s3_name}-${timestamp}.zip`;
+            const zipName = `${workspace.remote_name}-${timestamp}.zip`;
             zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
+
+            let homeDir;
+            if (workspace.homedir_location == 'S3') {
+                homeDir = path.join(config.workspaceJobsDirectory, workspace.local_name);
+            } else {
+                homeDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
+            }
 
             return {
                 workspace,
                 workspaceSettings,
-                workspaceDir: `${workspacePrefix}/${workspace.local_name}`,
+                workspaceDir: homeDir,
                 zipPath,
             };
         },

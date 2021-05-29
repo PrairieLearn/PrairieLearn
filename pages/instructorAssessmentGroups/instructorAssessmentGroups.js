@@ -76,7 +76,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'copy_assessment_groups') {
         const params = [
             res.locals.assessment.id,
-            req.body.inputGroupSelect01,
+            req.body.copy_assessment_id,
             res.locals.authn_user.user_id,
         ];
         sqldb.call('assessment_groups_copy', params, function(err, _result) {
@@ -92,10 +92,10 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'addGroup') {
+    } else if (req.body.__action == 'add_group') {
         const assessment_id = res.locals.assessment.id;
-        const groupname = req.body.groupname;
-        if (String(groupname).length < 1) {
+        const group_name = req.body.group_name;
+        if (!group_name || String(group_name).length < 1) {
             res.locals.errormsg = 'Please enter a group name when adding a group';
             obtainInfo(req, res, next);
             return;
@@ -105,59 +105,41 @@ router.post('/', function(req, res, next) {
         res.locals.errormsg = '';
         let updateList = new Array();
         uidlist.forEach(uid => {
-            updateList.push([groupname, uid]);
+            updateList.push([group_name, uid]);
         });
-        const params2 = [
+        const params = [
             assessment_id,
             updateList,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_groups_update', params2, (err, result) => {
+        sqldb.call('assessment_groups_update', params, (err, result) => {
             if (err) {
-                res.locals.errormsg = 'ERROR when adding group ' + groupname + ' - Internal ' + String(err);
+                res.locals.errormsg = 'ERROR when adding group ' + group_name + ' - Internal ' + String(err);
             } else {
                 const notExist = result.rows[0].not_exist_user;
                 if (notExist) {
-                    res.locals.errormsg += 'ERROR when adding group ' + groupname + ' - [' + notExist.toString() + ']. Please check if the group name is unique and whether their uids are correct.';
+                    res.locals.errormsg += 'ERROR when adding group ' + group_name + ' - [' + notExist.toString() + ']. Please check if the group name is unique and whether their uids are correct.';
                 }
                 const inGroup = result.rows[0].already_in_group;
                 if (inGroup) {
-                    res.locals.errormsg += 'ERROR when adding group ' + groupname + ' - [' + inGroup.toString() + '] are already in another group.';
+                    res.locals.errormsg += 'ERROR when adding group ' + group_name + ' - [' + inGroup.toString() + '] are already in another group.';
                 }
             }
             obtainInfo(req, res, next);
         });
-    } else if (req.body.__action == 'configGroup') {
-        res.locals.errormsg = '';
-        const params = {
-            assessment_id: res.locals.assessment.id,
-            minsize: req.body.minsize,
-            maxsize: req.body.maxsize,
-            joincheck: req.body.joincheck || false,
-            createcheck: req.body.createcheck || false,
-            leavecheck: req.body.leavecheck || false,
-        };
-        if (req.body.maxsize.length < 1 || req.body.minsize.length < 1) {
-            res.locals.errormsg += 'Please enter group max size and min size';
-            obtainInfo(req, res, next);
-            return;
-        }
-        sqldb.query(sql.config_group, params, function(err, _result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.__action == 'addmember') {
+    } else if (req.body.__action == 'add_member') {
         const assessment_id = res.locals.assessment.id;
-        const gid = req.body.gid;
-        const uids = req.body.addmemberuids;
+        const group_id = req.body.group_id;
+        const uids = req.body.add_member_uids;
         const uidlist = uids.split(/[ ,]+/);
         let failedUids = '';
         res.locals.errormsg = '';
+        //start processing
         (async () => {
             for (const uid of uidlist) {
-                const params = [
+                let params = [
                     assessment_id,
-                    gid,
+                    group_id,
                     uid,
                     res.locals.authn_user.user_id,
                 ];
@@ -168,22 +150,23 @@ router.post('/', function(req, res, next) {
                 }
             }
             if (failedUids.length > 0) {
-                res.locals.errormsg += 'Failed to add ' + failedUids + 'to Group No.' + gid + '. Please check if the uid exist.\n';
+                res.locals.errormsg += 'Failed to add ' + failedUids + '. Please check if the uid exist.\n';
             }
             obtainInfo(req, res, next);
         })();
-    } else if (req.body.__action == 'deletemember') {
+    } else if (req.body.__action == 'delete_member') {
         const assessment_id = res.locals.assessment.id;
-        const gid = req.body.gid;
-        const uids = req.body.deletememberuids;
+        const group_id = req.body.group_id;
+        const uids = req.body.delete_member_uids;
         const uidlist = uids.split(/[ ,]+/);
         let failedUids = '';
         res.locals.errormsg = '';
+        //start processing
         (async () => {
             for (const uid of uidlist) {
-                const params = [
+                let params = [
                     assessment_id,
-                    gid,
+                    group_id,
                     uid,
                     res.locals.authn_user.user_id,
                 ];
@@ -194,16 +177,16 @@ router.post('/', function(req, res, next) {
                 }
             }
             if (failedUids.length > 0) {
-                res.locals.errormsg += 'Failed to delete ' + failedUids + 'from Group No.' + gid + ']. Please check if the uid exist.\n';
+                res.locals.errormsg += 'Failed to remove ' + failedUids + '. Please check if the uid exist.\n';
             }
             obtainInfo(req, res, next);
         })();
-    } else if (req.body.__action == 'deletegroup') {
+    } else if (req.body.__action == 'delete_group') {
         const params = [
             res.locals.assessment.id,
-            req.body.gid,
+            req.body.group_id,
             res.locals.authn_user.user_id,
-        ];
+        ];    
         sqldb.call('assessment_groups_delete_group', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);

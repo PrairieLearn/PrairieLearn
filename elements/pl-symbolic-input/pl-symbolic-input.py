@@ -18,6 +18,8 @@ IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = 'i'
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 15  # Minimum size to show the placeholder text
+ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = '0'
 
 
 def get_variables_list(variables_string):
@@ -31,15 +33,15 @@ def get_variables_list(variables_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text', 'allow-blank', 'blank-value']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
     correct_answer = pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
     if correct_answer is not None:
-        if name in data['correct-answers']:
-            raise Exception('duplicate correct-answers variable name: %s' % name)
-        data['correct-answers'][name] = correct_answer
+        if name in data['correct_answers']:
+            raise Exception('duplicate correct_answers variable name: %s' % name)
+        data['correct_answers'][name] = correct_answer
 
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     if not (imaginary_unit == 'i' or imaginary_unit == 'j'):
@@ -57,7 +59,7 @@ def render(element_html, data):
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    operators = ['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
+    operators = ['cos', 'sin', 'tan', 'arccos', 'arcsin', 'arctan', 'acos', 'asin', 'atan', 'arctan2', 'atan2', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
     constants = ['pi', 'e']
 
     if data['panel'] == 'question':
@@ -216,9 +218,13 @@ def parse(element_html, data):
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, 'blank-value', str(BLANK_VALUE_DEFAULT))
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
+    if allow_blank and a_sub is not None and a_sub.strip() == '':
+        a_sub = blank_value
     if not a_sub:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None

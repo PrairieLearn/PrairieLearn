@@ -1,14 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <%- include('../partials/head', {pageTitle: 'Edit ' + fileEdit.fileName}); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <script src="/node_modules/ace-builds/src-min-noconflict/ace.js"></script>
-    <script src="/node_modules/crypto-js/crypto-js.js"></script>
+    <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ace.js') %>"></script>
+    <script src="<%= node_modules_asset_path('crypto-js/crypto-js.js') %>"></script>
     <script src="./file_edit?serve=client"></script>
-    <script src="/node_modules/socket.io-client/dist/socket.io.js"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
 </head>
 
 <body>
@@ -103,7 +101,7 @@
                 <div class="card-body row collapse" id="help-<%= fileEdit.uuid %>">
                     <div class="container-fluid">
                         <p>
-                            You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong>.
+                            You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
                             <% if (config.fileEditorUseGit) { %>
                             Doing so will write your changes to disk, will push them to the remote GitHub repository, and will sync them to the database.
                             <% } else { %>

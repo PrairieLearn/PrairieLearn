@@ -1,8 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
     <%- include('../partials/head'); %>
+    <script src="<%= node_modules_asset_path('clipboard/dist/clipboard.min.js') %>"></script>
+    <script>
+      $(() => {
+          let clipboard = new ClipboardJS('.btn-copy');
+          clipboard.on('success', (e) => {
+              $(e.trigger).popover({
+                  content: 'Copied!',
+                  placement: 'bottom',
+              }).popover('show');
+              window.setTimeout(function () {
+                  $(e.trigger).popover('hide');
+              }, 1000);
+
+          });
+      });
+    </script>
     <style>
         .popover{
             max-width: 50%;
@@ -52,6 +68,17 @@
                         </td>
                     </tr>
                     <% } %>
+                    <tr>
+                      <th class="align-middle">Student Link</th>
+                      <td class="form-inline align-middle">
+                        <span class="input-group">
+                          <span readonly class="form-control form-control-sm"><%= studentLink %></span>
+                          <button type="button" class="input-group-prepend btn btn-sm btn-outline-secondary btn-copy" data-clipboard-text="<%= studentLink %>">
+                            <i class="far fa-clipboard"></i>
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
                 </tbody>
             </table>
             <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>

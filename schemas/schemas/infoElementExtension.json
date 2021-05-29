@@ -1,0 +1,84 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Element Extension Info",
+    "description": "Info files for v3 element extensions.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "controller": {
+            "description": "The name of the extension's Python controller file.",
+            "type": "string"
+        },
+        "dependencies": {
+            "description": "The extension's client-side dependencies.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "coreStyles": {
+                    "description": "The styles required by this extension from /public/stylesheets.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in /public/stylesheets.",
+                        "type": "string"
+                    }
+                },
+                "coreScripts": {
+                    "description": "The scripts required by this extension from /public/javascripts.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in /public/javascripts.",
+                        "type": "string"
+                    }
+                },
+                "nodeModulesStyles": {
+                    "description": "The styles required by this extension from /node_modules.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in /node_modules.",
+                        "type": "string"
+                    }
+                },
+                "nodeModulesScripts": {
+                    "description": "The scripts required by this extension from /node_modules.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in /node_modules.",
+                        "type": "string"
+                    }
+                },
+                "clientFilesCourseStyles": {
+                    "description": "The styles required by this extension from clientFilesCourse.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in clientFilesCourse.",
+                        "type": "string"
+                    }
+                },
+                "clientFilesCourseScripts": {
+                    "description": "The styles required by this extension from clientFilesCourse.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in clientFilesCourse.",
+                        "type": "string"
+                    }
+                },
+                "extensionStyles": {
+                    "description": "The styles required by this extension from the extension's directory.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in the extension's directory.",
+                        "type": "string"
+                    }
+                },
+                "extensionScripts": {
+                    "description": "The scripts required by this extension from the extension's directory.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in the extension's directory.",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

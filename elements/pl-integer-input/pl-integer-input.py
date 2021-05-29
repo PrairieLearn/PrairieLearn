@@ -4,6 +4,7 @@ import chevron
 import math
 import prairielearn as pl
 import random
+import numpy
 
 
 WEIGHT_DEFAULT = 1
@@ -14,20 +15,40 @@ DISPLAY_DEFAULT = 'inline'
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
+ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = 0
+BASE_DEFAULT = 10
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'size', 'show-help-text', 'base', 'allow-blank', 'blank-value']
+
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
+    base = pl.get_integer_attrib(element, 'base', BASE_DEFAULT)
 
-    correct_answer = pl.get_integer_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
+    if base != 0 and (base < 2 or base > 36):
+        raise Exception('Base must be either 0, or between 2 and 36')
+
+    correct_answer = pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
     if correct_answer is not None:
         if name in data['correct_answers']:
             raise Exception('duplicate correct_answers variable name: %s' % name)
+        # Test conversion, but leave as string so proper value is shown on answer panel
         data['correct_answers'][name] = correct_answer
+
+    if correct_answer is None:
+        correct_answer = pl.from_json(data['correct_answers'].get(name, None))
+    if correct_answer is not None:
+        try:
+            if not isinstance(correct_answer, int):
+                correct_answer = int(correct_answer, base)
+        except Exception:
+            raise Exception('correct answer is not a valid input: %s' % name)
+        if correct_answer > 2**53 - 1 or correct_answer < -((2**53) - 1):
+            raise Exception('correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1)).')
 
 
 def render(element_html, data):
@@ -37,13 +58,19 @@ def render(element_html, data):
     suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
+    base = pl.get_integer_attrib(element, 'base', BASE_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
         # Get info strings
-        info_params = {'format': True}
+        info_params = {
+            'format': True,
+            'base': base,
+            'default_base': base == BASE_DEFAULT or base == 0,
+            'zero_base': base == 0
+        }
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
@@ -60,6 +87,7 @@ def render(element_html, data):
             'info': info,
             'shortinfo': shortinfo,
             'size': size,
+            'base': base,
             'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
             'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD,
             'uuid': pl.get_uuid()
@@ -97,6 +125,8 @@ def render(element_html, data):
         html_params = {
             'submission': True,
             'label': label,
+            'base': base,
+            'default_base': base == BASE_DEFAULT or base == 0,
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
@@ -112,7 +142,8 @@ def render(element_html, data):
             a_sub = pl.from_json(a_sub)
 
             html_params['suffix'] = suffix
-            html_params['a_sub'] = '{:d}'.format(a_sub)
+            html_params['a_sub'] = numpy.base_repr(a_sub, base) if base > 0 else data['raw_submitted_answers'].get(name, str(a_sub))
+
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
@@ -142,7 +173,12 @@ def render(element_html, data):
     elif data['panel'] == 'answer':
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is not None:
-            html_params = {'answer': True, 'label': label, 'a_tru': '{:d}'.format(a_tru), 'suffix': suffix}
+            if isinstance(a_tru, str):
+                a_tru_str = a_tru
+                a_tru = pl.string_to_integer(a_tru_str, base)
+            else:
+                a_tru_str = numpy.base_repr(a_tru, base if base > 0 else 10)
+            html_params = {'answer': True, 'label': label, 'a_tru': a_tru_str, 'suffix': suffix}
             with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
         else:
@@ -156,6 +192,7 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    base = pl.get_integer_attrib(element, 'base', BASE_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -165,25 +202,39 @@ def parse(element_html, data):
         return
 
     if a_sub.strip() == '':
-        opts = {
-            'format_error': True,
-            'format_error_message': 'the submitted answer was blank.'
-        }
-        with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
-            format_str = chevron.render(f, opts).strip()
-        data['format_errors'][name] = format_str
-        data['submitted_answers'][name] = None
-        return
+
+        if pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT):
+            a_sub = pl.get_integer_attrib(element, 'blank-value', BLANK_VALUE_DEFAULT)
+        else:
+            opts = {
+                'format_error': True,
+                'format_error_message': 'the submitted answer was blank.',
+                'base': base,
+                'default_base': base == BASE_DEFAULT or base == 0,
+                'zero_base': base == 0
+            }
+            with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
+                format_str = chevron.render(f, opts).strip()
+                data['format_errors'][name] = format_str
+                data['submitted_answers'][name] = None
+            return
 
     # Convert to integer
     try:
-        a_sub_parsed = pl.string_to_integer(a_sub)
+        a_sub_parsed = pl.string_to_integer(str(a_sub), base)
         if a_sub_parsed is None:
             raise ValueError('invalid submitted answer (wrong type)')
+        if a_sub_parsed > 2**53 - 1 or a_sub_parsed < -((2**53) - 1):
+            data['format_errors'][name] = 'correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1)).'
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
     except Exception:
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
-            format_str = chevron.render(f, {'format_error': True}).strip()
+            format_str = chevron.render(f, {
+                'format_error': True,
+                'base': base,
+                'default_base': base == BASE_DEFAULT or base == 0,
+                'zero_base': base == 0
+            }).strip()
         data['format_errors'][name] = format_str
         data['submitted_answers'][name] = None
 
@@ -191,6 +242,7 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    base = pl.get_integer_attrib(element, 'base', BASE_DEFAULT)
 
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -211,8 +263,8 @@ def grade(element_html, data):
     a_sub = pl.from_json(a_sub)
 
     # Cast both submitted and true answers as integers.
-    a_tru = int(a_tru)
-    a_sub = int(a_sub)
+    a_tru = pl.string_to_integer(a_tru, base) if isinstance(a_tru, str) else int(a_tru)
+    a_sub = pl.string_to_integer(a_sub, base) if isinstance(a_sub, str) else int(a_sub)
 
     if a_tru == a_sub:
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
@@ -224,6 +276,7 @@ def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    base = pl.get_integer_attrib(element, 'base', BASE_DEFAULT)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
@@ -231,13 +284,21 @@ def test(element_html, data):
     # If correct answer is in a format generated by pl.to_json, convert it
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
+    if isinstance(a_tru, str):
+        a_tru = pl.string_to_integer(a_tru, base)
 
     result = data['test_type']
     if result == 'correct':
-        data['raw_submitted_answers'][name] = str(a_tru)
+        if base > 0:
+            data['raw_submitted_answers'][name] = numpy.base_repr(a_tru, base)
+        elif random.choice([True, False]):
+            data['raw_submitted_answers'][name] = numpy.base_repr(a_tru, 10)
+        else:
+            # Use 0x format
+            data['raw_submitted_answers'][name] = f'{a_tru:#x}'
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
-        data['raw_submitted_answers'][name] = str(a_tru + (random.randint(1, 11) * random.choice([-1, 1])))
+        data['raw_submitted_answers'][name] = numpy.base_repr(a_tru + (random.randint(1, 11) * random.choice([-1, 1])), base if base > 0 else 10)
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif result == 'invalid':
         # FIXME: add more invalid expressions, make text of format_errors

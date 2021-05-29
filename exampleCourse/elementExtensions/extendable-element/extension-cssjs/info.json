@@ -1,0 +1,7 @@
+{
+    "controller": "extension-cssjs.py",
+    "dependencies": {
+        "extensionStyles": ["extension-cssjs.css"],
+        "extensionScripts": ["extension-cssjs.js"]
+    }
+}

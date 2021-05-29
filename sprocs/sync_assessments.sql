@@ -167,13 +167,35 @@ BEGIN
 
         -- if it is a group work try to insert a group_config
         IF (valid_assessment.data->>'group_work')::boolean THEN
-            INSERT INTO group_configs
-                (course_instance_id,
-                assessment_id
+            INSERT INTO group_configs (
+                course_instance_id,
+                assessment_id,
+                maximum,
+                minimum,
+                student_authz_create,
+                student_authz_join,
+                student_authz_leave
             ) VALUES (
                 syncing_course_instance_id,
-                new_assessment_id
-            ) ON CONFLICT DO NOTHING;
+                new_assessment_id,
+                (valid_assessment.data->>'group_max_size')::bigint,
+                (valid_assessment.data->>'group_min_size')::bigint,
+                (valid_assessment.data->>'student_group_create')::boolean,
+                (valid_assessment.data->>'student_group_join')::boolean,
+                (valid_assessment.data->>'student_group_leave')::boolean
+            ) ON CONFLICT (assessment_id)
+            DO UPDATE
+            SET 
+                maximum = EXCLUDED.maximum,
+                minimum = EXCLUDED.minimum,
+                student_authz_create = EXCLUDED.student_authz_create,
+                student_authz_join = EXCLUDED.student_authz_join,
+                student_authz_leave = EXCLUDED.student_authz_leave,
+                deleted_at = NULL;
+        ELSE
+            UPDATE group_configs
+            SET deleted_at = now()
+            WHERE assessment_id = new_assessment_id;
         END IF;
 
         -- Now process all access rules for this assessment
@@ -191,7 +213,8 @@ BEGIN
                 exam_uuid,
                 start_date,
                 end_date,
-                show_closed_assessment)
+                show_closed_assessment,
+                show_closed_assessment_score)
             (
                 SELECT
                     new_assessment_id,
@@ -206,7 +229,8 @@ BEGIN
                     (access_rule->>'exam_uuid')::uuid,
                     input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
-                    (access_rule->>'show_closed_assessment')::boolean
+                    (access_rule->>'show_closed_assessment')::boolean,
+                    (access_rule->>'show_closed_assessment_score')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -226,7 +250,8 @@ BEGIN
                 seb_config = EXCLUDED.seb_config,
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date,
-                show_closed_assessment = EXCLUDED.show_closed_assessment;
+                show_closed_assessment = EXCLUDED.show_closed_assessment,
+                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score;
         END LOOP;
 
         -- Delete excess access rules
@@ -288,6 +313,7 @@ BEGIN
                         points_list,
                         force_max_points,
                         tries_per_variant,
+                        grade_rate_minutes,
                         deleted_at,
                         assessment_id,
                         question_id,
@@ -300,6 +326,7 @@ BEGIN
                         jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
+                        (assessment_question->>'grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
                         (assessment_question->>'question_id')::bigint,
@@ -313,6 +340,7 @@ BEGIN
                         init_points = EXCLUDED.init_points,
                         force_max_points = EXCLUDED.force_max_points,
                         tries_per_variant = EXCLUDED.tries_per_variant,
+                        grade_rate_minutes = EXCLUDED.grade_rate_minutes,
                         deleted_at = EXCLUDED.deleted_at,
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
@@ -424,6 +452,7 @@ BEGIN
     FROM assessments AS a
     WHERE
         a.deleted_at IS NULL
+        AND a.course_instance_id = syncing_course_instance_id
         AND (
             a.assessment_set_id IS NULL
             OR a.number IS NULL

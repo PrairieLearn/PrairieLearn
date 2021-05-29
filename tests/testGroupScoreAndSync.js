@@ -60,7 +60,7 @@ describe('assessment instance group synchronization test', function () {
         });
         it('should have a CSRF token', function() {
             elemList = locals.$('form input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 6);
+            assert.lengthOf(elemList, 5);
             assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
@@ -80,9 +80,9 @@ describe('assessment instance group synchronization test', function () {
         });
         it('put 3 users in a group',  function(callback) {
             var form = {
-                __action: 'addGroup',
+                __action: 'add_group',
                 __csrf_token: locals.__csrf_token,
-                groupname: 'test_group',
+                group_name: 'test_group',
                 uids: locals.studentUsers[0].uid+','+ locals.studentUsers[1].uid+',' + locals.studentUsers[2].uid,
             };
             request.post({url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true}, function (err, response) {
@@ -96,7 +96,7 @@ describe('assessment instance group synchronization test', function () {
         it('should create the correct group configuration', function(callback) {
             var params = {
                 assessment_id: locals.assessment_id,
-                groupname: 'test_group',
+                group_name: 'test_group',
             };
             sqldb.query(sql.select_group_users, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -136,7 +136,7 @@ describe('assessment instance group synchronization test', function () {
        
         it('should be able to start the assessment', function(callback) {
             var form = {
-                __action: 'newInstance',
+                __action: 'new_instance',
                 __csrf_token: locals.__csrf_token,
             };
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {

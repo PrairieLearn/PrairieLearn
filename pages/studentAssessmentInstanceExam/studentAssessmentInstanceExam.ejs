@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -63,7 +63,6 @@
         $(function() {$('#timeLimitExpiredModal').modal({})})
       </script>
     <% } // showTimeLimitExpiredModal %>
-
     <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
     <div id="content" class="container">
       <div class="card mb-4">
@@ -132,9 +131,11 @@
                 Time remaining: <span id="countdownDisplay"></span>
               </div>
             </div>
-            <%- include('../partials/countdown', {
+            <%- include('../partials/examTimeLimitCountdown', {
               serverTimeLimitMS: assessment_instance_time_limit_ms,
               serverRemainingMS: assessment_instance_remaining_ms,
+              serverUpdateURL: urlPrefix + '/assessment_instance/' +
+                               assessment_instance.id + '/time_remaining',
               progressSelector: '#countdownProgress',
               displaySelector: '#countdownDisplay',
             }) %>
@@ -206,7 +207,7 @@
 
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
-                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
+                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
                 <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
               <% } else { %>
                 <td class="text-center">
@@ -235,6 +236,11 @@
               <% } %>
             </form>
             <ul class="my-1">
+              <% if (suspendedSavedAnswers > 1) { %>
+              <li>There are <%= suspendedSavedAnswers %> saved answers that cannot be graded yet because their grade rate has not been reached. They are marked with the <i class="fa fa-hourglass-half"></i> icon above. Reload this page to update this information.</li>
+              <% } else if (suspendedSavedAnswers == 1) { %>
+              <li>There is one saved answer that cannot be graded yet because its grade rate has not been reached. It is marked with the <i class="fa fa-hourglass-half"></i> icon above. Reload this page to update this information.</li>
+              <% } %>
               <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
               <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
               <% if (authz_result.mode == 'SEB' || authz_result.password != null || authz_result.show_closed_assessment == false) { %>

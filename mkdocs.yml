@@ -32,6 +32,8 @@ pages:
   - 'Element for drawing': 'pl-drawing/index.md'
   - 'External grading': 'externalGrading.md'
   - 'Python autograder': 'python-grader/index.md'
+  - 'C autograder': 'c-grader/index.md'
+  - 'Java autograder': 'java-grader/index.md'
   - 'Workspaces': 'workspaces/index.md'
   - 'Manual grading': 'manualGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
@@ -44,6 +46,7 @@ pages:
   - 'Installing natively': 'installingNative.md'
   - 'Server configuration': 'configJson.md'
   - 'Question element writing': 'devElements.md'
+  - 'Element extensions': 'elementExtensions.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
 - Admin Guide:

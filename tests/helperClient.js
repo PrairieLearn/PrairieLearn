@@ -41,3 +41,18 @@ module.exports.extractAndSaveCSRFToken = (context, $, parentSelector = '') => {
     return csrfToken;
 };
 
+
+/**
+ * Utility function that extracts a variant ID from a `__variant_id` input
+ * that is a descendent of the `parentSelector`, if one is specified.
+ * The token will also be persisted to `context.__variant_id`.
+ */
+module.exports.extractAndSaveVariantId = (context, $, parentSelector = '') => {
+    const variantIdInput = $(`${parentSelector} input[name="__variant_id"]`);
+    assert.lengthOf(variantIdInput, 1);
+    const variantId = variantIdInput.val();
+    assert.isString(variantId);
+    context.__variant_id = variantId;
+    return variantId;
+};
+

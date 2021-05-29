@@ -63,7 +63,7 @@ PrairieLearn
 ```sh
 # make sure you are in the top-level PrairieLearn/ directory
 npm test
-npm run lint -s
+make lint
 ```
 
 * The above tests are run by the CI server on every push to GitHub.
@@ -103,6 +103,8 @@ debug('func()', 'param:', param);
 ```
 
 * As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
+
+* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `npx mocha --trace-warnings tests/index.js`.
 
 ## Debugging client-side JavaScript
 
@@ -589,6 +591,16 @@ FROM
 
 * Use the [async library](http://caolan.github.io/async/) for complex control flow. Versions 3 and higher of `async` support both async/await and callback styles.
 
+## Using async route handlers with ExpressJS
+
+* Express can't directly use async route handlers. Instead we use [express-async-handler](https://www.npmjs.com/package/express-async-handler) like this:
+
+```javascript
+const asyncHandler = require('express-async-handler');
+router.get('/', asyncHandler(async (req, res, next) => {
+    // can use "await" here
+}));
+```
 
 ## Interfacing between callback-style and async/await-style functions
 
@@ -864,14 +876,14 @@ router.post('/', function(req, res, next) {
 app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
 ```
 
-* To lint the code, use `npm run lint -s`. This is also run by the CI tests.
+* To lint the code, use `make lint`. This is also run by the CI tests.
 
 
 ## Question-rendering control flow
 
 * The core files involved in question rendering are [lib/question.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/question.js), [lib/question.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/question.sql), and [pages/partials/question.ejs](https://github.com/PrairieLearn/PrairieLearn/blob/master/pages/partials/question.ejs).
 
-* The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestion`, `pages/studentInstanceQuestionExam`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
+* The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestionExam`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
 
 * For example, the exact control-flow for `pages/instructorQuestion` is:
 

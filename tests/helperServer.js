@@ -3,10 +3,13 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const tmp = require('tmp-promise');
 const path = require('path');
+const delay = require('delay');
+const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const config = require('../lib/config');
 const load = require('../lib/load');
+const aws = require('../lib/aws');
 const cron = require('../cron');
 const socketServer = require('../lib/socket-server');
 const serverJobs = require('../lib/server-jobs');
@@ -15,6 +18,9 @@ const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
 const workers = require('../lib/workers');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 config.startServer = false;
 config.serverPort = 3007;
@@ -34,6 +40,9 @@ module.exports = {
             debug('before()');
             var that = this;
             async.series([
+                async () => {
+                    await aws.init();
+                },
                 function(callback) {
                     debug('before(): initializing DB');
                     // pass "this" explicitly to enable this.timeout() calls
@@ -63,8 +72,12 @@ module.exports = {
                 },
                 function(callback) {
                     debug('before(): sync from disk');
-                    syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function(err) {
+                    syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function(err, result) {
                         if (ERR(err, callback)) return;
+                        if (result.hadJsonErrorsOrWarnings) {
+                            console.log(logger.getOutput());
+                            return callback(new Error(`Errors or warnings found during sync of ${courseDir} (output printed to console)`));
+                        }
                         callback(null);
                     });
                 },
@@ -195,3 +208,29 @@ module.exports = {
         });
     },
 };
+
+module.exports.getLastJobSequenceIdAsync = async () => {
+    const result = await sqldb.queryZeroOrOneRowAsync(sql.select_last_job_sequence, []);
+    if (result.rowCount == 0) throw new Error('Could not find last job_sequence_id: did the job start?');
+    const job_sequence_id = result.rows[0].id;
+    return job_sequence_id;
+};
+module.exports.getLastJobSequenceId = util.callbackify(module.exports.getLastJobSequenceIdAsync);
+
+module.exports.waitForJobSequenceAsync = async (job_sequence_id) => {
+    let job_sequence;
+    while (true) { // eslint-disable-line no-constant-condition
+        const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, { job_sequence_id });
+        job_sequence = result.rows[0];
+        if (job_sequence.status != 'Running') break;
+        await delay(10);
+    }
+    return job_sequence;
+};
+module.exports.waitForJobSequence = util.callbackify(module.exports.waitForJobSequenceAsync);
+
+module.exports.waitForJobSequenceSuccessAsync = async (job_sequence_id) => {
+    const job_sequence = await module.exports.waitForJobSequenceAsync(job_sequence_id);
+    assert.equal(job_sequence.status, 'Success');
+};
+module.exports.waitForJobSequenceSuccess = util.callbackify(module.exports.waitForJobSequenceSuccessAsync);

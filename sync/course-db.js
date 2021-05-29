@@ -7,7 +7,7 @@ const fsPromises = require('fs').promises;
 const util = require('util');
 const async = require('async');
 const jju = require('jju');
-const Ajv = require('ajv');
+const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors');
 const { parseISO, isValid, isAfter } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
@@ -20,9 +20,7 @@ const perf = require('./performance')('course-db');
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ schemaId: 'auto', allErrors: true, jsonPointers: true });
-// @ts-ignore
-ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'));
+const ajv = new Ajv({ allErrors: true });
 
 const DEFAULT_QUESTION_INFO = {
     type: 'Calculation',
@@ -150,6 +148,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} longName
  * @property {number} number
  * @property {string} timezone
+ * @property {boolean} hideInEnrollPage
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
@@ -183,6 +182,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {string} id
   * @property {boolean} forceMaxPoints
   * @property {number} triesPerVariant
+  * @property {number} gradeRateMinutes
   */
 
 /**
@@ -194,6 +194,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -203,6 +204,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -223,6 +225,12 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
  * @property {boolean} groupWork
+ * @property {number} groupMaxSize
+ * @property {number} groupMinSize
+ * @property {boolean} studentGroupCreate
+ * @property {boolean} studentGroupJoin
+ * @property {boolean} studentGroupLeave
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -422,6 +430,20 @@ module.exports.courseDataHasErrors = function(courseData) {
     if (Object.values(courseData.courseInstances).some(courseInstance => {
         if (infofile.hasErrors(courseInstance.courseInstance)) return true;
         return Object.values(courseInstance.assessments).some(infofile.hasErrors);
+    })) return true;
+    return false;
+};
+
+/**
+ * @param {CourseData} courseData
+ * @returns {boolean}
+ */
+module.exports.courseDataHasErrorsOrWarnings = function(courseData) {
+    if (infofile.hasErrorsOrWarnings(courseData.course)) return true;
+    if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings)) return true;
+    if (Object.values(courseData.courseInstances).some(courseInstance => {
+        if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
+        return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
     })) return true;
     return false;
 };
@@ -895,8 +917,8 @@ async function validateAssessment(assessment, questions) {
     };
     (assessment.zones || []).forEach(zone => {
         (zone.questions || []).map(zoneQuestion => {
-            if (!allowRealTimeGrading && Array.isArray(zoneQuestion.points)) {
-                errors.push(`Cannot specify an array of points for a question if real-time grading is disabled`);
+            if (!allowRealTimeGrading && Array.isArray(zoneQuestion.points) && zoneQuestion.points.length > 1) {
+                errors.push(`Cannot specify an array of multiple point values for a question if real-time grading is disabled`);
             }
             // We'll normalize either single questions or alternative groups
             // to make validation easier
@@ -907,8 +929,8 @@ async function validateAssessment(assessment, questions) {
             } else if ('alternatives' in zoneQuestion) {
                 zoneQuestion.alternatives.forEach(alternative => checkAndRecordQid(alternative.id));
                 alternatives = zoneQuestion.alternatives.map(alternative => {
-                    if (!allowRealTimeGrading && Array.isArray(alternative.points)) {
-                        errors.push(`Cannot specify an array of points for an alternative if real-time grading is disabled`);
+                    if (!allowRealTimeGrading && Array.isArray(alternative.points) && alternative.points.length > 1) {
+                        errors.push(`Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`);
                     }
                     return {
                         points: alternative.points || zoneQuestion.points,

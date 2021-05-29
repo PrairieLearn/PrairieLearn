@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -50,7 +50,11 @@
               </td>
               <td class="text-center align-middle">
                 <% if (!row.multiple_instance_header) { %>
+                <% if(!row.show_closed_assessment_score) { %>
+                Score not shown
+                <% } else { %>
                 <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                <% } %>
                 <% } %>
               </td>
             </tr>

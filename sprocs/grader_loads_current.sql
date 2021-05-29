@@ -42,7 +42,9 @@ CREATE OR REPLACE FUNCTION
         OUT desired_instances_by_history_jobs double precision,
         OUT desired_instances_by_current_users double precision,
         OUT desired_instances_by_history_users double precision,
-        OUT desired_instances integer,      -- the actual number of requested grading instances
+        OUT desired_instances_current integer,  -- instantaneous number of requested grading instances
+        OUT desired_instances_history integer,  -- max of historical values
+        OUT desired_instances integer,          -- the actual number of requested grading instances
         OUT timestamp_formatted text
     )
 AS $$
@@ -171,7 +173,7 @@ BEGIN
     desired_instances_by_history_jobs := history_jobs * history_capacity_factor / jobs_per_instance;
     desired_instances_by_current_users := predicted_jobs_by_current_users / jobs_per_instance;
     desired_instances_by_history_users := predicted_jobs_by_history_users / jobs_per_instance;
-    desired_instances := ceiling(greatest(
+    desired_instances_current := ceiling(greatest(
         1,
         desired_instances_by_ungraded_jobs,
         desired_instances_by_current_jobs,
@@ -179,6 +181,18 @@ BEGIN
         desired_instances_by_current_users,
         desired_instances_by_history_users
     ));
+
+    -- ######################################################################
+    -- anti-flapping using historical information
+
+    SELECT coalesce(max(value), 0)
+    INTO desired_instances_history
+    FROM time_series
+    WHERE
+        name = 'desired_instances_current'
+        AND date > now() - history_interval;
+
+    desired_instances := greatest(desired_instances_current, desired_instances_history);
 
     -- ######################################################################
     -- write data to time_series table
@@ -218,6 +232,8 @@ BEGIN
         ('desired_instances_by_history_jobs', desired_instances_by_history_jobs),
         ('desired_instances_by_current_users', desired_instances_by_current_users),
         ('desired_instances_by_history_users', desired_instances_by_history_users),
+        ('desired_instances_current', desired_instances_current),
+        ('desired_instances_history', desired_instances_history),
         ('desired_instances', desired_instances);
 
     -- ######################################################################

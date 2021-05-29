@@ -13,8 +13,9 @@
 !docker/
 !elements/
 !exampleCourse/
-!testCourse/
+!grader_host/
 !lib/
+!Makefile
 !middlewares/
 !migrations/
 !models/
@@ -22,6 +23,7 @@
 !package.json
 !package-lock.json
 !pages/
+!prairielib/
 !public/
 !question-servers/
 !requirements.txt
@@ -30,6 +32,7 @@
 !schemas/
 !sprocs/
 !sync/
+!testCourse/
 !tests/
 !tools/
 !webhooks/

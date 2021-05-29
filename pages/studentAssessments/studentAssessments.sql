@@ -19,6 +19,7 @@ WITH
             aa.credit,
             aa.credit_date_string,
             aa.access_rules,
+            aa.show_closed_assessment_score,
             NULL::integer AS assessment_instance_id,
             NULL::integer AS assessment_instance_number,
             NULL::integer AS assessment_instance_score_perc,
@@ -53,6 +54,7 @@ WITH
             mia.credit,
             mia.credit_date_string,
             mia.access_rules,
+            mia.show_closed_assessment_score,
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc,
@@ -83,6 +85,7 @@ WITH
             aa.credit,
             aa.credit_date_string,
             aa.access_rules,
+            aa.show_closed_assessment_score,
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc,
@@ -90,8 +93,8 @@ WITH
         FROM
             -- join group_users first to find all group assessments
             group_configs AS gc
-            JOIN groups AS gr ON (gr.group_config_id = gc.id AND gr.deleted_at IS NULL)
-            JOIN group_users AS gu ON (gu.group_id = gr.id AND gu.user_id = $user_id)
+            JOIN groups AS g ON (g.group_config_id = gc.id AND g.deleted_at IS NULL)
+            JOIN group_users AS gu ON (gu.group_id = g.id AND gu.user_id = $user_id)
             FULL JOIN assessments AS a ON (gc.assessment_id = a.id)
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
