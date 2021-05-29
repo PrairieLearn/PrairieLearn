@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/d3.min.js"></script>
-    <script src="/localscripts/histmini.js"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
   </head>
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+      <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary">
             <div class="row align-items-center justify-content-between">
@@ -49,10 +50,19 @@
               <% } %>
               <tr>
                 <td class="align-middle" style="width: 1%">
-                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="badge color-<%= row.color %> color-hover" role="button"><%= row.label %></a>
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="badge color-<%= row.color %> color-hover" role="button">
+                    <%= row.label %></a>
                 </td>
                 <td class="align-middle">
-                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %></a>
+                  <% if (row.sync_errors) { %>
+                    <i class="fa fa-times text-danger mr-1" aria-hidden="true"></i>
+                  <% } else if (row.sync_warnings) { %>
+                    <i class="fa fa-exclamation-triangle text-warning mr-1" aria-hidden="true"></i>
+                  <% } %>
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %> 
+                  <% if (row.group_work) { %>
+                    <i class="fas fa-users"></i>
+                  <% } %></a>
                   <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
                 </td>
                 <td class="align-middle"><%= row.tid %></td>

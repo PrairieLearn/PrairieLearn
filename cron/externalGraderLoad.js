@@ -317,6 +317,22 @@ function sendStatsToCloudWatch(stats, callback) {
                     Value: stats.desired_instances_by_history_users,
                 },
                 {
+                    MetricName: 'DesiredInstancesCurrent',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_current,
+                },
+                {
+                    MetricName: 'DesiredInstancesHistory',
+                    Dimensions: dimensions,
+                    StorageResolution: 1,
+                    Timestamp: stats.timestamp_formatted,
+                    Unit: 'Count',
+                    Value: stats.desired_instances_history,
+                },
+                {
                     MetricName: 'DesiredInstances',
                     Dimensions: dimensions,
                     StorageResolution: 1,

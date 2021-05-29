@@ -1,29 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-100">
   <head>
     <%- include('../partials/head'); %>
-    <link href="/stylesheets/home.css" rel="stylesheet">
+    <link href="<%= asset_path('stylesheets/home.css') %>" rel="stylesheet">
   </head>
 
-  <body>
+  <body class="d-flex flex-column h-100">
     <header>
       <% if (isAuthenticated) { %>
       <%- include('../partials/navbar', {navPage: 'home'}); %>
-      <% } else { %> <!-- isAuthenticated -->
-      <nav class="navbar navbar-light bg-white">
-        <a class="navbar-brand" href="<%= homeUrl %>">
-          <span class="navbar-brand-label">PrairieLearn</span>
-          <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
-        </a>
-      </nav>
       <% } %> <!-- isAuthenticated -->
     </header>
 
-    <main>
-      <div class="jumbotron bg-white rounded-0 my-0 <% if (isAuthenticated) { %>pt-4 pb-0<% } else { %>bg-flourish p-flourish<% } %>">
+    <main class="flex-grow-1">
+      <div class="jumbotron bg-white rounded-0 my-0 <%= isAuthenticated ? 'py-0 mb-n4' : 'bg-flourish p-flourish' %>">
         <div class="container">
           <div class="row align-items-center">
-            <div class="pb-4 <% if (isAuthenticated) { %>d-none<% } else { %>col-md-6 col-lg-7<% } %>">
+            <div class="pb-4 <%= isAuthenticated ? 'd-none' : 'col-md-6 col-lg-7' %>">
               <h1 class="display-4 font-weight-normal">PrairieLearn</h1>
               <p class="lead font-weight-normal">
                 <i class="fa fa-sync-alt fa-fw" aria-ignore="true"></i>
@@ -35,49 +28,53 @@
               </a>
             </div> <!-- col -->
 
-            <div class="<% if (isAuthenticated) { %>col-12<% } else { %>col-md-6 col-lg-5<% } %>">
+            <div class="<%= isAuthenticated ? 'col-12' : 'col-md-6 col-lg-5' %>">
               <div class="row">
-                <div class="<% if (isAuthenticated) {%>col-md-6<% } else { %>col-12<% } %>">
-                  <div class="card shadow-sm rounded-pill my-1">
+                <div class="<%= isAuthenticated ? 'col-md-6' : 'col-12' %>">
+                  <div class="card rounded-pill my-1">
                     <div class="card-body d-flex align-items-center p-2">
-                      <span class="fa-stack fa-2x mr-2" aria-hidden="true">
+                      <span class="fa-stack <%= isAuthenticated ? 'fa-1x mr-1' : 'fa-2x mr-2' %>" aria-hidden="true">
                         <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                         <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
                       </span>
                       <span>
-                        <p class="h6">
+                        <p class="<%= isAuthenticated ? 'h6 d-inline-block my-0 ml-n1' : 'h6' %>">
                           <% if (isAuthenticated) { %>
-                          Student quick links
+                          <span class="btn btn-xs my-0 align-text-bottom btn-white justify-content-center font-weight-bold text-uppercase disabled">
+                            Students
+                          </span>
                           <% } else { %>
                           Are you a student?
                           <% } %>
                         </p>
-                        <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-sm btn-outline-primary mb-1">
+                        <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
                           Enroll course
                         </a>
                       </span>
                     </div><!-- card-body -->
                   </div> <!-- card -->
                 </div><!-- col -->
-                <div class="<% if (isAuthenticated) {%>col-md-6<% } else { %>col-12<% } %>">
-                  <div class="card shadow-sm rounded-pill my-1">
+                <div class="<%= isAuthenticated ? 'col-md-6' : 'col-12' %>">
+                  <div class="card rounded-pill my-1">
                     <div class="card-body d-flex align-items-center p-2">
-                      <span class="fa-stack fa-2x mr-2" aria-hidden="true">
+                      <span class="fa-stack <%= isAuthenticated ? 'fa-1x mr-1' : 'fa-2x mr-2' %>" aria-hidden="true">
                         <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                         <i class="fas fa-user-tie fa-stack-1x text-light"></i>
                       </span>
                       <span>
-                        <p class="h6">
+                        <p class="<%= isAuthenticated ? 'h6 d-inline-block my-0 ml-n1' : 'h6' %>">
                           <% if (isAuthenticated) { %>
-                          Instructor quick links
+                          <span class="btn btn-xs my-0 align-text-bottom btn-white justify-content-center font-weight-bold text-uppercase disabled">
+                            Instructors
+                          </span>
                           <% } else { %>
                           Are you an instructor?
                           <% } %>
                         </p>
-                        <a href="https://prairielearn.readthedocs.io/en/latest/requestCourse" class="btn btn-sm btn-outline-info mb-1">
+                        <a href="<%= plainUrlPrefix %>/request_course" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
                           Request course
                         </a>
-                        <a href="https://prairielearn.readthedocs.io/en/latest" class="btn btn-sm btn-outline-info mb-1">
+                        <a href="https://prairielearn.readthedocs.io/en/latest" class="btn btn-<%= isAuthenticated ? 'xs my-0 align-text-bottom' : 'sm mb-1' %> btn-outline-primary justify-content-center">
                           View docs
                         </a>
                       </span>
@@ -91,104 +88,101 @@
       </div> <!-- jumbotron -->
 
       <% if (isAuthenticated) { %>
-      <div class="<% if (isAuthenticated) { %>bg-flourish pb-4<% } %>">
-        <div id="content" class="container py-5">
-          <% if (devMode) { %>
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Development Mode</div>
-            <div class="card-body">
-              <p>
-                PrairieLearn is running in Development Mode. Click
-                the <strong>“Load from disk”</strong> button above to load
-                question and assessment definitions from JSON files on
-                disk.
-              </p>
-              <p>
-                You need to click “Load from disk” every time that a JSON
-                file is changed on disk. Changes to other files (JS, HTML,
-                etc) will be automatically loaded every time you navigate
-                to a different page or if you reload the current page in
-                your web browser.
-              </p>
-              <p class="mb-0">
-                See the
-                <a href="https://prairielearn.readthedocs.io">
-                  PrairieLearn documentation
-                </a>
-                for information on creating questions and assessments.
-              </p>
-            </div><!-- card-body -->
-          </div><!-- card -->
-          <% } %> <!-- devMode -->
-
-          <%- include('../partials/advertisement'); %>
-
-          <% if (courses && courses.length > 0) { %>
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Courses</div>
-            <table class="table table-sm table-hover table-striped">
-              <tbody>
-                <% courses.forEach(function(course) { %>
-                <tr>
-                  <td>
-                    <a href="<%= plainUrlPrefix %>/course/<%= course.id %>">
-                      <%= course.label %>
-                    </a>
-                  </td>
-                </tr>
-                <% }); %>
-              </tbody>
-            </table>
-          </div><!-- card -->
-          <% } %> <!-- courses.length -->
-
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <% if (courses && courses.length > 0) { %>
-              Course instances
-              <% } else { %>
-              Courses
-              <% } %>
-              <% if (authn_provider_name !== 'LTI') { %>
-              <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
-                <i class="fa fa-edit" aria-hidden="true"></i>
-                <span class="d-none d-sm-inline">Add or remove courses</span>
+      <div id="content" class="container py-5">
+        <% if (devMode) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">Development Mode</div>
+          <div class="card-body">
+            <p>
+              PrairieLearn is running in Development Mode. Click
+              the <strong>“Load from disk”</strong> button above to load
+              question and assessment definitions from JSON files on
+              disk.
+            </p>
+            <p>
+              You need to click “Load from disk” every time that a JSON
+              file is changed on disk. Changes to other files (JS, HTML,
+              etc) will be automatically loaded every time you navigate
+              to a different page or if you reload the current page in
+              your web browser.
+            </p>
+            <p class="mb-0">
+              See the
+              <a href="https://prairielearn.readthedocs.io">
+                PrairieLearn documentation
               </a>
-              <% } %>
-            </div><!-- card-header -->
+              for information on creating questions and assessments.
+            </p>
+          </div><!-- card-body -->
+        </div><!-- card -->
+        <% } %> <!-- devMode -->
 
-            <% if (course_instances && course_instances.length == 0) { %>
-            <% if (devMode) { %>
-            <div class="card-body">
-              No courses loaded. Click <strong>“Load from disk”</strong>
-              above and then click <strong>“Home”</strong> to come back to
-              this page.
-            </div>
-            <% } else { %> <!-- devMode -->
-            <div class="card-body">
-              No courses found. Use the “Add or remove courses” button to add one.
-            </div>
-            <% } %> <!-- devMode -->
-            <% } else { %> <!-- course_instances.length -->
-            <table class="table table-sm table-hover table-striped">
-              <tbody>
-                <% course_instances.forEach(function(course_instance) { %>
-                <tr>
-                  <td>
-                    <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
-                      <%= course_instance.label %>
-                    </a>
-                  </td>
-                </tr>
-                <% }); %>
-              </tbody>
-            </table>
-            <% } %> <!-- course_instances.length -->
-          </div><!-- card -->
-        </div><!-- container -->
-      </div><!-- bg-flourish -->
-      <% } %> <!-- isAuthenticated -->
+        <%- include('../partials/advertisement'); %>
 
+        <% if (courses && courses.length > 0) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">Courses</div>
+          <table class="table table-sm table-hover table-striped">
+            <tbody>
+              <% courses.forEach(function(course) { %>
+              <tr>
+                <td>
+                  <a href="<%= plainUrlPrefix %>/course/<%= course.id %>">
+                    <%= course.label %>
+                  </a>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div><!-- card -->
+        <% } %> <!-- courses.length -->
+
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white d-flex align-items-center">
+            <% if (courses && courses.length > 0) { %>
+            Course instances
+            <% } else { %>
+            Courses
+            <% } %>
+            <% if (authn_provider_name !== 'LTI') { %>
+            <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
+              <i class="fa fa-edit" aria-hidden="true"></i>
+              <span class="d-none d-sm-inline">Add or remove courses</span>
+            </a>
+            <% } %>
+          </div><!-- card-header -->
+
+          <% if (course_instances && course_instances.length == 0) { %>
+          <% if (devMode) { %>
+          <div class="card-body">
+            No courses loaded. Click <strong>“Load from disk”</strong>
+            above and then click <strong>“Home”</strong> to come back to
+            this page.
+          </div>
+          <% } else { %> <!-- devMode -->
+          <div class="card-body">
+            No courses found. Use the “Add or remove courses” button to add one.
+          </div>
+          <% } %> <!-- devMode -->
+          <% } else { %> <!-- course_instances.length -->
+          <table class="table table-sm table-hover table-striped">
+            <tbody>
+              <% course_instances.forEach(function(course_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
+                    <%= course_instance.label %>
+                  </a>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+          <% } %> <!-- course_instances.length -->
+        </div><!-- card -->
+      </div><!-- container -->
+      <% } else { %> <!-- isAuthenticated -->
       <div class="position-relative bg-students text-white text-center pt-5">
         <div class="container">
           <h2 class="pt-3 pb-5 text-uppercase font-weight-bold">Empower students to master content</h2>
@@ -433,7 +427,7 @@
             Start by requesting a course and creating some content. Join the Slack workspace for ad hoc
             assistance or some random banter!
           </p>
-          <a class="btn btn-outline-dark btn-lg mr-2 mb-2" href="https://prairielearn.readthedocs.io/en/latest/requestCourse">
+          <a class="btn btn-outline-dark btn-lg mr-2 mb-2" href="<%= plainUrlPrefix %>/request_course">
             <i class="fab fa-wpforms" aria-hidden="true"></i>
             Request your course
           </a>
@@ -454,27 +448,31 @@
           <p class="lead">
             PrairieLearn is open source, so anyone can add features or fix bugs!
           </p>
-          <a class="btn btn-outline-light btn-lg mr-2 mb-2" href="https://github.com/PrairieLearn/PrairieLearn">
+          <a class="btn btn-outline-light btn-lg mb-2" href="https://github.com/PrairieLearn/PrairieLearn">
             <i class="fab fa-github" aria-hidden="true"></i>
             GitHub
           </a>
-          <a class="btn btn-outline-light btn-lg mr-2 mb-2" href="https://prairielearn.slack.com">
+          <a class="btn btn-outline-light btn-lg ml-2 mb-2" href="https://prairielearn.slack.com">
             <i class="fab fa-slack" aria-hidden="true"></i>
             Slack
           </a>
-          <a class="btn btn-outline-light btn-lg mb-2" href="https://prairielearn.readthedocs.io/en/latest/dev-guide">
+          <a class="btn btn-outline-light btn-lg ml-2 mb-2" href="https://prairielearn.readthedocs.io/en/latest/dev-guide">
             <i class="fas fa-book" aria-hidden="true"></i>
             Developer guide
           </a>
         </div> <!-- container -->
       </div> <!-- jumbotron -->
+      <% } %> <!-- isAuthenticated -->
     </main>
 
-    <footer class="bg-dark text-light text-right small py-3">
-      <div class="container">
-        &copy; 2020 <a class="text-light" href="https://illinois.edu">University of Illinois at Urbana-Champaign</a>
+    <footer class="footer font-weight-light text-light <%= isAuthenticated ? 'tiny text-center' : 'small text-right bg-dark py-3' %>">
+      <% if (isAuthenticated) { %>
+      <div class="bg-flourish h-flourish"></div>
+      <% } %>
+      <div class="<%= isAuthenticated ? 'bg-secondary p-1' : 'container' %>">
+        &copy; 2021 <a class="text-nowrap text-light" href="https://illinois.edu">University of Illinois at Urbana-Champaign</a>
         &middot;
-        <a class="text-light" href="https://www.vecteezy.com/free-vector/nature">Nature Vectors by Vecteezy</a>
+        <a class="text-nowrap text-light" href="https://www.vecteezy.com/free-vector/nature">Nature Vectors by Vecteezy</a>
       </div>
     </footer>
   </body>

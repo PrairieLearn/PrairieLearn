@@ -1,0 +1,13 @@
+{
+    "description": "Upsert a value in the config table.",
+    "params": [
+        {
+            "name": "key",
+            "description": "Key to upsert."
+        },
+        {
+            "name": "value",
+            "description": "Value to upsert to."
+        }
+    ]
+}

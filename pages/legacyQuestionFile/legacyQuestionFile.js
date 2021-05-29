@@ -3,9 +3,11 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('@prairielearn/prairielib/error');
-var filePaths = require('../../lib/file-paths');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
+const chunks = require('../../lib/chunks');
+var filePaths = require('../../lib/file-paths');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -22,9 +24,26 @@ router.get('/:filename', function(req, res, next) {
         if (ERR(err, next)) return;
         if (!result.rows[0].access_allowed) return next(error.make(403, 'Access denied', {locals: res.locals, filename: filename}));
 
-        filePaths.questionFilePath(filename, question.directory, course.path, question, function(err, fullPath, effectiveFilename, rootPath) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+
+        chunks.getTemplateQuestionIds(question, (err, questionIds) => {
             if (ERR(err, next)) return;
-            res.sendFile(effectiveFilename, {root: rootPath});
+
+            const templateQuestionChunks = questionIds.map(id => ({'type': 'question', questionId: id}));
+            const chunksToLoad = [
+                {
+                    'type': 'question',
+                    'questionId': question.id,
+                },
+            ].concat(templateQuestionChunks);
+            chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
+                if (ERR(err, next)) return;
+
+                filePaths.questionFilePath(filename, question.directory, coursePath, question, function(err, fullPath, effectiveFilename, rootPath) {
+                    if (ERR(err, next)) return;
+                    res.sendFile(effectiveFilename, {root: rootPath});
+                });
+            });
         });
     });
 });

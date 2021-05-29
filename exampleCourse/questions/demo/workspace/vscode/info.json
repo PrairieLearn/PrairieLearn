@@ -7,14 +7,24 @@
         "tyang15"
     ],
     "type": "v3",
+    "singleVariant": true,
     "workspaceOptions": {
-        "image": "codercom/code-server",
+        "image": "codercom/code-server:3.4.1",
         "port": 8080,
         "args": "--auth none",
         "home": "/home/coder",
         "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c"
+            "fibonacci.py"
+        ],
+        "syncIgnore": [
+            ".local/share/code-server/"
         ]
+    },
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 20
     }
 }

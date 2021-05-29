@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -27,7 +27,7 @@
             <% if (assessment_instance.all_questions_answered) { %>
             <div class="alert alert-warning">There are still unanswered questions.</div>
             <% } %>
-            <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
+            <p class="text-danger"><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
             <p>Are you sure you want to finish, complete, and close out the assessment?</p>
           </div>
           <div class="modal-footer">
@@ -63,7 +63,6 @@
         $(function() {$('#timeLimitExpiredModal').modal({})})
       </script>
     <% } // showTimeLimitExpiredModal %>
-
     <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
     <div id="content" class="container">
       <div class="card mb-4">
@@ -74,7 +73,7 @@
         <div class="card-body">
           <% if (!assessment.allow_real_time_grading) { %>
             <div class="alert alert-warning">
-              This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later.
+              This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later. You can use the <span class="badge badge-outline badge-light">Finish assessment</span> button below to finish and calculate your final grade.
             </div>
           <% } %>
           <div class="row align-items-center">
@@ -82,6 +81,10 @@
               <div class="col-md-3 col-sm-12">
                 <% include('../partials/pointsFormatter'); %>
                 Total points: <%= getStringFromFloat(assessment_instance.max_points) %>
+              <% if (assessment_instance.max_bonus_points) { %>
+              <br />(<%= assessment_instance.max_bonus_points %> bonus
+              point<% if (assessment_instance.max_bonus_points > 1) { %>s<% } %> possible)
+              <% } %>
               </div>
               <div class="col-md-9 col-sm-12">
                   <% if (assessment_instance.open) { %>
@@ -101,6 +104,10 @@
               <div class="col-md-3 col-sm-6">
                 <% include('../partials/pointsFormatter'); %>
                 Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
+                <% if (assessment_instance.max_bonus_points) { %>
+                <br />(<%= assessment_instance.max_bonus_points %> bonus
+                point<% if (assessment_instance.max_bonus_points > 1) { %>s<% } %> possible)
+                <% } %>
               </div>
               <div class="col-md-3 col-sm-6">
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
@@ -132,9 +139,11 @@
                 Time remaining: <span id="countdownDisplay"></span>
               </div>
             </div>
-            <%- include('../partials/countdown', {
+            <%- include('../partials/examTimeLimitCountdown', {
               serverTimeLimitMS: assessment_instance_time_limit_ms,
               serverRemainingMS: assessment_instance_remaining_ms,
+              serverUpdateURL: urlPrefix + '/assessment_instance/' +
+                               assessment_instance.id + '/time_remaining',
               progressSelector: '#countdownProgress',
               displaySelector: '#countdownDisplay',
             }) %>
@@ -180,16 +189,16 @@
               <th colspan="5">
                 <%= instance_question.zone_title %>
                 <% if (instance_question.zone_has_max_points) { %>
-                 &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
-                    data-toggle="popover" data-trigger="focus" data-container="body"
-                    data-html="true"
-                    data-content="Of the points that you are awarded for answering these questions, at most <%= instance_question.zone_max_points %> will count toward your total points."><span class="badge badge-secondary align-top">maximum <%= instance_question.zone_max_points %> points &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+                  <%- include('../partials/zoneInfoBadge', { zoneInfo: {
+                    popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
+                    mainContent: `Maximum ${instance_question.zone_max_points} points`
+                  }}); %>
                 <% } %>
                 <% if (instance_question.zone_has_best_questions) { %>
-                 &nbsp;<a tabindex="0" class="btn btn-xs btn-secondary" role="button"
-                    data-toggle="popover" data-trigger="focus" data-container="body"
-                    data-html="true"
-                    data-content="Of these questions, only the <%= instance_question.zone_best_questions %> with the highest number of awarded points will count toward your total points."><span class="badge badge-secondary align-top">best <%= instance_question.zone_best_questions %> questions &nbsp;<i class="far fa-question-circle" aria-hidden="true"></i></span></a>
+                  <%- include('../partials/zoneInfoBadge', { zoneInfo: {
+                    popoverContent: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                    mainContent: `Best ${instance_question.zone_best_questions} questions`
+                  }}); %>
                 <% } %>
               </th>
             </tr>
@@ -206,7 +215,7 @@
 
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
-                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
+                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
                 <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
               <% } else { %>
                 <td class="text-center">
@@ -235,9 +244,14 @@
               <% } %>
             </form>
             <ul class="my-1">
+              <% if (suspendedSavedAnswers > 1) { %>
+              <li>There are <%= suspendedSavedAnswers %> saved answers that cannot be graded yet because their grade rate has not been reached. They are marked with the <i class="fa fa-hourglass-half"></i> icon above. Reload this page to update this information.</li>
+              <% } else if (suspendedSavedAnswers == 1) { %>
+              <li>There is one saved answer that cannot be graded yet because its grade rate has not been reached. It is marked with the <i class="fa fa-hourglass-half"></i> icon above. Reload this page to update this information.</li>
+              <% } %>
               <li>Submit your answer to each question with the <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the question page.</li>
               <li>Look at <strong>Best submission</strong> to confirm that each question has been graded. Questions with <strong>Available points</strong> can be attempted again for more points. Attempting questions again will never reduce the points you already have.</li>
-              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
+              <% if (authz_result.mode == 'SEB' || authz_result.password != null || authz_result.show_closed_assessment == false) { %>
                 <li>
                   After you have answered all the questions completely, click here:
                   <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
@@ -249,14 +263,10 @@
           <% } else { %>
             <ul class="my-1">
               <li>Submit your answer to each question with the <strong>Save</strong> button on the question page.</li>
-              <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
-                <li>
-                  After you have answered all the questions completely, click here:
-                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
-                </li>
-              <% } else { %>
-                <li>When you are done, please logout and close your browser; there is no need to do anything else. Your saved answers will be automatically graded when your final score is computed.</li>
-              <% } %>
+              <li>
+                After you have answered all the questions completely, click here:
+                <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+              </li>
             </ul>
           <% } %>
         </div>

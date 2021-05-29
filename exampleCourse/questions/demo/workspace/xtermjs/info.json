@@ -8,7 +8,12 @@
         "tyang15"
     ],
     "type": "v3",
+    "singleVariant": true,
     "workspaceOptions": {
+        "comment": {
+            "why": "testing comments in workspace blocks",
+            "also": "testing object comments"
+        },
         "image": "prairielearn/workspace-xtermjs",
         "port": 8080,
         "home": "/home/prairie",

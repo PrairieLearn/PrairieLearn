@@ -46,6 +46,7 @@ WITH object_data AS (
         u.name AS user_name,
         coalesce(e.role, 'None'::enum_role) AS user_role,
         ai.max_points,
+        ai.max_bonus_points,
         ai.points,
         ai.score_perc,
         ai.number AS assessment_instance_number,
@@ -99,6 +100,7 @@ WITH object_data AS (
         aar.role,
         aar.seb_config,
         aar.show_closed_assessment,
+        aar.show_closed_assessment_score,
         format_date_iso8601(aar.start_date, ci.display_timezone) AS start_date,
         aar.time_limit_min,
         aar.uids

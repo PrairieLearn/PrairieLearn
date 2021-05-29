@@ -3,7 +3,8 @@
     "dependencies": {
         "nodeModulesScripts": [
             "ace-builds/src-min-noconflict/ace.js",
-            "showdown/dist/showdown.js"
+            "showdown/dist/showdown.js",
+            "xss/dist/xss.min.js"
         ],
         "elementScripts": [
             "pl-file-editor.js"

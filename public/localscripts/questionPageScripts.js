@@ -1,6 +1,6 @@
 function confirmOnUnload() {
     const form = $('form.question-form');
-    const getForm = () => form.serialize();
+    const getForm = () => form.find(':not([name="__variant_id"]):not([name="__csrf_token"])').serialize();
 
     // Set form state on load and submit
     var initialForm = getForm();

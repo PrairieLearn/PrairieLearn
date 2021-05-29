@@ -70,7 +70,7 @@
   * Add support for Rust to `pl-code` element (Nathan Walters).
 
   * Add tests for LTI auth (Dave Mussulman).
-  
+
   * Add more robust Python autograder to `prairielearn/grader-python` (Nathan Bowman and Nicolas Nytko).
 
   * Add choose course instance dropdown to instructor nav-bar when viewing course only (Tim Bretl).
@@ -110,6 +110,8 @@
   * Change blocked-event-loop detection to be more lightweight in production (Matt West).
 
   * Change file editing access to `Editor`, down from `Owner` (Matt West).
+
+  * Change syncing to be more resilient and to record errors/warnings encountered during sync (Nathan Walters).
 
   * Change element default setup to be top-down instead of inline (James Balamuta).
 
@@ -256,6 +258,10 @@
   * Fix gradebook and question statistics download links (Tim Bretl).
 
   * Fix `demoRandomPlot` by updating the matlibplot subplot code (James Balamuta).
+
+  * Fix default institution in course instance access rules (Tim Bretl).
+
+  * Fix `group_work` flag when calling `authz_assessment_instance` (Tim Bretl).
 
   * Remove `number` column from `course_instances` table and `number` property from `infoCourseInstance.json` schema (Tim Bretl).
 

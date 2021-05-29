@@ -1,6 +1,7 @@
 DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb);
 DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,text);
 DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,timestamp with time zone,text);
+DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,timestamp with time zone,text, boolean);
 
 CREATE OR REPLACE FUNCTION
     authz_assessment_instance (
@@ -8,6 +9,7 @@ CREATE OR REPLACE FUNCTION
         IN authz_data JSONB,
         IN req_date timestamptz,
         IN display_timezone text,
+        IN group_work boolean,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
@@ -18,6 +20,7 @@ CREATE OR REPLACE FUNCTION
         OUT mode enum_mode,
         OUT seb_config JSONB,
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
+        OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -43,6 +46,7 @@ BEGIN
     mode := assessment_result.mode;
     seb_config := assessment_result.seb_config;
     show_closed_assessment := assessment_result.show_closed_assessment;
+    show_closed_assessment_score := assessment_result.show_closed_assessment_score;
 
     time_limit_expired := FALSE;
     IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < req_date THEN
@@ -58,6 +62,16 @@ BEGIN
         IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
             authorized := TRUE;
             authorized_edit := TRUE;
+        END IF;
+    END IF;
+
+    -- give access if we are a member of the group this assessment belongs to and we aren't emulating
+    IF (group_work) THEN
+        IF EXISTS (SELECT * FROM group_users AS gu WHERE gu.group_id = assessment_instance.group_id AND gu.user_id = (authz_data->'user'->>'user_id')::bigint) THEN
+            IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
+                authorized := TRUE;
+                authorized_edit := TRUE;
+            END IF;
         END IF;
     END IF;
 

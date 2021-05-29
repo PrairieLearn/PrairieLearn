@@ -82,6 +82,17 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
             <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
             <a class="dropdown-item" href="<%= urlPrefix %>/effectiveUser">Change effective user</a>
             <% } %>
+            <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
+              News
+              <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
+                <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
+              <% } %>
+            </a>
+            <% if (typeof authz_data === 'undefined' ||
+                   (typeof authz_data !== 'undefined' && authz_data.mode != 'Exam')) {%>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="<%= plainUrlPrefix %>/request_course"> Course Requests </a>
+            <% } %>
             <% if (typeof authz_data !== 'undefined' && authz_data.mode == 'Exam') { %>
         <div class="dropdown-divider"></div>
         <button class="dropdown-item disabled" type="button">

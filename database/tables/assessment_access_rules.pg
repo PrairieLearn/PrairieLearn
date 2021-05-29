@@ -10,6 +10,7 @@ columns
     role: enum_role
     seb_config: jsonb
     show_closed_assessment: boolean not null default true
+    show_closed_assessment_score: boolean not null default true
     start_date: timestamp with time zone
     time_limit_min: integer
     uids: text[]

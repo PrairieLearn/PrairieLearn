@@ -8,6 +8,7 @@ const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { promisify, callbackify } = require('util');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -18,11 +19,15 @@ const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
+const chunks = require('../lib/chunks');
+const assets = require('../lib/assets');
 
 // Maps core element names to element info
 let coreElementsCache = {};
 // Maps course IDs to course element info
-const courseElementsCache = {};
+let courseElementsCache = {};
+/* Maps course IDs to course element extension info */
+let courseExtensionsCache = {};
 
 module.exports = {
 
@@ -76,14 +81,11 @@ module.exports = {
                     return callback(null, files);
                 });
             },
-            (files, callback) => {
-                // Filter out any non-directories
-                async.filter(files, (file, callback) => fs.lstat(path.join(sourceDir, file), (err, stats) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, stats.isDirectory());
-                }), (err, results) => {
-                    if (ERR(err, callback)) return;
-                    return callback(null, results);
+            async (files) => {
+                /* Filter out any non-directories */
+                return async.filter(files, async (file) => {
+                    const stats = await fs.promises.lstat(path.join(sourceDir, file));
+                    return stats.isDirectory();
                 });
             },
             (elementNames, callback) => {
@@ -129,24 +131,111 @@ module.exports = {
         });
     },
 
-    loadElementsForCourse(course, callback) {
-        if (courseElementsCache[course.id] !== undefined) {
-            return callback(null, courseElementsCache[course.id]);
-        }
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
-            if (ERR(err, callback)) return;
-            courseElementsCache[course.id] = elements;
-            callback(null, courseElementsCache[course.id]);
-        });
+    async loadElementsAsync(sourceDir, elementType) {
+        return promisify(module.exports.loadElements)(sourceDir, elementType);
     },
 
-    // Skips the cache; used when syncing course from GitHub/disk
-    reloadElementsForCourse(course, callback) {
-        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
-            if (ERR(err, callback)) return;
-            courseElementsCache[course.courseId] = elements;
-            callback(null, courseElementsCache[course.courseId]);
+    async loadElementsForCourseAsync(course) {
+        if (courseElementsCache[course.id] !== undefined
+            && courseElementsCache[course.id].commit_hash
+            && courseElementsCache[course.id].commit_hash === course.commit_hash) {
+            return courseElementsCache[course.id].data;
+        }
+
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        const elements = await module.exports.loadElementsAsync(path.join(coursePath, 'elements'), 'course');
+        courseElementsCache[course.id] = {'commit_hash': course.commit_hash, 'data': elements};
+        return elements;
+    },
+
+    /**
+     * Takes a directory containing an extension directory and returns a new
+     * object mapping element names to each extension, which itself an object
+     * that contains relevant extension scripts and styles.
+     * @param  {String}   sourceDir Absolute path to the directory of extensions
+     */
+    async loadExtensionsAsync(sourceDir) {
+        const readdir = promisify(fs.readdir);
+        const readJson = promisify(fs.readJson);
+
+        /* Load each root element extension folder */
+        let elementFolders;
+        try {
+            elementFolders = await readdir(sourceDir);
+        } catch (err) {
+            if (err.code === 'ENOENT') {
+                // We don't really care if there are no extensions, just return an empty array.
+                return [];
+            } else {
+                throw err;
+            }
+        }
+
+        /* Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ] */
+        const elementArrays = (await async.map(elementFolders, async (element) => {
+            const extensions = await readdir(path.join(sourceDir, element));
+            return extensions.map(ext => [element, ext]);
+        })).flat();
+
+        /* Populate element map */
+        const elements = {};
+        elementArrays.forEach(extension => {
+            if (!(extension[0] in elements)) {
+                elements[extension[0]] = {};
+            }
         });
+
+        /* Load extensions */
+        await async.each(elementArrays, async (extension) => {
+            const [element, extensionDir] = extension;
+            const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
+
+            let info;
+            try {
+                info = await readJson(infoPath);
+            } catch (err) {
+                if (err.code === 'ENOENT') {
+                    /* Not an extension directory, skip it. */
+                    logger.verbose(`${infoPath} not found, skipping...`);
+                    return;
+                } else if (err.code === 'ENOTDIR') {
+                    /* Random file, skip it as well. */
+                    logger.verbose(`Found stray file ${infoPath}, skipping...`);
+                    return;
+                } else {
+                    throw err;
+                }
+            }
+
+            await jsonLoader.validateJSONAsync(info, schemas.infoElementExtension);
+            info.name = extensionDir;
+            info.directory = path.join(sourceDir, element, extensionDir);
+            elements[element][extensionDir] = info;
+        });
+
+        return elements;
+    },
+
+    async loadExtensionsForCourseAsync(course) {
+        if (courseExtensionsCache[course.id] !== undefined
+            && courseExtensionsCache[course.id].commit_hash
+            && courseExtensionsCache[course.id].commit_hash === course.commit_hash) {
+            return courseExtensionsCache[course.id].data;
+        }
+
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        let extensions = await module.exports.loadExtensionsAsync(path.join(coursePath, 'elementExtensions'));
+        courseExtensionsCache[course.id] = {'commit_hash': course.commit_hash, 'data': extensions};
+        return extensions;
+    },
+
+    /**
+     * Wipes the element and extension cache.  This is only needed in
+     * dev mode because each cache tracks Git commit hashes.
+     */
+    flushElementCache: function() {
+        courseElementsCache = {};
+        courseExtensionsCache = {};
     },
 
     resolveElement: function(elementName, context) {
@@ -165,10 +254,10 @@ module.exports = {
     },
 
     /**
-     * Add clientFiles urls for elements.
+     * Add clientFiles urls for elements and extensions.
      * Returns a copy of data with the new urls inserted.
      */
-    getElementClientFiles: function(data, elementName, _context) {
+    getElementClientFiles: function(data, elementName, context) {
         let dataCopy = _.cloneDeep(data);
         /* The options field wont contain URLs unless in the 'render' stage, so check
            if it is populated before adding the element url */
@@ -176,7 +265,14 @@ module.exports = {
             /* Join the URL using Posix join to avoid generating a path with backslashes,
                as would be the case when running on Windows */
             dataCopy.options.client_files_element_url = path.posix.join(data.options.base_url, 'elements', elementName, 'clientFilesElement');
-            /* This will add extension urls once that is merged (and will use the context, I promise!) */
+            dataCopy.options.client_files_extensions_url = {};
+
+            if (_.has(context.course_element_extensions, elementName)) {
+                Object.keys(context.course_element_extensions[elementName]).forEach(extension => {
+                    const url = path.posix.join(data.options.base_url, 'elementExtensions', elementName, extension, 'clientFilesExtension');
+                    dataCopy.options.client_files_extensions_url[extension] = url;
+                });
+            }
         }
         return dataCopy;
     },
@@ -201,7 +297,7 @@ module.exports = {
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
-                    return resolve([module.exports.defaultElementFunctionRet(fcn, data), '']);
+                    return resolve([module.exports.defaultElementFunctionRet(fcn, dataCopy), '']);
                 }
                 if (ERR(err, reject)) return;
                 resolve([ret, consoleLog]);
@@ -381,7 +477,7 @@ module.exports = {
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);                   if (err) return err;
+        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade']);          if (err) return err;
         err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade']); if (err) return err;
         err = checkProp('variant_seed',          'integer', allPhases,                            []);                                        if (err) return err;
         err = checkProp('options',               'object',  allPhases,                            []);                                        if (err) return err;
@@ -416,6 +512,11 @@ module.exports = {
                 if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
                     renderedElementNames.push(elementName);
                 }
+                /* Populate the extensions used by this element */
+                data.extensions = [];
+                if (_.has(context.course_element_extensions, elementName)) {
+                    data.extensions = context.course_element_extensions[elementName];
+                }
                 // We need to wrap it in another node, since only child nodes
                 // are serialized
                 const serializedNode = parse5.serialize({
@@ -431,6 +532,9 @@ module.exports = {
                     // We'll catch this and add it to the course issues list
                     throw courseIssue;
                 }
+                /* We'll be sneaky and remove the extensions, since they're not used elsewhere */
+                delete data.extensions;
+                delete ret_val.extensions;
                 if (_.isString(consoleLog) && consoleLog.length > 0) {
                     const courseIssue = new Error(`${elementFile}: output logged on console during ${phase}()`);
                     courseIssue.data = { outputBoth: consoleLog };
@@ -511,6 +615,11 @@ module.exports = {
                 }
 
                 const elementFile = module.exports.getElementController(elementName, context);
+                /* Populate the extensions used by this element */
+                data.extensions = [];
+                if (_.has(context.course_element_extensions, elementName)) {
+                    data.extensions = context.course_element_extensions[elementName];
+                }
 
                 module.exports.legacyElementFunction(pc, phase, elementName, $, element, data, context, (err, ret_val, consoleLog) => {
                     if (err) {
@@ -520,6 +629,8 @@ module.exports = {
                         courseIssues.push(courseIssue);
                         return callback(courseIssue);
                     }
+                    delete data.extensions;
+                    delete ret_val.extensions;
                     if (_.isString(consoleLog) && consoleLog.length > 0) {
                         const courseIssue = new Error(elementFile + ': output logged on console during ' + phase + '()');
                         courseIssue.data = { outputBoth: consoleLog };
@@ -736,6 +847,8 @@ module.exports = {
         options.question_path = context.question_dir;
         options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
         options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
+        options.server_files_course_path = path.join(context.course_dir, 'serverFilesCourse');
+        options.course_extensions_path = path.join(context.course_dir, 'elementExtensions');
         return options;
     },
 
@@ -951,6 +1064,7 @@ module.exports = {
                             return callback(new Error(`Error generating options: ${err}`));
                         }
 
+                        const extensions = context.course_element_extensions;
                         const dependencies = {
                             coreStyles: [],
                             coreScripts: [],
@@ -960,6 +1074,8 @@ module.exports = {
                             coreElementScripts: [],
                             courseElementStyles: [],
                             courseElementScripts: [],
+                            extensionStyles: [],
+                            extensionScripts: [],
                             clientFilesCourseStyles: [],
                             clientFilesCourseScripts: [],
                             clientFilesQuestionStyles: [],
@@ -1011,7 +1127,7 @@ module.exports = {
                                 }
                             }
 
-                            let depdendencyTypes = [
+                            const dependencyTypes = [
                                 'coreStyles',
                                 'coreScripts',
                                 'nodeModulesStyles',
@@ -1023,7 +1139,7 @@ module.exports = {
                                 'courseElementStyles',
                                 'courseElementScripts',
                             ];
-                            for (const type of depdendencyTypes) {
+                            for (const type of dependencyTypes) {
                                 if (_.has(elementDependencies, type)) {
                                     if (_.isArray(elementDependencies[type])) {
                                         for (const dep of elementDependencies[type]) {
@@ -1039,16 +1155,61 @@ module.exports = {
                                     }
                                 }
                             }
+
+                            /* Load any extensions if they exist */
+                            if (_.has(extensions, elementName)) {
+                                for (const extensionName of Object.keys(extensions[elementName])) {
+                                    if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
+                                        continue;
+                                    }
+
+                                    const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
+                                    if (_.has(extension, 'extensionStyles')) {
+                                        extension.extensionStyles = extension.extensionStyles.map(dep => `${elementName}/${extensionName}/${dep}`);
+                                    }
+                                    if (_.has(extension, 'extensionScripts')) {
+                                        extension.extensionScripts = extension.extensionScripts.map(dep => `${elementName}/${extensionName}/${dep}`);
+                                    }
+
+                                    const dependencyTypes = [
+                                        'coreStyles',
+                                        'coreScripts',
+                                        'nodeModulesStyles',
+                                        'nodeModulesScripts',
+                                        'clientFilesCourseStyles',
+                                        'clientFilesCourseScripts',
+                                        'extensionStyles',
+                                        'extensionScripts',
+                                    ];
+
+                                    for (const type of dependencyTypes) {
+                                        if (_.has(extension, type)) {
+                                            if (_.isArray(extension[type])) {
+                                                for (const dep of extension[type]) {
+                                                    if (!_.includes(dependencies[type], dep)) {
+                                                        dependencies[type].push(dep);
+                                                    }
+                                                }
+                                            } else {
+                                                const courseIssue = new Error(`Error getting dependencies for extension ${extension.name}: "${type}" is not an array`);
+                                                courseIssue.data = { elementDependencies };
+                                                courseIssue.fatal = true;
+                                                courseIssues.push(courseIssue);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         });
 
                         // Transform dependency list into style/link tags
                         const coreScriptUrls = [];
                         const scriptUrls = [];
                         const styleUrls = [];
-                        dependencies.coreStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
-                        dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
-                        dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(`/node_modules/${file}`));
-                        dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
+                        dependencies.coreStyles.forEach((file) => styleUrls.push(assets.assetPath(`stylesheets/${file}`)));
+                        dependencies.coreScripts.forEach((file) => coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)));
+                        dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(assets.nodeModulesAssetPath(file)));
+                        dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(assets.nodeModulesAssetPath(file)));
                         dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesQuestionStyles.forEach((file) => styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
@@ -1057,6 +1218,9 @@ module.exports = {
                         dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
                         dependencies.courseElementStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elements/${file}`));
                         dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elements/${file}`));
+                        dependencies.extensionStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`));
+                        dependencies.extensionScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`));
+
                         const headerHtmls = [
                             ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                             // It's important that any library-style scripts come first
@@ -1263,17 +1427,49 @@ module.exports = {
         });
     },
 
-    getContext: function(question, course, callback) {
+    async getContextAsync(question, course) {
+        const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+        const chunksToLoad = [
+            {
+                'type': 'question',
+                'questionId': question.id,
+            },
+            {
+                'type': 'clientFilesCourse',
+            },
+            {
+                'type': 'serverFilesCourse',
+            },
+            {
+                'type': 'elements',
+            },
+            {
+                'type': 'elementExtensions',
+            },
+        ];
+        await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
         const context = {
             question,
             course,
-            course_dir: course.path,
-            question_dir: path.join(course.path, 'questions', question.directory),
-            course_elements_dir: path.join(course.path, 'elements'),
+            course_dir: coursePath,
+            question_dir: path.join(coursePath, 'questions', question.directory),
+            course_elements_dir: path.join(coursePath, 'elements'),
         };
-        module.exports.loadElementsForCourse(course, (err, elements) => {
+
+        /* Load elements and any extensions */
+        const elements = await module.exports.loadElementsForCourseAsync(course);
+        const extensions = await module.exports.loadExtensionsForCourseAsync(course);
+
+        context.course_elements = elements;
+        context.course_element_extensions = extensions;
+
+        return context;
+    },
+
+    getContext: function(question, course, callback) {
+        return callbackify(module.exports.getContextAsync)(question, course, (err, context) => {
             if (ERR(err, callback)) return;
-            context.course_elements = elements;
             callback(null, context);
         });
     },

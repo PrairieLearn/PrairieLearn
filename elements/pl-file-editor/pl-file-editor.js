@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax */
+/* global ace, showdown, MathJax, filterXSS */
 
 window.PLFileEditor = function(uuid, options) {
     var elementId = '#file-editor-' + uuid;
@@ -33,11 +33,11 @@ window.PLFileEditor = function(uuid, options) {
 
     if (options.minLines) {
         this.editor.setOption('minLines', options.minLines);
-    } 
+    }
 
     if (options.maxLines) {
         this.editor.setOption('maxLines', options.maxLines);
-    } 
+    }
 
     if (options.autoResize) {
         this.editor.setAutoScrollEditorIntoView(true);
@@ -47,7 +47,10 @@ window.PLFileEditor = function(uuid, options) {
     this.plOptionFocus = options.plOptionFocus;
 
     if (options.preview == 'markdown') {
-        let renderer = new showdown.Converter();
+        let renderer = new showdown.Converter({
+            'literalMidWordUnderscores':true,
+            'literalMidWordAsterisks':true,
+        });
 
         this.editor.session.on('change', () => {
             this.updatePreview(renderer.makeHtml(this.editor.getValue()));
@@ -75,14 +78,14 @@ window.PLFileEditor = function(uuid, options) {
 window.PLFileEditor.prototype.updatePreview = function(html_contents) {
     const default_preview_text = '<p>Begin typing above to preview</p>';
     let preview = this.element.find('.preview')[0];
-
     if (html_contents.trim().length == 0) {
         preview.innerHTML = default_preview_text;
     } else {
-        preview.innerHTML = html_contents;
-        if (html_contents.includes('$') ||
-            html_contents.includes('\\(') || html_contents.includes('\\)') ||
-            html_contents.includes('\\[') || html_contents.includes('\\]')) {
+        let sanitized_contents = filterXSS(html_contents);
+        preview.innerHTML = sanitized_contents;
+        if (sanitized_contents.includes('$') ||
+            sanitized_contents.includes('\\(') || sanitized_contents.includes('\\)') ||
+            sanitized_contents.includes('\\[') || sanitized_contents.includes('\\]')) {
             MathJax.typesetPromise();
         }
     }

@@ -1,13 +1,14 @@
 import sys
 import os
+import os.path as path
 import json
 import numpy as np
 import numpy.random
 import random
-from os.path import join
+import io
+import pl_helpers
 from types import ModuleType, FunctionType
 from copy import deepcopy
-
 
 class UserCodeFailed(Exception):
     def __init__(self, err, *args):
@@ -20,8 +21,17 @@ def set_random_seed(seed=None):
     random.seed(seed)
 
 
+def try_read(fname):
+    try:
+        with open(fname, 'r', encoding='utf-8') as f:
+            contents = f.read()
+    except:
+        contents = ''
+    return contents
+
+
 def execute_code(fname_ref, fname_student, include_plt=False,
-                 console_output_fname=None, test_iter_num=0):
+                 console_output_fname=None, test_iter_num=0, ipynb_key="#grade"):
     """
     execute_code(fname_ref, fname_student)
 
@@ -43,21 +53,42 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     job_dir = os.environ.get("JOB_DIR")
     filenames_dir = os.environ.get("FILENAMES_DIR")
 
-    with open(join(filenames_dir, 'data.json')) as f:
+    with open(path.join(filenames_dir, 'data.json'), encoding='utf-8') as f:
         data = json.load(f)
-    with open(join(filenames_dir, 'setup_code.py'), 'r') as f:
+    with open(path.join(filenames_dir, 'setup_code.py'), 'r', encoding='utf-8') as f:
         str_setup = f.read()
-    with open(fname_ref, 'r') as f:
+    with open(fname_ref, 'r', encoding='utf-8') as f:
         str_ref = f.read()
+
+    # Read in leading, trailing code
+    str_leading = try_read(path.join(filenames_dir, 'leading_code.py'))
+    str_trailing = try_read(path.join(filenames_dir, 'trailing_code.py'))
+
+    # Read student code (and transform if necessary) and append leading/trailing code
     with open(fname_student, 'r', encoding='utf-8') as f:
-        str_student = f.read()
-    with open(join(filenames_dir, 'test.py')) as f:
+        filename, extension = path.splitext(fname_student)
+        if extension == '.ipynb':
+            str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
+        else:
+            str_student = f.read()
+    str_student = str_leading + str_student + str_trailing
+
+    with open(path.join(filenames_dir, 'test.py'), encoding='utf-8') as f:
         str_test = f.read()
 
-    os.remove(join(filenames_dir, 'data.json'))
+    # Delete sensitive code so students can't read e.g. test cases or setup code
+    os.remove(path.join(filenames_dir, 'data.json'))
     os.remove(fname_ref)
-    os.remove(join(filenames_dir, 'setup_code.py'))
-    os.remove(join(filenames_dir, 'test.py'))
+    os.remove(path.join(filenames_dir, 'setup_code.py'))
+    try:
+        os.remove(path.join(filenames_dir, 'leading_code.py'))
+    except FileNotFoundError:
+        pass
+    try:
+        os.remove(path.join(filenames_dir, 'trailing_code.py'))
+    except FileNotFoundError:
+        pass
+    os.remove(path.join(filenames_dir, 'test.py'))
 
     repeated_setup_name = 'repeated_setup()'
     if repeated_setup_name not in str_setup:
@@ -123,13 +154,21 @@ def execute_code(fname_ref, fname_student, include_plt=False,
         err = None
     except Exception:
         err = sys.exc_info()
-    with open(join(filenames_dir, 'data.json'), 'w') as f:
+
+    # Now that user code has been run, replace deleted files in case we are to run the tests again.
+    with open(path.join(filenames_dir, 'data.json'), 'w', encoding='utf-8') as f:
         json.dump(data, f)
-    with open(fname_ref, 'w') as f:
+    with open(fname_ref, 'w', encoding='utf-8') as f:
         f.write(str_ref)
-    with open(join(filenames_dir, 'setup_code.py'), 'w') as f:
+    with open(path.join(filenames_dir, 'setup_code.py'), 'w', encoding='utf-8') as f:
         f.write(str_setup)
-    with open(join(filenames_dir, 'test.py'), 'w') as f:
+    if len(str_leading) > 0:
+        with open(path.join(filenames_dir, 'leading_code.py'), 'w', encoding='utf-8') as f:
+            f.write(str_leading)
+    if len(str_trailing) > 0:
+        with open(path.join(filenames_dir, 'trailing_code.py'), 'w', encoding='utf-8') as f:
+            f.write(str_trailing)
+    with open(path.join(filenames_dir, 'test.py'), 'w', encoding='utf-8') as f:
         f.write(str_test)
     if err is not None:
         raise UserCodeFailed(err)

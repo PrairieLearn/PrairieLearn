@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
     <head>
         <link rel="stylesheet" href="xterm/css/xterm.css" />
         <script src="xterm/lib/xterm.js"></script>
@@ -25,10 +25,11 @@
          term.open(document.getElementById('terminal'));
          fit.fit();
 
-         let socket = new WebSocket('ws://' + window.location.host + window.location.pathname);
+         const protocol = (location.protocol == 'https:' ? 'wss:' : 'ws:');
+         let socket = new WebSocket(`${protocol}//${window.location.host}${window.location.pathname}`);
          socket.onopen = () => {
-             term.onKey((ev) => {
-                 socket.send(JSON.stringify({ 'event': 'keypress', 'value': ev }));
+             term.onData((ev) => {
+                 socket.send(JSON.stringify({ 'event': 'data', 'value': ev }));
              });
              window.onresize = () => {
                  fit.fit();

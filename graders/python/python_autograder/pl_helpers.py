@@ -2,16 +2,36 @@ import io
 import urllib
 import base64
 import os
-from os.path import join
+import pygments
+from os.path import join, splitext
 from functools import wraps
 from code_feedback import Feedback
-import pygments
 from pygments.lexers import PythonLexer
 from pygments.formatters import Terminal256Formatter
+from IPython import get_ipython
+from nbformat import read
+from IPython.core.interactiveshell import InteractiveShell
 
 
 class DoNotRun(Exception):
     pass
+
+
+def extract_ipynb_contents(f, ipynb_key):
+    """
+    Extract all cells from a ipynb notebook that start with a given
+    delimiter
+    """
+
+    nb = read(f, 4)
+    shell = InteractiveShell.instance()
+    content = ''
+    for cell in nb.cells:
+        if cell['cell_type'] == 'code':
+            code = shell.input_transformer_manager.transform_cell(cell.source)
+            if code.strip().startswith(ipynb_key):
+                content += code
+    return content
 
 
 def save_plot(plt, iternum=0):
@@ -77,13 +97,19 @@ def not_repeated(f):
     return wrapped
 
 
-def print_student_code(st_code='user_code.py', as_feedback=True):
+def print_student_code(st_code='user_code.py', ipynb_key='#grade', as_feedback=True):
     """
     Print the student's code, with syntax highlighting.
     """
 
     with open(st_code, 'r', encoding='utf-8') as f:
-        contents = f.read().strip()
+        filename, extension = splitext(st_code)
+        if extension == '.ipynb':
+            contents = extract_ipynb_contents(f, ipynb_key).strip()
+            lines = filter(lambda l: not l.strip().startswith(ipynb_key), contents.split('\n'))
+            contents = '\n'.join(lines)
+        else:
+            contents = f.read().strip()
         formatted = pygments.highlight(contents, PythonLexer(), Terminal256Formatter(style='monokai'))
         if as_feedback:
             Feedback.add_feedback(formatted)

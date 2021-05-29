@@ -12,7 +12,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
     return sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course)
-        + sanitizeName.sanitizeString(locals.instance_user.uid)
+        + sanitizeName.sanitizeString(locals.assessment.group_work ? locals.group.name : locals.instance_user.uid)
         + '_'
         + locals.assessment_instance.number
         + '_'
@@ -36,12 +36,20 @@ router.get('/', (req, res, next) => {
                 if (ERR(err, next)) return;
                 res.locals.instance_questions = result.rows;
 
-                const params = {assessment_instance_id: res.locals.assessment_instance.id};
-                sqlDb.query(sql.select_log, params, (err, result) => {
+                const params = [res.locals.assessment_instance.id, false];
+                sqlDb.call('assessment_instances_select_log', params, (err, result) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
-
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    if (res.locals.assessment.group_work) {
+                        const params = {assessment_instance_id: res.locals.assessment_instance.id};
+                        sqlDb.query(sql.select_group_info, params, (err, result) => {
+                            if (ERR(err, next)) return;
+                            res.locals.group = result.rows[0];
+                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        });
+                    } else {
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    }
                 });
             });
         });
@@ -50,8 +58,8 @@ router.get('/', (req, res, next) => {
 
 router.get('/:filename', (req, res, next) => {
     if (req.params.filename == logCsvFilename(res.locals)) {
-        const params = {assessment_instance_id: res.locals.assessment_instance.id};
-        sqlDb.query(sql.select_log, params, (err, result) => {
+        const params = [res.locals.assessment_instance.id, false];
+        sqlDb.call('assessment_instances_select_log', params, (err, result) => {
             if (ERR(err, next)) return;
             const log = result.rows;
             const csvHeaders = ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'];

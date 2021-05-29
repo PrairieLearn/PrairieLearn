@@ -20,7 +20,7 @@ const ensureUpToDate = (locals, callback) => {
 
         debug('updated:', updated);
         if (!updated) return callback(null);
-        
+
         // we updated the assessment_instance, so reload it
 
         debug('selecting assessment instance');
@@ -43,7 +43,10 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
 
         debug('selecting questions');
-        var params = {assessment_instance_id: res.locals.assessment_instance.id};
+        var params = {
+            assessment_instance_id: res.locals.assessment_instance.id,
+            user_id: res.locals.user.user_id,
+        };
         sqldb.query(sql.get_questions, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.questions = result.rows;
@@ -53,9 +56,18 @@ router.get('/', function(req, res, next) {
             assessment.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
                 if (ERR(err, next)) return;
                 res.locals.assessment_text_templated = assessment_text_templated;
-
                 debug('rendering EJS');
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                if (res.locals.assessment.group_work) {
+                    sqldb.query(sql.get_group_info, params, function(err, result) {
+                        if (ERR(err, next)) return;
+                        res.locals.group_info = result.rows;
+                        if (res.locals.group_info[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));
+                        res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    });
+                } else {
+                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                }
             });
         });
     });
@@ -79,6 +91,16 @@ router.post('/', function(req, res, next) {
         util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'leave_group') {
+        const params = {
+            assessment_instance_id: res.locals.assessment_instance.id,
+            user_id: res.locals.user.user_id,
+            authn_user_id: res.locals.authn_user.user_id,
+        };
+        sqldb.query(sql.leave_group, params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect('/pl/course_instance/' + res.locals.course_instance.id + '/assessment/' + res.locals.assessment.id);
         });
     } else {
         next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

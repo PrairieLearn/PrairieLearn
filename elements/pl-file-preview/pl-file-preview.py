@@ -31,13 +31,15 @@ def render(element_html, data):
     if len(submitted_files) > 0:
         files = []
         for idx, file in enumerate(submitted_files):
+            b64contents = file['contents'] or ''
             try:
-                contents = base64.b64decode(file['contents'] or '').decode()
+                contents = base64.b64decode(b64contents).decode()
             except UnicodeDecodeError:
                 contents = 'Unable to decode file.'
             files.append({
                 'name': file['name'],
                 'contents': contents,
+                'contentsb64': b64contents,
                 'index': idx
             })
         html_params['has_files'] = True

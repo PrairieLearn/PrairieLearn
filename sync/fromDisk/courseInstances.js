@@ -1,46 +1,68 @@
+// @ts-check
 const _ = require('lodash');
-const { callbackify } = require('util');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
-module.exports.sync = function(courseInfo, courseInstanceDB, callback) {
-    callbackify(async () => {
-        _(courseInstanceDB)
-            .groupBy('uuid')
-            .each(function(courseInstances, uuid) {
-                if (courseInstances.length > 1) {
-                    const directories = courseInstances.map(ci => ci.directory).join(', ');
-                    throw new Error(`UUID ${uuid} is used in multiple course instances: ${directories}`);
-                }
-            });
+const infofile = require('../infofile');
+const perf = require('../performance')('question');
 
-        const courseInstancesParam = Object.keys(courseInstanceDB).map(courseInstanceShortName => {
-            const courseInstance = courseInstanceDB[courseInstanceShortName];
+/**
+ *
+ * @param {import('../course-db').CourseInstance} courseInstance
+ * @param {string} courseTimezone
+ */
+function getParamsForCourseInstance(courseInstance, courseTimezone) {
+    if (!courseInstance) return null;
 
-            const accessRules = (courseInstance.allowAccess || []).map(accessRule => ({
-                role: _(accessRule).has('role') ? accessRule.role : null,
-                uids: _(accessRule).has('uids') ? accessRule.uids : null,
-                start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
-                end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-                institution: _(accessRule).has('institution') ? accessRule.institution : null,
-            }));
+    const accessRules = (courseInstance.allowAccess || []).map(accessRule => ({
+        role: _(accessRule).has('role') ? accessRule.role : null,
+        uids: _(accessRule).has('uids') ? accessRule.uids : null,
+        start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
+        end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
+        institution: _(accessRule).has('institution') ? accessRule.institution : null,
+    }));
 
-            return {
-                uuid: courseInstance.uuid,
-                short_name: courseInstanceShortName,
-                long_name: courseInstance.longName,
-                display_timezone: courseInstance.timezone || courseInfo.timezone || 'America/Chicago',
-                access_rules: accessRules,
-            };
-        });
+    const userRoles = Object.entries(courseInstance.userRoles || {})
+        .filter(([_uid, role]) => role === 'Instructor' || role === 'TA');
 
-        const params = [
-            JSON.stringify(courseInstancesParam),
-            courseInfo.courseId,
-        ];
-        const syncCourseInstancesResult = await sqldb.callOneRowAsync('sync_course_instances', params);
-        const newCourseInstanceIds = syncCourseInstancesResult.rows[0].new_course_instance_ids;
-        courseInstancesParam.forEach((courseInstanceParam, index) => {
-            courseInstanceDB[courseInstanceParam.short_name].courseInstanceId = newCourseInstanceIds[index];
-        });
-    })(callback);
+    return {
+        uuid: courseInstance.uuid,
+        long_name: courseInstance.longName,
+        number: courseInstance.number,
+        hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
+        display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
+        access_rules: accessRules,
+        user_roles: userRoles,
+    };
+}
+
+/**
+ * @param {any} courseId
+ * @param {import('../course-db').CourseData} courseData
+ * @returns {Promise<{ [ciid: string]: any }>}
+ */
+module.exports.sync = async function(courseId, courseData) {
+    const courseTimezone = (courseData.course.data && courseData.course.data.timezone) || null;
+    const courseInstanceParams = Object.entries(courseData.courseInstances).map(([shortName, courseIntanceData]) => {
+        const { courseInstance } = courseIntanceData;
+        return JSON.stringify([
+            shortName,
+            courseInstance.uuid,
+            infofile.stringifyErrors(courseInstance),
+            infofile.stringifyWarnings(courseInstance),
+            getParamsForCourseInstance(courseInstance.data, courseTimezone),
+        ]);
+    });
+
+    const params = [
+        courseInstanceParams,
+        courseId,
+    ];
+
+    perf.start('sproc:sync_course_instances');
+    const result = await sqldb.callOneRowAsync('sync_course_instances', params);
+    perf.end('sproc:sync_course_instances');
+
+    /** @type {[string, any][]} */
+    const nameToIdMap = result.rows[0].name_to_id_map;
+    return nameToIdMap;
 };

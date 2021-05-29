@@ -19,7 +19,7 @@ docker run -it --rm -p 3000:3000 prairielearn/prairielearn
 
 * Step 3: Open a web browser and connect to [http://localhost:3000/pl](http://localhost:3000/pl)
 
-* Step 4: When you are finished with PrairieLearn, type Control-C on the commandline where your ran the server to stop it.
+* Step 4: When you are finished with PrairieLearn, type Control-C on the commandline where you ran the server to stop it.
 
 * Step 5: To use your own course, use the `-v` flag to bind the Docker `/course` directory with your own course directory (replace the precise path with your own) on Windows:
 
@@ -62,3 +62,23 @@ To run a specific older version (e.g., version 1.2.3) then you can do:
 ```sh
 docker run -it --rm -p 3000:3000 [other args] prairielearn/prairielearn:1.2.3
 ```
+
+## Running PrairieLearn from a WSL2 instance
+
+If you are using Windows with WSL2, you should be able to run Docker from another WSL2 instance. In order to that, you need to follow these instructions:
+
+* Open the Docker Dashboard, and click on Settings (the gear button at the top of the interface).
+    * Under General, ensure the "Use the WSL2 based engine" option is selected.
+    * Then, under Resources, select "WSL integration", and enable the option "Enable integration with my default WSL distro".
+    * Also enable integration with any listed distros that you want to access docker from.
+    * Click on "Apply & Restart" for the settings to apply.
+
+* On the shell of your WSL2 instance, make sure the instance has the `docker` command installed. The installation process may depend on your distribution, but most distributions provide a `docker` package.
+
+* Now you should be able to start PrairieLearn with the following command (assuming your course is stored under `/mnt/c/Users/yourname/git/pl-tam212`):
+
+```sh
+docker run -it --rm -p 3000:3000 -v /mnt/c/Users/yourname/git/pl-tam212:/course prairielearn/prairielearn
+```
+
+If you plan on running externally graded questions or workspaces in local development, please see the [docker section in the external grading docs](../externalGrading/#running-locally-on-docker) for a slightly different docker launch command.

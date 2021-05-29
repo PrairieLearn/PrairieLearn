@@ -17,6 +17,7 @@ CREATE OR REPLACE FUNCTION
         OUT mode enum_mode,          -- The mode for this assessment.
         OUT seb_config JSONB,        -- The SEB config (if any) for this assessment.
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
+        OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -78,5 +79,6 @@ BEGIN
     mode := user_result.mode;
     seb_config := user_result.seb_config;
     show_closed_assessment := user_result.show_closed_assessment;
+    show_closed_assessment_score := user_result.show_closed_assessment_score;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -14,7 +14,7 @@ columns
 
 indexes
     file_edits_pkey: PRIMARY KEY (id) USING btree (id)
-    file_edits_ui_ci_dn_fn_deleted_at_null_idx: USING btree (user_id, course_id, dir_name, file_name) WHERE deleted_at IS NULL
+    file_edits_ui_ci_dn_fn_deleted_at_null_idx: UNIQUE USING btree (user_id, course_id, dir_name, file_name) WHERE deleted_at IS NULL
 
 foreign-key constraints
     file_edits_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

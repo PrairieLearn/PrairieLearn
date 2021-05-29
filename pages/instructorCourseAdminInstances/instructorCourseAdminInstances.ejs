@@ -1,10 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
         <%- include('../partials/head', {pageTitle: 'Course Instances'}); %>
-        <script src="/javascripts/lodash.min.js"></script>
-        <script src="/javascripts/d3.min.js"></script>
-        <script src="/localscripts/histmini.js"></script>
     </head>
     <body>
         <script>
@@ -19,6 +16,7 @@
         </script>
         <%- include('../partials/navbar'); %>
         <div id="content" class="container-fluid">
+            <%- include('../partials/courseSyncErrorsAndWarnings'); %>
             <div class="card mb-4">
                 <div class="card-header bg-primary">
                     <div class="row align-items-center justify-content-between">
