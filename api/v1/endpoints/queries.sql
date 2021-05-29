@@ -46,6 +46,7 @@ WITH object_data AS (
         u.name AS user_name,
         coalesce(e.role, 'None'::enum_role) AS user_role,
         ai.max_points,
+        ai.max_bonus_points,
         ai.points,
         ai.score_perc,
         ai.number AS assessment_instance_number,
