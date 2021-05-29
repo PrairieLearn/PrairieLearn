@@ -30,6 +30,7 @@ require('./testShowClosedAssessment');
 require('./testShowClosedAssessmentScore');
 require('./testSubmittable');
 require('./testGradeRate');
+require('./testBonusPoints');
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testCourseElementExtension');
