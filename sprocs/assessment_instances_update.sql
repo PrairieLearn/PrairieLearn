@@ -19,7 +19,7 @@ DECLARE
     assessment_type enum_assessment_type;
     assessment_instance_open boolean;
     new_instance_questions_count integer;
-    zone_max_points double precision;
+    zones_total_max_points double precision;
     assessment_max_points double precision;
     assessment_max_bonus_points double precision;
     old_assessment_instance_max_points double precision;
@@ -108,14 +108,14 @@ BEGIN
     updated := updated OR (cardinality(new_instance_question_ids) > 0);
 
     SELECT sum(zmp.max_points)
-    INTO zone_max_points
+    INTO zones_total_max_points
     FROM assessment_instances_points(assessment_instance_id) AS zmp;
     
     -- determine the correct max_points
-    new_assessment_instance_max_points := COALESCE(assessment_max_points, GREATEST(zone_max_points - assessment_max_bonus_points, 0));
+    new_assessment_instance_max_points := COALESCE(assessment_max_points, GREATEST(zones_total_max_points - assessment_max_bonus_points, 0));
 
-    -- ensure that max_bonus_points is at most based on available points
-    assessment_max_bonus_points := GREATEST(LEAST(assessment_max_bonus_points, zone_max_points - new_assessment_instance_max_points), 0);
+    -- ensure that max_bonus_points is not greater than the number of available points
+    assessment_max_bonus_points := GREATEST(LEAST(assessment_max_bonus_points, zones_total_max_points - new_assessment_instance_max_points), 0);
 
     -- update max_points if necessary and log it
     IF new_assessment_instance_max_points IS DISTINCT FROM old_assessment_instance_max_points OR assessment_max_bonus_points IS DISTINCT FROM old_assessment_instance_max_bonus_points THEN
