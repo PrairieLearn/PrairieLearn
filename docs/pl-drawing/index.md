@@ -30,7 +30,7 @@ Attribute | Type | Default | Description
 `height` | integer | 320 | Vertical height of the canvas (in pixels).
 `grid-size` | integer | 20 | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.
 `snap-to-grid` | boolean | false | If true, objects placed in the canvas snap to closest grid point. Otherwise, they can be placed outside of the grid.
-`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
+`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
 `tol` | float | `0.5*grid-size` | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
 `show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.

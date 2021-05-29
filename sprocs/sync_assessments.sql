@@ -140,6 +140,7 @@ BEGIN
             multiple_instance = (valid_assessment.data->>'multiple_instance')::boolean,
             shuffle_questions = (valid_assessment.data->>'shuffle_questions')::boolean,
             max_points = (valid_assessment.data->>'max_points')::double precision,
+            max_bonus_points = (valid_assessment.data->>'max_bonus_points')::double precision,
             auto_close = (valid_assessment.data->>'auto_close')::boolean,
             text = valid_assessment.data->>'text',
             html = valid_assessment.data->>'html',
