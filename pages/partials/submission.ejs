@@ -13,11 +13,9 @@
       </div>
       <span class="small">
         <% if (authz_data.user.uid == submission.uid) { %>
-          <span class="pl-submission-attribution">You</span>
-          submitted 
+          <span class="pl-submission-attribution">You</span> submitted 
         <% } else { %>
-          Submitted by
-          <span class="pl-submission-attribution"><%= submission.uid %></span>
+          Submitted by <%= authz_data.user.name %> (<span class="pl-submission-attribution"><%= submission.uid %></span>)
         <% } %>
         at <span class="pl-submission-time"><%- submission.formatted_date %></span>
       </span>
