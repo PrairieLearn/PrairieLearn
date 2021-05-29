@@ -66,8 +66,12 @@ describe('News items', function() {
             page = await requestp(locals.baseUrl);
             locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
         });
-        it('should show up in the navbar link', () => {
-            elemList = locals.$('i.news-item-link-notification');
+        it('should show up in the top navbar', () => {
+            elemList = locals.$('span.news-item-count');
+            assert.lengthOf(elemList, 1);
+        });
+        it('should show up in the News link', () => {
+            elemList = locals.$('span.news-item-link-count');
             assert.lengthOf(elemList, 1);
         });
     });

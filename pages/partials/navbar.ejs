@@ -58,24 +58,13 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
 
 <ul class="nav navbar-nav" id="username-nav">
 
-    <a class="nav-link " href="<%= urlPrefix %>/news_items"
-      <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
-        title="News (<%= news_item_notification_count %> unread)"
-        aria-label="News (<%= news_item_notification_count %> unread)"
-      <% } else { %>
-        title="News"
-        aria-label="News"
-      <% } %>
-    >
-      <i class="fas fa-bullhorn" aria-hidden="true"></i>
-      <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
-        <i class="fas fa-circle small text-primary news-item-link-notification" aria-hidden="true"></i>
-      <% } %>
-    </a>
     <% if (!locals.effective_user_has_no_access_to_course_instance) { %>
     <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <%= displayedName %>
+            <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
+              <span class="badge badge-pill badge-primary news-item-count"><%= news_item_notification_count %></span>
+            <% } %>
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
             <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
@@ -92,7 +81,7 @@ if (!locals.effective_user_has_no_access_to_course_instance) {
               <% } %>  
             >
               News
-              <% if (typeof news_item_notification_count !== 'undefined' && news_item_notification_count > 0) { %>
+              <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
                 <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
               <% } %>
             </a>
