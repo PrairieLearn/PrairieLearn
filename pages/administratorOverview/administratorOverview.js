@@ -171,6 +171,15 @@ router.post('/', (req, res, next) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + job_sequence_id);
         });
+    } else if (req.body.__action === 'generate_all_chunks') {
+        sqlDb.query(sql.select_all_course_ids, {}, (err, result) => {
+            if (ERR(err, next)) return;
+            const courseIds = result.rows.map(({ id }) => id);
+            util.callbackify(chunks.generateAllChunksForCourseList)(courseIds, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+                if (ERR(err, next)) return;
+                res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + job_sequence_id);
+            });
+        });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
