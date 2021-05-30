@@ -18,7 +18,7 @@ WHERE
     AND aset.abbreviation = 'E'
     AND a.number = '11';
 
--- BLOCK select_homework7
+-- BLOCK select_homework8
 SELECT
     a.id
 FROM
@@ -27,7 +27,7 @@ FROM
 WHERE
     a.course_instance_id = 1
     AND aset.abbreviation = 'HW'
-    AND a.number = '7';
+    AND a.number = '8';
 
 -- BLOCK read_assessment_instance_points
 SELECT

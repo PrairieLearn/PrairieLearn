@@ -38,10 +38,10 @@ describe('Exam and homework assessment with submittable rule', function() {
         context.examId = resultsExam.rows[0].id;
         context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
-        const resultsHomework = await sqldb.queryOneRowAsync(sql.select_homework7, []);
+        const resultsHomework = await sqldb.queryOneRowAsync(sql.select_homework8, []);
         context.hwId = resultsHomework.rows[0].id;
         context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
-        context.hwNumber = '7';
+        context.hwNumber = '8';
     });
     after('shut down testing server', helperServer.after);
     after('unset authenticated user', function(callback) {
