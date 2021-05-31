@@ -14,19 +14,22 @@ function setDictList(dict, dictKey, listIdx, value, isNode) {
 }
 
 /** Parse encoded XML diagram returned by draw.io */
-function parseDiagram(data) {
+function parseDiagram(data, needDecode = true) {
     var responseRoot = stringToXML(data);
     if (!responseRoot) {
         console.error("Error parsing response XML");
     } else {
-
-        // Process compressed XML to get the XML representing the graph
-        var diagramNode = responseRoot.getElementsByTagName("diagram")[0];
-        var compressedXML = diagramNode.textContent
-        compressedXML = atob(compressedXML);
-        compressedXML = data = pako.inflateRaw(Uint8Array.from(compressedXML, c => c.charCodeAt(0)), { to: 'string' });
-        compressedXML = decodeURIComponent(compressedXML);
-
+        if (needDecode) {
+            // Process compressed XML to get the XML representing the graph
+            var diagramNode = responseRoot.getElementsByTagName("diagram")[0];
+            var compressedXML = diagramNode.textContent
+            compressedXML = atob(compressedXML);
+            compressedXML = data = pako.inflateRaw(Uint8Array.from(compressedXML, c => c.charCodeAt(0)), { to: 'string' });
+            compressedXML = decodeURIComponent(compressedXML);
+            var graphModelNode = stringToXML(compressedXML);
+        } else {
+            var graphModelNode = responseRoot;
+        }
         // Process XML representing graph into graph data structure
         var graph = {
             nodes: {
@@ -38,7 +41,6 @@ function parseDiagram(data) {
             start: undefined,
             err: undefined
         }
-        var graphModelNode = stringToXML(compressedXML);
         var graphRoot = graphModelNode.getElementsByTagName("root")[0]
 
         var graphComponentList = graphRoot.getElementsByTagName("object"); // Get all objects to process into graph

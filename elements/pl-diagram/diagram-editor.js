@@ -183,8 +183,8 @@ DiagramEditor.prototype.getFrameUrl = function () {
 	url += "&hide-pages=1"; //Disable format
 	url += '&ui=min';
 	url += '&libraries=1';
-	url += '&libs=;'
 	url += "&saveAndExit=0&noSaveBtn=1&noExitBtn=1"; // Disable save and exit buttons
+	url += '&libs=;'
 	if (this.config != null) {
 		url += '&configure=1';
 	}
@@ -220,13 +220,16 @@ DiagramEditor.prototype.handleMessage = function (msg) {
 	else if (msg.event == 'save') {
 		this.save(msg.xml, false, this.startElement);
 		this.xml = msg.xml;
-
 		if (msg.exit) {
 			msg.event = 'exit';
 		}
 		else {
 			this.setStatus('allChangesSaved', false);
 		}
+	}
+	else if (msg.event == 'load') {
+		console.log("Loaded " + msg.xml)
+		parseDiagram(msg.xml, false);
 	}
 	else if (msg.event == "event") {
 		console.error(msg.error)
