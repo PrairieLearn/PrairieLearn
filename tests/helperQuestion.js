@@ -342,6 +342,12 @@ module.exports = {
                 if (!_.has(locals.expectedResult, 'submission_score')) return; // skip check
                 assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
             });
+            checkInstanceQuestionPointsAndPercentage();
+        });
+    },
+
+    checkQuestionPointsAndPercentage(locals) {
+        describe('check question points and percentage', function() {
             it('should still have the instance_question', function(callback) {
                 var params = {
                     instance_question_id: locals.question.id,
