@@ -37,7 +37,7 @@ const addVectorsIncorrectServerPath = './addVectorsIncorrectServer.js';
 const questions = _.keyBy(questionsArray, 'qid');
 
 describe('Regrading', function() {
-    this.timeout(60000);
+    this.timeout(120000);
 
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
@@ -630,8 +630,8 @@ describe('Regrading', function() {
                 locals.question = questions.addVectors;
                 postRegradeForm(locals.question, true);
 
-                it('should wait for 10 seconds', function(callback) {
-                    setTimeout(callback, 10000);
+                it('should wait for 5 seconds', function(callback) {
+                    setTimeout(callback, 5000);
                 });
 
                 const totalPoints = 11 + 13 * 0.7 + 12 * 0.3;
@@ -655,8 +655,8 @@ describe('Regrading', function() {
                 locals.question = questions.partialCredit3;
                 postRegradeForm(locals.question, true);
 
-                it('should wait for 10 seconds', function(callback) {
-                    setTimeout(callback, 10000);
+                it('should wait for 5 seconds', function(callback) {
+                    setTimeout(callback, 5000);
                 });
 
                 const totalPoints = 11 + 13 * 0.7 + 12 * 0.3;
@@ -681,8 +681,8 @@ describe('Regrading', function() {
                 locals.question = questions.addVectors;
                 postRegradeForm(locals.question, false);
 
-                it('should wait for 10 seconds', function(callback) {
-                    setTimeout(callback, 10000);
+                it('should wait for 5 seconds', function(callback) {
+                    setTimeout(callback, 5000);
                 });
 
                 const totalPoints = 11 + 13 * 0.7 + 12 * 0.3;
@@ -707,8 +707,8 @@ describe('Regrading', function() {
                 locals.question = questions.partialCredit3;
                 postRegradeForm(locals.question, false);
 
-                it('should wait for 10 seconds', function(callback) {
-                    setTimeout(callback, 10000);
+                it('should wait for 5 seconds', function(callback) {
+                    setTimeout(callback, 5000);
                 });
 
                 const totalPoints = 11 + 13 * 0.7 + 12 * 0.15;
@@ -851,8 +851,8 @@ describe('Regrading', function() {
                 locals.question = questions.addVectors;
                 postRegradeForm(locals.question, true);
 
-                it('should wait for 10 seconds', function(callback) {
-                    setTimeout(callback, 10000);
+                it('should wait for 5 seconds', function(callback) {
+                    setTimeout(callback, 5000);
                 });
 
                 // Regrading the question gives a score of 0, which is lower than the original score, so we
@@ -877,8 +877,8 @@ describe('Regrading', function() {
                 locals.question = questions.partialCredit3;
                 postRegradeForm(locals.question, true);
 
-                it('should wait for 10 seconds', function(callback) {
-                    setTimeout(callback, 10000);
+                it('should wait for 5 seconds', function(callback) {
+                    setTimeout(callback, 5000);
                 });
 
                 // Regrading the question gives a score of 0, which is lower than the original score, so we
@@ -903,8 +903,8 @@ describe('Regrading', function() {
                 locals.question = questions.addVectors;
                 postRegradeForm(locals.question, false);
 
-                it('should wait for 10 seconds', function(callback) {
-                    setTimeout(callback, 10000);
+                it('should wait for 5 seconds', function(callback) {
+                    setTimeout(callback, 5000);
                 });
 
                 // Regrading the question gives a score of 0, and we keep this score.
@@ -928,8 +928,8 @@ describe('Regrading', function() {
                 locals.question = questions.partialCredit3;
                 postRegradeForm(locals.question, false);
 
-                it('should wait for 10 seconds', function(callback) {
-                    setTimeout(callback, 10000);
+                it('should wait for 5 seconds', function(callback) {
+                    setTimeout(callback, 5000);
                 });
 
                 // Regrading the question gives a score of 0, and we keep this score.
