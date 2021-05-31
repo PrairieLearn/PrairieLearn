@@ -34,7 +34,9 @@ function parseDiagram(data) {
             },
             edges: {
                 //edgeID: [nodeInID, nodeOutID, transition] -- the nodeID is the ID of the container of both the node and label
-            }
+            },
+            start: undefined,
+            err: undefined
         }
         var graphModelNode = stringToXML(compressedXML);
         var graphRoot = graphModelNode.getElementsByTagName("root")[0]
@@ -47,6 +49,12 @@ function parseDiagram(data) {
             if (elementType == "node") {
                 let nodeID = componentMX.getAttribute("parent");
                 setDictList(graph.nodes, nodeID, 1, component.getAttribute("label"), true);
+                if (component.getAttribute("isStartState") === "1") { // Is start State
+                    if (graph.start !== undefined) {
+                        graph.err = "Too many start states"
+                    }
+                    graph.start = nodeID
+                }
             }
             else if (elementType == "nodeLabel") {
                 let nodeID = componentMX.getAttribute("parent");

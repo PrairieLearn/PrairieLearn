@@ -141,8 +141,11 @@ def parseAnswerFSMFromXML(element):
     graph = {"edges": {}, "nodes": {}}
     inputs = pl.get_string_attrib(element, 'input', None)
     outputs = pl.get_string_attrib(element, 'output', None)
+    startState = pl.get_string_attrib(element, 'start', None)
     if inputs is None or outputs is None:
         raise Exception('input and output are required in pl-fsm')
+    if startState is None:
+        raise Exception('start state is required for pl-fsm answer')
     inputs = literal_eval(inputs)
     outputs = literal_eval(outputs)
     for a in inputs:
@@ -153,6 +156,7 @@ def parseAnswerFSMFromXML(element):
             raise Exception('Invalid output for pl-fsm')
     graph['inputs'] = inputs
     graph['outputs'] = outputs
+    graph['start'] = startState
     max_transitions = 2**len(outputs)
     for pl_state_element in element:
         if pl_state_element.tag == "pl-fsm-state":
@@ -165,13 +169,11 @@ def parseAnswerFSMFromXML(element):
             else:
                 stateTransitions = literal_eval(stateTransitions)
             stateOutputs = pl.get_string_attrib(pl_state_element, 'output', None)
-            stateOutputs = literal_eval(stateOutputs)
-
+            stateOutputs = tuple(literal_eval(stateOutputs))
             graph['nodes'][stateName] = stateOutputs
             graph['edges'][stateName] = []
             for i, dest in enumerate(stateTransitions):
                 graph["edges"][stateName].append([dest, i])
-
     return graph
 
 
@@ -216,6 +218,7 @@ def parse(element_html, data):
 
 
 def grade(element_html, data):
+    np.random.seed(0)
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name', element_defaults['answers-name'])
     student = data['submitted_answers'][name]
@@ -240,7 +243,7 @@ def grade(element_html, data):
                 data['format_errors'][name] = f"Node output incorrectly formatted: {token}"
                 return data
             nodeOutputs[outputIndices[token[0]]] = token[2]
-        student['nodes'][node] = (student['nodes'][node][0], nodeOutputs)
+        student['nodes'][node] = (student['nodes'][node][0], tuple(nodeOutputs))
     validChars = {'(', ')', '\'', '*', '+'}
     for char in inputAlphabet:
         validChars.add(char)
@@ -253,6 +256,7 @@ def grade(element_html, data):
                     return data
             edge[1] = edgeLabel
     print(student)
+    print(reference)
     # Second order checks to make sure only one transition exists for each assignment of input booleans
     allAssignments = list(itertools.product([True, False], repeat=len(inputAlphabet)))
     for nodeIn in student['nodes']:
@@ -274,7 +278,41 @@ def grade(element_html, data):
                 data['format_errors'][name] = f"Node {student['nodes'][nodeIn][1]} has too many transitions for {allAssignments[i]}"
                 print(data['format_errors'][name])
                 return data
-    print("ALL G")
+    print("Pass 2nd order check")
+    # Random checks
+    CASE_SIZE = 10
+    testCase = np.random.choice([0, 1], size=(CASE_SIZE, len(inputAlphabet)), replace=True)
+    studentOutput = []
+    referenceOutput = []
+    # evaluate student FSM
+    currState = student['start']
+    for row in testCase:
+        assignment = {inputAlphabet[j]: row[j] for j in range(len(inputAlphabet))}
+        for edge in student['edges'][currState]:
+            edgeAST = booleanParser.create_ast(edge[1])
+            if(booleanParser.eval_ast(edgeAST, assignment)):
+                currState = edge[0]
+                output = tuple(int(i) for i in student['nodes'][currState][1])
+                studentOutput.append(output)
+                break
+    # evaluate reference FSM
+    currState = reference['start']
+    for row in testCase:
+        toBin = int("".join(str(x) for x in row), 2)
+        for edge in reference['edges'][currState]:
+            if edge[1] == toBin:
+                currState = edge[0]
+                output = tuple(reference['nodes'][currState])
+                referenceOutput.append(output)
+                break
+    # compare outputs
+    numCorrect = 0
+    for i in range(CASE_SIZE):
+        if studentOutput[i] == referenceOutput[i]:
+            numCorrect += 1
+    print(studentOutput)
+    print(referenceOutput)
+    print(f"{numCorrect} out of {CASE_SIZE}")
     return data
 
 

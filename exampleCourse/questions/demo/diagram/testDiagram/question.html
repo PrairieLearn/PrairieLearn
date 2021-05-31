@@ -8,7 +8,8 @@
         <pl-fsm input="['a','b']" output="['o','z']">
             <!-- required, restrict to one letter variables-->
             <!-- start default should be false, x1 default = 0, y1 default height/2, transitions default["","","",""], output default ["",""], length of transitions must be 2^{number of inputs} -->
-            <pl-fsm-state name="cheese" start="true" x1="250" y1="250" transitions="['lettuce','','','ham']"></pl-fsm-state>
+            <pl-fsm-state name="cheese" start="true" x1="250" y1="250" transitions="['lettuce','','','ham']">
+            </pl-fsm-state>
             <pl-fsm-state name="ham" x1="250" y1="500" transitions="['ham','','','']"></pl-fsm-state>
             <pl-fsm-state name="lettuce" x1="500" y1="250"></pl-fsm-state>
         </pl-fsm>
@@ -16,10 +17,12 @@
 
 
     <pl-diagram-answer x-size="100" y-size="100">
-        <pl-fsm input="['a','b']" output="['o','z']">
-            <pl-fsm-state name="cheese" output="[0,1]" transitions="['cheese', 'ham' , 'lettuce' , 'cheese' ]">
+        <pl-fsm input="['a','b']" output="['o','z']" start="cheese">
+            <pl-fsm-state name="cheese" output="[0,1]" transitions="['ham', 'ham' , 'lettuce' , 'lettuce' ]">
             </pl-fsm-state>
-            <pl-fsm-state name="ham" output="[1,1]" transitions="['cheese', 'ham' , 'lettuce' , 'cheese' ]">
+            <pl-fsm-state name="ham" output="[1,1]" transitions="['lettuce', 'lettuce' , 'lettuce' , 'ham' ]">
+            </pl-fsm-state>
+            <pl-fsm-state name="lettuce" output="[1,0]" transitions="['ham', 'cheese' , 'ham' , 'cheese' ]">
             </pl-fsm-state>
         </pl-fsm>
     </pl-diagram-answer>
