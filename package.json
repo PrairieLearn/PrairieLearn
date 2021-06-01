@@ -23,7 +23,7 @@
         "archiver": "^5.2.0",
         "async": "^3.2.0",
         "async-stacktrace": "0.0.2",
-        "aws-sdk": "^2.902.0",
+        "aws-sdk": "^2.918.0",
         "backbone": "^1.4.0",
         "base64url": "^3.0.1",
         "better-ajv-errors": "^0.7.0",
