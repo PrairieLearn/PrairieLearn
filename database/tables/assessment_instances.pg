@@ -8,6 +8,7 @@ columns
     duration: interval default '00:00:00'::interval
     group_id: bigint
     id: bigint not null default nextval('assessment_instances_id_seq'::regclass)
+    max_bonus_points: double precision
     max_points: double precision
     mode: enum_mode
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP

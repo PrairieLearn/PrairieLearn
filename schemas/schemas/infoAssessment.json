@@ -71,7 +71,11 @@
             "type": "string"
         },
         "maxPoints": {
-            "description": "The maximum number of points that can be earned for this assessment.",
+            "description": "The number of points that must be earned in this assessment to achieve a score of 100%.",
+            "type": "number"
+        },
+        "maxBonusPoints": {
+            "description": "The maximum number of additional points that can be earned beyond maxPoints.",
             "type": "number"
         },
         "autoClose": {

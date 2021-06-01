@@ -28,6 +28,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
         uuid: courseInstance.uuid,
         long_name: courseInstance.longName,
         number: courseInstance.number,
+        hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
         display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
         access_rules: accessRules,
         user_roles: userRoles,

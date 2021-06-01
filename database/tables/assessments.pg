@@ -10,6 +10,7 @@ columns
     deleted_at: timestamp with time zone
     group_work: boolean default false
     id: bigint not null default nextval('assessments_id_seq'::regclass)
+    max_bonus_points: double precision
     max_points: double precision
     mode: enum_mode
     multiple_instance: boolean

@@ -61,6 +61,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         require_honor_code: requireHonorCode,
         auto_close: !!_.get(assessment, 'autoClose', true),
         max_points: assessment.maxPoints,
+        max_bonus_points: assessment.maxBonusPoints,
         set_name: assessment.set,
         topic_name: assessment.topic,
         text: assessment.text,
