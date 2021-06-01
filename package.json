@@ -125,7 +125,7 @@
         "yargs-parser": "^20.2.6"
     },
     "devDependencies": {
-        "@types/chai": "^4.2.15",
+        "@types/chai": "^4.2.18",
         "@types/fs-extra": "^9.0.8",
         "@types/mocha": "^8.2.1",
         "@types/node": "^15.0.2",
