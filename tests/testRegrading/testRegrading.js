@@ -337,10 +337,13 @@ describe('Regrading', function() {
     };
 
     /**
-     * Ensures that the instructor assessment instance page for the current assessment instance
-     * contains no regrade buttons. Assumes that startExam(examNumber) has been called.
+     * Ensures that the regrading functionality is either visible (if canRegrade is true) or not
+     * visible (if canRegrade is false) on the instructor assessment instance page.
+     *
+     * @param {*} canRegrade whether the "Questions" table on the instructor assessment instance
+     * page should have a column for regrading
      */
-    var ensureNoRegradeButtons = function() {
+    var checkInstructorAssessmentInstancePage = function(canRegrade) {
         describe('The instructor assessment instance page', function() {
             it('should load successfully', function(callback) {
                 request(locals.instructorAssessmentInstanceUrl, function(error, response, body) {
@@ -358,14 +361,25 @@ describe('Regrading', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should not contain a "Regrade" column', function() {
-                elemList = locals.$('tr th:contains("Regrade")');
-                assert.lengthOf(elemList, 0);
-            });
-            it('should not contain any "Regrade" buttons', function() {
-                elemList = locals.$('td button:contains("Regrade")');
-                assert.lengthOf(elemList, 0);
-            });
+            if (canRegrade) {
+                it('should contain a "Regrade" column', function() {
+                    elemList = locals.$('tr th:contains("Regrade")');
+                    assert.lengthOf(elemList, 1);
+                });
+                it(`should contain ${questionsArray.length} "Regrade" buttons`, function() {
+                    elemList = locals.$('td button:contains("Regrade")');
+                    assert.lengthOf(elemList, questionsArray.length);
+                });
+            } else {
+                it('should not contain a "Regrade" column', function() {
+                    elemList = locals.$('tr th:contains("Regrade")');
+                    assert.lengthOf(elemList, 0);
+                });
+                it('should not contain any "Regrade" buttons', function() {
+                    elemList = locals.$('td button:contains("Regrade")');
+                    assert.lengthOf(elemList, 0);
+                });
+            }
         });
     };
 
@@ -600,13 +614,13 @@ describe('Regrading', function() {
         config.regradeActive = false;
 
         describe('When config.regradeActive is false', function() {
-            ensureNoRegradeButtons();
+            checkInstructorAssessmentInstancePage(false);
         });
 
         config.regradeActive = true;
 
         describe('When config.regradeActive is true and the assessment instance is open', function() {
-            ensureNoRegradeButtons();
+            checkInstructorAssessmentInstancePage(false);
         });
 
         closeAssessmentInstance();
@@ -620,30 +634,7 @@ describe('Regrading', function() {
 
         describe('When config.regradeActive is true and the assessment instance is closed', function() {
             describe('The instructor assessment instance page', function() {
-                it('should load successfully', function(callback) {
-                    request(locals.instructorAssessmentInstanceUrl, function(error, response, body) {
-                        if (error) {
-                            return callback(error);
-                        }
-                        if (response.statusCode != 200) {
-                            return callback(new Error('bad status: ' + response.statusCode));
-                        }
-                        res = response;
-                        page = body;
-                        callback(null);
-                    });
-                });
-                it('should parse', function() {
-                    locals.$ = cheerio.load(page);
-                });
-                it('should contain a "Regrade" column', function() {
-                    elemList = locals.$('tr th:contains("Regrade")');
-                    assert.lengthOf(elemList, 0);
-                });
-                it(`should contain ${questionsArray.length} "Regrade" buttons`, function() {
-                    elemList = locals.$('td button:contains("Regrade")');
-                    assert.lengthOf(elemList, questionsArray.length);
-                });
+                checkInstructorAssessmentInstancePage(true);
             });
 
             describe('Regrading addVectors and keeping the highest score', function() {
@@ -814,13 +805,13 @@ describe('Regrading', function() {
         config.regradeActive = false;
 
         describe('When config.regradeActive is false', function() {
-            ensureNoRegradeButtons();
+            checkInstructorAssessmentInstancePage(false);
         });
 
         config.regradeActive = true;
 
         describe('When config.regradeActive is true and the assessment instance is open', function() {
-            ensureNoRegradeButtons();
+            checkInstructorAssessmentInstancePage(false);
         });
 
         closeAssessmentInstance();
@@ -834,30 +825,7 @@ describe('Regrading', function() {
 
         describe('When config.regradeActive is true and the assessment instance is closed', function() {
             describe('The instructor assessment instance page', function() {
-                it('should load successfully', function(callback) {
-                    request(locals.instructorAssessmentInstanceUrl, function(error, response, body) {
-                        if (error) {
-                            return callback(error);
-                        }
-                        if (response.statusCode != 200) {
-                            return callback(new Error('bad status: ' + response.statusCode));
-                        }
-                        res = response;
-                        page = body;
-                        callback(null);
-                    });
-                });
-                it('should parse', function() {
-                    locals.$ = cheerio.load(page);
-                });
-                it('should contain a "Regrade" column', function() {
-                    elemList = locals.$('tr th:contains("Regrade")');
-                    assert.lengthOf(elemList, 0);
-                });
-                it(`should contain ${questionsArray.length} "Regrade" buttons`, function() {
-                    elemList = locals.$('td button:contains("Regrade")');
-                    assert.lengthOf(elemList, questionsArray.length);
-                });
+                checkInstructorAssessmentInstancePage(true);
             });
 
             describe('Regrading addVectors and keeping the highest score', function() {
