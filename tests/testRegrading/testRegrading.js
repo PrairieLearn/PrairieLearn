@@ -389,11 +389,7 @@ describe('Regrading', function() {
             });
             it('should extract the CSRF token into locals.__csrf_token', function() {
                 locals.$ = cheerio.load(page);
-                elemList = locals.$('form input[name="__csrf_token"]');
-                assert.lengthOf(elemList, 1);
-                assert.nestedProperty(elemList[0], 'attribs.value');
-                locals.__csrf_token = elemList[0].attribs.value;
-                assert.isString(locals.__csrf_token);
+                helperClient.extractAndSaveCSRFToken(locals, locals.$, 'form');
             });
             it('should simulate a time-limit expiration to close the assessment instance', function() {
                 const form = {
@@ -431,27 +427,58 @@ describe('Regrading', function() {
      * regrade results in a higher score. If keepHighestScore is false, then the question's score will
      * always be updated with the regraded score, even if the regrade results in a lower score.
      * 
+     * Assumes that the instance question can be regraded, i.e. config.regradeActive is true and the
+     * assessment instance is closed.
+     *
      * @param {*} question the instance question to regrade
      * @param {*} keepHighestScore whether we should keep the question's original score if the regraded
      * score is lower
      */
     var postRegradeForm = function(question, keepHighestScore) {
-        it('should successfully POST regrade form and redirect to grading job page', function(callback) {
-            const form = {
-                __action: 'regrade_question',
-                __csrf_token: locals.__csrf_token,
-                update_method: keepHighestScore ? 'highest-score-update' : 'allow-decrease',
-                instance_question_id: question.id,
-            };
-            request.post({url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true}, function(error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                assert.match(response.req.path, /\/pl\/course_instance\/1\/instructor\/jobSequence\/\d+/);
-                callback(null);
+        describe('Start regrade', function() {
+            it('should access the instructor assessment instance page', function(callback) {
+                request(locals.instructorAssessmentInstanceUrl, function(error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    res = response;
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should parse', function() {
+                locals.$ = cheerio.load(page);
+            });
+            it('should simulate the clicking of a "Regrade" button, then extract a CSRF token', function() {
+                // Get a regrade button
+                const regradeButton = locals.$('td button:contains("Regrade")')[0];
+
+                // simulate clicking a "Regrade" button so that the CSRF token becomes visible in the HTML
+                regradeButton.click();
+
+                // Extract the CSRF token into locals.__csrf_token
+                helperClient.extractAndSaveCSRFToken(locals, locals.$, 'form');
+            });
+            it('should successfully POST regrade form and redirect to grading job page', function(callback) {
+                const form = {
+                    __action: 'regrade_question',
+                    __csrf_token: locals.__csrf_token,
+                    update_method: keepHighestScore ? 'highest-score-update' : 'allow-decrease',
+                    instance_question_id: question.id,
+                };
+                request.post({url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true}, function(error, response, _body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    assert.match(response.req.path, /\/pl\/course_instance\/1\/instructor\/jobSequence\/\d+/);
+                    callback(null);
+                });
             });
         });
     };
@@ -616,13 +643,6 @@ describe('Regrading', function() {
                 it(`should contain ${questionsArray.length} "Regrade" buttons`, function() {
                     elemList = locals.$('td button:contains("Regrade")');
                     assert.lengthOf(elemList, questionsArray.length);
-                });
-                it('should have a CSRF token', function() {
-                    elemList = locals.$('form input[name="__csrf_token"]');
-                    assert.lengthOf(elemList, 1);
-                    assert.nestedProperty(elemList[0], 'attribs.value');
-                    locals.__csrf_token = elemList[0].attribs.value;
-                    assert.isString(locals.__csrf_token);
                 });
             });
 
@@ -837,13 +857,6 @@ describe('Regrading', function() {
                 it(`should contain ${questionsArray.length} "Regrade" buttons`, function() {
                     elemList = locals.$('td button:contains("Regrade")');
                     assert.lengthOf(elemList, questionsArray.length);
-                });
-                it('should have a CSRF token', function() {
-                    elemList = locals.$('form input[name="__csrf_token"]');
-                    assert.lengthOf(elemList, 1);
-                    assert.nestedProperty(elemList[0], 'attribs.value');
-                    locals.__csrf_token = elemList[0].attribs.value;
-                    assert.isString(locals.__csrf_token);
                 });
             });
 
