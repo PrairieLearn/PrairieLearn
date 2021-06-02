@@ -7,6 +7,8 @@ const { promisify } = require('util');
 
 const error = require('./error');
 
+let searchSchema = null;
+
 /**
  * Formats a string for debugging.
  *
@@ -180,8 +182,28 @@ module.exports.getClient = function(callback) {
             }
             return ERR(err, callback); // unconditionally return
         }
-        callback(null, client, done);
+        if (searchSchema != null) {
+            const setSearchPathSql = `SET search_path TO ${searchSchema},public`;
+            module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
+                if (err) {
+                    done(client);
+                    return ERR(err, callback); // unconditionally return
+                }
+                callback(null, client, done);
+            });
+        } else {
+            callback(null, client, done);
+        }
     });
+};
+
+/**
+ * Set the schema to use for the search path.
+ *
+ * @param {string} schema to use (can be "null" to unset the search path)
+ */
+function module.exports.setSearchSchema = function(schema) {
+    searchSchema = schema;
 };
 
 /**
@@ -419,14 +441,35 @@ module.exports.query = function(sql, params, callback) {
             return true;
         };
         if (handleError(err)) return;
-        paramsToArray(sql, params, function(err, newSql, newParams) {
-            if (err) err = error.addData(err, {sql: sql, sqlParams: params});
+
+        const setSearchPath = function(callback) {
+            if (searchSchema != null) {
+                const setSearchPathSql = `SET search_path TO ${searchSchema},public`;
+                module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
+                    if (err) {
+                        if (client) {
+                            done(client);
+                        }
+                        return ERR(err, callback); // unconditionally return
+                    }
+                    callback(null);
+                });
+            } else {
+                callback(null);
+            }
+        };
+
+        setSearchPath(function (err) {
             if (ERR(err, callback)) return;
-            client.query(newSql, newParams, function(err, result) {
-                if (handleError(err)) return;
-                done();
-                debug('query() success', 'rowCount:', result.rowCount);
-                callback(null, result);
+            paramsToArray(sql, params, function(err, newSql, newParams) {
+                if (err) err = error.addData(err, {sql: sql, sqlParams: params});
+                if (ERR(err, callback)) return;
+                client.query(newSql, newParams, function(err, result) {
+                    if (handleError(err)) return;
+                    done();
+                    debug('query() success', 'rowCount:', result.rowCount);
+                    callback(null, result);
+                });
             });
         });
     });
