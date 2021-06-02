@@ -13,6 +13,7 @@ extra_javascript:
 pages:
 - Introduction:
   - 'What is PrairieLearn?': 'Introduction/index.md'
+  - 'License': 'Introduction/license.md'
   - 'News': 'Introduction/news_items.md'
 
 - Instructor Manual:
@@ -22,7 +23,9 @@ pages:
     - 'Question Gallery': 'Instructor/getStarted/questionGallery/index.md'
     - 'Workshops': 'Instructor/getStarted/workshops/index.md'
   - How-to Guides:
-    - 'Assessments': 'Instructor/HowTos/howtoAssessments.md'
+    - 'Assessments': 'Instructor/howTos/howtoAssessments.md'
+  - References:
+    - 'Elements for writing questions': 'Instructor/references/elements.md'
 
 - Student Manual:
   - Get Started:

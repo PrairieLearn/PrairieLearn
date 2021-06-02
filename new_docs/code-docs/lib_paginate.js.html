@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: lib/paginate.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: lib/paginate.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const async = require('async');
+
+const sqldb = require('@prairielearn/prairielib/sql-db');
+
+module.exports = {
+    pages(chosenPage, count, pageSize) {
+        let lastPage = Math.ceil(count / pageSize);
+        if (lastPage == 0) lastPage = 1;
+
+        let currPage = Number(chosenPage);
+        if (!_.isInteger(currPage)) currPage = 1;
+
+        let prevPage = currPage - 1;
+        let nextPage = currPage + 1;
+
+        currPage = Math.max(1, Math.min(lastPage, currPage));
+        prevPage = Math.max(1, Math.min(lastPage, prevPage));
+        nextPage = Math.max(1, Math.min(lastPage, nextPage));
+
+        return {currPage, prevPage, nextPage, lastPage};
+    },
+
+    /**
+     * Utility function to facilitate extremely large queries whose results
+     * cannot fit in memory all at once. The given query must accept an "offset"
+     * param that will be used to paginate the query. The "receiveRow" callback
+     * will be called once for each row in the result set. The "done" callback
+     * is called either if an error has occurred or when all rows have been
+     * delivered.
+     */
+    paginateQuery(sql, params, receiveRow, done) {
+        const _params = Object.assign({}, params);
+        let offset = 0;
+        async.doWhilst((callback) => {
+            _params.offset = offset;
+            sqldb.query(sql, _params, (err, result) => {
+                if (ERR(err, callback)) return;
+                async.eachSeries(result.rows, receiveRow, (err) => {
+                    if (ERR(err, callback)) return;
+                    offset += result.rows.length;
+                    callback(null, result.rows.length);
+                });
+            });
+        }, (count, callback) => {
+            callback(null, count > 0);
+        }, (err) => {
+            if (ERR(err, done)) return;
+            done(null);
+        });
+    },
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-assessment.html">assessment</a></li><li><a href="module-question.html">question</a></li><li><a href="module-question-servers.html">question-servers</a></li></ul><h3>Classes</h3><ul><li><a href="LocalCache.html">LocalCache</a></li><li><a href="LocalLock.html">LocalLock</a></li><li><a href="module-question-NoSubmissionError.html">NoSubmissionError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#_generateAllChunksForCourseListWithJobSequence">_generateAllChunksForCourseListWithJobSequence</a></li><li><a href="global.html#_generateAllChunksForCourseWithJob">_generateAllChunksForCourseWithJob</a></li><li><a href="global.html#_getLock">_getLock</a></li><li><a href="global.html#_syncDiskToSqlWithLock">_syncDiskToSqlWithLock</a></li><li><a href="global.html#_updateScoreWithClient">_updateScoreWithClient</a></li><li><a href="global.html#addError">addError</a></li><li><a href="global.html#addErrors">addErrors</a></li><li><a href="global.html#addWarning">addWarning</a></li><li><a href="global.html#addWarnings">addWarnings</a></li><li><a href="global.html#assetPath">assetPath</a></li><li><a href="global.html#buildDirectory">buildDirectory</a></li><li><a href="global.html#checkAllowAccessDates">checkAllowAccessDates</a></li><li><a href="global.html#checkDuplicateUUIDs">checkDuplicateUUIDs</a></li><li><a href="global.html#close">close</a></li><li><a href="global.html#courseDataHasErrors">courseDataHasErrors</a></li><li><a href="global.html#courseDataHasErrorsOrWarnings">courseDataHasErrorsOrWarnings</a></li><li><a href="global.html#createAndUploadChunks">createAndUploadChunks</a></li><li><a href="global.html#delete">delete</a></li><li><a href="global.html#deleteFromS3Async">deleteFromS3Async</a></li><li><a href="global.html#describe">describe</a></li><li><a href="global.html#downloadFromS3Async">downloadFromS3Async</a></li><li><a href="global.html#ensureChunk">ensureChunk</a></li><li><a href="global.html#ensureChunksForCourseAsync">ensureChunksForCourseAsync</a></li><li><a href="global.html#ERR">ERR</a></li><li><a href="global.html#extractAndSaveCSRFToken">extractAndSaveCSRFToken</a></li><li><a href="global.html#extractAndSaveVariantId">extractAndSaveVariantId</a></li><li><a href="global.html#fetchCheerio">fetchCheerio</a></li><li><a href="global.html#generateAllChunksForCourseList">generateAllChunksForCourseList</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getAllChunksForCourse">getAllChunksForCourse</a></li><li><a href="global.html#getChunksDirectoriesForCourseId">getChunksDirectoriesForCourseId</a></li><li><a href="global.html#getDetailsForFile">getDetailsForFile</a></li><li><a href="global.html#getDevHostJobDirectory">getDevHostJobDirectory</a></li><li><a href="global.html#getDevJobDirectory">getDevJobDirectory</a></li><li><a href="global.html#getErrorsAndWarningsForFilePath">getErrorsAndWarningsForFilePath</a></li><li><a href="global.html#getFromS3Async">getFromS3Async</a></li><li><a href="global.html#getJobDirectory">getJobDirectory</a></li><li><a href="global.html#getJobSequenceWithFormattedOutput">getJobSequenceWithFormattedOutput</a></li><li><a href="global.html#getOrUpdateCourseCommitHash">getOrUpdateCourseCommitHash</a></li><li><a href="global.html#getRuntimeDirectoryForCourse">getRuntimeDirectoryForCourse</a></li><li><a href="global.html#getStream">getStream</a></li><li><a href="global.html#getTemplateQuestionIdsAsync">getTemplateQuestionIdsAsync</a></li><li><a href="global.html#hasErrors">hasErrors</a></li><li><a href="global.html#hasErrorsOrWarnings">hasErrorsOrWarnings</a></li><li><a href="global.html#hasUuid">hasUuid</a></li><li><a href="global.html#hasWarnings">hasWarnings</a></li><li><a href="global.html#identifyChangedFiles">identifyChangedFiles</a></li><li><a href="global.html#identifyChunksFromChangedFiles">identifyChunksFromChangedFiles</a></li><li><a href="global.html#identifyChunksToGenerate">identifyChunksToGenerate</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#loadAndValidateJson">loadAndValidateJson</a></li><li><a href="global.html#loadAssessments">loadAssessments</a></li><li><a href="global.html#loadConfigSecrets">loadConfigSecrets</a></li><li><a href="global.html#loadCourseInfo">loadCourseInfo</a></li><li><a href="global.html#loadCourseInstances">loadCourseInstances</a></li><li><a href="global.html#loadFullCourse">loadFullCourse</a></li><li><a href="global.html#loadFullCourseNew">loadFullCourseNew</a></li><li><a href="global.html#loadInfoFile">loadInfoFile</a></li><li><a href="global.html#loadInfoForDirectory">loadInfoForDirectory</a></li><li><a href="global.html#loadQuestions">loadQuestions</a></li><li><a href="global.html#makeError">makeError</a></li><li><a href="global.html#makeGradingResult">makeGradingResult</a></li><li><a href="global.html#makeWarning">makeWarning</a></li><li><a href="global.html#nodeModulesAssetPath">nodeModulesAssetPath</a></li><li><a href="global.html#nonblockingStringify">nonblockingStringify</a></li><li><a href="global.html#pendingChunksMap">pendingChunksMap</a></li><li><a href="global.html#RandomGenerator">RandomGenerator</a></li><li><a href="global.html#readInfoJSON">readInfoJSON</a></li><li><a href="global.html#readJSON">readJSON</a></li><li><a href="global.html#readJSONSyncOrDie">readJSONSyncOrDie</a></li><li><a href="global.html#releaseLock">releaseLock</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#sendCourseRequestMessage">sendCourseRequestMessage</a></li><li><a href="global.html#sendProctorMessage">sendProctorMessage</a></li><li><a href="global.html#sendSlackAlmaMessage">sendSlackAlmaMessage</a></li><li><a href="global.html#Stringifier">Stringifier</a></li><li><a href="global.html#stringifyErrors">stringifyErrors</a></li><li><a href="global.html#stringifyWarnings">stringifyWarnings</a></li><li><a href="global.html#syncDiskToSql">syncDiskToSql</a></li><li><a href="global.html#syncDiskToSqlWithLock">syncDiskToSqlWithLock</a></li><li><a href="global.html#syncOrCreateDiskToSql">syncOrCreateDiskToSql</a></li><li><a href="global.html#tryLock">tryLock</a></li><li><a href="global.html#updateChunksForCourse">updateChunksForCourse</a></li><li><a href="global.html#updateCourseCommitHash">updateCourseCommitHash</a></li><li><a href="global.html#updateScore">updateScore</a></li><li><a href="global.html#upload">upload</a></li><li><a href="global.html#uploadDirectoryToS3Async">uploadDirectoryToS3Async</a></li><li><a href="global.html#uploadToS3Async">uploadToS3Async</a></li><li><a href="global.html#validateAssessment">validateAssessment</a></li><li><a href="global.html#validateCourseInstance">validateCourseInstance</a></li><li><a href="global.html#validateJSON">validateJSON</a></li><li><a href="global.html#validateJSONAsync">validateJSONAsync</a></li><li><a href="global.html#validateOptions">validateOptions</a></li><li><a href="global.html#validateQuestion">validateQuestion</a></li><li><a href="global.html#visitMathBlock">visitMathBlock</a></li><li><a href="global.html#waitLock">waitLock</a></li><li><a href="global.html#writeErrorsAndWarningsForCourseData">writeErrorsAndWarningsForCourseData</a></li><li><a href="global.html#writeErrorsAndWarningsForInfoFileIfNeeded">writeErrorsAndWarningsForInfoFileIfNeeded</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Jun 02 2021 10:45:55 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

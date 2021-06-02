@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: tests/testHonorCode.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: tests/testHonorCode.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const assert = require('chai').assert;
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
+const { step } = require('mocha-steps');
+
+const config = require('../lib/config');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
+const helperServer = require('./helperServer');
+
+/**
+ * A wrapper around node-fetch that provides a few features:
+ * * Automatic parsing with cheerio
+ * * A `form` option akin to that from the `request` library
+ */
+const fetchCheerio = async (url, options = {}) => {
+  if (options.form) {
+    options.body = JSON.stringify(options.form);
+    options.headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+    delete options.form;
+  }
+  const response = await fetch(url, options);
+  const text = await response.text();
+  response.$ = cheerio.load(text);
+  // response.text() can only be called once, which we already did.
+  // Patch this so consumers can use it as normal.
+  response.text = () => text;
+  return response;
+};
+
+describe('Exam assessment response to `requireHonorCode`', function() {
+  this.timeout(60000);
+
+  const context = {};
+  context.siteUrl = `http://localhost:${config.serverPort}`;
+  context.baseUrl = `${context.siteUrl}/pl`;
+  context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
+
+  before('set up testing server', helperServer.before);
+
+  after('shut down testing server', helperServer.after);
+
+  step('get default exam info', async () => {
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, {number: '1'});
+    context.assessmentId = results.rows[0].id;
+    context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
+  });
+
+  step('visit default exam landing page', async () => {
+    const response = await fetchCheerio(context.assessmentUrl);
+    assert.isTrue(response.ok);
+
+    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+
+    // We should see the honor code div by default
+    assert.lengthOf(response.$('div.test-suite-honor-code'), 1);
+  });
+
+  step('get `"requireHonorCode": false` exam info', async () => {
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, {number: '2'});
+    context.assessmentId = results.rows[0].id;
+    context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
+  });
+
+  step('visit `"requireHonorCode": false` exam landing page', async () => {
+    const response = await fetchCheerio(context.assessmentUrl);
+    assert.isTrue(response.ok);
+
+    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+
+    // We should not see the honor code div anymore
+    assert.lengthOf(response.$('div.test-suite-honor-code'), 0);
+  });
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-assessment.html">assessment</a></li><li><a href="module-question.html">question</a></li><li><a href="module-question-servers.html">question-servers</a></li></ul><h3>Classes</h3><ul><li><a href="LocalCache.html">LocalCache</a></li><li><a href="LocalLock.html">LocalLock</a></li><li><a href="module-question-NoSubmissionError.html">NoSubmissionError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#_generateAllChunksForCourseListWithJobSequence">_generateAllChunksForCourseListWithJobSequence</a></li><li><a href="global.html#_generateAllChunksForCourseWithJob">_generateAllChunksForCourseWithJob</a></li><li><a href="global.html#_getLock">_getLock</a></li><li><a href="global.html#_syncDiskToSqlWithLock">_syncDiskToSqlWithLock</a></li><li><a href="global.html#_updateScoreWithClient">_updateScoreWithClient</a></li><li><a href="global.html#addError">addError</a></li><li><a href="global.html#addErrors">addErrors</a></li><li><a href="global.html#addWarning">addWarning</a></li><li><a href="global.html#addWarnings">addWarnings</a></li><li><a href="global.html#assetPath">assetPath</a></li><li><a href="global.html#buildDirectory">buildDirectory</a></li><li><a href="global.html#checkAllowAccessDates">checkAllowAccessDates</a></li><li><a href="global.html#checkDuplicateUUIDs">checkDuplicateUUIDs</a></li><li><a href="global.html#close">close</a></li><li><a href="global.html#courseDataHasErrors">courseDataHasErrors</a></li><li><a href="global.html#courseDataHasErrorsOrWarnings">courseDataHasErrorsOrWarnings</a></li><li><a href="global.html#createAndUploadChunks">createAndUploadChunks</a></li><li><a href="global.html#delete">delete</a></li><li><a href="global.html#deleteFromS3Async">deleteFromS3Async</a></li><li><a href="global.html#describe">describe</a></li><li><a href="global.html#downloadFromS3Async">downloadFromS3Async</a></li><li><a href="global.html#ensureChunk">ensureChunk</a></li><li><a href="global.html#ensureChunksForCourseAsync">ensureChunksForCourseAsync</a></li><li><a href="global.html#ERR">ERR</a></li><li><a href="global.html#extractAndSaveCSRFToken">extractAndSaveCSRFToken</a></li><li><a href="global.html#extractAndSaveVariantId">extractAndSaveVariantId</a></li><li><a href="global.html#fetchCheerio">fetchCheerio</a></li><li><a href="global.html#generateAllChunksForCourseList">generateAllChunksForCourseList</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getAllChunksForCourse">getAllChunksForCourse</a></li><li><a href="global.html#getChunksDirectoriesForCourseId">getChunksDirectoriesForCourseId</a></li><li><a href="global.html#getDetailsForFile">getDetailsForFile</a></li><li><a href="global.html#getDevHostJobDirectory">getDevHostJobDirectory</a></li><li><a href="global.html#getDevJobDirectory">getDevJobDirectory</a></li><li><a href="global.html#getErrorsAndWarningsForFilePath">getErrorsAndWarningsForFilePath</a></li><li><a href="global.html#getFromS3Async">getFromS3Async</a></li><li><a href="global.html#getJobDirectory">getJobDirectory</a></li><li><a href="global.html#getJobSequenceWithFormattedOutput">getJobSequenceWithFormattedOutput</a></li><li><a href="global.html#getOrUpdateCourseCommitHash">getOrUpdateCourseCommitHash</a></li><li><a href="global.html#getRuntimeDirectoryForCourse">getRuntimeDirectoryForCourse</a></li><li><a href="global.html#getStream">getStream</a></li><li><a href="global.html#getTemplateQuestionIdsAsync">getTemplateQuestionIdsAsync</a></li><li><a href="global.html#hasErrors">hasErrors</a></li><li><a href="global.html#hasErrorsOrWarnings">hasErrorsOrWarnings</a></li><li><a href="global.html#hasUuid">hasUuid</a></li><li><a href="global.html#hasWarnings">hasWarnings</a></li><li><a href="global.html#identifyChangedFiles">identifyChangedFiles</a></li><li><a href="global.html#identifyChunksFromChangedFiles">identifyChunksFromChangedFiles</a></li><li><a href="global.html#identifyChunksToGenerate">identifyChunksToGenerate</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#loadAndValidateJson">loadAndValidateJson</a></li><li><a href="global.html#loadAssessments">loadAssessments</a></li><li><a href="global.html#loadConfigSecrets">loadConfigSecrets</a></li><li><a href="global.html#loadCourseInfo">loadCourseInfo</a></li><li><a href="global.html#loadCourseInstances">loadCourseInstances</a></li><li><a href="global.html#loadFullCourse">loadFullCourse</a></li><li><a href="global.html#loadFullCourseNew">loadFullCourseNew</a></li><li><a href="global.html#loadInfoFile">loadInfoFile</a></li><li><a href="global.html#loadInfoForDirectory">loadInfoForDirectory</a></li><li><a href="global.html#loadQuestions">loadQuestions</a></li><li><a href="global.html#makeError">makeError</a></li><li><a href="global.html#makeGradingResult">makeGradingResult</a></li><li><a href="global.html#makeWarning">makeWarning</a></li><li><a href="global.html#nodeModulesAssetPath">nodeModulesAssetPath</a></li><li><a href="global.html#nonblockingStringify">nonblockingStringify</a></li><li><a href="global.html#pendingChunksMap">pendingChunksMap</a></li><li><a href="global.html#RandomGenerator">RandomGenerator</a></li><li><a href="global.html#readInfoJSON">readInfoJSON</a></li><li><a href="global.html#readJSON">readJSON</a></li><li><a href="global.html#readJSONSyncOrDie">readJSONSyncOrDie</a></li><li><a href="global.html#releaseLock">releaseLock</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#sendCourseRequestMessage">sendCourseRequestMessage</a></li><li><a href="global.html#sendProctorMessage">sendProctorMessage</a></li><li><a href="global.html#sendSlackAlmaMessage">sendSlackAlmaMessage</a></li><li><a href="global.html#Stringifier">Stringifier</a></li><li><a href="global.html#stringifyErrors">stringifyErrors</a></li><li><a href="global.html#stringifyWarnings">stringifyWarnings</a></li><li><a href="global.html#syncDiskToSql">syncDiskToSql</a></li><li><a href="global.html#syncDiskToSqlWithLock">syncDiskToSqlWithLock</a></li><li><a href="global.html#syncOrCreateDiskToSql">syncOrCreateDiskToSql</a></li><li><a href="global.html#tryLock">tryLock</a></li><li><a href="global.html#updateChunksForCourse">updateChunksForCourse</a></li><li><a href="global.html#updateCourseCommitHash">updateCourseCommitHash</a></li><li><a href="global.html#updateScore">updateScore</a></li><li><a href="global.html#upload">upload</a></li><li><a href="global.html#uploadDirectoryToS3Async">uploadDirectoryToS3Async</a></li><li><a href="global.html#uploadToS3Async">uploadToS3Async</a></li><li><a href="global.html#validateAssessment">validateAssessment</a></li><li><a href="global.html#validateCourseInstance">validateCourseInstance</a></li><li><a href="global.html#validateJSON">validateJSON</a></li><li><a href="global.html#validateJSONAsync">validateJSONAsync</a></li><li><a href="global.html#validateOptions">validateOptions</a></li><li><a href="global.html#validateQuestion">validateQuestion</a></li><li><a href="global.html#visitMathBlock">visitMathBlock</a></li><li><a href="global.html#waitLock">waitLock</a></li><li><a href="global.html#writeErrorsAndWarningsForCourseData">writeErrorsAndWarningsForCourseData</a></li><li><a href="global.html#writeErrorsAndWarningsForInfoFileIfNeeded">writeErrorsAndWarningsForInfoFileIfNeeded</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Jun 02 2021 10:45:55 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: lib/named-locks.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: lib/named-locks.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
+const ERR = require('async-stacktrace');
+const util = require('util');
+const async = require('async');
+
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
+/** @typedef {{ client: import("pg").PoolClient, done: (release?: any) => void }} Lock */
+/** @typedef {{ timeout?: number }} Options */
+
+/*
+ * The functions here all identify locks by "name", which is a plain
+ * string. The locks use the named_locks DB table. Each lock name
+ * corresponds to a unique table row. To take a lock, we:
+ *     1. make sure a row exists for the lock name
+ *     2. start a transaction
+ *     3. acquire a "FOR UPDATE" row lock on the DB row for the named
+ *        lock (this blocks all other locks on the same row). See
+ *        https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-ROWS
+ *     4. return to the caller with the transaction held open
+ *
+ * The caller then does some work and finally calls releaseLock(),
+ * which ends the transaction, thereby releasing the row lock.
+ *
+ * The flow above will wait indefinitely for the lock to become
+ * available. To implement optional timeouts, we set the DB variable
+ * `lock_timeout`:
+ * https://www.postgresql.org/docs/current/runtime-config-client.html#GUC-LOCK-TIMEOUT
+ * If we timeout then we will return an error to the caller.
+ *
+ * To implement a no-waiting tryLock() we use the PostgreSQL "SKIP
+ * LOCKED" feature:
+ * https://www.postgresql.org/docs/current/sql-select.html#SQL-FOR-UPDATE-SHARE
+ * If we fail to acquire the lock then we immediately release the
+ * transaction and return to the caller with `lock = null`. In this
+ * case the caller should not call releaseLock().
+ *
+ * The lock object returned by functions in this module are of the
+ * form `{client, done}`, where `client` and `done` are sqldb
+ * transaction objects. These are simply the objects we need to end
+ * the transaction, which will release the lock.
+ */
+
+/**
+ * Try to acquire a lock and either succeed if it's available or
+ * return immediately if not. If a lock is acquired then it must
+ * must later be released by releaseLock(). If a lock is not acquired
+ * (it is null) then releaseLock() should not be called.
+ *
+ * @param {string} name The name of the lock to acquire.
+ * @param {(err: Error | null, lock: Lock) => void} callback A callback(err, lock) function. If lock is null then it was not acquired.
+ */
+module.exports.tryLock = function(name, callback) {
+    module.exports._getLock(name, { wait: false }, (err, lock) => {
+        if (ERR(err, callback)) return;
+        callback(null, lock);
+    });
+};
+module.exports.tryLockAsync = util.promisify(module.exports.tryLock);
+
+/**
+ * Wait until a lock can be successfully acquired.
+ *
+ * @param {string} name The name of the lock to acquire.
+ * @param {Options} options Optional parameters:
+ *                              timeout (how many milliseconds to wait - undefined, null, or
+ *                                       anything other than a positive number means forever)
+ * @param {(err: Error | null, lock?: Lock) => void} callback A callback(err, lock) function.
+ */
+module.exports.waitLock = function(name, options, callback) {
+    const internalOptions = {
+        wait: true,
+        timeout: options.timeout || 0,
+    };
+    module.exports._getLock(name, internalOptions, (err, lock) => {
+        if (ERR(err, callback)) return;
+        if (lock == null) return callback(new Error('failed to acquire lock'));
+        callback(null, lock);
+    });
+};
+
+module.exports.waitLockAsync = util.promisify(module.exports.waitLock);
+
+/**
+ * Release a lock.
+ *
+ * @param {Lock} lock - The previously acquired lock.
+ * @param {(err: Error | null) => void} callback - A callback(err) function.
+ */
+module.exports.releaseLock = function(lock, callback) {
+    if (lock == null) return callback(new Error('lock is null'));
+    sqldb.endTransaction(lock.client, lock.done, null, (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+};
+
+module.exports.releaseLockAsync = util.promisify(module.exports.releaseLock);
+
+/**
+ * Internal helper function to get a lock with optional
+ * waiting. Do not call directly, but use tryLock() or waitLock()
+ * instead.
+ *
+ * @param {string} name The name of the lock to acquire.
+ * @param {{ wait?: boolean, timeout?: number }} options Optional parameters.
+ * @param {(err: Error | null, lock?: Lock) => void} callback A callback(err, lock) function.
+ */
+module.exports._getLock = function(name, options, callback) {
+    options = options || {};
+    sqldb.query(sql.ensure_named_locks_table, {name}, (err, _result) => {
+        if (ERR(err, callback)) return;
+        const lock_sql = options.wait ? sql.lock_row_wait : sql.lock_row_nowait;
+        sqldb.query(sql.ensure_named_lock_row, {name}, (err, _result) => {
+            if (ERR(err, callback)) return;
+            sqldb.beginTransaction((err, client, done) => {
+                if (ERR(err, callback)) return;
+                async.waterfall([
+                    (callback) => {
+                        if (options.wait &amp;&amp; (options.timeout > 0)) {
+                            sqldb.callWithClient(client, 'lock_timeout_set', [options.timeout], (err) => {
+                                if (ERR(err, callback)) return;
+                                callback(null);
+                            });
+                        } else {
+                            callback(null);
+                        }
+                    },
+                    (callback) => {
+                        sqldb.queryWithClient(client, lock_sql, {name}, (err, result) => {
+                            if (ERR(err, callback)) return;
+                            // could not get the lock, return success with a null lock
+                            if (result.rowCount == 0) return callback(null, null);
+                            // got the lock, make a lock object and return it
+                            const lock = {client, done};
+                            callback(null, lock);
+                        });
+                    },
+                ], (err, lock) => {
+                    // We need to make sure the transaction is going
+                    // to be ended on any code path.
+                    if (err) {
+                        // Something went wrong, so we end the
+                        // transaction and return the error.
+                        sqldb.endTransaction(client, done, err, (endErr) => {
+                            if (ERR(endErr, callback)) return;
+                            callback(err);
+                        });
+                    } else {
+                        if (lock == null) {
+                            // We didn't acquire the lock so our
+                            // parent caller will never release it, so
+                            // we have to end the transaction now.
+                            sqldb.endTransaction(client, done, err, (endErr) => {
+                                if (ERR(endErr, callback)) return;
+                                callback(null, null);
+                            });
+                        } else {
+                            // We successfully acquired the lock, so
+                            // we return with the transaction held
+                            // open. The caller will later call
+                            // releaseLock() to end the transaction.
+                            callback(null, lock);
+                        }
+                    }
+                });
+            });
+        });
+    });
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-assessment.html">assessment</a></li><li><a href="module-question.html">question</a></li><li><a href="module-question-servers.html">question-servers</a></li></ul><h3>Classes</h3><ul><li><a href="LocalCache.html">LocalCache</a></li><li><a href="LocalLock.html">LocalLock</a></li><li><a href="module-question-NoSubmissionError.html">NoSubmissionError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#_generateAllChunksForCourseListWithJobSequence">_generateAllChunksForCourseListWithJobSequence</a></li><li><a href="global.html#_generateAllChunksForCourseWithJob">_generateAllChunksForCourseWithJob</a></li><li><a href="global.html#_getLock">_getLock</a></li><li><a href="global.html#_syncDiskToSqlWithLock">_syncDiskToSqlWithLock</a></li><li><a href="global.html#_updateScoreWithClient">_updateScoreWithClient</a></li><li><a href="global.html#addError">addError</a></li><li><a href="global.html#addErrors">addErrors</a></li><li><a href="global.html#addWarning">addWarning</a></li><li><a href="global.html#addWarnings">addWarnings</a></li><li><a href="global.html#assetPath">assetPath</a></li><li><a href="global.html#buildDirectory">buildDirectory</a></li><li><a href="global.html#checkAllowAccessDates">checkAllowAccessDates</a></li><li><a href="global.html#checkDuplicateUUIDs">checkDuplicateUUIDs</a></li><li><a href="global.html#close">close</a></li><li><a href="global.html#courseDataHasErrors">courseDataHasErrors</a></li><li><a href="global.html#courseDataHasErrorsOrWarnings">courseDataHasErrorsOrWarnings</a></li><li><a href="global.html#createAndUploadChunks">createAndUploadChunks</a></li><li><a href="global.html#delete">delete</a></li><li><a href="global.html#deleteFromS3Async">deleteFromS3Async</a></li><li><a href="global.html#describe">describe</a></li><li><a href="global.html#downloadFromS3Async">downloadFromS3Async</a></li><li><a href="global.html#ensureChunk">ensureChunk</a></li><li><a href="global.html#ensureChunksForCourseAsync">ensureChunksForCourseAsync</a></li><li><a href="global.html#ERR">ERR</a></li><li><a href="global.html#extractAndSaveCSRFToken">extractAndSaveCSRFToken</a></li><li><a href="global.html#extractAndSaveVariantId">extractAndSaveVariantId</a></li><li><a href="global.html#fetchCheerio">fetchCheerio</a></li><li><a href="global.html#generateAllChunksForCourseList">generateAllChunksForCourseList</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getAllChunksForCourse">getAllChunksForCourse</a></li><li><a href="global.html#getChunksDirectoriesForCourseId">getChunksDirectoriesForCourseId</a></li><li><a href="global.html#getDetailsForFile">getDetailsForFile</a></li><li><a href="global.html#getDevHostJobDirectory">getDevHostJobDirectory</a></li><li><a href="global.html#getDevJobDirectory">getDevJobDirectory</a></li><li><a href="global.html#getErrorsAndWarningsForFilePath">getErrorsAndWarningsForFilePath</a></li><li><a href="global.html#getFromS3Async">getFromS3Async</a></li><li><a href="global.html#getJobDirectory">getJobDirectory</a></li><li><a href="global.html#getJobSequenceWithFormattedOutput">getJobSequenceWithFormattedOutput</a></li><li><a href="global.html#getOrUpdateCourseCommitHash">getOrUpdateCourseCommitHash</a></li><li><a href="global.html#getRuntimeDirectoryForCourse">getRuntimeDirectoryForCourse</a></li><li><a href="global.html#getStream">getStream</a></li><li><a href="global.html#getTemplateQuestionIdsAsync">getTemplateQuestionIdsAsync</a></li><li><a href="global.html#hasErrors">hasErrors</a></li><li><a href="global.html#hasErrorsOrWarnings">hasErrorsOrWarnings</a></li><li><a href="global.html#hasUuid">hasUuid</a></li><li><a href="global.html#hasWarnings">hasWarnings</a></li><li><a href="global.html#identifyChangedFiles">identifyChangedFiles</a></li><li><a href="global.html#identifyChunksFromChangedFiles">identifyChunksFromChangedFiles</a></li><li><a href="global.html#identifyChunksToGenerate">identifyChunksToGenerate</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#loadAndValidateJson">loadAndValidateJson</a></li><li><a href="global.html#loadAssessments">loadAssessments</a></li><li><a href="global.html#loadConfigSecrets">loadConfigSecrets</a></li><li><a href="global.html#loadCourseInfo">loadCourseInfo</a></li><li><a href="global.html#loadCourseInstances">loadCourseInstances</a></li><li><a href="global.html#loadFullCourse">loadFullCourse</a></li><li><a href="global.html#loadFullCourseNew">loadFullCourseNew</a></li><li><a href="global.html#loadInfoFile">loadInfoFile</a></li><li><a href="global.html#loadInfoForDirectory">loadInfoForDirectory</a></li><li><a href="global.html#loadQuestions">loadQuestions</a></li><li><a href="global.html#makeError">makeError</a></li><li><a href="global.html#makeGradingResult">makeGradingResult</a></li><li><a href="global.html#makeWarning">makeWarning</a></li><li><a href="global.html#nodeModulesAssetPath">nodeModulesAssetPath</a></li><li><a href="global.html#nonblockingStringify">nonblockingStringify</a></li><li><a href="global.html#pendingChunksMap">pendingChunksMap</a></li><li><a href="global.html#RandomGenerator">RandomGenerator</a></li><li><a href="global.html#readInfoJSON">readInfoJSON</a></li><li><a href="global.html#readJSON">readJSON</a></li><li><a href="global.html#readJSONSyncOrDie">readJSONSyncOrDie</a></li><li><a href="global.html#releaseLock">releaseLock</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#sendCourseRequestMessage">sendCourseRequestMessage</a></li><li><a href="global.html#sendProctorMessage">sendProctorMessage</a></li><li><a href="global.html#sendSlackAlmaMessage">sendSlackAlmaMessage</a></li><li><a href="global.html#Stringifier">Stringifier</a></li><li><a href="global.html#stringifyErrors">stringifyErrors</a></li><li><a href="global.html#stringifyWarnings">stringifyWarnings</a></li><li><a href="global.html#syncDiskToSql">syncDiskToSql</a></li><li><a href="global.html#syncDiskToSqlWithLock">syncDiskToSqlWithLock</a></li><li><a href="global.html#syncOrCreateDiskToSql">syncOrCreateDiskToSql</a></li><li><a href="global.html#tryLock">tryLock</a></li><li><a href="global.html#updateChunksForCourse">updateChunksForCourse</a></li><li><a href="global.html#updateCourseCommitHash">updateCourseCommitHash</a></li><li><a href="global.html#updateScore">updateScore</a></li><li><a href="global.html#upload">upload</a></li><li><a href="global.html#uploadDirectoryToS3Async">uploadDirectoryToS3Async</a></li><li><a href="global.html#uploadToS3Async">uploadToS3Async</a></li><li><a href="global.html#validateAssessment">validateAssessment</a></li><li><a href="global.html#validateCourseInstance">validateCourseInstance</a></li><li><a href="global.html#validateJSON">validateJSON</a></li><li><a href="global.html#validateJSONAsync">validateJSONAsync</a></li><li><a href="global.html#validateOptions">validateOptions</a></li><li><a href="global.html#validateQuestion">validateQuestion</a></li><li><a href="global.html#visitMathBlock">visitMathBlock</a></li><li><a href="global.html#waitLock">waitLock</a></li><li><a href="global.html#writeErrorsAndWarningsForCourseData">writeErrorsAndWarningsForCourseData</a></li><li><a href="global.html#writeErrorsAndWarningsForInfoFileIfNeeded">writeErrorsAndWarningsForInfoFileIfNeeded</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Jun 02 2021 10:45:55 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

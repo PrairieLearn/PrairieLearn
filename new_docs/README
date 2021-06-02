@@ -1,0 +1,7 @@
+# Instructions to preview documentation locally
+# DELETE THIS FILE BEFORE MERGING
+
+1) open terminal
+2) run "make preview"
+3) open browser
+4) go to http://127.0.0.1:8000
