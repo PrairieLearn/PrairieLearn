@@ -27,12 +27,16 @@ const assessmentMaxPoints = questionsArray.reduce(function(maxPointsSum, questio
     return maxPointsSum + question.maxPoints;
 });
 
-const partialCredit3ServerPath = '../../testCourse/questions/partialCredit3/server.py';
 const addVectorsServerPath = '../../testCourse/questions/addVectors/server.js';
-const partialCredit3CorrectServerPath = './partialCredit3CorrectServer.py';
-const addVectorsCorrectServerPath = './addVectorsCorrectServer.js';
-const partialCredit3IncorrectServerPath = './partialCredit3IncorrectServer.py';
+const addVectorsCorrectedServerPath = './addVectorsCorrectedServer.js';
 const addVectorsIncorrectServerPath = './addVectorsIncorrectServer.js';
+const addVectorsServerCopyPath = './addVectorsServerCopy.js';
+
+const partialCredit3ServerPath = '../../testCourse/questions/partialCredit3/server.py';
+const paritalCredit3CorrectedServerPath = './partialCredit3CorrectedServer.py';
+const partialCredit3IncorrectServerPath = './partialCredit3IncorrectServer.py';
+const partialCredit3ServerCopyPath = './partialCredit3ServerCopy.js';
+
 
 const questions = _.keyBy(questionsArray, 'qid');
 
@@ -297,7 +301,7 @@ describe('Regrading', function() {
      * Replaces the server.js and server.py files for addVectors and partialCredit3 with files that have
      * incorrect grade functions.
      */
-    var useIncorrectGradeFunctions = function() {
+    var useIncorrectServerFiles = function() {
         describe('Replace server files for addVectors and partialCredit3 with files that have incorrect grade functions', function() {
             it('should succeed for addVectors', function(callback) {
                 fs.copyFile(addVectorsIncorrectServerPath, addVectorsServerPath, function(err) {
@@ -316,19 +320,20 @@ describe('Regrading', function() {
     };
 
     /**
-     * Restores the original server.py or server.js files for addVectors and partialCredit3.
+     * Replaces the server.js and server.py files for addVectors and partialCredit3 with files
+     * that have corrected grade functions.
      */
-    var restoreServerFiles = function() {
-        describe('Restore the original server files for addVectors and partialCredit3', function() {
+    var useCorrectedServerFiles = function() {
+        describe('Replace server files for addVectors and partialCredit3 with files that have corrected grade functions', function() {
             it('should succeed for addVectors', function(callback) {
-                fs.copyFile(addVectorsCorrectServerPath, addVectorsServerPath, function(err) {
+                fs.copyFile(addVectorsCorrectedServerPath, addVectorsServerPath, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             });
 
             it('should succeed for partialCredit3', function(callback) {
-                fs.copyFile(partialCredit3CorrectServerPath, partialCredit3ServerPath, function(err) {
+                fs.copyFile(paritalCredit3CorrectedServerPath, partialCredit3ServerPath, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -499,14 +504,14 @@ describe('Regrading', function() {
 
     describe('Copy original server files for addVectors and partialCredit3 into temp files', function() {
         it('should succeed for addVectors', function(callback) {
-            fs.copyFile(addVectorsServerPath, addVectorsCorrectServerPath, function(err) {
+            fs.copyFile(addVectorsServerPath, addVectorsServerCopyPath, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         });
 
         it('should succeed for partialCredit3', function(callback) {
-            fs.copyFile(partialCredit3ServerPath, partialCredit3CorrectServerPath, function(err) {
+            fs.copyFile(partialCredit3ServerPath, partialCredit3ServerCopyPath, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -514,8 +519,8 @@ describe('Regrading', function() {
     });
 
     describe('Regrading questions on assessment with real-time grading enabled', function() {
+        useIncorrectServerFiles();
         startExam('11');
-        useIncorrectGradeFunctions();
 
         describe('Make submissions for addVectors', function() {
             describe('Save an incorrect answer', function() {
@@ -630,7 +635,7 @@ describe('Regrading', function() {
         };
         helperQuestion.checkAssessmentScore(locals);
         
-        restoreServerFiles();
+        useCorrectedServerFiles();
 
         describe('When config.regradeActive is true and the assessment instance is closed', function() {
             describe('The instructor assessment instance page', function() {
@@ -743,8 +748,8 @@ describe('Regrading', function() {
     });
 
     describe('Regrading questions on assessment with real-time grading disabled', function() {
+        useIncorrectServerFiles();
         startExam('12');
-        useIncorrectGradeFunctions();
 
         locals.expectedResult = {
             submission_score: null,
@@ -821,7 +826,7 @@ describe('Regrading', function() {
         };
         helperQuestion.checkAssessmentScore(locals);
         
-        restoreServerFiles();
+        useCorrectedServerFiles();
 
         describe('When config.regradeActive is true and the assessment instance is closed', function() {
             describe('The instructor assessment instance page', function() {
@@ -932,16 +937,32 @@ describe('Regrading', function() {
         });
     });
 
-    describe('Delete copies of server files for addVectors and partialCredit3', function() {
+    describe('Restore the original server files for addVectors and partialCredit3', function() {
         it('should succeed for addVectors', function(callback) {
-            fs.unlink(addVectorsCorrectServerPath, function(err) {
+            fs.copyFile(addVectorsServerCopyPath, addVectorsServerPath, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         });
 
         it('should succeed for partialCredit3', function(callback) {
-            fs.unlink(partialCredit3CorrectServerPath, function(err) {
+            fs.copyFile(partialCredit3ServerCopyPath, partialCredit3ServerPath, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+    });
+
+    describe('Delete copies of server files for addVectors and partialCredit3', function() {
+        it('should succeed for addVectors', function(callback) {
+            fs.unlink(addVectorsServerCopyPath, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+
+        it('should succeed for partialCredit3', function(callback) {
+            fs.unlink(partialCredit3ServerCopyPath, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

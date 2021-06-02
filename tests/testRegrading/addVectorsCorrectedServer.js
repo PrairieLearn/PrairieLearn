@@ -44,11 +44,11 @@ define(["PrairieRandom", "PrairieGeom", "QServer"], function(PrairieRandom, Prai
     server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
         var score = 1;
         var feedback = {wx: '', wy: ''};
-        if (!PrairieGeom.checkEqual(trueAnswer.wx, submittedAnswer.wx, options.relTol, options.absTol)) {
+        if (!PrairieGeom.checkEqual(params.ux + params.vx, submittedAnswer.wx, options.relTol, options.absTol)) {
             score = 0;
             feedback.wx = 'The first component $w_x$ is incorrect.';
         }
-        if (!PrairieGeom.checkEqual(trueAnswer.wy, submittedAnswer.wy, options.relTol, options.absTol)) {
+        if (!PrairieGeom.checkEqual(params.uy + params.vy, submittedAnswer.wy, options.relTol, options.absTol)) {
             score = 0;
             feedback.wy = 'The second component $w_y$ is incorrect.';
         }
