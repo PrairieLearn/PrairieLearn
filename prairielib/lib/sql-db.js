@@ -200,10 +200,41 @@ module.exports.getClient = function(callback) {
 /**
  * Set the schema to use for the search path.
  *
- * @param {string} schema to use (can be "null" to unset the search path)
+ * @param {string} schema - The schema name to use (can be "null" to unset the search path)
  */
 function module.exports.setSearchSchema = function(schema) {
     searchSchema = schema;
+};
+
+/**
+ * Get the schema that is currently used for the search path.
+ *
+ * @return {string} schema in use (may be "null" to indicate no schema)
+ */
+function module.exports.getSearchSchema = function() {
+    return searchSchema;
+};
+
+/**
+ * Generate, set, and return a random schema name.
+ *
+ * @param {string} prefix - The prefix of the new schema
+ * @return {string} new schema name
+ */
+function module.exports.setRandomSearchSchema = function(prefix) {
+    // truncated prefix (max 28 characters)
+    const truncPrefix = prefix.subtring(30);
+    // 27-character timestamp in format YYYY-MM-DDTHH-MM-SS-SSSZ
+    const timestamp = (new Date()).toISOString().replaceAll(':', '-').replaceAll('.', '-');
+    // random 6-character suffix to avoid clashes (approx 2 billion values)
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const suffix = _.times(6, function() {return _.sample(chars);}).join('');
+
+    // schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6)
+    // which is the default PostgreSQL identifier limit
+    const schema = `${prefix}-${timestamp}-${suffix}`;
+    module.export.setSearchSchema(schema);
+    return schema;
 };
 
 /**

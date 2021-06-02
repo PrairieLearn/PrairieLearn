@@ -1136,6 +1136,10 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            sqldb.setRandomSearchSchema(config.instanceId);
+            callback(null);
+        },
+        function(callback) {
             sprocs.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
