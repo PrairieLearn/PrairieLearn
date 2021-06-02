@@ -50,8 +50,8 @@ python3.6 --version   # should return "Python 3.6" or higher
 * Install the Python libraries:
 
 ```sh
-cd PrairieLearn
-python3 -m pip install -r requirements.txt
+cd PrairieLearn/images/plbase
+python3 -m pip install -r python-requirements.txt
 ```
 
 * Create the database (one time only):
@@ -84,8 +84,7 @@ npm test
 
 ```sh
 cd PrairieLearn
-npm run lint-js -s
-npm run lint-python -s
+make lint # or lint-js for Javascript only, or lint-python for Python only
 ```
 
 * Create the file `PrairieLearn/config.json` with the path of your local course repository and with the path of a directory into which temporary files will be saved when using the in-browser file editor (edit both paths as needed):

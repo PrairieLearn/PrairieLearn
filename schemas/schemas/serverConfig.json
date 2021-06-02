@@ -4,6 +4,10 @@
     "description": "A configuration file for the PrairieLearn server.",
     "type": "object",
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "courseDirs": {
             "description": "Paths of the course directories.",
             "type": "array",

@@ -17,7 +17,3 @@ bash Miniforge3-Linux-x86_64.sh -b -p /usr/local -f
 
 echo "installing Python packages..."
 python3 -m pip install --no-cache-dir -r /requirements.txt
-
-echo "Setting up autograder..."
-useradd ag
-chmod +x /python_autograder/run.sh

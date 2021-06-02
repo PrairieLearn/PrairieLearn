@@ -42,6 +42,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
+const assets = require('./lib/assets');
 
 
 process.on('warning', e => console.warn(e)); // eslint-disable-line no-console
@@ -76,6 +77,14 @@ module.exports.initExpress = function() {
     app.set('trust proxy', config.trustProxy);
     config.devMode = (app.get('env') == 'development');
 
+    // Set res.locals variables first, so they will be available on
+    // all pages including the error page (which we could jump to at
+    // any point.
+    app.use((req, res, next) => {
+        res.locals.asset_path = assets.assetPath;
+        res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
+        next();
+    });
     app.use(function(req, res, next) {res.locals.config = config; next();});
     app.use(function(req, res, next) {config.setLocals(res.locals); next();});
 
@@ -210,9 +219,36 @@ module.exports.initExpress = function() {
         logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
         app.use(express.static(config.localRootFilesDir));
     }
+
+    // To allow for more aggressive caching of static files served from public/,
+    // we use an `assets/` path that includes a cachebuster in the path.
+    // In requests for resources, the cachebuster will be a hash of the contents
+    // of `/public`, which we will compute at startup. See `lib/assets.js` for
+    // implementation details.
+    app.use('/assets/:cachebuster', express.static(path.join(__dirname, 'public'), {
+        // In dev mode, assets are likely to change while the server is running,
+        // so we'll prevent them from being cached.
+        maxAge: config.devMode ? '0' : '31557600',
+        immutable: true,
+    }));
+    // This route is kept around for legacy reasons - new code should prefer the
+    // "cacheable" route above.
     app.use(express.static(path.join(__dirname, 'public')));
-    app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
+
+    // To allow for more aggressive caching of files served from node_modules/,
+    // we insert a hash of the module version into the resource path. This allows
+    // us to treat those files as immutable and cache them essentially forever.
+    app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules'), {
+        maxAge: '31557600',
+        immutable: true,
+    }));
+    // This is included for backwards-compatibility with pages that might still
+    // expect to be able to load files from the `/node_modules` route.
     app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+
+    // Included for backwards-compatibility; new code should load MathJax from
+    // `/cacheable_node_modules` instead.
+    app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
 
     // Support legacy use of ace by v2 questions
     app.use('/localscripts/calculationQuestion/ace', express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict')));
@@ -435,6 +471,10 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'regrading'; next();},
         require('./pages/instructorAssessmentRegrading/instructorAssessmentRegrading'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances', [
         function(req, res, next) {res.locals.navSubPage = 'instances'; next();},
         require('./pages/instructorAssessmentInstances/instructorAssessmentInstances'),
@@ -617,11 +657,20 @@ module.exports.initExpress = function() {
     ]);
 
     // legacy client file paths
+    // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/file', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/text', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/text', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionText/legacyQuestionText'),
     ]);
@@ -658,12 +707,31 @@ module.exports.initExpress = function() {
         require('./middlewares/studentAssessmentAccess'),
         require('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile'),
     ]);
+    app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining', [
+        require('./middlewares/selectAndAuthzAssessmentInstance'),
+        require('./middlewares/studentAssessmentAccess'),
+        require('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining'),
+    ]);
     app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
         require('./middlewares/selectAndAuthzAssessmentInstance'),
         require('./middlewares/logPageView')('studentAssessmentInstance'),
         require('./middlewares/studentAssessmentAccess'),
         require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
         require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded', [
+        function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        function(req, res, next) {res.locals.assessment_question_id = req.params.assessment_question_id; next();},
+        require('./pages/instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading'),
+    ]);
+    app.use('/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading', [
+        function(req, res, next) {res.locals.navSubPage = 'manual_grading'; next();},
+        require('./middlewares/selectAndAuthzInstanceQuestion'),
+        require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
         require('./middlewares/selectAndAuthzInstanceQuestion'),
@@ -864,11 +932,20 @@ module.exports.initExpress = function() {
     ]);
 
     // legacy client file paths
+    // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
     app.use('/pl/course/:course_id/question/:question_id/file', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionFile/legacyQuestionFile'),
     ]);
+    app.use('/pl/course/:course_id/question/:question_id/preview/file', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionFile/legacyQuestionFile'),
+    ]);
     app.use('/pl/course/:course_id/question/:question_id/text', [
+        require('./middlewares/selectAndAuthzInstructorQuestion'),
+        require('./pages/legacyQuestionText/legacyQuestionText'),
+    ]);
+    app.use('/pl/course/:course_id/question/:question_id/preview/text', [
         require('./middlewares/selectAndAuthzInstructorQuestion'),
         require('./pages/legacyQuestionText/legacyQuestionText'),
     ]);
@@ -1110,6 +1187,7 @@ if (config.startServer) {
                 callback(null);
             });
         },
+        async () => await assets.init(),
         function(callback) {
             load.initEstimator('request', 1);
             load.initEstimator('authed_request', 1);

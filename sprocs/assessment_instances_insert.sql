@@ -43,9 +43,10 @@ BEGIN
             AND gc.assessment_id = assessment_instances_insert.assessment_id
             AND gc.deleted_at IS NULL
             AND g.deleted_at IS NULL;
-            IF NOT FOUND THEN
-                RAISE EXCEPTION 'no matched group_id with user_id: %', assessment_instances_insert.user_id;
-            END IF;
+        
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'no matched group_id with user_id: %', assessment_instances_insert.user_id;
+        END IF;
     END IF;    
 
     IF assessment.multiple_instance THEN
@@ -59,9 +60,10 @@ BEGIN
                     ELSE ai.user_id = assessment_instances_insert.user_id
                  END);
     END IF;
-        -- if a.multiple_instance is FALSE then we use
-        -- number = 1 so we will error on INSERT if there
-        -- are existing assessment_instances
+
+    -- if a.multiple_instance is FALSE then we use
+    -- number = 1 so we will error on INSERT if there
+    -- are existing assessment_instances
         
     -- ######################################################################
     -- determine other properties
@@ -87,8 +89,6 @@ BEGIN
 
     -- ######################################################################
     -- start a record of the last access time
-
-    -- (Just a question that I tried the CASE WHEN in ON CONFLICT but it does not work so I do the else if in that part)
     -- After code review I will delete those two lines of comment
     IF group_work THEN 
         INSERT INTO last_accesses

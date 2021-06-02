@@ -21,39 +21,35 @@ function histogram(selector, data, xgrid, options) {
 
     var xmin = (options.xmin == "auto" ? _(xgrid).min() : options.xmin);
     var xmax = (options.xmax == "auto" ? _(xgrid).max() : options.xmax);
-    var x = d3.scale.linear()
+    var x = d3.scaleLinear()
         .domain([xmin, xmax])
         .range([0, width]);
 
     var ymin = (options.ymin == "auto" ? _(data).min() : options.ymin);
     var ymax = (options.ymax == "auto" ? _(data).max() : options.ymax);
-    var y = d3.scale.linear()
+    var y = d3.scaleLinear()
         .domain([ymin, ymax])
         .nice()
         .range([height, 0]);
 
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
-    var xAxis = d3.svg.axis()
+    var xAxis = d3.axisBottom()
         .scale(x)
         .tickValues(xgrid)
-        .tickFormat(xTickFormat)
-        .orient("bottom");
+        .tickFormat(xTickFormat);
 
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left");
+    var yAxis = d3.axisLeft()
+        .scale(y);
     
-    var xGrid = d3.svg.axis()
+    var xGrid = d3.axisBottom()
         .scale(x)
         .tickValues(xgrid)
-        .orient("bottom")
         .tickSize(-height)
         .tickFormat("");
 
-    var yGrid = d3.svg.axis()
+    var yGrid = d3.axisLeft()
         .scale(y)
-        .orient("left")
         .tickSize(-width)
         .tickFormat("");
 

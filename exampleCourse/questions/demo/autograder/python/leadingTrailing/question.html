@@ -1,0 +1,28 @@
+<pl-question-panel>
+    <p>
+        <i>
+            This question defines the files <code class="user-output">leading_code.py</code> and <code class="user-output">trailing_code.py</code> to automatically prepend/append code to the student's answer before grading.  Adding these files allows one to automatically handle imports, function definitions, etc.  The contents of the leading and trailing code files are displayed in the code blocks below.
+        </i>
+    </p>
+
+    <p>
+        Complete the function below that computes one iteration of <i>gradient descent</i>:
+
+        $$ {\bf x}_{n+1} = {\bf x}_n - \alpha \nabla f\left({\bf x}_n\right) $$
+
+        Specifically, compute the value of <code class="user-output">x_new</code> (${\bf x}_{n+1}$) given ${\bf x}_n$, $\alpha$, and $\nabla f\left({\bf x}_n\right)$.
+    </p>
+
+    <hr>
+
+    <pl-code source-file-name="tests/leading_code.py" language="python"></pl-code>
+    <div class="mb-2 pl-4" style="padding-left: 2.5rem">
+        <pl-string-input answers-name="answer" display="block" placeholder="x_new = ..."></pl-string-input>
+    </div>
+    <pl-code source-file-name="tests/trailing_code.py" language="python"></pl-code>
+</pl-question-panel>
+
+<pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+    <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

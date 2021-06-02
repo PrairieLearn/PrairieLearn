@@ -5,6 +5,11 @@
     "set": "Homework",
     "number": "5",
     "groupWork": true,
+    "groupMaxSize": 3,
+    "groupMinSize": 3,
+    "studentGroupCreate": true,
+    "studentGroupJoin": true,
+    "studentGroupLeave": true,
     "allowAccess": [
         {
             "role": "TA",

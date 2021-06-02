@@ -54,7 +54,8 @@ The `info.json` file for each question defines properties of the question. For e
     "title": "Newton's third law",
     "topic": "Forces",
     "tags": ["secret", "Fa18"],
-    "type": "v3"
+    "type": "v3",
+    "comment": "You can add comments to JSON files using this property."
 }
 ```
 
@@ -113,7 +114,7 @@ Property | Description
 `clientFilesQuestionStyles` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
 `clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
 `clientFilesCourseStyles` | The styles required by this question relative to `[course directory]/clientFilesCourse`.
-`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`. 
+`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`.
 
 ## Question `question.html`
 
@@ -133,7 +134,7 @@ The `question.html` is regular HTML, with four special features:
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
-   
+
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
 4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
@@ -162,7 +163,7 @@ A complete `question.html` and `server.py` example looks like:
   If $x = {{params.x}}$ and $y$ is {{params.operation}} $x$, what is $y$?
 </pl-question-panel>
 
-<!-- y is defined by data["correct_answer"]["y"] in server.py's `generate()`. -->
+<!-- y is defined by data["correct_answers"]["y"] in server.py's `generate()`. -->
 <pl-number-input answers-name="y" label="$y =$"></pl-number-input>
 ```
 
@@ -448,7 +449,6 @@ For most [elements] there are four different ways of grading the student answer.
 
 3. Write a [custom `grade(data)`](#question-serverpy) function in server.py that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
 
-4. Write an [external grader](externalGrading), though this is typically applied to more complex questions like coding.
+4. Write an [external grader](externalGrading.md), though this is typically applied to more complex questions like coding.
 
 If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements/#pl-answer-panel-element) that any correct answer would be accepted and this displayed answer is only an example.
-

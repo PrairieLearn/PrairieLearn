@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
@@ -51,17 +50,15 @@ router.get('/', function(req, res, _next) {
 });
 
 var sendInstancesCsv = function(res, req, columns, options, callback) {
-    var params = {assessment_id: res.locals.assessment.id};
+    var params = {
+        assessment_id: res.locals.assessment.id,
+        highest_score: options.only_highest,
+        group_work: options.group_work,
+    };
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, callback)) return;
 
         var rows = result.rows;
-        if (options.only_highest) {
-            rows = _.filter(rows, 'highest_score');
-        }
-        if (options.group_work) {
-            rows = _.filter(rows, 'unique_group');
-        }
         csvMaker.rowsToCsv(rows, columns, function(err, csv) {
             if (ERR(err, callback)) return;
             res.attachment(req.params.filename);
@@ -81,8 +78,8 @@ router.get('/:filename', function(req, res, next) {
     const usernameColumn = [
         ['Username', 'username'],
     ];
-    const groupnameColumn = [
-        ['Groupname', 'groupname'],
+    const groupNameColumn = [
+        ['Group name', 'group_name'],
         ['Usernames', 'uid_list'],
     ];
     const scoreColumn = [
@@ -104,8 +101,8 @@ router.get('/:filename', function(req, res, next) {
     ];
     let scoresColumns = studentColumn.concat(scoreColumn);
     let pointsColumns = studentColumn.concat(pointColumn);
-    let scoresGroupColumns = groupnameColumn.concat(scoreColumn);
-    let pointsGroupColumns = groupnameColumn.concat(pointColumn);
+    let scoresGroupColumns = groupNameColumn.concat(scoreColumn);
+    let pointsGroupColumns = groupNameColumn.concat(pointColumn);
     let scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
     let pointsByUsernameColumns = usernameColumn.concat(pointColumn);
     let identityColumn = studentColumn.concat(
@@ -114,7 +111,7 @@ router.get('/:filename', function(req, res, next) {
         ['Role', 'role'],
     ]));
     if(res.locals.assessment.group_work){
-        identityColumn = groupnameColumn;
+        identityColumn = groupNameColumn;
     }
     let instancesColumns = identityColumn.concat(instanceColumn);
     
@@ -192,6 +189,8 @@ router.get('/:filename', function(req, res, next) {
         };
         sqldb.query(sql.submissions_for_manual_grading, params, function(err, result) {
             if (ERR(err, next)) return;
+            // Replace user-friendly column names with upload-friendly names
+            identityColumn = identityColumn.map(pair => [pair[1], pair[1]]);
             const columns = identityColumn.concat([
                 ['qid', 'qid'],
                 ['old_score_perc', 'old_score_perc'],

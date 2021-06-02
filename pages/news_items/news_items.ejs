@@ -6,7 +6,7 @@
     <% } else { %>
         <%- include('../partials/head'); %>
     <% } %>
-    <link href="/stylesheets/issues.css" rel="stylesheet" />
+    <link href="<%= asset_path('stylesheets/issues.css') %>" rel="stylesheet" />
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'news_items'}); %>

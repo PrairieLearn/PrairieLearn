@@ -148,6 +148,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} longName
  * @property {number} number
  * @property {string} timezone
+ * @property {boolean} hideInEnrollPage
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
@@ -181,6 +182,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {string} id
   * @property {boolean} forceMaxPoints
   * @property {number} triesPerVariant
+  * @property {number} gradeRateMinutes
   */
 
 /**
@@ -192,6 +194,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -201,6 +204,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -216,11 +220,18 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {boolean} shuffleQuestions
  * @property {AssessmentAllowAccess[]} allowAccess
  * @property {string} text
+ * @property {number} maxBonusPoints
  * @property {number} maxPoints
  * @property {boolean} autoClose
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
  * @property {boolean} groupWork
+ * @property {number} groupMaxSize
+ * @property {number} groupMinSize
+ * @property {boolean} studentGroupCreate
+ * @property {boolean} studentGroupJoin
+ * @property {boolean} studentGroupLeave
+ * @property {number} gradeRateMinutes
  */
 
 /**

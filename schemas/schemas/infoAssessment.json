@@ -12,6 +12,10 @@
         "number"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
@@ -63,7 +67,11 @@
             "type": "string"
         },
         "maxPoints": {
-            "description": "The maximum number of points that can be earned for this assessment.",
+            "description": "The number of points that must be earned in this assessment to achieve a score of 100%.",
+            "type": "number"
+        },
+        "maxBonusPoints": {
+            "description": "The maximum number of additional points that can be earned beyond maxPoints.",
             "type": "number"
         },
         "autoClose": {
@@ -97,6 +105,34 @@
             "description": "Whether the assessment will support group work.",
             "type": "boolean",
             "default": false
+        },
+        "groupMaxSize": {
+            "description": "Maximum number of students in a group.",
+            "type": "number"
+        },
+        "groupMinSize": {
+            "description": "Minimum number of students in a group.",
+            "type": "number"
+        },
+        "studentGroupCreate": {
+            "description": "Whether students can create groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "studentGroupJoin": {
+            "description": "Whether students can join groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "studentGroupLeave": {
+            "description": "Whether students can leave groups.",
+            "type": "boolean",
+            "default": false
+        },
+        "gradeRateMinutes": {
+            "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+            "type": "number",
+            "minimum": 0
         }
     },
     "definitions": {
@@ -105,6 +141,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "mode": {
                     "description": "The server mode required for access.",
                     "enum": [
@@ -159,6 +199,10 @@
                     "description": "Configuration related to Safe Exam Browser",
                     "type": "object",
                     "properties": {
+                        "comment": {
+                            "description": "Arbitrary comment for reference purposes.",
+                            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                        },
                         "password": {
                             "description": "Password protect the SEB exam and config file",
                             "type": "string"
@@ -196,6 +240,10 @@
                     "description": "Zone title, displayed to the students at the top of the question list for the zone.",
                     "type": "string"
                 },
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "maxPoints": {
                     "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
                     "type": "number"
@@ -217,6 +265,11 @@
                     "items": {
                         "$ref": "#/definitions/zoneQuestion"
                     }
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             },
             "required": [
@@ -226,6 +279,10 @@
         "zoneQuestion": {
             "type": "object",
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "points": {
                     "$ref": "#/definitions/points"
                 },
@@ -256,12 +313,21 @@
                     "description": "The maximum number of graded submissions allowed for each question instance.",
                     "type": "number",
                     "default": 1
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             }
         },
         "questionAlternative": {
             "type": "object",
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "points": {
                     "$ref": "#/definitions/points"
                 },
@@ -278,6 +344,11 @@
                     "description": "The maximum number of graded submissions allowed for each question instance.",
                     "type": "number",
                     "default": 1
+                },
+                "gradeRateMinutes": {
+                    "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
+                    "type": "number",
+                    "minimum": 0
                 }
             }
         },

@@ -10,8 +10,8 @@
             "underscore.js"
         ],
         "elementScripts": [
-            "mechanicsObjects.js",
-            "pl-drawing.js"
+            "pl-drawing.js",
+            "mechanicsObjects.js"
         ],
         "elementStyles": [
             "pl-drawing.css"
