@@ -93,10 +93,10 @@ def prepare(element_html, data):
             else:
                 incorrect_answers.append(html_tags.text)
             html_ordering.append(html_tags.text)
+        elif html_tags.tag is lxml.etree.Comment:
+            pass    # just ignore comments
         else:
-            # TODO allow comments, formatting tags, etc.
-            pass
-            # raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
+            raise Exception('Tags nested inside <pl-order-blocks> must be <pl-answer>.')
 
     if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
