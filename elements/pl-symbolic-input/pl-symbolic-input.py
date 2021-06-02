@@ -29,9 +29,11 @@ def get_variables_list(variables_string):
     else:
         return []
 
-
 def prepare_context(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    enable_more_func_names =  pl.get_boolean_attrib(element, 'enable-more-function-names', ENABLE_MORE_FUNCTION_NAMES_DEFAULT)
+    if enable_more_func_names:
+        phs.CONSTANTS_INSTANCE = phs.CONSTANTS_INSTANCE.enable_extended_function_names()
     extra_functions_string = pl.get_string_attrib(element, 'extra-functions', EXTRA_FUNCTIONS_DEFAULT)
     extra_functions = get_variables_list(extra_functions_string)
     phs.CONSTANTS_INSTANCE = phs.CONSTANTS_INSTANCE.add_new_operator_names(extra_functions)
