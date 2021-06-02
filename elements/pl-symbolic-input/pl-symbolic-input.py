@@ -7,10 +7,11 @@ import random
 import math
 import python_helper_sympy as phs
 
-
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 VARIABLES_DEFAULT = None
+EXTRA_FUNCTIONS_DEFAULT = None
+ENABLE_MORE_FUNCTION_NAMES_DEFAULT = False
 LABEL_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
 ALLOW_COMPLEX_DEFAULT = False
@@ -21,7 +22,6 @@ PLACEHOLDER_TEXT_THRESHOLD = 15  # Minimum size to show the placeholder text
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = '0'
 
-
 def get_variables_list(variables_string):
     if variables_string is not None:
         variables_list = [variable.strip() for variable in variables_string.split(',')]
@@ -30,10 +30,16 @@ def get_variables_list(variables_string):
         return []
 
 
+def prepare_context(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    extra_functions_string = pl.get_string_attrib(element, 'extra-functions', EXTRA_FUNCTIONS_DEFAULT)
+    extra_functions = get_variables_list(extra_functions_string)
+    phs.CONSTANTS_INSTANCE = phs.CONSTANTS_INSTANCE.add_new_operator_names(extra_functions)
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text', 'allow-blank', 'blank-value']
+    optional_attribs = ['weight', 'correct-answer', 'variables', 'enable-more-function-names', 'extra-functions', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text', 'allow-blank', 'blank-value']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -59,7 +65,17 @@ def render(element_html, data):
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    operators = ['cos', 'sin', 'tan', 'arccos', 'arcsin', 'arctan', 'acos', 'asin', 'atan', 'arctan2', 'atan2', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
+    enable_more_func_names =  pl.get_boolean_attrib(element, 'enable-more-function-names', ENABLE_MORE_FUNCTION_NAMES_DEFAULT)
+    if enable_more_func_names:
+        phs.CONSTANTS_INSTANCE = phs.CONSTANTS_INSTANCE.enable_extended_function_names()
+
+    operators = phs.CONSTANTS_INSTANCE.get_supported_function_names()
+    arithmetic_operators = ['( )', '+', '-', '*', '/', '^', '**']
+    extra_functions_string = pl.get_string_attrib(element, 'extra-functions', EXTRA_FUNCTIONS_DEFAULT)
+    extra_functions = get_variables_list(extra_functions_string)
+    phs.CONSTANTS_INSTANCE = phs.CONSTANTS_INSTANCE.add_new_operator_names(extra_functions)
+    operators.extend(extra_functions)
+    operators.extend(arithmetic_operators)
     constants = ['pi', 'e']
 
     if data['panel'] == 'question':
@@ -132,9 +148,9 @@ def render(element_html, data):
             a_sub = data['submitted_answers'][name]
             if isinstance(a_sub, str):
                 # this is for backward-compatibility
-                a_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
+                a_sub = phs.convert_string_to_sympy_with_context(a_sub, variables, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
             else:
-                a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
+                a_sub = phs.json_to_sympy_with_context(a_sub, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
             a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
             html_params['a_sub'] = sympy.latex(a_sub)
         elif name not in data['submitted_answers']:
@@ -192,9 +208,9 @@ def render(element_html, data):
         if a_tru is not None:
             if isinstance(a_tru, str):
                 # this is so instructors can specify the true answer simply as a string
-                a_tru = phs.convert_string_to_sympy(a_tru, variables, allow_complex=allow_complex)
+                a_tru = phs.convert_string_to_sympy_with_context(a_tru, variables, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
             else:
-                a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+                a_tru = phs.json_to_sympy_with_context(a_tru, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
             a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
             html_params = {
                 'answer': True,
@@ -213,6 +229,7 @@ def render(element_html, data):
 
 
 def parse(element_html, data):
+    prepare_context(element_html, data)
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
@@ -243,7 +260,7 @@ def parse(element_html, data):
         a_sub = a_sub.strip()
 
         # Convert safely to sympy
-        a_sub_parsed = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
+        a_sub_parsed = phs.convert_string_to_sympy_with_context(a_sub, variables, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
 
         # If complex numbers are not allowed, raise error if expression has the imaginary unit
         if (not allow_complex) and (a_sub_parsed.has(sympy.I)):
@@ -254,7 +271,7 @@ def parse(element_html, data):
             return
 
         # Store result as json.
-        a_sub_json = phs.sympy_to_json(a_sub_parsed, allow_complex=allow_complex)
+        a_sub_json = phs.sympy_to_json_with_context(a_sub_parsed, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
     except phs.HasFloatError as err:
         s = 'Your answer contains the floating-point number ' + str(err.n) + '. '
         s += 'All numbers must be expressed as integers (or ratios of integers). '
@@ -315,7 +332,7 @@ def parse(element_html, data):
     # Make sure we can parse the json again
     try:
         # Convert safely to sympy
-        phs.json_to_sympy(a_sub_json, allow_complex=allow_complex)
+        phs.json_to_sympy_with_context(a_sub_json, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
 
         # Finally, store the result
         data['submitted_answers'][name] = a_sub_json
@@ -347,16 +364,16 @@ def grade(element_html, data):
     # Parse true answer
     if isinstance(a_tru, str):
         # this is so instructors can specify the true answer simply as a string
-        a_tru = phs.convert_string_to_sympy(a_tru, variables, allow_complex=allow_complex)
+        a_tru = phs.convert_string_to_sympy_with_context(a_tru, variables, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
     else:
-        a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+        a_tru = phs.json_to_sympy_with_context(a_tru, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
 
     # Parse submitted answer
     if isinstance(a_sub, str):
         # this is for backward-compatibility
-        a_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
+        a_sub = phs.convert_string_to_sympy_with_context(a_sub, variables, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
     else:
-        a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
+        a_sub = phs.json_to_sympy_with_context(a_sub, phs.CONSTANTS_INSTANCE, allow_complex=allow_complex)
 
     # Check equality
     correct = a_tru.equals(a_sub)

@@ -499,7 +499,7 @@ Fill in the blank field that allows for mathematical symbol input.
 
 **question.html**
 ```html
-<pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
+<pl-symbolic-input answers-name="symbolic_math" variables="x, y" extra-functions="loglog, zeta" label="$z =$"></pl-symbolic-input>
 ```
 
 **server.py**
@@ -529,6 +529,8 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
+`enable-more-function-names` | boolean | false | Whether to include extra sets of reserved function names used in the symbolic expression.
+`extra-functions` | string | - | A comma-delimited list of extra function names that can be used in the symbolic expression. Note that an exception is raised if the list contains one or more names that coincide with extisting reserved functions.
 `allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
 `allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).

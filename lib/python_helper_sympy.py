@@ -2,9 +2,12 @@ import sympy
 import ast
 import sys
 
+MAX_FUNCTION_NAME_LENGTH = 6
+
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
 class _Constants:
+
     def __init__(self):
         self.helpers = {
             '_Integer': sympy.Integer,
@@ -28,18 +31,59 @@ class _Constants:
             'cos': sympy.cos,
             'sin': sympy.sin,
             'tan': sympy.tan,
+            'sec': sympy.sec,
+            'csc': sympy.csc,
+            'cot': sympy.cot,
             'arccos': sympy.acos,
             'arcsin': sympy.asin,
             'arctan': sympy.atan,
-            'acos': sympy.acos,
-            'asin': sympy.asin,
-            'atan': sympy.atan,
-            'arctan2': sympy.atan2,
             'atan2': sympy.atan2,
             'exp': sympy.exp,
             'log': sympy.log,
+            'ln': lambda x: sympy.log(x, sympy.E),
             'sqrt': sympy.sqrt,
+            're': sympy.re,
+            'im': sympy.im,
+            'max': sympy.Max,
+            'min': sympy.Min,
         }
+
+    def get_supported_function_names(self):
+        return list(self.functions.keys())
+
+    def add_new_operator_names(self, opNamesList):
+        for opName in list(opNamesList):
+            if opName not in self.functions.keys():
+                sympyDummyFunc = sympy.Function(opName) 
+                self.functions.update({ opName : sympyDummyFunc })
+        return self
+
+    def enable_extended_function_names(self):
+        extended_func_names_dict = {
+            'cosh':  sympy.cosh, 
+            'sinh':  sympy.sinh,
+            'tanh':  sympy.tanh,
+            'sech':  sympy.sech,
+            'csch':  sympy.csch,
+            'coth':  sympy.coth,
+            'acosh': sympy.acosh,
+            'asinh': sympy.asinh,
+            'atanh': sympy.atanh,
+            'asech': sympy.asech,
+            'acsch': sympy.acsch,
+            'acoth': sympy.acoth,
+            'sgn':   sympy.sign,
+            'abs':   sympy.Abs,
+            'arg':   sympy.arg,
+            'ceil':  sympy.ceiling,
+            'floor': sympy.floor,
+            'frac':  sympy.frac,
+        }
+        for funcName in extended_func_names_dict.keys():
+            self.functions.update({ funcName : extended_func_names_dict[funcName] })
+        return self
+
+CONSTANTS_INSTANCE = _Constants()
 
 # Safe evaluation of user input to convert from string to sympy expression.
 #
@@ -86,7 +130,9 @@ class _Constants:
 #     https://github.com/newville/asteval
 
 class Error(Exception):
-    def __init__(self, offset):
+    def __init__(self, offset, extra_msg = None):
+        if extra_msg != None:
+            self.message += " [EXTRA-MSG: %s]" % extra_msg
         self.offset = offset
 
 class HasFloatError(Error):
@@ -103,8 +149,11 @@ class HasInvalidExpressionError(Error):
     pass
 
 class HasInvalidFunctionError(Error):
-    def __init__(self, offset, text):
-        super(HasInvalidFunctionError, self).__init__(offset)
+    def __init__(self, offset, text, ctx = None):
+        if ctx != None:
+            super(HasInvalidFunctionError, self).__init__(offset, str(ctx))
+        else:
+            super(HasInvalidFunctionError, self).__init__(offset)
         self.text = text
 
 class HasInvalidVariableError(Error):
@@ -226,9 +275,7 @@ def evaluate(expr, locals_for_eval={}):
         locals = {**locals, **locals_for_eval[key]}
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
-def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=False):
-    const = _Constants()
-
+def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False, allow_complex=False):
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
     locals_for_eval = {
@@ -247,18 +294,24 @@ def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=Fals
     if variables is not None:
         for variable in variables:
             locals_for_eval['variables'][variable] = sympy.Symbol(variable)
+    # And similarly for the function names:
+    if const.functions is not None:
+        for func in const.functions.keys():
+            locals_for_eval['functions'][func] = sympy.Function(func)
 
     # Do the conversion
     return evaluate(a, locals_for_eval)
 
-def point_to_error(s, ind, w = 5):
+def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=False):
+    consts = _Constants()
+    return convert_string_to_sympy_with_context(a, variables, consts, allow_hidden=allow_hidden, allow_complex=allow_complex)
+
+def point_to_error(s, ind, w = MAX_FUNCTION_NAME_LENGTH):
     w_left = ind - max(0, ind-w)
     w_right = min(ind+w, len(s)) - ind
     return s[ind-w_left:ind+w_right] + '\n' + ' '*w_left + '^' + ' '*w_right
 
-def sympy_to_json(a, allow_complex=True):
-    const = _Constants()
-
+def sympy_to_json_with_context(a, const, allow_complex=True):
     # Get list of variables in the sympy expression
     variables = [str(v) for v in a.free_symbols]
 
@@ -278,7 +331,11 @@ def sympy_to_json(a, allow_complex=True):
 
     return {'_type': 'sympy', '_value': str(a), '_variables': variables}
 
-def json_to_sympy(a, allow_complex=True):
+def sympy_to_json(a, allow_complex=True):
+    consts = _Constants()
+    return sympy_to_json_with_context(a, consts, allow_complex = allow_complex)
+
+def json_to_sympy_with_context(a, const, allow_complex=True):
     if not '_type' in a:
         raise ValueError('json must have key _type for conversion to sympy')
     if a['_type'] != 'sympy':
@@ -288,4 +345,8 @@ def json_to_sympy(a, allow_complex=True):
     if not '_variables' in a:
         a['_variables'] = None
 
-    return convert_string_to_sympy(a['_value'], a['_variables'], allow_hidden=True, allow_complex=allow_complex)
+    return convert_string_to_sympy_with_context(a['_value'], a['_variables'], const, allow_hidden=True, allow_complex=allow_complex)
+
+def json_to_sympy(a, allow_complex=True):
+    consts = _Constants()
+    return json_to_sympy_with_context(a, consts, allow_complex=allow_complex)
