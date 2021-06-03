@@ -321,7 +321,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(result.rows[0].points, 0);
     });
 
-    step('get CRSF token and variant ID for attaching file on question page', async () => {
+    step('get CSRF token and variant ID for attaching file on question page', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
@@ -346,7 +346,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(response.status, 500);
     });
 
-    step('get CRSF token for attaching file on assessment instance page', async () => {
+    step('get CSRF token for attaching file on assessment instance page', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
@@ -370,7 +370,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(response.status, 500);
     });
 
-    step('get CRSF token and variant ID for attaching text on question page', async () => {
+    step('get CSRF token and variant ID for attaching text on question page', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
@@ -395,7 +395,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(response.status, 500);
     });
 
-    step('get CRSF token for attaching text on assessment instance page', async () => {
+    step('get CSRF token for attaching text on assessment instance page', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
