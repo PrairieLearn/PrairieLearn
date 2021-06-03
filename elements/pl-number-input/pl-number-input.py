@@ -41,7 +41,7 @@ def prepare(element_html, data):
     if custom_format is not None:
         try:
             _ = ('{:' + custom_format + '}').format(0)
-        except ValueError as e:
+        except ValueError:
             raise Exception('invalid custom format: %s' % custom_format) from None
 
 
