@@ -106,7 +106,7 @@
             <tr>
               <th>Student question</th>
               <th>Instructor question</th>
-              <% if (config.regradeActive) { %>
+              <% if (config.regradeActive && !assessment_instance.open) { %>
               <th>Regrade</th>
               <% } %>
               <th class="text-center">
@@ -143,15 +143,7 @@
                 (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/">instructor view</a>)
               </td>
 
-              <% if (config.regradeActive) { %>
-              <!-- <td>
-                <form name="regrade-question-button" method="POST">
-                  <input type="hidden" name="__action" value="regrade_question">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <input type="hidden" name="instance_question_id" value="<%= instance_question.id %>">
-                  <button type="submit" class="btn btn-primary">Regrade</button>
-                </form>
-              </td> -->
+              <% if (config.regradeActive && !assessment_instance.open) { %>
               <td>
                 <button type="button" class="btn btn-primary regradeQuestionButton"
                   id="regradeQuestion<%= i_instance_question %>" tabindex="0"

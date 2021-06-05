@@ -160,7 +160,7 @@ router.post('/', (req, res, next) => {
             });
         });
     } else if (req.body.__action == 'regrade_question') {
-        if (!config.regradeActive) {
+        if (!config.regradeActive || res.locals.assessment_instance.open) {
             return next(error.make(400, 'regrade disabled', {locals: res.locals, body: req.body}));
         }
         let instance_question_id = req.body.instance_question_id;
