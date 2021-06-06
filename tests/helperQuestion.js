@@ -342,7 +342,7 @@ module.exports = {
                 if (!_.has(locals.expectedResult, 'submission_score')) return; // skip check
                 assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
             });
-            checkInstanceQuestionPointsAndPercentage();
+            module.exports.checkQuestionPointsAndPercentage(locals);
         });
     },
 
