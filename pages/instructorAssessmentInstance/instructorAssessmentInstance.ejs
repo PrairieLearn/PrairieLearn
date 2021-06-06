@@ -106,7 +106,7 @@
             <tr>
               <th>Student question</th>
               <th>Instructor question</th>
-              <% if (config.regradeActive && !assessment_instance.open) { %>
+              <% if (config.regradeActive) { %>
               <th>Regrade</th>
               <% } %>
               <th class="text-center">
@@ -143,7 +143,7 @@
                 (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/">instructor view</a>)
               </td>
 
-              <% if (config.regradeActive && !assessment_instance.open) { %>
+              <% if (config.regradeActive) { %>
               <td>
                 <button type="button" class="btn btn-primary regradeQuestionButton"
                   id="regradeQuestion<%= i_instance_question %>" tabindex="0"

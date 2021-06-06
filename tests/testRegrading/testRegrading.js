@@ -614,11 +614,6 @@ describe('Regrading', function() {
         });
 
         config.regradeActive = true;
-
-        describe('When config.regradeActive is true and the assessment instance is open', function() {
-            checkInstructorAssessmentInstancePage(false);
-        });
-
         closeAssessmentInstance();
         locals.expectedResult = {
             assessment_instance_points: 8 + 13 * 0.7 + 12 * 0.3,
@@ -628,7 +623,7 @@ describe('Regrading', function() {
         
         useCorrectedServerFiles();
 
-        describe('When config.regradeActive is true and the assessment instance is closed', function() {
+        describe('When config.regradeActive is true', function() {
             describe('The instructor assessment instance page', function() {
                 checkInstructorAssessmentInstancePage(true);
             });
@@ -805,11 +800,6 @@ describe('Regrading', function() {
         });
 
         config.regradeActive = true;
-
-        describe('When config.regradeActive is true and the assessment instance is open', function() {
-            checkInstructorAssessmentInstancePage(false);
-        });
-
         closeAssessmentInstance();
         locals.expectedResult = {
             assessment_instance_points: 24,
@@ -819,7 +809,7 @@ describe('Regrading', function() {
         
         useCorrectedServerFiles();
 
-        describe('When config.regradeActive is true and the assessment instance is closed', function() {
+        describe('When config.regradeActive is true', function() {
             describe('The instructor assessment instance page', function() {
                 checkInstructorAssessmentInstancePage(true);
             });
