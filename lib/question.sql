@@ -159,6 +159,25 @@ FROM variants AS v
 JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
 WHERE v.id = $variant_id;
 
+--BLOCK select_variants_info_for_instance_question
+SELECT v.open, v.num_tries, v.id
+FROM variants AS v
+WHERE v.instance_question_id = $instance_question_id;
+
+--BLOCK reset_variants
+UPDATE variants AS v
+SET
+    open = true,
+    num_tries = 0
+WHERE v.instance_question_id = $instance_question_id;
+
+--BLOCK restore_variant
+UPDATE variants AS v
+SET
+    open = $variant_open,
+    num_tries = $variant_num_tries
+WHERE v.id = $variant_id;
+
 --BLOCK reset_instance_question
 UPDATE instance_questions AS iq
 SET
@@ -176,18 +195,6 @@ SET
     modified_at = now()
 WHERE
     iq.id = $instance_question_id;
-
---BLOCK reset_variants
-UPDATE variants AS v
-SET 
-    open = true,
-    num_tries = 0
-WHERE v.instance_question_id = $instance_question_id;
-
---BLOCK close_variants
-UPDATE variants AS v
-SET open = false
-WHERE v.instance_question_id = $instance_question_id;
 
 --BLOCK restore_instance_question
 UPDATE instance_questions AS iq
