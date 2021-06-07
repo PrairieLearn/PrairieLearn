@@ -420,13 +420,14 @@ describe('Regrading', function() {
                 // We should have been redirected back to the same assessment instance
                 assert.equal(response.url, locals.assessmentInstanceUrl + '?timeLimitExpired=true');
             });
-            it('should ensure that the assessment instance is closed', async function() {
+            it('should ensure that the assessment instance is closed', function(callback) {
                 const params = {
                     assessment_id: locals.assessment_id,
                 };
-                const results = await sqldb.queryAsync(sql.select_assessment_instances_with_assessment_id, params);
-                assert.equal(results.rowCount, 1);
-                assert.equal(results.rows[0].open, false);
+                sqldb.queryOneRow(sql.select_assessment_instances_with_assessment_id, params, (err, result) => {
+                    if (ERR(err, callback)) return;
+                    assert.equal(result.rows[0].open, false);
+                });
             });
         });
     };
