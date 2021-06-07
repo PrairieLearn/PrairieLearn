@@ -84,6 +84,37 @@
                 }
             }
         },
+        "assessmentUnits": {
+            "description": "The units of instruction covered in a course.",
+            "type": "array",
+            "items": {
+                "description": "A unit of instruction.",
+                "type": "object",
+                "required": [
+                    "name",
+                    "heading"
+                ],
+                "properties": {
+                    "name": {
+                        "description": "Shorthand name for a unit",
+                        "type": "string"
+                    },
+                    "heading": {
+                        "description": "Full name of unit (visible to students)",
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "groupBy": {
+            "description": "Determines which assessment category assessments will be grouped into on the student assessments page. Can be set to either \"set\" or \"unit\" (default: \"set\").",
+            "type": "string",
+            "default": "set",
+            "enum": [
+                "set",
+                "unit"
+            ]
+        },
         "topics": {
             "description": "Question topics (visible to students).",
             "type": "array",
