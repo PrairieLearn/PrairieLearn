@@ -820,7 +820,6 @@ in [the format expected by externally graded questions](externalGrading.md#file-
 
 Attribute | Type | Default | description
 --- | --- | --- | ---
-`answers-name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
 `file-names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
 
 
