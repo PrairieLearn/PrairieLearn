@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS assessment_units (
-    course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    name TEXT,
+    course_id BIGINT NOT NULL REFERENCES courses(course_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    name TEXT NOT NULL,
     heading TEXT,
     number INTEGER,
+    PRIMARY KEY (course_id, name)
 )
