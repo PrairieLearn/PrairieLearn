@@ -4,6 +4,7 @@ const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
+const path = require('path');
 
 const config = require('../../lib/config');
 const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -27,15 +28,15 @@ const assessmentMaxPoints = questionsArray.reduce(function(maxPointsSum, questio
     return maxPointsSum + question.maxPoints;
 });
 
-const addVectorsServerPath = '../../testCourse/questions/addVectors/server.js';
-const addVectorsCorrectedServerPath = './serverFiles/addVectorsCorrectedServer.js';
-const addVectorsIncorrectServerPath = './serverFiles/addVectorsIncorrectServer.js';
-const addVectorsServerCopyPath = './serverFiles/addVectorsServerCopy.js';
+const addVectorsServerPath = path.resolve(__dirname, '../../testCourse/questions/addVectors/server.js');
+const addVectorsCorrectedServerPath = path.resolve(__dirname, './serverFiles/addVectorsCorrectedServer.js');
+const addVectorsIncorrectServerPath = path.resolve(__dirname, './serverFiles/addVectorsIncorrectServer.js');
+const addVectorsServerCopyPath = path.resolve(__dirname, './serverFiles/addVectorsServerCopy.js');
 
-const partialCredit3ServerPath = '../../testCourse/questions/partialCredit3/server.py';
-const paritalCredit3CorrectedServerPath = './serverFiles/partialCredit3CorrectedServer.py';
-const partialCredit3IncorrectServerPath = './serverFiles/partialCredit3IncorrectServer.py';
-const partialCredit3ServerCopyPath = './serverFiles/partialCredit3ServerCopy.js';
+const partialCredit3ServerPath = path.resolve(__dirname, '../../testCourse/questions/partialCredit3/server.py');
+const paritalCredit3CorrectedServerPath = path.resolve(__dirname, './serverFiles/partialCredit3CorrectedServer.py');
+const partialCredit3IncorrectServerPath = path.resolve(__dirname, './serverFiles/partialCredit3IncorrectServer.py');
+const partialCredit3ServerCopyPath = path.resolve(__dirname, './serverFiles/partialCredit3ServerCopy.js');
 
 const questions = _.keyBy(questionsArray, 'qid');
 
