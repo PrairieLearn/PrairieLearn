@@ -26,7 +26,7 @@ const questionsArray = [
 
 const assessmentMaxPoints = questionsArray.reduce(function(maxPointsSum, question) {
     return maxPointsSum + question.maxPoints;
-});
+}, 0);
 
 const addVectorsServerPath = path.resolve(__dirname, '../../testCourse/questions/addVectors/server.js');
 const addVectorsCorrectedServerPath = path.resolve(__dirname, './serverFiles/addVectorsCorrectedServer.js');
@@ -34,14 +34,14 @@ const addVectorsIncorrectServerPath = path.resolve(__dirname, './serverFiles/add
 const addVectorsServerCopyPath = path.resolve(__dirname, './serverFiles/addVectorsServerCopy.js');
 
 const partialCredit3ServerPath = path.resolve(__dirname, '../../testCourse/questions/partialCredit3/server.py');
-const paritalCredit3CorrectedServerPath = path.resolve(__dirname, './serverFiles/partialCredit3CorrectedServer.py');
+const partialCredit3CorrectedServerPath = path.resolve(__dirname, './serverFiles/partialCredit3CorrectedServer.py');
 const partialCredit3IncorrectServerPath = path.resolve(__dirname, './serverFiles/partialCredit3IncorrectServer.py');
 const partialCredit3ServerCopyPath = path.resolve(__dirname, './serverFiles/partialCredit3ServerCopy.js');
 
 const questions = _.keyBy(questionsArray, 'qid');
 
 describe('Regrading', function() {
-    this.timeout(120000);
+    this.timeout(60000);
 
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
@@ -333,7 +333,7 @@ describe('Regrading', function() {
             });
 
             it('should succeed for partialCredit3', function(callback) {
-                fs.copyFile(paritalCredit3CorrectedServerPath, partialCredit3ServerPath, function(err) {
+                fs.copyFile(partialCredit3CorrectedServerPath, partialCredit3ServerPath, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -408,7 +408,7 @@ describe('Regrading', function() {
             });
             it('should extract the CSRF token into locals.__csrf_token', function() {
                 locals.$ = cheerio.load(page);
-                helperClient.extractAndSaveCSRFToken(locals, locals.$, 'form');
+                helperClient.extractAndSaveCSRFToken(locals, locals.$, 'form[name="time-limit-finish-form"]');
             });
             it('should simulate a time-limit expiration to close the assessment instance', async function() {
                 const form = {
@@ -577,8 +577,8 @@ describe('Regrading', function() {
                 const expectedResult = {
                     submission_score: 0.7,
                     submission_correct: false,
-                    instance_question_points: (points / 13) * 100,
-                    instance_question_score_perc: 70,
+                    instance_question_points: points,
+                    instance_question_score_perc: (points / 13) * 100,
                     assessment_instance_points: 8 + points,   // the 8 points are from the previous submissions for addVectors
                     assessment_instance_score_perc: ((8 + points) / assessmentMaxPoints) * 100,
                 };
@@ -626,9 +626,7 @@ describe('Regrading', function() {
         useCorrectedServerFiles();
 
         describe('When config.regradeActive is true', function() {
-            describe('The instructor assessment instance page', function() {
-                checkInstructorAssessmentInstancePage(true);
-            });
+            checkInstructorAssessmentInstancePage(true);
 
             describe('Regrading addVectors and keeping the highest score', function() {
                 locals.question = questions.addVectors;
@@ -812,9 +810,7 @@ describe('Regrading', function() {
         useCorrectedServerFiles();
 
         describe('When config.regradeActive is true', function() {
-            describe('The instructor assessment instance page', function() {
-                checkInstructorAssessmentInstancePage(true);
-            });
+            checkInstructorAssessmentInstancePage(true);
 
             describe('Regrading addVectors and keeping the highest score', function() {
                 locals.question = questions.addVectors;
