@@ -464,7 +464,7 @@ describe('Regrading', function() {
                 locals.$ = cheerio.load(page);
             });
             it('should extract a CSRF token', function() {
-                const regradeFormHTML = locals.$('td button:contains("Regrade")')[0].attribs["data-content"];
+                const regradeFormHTML = locals.$('td button:contains("Regrade")')[0].attribs['data-content'];
                 locals.$ = cheerio.load(regradeFormHTML);
                 helperQuestion.extractAndSaveCSRFToken(locals, locals.$);
             });
