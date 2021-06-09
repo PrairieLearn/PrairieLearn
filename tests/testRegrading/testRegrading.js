@@ -593,8 +593,8 @@ describe('Regrading', function() {
             describe('Save and grade an answer of "50", which mistakenly gives 100% of the available points', function() {
                 const points = 13 * 0.7 + 12 * 0.3;
                 const expectedResult = {
-                    submission_score: 0.7,
-                    submission_correct: false,
+                    submission_score: 1,
+                    submission_correct: true,
                     instance_question_points: points,
                     instance_question_score_perc: (points / 13) * 100,
                     assessment_instance_points: 8 + points,     // the 8 points are from the previous submissions for addVectors
@@ -609,126 +609,117 @@ describe('Regrading', function() {
             });
         });
         
-        config.regradeActive = false;
+        describe('Set config.regradeActive to false', function() {
+            it('should succeed', function() {
+                config.regradeActive = false;
+            });
+        });
 
         describe('When config.regradeActive is false', function() {
             checkInstructorAssessmentInstancePage(false);
         });
 
-        config.regradeActive = true;
+        describe('Set config.regradeActive to true', function() {
+            it('should succeed', function() {
+                config.regradeActive = true;
+            });
+        });
+
         closeAssessmentInstance();
-        locals.expectedResult = {
-            assessment_instance_points: 8 + 13 * 0.7 + 12 * 0.3,
-            assessment_instance_score_perc: ((8 + 13 * 0.7 + 12 * 0.3) / assessmentMaxPoints) * 100,
-        };
-        helperQuestion.checkAssessmentScore(locals);
+
+        describe('Set expected assessment instance score in locals.expectedResult', function() {
+            it('should succeed', function() {
+                locals.expectedResult = {
+                    assessment_instance_points: 8 + 13 * 0.7 + 12 * 0.3,
+                    assessment_instance_score_perc: ((8 + 13 * 0.7 + 12 * 0.3) / assessmentMaxPoints) * 100,
+                };
+            });
+        });
         
+        helperQuestion.checkAssessmentScore(locals);
         useCorrectedServerFiles();
 
         describe('When config.regradeActive is true', function() {
             checkInstructorAssessmentInstancePage(true);
 
             describe('Regrading addVectors and keeping the highest score', function() {
-                locals.question = questions.addVectors;
+                describe('Set question and expected scores in locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = questions.addVectors;
+                        const assessmentPoints = 11 + 13 * 0.7 + 12 * 0.3;
+                        locals.expectedResult = {
+                            instance_question_points: 11,
+                            instance_question_score_perc: 100,
+                            assessment_instance_points: assessmentPoints,
+                            assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
+                        };
+                    });
+                });
+
                 postRegradeForm(locals.question, true);
-
-                it('should wait for 5 seconds', function(callback) {
-                    setTimeout(callback, 5000);
-                });
-
-                const totalPoints = 11 + 13 * 0.7 + 12 * 0.3;
-                locals.expectedResult = {
-                    instance_question_points: 11,
-                    instance_question_score_perc: 100,
-                    assessment_instance_points: totalPoints,
-                    assessment_instance_score_perc: (totalPoints / assessmentMaxPoints) * 100,
-                };
-
-                it('should have updated question score correctly', function() {
-                    helperQuestion.checkQuestionPointsAndPercentage(locals);
-                });
-
-                it('should have updated assessment score correctly', function() {
-                    helperQuestion.checkAssessmentScore(locals);
-                });
+                helperQuestion.waitForJobSequence(locals);
+                helperQuestion.checkQuestionPointsAndPercentage(locals);
+                helperQuestion.checkAssessmentScore(locals);
             });
 
             describe('Regrading partialCredit3 and keeping the highest score', function() {
-                locals.question = questions.partialCredit3;
+                describe('Set question and expected scores in locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = questions.partialCredit3;
+                        const assessmentPoints = 11 + 13 * 0.7 + 12 * 0.3;
+                        locals.expectedResult = {
+                            instance_question_points: 13 * 0.7 + 12 * 0.3,  // The regraded score is lower, so we keep the original score
+                            instance_question_score_perc: 70 + (12 / 13) * 30,
+                            assessment_instance_points: assessmentPoints,
+                            assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
+                        };
+                    });
+                });
+
                 postRegradeForm(locals.question, true);
-
-                it('should wait for 5 seconds', function(callback) {
-                    setTimeout(callback, 5000);
-                });
-
-                const totalPoints = 11 + 13 * 0.7 + 12 * 0.3;
-
-                locals.expectedResult = {
-                    instance_question_points: 13 * 0.7 + 12 * 0.3,  // The regraded score is lower, so we keep the original score
-                    instance_question_score_perc: 70 + (12 / 13) * 30,
-                    assessment_instance_points: totalPoints,
-                    assessment_instance_score_perc: (totalPoints / assessmentMaxPoints) * 100,
-                };
-
-                it('should have updated question score correctly', function() {
-                    helperQuestion.checkQuestionPointsAndPercentage(locals);
-                });
-
-                it('should have updated assessment score correctly', function() {
-                    helperQuestion.checkAssessmentScore(locals);
-                });
+                helperQuestion.waitForJobSequence(locals);
+                helperQuestion.checkQuestionPointsAndPercentage(locals);
+                helperQuestion.checkAssessmentScore(locals);
             });
 
             describe('Regrading addVectors and keeping the regraded score', function() {
-                locals.question = questions.addVectors;
+                describe('Set question and expected scores in locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = questions.addVectors;
+                        const assessmentPoints = 11 + 13 * 0.7 + 12 * 0.3;
+                        locals.expectedResult = {
+                            instance_question_points: 11,
+                            instance_question_score_perc: 100,
+                            assessment_instance_points: assessmentPoints,
+                            assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
+                        };
+                    });
+                });
+
                 postRegradeForm(locals.question, false);
-
-                it('should wait for 5 seconds', function(callback) {
-                    setTimeout(callback, 5000);
-                });
-
-                const totalPoints = 11 + 13 * 0.7 + 12 * 0.3;
-
-                locals.expectedResult = {
-                    instance_question_points: 11,
-                    instance_question_score_perc: 100,
-                    assessment_instance_points: totalPoints,
-                    assessment_instance_score_perc: (totalPoints / assessmentMaxPoints) * 100,
-                };
-
-                it('should have updated question score correctly', function() {
-                    helperQuestion.checkQuestionPointsAndPercentage(locals);
-                });
-
-                it('should have updated assessment score correctly', function() {
-                    helperQuestion.checkAssessmentScore(locals);
-                });
+                helperQuestion.waitForJobSequence(locals);
+                helperQuestion.checkQuestionPointsAndPercentage(locals);
+                helperQuestion.checkAssessmentScore(locals);
             });
 
             describe('Regrading partialCredit3 and keeping the regraded score', function() {
-                locals.question = questions.partialCredit3;
+                describe('Set question and expected scores in locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = questions.partialCredit3;
+                        const assessmentPoints = 11 + 13 * 0.7 + 12 * 0.15;
+                        locals.expectedResult = {
+                            instance_question_points: 13 * 0.7 + 12 * 0.15,
+                            instance_question_score_perc: 70 + (12 / 13) * 15,
+                            assessment_instance_points: assessmentPoints,
+                            assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
+                        };
+                    });
+                });
+
                 postRegradeForm(locals.question, false);
-
-                it('should wait for 5 seconds', function(callback) {
-                    setTimeout(callback, 5000);
-                });
-
-                const totalPoints = 11 + 13 * 0.7 + 12 * 0.15;
-
-                locals.expectedResult = {
-                    instance_question_points: 13 * 0.7 + 12 * 0.15,
-                    instance_question_score_perc: 70 + (12 / 13) * 15,
-                    assessment_instance_points: totalPoints,
-                    assessment_instance_score_perc: (totalPoints / assessmentMaxPoints) * 100,
-                };
-
-                it('should have updated question score correctly', function() {
-                    helperQuestion.checkQuestionPointsAndPercentage(locals);
-                });
-
-                it('should have updated assessment score correctly', function() {
-                    helperQuestion.checkAssessmentScore(locals);
-                });
+                helperQuestion.waitForJobSequence(locals);
+                helperQuestion.checkQuestionPointsAndPercentage(locals);
+                helperQuestion.checkAssessmentScore(locals);
             });
         });
     });
@@ -737,14 +728,18 @@ describe('Regrading', function() {
         useIncorrectServerFiles();
         startExam('12');
 
-        locals.expectedResult = {
-            submission_score: null,
-            submission_correct: null,
-            instance_question_points: 0,
-            instance_question_score_perc: 0,
-            assessment_instance_points: 0,
-            assessment_instance_score_perc: 0,
-        };
+        describe('Set expected result of saving a question in locals.expectedResult', function() {
+            it('should succeed', function() {
+                locals.expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0,
+                    assessment_instance_points: 0,
+                    assessment_instance_score_perc: 0,
+                };
+            });
+        });
 
         describe('Make submissions for addVectors', function() {
             describe('Save an incorrect answer', function() {
@@ -793,125 +788,123 @@ describe('Regrading', function() {
             });
         });
         
-        config.regradeActive = false;
+        describe('Set config.regradeActive to false', function() {
+            it('should succeed', function() {
+                config.regradeActive = false;
+            });
+        });
 
         describe('When config.regradeActive is false', function() {
             checkInstructorAssessmentInstancePage(false);
         });
 
-        config.regradeActive = true;
-        closeAssessmentInstance();
-        locals.expectedResult = {
-            assessment_instance_points: 24,
-            assessment_instance_score_perc: 100,
-        };
-        helperQuestion.checkAssessmentScore(locals);
+        describe('Set config.regradeActive to true', function() {
+            it('should succeed', function() {
+                config.regradeActive = true;
+            });
+        });
         
+        closeAssessmentInstance();
+
+        describe('Set expected assessment instance score in locals.expectedResult', function() {
+            it('should succeed', function() {
+                locals.expectedResult = {
+                    assessment_instance_points: 24,
+            assessment_instance_score_perc: 100,
+                };
+            });
+        });
+
+        helperQuestion.checkAssessmentScore(locals);
         useCorrectedServerFiles();
 
         describe('When config.regradeActive is true', function() {
             checkInstructorAssessmentInstancePage(true);
 
             describe('Regrading addVectors and keeping the highest score', function() {
-                locals.question = questions.addVectors;
+                describe('Set question and expected scores in locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = questions.addVectors;
+
+                        // Regrading the question gives a score of 0, which is lower than the original score, so we
+                        // keep the original score.
+                        locals.expectedResult = {
+                            instance_question_points: 11,
+                            instance_question_score_perc: 100,
+                            assessment_instance_points: 24,
+                            assessment_instance_score_perc: 100,
+                        };
+                    });
+                });
+                
                 postRegradeForm(locals.question, true);
-
-                it('should wait for 5 seconds', function(callback) {
-                    setTimeout(callback, 5000);
-                });
-
-                // Regrading the question gives a score of 0, which is lower than the original score, so we
-                // keep the original score.
-                locals.expectedResult = {
-                    instance_question_points: 11,
-                    instance_question_score_perc: 100,
-                    assessment_instance_points: 24,
-                    assessment_instance_score_perc: 100,
-                };
-
-                it('should have updated question score correctly', function() {
-                    helperQuestion.checkQuestionPointsAndPercentage(locals);
-                });
-
-                it('should have updated assessment score correctly', function() {
-                    helperQuestion.checkAssessmentScore(locals);
-                });
+                helperQuestion.waitForJobSequence(locals);
+                helperQuestion.checkQuestionPointsAndPercentage(locals);
+                helperQuestion.checkAssessmentScore(locals);
             });
 
             describe('Regrading partialCredit3 and keeping the highest score', function() {
-                locals.question = questions.partialCredit3;
+                describe('Set question and expected scores in locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = questions.partialCredit3;
+
+                        // Regrading the question gives a score of 0, which is lower than the original score, so we
+                        // keep the original score.
+                        locals.expectedResult = {
+                            instance_question_points: 13,
+                            instance_question_score_perc: 100,
+                            assessment_instance_points: 24,
+                            assessment_instance_score_perc: 100,
+                        };
+                    });
+                });
+                
                 postRegradeForm(locals.question, true);
-
-                it('should wait for 5 seconds', function(callback) {
-                    setTimeout(callback, 5000);
-                });
-
-                // Regrading the question gives a score of 0, which is lower than the original score, so we
-                // keep the original score.
-                locals.expectedResult = {
-                    instance_question_points: 13,
-                    instance_question_score_perc: 100,
-                    assessment_instance_points: 24,
-                    assessment_instance_score_perc: 100,
-                };
-
-                it('should have updated question score correctly', function() {
-                    helperQuestion.checkQuestionPointsAndPercentage(locals);
-                });
-
-                it('should have updated assessment score correctly', function() {
-                    helperQuestion.checkAssessmentScore(locals);
-                });
+                helperQuestion.waitForJobSequence(locals);
+                helperQuestion.checkQuestionPointsAndPercentage(locals);
+                helperQuestion.checkAssessmentScore(locals);
             });
 
             describe('Regrading addVectors and keeping the regraded score', function() {
-                locals.question = questions.addVectors;
-                postRegradeForm(locals.question, false);
-
-                it('should wait for 5 seconds', function(callback) {
-                    setTimeout(callback, 5000);
+                describe('Set question and expected scores in locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = questions.addVectors;
+                        
+                        // Regrading the question gives a score of 0, and we keep this score.
+                        locals.expectedResult = {
+                            instance_question_points: 0,
+                            instance_question_score_perc: 0,
+                            assessment_instance_points: 13, // we still have 13 points from partialCredit3
+                            assessment_instance_score_perc: (13 / assessmentMaxPoints) * 100,
+                        };
+                    });
                 });
 
-                // Regrading the question gives a score of 0, and we keep this score.
-                locals.expectedResult = {
-                    instance_question_points: 0,
-                    instance_question_score_perc: 0,
-                    assessment_instance_points: 13, // we still have 13 points from partialCredit3
-                    assessment_instance_score_perc: (13 / assessmentMaxPoints) * 100,
-                };
-
-                it('should have updated question score correctly', function() {
-                    helperQuestion.checkQuestionPointsAndPercentage(locals);
-                });
-
-                it('should have updated assessment score correctly', function() {
-                    helperQuestion.checkAssessmentScore(locals);
-                });
+                postRegradeForm(locals.question, true);
+                helperQuestion.waitForJobSequence(locals);
+                helperQuestion.checkQuestionPointsAndPercentage(locals);
+                helperQuestion.checkAssessmentScore(locals);
             });
 
             describe('Regrading partialCredit3 and keeping the regraded score', function() {
-                locals.question = questions.partialCredit3;
-                postRegradeForm(locals.question, false);
+                describe('Set question and expected scores in locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = questions.partialCredit3;
 
-                it('should wait for 5 seconds', function(callback) {
-                    setTimeout(callback, 5000);
+                        // Regrading the question gives a score of 50%, and we keep this score.
+                        locals.expectedResult = {
+                            instance_question_points: 6.5,
+                            instance_question_score_perc: 50,
+                            assessment_instance_points: 6.5,
+                            assessment_instance_score_perc: (6.5 / assessmentMaxPoints) * 100,
+                        };
+                    });
                 });
 
-                // Regrading the question gives a score of 0, and we keep this score.
-                locals.expectedResult = {
-                    instance_question_points: 0,
-                    instance_question_score_perc: 0,
-                    assessment_instance_points: 0,
-                    assessment_instance_score_perc: 0,
-                };
-
-                it('should have updated question score correctly', function() {
-                    helperQuestion.checkQuestionPointsAndPercentage(locals);
-                });
-
-                it('should have updated assessment score correctly', function() {
-                    helperQuestion.checkAssessmentScore(locals);
-                });
+                postRegradeForm(locals.question, true);
+                helperQuestion.waitForJobSequence(locals);
+                helperQuestion.checkQuestionPointsAndPercentage(locals);
+                helperQuestion.checkAssessmentScore(locals);
             });
         });
     });
