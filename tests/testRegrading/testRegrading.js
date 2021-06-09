@@ -416,7 +416,6 @@ describe('Regrading', function() {
                     __csrf_token: locals.__csrf_token,
                 };
                 const response = await helperClient.fetchCheerio(locals.assessmentInstanceUrl, { method: 'POST', form });
-                assert.equal(response.status, 403);
 
                 // We should have been redirected back to the same assessment instance
                 assert.equal(response.url, locals.assessmentInstanceUrl + '?timeLimitExpired=true');
@@ -464,15 +463,10 @@ describe('Regrading', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should simulate the clicking of a "Regrade" button, then extract a CSRF token', function() {
-                // Get a regrade button
-                const regradeButton = locals.$('td button:contains("Regrade")')[0];
-
-                // simulate clicking a "Regrade" button so that the CSRF token becomes visible in the HTML
-                regradeButton.click();
-
-                // Extract the CSRF token into locals.__csrf_token
-                helperClient.extractAndSaveCSRFToken(locals, locals.$, 'form');
+            it('should extract a CSRF token', function() {
+                const regradeFormHTML = locals.$('td button:contains("Regrade")')[0].attribs["data-content"];
+                locals.$ = cheerio.load(regradeFormHTML);
+                helperQuestion.extractAndSaveCSRFToken(locals, locals.$);
             });
             it('should successfully POST regrade form and redirect to grading job page', function(callback) {
                 const form = {
