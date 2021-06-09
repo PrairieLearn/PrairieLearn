@@ -10,10 +10,10 @@ const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { promisify, callbackify } = require('util');
 
-const schemas = require('../schemas');
 const config = require('../lib/config');
+const schemas = require('../schemas');
 const logger = require('../lib/logger');
-const codeCaller = require('../lib/code-caller');
+const codeCaller = require('../lib/code-caller-python');
 const workers = require('../lib/workers');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
@@ -280,21 +280,18 @@ module.exports = {
     elementFunction: async function(pc, fcn, elementName, elementHtml, data, context) {
         return new Promise((resolve, reject) => {
             const resolvedElement = module.exports.resolveElement(elementName, context);
-            const cwd = resolvedElement.directory;
-            const controller = resolvedElement.controller;
+            const {
+                controller,
+                type: resolvedElementType,
+                name: resolvedElementName,
+            } = resolvedElement;
             const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-            const paths = [path.join(__dirname, 'freeformPythonLib')];
-            if (resolvedElement.type == 'course') {
-                paths.push(path.join(context.course_dir, 'serverFilesCourse'));
-            }
-            const opts = {
-                cwd,
-                paths,
-            };
-            pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+            const type = `${resolvedElementType}-element`;
+            const directory = resolvedElementName;
+            pc.call(type, directory, pythonFile, fcn, pythonArgs, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     return resolve([module.exports.defaultElementFunctionRet(fcn, dataCopy), '']);
@@ -313,8 +310,11 @@ module.exports = {
             return callback(e);
         }
 
-        const cwd = resolvedElement.directory;
-        const controller = resolvedElement.controller;
+        const {
+            controller,
+            type: resolvedElementType,
+            name: resolvedElementName,
+        } = resolvedElement;
         const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
         if (_.isString(controller)) {
@@ -322,16 +322,10 @@ module.exports = {
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-            const paths = [path.join(__dirname, 'freeformPythonLib')];
-            if (resolvedElement.type == 'course') {
-                paths.push(path.join(context.course_dir, 'serverFilesCourse'));
-            }
-            const opts = {
-                cwd,
-                paths,
-            };
             debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
-            pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+            const type = `${resolvedElementType}-element`;
+            const directory = resolvedElementName;
+            pc.call(type, directory, pythonFile, fcn, pythonArgs, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`elementFunction(): function not present`);
@@ -376,11 +370,7 @@ module.exports = {
         const pythonFunction = phase;
         const pythonArgs = [data];
         if (phase == 'render') pythonArgs.push(html);
-        const opts = {
-            cwd: context.question_dir,
-            paths: [path.join(__dirname, 'freeformPythonLib'), path.join(context.course_dir, 'serverFilesCourse')],
-        };
-        const fullFilename = path.join(context.question_dir, 'server.py');
+        const fullFilename = path.join(context.question_dir_host, 'server.py');
         fs.access(fullFilename, fs.constants.R_OK, (err) => {
             if (err) {
                 // server.py does not exist
@@ -388,7 +378,9 @@ module.exports = {
             }
 
             debug(`execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`);
-            pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
+            const type = 'question';
+            const directory = context.question.directory;
+            pc.call(type, directory, pythonFile, pythonFunction, pythonArgs, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
                     debug(`execPythonServer(): function not present`);
@@ -701,7 +693,7 @@ module.exports = {
             return callback(null, courseIssues, data, '', Buffer.from(''));
         }
 
-        const htmlFilename = path.join(context.question_dir, 'question.html');
+        const htmlFilename = path.join(context.question_dir_host, 'question.html');
         module.exports.execTemplate(htmlFilename, data, (err, html, $) => {
             if (err) {
                 const courseIssue = new Error(htmlFilename + ': ' + err.toString());
@@ -865,7 +857,7 @@ module.exports = {
                 options: _.defaults({}, course.options, question.options),
             };
             _.extend(data.options, module.exports.getContextOptions(context));
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('generate', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -899,7 +891,7 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
             };
             _.extend(data.options, module.exports.getContextOptions(context));
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('prepare', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -1006,7 +998,7 @@ module.exports = {
         let allRenderedElementNames = [];
         const courseIssues = [];
         let panelCount = 0, cacheHitCount = 0;
-        workers.getPythonCaller((err, pc) => {
+        workers.getPythonCaller(course, (err, pc) => {
             if (ERR(err, callback)) return;
             async.series([
                 // FIXME: support 'header'
@@ -1264,7 +1256,7 @@ module.exports = {
                 context,
                 (callback) => {
                     // function to compute the file data and return the cachedData
-                    workers.getPythonCaller((err, pc) => {
+                    workers.getPythonCaller(course, (err, pc) => {
                         if (ERR(err, callback)) return;
                         module.exports.processQuestion('file', pc, data, context, (err, courseIssues, _data, _html, fileData) => {
                             // don't immediately error here; we have to return the pythonCaller
@@ -1309,7 +1301,7 @@ module.exports = {
                 gradable: _.get(submission, 'gradable', true),
             };
             _.extend(data.options, module.exports.getContextOptions(context));
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('parse', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -1355,7 +1347,7 @@ module.exports = {
                 gradable: submission.gradable,
             };
             _.extend(data.options, module.exports.getContextOptions(context));
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('grade', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -1403,7 +1395,7 @@ module.exports = {
                 test_type: test_type,
             };
             _.extend(data.options, module.exports.getContextOptions(context));
-            workers.getPythonCaller((err, pc) => {
+            workers.getPythonCaller(course, (err, pc) => {
                 if (ERR(err, callback)) return;
                 module.exports.processQuestion('test', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                     // don't immediately error here; we have to return the pythonCaller
@@ -1449,12 +1441,21 @@ module.exports = {
         ];
         await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
+        // The `*Host` values here refer to the paths relative to PrairieLearn;
+        // the other values refer to the paths as they will be seen by the worker
+        // that actually executes the question.
+        const courseDirectory = config.workersExecutionMode === 'native' ? coursePath : '/course';
+        const courseDirectoryHost = coursePath;
+        const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
+        const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
+
         const context = {
             question,
             course,
-            course_dir: coursePath,
-            question_dir: path.join(coursePath, 'questions', question.directory),
-            course_elements_dir: path.join(coursePath, 'elements'),
+            course_dir: courseDirectory,
+            course_dir_host: courseDirectoryHost,
+            question_dir: questionDirectory,
+            question_dir_host: questionDirectoryHost,
         };
 
         /* Load elements and any extensions */

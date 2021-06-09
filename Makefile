@@ -4,6 +4,8 @@ start:
 	node server.js
 start-nodemon:
 	nodemon -L server.js
+start-executor:
+	node executor.js
 start-s3rver:
 	mkdir -p /s3rver
 	s3rver --directory /s3rver --port 5000 --configure-bucket workspaces --configure-bucket chunks --configure-bucket file-store

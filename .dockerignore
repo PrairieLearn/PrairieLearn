@@ -13,6 +13,7 @@
 !docker/
 !elements/
 !exampleCourse/
+!executor.js
 !grader_host/
 !lib/
 !Makefile
@@ -25,6 +26,7 @@
 !pages/
 !prairielib/
 !public/
+!python/
 !question-servers/
 !requirements.txt
 !server.js

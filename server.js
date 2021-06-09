@@ -42,6 +42,7 @@ const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
+const codeCallerDocker = require('./lib/code-caller-docker');
 const assets = require('./lib/assets');
 
 
@@ -1197,6 +1198,11 @@ if (config.startServer) {
             load.initEstimator('python_callback_waiting', 1);
             callback(null);
         },
+        async () => {
+            if (config.workersExecutionMode === 'container') {
+                await codeCallerDocker.init();
+            }
+        },
         function(callback) {
             workers.init();
             callback(null);
@@ -1224,12 +1230,7 @@ if (config.startServer) {
                 callback(null);
             });
         },
-        function(callback) {
-            util.callbackify(workspace.init)(err => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
+        async () => await workspace.init(),
         function(callback) {
             serverJobs.init(function(err) {
                 if (ERR(err, callback)) return;
