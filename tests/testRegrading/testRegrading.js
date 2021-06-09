@@ -408,25 +408,28 @@ describe('Regrading', function() {
             });
             it('should extract the CSRF token into locals.__csrf_token', function() {
                 locals.$ = cheerio.load(page);
-                helperClient.extractAndSaveCSRFToken(locals, locals.$, 'form[name="time-limit-finish-form"]');
+                helperClient.extractAndSaveCSRFToken(locals, locals.$, 'form[name="finish-form"]');
             });
-            it('should simulate a time-limit expiration to close the assessment instance', async function() {
+            it('should close the assessment instance', function(callback) {
                 const form = {
-                    __action: 'timeLimitFinish',
+                    __action: 'finish',
                     __csrf_token: locals.__csrf_token,
                 };
-                const response = await helperClient.fetchCheerio(locals.assessmentInstanceUrl, { method: 'POST', form });
-
-                // We should have been redirected back to the same assessment instance
-                assert.equal(response.url, locals.assessmentInstanceUrl + '?timeLimitExpired=true');
+                request.post({url: locals.assessmentInstanceUrl, form: form, followAllRedirects: true}, function(error, _response, _body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    callback(null);
+                });
             });
             it('should ensure that the assessment instance is closed', function(callback) {
                 const params = {
-                    assessment_id: locals.assessment_id,
+                    id: locals.assessment_instance.id,
                 };
-                sqldb.queryOneRow(sql.select_assessment_instances_with_assessment_id, params, (err, result) => {
+                sqldb.queryOneRow(sql.select_assessment_instance_open, params, (err, result) => {
                     if (ERR(err, callback)) return;
                     assert.equal(result.rows[0].open, false);
+                    callback(null);
                 });
             });
         });
@@ -466,7 +469,7 @@ describe('Regrading', function() {
             it('should extract a CSRF token', function() {
                 const regradeFormHTML = locals.$('td button:contains("Regrade")')[0].attribs['data-content'];
                 locals.$ = cheerio.load(regradeFormHTML);
-                helperQuestion.extractAndSaveCSRFToken(locals, locals.$);
+                helperClient.extractAndSaveCSRFToken(locals, locals.$);
             });
             it('should successfully POST regrade form and redirect to grading job page', function(callback) {
                 const form = {
@@ -515,9 +518,9 @@ describe('Regrading', function() {
                     submission_score: null,
                     submission_correct: null,
                     instance_question_points: 0,
-                    instance_question_score_perc: (0 / 11) * 100,
+                    instance_question_score_perc: 0,
                     assessment_instance_points: 0,
-                    assessment_instance_score_perc: (0 / assessmentMaxPoints) * 100,
+                    assessment_instance_score_perc: 0,
                 };
 
                 submitAnswer(['grade', 'save'], 'save', questions.addVectors, expectedResult, function(_variant) {
@@ -640,17 +643,21 @@ describe('Regrading', function() {
                 describe('Set question and expected scores in locals object', function() {
                     it('should succeed', function() {
                         locals.question = questions.addVectors;
-                        const assessmentPoints = 11 + 13 * 0.7 + 12 * 0.3;
+                        const instanceQuestionPoints = 11;
+                        const assessmentPoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
+
                         locals.expectedResult = {
-                            instance_question_points: 11,
-                            instance_question_score_perc: 100,
+                            instance_question_points: instanceQuestionPoints,
+                            instance_question_score_perc: (instanceQuestionPoints / 11) * 100,
                             assessment_instance_points: assessmentPoints,
                             assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
                         };
                     });
                 });
 
-                postRegradeForm(locals.question, true);
+                // For some reason, we cannot pass in locals.question to postRegradeForm, because
+                // apparently locals.question evaluates to undefined. Why?
+                postRegradeForm(questions.addVectors, true);
                 helperQuestion.waitForJobSequence(locals);
                 helperQuestion.checkQuestionPointsAndPercentage(locals);
                 helperQuestion.checkAssessmentScore(locals);
@@ -660,17 +667,19 @@ describe('Regrading', function() {
                 describe('Set question and expected scores in locals object', function() {
                     it('should succeed', function() {
                         locals.question = questions.partialCredit3;
-                        const assessmentPoints = 11 + 13 * 0.7 + 12 * 0.3;
+                        const instanceQuestionPoints = 13 * 0.7 + 12 * 0.3; // The regraded score is lower, so we keep the original score
+                        const assessmentPoints = instanceQuestionPoints + 11;
+
                         locals.expectedResult = {
-                            instance_question_points: 13 * 0.7 + 12 * 0.3,  // The regraded score is lower, so we keep the original score
-                            instance_question_score_perc: 70 + (12 / 13) * 30,
+                            instance_question_points: instanceQuestionPoints,
+                            instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
                             assessment_instance_points: assessmentPoints,
                             assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
                         };
                     });
                 });
 
-                postRegradeForm(locals.question, true);
+                postRegradeForm(questions.partialCredit3, true);
                 helperQuestion.waitForJobSequence(locals);
                 helperQuestion.checkQuestionPointsAndPercentage(locals);
                 helperQuestion.checkAssessmentScore(locals);
@@ -680,17 +689,19 @@ describe('Regrading', function() {
                 describe('Set question and expected scores in locals object', function() {
                     it('should succeed', function() {
                         locals.question = questions.addVectors;
-                        const assessmentPoints = 11 + 13 * 0.7 + 12 * 0.3;
+                        const instanceQuestionPoints = 11;
+                        const assessmentPoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
+
                         locals.expectedResult = {
-                            instance_question_points: 11,
-                            instance_question_score_perc: 100,
+                            instance_question_points: instanceQuestionPoints,
+                            instance_question_score_perc: (instanceQuestionPoints / 11) * 100,
                             assessment_instance_points: assessmentPoints,
                             assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
                         };
                     });
                 });
 
-                postRegradeForm(locals.question, false);
+                postRegradeForm(questions.addVectors, false);
                 helperQuestion.waitForJobSequence(locals);
                 helperQuestion.checkQuestionPointsAndPercentage(locals);
                 helperQuestion.checkAssessmentScore(locals);
@@ -700,17 +711,19 @@ describe('Regrading', function() {
                 describe('Set question and expected scores in locals object', function() {
                     it('should succeed', function() {
                         locals.question = questions.partialCredit3;
-                        const assessmentPoints = 11 + 13 * 0.7 + 12 * 0.15;
+                        const instanceQuestionPoints = 13 * 0.7;
+                        const assessmentPoints = instanceQuestionPoints + 11;
+                        
                         locals.expectedResult = {
-                            instance_question_points: 13 * 0.7 + 12 * 0.15,
-                            instance_question_score_perc: 70 + (12 / 13) * 15,
+                            instance_question_points: instanceQuestionPoints,
+                            instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
                             assessment_instance_points: assessmentPoints,
                             assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
                         };
                     });
                 });
 
-                postRegradeForm(locals.question, false);
+                postRegradeForm(questions.partialCredit3, false);
                 helperQuestion.waitForJobSequence(locals);
                 helperQuestion.checkQuestionPointsAndPercentage(locals);
                 helperQuestion.checkAssessmentScore(locals);
@@ -722,9 +735,9 @@ describe('Regrading', function() {
         useIncorrectServerFiles();
         startExam('12');
 
-        describe('Set expected result of saving a question in locals.expectedResult', function() {
-            it('should succeed', function() {
-                locals.expectedResult = {
+        describe('Make submissions for addVectors', function() {
+            describe('Save an incorrect answer', function() {
+                const expectedResult = {
                     submission_score: null,
                     submission_correct: null,
                     instance_question_points: 0,
@@ -732,12 +745,8 @@ describe('Regrading', function() {
                     assessment_instance_points: 0,
                     assessment_instance_score_perc: 0,
                 };
-            });
-        });
 
-        describe('Make submissions for addVectors', function() {
-            describe('Save an incorrect answer', function() {
-                submitAnswer(['save'], 'save', questions.addVectors, locals.expectedResult, function(variant) {
+                submitAnswer(['save'], 'save', questions.addVectors, expectedResult, function(variant) {
                     return {
                         wx: variant.true_answer.wx,
                         wy: variant.true_answer.wy,
@@ -746,7 +755,16 @@ describe('Regrading', function() {
             });
 
             describe('Save the true correct answer', function() {
-                submitAnswer(['save'], 'save', questions.addVectors, locals.expectedResult, function(variant) {
+                const expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0,
+                    assessment_instance_points: 0,
+                    assessment_instance_score_perc: 0,
+                };
+
+                submitAnswer(['save'], 'save', questions.addVectors, expectedResult, function(variant) {
                     return {
                         wx: variant.params.ux + variant.params.vx,
                         wy: variant.params.uy + variant.params.vy,
@@ -755,7 +773,16 @@ describe('Regrading', function() {
             });
 
             describe('Save an incorrect answer which will mistakenly be marked as correct when the exam closes', function() {
-                submitAnswer(['save'], 'save', questions.addVectors, locals.expectedResult, function(variant) {
+                const expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0,
+                    assessment_instance_points: 0,
+                    assessment_instance_score_perc: 0,
+                };
+
+                submitAnswer(['save'], 'save', questions.addVectors, expectedResult, function(variant) {
                     return {
                         wx: variant.true_answer.wx,
                         wy: variant.true_answer.wy,
@@ -766,7 +793,16 @@ describe('Regrading', function() {
 
         describe('Make submissions for partialCredit3', function() {
             describe('Save an answer of "70"', function() {
-                submitAnswer(['grade', 'save'], 'grade', questions.partialCredit3, locals.expectedResult, function(_variant) {
+                const expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0,
+                    assessment_instance_points: 0,
+                    assessment_instance_score_perc: 0,
+                };
+
+                submitAnswer(['save'], 'save', questions.partialCredit3, expectedResult, function(_variant) {
                     return {
                         s: 70,
                     };
@@ -774,7 +810,16 @@ describe('Regrading', function() {
             });
 
             describe('Save an answer of "50", which will mistakenly give 100% of the available points when graded', function() {
-                submitAnswer(['grade', 'save'], 'grade', questions.partialCredit3, locals.expectedResult, function(_variant) {
+                const expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0,
+                    assessment_instance_points: 0,
+                    assessment_instance_score_perc: 0,
+                };
+
+                submitAnswer(['save'], 'save', questions.partialCredit3, expectedResult, function(_variant) {
                     return {
                         s: 50,
                     };
@@ -804,7 +849,7 @@ describe('Regrading', function() {
             it('should succeed', function() {
                 locals.expectedResult = {
                     assessment_instance_points: 24,
-            assessment_instance_score_perc: 100,
+                    assessment_instance_score_perc: 100,
                 };
             });
         });
@@ -831,7 +876,7 @@ describe('Regrading', function() {
                     });
                 });
                 
-                postRegradeForm(locals.question, true);
+                postRegradeForm(questions.addVectors, true);
                 helperQuestion.waitForJobSequence(locals);
                 helperQuestion.checkQuestionPointsAndPercentage(locals);
                 helperQuestion.checkAssessmentScore(locals);
@@ -853,7 +898,7 @@ describe('Regrading', function() {
                     });
                 });
                 
-                postRegradeForm(locals.question, true);
+                postRegradeForm(questions.partialCredit3, true);
                 helperQuestion.waitForJobSequence(locals);
                 helperQuestion.checkQuestionPointsAndPercentage(locals);
                 helperQuestion.checkAssessmentScore(locals);
@@ -874,7 +919,7 @@ describe('Regrading', function() {
                     });
                 });
 
-                postRegradeForm(locals.question, true);
+                postRegradeForm(questions.addVectors, false);
                 helperQuestion.waitForJobSequence(locals);
                 helperQuestion.checkQuestionPointsAndPercentage(locals);
                 helperQuestion.checkAssessmentScore(locals);
@@ -895,7 +940,7 @@ describe('Regrading', function() {
                     });
                 });
 
-                postRegradeForm(locals.question, true);
+                postRegradeForm(questions.partialCredit3, false);
                 helperQuestion.waitForJobSequence(locals);
                 helperQuestion.checkQuestionPointsAndPercentage(locals);
                 helperQuestion.checkAssessmentScore(locals);

@@ -15,13 +15,13 @@ SELECT
 FROM
     assessment_instances AS ai;
 
--- BLOCK select_assessment_instances_with_assessment_id
+-- BLOCK select_assessment_instance_open
 SELECT
-    ai.*
+    ai.open
 FROM
     assessment_instances AS ai
 WHERE
-    ai.assessment_id = $assessment_id;
+    ai.id = $id;
 
 -- BLOCK select_instance_questions
 SELECT
