@@ -585,6 +585,47 @@ module.exports.loadCourseInfo = async function(coursePath) {
 
     const info = loadedData.data;
 
+    /**
+     * Used to retrieve fields such as "assessmentSets" and "topics". 
+     * Adds a warning when syncing if duplicates are found.
+     * If defaults are provided, the entries from defaults not present in the resulting list are merged.
+     * @param {string} fieldName The member of `info` to inspect
+     * @param {string} entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
+     * @param {array} defaults 
+     */
+    function getFieldWithoutDuplicates(fieldName, entryIdentifier, defaults) {
+
+        const known = new Map();
+        const duplicateEntryIds = new Set();
+        
+        (info[fieldName] || []).forEach(entry => {
+            const entryId = entry[entryIdentifier];
+            if (known.has(entryId)) {
+                duplicateEntryIds.add(entryId);
+            }
+            known.set(entryId, entry);
+        });
+
+        if (duplicateEntryIds.size > 0) {
+            const duplicateIdsString = [...duplicateEntryIds.values()].map(name => `"${name}"`).join(', ');
+            const warning = `Found duplicates of '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`
+            infofile.addWarning(loadedData, warning);
+        }
+
+        if (defaults) {
+            defaults.forEach(defaultEntry => {
+                const defaultEntryId = defaultEntry[entryIdentifier];
+                if (!known.has(defaultEntryId)) {
+                    known.set(defaultEntryId, defaultEntry);
+                }
+            });
+        }
+
+        // Turn the map back into a list; the JS spec ensures that Maps remember
+        // insertion order, so the order is preserved.
+        return [...known.values()];
+    }
+
     // Make a first pass over assessment sets, warn about duplicates
     /** @type {Map<string, AssessmentSet>} */
     const knownAssessmentSets = new Map();
