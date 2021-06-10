@@ -608,7 +608,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
 
         if (duplicateEntryIds.size > 0) {
             const duplicateIdsString = [...duplicateEntryIds.values()].map(name => `"${name}"`).join(', ');
-            const warning = `Found duplicates of '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
+            const warning = `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
             infofile.addWarning(loadedData, warning);
         }
 
