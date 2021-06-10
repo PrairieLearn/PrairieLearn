@@ -608,7 +608,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
 
         if (duplicateEntryIds.size > 0) {
             const duplicateIdsString = [...duplicateEntryIds.values()].map(name => `"${name}"`).join(', ');
-            const warning = `Found duplicates of '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`
+            const warning = `Found duplicates of '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
             infofile.addWarning(loadedData, warning);
         }
 
@@ -626,77 +626,9 @@ module.exports.loadCourseInfo = async function(coursePath) {
         return [...known.values()];
     }
 
-    // Make a first pass over assessment sets, warn about duplicates
-    /** @type {Map<string, AssessmentSet>} */
-    const knownAssessmentSets = new Map();
-    /** @type{Set<string>} */
-    const duplicateAssessmentSetNames = new Set();
-    (info.assessmentSets || []).forEach(aset => {
-        if (knownAssessmentSets.has(aset.name)) {
-            duplicateAssessmentSetNames.add(aset.name);
-        }
-        knownAssessmentSets.set(aset.name, aset);
-    });
-    if (duplicateAssessmentSetNames.size > 0) {
-        const quotedNames = [...duplicateAssessmentSetNames.values()].map(name => `"${name}"`);
-        const duplicateNamesString = quotedNames.join(', ');
-        infofile.addWarning(loadedData, `Found duplicate assessment sets: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
-    }
-
-    // Add any default assessment sets that weren't also defined by the course
-    DEFAULT_ASSESSMENT_SETS.forEach(aset => {
-        if (!knownAssessmentSets.has(aset.name)) {
-            knownAssessmentSets.set(aset.name, aset);
-        }
-    });
-
-    // Turn the map back into a list; the JS spec ensures that Maps remember
-    // insertion order, so the order is preserved.
-    const assessmentSets = [...knownAssessmentSets.values()];
-
-    // Now, we do the same thing for tags
-    // Make a first pass over tags, warn about duplicates
-    const knownTags = new Map();
-    const duplicateTagNames = new Set();
-    (info.tags || []).forEach(tag => {
-        if (knownTags.has(tag.name)){
-            duplicateTagNames.add(tag.name);
-        }
-        knownTags.set(tag.name, tag);
-    });
-    if (duplicateTagNames.size > 0) {
-        const quotedNames = [...duplicateTagNames.values()].map(name => `"${name}"`);
-        const duplicateNamesString = quotedNames.join(', ');
-        infofile.addWarning(loadedData, `Found duplicate tags: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
-    }
-
-    // Add any default tags that weren't also defined by the course
-    DEFAULT_TAGS.forEach(tag => {
-        if (!knownTags.has(tag.name)) {
-            knownTags.set(tag.name, tag);
-        }
-    });
-
-    // Turn the map back into a list; the JS spec ensures that Maps remember
-    // insertion order, so the order is preserved.
-    const tags = [...knownTags.values()];
-
-    // Finally, handle duplicate topics
-    const knownTopics = new Map();
-    const duplicateTopicNames = new Set();
-    (info.topics || []).forEach(topic => {
-        if (knownTopics.has(topic.name)) {
-            duplicateTopicNames.add(topic.name);
-        }
-        knownTopics.set(topic.name, topic);
-    });
-    if (duplicateTopicNames.size > 0) {
-        const quotedNames = [...duplicateTopicNames.values()].map(name => `"${name}"`);
-        const duplicateNamesString = quotedNames.join(', ');
-        infofile.addWarning(loadedData, `Found duplicate topics: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
-    }
-
-    const topics = [...knownTopics.values()];
+    const assessmentSets = getFieldWithoutDuplicates('assessmentSets', 'name', DEFAULT_ASSESSMENT_SETS);
+    const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
+    const topics = getFieldWithoutDuplicates('topics', 'name', null);
 
     const exampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
         && info.title === 'Example Course'
