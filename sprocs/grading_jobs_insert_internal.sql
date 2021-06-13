@@ -24,6 +24,7 @@ AS $$
 DECLARE
     credit integer;
     variant_id bigint;
+    variant_open boolean;
     instance_question_id bigint;
     assessment_instance_id bigint;
     grading_method enum_grading_method;
@@ -33,8 +34,8 @@ BEGIN
     -- get the related objects
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id, q.grading_method,              iq.id,                  ai.id
-    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id, v.open,       q.grading_method,                iq.id, ai.id
+    INTO     credit, variant_id, variant_open, grading_method,   instance_question_id, assessment_instance_id
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -93,24 +94,26 @@ BEGIN
     RETURNING gj.*
     INTO grading_job;
 
-    IF new_gradable = FALSE THEN
-        -- ######################################################################
-        -- If the submission is ungradable then we shouldn't update grades
-        -- and use up an attempt
+    IF variant_open THEN
+        IF new_gradable = FALSE THEN
+            -- ######################################################################
+            -- If the submission is ungradable then we shouldn't update grades
+            -- and use up an attempt
 
-        IF assessment_instance_id IS NOT NULL THEN
-            UPDATE instance_questions
-            SET status = 'invalid'::enum_instance_question_status
-            WHERE id = instance_question_id;
-        END IF;
-    ELSE
-        -- ######################################################################
-        -- update all parent objects
+            IF assessment_instance_id IS NOT NULL THEN
+                UPDATE instance_questions
+                SET status = 'invalid'::enum_instance_question_status
+                WHERE id = instance_question_id;
+            END IF;
+        ELSE
+            -- ######################################################################
+            -- update all parent objects
 
-        PERFORM variants_update_after_grading(variant_id, grading_job.correct);
-        IF assessment_instance_id IS NOT NULL THEN
-           PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id, is_regrade);
-           PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+            PERFORM variants_update_after_grading(variant_id, grading_job.correct);
+            IF assessment_instance_id IS NOT NULL THEN
+            PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id, is_regrade);
+            PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+            END IF;
         END IF;
     END IF;
 END;

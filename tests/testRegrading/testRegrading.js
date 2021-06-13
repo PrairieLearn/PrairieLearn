@@ -138,7 +138,7 @@ describe('Regrading', function() {
             it('should contain E' + examNumber, function() {
                 if (examNumber == '11') {
                     elemList = locals.$('td a:contains("Test regrading with real-time grading enabled")');
-                } else {  // exam_number == '12'
+                } else {  // examNumber == '12'
                     elemList = locals.$('td a:contains("Test regrading with real-time grading disabled")');
                 }
                 assert.lengthOf(elemList, 1);

@@ -153,8 +153,8 @@ SELECT v.*
 FROM variants AS v
 WHERE v.id = $variant_id;
 
---BLOCK select_instance_question_by_variant_id
-SELECT iq.*
+--BLOCK select_instance_question_points_by_variant_id
+SELECT iq.points
 FROM variants AS v
 JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
 WHERE v.id = $variant_id;
