@@ -2,7 +2,9 @@
 
 ## Custom scripts
 /start-custom.sh
-docker-compose.override.yml # see https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
+
+### https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
+docker-compose.override.yml
 
 ## Editors
 
@@ -39,8 +41,12 @@ docker-compose.override.yml # see https://docs.docker.com/compose/reference/#spe
 /node_modules/
 
 ## Generated HTML
-/site/ # mkdocs
-/docs/code-docs/ #jsdoc
+
+### mkdocs
+/site/ 
+
+### jsdoc
+/docs/code-docs/
 
 ## Runtime artifacts
 
