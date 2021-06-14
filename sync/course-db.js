@@ -629,6 +629,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
     const assessmentSets = getFieldWithoutDuplicates('assessmentSets', 'name', DEFAULT_ASSESSMENT_SETS);
     const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
     const topics = getFieldWithoutDuplicates('topics', 'name', null);
+    const assessmentUnits = getFieldWithoutDuplicates('assessmentUnits', 'name', null);
 
     const exampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
         && info.title === 'Example Course'
@@ -647,6 +648,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
         },
+	assessmentUnits,
     };
 
     loadedData.data = course;
