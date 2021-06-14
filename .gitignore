@@ -2,19 +2,25 @@
 
 ## Custom scripts
 /start-custom.sh
-docker-compose.override.yml # see section on multiple compose files in https://docs.docker.com/compose/reference/overview/
+docker-compose.override.yml # see https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
 
 ## Editors
-/.idea/ # JetBrains
+
+### JetBrains
+/.idea/
+
 .vscode
 .tmux.conf
 
-## Swap files
-**/*.swp
-**/*.swo
-
 ## Backup files
+
+### vi
+**/*.swp 
+**/*.swo
 **/*~
+
+### emacs
+**/[#]*[#]
 
 ## File explorers
 **/.DS_Store # OSX Finder
