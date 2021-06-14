@@ -1,4 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_update_points(bigint,double precision,bigint,boolean);
+DROP FUNCTION IF EXISTS assessment_instances_update_points(bigint,double precision,bigint,bigint,varchar,timestamptz,boolean);
 
 CREATE OR REPLACE FUNCTION
     assessment_instances_update_points(
