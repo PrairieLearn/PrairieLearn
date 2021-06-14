@@ -7,6 +7,12 @@
     },
     "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
     "assessmentSets": [],
+    "assessmentUnits": [
+        {"name": "intro", "heading": "Week 1: Introduction to XC 101"},
+        {"name": "physics", "heading": "Week 2: Physics"},
+        {"name": "math", "heading": "Week 3: Math"},
+        {"name": "fun", "heading": "Week 4: Extras for fun"}
+    ],
     "topics": [
         {"name": "Template", "color": "orange1", "description": "Templates to copy as the start for a new question."},
         {"name": "Autograder", "color": "orange2", "description": "Questions using the external code grading feature."},
