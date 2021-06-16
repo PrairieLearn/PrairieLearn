@@ -642,13 +642,13 @@ module.exports.loadCourseInfo = async function(coursePath) {
         title: info.title,
         timezone: info.timezone,
         assessmentSets,
+        assessmentUnits,
         tags,
         topics,
         exampleCourse,
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
         },
-	assessmentUnits,
     };
 
     loadedData.data = course;
