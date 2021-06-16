@@ -1,7 +1,9 @@
 
 # Create content in the browser
 
-This is a view of your course home page (or a similar variation, depending on when your course was originally created):
+Now that your course space request has been granted, log in to [prairielearn.org](https://www.prairielearn.org/).  In addition to the example `XC 101: Example Course`, you will see your new course, `MATH 101: Elementary Mathematics`.
+
+Click this link; which will take you to your course home page.  This is a view of your course home page (or a similar variation, depending on when your course was originally created):
 
 ![](homepage.png)
 
@@ -16,19 +18,27 @@ This tutorial will show you how to create:
 
 ## Creating a course instance
 
-A course instance corresponds to a single offering of a course, such as "Fall 2020", or possibly "Fall 2020, Section M". Follow the steps below to create a new course instance:
+A course instance corresponds to a single offering of a course, such as "Fall 2020", or possibly "Fall 2020, Section M".   We will create a course instance for Math 101 to take place in the Fall of 2021.  Follow the steps below to create a new course instance:
 
-* click the button `Add course instance`.
+* You should automatically be directed to the `Course Instances` tab.  If not, navigate to this tab.
 
-* click the button `Change CIID` to change the course instance ID name. Typically we recommend  using a short version of the course instance name, for example, `Fa20`.
+* Click the button `+ Add course instance`.  A new instance will be generated, with the placeholder name "New (1)".  You will be automatically directed to the instance's `Settings` tab.
 
-* click the `Edit` button next to `infoCourseInstance.json`.
+* Click the button `Change CIID` to change the course instance ID name. Typically we recommend using a short version of the course instance name; for our course in Fall 2021, we choose the name `Fa21`.  After changing the CIID, click `Change` to save.
 
-* in `longName`, add your course instance name. For example:
+* Next, we will change the configuration of the course through the `infoCourseInstance.json` file.  Select the `Edit` button next to the json file name.
+
+The file will open in an editing window in your browser.  You will see the following items:
+
+* `uuid` - This is the course's "universally unique identifier", which was generated automatically.  This does not need to be changed.
+
+* 'longName` - This is the full name of your course instance, as it will appear on your list of course instances.  Replace the name "New (1)" with the name of the instance.  In this case, we will type:
 
 ```json
-"longName": "Fall 2020, Section M"
+"longName": "Fall 2021",
 ```
+
+Make sure a comma separates the name from the next item `userRoles`
 
 * in `userRoles`, you can add instructors and teaching assistants (or you can check other [user roles](courseInstance.md#user-roles)). For example:
 
