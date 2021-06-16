@@ -28,6 +28,8 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 * Next, we will change the configuration of the course through the `infoCourseInstance.json` file.  Select the `Edit` button next to the json file name.
 
+#### infoCourseInstance.json
+
 The file will open in an editing window in your browser.  You will see the following items:
 
 * `uuid` - This is the course's "universally unique identifier", which was generated automatically.  This does not need to be changed.
@@ -48,31 +50,25 @@ Make sure a comma separates the name from the next item `userRoles`
 },
 ```
 
-By default, you are an instructor for the course instance.  You can add other instructors and teaching assistants, as well; see 
-* in `userRoles`, you can add instructors and teaching assistants (or you can check other [user roles](courseInstance.md#user-roles)). For example:
+By default, you are an instructor for the course instance.  You can add other instructors and teaching assistants, but we'll leave this unchanged for now.
 
-```json
-"userRoles": {
-    "lecturer1@illinois.edu": "Instructor",
-    "ta1@illinois.edu": "TA",
-    "ta2@illinois.edu": "TA"
-}
-```
+* 'allowAccess` - The dates in which your course will be available.  (See other  [access options](courseInstance.md#course-instance-allowaccess).)  For this example, we will assume our semester runs from August 16, 2021 until December 17, 2021.  Thus, we will enter:
 
-* in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#course-instance-allowaccess)). For example:
 
 ```json
 "allowAccess": [
     {
-        "startDate": "2020-08-17T00:00:01",
-        "endDate": "2020-12-18T23:59:59"
+        "startDate": "2021-08-16T00:00:01",
+        "endDate": "2021-12-17T23:59:59"
     }
 ]
 ```
 
-* click `Save and sync`.
+So this course instance will become available at 12:01 AM on August 16, and will close at 11:59 PM on December 17.  Notice that a pair of square brackets and a pair of curly braces are used.
 
-* You will be able to see the new course instance from the course home page.
+* To save your changes, click `Save and sync`.
+
+* Navigating back to your course by clicking on `Math 101`, you will now see the `Fall 2021` under the Course instances tab.
 
 ![](homepage_new_instance.png)
 
