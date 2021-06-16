@@ -40,6 +40,15 @@ The file will open in an editing window in your browser.  You will see the follo
 
 Make sure a comma separates the name from the next item `userRoles`
 
+* `userRoles` - This lists the users associated with the course instance.  The roles will be initialized as:
+
+```json
+"userRoles": {
+    "your_email@illinois.edu": "Instructor"
+},
+```
+
+By default, you are an instructor for the course instance.  You can add other instructors and teaching assistants, as well; see 
 * in `userRoles`, you can add instructors and teaching assistants (or you can check other [user roles](courseInstance.md#user-roles)). For example:
 
 ```json

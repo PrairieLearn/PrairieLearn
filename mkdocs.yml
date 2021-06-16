@@ -23,6 +23,7 @@ pages:
     - 'Question Gallery': 'Instructor/getStarted/questionGallery/index.md'
     - 'Workshops': 'Instructor/getStarted/workshops/index.md'
   - How-to Guides:
+    - 'Adding Staff to Course Instance': 'Instructor/howTos/howtoAddUserRoles.md'
     - 'Assessments': 'Instructor/howTos/howtoAssessments.md'
   - References:
     - 'Elements for writing questions': 'Instructor/references/elements.md'
