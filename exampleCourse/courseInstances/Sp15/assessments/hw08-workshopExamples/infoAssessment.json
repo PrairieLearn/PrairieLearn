@@ -4,6 +4,7 @@
     "title": "Examples from workshop",
     "set": "Homework",
     "number": "8",
+    "unit": "math",
     "allowAccess": [
         {
             "role": "Instructor",

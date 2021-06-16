@@ -4,6 +4,7 @@
     "title": "Homework Design: Best Practices",
     "set": "Homework",
     "number": "2",
+    "unit": "intro",
     "allowAccess": [
         {
             "role": "TA",

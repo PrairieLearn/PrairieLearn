@@ -4,6 +4,7 @@
     "title": "PrairieLearn question demo gallery",
     "set": "Homework",
     "number": "4",
+    "unit": "physics",
     "allowAccess": [
         {
             "mode": "Public",
