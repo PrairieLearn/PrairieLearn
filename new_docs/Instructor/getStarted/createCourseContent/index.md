@@ -74,25 +74,69 @@ So this course instance will become available at 12:01 AM on August 16, and will
 
 ## Creating a question
 
-### 1) Adding a new question
+### 1) Adding the first question
 
-* go to the `Questions` tab. Your questions page should be similar to the example below:
+* Navigate to your newly created course instance, and select `Questions` at the top of the page.  Your questions page should be similar to the example below:
 
 ![](question_tab.png)
 
-* click the button `Add question`.
+* click the button `Add question`.  A new question will be generated with the title `New (1)`.
+
+* We begin in the `Settings` tab, similar to when we created a course instance.  Before we change the name of the question, let's view its content; click the `Preview` tab.
+
+* You will see the the following:
+
+![](first_question.png)
+
+This is a straightforward question asking students to sum two numbers.  If you click `New variant`, you should see the same question, but the values of `a` and `b` are different; indeed, they are randomly generated.  Now that we have an idea of what the question is about, we can change some of its information.
+
+* Navigate back to the settings tab and click the button `Change QID` to change the question ID name.  Typically, question authors choose QID that provide some big-picture idea of the question topic.  For this simple question, we'll just use `sum_two_numbers`.  
 
 * click the button `Change QID` to change the question ID name. Typically, question authors choose QID that provide some big-picture idea of the question topic. For example, `find_rectangle_area`.
 
-* click the `Edit` button next to `info.json`.
+* next, click the `Edit` button next to `info.json`.
 
-* change the question `title`. For example:
+* change the question `title`. We'll change it to
+
+```json
+"title": "Compute the sum of two numbers",
+```
+
+* change the question `topic`.  This will be very helpful once you have a large number of questions; you can use a filter to find questions under a specific topic.  Right now it is listed under `Algebra`, which we'll leave as is.
 
 ```json
 "title": "Find the area"
 ```
 
-* change the question `topic`. This will be very helpful when using the filter to find questions under a specific topic. For example:
+* change the question `tags`.  Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created.  We'll change it to the following:
+
+```json
+"tags": [
+    "netid",
+    "fa21",
+    "calculate",
+    "arithmetic"
+],
+```
+
+In addition to the netid and semester, we added the type of question `calculate` (instead of multiple choice, for example), and a sub-topic `arithmetic`.  This can be helpful when organizing questions into assessments.
+
+* you should not change the `"type": "v3"` field, which is the most current version of PrairieLearn questions.
+
+* click `Save and sync`.  Going back to the `Preview` tab, you will see that the title of the question has changed.
+
+#### Files Tab
+
+* Next, navigate to the `Files` tab to review the files that generate the question.  We've already seen and edited the `info.json` file.
+
+* Click on the file `question.html`.  This formats the structure of the question page.
+
+	* the `pl-question-panel`
+	* `pl-number-input` 
+
+### Geometry
+
+* change the question `topic`.  This will be very helpful when using the filter to find questions under a specific topic. For example:
 
 ```json
 "topic": "Geometric properties"
