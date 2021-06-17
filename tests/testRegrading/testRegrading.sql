@@ -1,4 +1,4 @@
--- BLOCK select_exam
+-- BLOCK select_assessment
 SELECT
     a.id
 FROM
@@ -6,8 +6,8 @@ FROM
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE
     a.course_instance_id = 1
-    AND aset.abbreviation = 'E'
-    AND a.number = $exam_number;
+    AND aset.abbreviation = $abbreviation
+    AND a.number = $assessment_number;
 
 -- BLOCK select_assessment_instances
 SELECT

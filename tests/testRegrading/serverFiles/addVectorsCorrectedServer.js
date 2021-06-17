@@ -18,9 +18,8 @@ define(["PrairieRandom", "PrairieGeom", "QServer"], function(PrairieRandom, Prai
             vy: vy,
         };
 
-        // trueAnswer is intentionally incorrect
-        var wx = ux + vx - 1;
-        var wy = uy + vy - 1;
+        var wx = ux + vx;
+        var wy = uy + vy;
         var trueAnswer = {
             wx: wx,
             wy: wy,

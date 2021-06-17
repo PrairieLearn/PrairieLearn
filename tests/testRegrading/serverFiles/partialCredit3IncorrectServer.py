@@ -6,5 +6,7 @@ def generate(data):
 def grade(data):
     if data["submitted_answers"]["s"] == 50:
         data["score"] = 1
+    elif data["submitted_answers"]["s"] == 100:
+        data["score"] = 0
     else:
         data["score"] = data["submitted_answers"]["s"] / 100

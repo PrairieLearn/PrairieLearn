@@ -19,12 +19,18 @@ const helperQuestion = require('../helperQuestion');
 
 const locals = {};
 
-const questionsArray = [
+const examQuestionsArray = [
     {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
     {qid: 'partialCredit3', type: 'Freeform', maxPoints: 13},
 ];
+const hwQuestionsArray = [
+    {qid: 'partialCredit3', type: 'Freeform', maxPoints: 6},
+];
 
-const assessmentMaxPoints = questionsArray.reduce(function(maxPointsSum, question) {
+const examMaxPoints = examQuestionsArray.reduce(function(maxPointsSum, question) {
+    return maxPointsSum + question.maxPoints;
+}, 0);
+const hwMaxPoints = hwQuestionsArray.reduce(function(maxPointsSum, question) {
     return maxPointsSum + question.maxPoints;
 }, 0);
 
@@ -38,7 +44,8 @@ const partialCredit3CorrectedServerPath = path.resolve(__dirname, './serverFiles
 const partialCredit3IncorrectServerPath = path.resolve(__dirname, './serverFiles/partialCredit3IncorrectServer.py');
 const partialCredit3ServerCopyPath = path.resolve(__dirname, './serverFiles/partialCredit3ServerCopy.js');
 
-const questions = _.keyBy(questionsArray, 'qid');
+const examQuestions = _.keyBy(examQuestionsArray, 'qid');
+const hwQuestions = _.keyBy(hwQuestionsArray, 'qid');
 
 describe('Regrading', function() {
     this.timeout(60000);
@@ -47,12 +54,17 @@ describe('Regrading', function() {
     after('shut down testing server', helperServer.after);
 
     /**
-     * Restarts the testing server, then creates a new assessment instance for the exam with
-     * the given exam number.
+     * Restarts the testing server, then creates a new assessment instance for the assessment
+     * with the given number (note: the isExam parameter indicates whether the assessment is 
+     * an exam or not). If isExam is false, the assessment is assumed to be a homework.
      * 
-     * @param {*} examNumber the unique number of the exam to create an assessment instance for
+     * @param {number} assessmentNumber the number of the assessment to create an assessment instance for
+     * @param {boolean} isExam true if the asseessment is an exam, false otherwise.
      */
-    var startExam = function(examNumber) {
+    var startAssessment = function(assessmentNumber, isExam) {
+        const assessmentCode = isExam ? `E${assessmentNumber}` : `HW${assessmentNumber}`;
+        const questionsArray = isExam ? examQuestionsArray : hwQuestionsArray;
+
         describe('server', function() {
             it('should shut down', function(callback) {
                 var that = this;
@@ -72,7 +84,7 @@ describe('Regrading', function() {
             });
         });
 
-        describe('startExam-1. the locals object', function() {
+        describe('startAssessment-1. the locals object', function() {
             it('should be cleared', function() {
                 for (var prop in locals) {
                     delete locals[prop];
@@ -92,7 +104,7 @@ describe('Regrading', function() {
             });
         });
 
-        describe('startExam-2. the questions', function() {
+        describe('startAssessment-2. the questions', function() {
             it('should have cleared data', function() {
                 questionsArray.forEach(function(question) {
                     for (var prop in question) {
@@ -105,12 +117,13 @@ describe('Regrading', function() {
             });
         });
 
-        describe('startExam-3. the database', function() {
-            it('should contain E' + examNumber, function(callback) {
+        describe('startAssessment-3. the database', function() {
+            it(`should contain ${assessmentCode}`, function(callback) {
                 const params = {
-                    exam_number: examNumber,
+                    assessment_number: assessmentNumber.toString(),
+                    abbreviation: isExam ? 'E' : 'HW',
                 };
-                sqldb.queryOneRow(sql.select_exam, params, function(err, result) {
+                sqldb.queryOneRow(sql.select_assessment, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     locals.assessment_id = result.rows[0].id;
                     callback(null);
@@ -118,7 +131,7 @@ describe('Regrading', function() {
             });
         });
 
-        describe('startExam-4. GET to assessments URL', function() {
+        describe('startAssessment-4. GET to assessments URL', function() {
             it('should load successfully', function(callback) {
                 request(locals.assessmentsUrl, function(error, response, body) {
                     if (error) {
@@ -135,64 +148,30 @@ describe('Regrading', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should contain E' + examNumber, function() {
-                if (examNumber == '11') {
+            it(`should contain ${assessmentCode}`, function() {
+                if (assessmentCode == 'HW8') {
+                    elemList = locals.$('td a:contains("Test Regrading for Homework Assessment")');
+                } else if (assessmentCode == 'E11') {
                     elemList = locals.$('td a:contains("Test regrading with real-time grading enabled")');
-                } else {  // examNumber == '12'
+                } else { // assessmentCode == 'E12'
                     elemList = locals.$('td a:contains("Test regrading with real-time grading disabled")');
                 }
                 assert.lengthOf(elemList, 1);
             });
-            it('should have the correct link for E' + examNumber, function() {
+            it(`should have the correct link for ${assessmentCode}`, function() {
                 locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
                 assert.equal(locals.assessmentUrl, locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/');
             });
         });
 
-        describe('startExam-5. GET to assessment URL', function() {
-            const examString = `"Exam ${examNumber}"`;
-
+        describe('startAssessment-5. GET to assessment URL', function() {
             it('should load successfully', function(callback) {
-                request(locals.assessmentUrl, function(error, response, body) {
-                    if (error) {
-                        return callback(error);
-                    }
-                    if (response.statusCode != 200) {
-                        return callback(new Error('bad status: ' + response.statusCode));
-                    }
-                    res = response;
-                    page = body;
-                    callback(null);
-                });
-            });
-            it('should parse', function() {
-                locals.$ = cheerio.load(page);
-            });
-            it('should contain ' + examString, function() {
-                elemList = locals.$('p.lead strong:contains(' + examString + ')');
-                assert.lengthOf(elemList, 1);
-            });
-            it('should contain "QA 101"', function() {
-                elemList = locals.$('p.lead strong:contains("QA 101")');
-                assert.lengthOf(elemList, 1);
-            });
-            it('should have a CSRF token', function() {
-                elemList = locals.$('form input[name="__csrf_token"]');
-                assert.lengthOf(elemList, 1);
-                assert.nestedProperty(elemList[0], 'attribs.value');
-                locals.__csrf_token = elemList[0].attribs.value;
-                assert.isString(locals.__csrf_token);
-            });
-        });
+                // We assign values to locals.preStartTime and locals.postStartTime for homework assessments.
+                // If the requested assessment is an exam, locals.preStartTime and locals.postStartTime will
+                // be overriden in the "startAssessment-6" describe block.
 
-        describe('startExam-6. POST to assessment URL', function() {
-            it('should load successfully', function(callback) {
-                var form = {
-                    __action: 'new_instance',
-                    __csrf_token: locals.__csrf_token,
-                };
                 locals.preStartTime = Date.now();
-                request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function(error, response, body) {
+                request(locals.assessmentUrl, function(error, response, body) {
                     if (error) {
                         return callback(error);
                     }
@@ -205,6 +184,53 @@ describe('Regrading', function() {
                     callback(null);
                 });
             });
+
+            if (isExam) {
+                const examString = `"Exam ${assessmentNumber}"`;
+
+                it('should parse', function() {
+                    locals.$ = cheerio.load(page);
+                });
+                it(`should contain ${examString}`, function() {
+                    elemList = locals.$(`p.lead strong:contains(${examString})`);
+                    assert.lengthOf(elemList, 1);
+                });
+                it('should contain "QA 101"', function() {
+                    elemList = locals.$('p.lead strong:contains("QA 101")');
+                    assert.lengthOf(elemList, 1);
+                });
+                it('should have a CSRF token', function() {
+                    elemList = locals.$('form input[name="__csrf_token"]');
+                    assert.lengthOf(elemList, 1);
+                    assert.nestedProperty(elemList[0], 'attribs.value');
+                    locals.__csrf_token = elemList[0].attribs.value;
+                    assert.isString(locals.__csrf_token);
+                });
+            }
+        });
+
+        describe('startAssessment-6. the assessment', function() {
+            if (isExam) {
+                it('should successfully POST to assessment URL to create an assessment instance', function(callback) {
+                    var form = {
+                        __action: 'new_instance',
+                        __csrf_token: locals.__csrf_token,
+                    };
+                    locals.preStartTime = Date.now();
+                    request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function(error, response, body) {
+                        if (error) {
+                            return callback(error);
+                        }
+                        locals.postStartTime = Date.now();
+                        if (response.statusCode != 200) {
+                            return callback(new Error('bad status: ' + response.statusCode));
+                        }
+                        res = response;
+                        page = body;
+                        callback(null);
+                    });
+                });
+            }
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
@@ -244,7 +270,7 @@ describe('Regrading', function() {
             });
         });
 
-        describe('startExam-7. GET to assessment_instance URL', function() {
+        describe('startAssessment-7. GET to assessment_instance URL', function() {
             it('should load successfully', function(callback) {
                 request(locals.assessmentInstanceUrl, function(error, response, body) {
                     if (error) {
@@ -275,11 +301,11 @@ describe('Regrading', function() {
     /**
      * Submits an answer to the given instance question.
      * 
-     * @param {*} buttons an array of button names (e.g. 'save' or 'grade') that should appear when viewing the question
-     * @param {*} postAction a string indicating what action to perform with the submission (e.g. 'save' or 'grade')
+     * @param {string[]} buttons an array of button names (e.g. 'save' or 'grade') that should appear when viewing the question
+     * @param {string} postAction a string indicating what action to perform with the submission (e.g. 'save' or 'grade')
      * @param {*} question the instance question to submit an answer to
      * @param {*} expectedResult the expected result of the submission
-     * @param {*} getSubmittedAnswer a function that returns the answer to be submitted
+     * @param {Function} getSubmittedAnswer a function that returns the answer to be submitted
      */
     var submitAnswer = function(buttons, postAction, question, expectedResult, getSubmittedAnswer) {
         describe('setting up the submission data', function() {
@@ -342,13 +368,16 @@ describe('Regrading', function() {
     };
 
     /**
-     * Ensures that the regrading functionality is either visible (if canRegrade is true) or not
+     * Ensures that the regrade buttons are either visible (if canRegrade is true) or not
      * visible (if canRegrade is false) on the instructor assessment instance page.
      *
-     * @param {*} canRegrade whether the "Questions" table on the instructor assessment instance
-     * page should have a column for regrading
+     * @param {boolean} canRegrade whether the "Questions" table on the instructor assessment instance
+     * page should have a column containing regrade buttons
+     * @param {boolean} isExam true if the current assessment instance is an exam, false otherwise
      */
-    var checkInstructorAssessmentInstancePage = function(canRegrade) {
+    var checkRegradeButtons = function(canRegrade, isExam) {
+        const questionsArray = isExam ? examQuestionsArray : hwQuestionsArray;
+
         describe('The instructor assessment instance page', function() {
             it('should load successfully', function(callback) {
                 request(locals.instructorAssessmentInstanceUrl, function(error, response, body) {
@@ -389,7 +418,7 @@ describe('Regrading', function() {
     };
 
     /**
-     * Closes the current assessment instance. Assumes that startExam(examNumber) has been called.
+     * Closes the current assessment instance. Assumes that the startAssessment function has been called.
      */
     var closeAssessmentInstance = function() {
         describe('Close the assessment instance', function() {
@@ -445,8 +474,8 @@ describe('Regrading', function() {
      * assessment instance is closed.
      *
      * @param {*} question the instance question to regrade
-     * @param {*} keepHighestScore whether we should keep the question's original score if the regraded
-     * score is lower
+     * @param {boolean} keepHighestScore whether we should keep the question's original score if the 
+     * regraded score is lower
      */
     var postRegradeForm = function(question, keepHighestScore) {
         describe('Start regrade', function() {
@@ -508,9 +537,9 @@ describe('Regrading', function() {
         });
     });
 
-    describe('Regrading questions on assessment with real-time grading enabled', function() {
+    describe('Regrading questions on exam with real-time grading enabled', function() {
         useIncorrectServerFiles();
-        startExam('11');
+        startAssessment(11, true);
 
         describe('Make submissions for addVectors', function() {
             describe('Save an incorrect answer', function() {
@@ -523,7 +552,7 @@ describe('Regrading', function() {
                     assessment_instance_score_perc: 0,
                 };
 
-                submitAnswer(['grade', 'save'], 'save', questions.addVectors, expectedResult, function(_variant) {
+                submitAnswer(['grade', 'save'], 'save', examQuestions.addVectors, expectedResult, function(_variant) {
                     return {
                         wx: -500,
                         wy: 700,
@@ -541,7 +570,7 @@ describe('Regrading', function() {
                     assessment_instance_score_perc: 0,
                 };
 
-                submitAnswer(['grade', 'save'], 'grade', questions.addVectors, expectedResult, function(variant) {
+                submitAnswer(['grade', 'save'], 'grade', examQuestions.addVectors, expectedResult, function(variant) {
                     return {
                         wx: variant.params.ux + variant.params.vx,
                         wy: variant.params.uy + variant.params.vy,
@@ -556,10 +585,10 @@ describe('Regrading', function() {
                     instance_question_points: 8,
                     instance_question_score_perc: (8 / 11) * 100,
                     assessment_instance_points: 8,
-                    assessment_instance_score_perc: (8 / assessmentMaxPoints) * 100,
+                    assessment_instance_score_perc: (8 / examMaxPoints) * 100,
                 };
     
-                submitAnswer(['grade', 'save'], 'grade', questions.addVectors, expectedResult, function(variant) {
+                submitAnswer(['grade', 'save'], 'grade', examQuestions.addVectors, expectedResult, function(variant) {
                     return {
                         wx: variant.true_answer.wx,
                         wy: variant.true_answer.wy,
@@ -577,10 +606,10 @@ describe('Regrading', function() {
                     instance_question_points: points,
                     instance_question_score_perc: (points / 13) * 100,
                     assessment_instance_points: 8 + points,   // the 8 points are from the previous submissions for addVectors
-                    assessment_instance_score_perc: ((8 + points) / assessmentMaxPoints) * 100,
+                    assessment_instance_score_perc: ((8 + points) / examMaxPoints) * 100,
                 };
 
-                submitAnswer(['grade', 'save'], 'grade', questions.partialCredit3, expectedResult, function(_variant) {
+                submitAnswer(['grade', 'save'], 'grade', examQuestions.partialCredit3, expectedResult, function(_variant) {
                     return {
                         s: 70,
                     };
@@ -595,10 +624,10 @@ describe('Regrading', function() {
                     instance_question_points: points,
                     instance_question_score_perc: (points / 13) * 100,
                     assessment_instance_points: 8 + points,     // the 8 points are from the previous submissions for addVectors
-                    assessment_instance_score_perc: ((8 + points) / assessmentMaxPoints) * 100,
+                    assessment_instance_score_perc: ((8 + points) / examMaxPoints) * 100,
                 };
 
-                submitAnswer(['grade', 'save'], 'grade', questions.partialCredit3, expectedResult, function(_variant) {
+                submitAnswer(['grade', 'save'], 'grade', examQuestions.partialCredit3, expectedResult, function(_variant) {
                     return {
                         s: 50,
                     };
@@ -613,13 +642,7 @@ describe('Regrading', function() {
         });
 
         describe('When config.regradeActive is false', function() {
-            checkInstructorAssessmentInstancePage(false);
-        });
-
-        describe('Set config.regradeActive to true', function() {
-            it('should succeed', function() {
-                config.regradeActive = true;
-            });
+            checkRegradeButtons(false, true);
         });
 
         closeAssessmentInstance();
@@ -628,7 +651,7 @@ describe('Regrading', function() {
             it('should succeed', function() {
                 locals.expectedResult = {
                     assessment_instance_points: 8 + 13 * 0.7 + 12 * 0.3,
-                    assessment_instance_score_perc: ((8 + 13 * 0.7 + 12 * 0.3) / assessmentMaxPoints) * 100,
+                    assessment_instance_score_perc: ((8 + 13 * 0.7 + 12 * 0.3) / examMaxPoints) * 100,
                 };
             });
         });
@@ -636,104 +659,110 @@ describe('Regrading', function() {
         helperQuestion.checkAssessmentScore(locals);
         useCorrectedServerFiles();
 
+        describe('Set config.regradeActive to true', function() {
+            it('should succeed', function() {
+                config.regradeActive = true;
+            });
+        });
+
         describe('When config.regradeActive is true', function() {
-            checkInstructorAssessmentInstancePage(true);
+            checkRegradeButtons(true, true);
+        });
 
-            describe('Regrading addVectors and keeping the highest score', function() {
-                describe('Set question and expected scores in locals object', function() {
-                    it('should succeed', function() {
-                        locals.question = questions.addVectors;
-                        const instanceQuestionPoints = 11;
-                        const assessmentPoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
+        describe('Regrading addVectors and keeping the highest score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = examQuestions.addVectors;
+                    const instanceQuestionPoints = 11;
+                    const assessmentPoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
 
-                        locals.expectedResult = {
-                            instance_question_points: instanceQuestionPoints,
-                            instance_question_score_perc: (instanceQuestionPoints / 11) * 100,
-                            assessment_instance_points: assessmentPoints,
-                            assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
-                        };
-                    });
+                    locals.expectedResult = {
+                        instance_question_points: instanceQuestionPoints,
+                        instance_question_score_perc: (instanceQuestionPoints / 11) * 100,
+                        assessment_instance_points: assessmentPoints,
+                        assessment_instance_score_perc: (assessmentPoints / examMaxPoints) * 100,
+                    };
                 });
-
-                // For some reason, we cannot pass in locals.question to postRegradeForm, because
-                // apparently locals.question evaluates to undefined. Why?
-                postRegradeForm(questions.addVectors, true);
-                helperQuestion.waitForJobSequence(locals);
-                helperQuestion.checkQuestionPointsAndPercentage(locals);
-                helperQuestion.checkAssessmentScore(locals);
             });
 
-            describe('Regrading partialCredit3 and keeping the highest score', function() {
-                describe('Set question and expected scores in locals object', function() {
-                    it('should succeed', function() {
-                        locals.question = questions.partialCredit3;
-                        const instanceQuestionPoints = 13 * 0.7 + 12 * 0.3; // The regraded score is lower, so we keep the original score
-                        const assessmentPoints = instanceQuestionPoints + 11;
+            // For some reason, we cannot pass in locals.question to postRegradeForm, because
+            // apparently locals.question evaluates to undefined. Why?
+            postRegradeForm(examQuestions.addVectors, true);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
+        });
 
-                        locals.expectedResult = {
-                            instance_question_points: instanceQuestionPoints,
-                            instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
-                            assessment_instance_points: assessmentPoints,
-                            assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
-                        };
-                    });
+        describe('Regrading partialCredit3 and keeping the highest score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = examQuestions.partialCredit3;
+                    const instanceQuestionPoints = 13 * 0.7 + 12 * 0.3; // The regraded score is lower, so we keep the original score
+                    const assessmentPoints = instanceQuestionPoints + 11;
+
+                    locals.expectedResult = {
+                        instance_question_points: instanceQuestionPoints,
+                        instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
+                        assessment_instance_points: assessmentPoints,
+                        assessment_instance_score_perc: (assessmentPoints / examMaxPoints) * 100,
+                    };
                 });
-
-                postRegradeForm(questions.partialCredit3, true);
-                helperQuestion.waitForJobSequence(locals);
-                helperQuestion.checkQuestionPointsAndPercentage(locals);
-                helperQuestion.checkAssessmentScore(locals);
             });
 
-            describe('Regrading addVectors and keeping the regraded score', function() {
-                describe('Set question and expected scores in locals object', function() {
-                    it('should succeed', function() {
-                        locals.question = questions.addVectors;
-                        const instanceQuestionPoints = 11;
-                        const assessmentPoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
+            postRegradeForm(examQuestions.partialCredit3, true);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
+        });
 
-                        locals.expectedResult = {
-                            instance_question_points: instanceQuestionPoints,
-                            instance_question_score_perc: (instanceQuestionPoints / 11) * 100,
-                            assessment_instance_points: assessmentPoints,
-                            assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
-                        };
-                    });
+        describe('Regrading addVectors and keeping the regraded score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = examQuestions.addVectors;
+                    const instanceQuestionPoints = 11;
+                    const assessmentPoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
+
+                    locals.expectedResult = {
+                        instance_question_points: instanceQuestionPoints,
+                        instance_question_score_perc: (instanceQuestionPoints / 11) * 100,
+                        assessment_instance_points: assessmentPoints,
+                        assessment_instance_score_perc: (assessmentPoints / examMaxPoints) * 100,
+                    };
                 });
-
-                postRegradeForm(questions.addVectors, false);
-                helperQuestion.waitForJobSequence(locals);
-                helperQuestion.checkQuestionPointsAndPercentage(locals);
-                helperQuestion.checkAssessmentScore(locals);
             });
 
-            describe('Regrading partialCredit3 and keeping the regraded score', function() {
-                describe('Set question and expected scores in locals object', function() {
-                    it('should succeed', function() {
-                        locals.question = questions.partialCredit3;
-                        const instanceQuestionPoints = 13 * 0.7;
-                        const assessmentPoints = instanceQuestionPoints + 11;
-                        
-                        locals.expectedResult = {
-                            instance_question_points: instanceQuestionPoints,
-                            instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
-                            assessment_instance_points: assessmentPoints,
-                            assessment_instance_score_perc: (assessmentPoints / assessmentMaxPoints) * 100,
-                        };
-                    });
-                });
+            postRegradeForm(examQuestions.addVectors, false);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
+        });
 
-                postRegradeForm(questions.partialCredit3, false);
-                helperQuestion.waitForJobSequence(locals);
-                helperQuestion.checkQuestionPointsAndPercentage(locals);
-                helperQuestion.checkAssessmentScore(locals);
+        describe('Regrading partialCredit3 and keeping the regraded score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = examQuestions.partialCredit3;
+                    const instanceQuestionPoints = 13 * 0.7;
+                    const assessmentPoints = instanceQuestionPoints + 11;
+                    
+                    locals.expectedResult = {
+                        instance_question_points: instanceQuestionPoints,
+                        instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
+                        assessment_instance_points: assessmentPoints,
+                        assessment_instance_score_perc: (assessmentPoints / examMaxPoints) * 100,
+                    };
+                });
             });
+
+            postRegradeForm(examQuestions.partialCredit3, false);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
         });
     });
 
-    describe('Regrading questions on assessment with real-time grading disabled', function() {
+    describe('Regrading questions on exam with real-time grading disabled', function() {
         useIncorrectServerFiles();
-        startExam('12');
+        startAssessment(12, true);
 
         describe('Make submissions for addVectors', function() {
             describe('Save an incorrect answer', function() {
@@ -746,7 +775,7 @@ describe('Regrading', function() {
                     assessment_instance_score_perc: 0,
                 };
 
-                submitAnswer(['save'], 'save', questions.addVectors, expectedResult, function(variant) {
+                submitAnswer(['save'], 'save', examQuestions.addVectors, expectedResult, function(variant) {
                     return {
                         wx: variant.true_answer.wx,
                         wy: variant.true_answer.wy,
@@ -764,7 +793,7 @@ describe('Regrading', function() {
                     assessment_instance_score_perc: 0,
                 };
 
-                submitAnswer(['save'], 'save', questions.addVectors, expectedResult, function(variant) {
+                submitAnswer(['save'], 'save', examQuestions.addVectors, expectedResult, function(variant) {
                     return {
                         wx: variant.params.ux + variant.params.vx,
                         wy: variant.params.uy + variant.params.vy,
@@ -782,7 +811,7 @@ describe('Regrading', function() {
                     assessment_instance_score_perc: 0,
                 };
 
-                submitAnswer(['save'], 'save', questions.addVectors, expectedResult, function(variant) {
+                submitAnswer(['save'], 'save', examQuestions.addVectors, expectedResult, function(variant) {
                     return {
                         wx: variant.true_answer.wx,
                         wy: variant.true_answer.wy,
@@ -802,7 +831,7 @@ describe('Regrading', function() {
                     assessment_instance_score_perc: 0,
                 };
 
-                submitAnswer(['save'], 'save', questions.partialCredit3, expectedResult, function(_variant) {
+                submitAnswer(['save'], 'save', examQuestions.partialCredit3, expectedResult, function(_variant) {
                     return {
                         s: 70,
                     };
@@ -819,7 +848,7 @@ describe('Regrading', function() {
                     assessment_instance_score_perc: 0,
                 };
 
-                submitAnswer(['save'], 'save', questions.partialCredit3, expectedResult, function(_variant) {
+                submitAnswer(['save'], 'save', examQuestions.partialCredit3, expectedResult, function(_variant) {
                     return {
                         s: 50,
                     };
@@ -834,13 +863,7 @@ describe('Regrading', function() {
         });
 
         describe('When config.regradeActive is false', function() {
-            checkInstructorAssessmentInstancePage(false);
-        });
-
-        describe('Set config.regradeActive to true', function() {
-            it('should succeed', function() {
-                config.regradeActive = true;
-            });
+            checkRegradeButtons(false, true);
         });
         
         closeAssessmentInstance();
@@ -857,94 +880,272 @@ describe('Regrading', function() {
         helperQuestion.checkAssessmentScore(locals);
         useCorrectedServerFiles();
 
+        describe('Set config.regradeActive to true', function() {
+            it('should succeed', function() {
+                config.regradeActive = true;
+            });
+        });
+
         describe('When config.regradeActive is true', function() {
-            checkInstructorAssessmentInstancePage(true);
+            checkRegradeButtons(true, true);
+        });
 
-            describe('Regrading addVectors and keeping the highest score', function() {
-                describe('Set question and expected scores in locals object', function() {
-                    it('should succeed', function() {
-                        locals.question = questions.addVectors;
+        describe('Regrading addVectors and keeping the highest score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = examQuestions.addVectors;
 
-                        // Regrading the question gives a score of 0, which is lower than the original score, so we
-                        // keep the original score.
-                        locals.expectedResult = {
-                            instance_question_points: 11,
-                            instance_question_score_perc: 100,
-                            assessment_instance_points: 24,
-                            assessment_instance_score_perc: 100,
+                    // Regrading the question gives a score of 0, which is lower than the original score, so we
+                    // keep the original score.
+                    locals.expectedResult = {
+                        instance_question_points: 11,
+                        instance_question_score_perc: 100,
+                        assessment_instance_points: 24,
+                        assessment_instance_score_perc: 100,
+                    };
+                });
+            });
+            
+            postRegradeForm(examQuestions.addVectors, true);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
+        });
+
+        describe('Regrading partialCredit3 and keeping the highest score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = examQuestions.partialCredit3;
+
+                    // Regrading the question gives a score of 0, which is lower than the original score, so we
+                    // keep the original score.
+                    locals.expectedResult = {
+                        instance_question_points: 13,
+                        instance_question_score_perc: 100,
+                        assessment_instance_points: 24,
+                        assessment_instance_score_perc: 100,
+                    };
+                });
+            });
+            
+            postRegradeForm(examQuestions.partialCredit3, true);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
+        });
+
+        describe('Regrading addVectors and keeping the regraded score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = examQuestions.addVectors;
+                    
+                    // Regrading the question gives a score of 0, and we keep this score.
+                    locals.expectedResult = {
+                        instance_question_points: 0,
+                        instance_question_score_perc: 0,
+                        assessment_instance_points: 13, // we still have 13 points from partialCredit3
+                        assessment_instance_score_perc: (13 / examMaxPoints) * 100,
+                    };
+                });
+            });
+
+            postRegradeForm(examQuestions.addVectors, false);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
+        });
+
+        describe('Regrading partialCredit3 and keeping the regraded score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = examQuestions.partialCredit3;
+
+                    // Regrading the question gives a score of 50%, and we keep this score.
+                    locals.expectedResult = {
+                        instance_question_points: 6.5,
+                        instance_question_score_perc: 50,
+                        assessment_instance_points: 6.5,
+                        assessment_instance_score_perc: (6.5 / examMaxPoints) * 100,
+                    };
+                });
+            });
+
+            postRegradeForm(examQuestions.partialCredit3, false);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
+        });
+    });
+
+    describe('Regrading questions on homework assessment', function() {
+        useIncorrectServerFiles();
+        startAssessment(8, false);
+        
+        // The only behaviour we test here is regrading when multiple variants exist
+        // for one instance question. We especially want to test what happens if a 
+        // variant closes early when regrading, or if the instance question closes early.
+
+        describe('Make some submissions for partialCredit3', function() {
+            for (let j = 0; j < 2; j++) {   // submit the same answer twice
+                describe('Save and grade an answer of "100", which mistakenly gives 0% of the available points', function() {
+                    const expectedResult = {
+                        submission_score: 0,
+                        submission_correct: false,
+                        instance_question_points: 0,
+                        instance_question_score_perc: 0,
+                        assessment_instance_points: 0,
+                        assessment_instance_score_perc: 0,
+                    };
+    
+                    submitAnswer(['grade', 'save'], 'grade', hwQuestions.partialCredit3, expectedResult, function(_variant) {
+                        return {
+                            s: 100,
                         };
                     });
                 });
-                
-                postRegradeForm(questions.addVectors, true);
-                helperQuestion.waitForJobSequence(locals);
-                helperQuestion.checkQuestionPointsAndPercentage(locals);
-                helperQuestion.checkAssessmentScore(locals);
+            }
+
+            describe('Generate a new variant', function() {
+                // At this point, the previous variant is closed, so making a GET request to the instance 
+                // question URL will generate a new variant.
+                describe('setting up the locals object', function() {
+                    it('should succeed', function() {
+                        locals.question = hwQuestions.partialCredit3;
+                        locals.shouldHaveButtons = ['grade', 'save'];
+                    });
+                });
+                helperQuestion.getInstanceQuestion(locals);
             });
 
-            describe('Regrading partialCredit3 and keeping the highest score', function() {
-                describe('Set question and expected scores in locals object', function() {
-                    it('should succeed', function() {
-                        locals.question = questions.partialCredit3;
-
-                        // Regrading the question gives a score of 0, which is lower than the original score, so we
-                        // keep the original score.
-                        locals.expectedResult = {
-                            instance_question_points: 13,
-                            instance_question_score_perc: 100,
-                            assessment_instance_points: 24,
-                            assessment_instance_score_perc: 100,
+            for (let j = 0; j < 2; j++) {   // submit the same answer twice
+                describe('Save and grade an answer of "100", which mistakenly gives 0% of the available points', function() {
+                    const expectedResult = {
+                        submission_score: 0,
+                        submission_correct: false,
+                        instance_question_points: 0,
+                        instance_question_score_perc: 0,
+                        assessment_instance_points: 0,
+                        assessment_instance_score_perc: 0,
+                    };
+    
+                    submitAnswer(['grade', 'save'], 'grade', hwQuestions.partialCredit3, expectedResult, function(_variant) {
+                        return {
+                            s: 100,
                         };
                     });
                 });
-                
-                postRegradeForm(questions.partialCredit3, true);
-                helperQuestion.waitForJobSequence(locals);
-                helperQuestion.checkQuestionPointsAndPercentage(locals);
-                helperQuestion.checkAssessmentScore(locals);
+            }
+        });
+
+        describe('Set config.regradeActive to false', function() {
+            it('should succeed', function() {
+                config.regradeActive = false;
+            });
+        });
+
+        describe('When config.regradeActive is false', function() {
+            checkRegradeButtons(false, false);
+        });
+
+        describe('Set config.regradeActive to true', function() {
+            it('should succeed', function() {
+                config.regradeActive = true;
+            });
+        });
+
+        describe('When config.regradeActive is true', function() {
+            checkRegradeButtons(true, false);
+        });
+
+        useCorrectedServerFiles();
+
+        describe('Regrading current submissions for partialCredit3 and keeping the highest score', function() {
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = hwQuestions.partialCredit3;
+                    locals.expectedResult = {
+                        instance_question_points: 3,    // 1 point for first variant + 2 points for second variant
+                        instance_question_score_perc: (3 / 6) * 100,
+                        assessment_instance_points: 3,
+                        assessment_instance_score_perc: (3 / hwMaxPoints) * 100,
+                    };
+                });
             });
 
-            describe('Regrading addVectors and keeping the regraded score', function() {
-                describe('Set question and expected scores in locals object', function() {
-                    it('should succeed', function() {
-                        locals.question = questions.addVectors;
-                        
-                        // Regrading the question gives a score of 0, and we keep this score.
-                        locals.expectedResult = {
-                            instance_question_points: 0,
-                            instance_question_score_perc: 0,
-                            assessment_instance_points: 13, // we still have 13 points from partialCredit3
-                            assessment_instance_score_perc: (13 / assessmentMaxPoints) * 100,
-                        };
+            postRegradeForm(hwQuestions.partialCredit3, true);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
+        });
+
+        useIncorrectServerFiles();
+
+        describe('Make more submissions for partialCredit3', function() {
+            // At this point, we only need to earn 100% on one more variant in 
+            // order to earn the maximum number of points for partialCredit3.
+            // We now generate two more variants, and we submit the answer "100" twice
+            // per variant.
+
+            for (let i = 0; i < 2; i++) {   // Go through 2 more variants
+                describe('Generate a new variant', function() {
+                    // At this point, the previous variant is closed, so making a GET request to the instance 
+                    // question URL will generate a new variant.
+                    describe('setting up the locals object', function() {
+                        it('should succeed', function() {
+                            locals.question = hwQuestions.partialCredit3;
+                            locals.shouldHaveButtons = ['grade', 'save'];
+                        });
                     });
+                    helperQuestion.getInstanceQuestion(locals);
                 });
 
-                postRegradeForm(questions.addVectors, false);
-                helperQuestion.waitForJobSequence(locals);
-                helperQuestion.checkQuestionPointsAndPercentage(locals);
-                helperQuestion.checkAssessmentScore(locals);
-            });
-
-            describe('Regrading partialCredit3 and keeping the regraded score', function() {
-                describe('Set question and expected scores in locals object', function() {
-                    it('should succeed', function() {
-                        locals.question = questions.partialCredit3;
-
-                        // Regrading the question gives a score of 50%, and we keep this score.
-                        locals.expectedResult = {
-                            instance_question_points: 6.5,
-                            instance_question_score_perc: 50,
-                            assessment_instance_points: 6.5,
-                            assessment_instance_score_perc: (6.5 / assessmentMaxPoints) * 100,
+                for (let j = 0; j < 2; j++) {   // We get 2 tries per variant.
+                    describe('Save and grade an answer of "100", which mistakenly gives 0% of the available points', function() {
+                        const expectedResult = {
+                            submission_score: 0,
+                            submission_correct: false,
+                            instance_question_points: 3,
+                            instance_question_score_perc: (3 / 6) * 100,
+                            assessment_instance_points: 3,
+                            assessment_instance_score_perc: (3 / hwMaxPoints) * 100,
                         };
+        
+                        submitAnswer(['grade', 'save'], 'grade', hwQuestions.partialCredit3, expectedResult, function(_variant) {
+                            return {
+                                s: 100,
+                            };
+                        });
                     });
-                });
+                }
+            }
+        });
 
-                postRegradeForm(questions.partialCredit3, false);
-                helperQuestion.waitForJobSequence(locals);
-                helperQuestion.checkQuestionPointsAndPercentage(locals);
-                helperQuestion.checkAssessmentScore(locals);
+        useCorrectedServerFiles();
+
+        describe('Regrading current submissions for partialCredit3 and keeping the highest score', function() {
+            // We have now generated four variants of the partialCredit3 question in total.
+            // Each variant will earn 100% under the corrected grade function. However, we
+            // expect that the score for the instance question is capped at 6 (the maxPoints
+            // for the question). Essentially, the last variant should not contribute to the
+            // score for the question because the first three variants already give 6 points 
+            // in total.
+
+            describe('Set question and expected scores in locals object', function() {
+                it('should succeed', function() {
+                    locals.question = hwQuestions.partialCredit3;
+                    locals.expectedResult = {
+                        instance_question_points: 6,
+                        instance_question_score_perc: 100,
+                        assessment_instance_points: 6,
+                        assessment_instance_score_perc: (6 / hwMaxPoints) * 100,
+                    };
+                });
             });
+
+            postRegradeForm(hwQuestions.partialCredit3, true);
+            helperQuestion.waitForJobSequence(locals);
+            helperQuestion.checkQuestionPointsAndPercentage(locals);
+            helperQuestion.checkAssessmentScore(locals);
         });
     });
 
