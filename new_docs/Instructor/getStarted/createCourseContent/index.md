@@ -92,8 +92,6 @@ This is a straightforward question asking students to sum two numbers.  If you c
 
 * Navigate back to the settings tab and click the button `Change QID` to change the question ID name.  Typically, question authors choose QID that provide some big-picture idea of the question topic.  For this simple question, we'll just use `sum_two_numbers`.  
 
-* click the button `Change QID` to change the question ID name. Typically, question authors choose QID that provide some big-picture idea of the question topic. For example, `find_rectangle_area`.
-
 * next, click the `Edit` button next to `info.json`.
 
 * change the question `title`. We'll change it to
@@ -104,9 +102,7 @@ This is a straightforward question asking students to sum two numbers.  If you c
 
 * change the question `topic`.  This will be very helpful once you have a large number of questions; you can use a filter to find questions under a specific topic.  Right now it is listed under `Algebra`, which we'll leave as is.
 
-```json
-"title": "Find the area"
-```
+
 
 * change the question `tags`.  Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created.  We'll change it to the following:
 
@@ -129,17 +125,96 @@ In addition to the netid and semester, we added the type of question `calculate`
 
 * Next, navigate to the `Files` tab to review the files that generate the question.  We've already seen and edited the `info.json` file.
 
-* Click on the file `question.html`.  This formats the structure of the question page.
+* click on the third selection `server.py`.  This provides backend support for the question; it is written in the Python programming language.  We'll examine the lines of the code:
 
-	* the `pl-question-panel`
-	* `pl-number-input` 
+First we import two *libraries* random and copy.  Libraries supply a set of pre-defined functions, which must be imported before using them.  We don't end up actually using the copy library here, only random.
+```python
+import random, copy
+```
+We define a *function* called `generate` that takes an input called `data`.
+```python
+def generate(data):
+```
 
-### Geometry
+Lines that begin with `#` are comments: they are messages for the user describing what happens in the code.  The first thing that happens is that two integers, `a` and `b` are generated using the `randint` function in the `random` library.  Each integer satisfies $5 \leq a,b \leq 10$.
+```python
+a = random.randint(5, 10)
+b = random.randint(5, 10)
+```
+Feel free to change the range of either number; for example, `b = random.randint(10, 20)` would change the range of the second integer to $10\leq b\leq 20$.
+
+Next, we place these two integers into the structure called `data`.  They are **parameters** of the question so we place them in `data['params']`.  They are further specifed by their variables names, `a` and `b`.
+```python
+data['params']['a'] = a
+data['params']['b'] = b
+```
+
+We define the correct answer to the question:
+```python
+c = a + b
+```
+
+Finally, we place the integer `c` into the structure `data`.  We place it in the `'correct_answers'` grouping, and give it the name `'c'`.
+```python
+data['correct_answers']['c'] = c
+```
+
+* Now, return to the Files menu and click on the file `question.html`.  This formats the structure of the question page.
+
+The `pl-question-panel` defines the question as presented to the student.  In the second line, we see:
+```html
+<p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
+```
+
+`{{params.a}}` and `{{params.b}}` references the two parameters created randomly in the `server.py` file.  The `$` signs denote "math mode", which formats how they appear in the text.  `<p>` and `</p>` denote the beginning and end of a paragraph.
+
+The `pl-number-input` defines how the answer should be input by the student:
+```html
+<pl-number-input answers-name="c" comparison="sigfig" digits="3" label="$c=$"></pl-number-input>
+```
+We'll look at each part of the line:
+  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- `answers-name` references the correct answer that was computed in `server.py`,  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  which we saved under the name `'c'`.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- `comparison` describes how the student's answer is compared to the the actual  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  answer.  For this question, we compare *significant figures*.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- `digits` denotes the number of digits in the student answer that must match the  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; correct answer.
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- `label` is what the student sees in front of the answer box.  Note that we format  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  it in math mode.
+
+There is one change we'll make to this question, namely the `comparison` between the student's answer and the true answer.  Let's see how the current setting of `comparison` affects the grade of a student question.  In the `Preview` tab, you can input an answer and click `Save & Grade` to test the question.  Here are some examples with the current setting:
+
+![](figures/Q1_1.png)
+![](figures/Q1_2.png)
+![](figures/Q1_3.png)
+![](figures/Q1_4.png)
+![](figures/Q1_5.png)
+
+The first four answers match 3 digits of the correct answer, namely $15.0$.  The last one only matches the first two digits of the correct answer, so is marked incorrect.  However, we might not want the answers $15.01$ and $15.0111111111111$ to be marked correct.
+
+Navigate back to the `Files` tab, and re-open `question.html`.  Change the last line to the following:
+```html
+<pl-number-input answers-name="c" comparison="relabs" atol="0" rtol="0" label="$c=$"></pl-number-input>
+```
+
+We changed `comparison` to `relabs`, which uses the relative and absolute error between the student's answer and the true answer to determine if a question is correct.  Since this is basic integer arithmetic, we will set `atol` (absolute tolerance) and `rtol` (relative tolerance) to zero.  A student will only be given credit for the exact answer.  Notice that we have removed `digits`, which is not needed for the `relabs` comparison variant.
+
+Click `Save and sync` to save your changes.  If you repeat the experiment above in the `Preview` tab, only the first two answers will be marked correct.
+
+### 2) Adding a geometry question
 
 * change the question `topic`.  This will be very helpful when using the filter to find questions under a specific topic. For example:
 
 ```json
 "topic": "Geometric properties"
+```
+
+```json
+"title": "Find the area"
 ```
 
 * change the question `tags`. Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created. For our example, we use:
@@ -152,6 +227,7 @@ In addition to the netid and semester, we added the type of question `calculate`
     "calculate"
 ],
 ```
+* click the button `Change QID` to change the question ID name. Typically, question authors choose QID that provide some big-picture idea of the question topic. For example, `find_rectangle_area`.
 
 * you should not change the `"type": "v3"` field, which is the most current version of PrairieLearn questions.
 
