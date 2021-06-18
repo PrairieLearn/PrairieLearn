@@ -981,9 +981,9 @@ describe('Regrading', function() {
         useIncorrectServerFiles();
         startAssessment(8, false);
         
-        // The only behaviour we test here is regrading when multiple variants exist
-        // for one instance question. We especially want to test what happens if a 
-        // variant closes early when regrading, or if the instance question closes early.
+        // Here, we test how regrading handles multiple variants in one instance question.
+        // We especially want to test what happens if a variant closes early when regrading,
+        // or if the instance question closes early.
 
         describe('Make some submissions for partialCredit3', function() {
             for (let j = 0; j < 2; j++) {   // submit the same answer twice
