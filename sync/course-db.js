@@ -116,6 +116,12 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} color
  */
 
+/**
+ * @typedef AssessmentUnit
+ * @property {string} name
+ * @property {string} heading
+ */
+
 /** 
  * @typedef {Object} Course
  * @property {string} uuid
@@ -128,6 +134,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {AssessmentUnit[]} assessmentUnits
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
