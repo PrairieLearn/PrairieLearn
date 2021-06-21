@@ -71,7 +71,7 @@
         "klaw": "^3.0.0",
         "lodash": "^4.17.21",
         "lru-cache": "^6.0.0",
-        "mathjax": "^3.1.2",
+        "mathjax": "^3.2.0",
         "mersenne": "0.0.4",
         "moment": "^2.29.1",
         "multer": "^1.4.2",
