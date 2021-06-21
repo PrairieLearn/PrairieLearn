@@ -14,7 +14,7 @@
         "typecheck": "make typecheck"
     },
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^5.15.1",
+        "@fortawesome/fontawesome-free": "^5.15.3",
         "@octokit/rest": "^18.3.1",
         "@prairielearn/prairielib": "^1.11.0",
         "ace-builds": "^1.4.12",
