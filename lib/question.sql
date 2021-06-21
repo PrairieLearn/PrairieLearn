@@ -130,7 +130,10 @@ JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
 LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
 JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
 JOIN questions AS q ON (q.id = aq.question_id)
-WHERE iq.id = $instance_question_id AND s.graded_at IS NOT NULL AND s.gradable
+WHERE 
+    iq.id = $instance_question_id 
+    AND s.graded_at IS NOT NULL 
+    AND (s.gradable OR s.broken) -- broken submissions are due to question code error, not student error, so we should regrade broken submissions too
 ORDER BY s.id ASC;
 
 --BLOCK select_course
