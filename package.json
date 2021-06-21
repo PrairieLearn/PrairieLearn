@@ -90,7 +90,7 @@
         "qrcode-svg": "^1.1.0",
         "redis": "^3.1.2",
         "redis-lru": "^0.6.0",
-        "rehype-raw": "^5.0.0",
+        "rehype-raw": "^5.1.0",
         "rehype-stringify": "^8.0.0",
         "remark-gfm": "^1.0.0",
         "remark-math": "^4.0.0",
