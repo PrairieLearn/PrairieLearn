@@ -40,6 +40,9 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
 matplotlib.use('PDF')
 
 def worker_loop():
+    # whether the PRNGs have already been seeded in this worker_loop call
+    seeded = False
+
     # file descriptor 3 is for output data
     with open(3, 'w', encoding='utf-8') as outf:
 
@@ -78,12 +81,12 @@ def worker_loop():
                 # fast as possible.
                 os._exit(0)
 
-            # re-seed the PRNGs
-            if type(args[-1]) is dict:
+            # re-seed the PRNGs if not already seeded
+            if type(args[-1]) is dict and not seeded:
                 variant_seed = args[-1].get('variant_seed', None)
                 random.seed(variant_seed)
                 numpy.random.seed(variant_seed)
-
+                seeded = True
 
             # reset and then set up the path
             sys.path = copy.copy(saved_path)
