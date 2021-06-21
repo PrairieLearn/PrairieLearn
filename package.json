@@ -53,7 +53,7 @@
         "express": "^4.17.1",
         "express-async-handler": "^1.1.4",
         "fabric": "^4.3.1",
-        "file-type": "^16.4.0",
+        "file-type": "^16.5.0",
         "filesize": "^6.3.0",
         "folder-hash": "^4.0.0",
         "fs-extra": "^10.0.0",
