@@ -5,6 +5,7 @@ columns
     credit: integer
     date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
+    eligible_for_regrading: boolean not null default false
     feedback: jsonb
     format_errors: jsonb
     gradable: boolean default true
