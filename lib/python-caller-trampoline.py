@@ -40,7 +40,7 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
 matplotlib.use('PDF')
 
 def worker_loop():
-    # whether the PRNGs have already been seeded in this worker_loop call
+    # whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
     # file descriptor 3 is for output data
@@ -81,7 +81,11 @@ def worker_loop():
                 # fast as possible.
                 os._exit(0)
 
-            # re-seed the PRNGs if not already seeded
+            # Here, we re-seed the PRNGs if not already seeded in this worker_loop() call.
+            # We only want to seed the PRNGs once per worker_loop() call, so that if a
+            # question happens to contain multiple occurrences of the same element, the
+            # randomizations for each occurrence are independent of each other but still
+            # dependent on the variant seed.
             if type(args[-1]) is dict and not seeded:
                 variant_seed = args[-1].get('variant_seed', None)
                 random.seed(variant_seed)
