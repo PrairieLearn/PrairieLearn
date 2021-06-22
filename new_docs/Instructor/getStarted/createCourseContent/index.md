@@ -5,7 +5,6 @@ Now that your course space request has been granted, log in to [prairielearn.org
 
 Click this link; which will take you to your course home page.  This is a view of your course home page (or a similar variation, depending on when your course was originally created):
 
-![](homepage.png)
 
 This tutorial will show you how to create:
 
@@ -70,7 +69,6 @@ So this course instance will become available at 12:01 AM on August 16, and will
 
 * Navigating back to your course by clicking on `Math 101`, you will now see the `Fall 2021` under the Course instances tab.
 
-![](homepage_new_instance.png)
 
 ## Creating a question
 
@@ -78,7 +76,6 @@ So this course instance will become available at 12:01 AM on August 16, and will
 
 * Navigate to your newly created course instance, and select `Questions` at the top of the page.  Your questions page should be similar to the example below:
 
-![](question_tab.png)
 
 * click the button `Add question`.  A new question will be generated with the title `New (1)`.
 
@@ -170,40 +167,8 @@ The `pl-question-panel` defines the question as presented to the student.  In th
 
 The `pl-number-input` defines how the answer should be input by the student:
 ```html
-<pl-number-input answers-name="c" comparison="sigfig" digits="3" label="$c=$"></pl-number-input>
+<pl-integer-input answers-name="c" label="$c=$"></pl-integer-input>
 ```
-We'll look at each part of the line:
-  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- `answers-name` references the correct answer that was computed in `server.py`,  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  which we saved under the name `'c'`.
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- `comparison` describes how the student's answer is compared to the the actual  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  answer.  For this question, we compare *significant figures*.
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- `digits` denotes the number of digits in the student answer that must match the  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; correct answer.
-
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- `label` is what the student sees in front of the answer box.  Note that we format  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;  it in math mode.
-
-There is one change we'll make to this question, namely the `comparison` between the student's answer and the true answer.  Let's see how the current setting of `comparison` affects the grade of a student question.  In the `Preview` tab, you can input an answer and click `Save & Grade` to test the question.  Here are some examples with the current setting:
-
-![](figures/Q1_1.png)
-![](figures/Q1_2.png)
-![](figures/Q1_3.png)
-![](figures/Q1_4.png)
-![](figures/Q1_5.png)
-
-The first four answers match 3 digits of the correct answer, namely $15.0$.  The last one only matches the first two digits of the correct answer, so is marked incorrect.  However, we might not want the answers $15.01$ and $15.0111111111111$ to be marked correct.
-
-Navigate back to the `Files` tab, and re-open `question.html`.  Change the last line to the following:
-```html
-<pl-number-input answers-name="c" comparison="relabs" atol="0" rtol="0" label="$c=$"></pl-number-input>
-```
-
-We changed `comparison` to `relabs`, which uses the relative and absolute error between the student's answer and the true answer to determine if a question is correct.  Since this is basic integer arithmetic, we will set `atol` (absolute tolerance) and `rtol` (relative tolerance) to zero.  A student will only be given credit for the exact answer.  Notice that we have removed `digits`, which is not needed for the `relabs` comparison variant.
-
-Click `Save and sync` to save your changes.  If you repeat the experiment above in the `Preview` tab, only the first two answers will be marked correct.
 
 ### 2) Adding a geometry question
 

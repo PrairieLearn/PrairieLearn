@@ -22,6 +22,7 @@ pages:
     - 'Creating course content': 'Instructor/getStarted/createCourseContent/index.md'
     - 'Question Gallery': 'Instructor/getStarted/questionGallery/index.md'
     - 'Workshops': 'Instructor/getStarted/workshops/index.md'
+    - 'Pitfalls': 'Instructor/getStarted/pitfalls/index.md'
   - How-to Guides:
     - 'Adding Staff to Course Instance': 'Instructor/howTos/howtoAddUserRoles.md'
     - 'Assessments': 'Instructor/howTos/howtoAssessments.md'
