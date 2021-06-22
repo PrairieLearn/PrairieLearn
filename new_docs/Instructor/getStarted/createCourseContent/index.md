@@ -33,7 +33,7 @@ The file will open in an editing window in your browser.  You will see the follo
 
 * `uuid` - This is the course's "universally unique identifier", which was generated automatically.  This does not need to be changed.
 
-* 'longName` - This is the full name of your course instance, as it will appear on your list of course instances.  Replace the name "New (1)" with the name of the instance.  In this case, we will type:
+* `longName` - This is the full name of your course instance, as it will appear on your list of course instances.  Replace the name "New (1)" with the name of the instance.  In this case, we will type:
 
 ```json
 "longName": "Fall 2021",
@@ -49,9 +49,9 @@ Make sure a comma separates the name from the next item `userRoles`
 },
 ```
 
-By default, you are an instructor for the course instance.  You can add other instructors and teaching assistants, but we'll leave this unchanged for now.
+By default, you are an instructor for the course instance.  You can add other instructors and teaching assistants, but we'll leave this unchanged for now.  For a list of possible roles, see [roles](courseInstance.md#user-roles).
 
-* 'allowAccess` - The dates in which your course will be available.  (See other  [access options](courseInstance.md#course-instance-allowaccess).)  For this example, we will assume our semester runs from August 16, 2021 until December 17, 2021.  Thus, we will enter:
+* `allowAccess` - The dates in which your course will be available.  (See other  [access options](courseInstance.md#course-instance-allowaccess).)  For this example, we will assume our semester runs from August 16, 2021 until December 17, 2021.  Thus, we will enter:
 
 
 ```json
@@ -169,6 +169,7 @@ The `pl-number-input` defines how the answer should be input by the student:
 ```html
 <pl-integer-input answers-name="c" label="$c=$"></pl-integer-input>
 ```
+For assessment of student answers, the question uses a `pl-integer-input` input field element since we are expecting an integer answer.  For a complete list of elements, see [elements](course.md/#elements).  There are only two attributes being used.  `answers-name` refers to the true answer that was created in `server.py`.  The attribute `label` determines what the student will see next to the submission box; use the `$` characters to format it in math mode.
 
 ### 2) Adding a geometry question
 
