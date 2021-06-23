@@ -87,7 +87,7 @@ BEGIN
             (variant_id, auth_user_id, raw_submitted_answer, submitted_answer, format_errors,
             credit, mode, duration, params, true_answer, gradable, broken, eligible_for_regrading)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta, variant.params, variant.true_answer, gradable, broken, variant.eligible_for_regrading)
+            credit, mode, delta, variant.params, variant.true_answer, gradable, broken, eligible_for_regrading)
     RETURNING id
     INTO submission_id;
 
