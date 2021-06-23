@@ -67,9 +67,92 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', async function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    if (req.body.__action == 'new_instance') {
+
+    // START NEW STUFF
+
+    if (req.body.__action == 'claim_role') {
+
+        try {
+            console.log("Running test call of sproc")
+            const queryParams = [
+                ['hello', 'world'], // pogil role (text) array
+                [1, 2], // user ids array
+                12345 // group id
+            ];
+
+            // Update roles
+            const result = await sqldb.callAsync('update_group_pogil_roles', queryParams);
+            console.log(result);
+
+          } catch (err) {
+            ERR(err, next);
+          }
+
+
+
+        // Checks whether the role name was valid or invalid
+        const validRoles = ["manager", "reflector", "contributor", "recorder"];
+        let invalidRoleName = true;
+        if (validRoles.includes(req.body.roleName.toLowerCase())) {
+            invalidRoleName = false;
+        }
+
+        var params = {
+            assessment_id: res.locals.assessment.id,
+            user_id: res.locals.user.user_id,
+        };
+
+        // Update the SQL database by changing the user's group role
+        if (!invalidRoleName) {
+            try {
+              let result = await sqldb.queryAsync(sql.get_group_info, params);
+              let queryParams = [
+                  req.body.roleName,
+                  res.locals.user.user_id,
+                  result.rows[0].group_id
+              ];
+              console.log(`Updating ${queryParams[1]} in group ${queryParams[2]} to ${queryParams[0]}.`);
+
+              // Update role
+              await sqldb.callAsync('update_group_pogil_role', queryParams);
+
+            } catch (err) {
+              ERR(err, next);
+            }
+        }
+
+        // Reload the page with updated group roles or error message
+        sqldb.query(sql.get_config_info, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.locals.permissions = result.rows[0];
+            res.locals.minsize = result.rows[0].minimum || 0;
+            res.locals.maxsize = result.rows[0].maximum || 999;
+            res.locals.invalidRoleName = invalidRoleName;
+
+            sqldb.query(sql.get_group_info, params, function(err, result) {
+                if (ERR(err, next)) return;
+                res.locals.groupsize = result.rowCount;
+                res.locals.group_info = result.rows;
+                res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+                if (res.locals.groupsize > 0) {
+                    res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+                    res.locals.start = false;
+                    if (res.locals.needsize <= 0) {
+                        res.locals.start = true;
+                    }
+                }
+
+                console.log("Refreshing page");
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
+        });
+    }
+
+    // END NEW STUFF
+
+    else if (req.body.__action == 'new_instance') {
         var params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,

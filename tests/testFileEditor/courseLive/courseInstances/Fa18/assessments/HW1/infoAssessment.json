@@ -1,0 +1,22 @@
+{
+    "uuid": "c2f20e45-0449-46c6-9418-b65a734870bd",
+    "type": "Homework",
+    "title": "Homework for file editor test",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {
+                    "id": "test/question",
+                    "points": 10
+                }
+            ]
+        }
+    ]
+}
