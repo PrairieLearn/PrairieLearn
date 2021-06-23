@@ -169,9 +169,40 @@ The `pl-number-input` defines how the answer should be input by the student:
 ```html
 <pl-integer-input answers-name="c" label="$c=$"></pl-integer-input>
 ```
-For assessment of student answers, the question uses a `pl-integer-input` input field element since we are expecting an integer answer.  For a complete list of elements, see [elements](course.md/#elements).  There are only two attributes being used.  `answers-name` refers to the true answer that was created in `server.py`.  The attribute `label` determines what the student will see next to the submission box; use the `$` characters to format it in math mode.
+For assessment of student answers, the question uses a `pl-integer-input` input field element since we are expecting an integer answer.  For a complete list of elements, see [elements](course.md/#elements).  There are only two attributes being used.  `answers-name` refers to the name of the true answer.  It could be given any name we choose, but `"c"` is a good choice because it matches the definition in the `server.py` file.  The attribute `label` determines what the student will see next to the submission box; use the `$` characters to format it in math mode.
 
 ### 2) Adding a geometry question
+
+Once again, navigate to the `Questions` tab and select `Add question`.  The same question asking for the sum of two numbers is generated.  This time, we'll completely change the content of the question and create a geometry question.
+
+* Go to the `Files` tab and edit the `question.html` file.
+
+* Replace the question with the following multiple-choice question:
+
+```html
+<pl-question-panel>
+  <p> What is the area of a rectangle that has sides 4 and 5?</p>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="area">
+  <pl-answer correct="true">20</pl-answer>
+  <pl-answer correct="false">10</pl-answer>
+  <pl-answer correct="false">9</pl-answer>
+  <pl-answer correct="false">18</pl-answer>
+  <pl-answer correct="false">40</pl-answer>
+</pl-multiple-choice>
+```
+Nothing in the `pl-question-panel` is particularly new.  Notice that we are defining the sides of the rectangle without appealing to the `server.py` file.
+
+Instead of an integer input, we define a `pl-multiple-choice` element.  The name of the answer is denoted by `"area"`.  We also define five `pl-answer` elements.  Each has an attribute, `correct`, and a corresponding numberical value.  We set `correct="true"` for 20, and all others are marked false.
+
+* Click `Save and sync`.  
+
+* You can return to the `Preview` tab to see the changes to the question.  Notice that by clicking `New variant`, the order of the possible choices will be changed, but the same five values will appear.
+
+* Finally, go the `Settings` tab and changed the `QID` and `info.json` file.  The QID and 
+
+
 
 * change the question `topic`.  This will be very helpful when using the filter to find questions under a specific topic. For example:
 
@@ -209,19 +240,6 @@ To provide a simple example, here we first create a question without any randomi
 
 * Modify the content of the file.  You may want to start by copying this simple example:
 
-```html
-<pl-question-panel>
-  <p> What is the area of a rectangle that has sides 4 and 5?</p>
-</pl-question-panel>
-
-<pl-multiple-choice answers-name="area">
-  <pl-answer correct="true">20</pl-answer>
-  <pl-answer correct="false">10</pl-answer>
-  <pl-answer correct="false">9</pl-answer>
-  <pl-answer correct="false">18</pl-answer>
-  <pl-answer correct="false">40</pl-answer>
-</pl-multiple-choice>
-```
 
 * click `Save and sync`
 
