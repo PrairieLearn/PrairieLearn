@@ -201,9 +201,14 @@ module.exports.getClient = function(callback) {
  * Set the schema to use for the search path.
  *
  * @param {string} schema - The schema name to use (can be "null" to unset the search path)
+ * @param {(error: Error | null) => void} callback
  */
-module.exports.setSearchSchema = function(schema) {
+module.exports.setSearchSchema = function(schema, callback) {
     searchSchema = schema;
+    module.exports.query('CREATE SCHEMA ' + schema, [], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
 };
 
 /**
@@ -219,9 +224,9 @@ module.exports.getSearchSchema = function() {
  * Generate, set, and return a random schema name.
  *
  * @param {string} prefix - The prefix of the new schema
- * @return {string} new schema name
+ * @param {(error: Error | null, schema: String) => void} callback
  */
-module.exports.setRandomSearchSchema = function(prefix) {
+module.exports.setRandomSearchSchema = function(prefix, callback) {
     // truncated prefix (max 28 characters)
     const truncPrefix = prefix.substring(30);
     // 27-character timestamp in format YYYY-MM-DDTHH-MM-SS-SSSZ
@@ -233,8 +238,10 @@ module.exports.setRandomSearchSchema = function(prefix) {
     // schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6)
     // which is the default PostgreSQL identifier limit
     const schema = `${prefix}_${timestamp}_${suffix}`;
-    module.exports.setSearchSchema(schema);
-    return schema;
+    module.exports.setSearchSchema(schema, (err) => {
+        if (ERR(err, callback)) return;
+        callback(null, schema);
+    });
 };
 
 /**
