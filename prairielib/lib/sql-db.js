@@ -233,7 +233,7 @@ module.exports.setRandomSearchSchema = function(prefix) {
     // schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6)
     // which is the default PostgreSQL identifier limit
     const schema = `${prefix}-${timestamp}-${suffix}`;
-    module.export.setSearchSchema(schema);
+    module.exports.setSearchSchema(schema);
     return schema;
 };
 
