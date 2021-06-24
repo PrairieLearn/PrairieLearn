@@ -599,14 +599,15 @@ describe('Regrading', function() {
 
         describe('Make submissions for partialCredit3', function() {
             describe('Save and grade an answer of "70", which gives 70% of the available points', function() {
-                const points = 13 * 0.7;
+                const instanceQuestionPoints = 13 * 0.7;
+                const assessmentInstancePoints = 8 + instanceQuestionPoints;
                 const expectedResult = {
                     submission_score: 0.7,
                     submission_correct: false,
-                    instance_question_points: points,
-                    instance_question_score_perc: (points / 13) * 100,
-                    assessment_instance_points: 8 + points,   // the 8 points are from the previous submissions for addVectors
-                    assessment_instance_score_perc: ((8 + points) / examMaxPoints) * 100,
+                    instance_question_points: instanceQuestionPoints,
+                    instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
+                    assessment_instance_points: assessmentInstancePoints,
+                    assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
                 };
 
                 submitAnswer(['grade', 'save'], 'grade', examQuestions.partialCredit3, expectedResult, function(_variant) {
@@ -616,15 +617,54 @@ describe('Regrading', function() {
                 });
             });
 
+            describe('Save an answer of "90", which is mistakenly marked as invalid', function() {
+                const instanceQuestionPoints = 13 * 0.7;
+                const assessmentInstancePoints = 8 + instanceQuestionPoints;
+                const expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                    instance_question_points: instanceQuestionPoints,
+                    instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
+                    assessment_instance_points: assessmentInstancePoints,
+                    assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
+                };
+
+                submitAnswer(['grade', 'save'], 'grade', examQuestions.partialCredit3, expectedResult, function(_variant) {
+                    return {
+                        s: 90,
+                    };
+                });
+            });
+
+            describe('Save and grade an answer of "80", which is mistakenly marked as invalid', function() {
+                const instanceQuestionPoints = 13 * 0.7;
+                const assessmentInstancePoints = 8 + instanceQuestionPoints;
+                const expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                    instance_question_points: instanceQuestionPoints,
+                    instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
+                    assessment_instance_points: assessmentInstancePoints,
+                    assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
+                };
+
+                submitAnswer(['grade', 'save'], 'grade', examQuestions.partialCredit3, expectedResult, function(_variant) {
+                    return {
+                        s: 80,
+                    };
+                });
+            });
+
             describe('Save and grade an answer of "50", which mistakenly gives 100% of the available points', function() {
-                const points = 13 * 0.7 + 12 * 0.3;
+                const instanceQuestionPoints = 13 * 0.7 + 12 * 0.3;
+                const assessmentInstancePoints = 8 + instanceQuestionPoints;
                 const expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
-                    instance_question_points: points,
-                    instance_question_score_perc: (points / 13) * 100,
-                    assessment_instance_points: 8 + points,     // the 8 points are from the previous submissions for addVectors
-                    assessment_instance_score_perc: ((8 + points) / examMaxPoints) * 100,
+                    instance_question_points: instanceQuestionPoints,
+                    instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
+                    assessment_instance_points: assessmentInstancePoints,
+                    assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
                 };
 
                 submitAnswer(['grade', 'save'], 'grade', examQuestions.partialCredit3, expectedResult, function(_variant) {
@@ -674,13 +714,13 @@ describe('Regrading', function() {
                 it('should succeed', function() {
                     locals.question = examQuestions.addVectors;
                     const instanceQuestionPoints = 11;
-                    const assessmentPoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
+                    const assessmentInstancePoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
 
                     locals.expectedResult = {
                         instance_question_points: instanceQuestionPoints,
                         instance_question_score_perc: (instanceQuestionPoints / 11) * 100,
-                        assessment_instance_points: assessmentPoints,
-                        assessment_instance_score_perc: (assessmentPoints / examMaxPoints) * 100,
+                        assessment_instance_points: assessmentInstancePoints,
+                        assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
                     };
                 });
             });
@@ -698,13 +738,13 @@ describe('Regrading', function() {
                 it('should succeed', function() {
                     locals.question = examQuestions.partialCredit3;
                     const instanceQuestionPoints = 13 * 0.7 + 12 * 0.3; // The regraded score is lower, so we keep the original score
-                    const assessmentPoints = instanceQuestionPoints + 11;
+                    const assessmentInstancePoints = instanceQuestionPoints + 11;
 
                     locals.expectedResult = {
                         instance_question_points: instanceQuestionPoints,
                         instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
-                        assessment_instance_points: assessmentPoints,
-                        assessment_instance_score_perc: (assessmentPoints / examMaxPoints) * 100,
+                        assessment_instance_points: assessmentInstancePoints,
+                        assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
                     };
                 });
             });
@@ -720,13 +760,13 @@ describe('Regrading', function() {
                 it('should succeed', function() {
                     locals.question = examQuestions.addVectors;
                     const instanceQuestionPoints = 11;
-                    const assessmentPoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
+                    const assessmentInstancePoints = instanceQuestionPoints + 13 * 0.7 + 12 * 0.3;
 
                     locals.expectedResult = {
                         instance_question_points: instanceQuestionPoints,
                         instance_question_score_perc: (instanceQuestionPoints / 11) * 100,
-                        assessment_instance_points: assessmentPoints,
-                        assessment_instance_score_perc: (assessmentPoints / examMaxPoints) * 100,
+                        assessment_instance_points: assessmentInstancePoints,
+                        assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
                     };
                 });
             });
@@ -741,14 +781,18 @@ describe('Regrading', function() {
             describe('Set question and expected scores in locals object', function() {
                 it('should succeed', function() {
                     locals.question = examQuestions.partialCredit3;
-                    const instanceQuestionPoints = 13 * 0.7;
-                    const assessmentPoints = instanceQuestionPoints + 11;
+
+                    // The "80" submission should be regraded because it was meant to be graded. On
+                    // the other hand, the "90" submission was never meant to be graded, so it should
+                    // not be regraded.
+                    const instanceQuestionPoints = 13 * 0.7 + 12 * 0.1;
+                    const assessmentInstancePoints = instanceQuestionPoints + 11;
                     
                     locals.expectedResult = {
                         instance_question_points: instanceQuestionPoints,
                         instance_question_score_perc: (instanceQuestionPoints / 13) * 100,
-                        assessment_instance_points: assessmentPoints,
-                        assessment_instance_score_perc: (assessmentPoints / examMaxPoints) * 100,
+                        assessment_instance_points: assessmentInstancePoints,
+                        assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
                     };
                 });
             });
