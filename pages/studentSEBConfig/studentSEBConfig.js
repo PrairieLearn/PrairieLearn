@@ -11,9 +11,9 @@ const _ = require('lodash');
 
 const csrf = require('../../lib/csrf');
 const config = require('../../lib/config');
-const sqldb = require('@prairielearn/prairielib').sqlDb;
-const sqlLoader = require('@prairielearn/prairielib').sqlLoader;
-const error = require('@prairielearn/prairielib').error;
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
+const error = require('../../prairielib/lib/error');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
