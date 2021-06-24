@@ -5,7 +5,8 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const _ = require('lodash');
 
-const { sqldb, migrations } = require('@prairielearn/prairielib');
+const sqldb = require('../prairielib/lib/sql-db');
+const migrations = require('../prairielib/lib/migrations');
 const sprocs = require('../sprocs');
 
 const postgresqlUser = 'postgres';
