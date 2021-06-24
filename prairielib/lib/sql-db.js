@@ -202,7 +202,7 @@ module.exports.getClient = function(callback) {
  *
  * @param {string} schema - The schema name to use (can be "null" to unset the search path)
  */
-function module.exports.setSearchSchema = function(schema) {
+module.exports.setSearchSchema = function(schema) {
     searchSchema = schema;
 };
 
@@ -211,7 +211,7 @@ function module.exports.setSearchSchema = function(schema) {
  *
  * @return {string} schema in use (may be "null" to indicate no schema)
  */
-function module.exports.getSearchSchema = function() {
+module.exports.getSearchSchema = function() {
     return searchSchema;
 };
 
@@ -221,7 +221,7 @@ function module.exports.getSearchSchema = function() {
  * @param {string} prefix - The prefix of the new schema
  * @return {string} new schema name
  */
-function module.exports.setRandomSearchSchema = function(prefix) {
+module.exports.setRandomSearchSchema = function(prefix) {
     // truncated prefix (max 28 characters)
     const truncPrefix = prefix.subtring(30);
     // 27-character timestamp in format YYYY-MM-DDTHH-MM-SS-SSSZ
