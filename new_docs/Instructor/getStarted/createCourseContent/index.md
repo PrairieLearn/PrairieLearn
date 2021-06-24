@@ -45,7 +45,7 @@ Make sure a comma separates the name from the next item `userRoles`
 
 ```json
 "userRoles": {
-    "your_email@illinois.edu": "Instructor"
+    "your_email@school.edu": "Instructor"
 },
 ```
 
@@ -101,11 +101,11 @@ This is a straightforward question asking students to sum two numbers.  If you c
 
 
 
-* change the question `tags`.  Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created.  We'll change it to the following:
+* change the question `tags`.  Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the user-ID of the question author (e.g., school email name) and the semester when the question was created.  We'll change it to the following:
 
 ```json
 "tags": [
-    "netid",
+    "your_userid",
     "fa21",
     "calculate",
     "arithmetic"
@@ -192,7 +192,7 @@ Once again, navigate to the `Questions` tab and select `Add question`.  The same
   <pl-answer correct="false">40</pl-answer>
 </pl-multiple-choice>
 ```
-Nothing in the `pl-question-panel` is particularly new.  Notice that we are defining the sides of the rectangle without appealing to the `server.py` file.
+Nothing in the `pl-question-panel` is particularly new.  Notice that we are defining the sides of the rectangle without appealing to the `server.py` file.  In fact, the file is not needed for the question as written, and you could just delete `server.py` for this question.  We'll leave it for now, because we will use it when we create another version of this question.
 
 Instead of an integer input, we define a `pl-multiple-choice` element.  The name of the answer is denoted by `"area"`.  We also define five `pl-answer` elements.  Each has an attribute, `correct`, and a corresponding numberical value.  We set `correct="true"` for 20, and all others are marked false.
 
@@ -200,35 +200,23 @@ Instead of an integer input, we define a `pl-multiple-choice` element.  The name
 
 * You can return to the `Preview` tab to see the changes to the question.  Notice that by clicking `New variant`, the order of the possible choices will be changed, but the same five values will appear.
 
-* Finally, go the `Settings` tab and changed the `QID` and `info.json` file.  The QID and 
+* Go to the `Settings` tab and changed the `QID`.  You can set the QID to `find_rectangle_area`, or another brief but descriptive name.
 
-
-
-* change the question `topic`.  This will be very helpful when using the filter to find questions under a specific topic. For example:
-
+* Now, edit the `info.json` file.  We'll change the `title`, `topic`, and `tags`:
 ```json
-"topic": "Geometric properties"
-```
-
-```json
-"title": "Find the area"
-```
-
-* change the question `tags`. Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created. For our example, we use:
-
-```json
+"title": "Find the area of a rectangle",
+"topic": "Geometry",
 "tags": [
-    "mfsilva",
-    "fa20",
+    "userid",
+    "fa21",
     "MC",
-    "calculate"
+    "geometric-properties"
 ],
 ```
-* click the button `Change QID` to change the question ID name. Typically, question authors choose QID that provide some big-picture idea of the question topic. For example, `find_rectangle_area`.
 
-* you should not change the `"type": "v3"` field, which is the most current version of PrairieLearn questions.
+We now use the tags `MC` for multiple-choice, and the sub-topic tag `geometric-properties`.
 
-* click `Save and sync`.
+* click `Save and sync` to finish.
 
 **Change the content of the question**
 
@@ -246,8 +234,6 @@ To provide a simple example, here we first create a question without any randomi
 * go to the `Preview` tab to see your question. Try it out!
 
 * if you go back to the question tab, you should see your new question.
-
-![](question_add_new.png)
 
 Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
 
@@ -323,8 +309,6 @@ def generate(data):
 
 You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to (depicted in red in the figure below). Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
-![](change-example-course.png)
-
 You will find a variety of questions in the example course. This is probably your best starting point when creating questions for the first time. Let's see how you can copy one of the example questions to your own course:
 
 * from the `Questions` tab, click on the question `Template pl-integer-input: randomized input parameters` (QID: `template/integerInput`).
@@ -338,8 +322,6 @@ You will find a variety of questions in the example course. This is probably you
 ## Creating an assessment
 
 Before you create an assessment, make sure you are in the desired course instance. For example, we want to create a homework assessment in the "Fall 2020" course instance, as indicated below.
-
-![](create_assessment.png)
 
 * click the button `Add assessment`.
 
