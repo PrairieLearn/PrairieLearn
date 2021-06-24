@@ -3,6 +3,7 @@ var express = require('express');
 var router = express.Router();
 var path = require('path');
 var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+var _ = require('lodash');
 
 var error = require('@prairielearn/prairielib/error');
 var assessment = require('../../lib/assessment');
@@ -77,14 +78,16 @@ router.post('/', async function(req, res, next) {
         try {
             console.log("Running test call of sproc")
             const queryParams = [
-                ['hello', 'world'], // pogil role (text) array
+                ["'Manager'::enum_pogil_role", "'Recorder'::enum_pogil_role"], // pogil role (text) array
                 [1, 2], // user ids array
                 12345 // group id
             ];
 
             // Update roles
-            const result = await sqldb.callAsync('update_group_pogil_roles', queryParams);
-            console.log(result);
+            sqldb.call('update_group_pogil_roles', queryParams, function(err, result) {
+                if (ERR(err, next)) return;
+                console.log(result);
+            });
 
           } catch (err) {
             ERR(err, next);

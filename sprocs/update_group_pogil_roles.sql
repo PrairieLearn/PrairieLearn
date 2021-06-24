@@ -1,6 +1,6 @@
-DROP FUNCTION IF EXISTS update_group_pogil_roles(text[], integer[], integer);
+DROP FUNCTION IF EXISTS update_group_pogil_roles(enum_pogil_role[], integer[], integer);
 CREATE OR REPLACE FUNCTION update_group_pogil_roles (
-    IN arg_group_roles text[],
+    IN arg_group_roles enum_pogil_role[],
     IN arg_user_ids integer[],
     IN arg_group_id integer
 )
