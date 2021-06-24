@@ -140,7 +140,7 @@ b = random.randint(5, 10)
 ```
 Feel free to change the range of either number; for example, `b = random.randint(10, 20)` would change the range of the second integer to $10\leq b\leq 20$.
 
-Next, we place these two integers into the structure called `data`.  They are **parameters** of the question so we place them in `data['params']`.  They are further specifed by their variables names, `a` and `b`.
+Next, we place these two integers into the structure called `data`.  Specifically, it is a Python [dictionary](https://docs.python.org/3/library/stdtypes.html#typesmapping).  For more info about the `data` dictionary, see [element functions](course.md/#element-functions).  The generated numbers are **parameters** of the question so we place them in `data['params']`.  They are further specifed by their variables names, `a` and `b`.
 ```python
 data['params']['a'] = a
 data['params']['b'] = b
@@ -218,40 +218,23 @@ We now use the tags `MC` for multiple-choice, and the sub-topic tag `geometric-p
 
 * click `Save and sync` to finish.
 
-**Change the content of the question**
+### 3) Creating a new question from an existing one inside your course
 
-To provide a simple example, here we first create a question without any randomization, by modifying the file [question.html](question.md#question-questionhtml).
+We'll now create a new question using an existing one inside the course.  We will adapt the previous geometry question to add randomization to the question.
 
-* go to the `Files` tab.
+* From the `Questions` tab, select the question you create with QID `find_rectangle_area`.
 
-* click the `Edit` button next to `question.html`.
+* Go to the `Settings` tab, and click the button `Make a copy of this question`. Click `Submit` to make a copy of the question inside your own course.
 
-* Modify the content of the file.  You may want to start by copying this simple example:
+Notice that the `title` and `QID`, which are "Find the area of a rectangle (copy 1)" and `find_rectangle_area_copy1`, respectively.  We are in the `Settings` tab of the new question, **not** the previous one.  Any edits you make won't affect the previous question.
 
-
-* click `Save and sync`
-
-* go to the `Preview` tab to see your question. Try it out!
-
-* if you go back to the question tab, you should see your new question.
-
-Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
-
-### 2) Creating a new question from an existing one inside your course
-
-* from the `Questions` tab, select the question you want to copy. As an example, we will use the question with QID `find_rectangle_area`.
-
-* go to the `Settings` tab.
-
-* click the button `Make a copy of this question`. Click `Submit` to make a copy of the question inside your own course.
-
-* click the button `Change QID` to change the question ID name. In this example, we will use `find_rectangle_area_rand`.
+* click the button `Change QID` to change the question ID name. In this example, we will use `find_rectangle_area_rand`, in anticipation of adding randomization to the question.
 
 * click the `Edit` button next to `info.json`.
 
 * change the question `title`. In this case, you can just remove `(copy 1)` from the title, come up with another one, or leave it as is.
 
-* you can change `topic` and `tags` as needed.
+You can change `topic` and `tags` as needed.  Since the question will be very similar to the last one, leaving them as is should be fine.  You may want to add an additional tag, `"rand"`.  When you have written many questions for your course, it can be useful to have a tag indicating which questions have randomization.
 
 * click `Save and sync`.
 
@@ -261,7 +244,7 @@ We will add randomization to the previous question, using the file [server.py](q
 
 * go to the `Files` tab.
 
-* click the `Edit` button next to `server.py`. Here is where you can define the question variables, and add randomization. We will talk about some other examples in later sections. Here is a how we can modify the original area example:
+* click the `Edit` button next to `server.py`.  We will define question variables in this file and add randomization.  Replace the text in `server.py` with the following:
 
 ```python
 import random
@@ -280,12 +263,14 @@ def generate(data):
   # define the correct answer
   data["params"]["truearea"] = a*b
 ```
+Like the first question, two integers are generated randomly and stored in the `data` dictionary.  We also define four "distractors" i.e., incorrect answers.  We provide incorrectly scaled versions of the area, as well as scaled versions of the perimeter.  Finally, we define the correct answer, which is stored using the key `"truearea"`.  
+
 
 * click `Save and sync`.
 
 * go to the `Files` tab.
 
-* click the `Edit` button next to `question.html`.
+* click the `Edit` button next to `question.html`.  We'll update the question to use the variables created in the `server.py` file.  Change the file to the following:
 
 ```html
 <pl-question-panel>
@@ -300,6 +285,8 @@ def generate(data):
 <pl-answer correct="false">{{params.distractor4}}</pl-answer>
 </pl-multiple-choice>
 ```
+
+Rather than explicitly typing the values of the correct and incorrect answers, we use the variables stored in the `data` dictionary.
 
 * click `Save and sync`.
 
