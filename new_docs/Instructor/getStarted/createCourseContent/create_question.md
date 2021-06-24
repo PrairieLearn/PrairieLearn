@@ -1,76 +1,4 @@
-
-# Create content in the browser
-
-Now that your course space request has been granted, log in to [prairielearn.org](https://www.prairielearn.org/).  In addition to the example `XC 101: Example Course`, you will see your new course, `MATH 101: Elementary Mathematics`.
-
-Click this link; which will take you to your course home page.  This is a view of your course home page (or a similar variation, depending on when your course was originally created):
-
-
-This tutorial will show you how to create:
-
-* [a course instance](#creating-a-course-instance)
-
-* [a question](#creating-questions-from-scratch)
-
-* [an assessment](#creating-a-new-assessment)
-
-
-## Creating a course instance
-
-A course instance corresponds to a single offering of a course, such as "Fall 2020", or possibly "Fall 2020, Section M".   We will create a course instance for Math 101 to take place in the Fall of 2021.  Follow the steps below to create a new course instance:
-
-* You should automatically be directed to the `Course Instances` tab.  If not, navigate to this tab.
-
-* Click the button `+ Add course instance`.  A new instance will be generated, with the placeholder name "New (1)".  You will be automatically directed to the instance's `Settings` tab.
-
-* Click the button `Change CIID` to change the course instance ID name. Typically we recommend using a short version of the course instance name; for our course in Fall 2021, we choose the name `Fa21`.  After changing the CIID, click `Change` to save.
-
-* Next, we will change the configuration of the course through the `infoCourseInstance.json` file.  Select the `Edit` button next to the json file name.
-
-#### infoCourseInstance.json
-
-The file will open in an editing window in your browser.  You will see the following items:
-
-* `uuid` - This is the course's "universally unique identifier", which was generated automatically.  This does not need to be changed.
-
-* `longName` - This is the full name of your course instance, as it will appear on your list of course instances.  Replace the name "New (1)" with the name of the instance.  In this case, we will type:
-
-```json
-"longName": "Fall 2021",
-```
-
-Make sure a comma separates the name from the next item `userRoles`
-
-* `userRoles` - This lists the users associated with the course instance.  The roles will be initialized as:
-
-```json
-"userRoles": {
-    "your_email@school.edu": "Instructor"
-},
-```
-
-By default, you are an instructor for the course instance.  You can add other instructors and teaching assistants, but we'll leave this unchanged for now.  For a list of possible roles, see [roles](courseInstance.md#user-roles).
-
-* `allowAccess` - The dates in which your course will be available.  (See other  [access options](courseInstance.md#course-instance-allowaccess).)  For this example, we will assume our semester runs from August 16, 2021 until December 17, 2021.  Thus, we will enter:
-
-
-```json
-"allowAccess": [
-    {
-        "startDate": "2021-08-16T00:00:01",
-        "endDate": "2021-12-17T23:59:59"
-    }
-]
-```
-
-So this course instance will become available at 12:01 AM on August 16, and will close at 11:59 PM on December 17.  Notice that a pair of square brackets and a pair of curly braces are used.
-
-* To save your changes, click `Save and sync`.
-
-* Navigating back to your course by clicking on `Math 101`, you will now see the `Fall 2021` under the Course instances tab.
-
-
-## Creating a question
+# Creating a question
 
 ### 1) Adding the first question
 
@@ -292,7 +220,7 @@ Rather than explicitly typing the values of the correct and incorrect answers, w
 
 * go to the `Preview` tab to see your question. Try it out! Check a different variant and see how the variables change.
 
-### 3) Copying a question from the example course
+### 4) Copying a question from the example course
 
 You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to (depicted in red in the figure below). Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
@@ -302,63 +230,6 @@ You will find a variety of questions in the example course. This is probably you
 
 * click on the `Settings` tab.
 
-* click the button `Make a copy of this question`. Select your course and click `Submit`.
+* click the button `Make a copy of this question`. Select your course "MATH 101" and click `Submit`.
 
 * That is it! Go to the `Questions` tab and you will see the question was added to your course. You can modify the question following the steps from the section above.
-
-## Creating an assessment
-
-Before you create an assessment, make sure you are in the desired course instance. For example, we want to create a homework assessment in the "Fall 2020" course instance, as indicated below.
-
-* click the button `Add assessment`.
-
-* click the button `Change AID` to change the assessment ID name. In general, we use names such as `Homework1` or `Exam5`.
-
-* click the `Edit` button next to `infoAssessment.json`.
-
-* select the [assessment type](assessment.md#assessment-types) to be either `Homework` or `Exam`. For this example, we will use `Homework`.
-
-* change the `title`. For example:
-```json
-"title": "Geometric properties and applications",
-```
-
-* you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course.md#assessment-sets).
-
-* change the number of the assessment (within its set). This number will be used to sort the assessments in the `Assessment` page.
-
-* in `allowAccess` you should set the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, we will use:
-
-```json
-"allowAccess": [
-    {
-        "startDate": "2020-09-01T20:00:00",
-        "endDate": "2020-09-06T20:00:00",
-        "credit": 100
-    }
-]
-```
-
-* in `zones` you should enter the questions to be included in that assessment. We will add the two questions that we just created:
-
-```json
-"zones": [
-    {
-        "questions": [
-            {"id": "find_rectangle_area_rand", "points": 1, "maxPoints": 5},
-            {"id": "integerInput", "points": 1, "maxPoints": 5}
-        ]
-    }
-]
-```
-
-* click `Save and sync`.
-
-
-**Learn more:**
-
-- [Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
-
-- [Different ways to setup an assessment](assessment.md)
-
-- [Detailed list of PrairieLearn elements](elements.md)

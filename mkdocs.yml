@@ -19,7 +19,11 @@ pages:
 - Instructor Manual:
   - Get Started:
     - 'Requesting your course space': 'Instructor/getStarted/requestCourseSpace/index.md'
-    - 'Creating course content': 'Instructor/getStarted/createCourseContent/index.md'
+    - Creating course content:
+      - 'Overview': 'Instructor/getStarted/createCourseContent/overview.md'
+      - 'Creating a course instance': 'Instructor/getStarted/createCourseContent/course_instance.md'
+      - 'Creating questions': 'Instructor/getStarted/createCourseContent/create_question.md'
+      - 'Create an assessment': 'Instructor/getStarted/createCourseContent/create_assessment.md' 
     - 'Question Gallery': 'Instructor/getStarted/questionGallery/index.md'
     - 'Workshops': 'Instructor/getStarted/workshops/index.md'
     - 'Pitfalls': 'Instructor/getStarted/pitfalls/index.md'
