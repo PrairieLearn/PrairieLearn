@@ -2,9 +2,9 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var error = require('@prairielearn/prairielib/error');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var error = require('../../prairielib/lib/error');
+var sqldb = require('../../prairielib/lib/sql-db');
+var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const chunks = require('../../lib/chunks');
 var filePaths = require('../../lib/file-paths');
