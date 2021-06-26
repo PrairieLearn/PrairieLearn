@@ -4,7 +4,7 @@ var async = require('async');
 var config = require('../lib/config');
 var logger = require('../lib/logger');
 var assessment = require('../lib/assessment');
-var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqldb = require('../prairielib/lib/sql-db');
 
 module.exports = {};
 

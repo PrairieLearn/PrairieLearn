@@ -14,7 +14,7 @@ const dockerUtil = require('../lib/dockerUtil');
 const configManager = require('../lib/config');
 const config = require('../lib/config').config;
 const logger = require('../lib/logger');
-const { sqldb } = require('@prairielearn/prairielib');
+const sqldb = require('../../prairielib/lib/sql-db');
 
 var imagesText = `alawini/cs411-mongo:latest
 alawini/cs411-neo4j
