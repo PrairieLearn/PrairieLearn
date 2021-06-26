@@ -1,5 +1,5 @@
 // @ts-check
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 
 const infofile = require('../infofile');
 const perf = require('../performance')('question');
