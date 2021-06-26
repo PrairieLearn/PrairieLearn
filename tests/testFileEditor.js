@@ -8,8 +8,8 @@ const async = require('async');
 const ncp = require('ncp');
 const config = require('../lib/config');
 const cheerio = require('cheerio');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 const {
