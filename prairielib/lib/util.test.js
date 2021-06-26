@@ -69,4 +69,16 @@ describe('sanitizeObject', () => {
     };
     check(input, expected);
   });
+
+  test('handles null values correctly', () => {
+    const input = {
+      test: 'test\u0000ing',
+      a: null,
+    };
+    const expected = {
+      test: 'test\\u0000ing',
+      a: null,
+    };
+    check(input, expected);
+  });
 });
