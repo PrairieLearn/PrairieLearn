@@ -3,7 +3,9 @@ const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
-const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
+const error = require('../../prairielib/lib/error');
+const sqlDb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
