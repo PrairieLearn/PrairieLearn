@@ -1,0 +1,24 @@
+{
+    "uuid": "b5561b51-7d73-444f-895a-ad9a60093bfe",
+    "type": "Exam",
+    "title": "Score Only Assessment",
+    "set": "Exam",
+    "number": "11",
+    "scoreOnly": true,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100,
+            "timeLimitMin": 50
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "startDate": "1900-07-07T23:59:59",
+            "endDate": "2300-07-10T23:59:59",
+            "timeLimitMin": 50
+        }
+    ],
+    "zones": []
+}
