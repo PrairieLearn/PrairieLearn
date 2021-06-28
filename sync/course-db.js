@@ -220,6 +220,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
+ * @property {string} unit
  * @property {string} number
  * @property {boolean} allowIssueReporting
  * @property {boolean} allowRealTimeGrading
