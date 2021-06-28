@@ -107,7 +107,7 @@
             }
         },
         "groupBy": {
-            "description": "Determines which assessment category assessments will be grouped into on the student assessments page. Can be set to either \"set\" or \"unit\" (default: \"set\").",
+            "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
             "type": "string",
             "default": "set",
             "enum": [
