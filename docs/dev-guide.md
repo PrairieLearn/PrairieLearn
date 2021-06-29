@@ -275,6 +275,31 @@ FROM
 ```
 
 
+## DB stored procedures (sprocs)
+
+* Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
+
+```
+const workspace_id = 1342;
+const message = 'Startup successful';
+sqldb.call('workspaces_message_update', [workspace_id, message], (err, result) => {
+    if (ERR(err, callback)) return;
+    // we could use the result here if we want the return value of the stored procedure
+    callback(null);
+});
+```
+
+* The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/12/ddl-schemas.html) with a name like `server_2021_06_29t19_28_32_247z_e3khma`. To see a list of the schemas use the `\dn` command in `psql`.
+
+* To be able to use the stored procedures from the `psql` command line it is necessary to get the most recent schema name using `\dn` and set the `search_path` to use this schema name and the `public` schema:
+
+```
+set search_path to server_2021_06_29t19_28_32_247z_e3khma,public;
+```
+
+* During startup we initially have no non-public schema in use. We first run the migrations to update all tables in the `public` schema, then we call `sqldb.setRandomSearchSchema()` to activate a random per-execution schema, and we run the sproc creation code to generate all the stored procedures in this schema. This means that every invocation of PrairieLearn will have its own local copy of the stored procedures which are the correct versions for its code. This lets us upgrade PrairieLearn servers one at a time, while old servers are still running with their own copies of their sprocs. When PrairieLearn first starts up it has `search_path = public`, but later it will have `search_path = server_2021_06_29t19_28_32_247z_e3khma,public` so that it will first search the random schema and then fall back to `public`. The naming convention for the random schema uses the local instance name, the date, and a random string.
+
+
 ## DB schema (simplified overview)
 
 * The most important tables in the database are shown in the diagram below (also as a [PDF image](simplified-models.pdf)).
