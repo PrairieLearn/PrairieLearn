@@ -202,63 +202,6 @@ module.exports.getClient = function(callback) {
 };
 
 /**
- * Set the schema to use for the search path.
- *
- * @param {string} schema - The schema name to use (can be "null" to unset the search path)
- * @param {(error: Error | null) => void} callback
- */
-module.exports.setSearchSchema = function(schema, callback) {
-    if (schema == null) {
-        searchSchema = schema;
-        return;
-    }
-    /* Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
-     * https://github.com/brianc/node-postgres/pull/396
-     * https://github.com/brianc/node-postgres/issues/1978
-     * https://www.postgresql.org/docs/12/sql-syntax-lexical.html
-     */
-    module.exports.query(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`, [], (err) => {
-        if (ERR(err, callback)) return;
-        // we only set searchSchema after CREATE to avoid the above query() call using searchSchema
-        searchSchema = schema;
-        callback(null);
-    });
-};
-
-/**
- * Get the schema that is currently used for the search path.
- *
- * @return {string} schema in use (may be "null" to indicate no schema)
- */
-module.exports.getSearchSchema = function() {
-    return searchSchema;
-};
-
-/**
- * Generate, set, and return a random schema name.
- *
- * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used.
- * @param {(error: Error | null, schema: String) => void} callback
- */
-module.exports.setRandomSearchSchema = function(prefix, callback) {
-    // truncated prefix (max 28 characters)
-    const truncPrefix = prefix.substring(0, 28);
-    // 27-character timestamp in format YYYY-MM-DDTHH-MM-SS-SSSZ
-    const timestamp = (new Date()).toISOString().replace(/-/g, '_').replace(/:/g, '_').replace(/[.]/g, '_');
-    // random 6-character suffix to avoid clashes (approx 2 billion values)
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const suffix = _.times(6, function() {return _.sample(chars);}).join('');
-
-    // schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6)
-    // which is the default PostgreSQL identifier limit
-    const schema = `${truncPrefix}_${timestamp}_${suffix}`;
-    module.exports.setSearchSchema(schema, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null, schema);
-    });
-};
-
-/**
  * Gets a new client from the connection pool.
  *
  * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
@@ -754,3 +697,60 @@ module.exports.callWithClientZeroOrOneRow = function(client, functionName, param
  * Errors if the function returns more than one row.
  */
 module.exports.callWithClientZeroOrOneRowAsync = promisify(module.exports.callWithClientZeroOrOneRow);
+
+/**
+ * Set the schema to use for the search path.
+ *
+ * @param {string} schema - The schema name to use (can be "null" to unset the search path)
+ * @param {(error: Error | null) => void} callback
+ */
+module.exports.setSearchSchema = function(schema, callback) {
+    if (schema == null) {
+        searchSchema = schema;
+        return;
+    }
+    /* Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
+     * https://github.com/brianc/node-postgres/pull/396
+     * https://github.com/brianc/node-postgres/issues/1978
+     * https://www.postgresql.org/docs/12/sql-syntax-lexical.html
+     */
+    module.exports.query(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`, [], (err) => {
+        if (ERR(err, callback)) return;
+        // we only set searchSchema after CREATE to avoid the above query() call using searchSchema
+        searchSchema = schema;
+        callback(null);
+    });
+};
+
+/**
+ * Get the schema that is currently used for the search path.
+ *
+ * @return {string} schema in use (may be "null" to indicate no schema)
+ */
+module.exports.getSearchSchema = function() {
+    return searchSchema;
+};
+
+/**
+ * Generate, set, and return a random schema name.
+ *
+ * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used.
+ * @param {(error: Error | null, schema: String) => void} callback
+ */
+module.exports.setRandomSearchSchema = function(prefix, callback) {
+    // truncated prefix (max 28 characters)
+    const truncPrefix = prefix.substring(0, 28);
+    // 27-character timestamp in format YYYY-MM-DDTHH-MM-SS-SSSZ
+    const timestamp = (new Date()).toISOString().replace(/-/g, '_').replace(/:/g, '_').replace(/[.]/g, '_');
+    // random 6-character suffix to avoid clashes (approx 2 billion values)
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const suffix = _.times(6, function() {return _.sample(chars);}).join('');
+
+    // schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6)
+    // which is the default PostgreSQL identifier limit
+    const schema = `${truncPrefix}_${timestamp}_${suffix}`;
+    module.exports.setSearchSchema(schema, (err) => {
+        if (ERR(err, callback)) return;
+        callback(null, schema);
+    });
+};
