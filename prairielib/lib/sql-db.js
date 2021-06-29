@@ -232,7 +232,7 @@ module.exports.getSearchSchema = function() {
 /**
  * Generate, set, and return a random schema name.
  *
- * @param {string} prefix - The prefix of the new schema
+ * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used.
  * @param {(error: Error | null, schema: String) => void} callback
  */
 module.exports.setRandomSearchSchema = function(prefix, callback) {
