@@ -167,7 +167,11 @@ module.exports.close = function(callback) {
 module.exports.closeAsync = promisify(module.exports.close);
 
 /**
- * Gets a new client from the connection pool.
+ * Gets a new client from the connection pool. If `err` is not null
+ * then `client` and `done` are undefined. If `err` is null then
+ * `client` is valid and can be used. The caller MUST call
+ * `done(client)` to release the client, whether or not errors occured
+ * while using `client`.
  *
  * @param {(error: Error | null, client: import("pg").PoolClient, done: (release?: any) => void) => void} callback
  */
