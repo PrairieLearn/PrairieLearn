@@ -238,7 +238,7 @@ module.exports.getSearchSchema = function() {
  */
 module.exports.setRandomSearchSchema = function(prefix, callback) {
     // truncated prefix (max 28 characters)
-    const truncPrefix = prefix.substring(30);
+    const truncPrefix = prefix.substring(0, 28);
     // 27-character timestamp in format YYYY-MM-DDTHH-MM-SS-SSSZ
     const timestamp = (new Date()).toISOString().replace(/-/g, '_').replace(/:/g, '_').replace(/[.]/g, '_');
     // random 6-character suffix to avoid clashes (approx 2 billion values)
