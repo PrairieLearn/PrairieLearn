@@ -321,9 +321,9 @@ class PLDrawingAnswerState {
      * This maintains a "submission" object that is separate from the canvas object.
      * By default, all properties from the canvas object are copied to the submission object.
      *
-     * @options options Options that were passed to the 'generate()' function.
-     * @options object Canvas object that was created and should be saved.
-     * @modifyHandler {optional} Function that is run whenever the canvas object is modified.
+     * @param options Options that were passed to the 'generate()' function.
+     * @param object Canvas object that was created and should be saved.
+     * @param modifyHandler {optional} Function that is run whenever the canvas object is modified.
      * This has the signature of (submitted_object, canvas_object).
      * Any properties that should be saved should be copied from canvas_object into
      * submitted_object.  If this is omitted, all properties from the canvas object
@@ -379,6 +379,105 @@ class PLDrawingAnswerState {
             }
             this.deleteObject(submitted_object);
         });
+    }
+
+    /**
+     * Registers an object to save to the answer when modified.
+     * This maintains a "submission" object that is separate from the canvas object.
+     * By default, all properties from the canvas object are copied to the submission object.
+     *
+     * @param options Options that were passed to the 'generate()' function.
+     * @param objects Canvas object that was created and should be saved.
+     * @param modifyHandlers {optional} Function that is run whenever the canvas object is modified.
+     * This has the signature of (submitted_object, canvas_object).
+     * Any properties that should be saved should be copied from canvas_object into
+     * submitted_object.  If this is omitted, all properties from the canvas object
+     * are copied as-is.
+     * @removeHandler {optional} Function that is run whenever the canvas object is deleted.
+     */
+    registerAnswerObjects(options, objects, modifyHandlers, removeHandlers) {
+        let submitted_object = _.clone(options);
+        if (!('id' in submitted_object)) {
+            if (!('id' in objects)) {
+                submitted_object.id = window.PLDrawingApi.generateID();
+            } else {
+                submitted_object.id = object.id;
+            }
+        }
+
+        const blocked_keys = new Set([
+            'aCoords',
+            'borderColor',
+            'cacheHeight',
+            'cacheTranslationX',
+            'cacheTranslationY',
+            'cacheWidth',
+            'canvas',
+            'cornerSize',
+            'dirty',
+            'isMoving',
+            'matrixCache',
+            'oCoords',
+            'ownCaching',
+            'ownMatrixCache',
+            'id',
+        ]);
+
+        objects[1].on('modified', () => {
+            if (modifyHandlers[1]) {
+                console.log(submitted_object);
+                modifyHandlers[1](submitted_object, objects[1]);
+                console.log(submitted_object);
+            } else {
+                for (const [key, value] of Object.entries(object)) {
+                    if (key[0] != '_' && !blocked_keys.has(key)) {
+                        if (value != submitted_object[key]) {
+                            console.log(key);
+                            console.log(submitted_object[key]);
+                            console.log(value);
+                        }
+                        submitted_object[key] = value;
+                    }
+                }
+            }
+            this.updateObject(submitted_object);
+        });
+
+        objects[1].on('removed', () => {
+            if (removeHandlers) {
+                removeHandler[1](submitted_object, object[1]);
+            }
+            this.deleteObject(submitted_object);
+        });
+
+        objects[0].on('modified', () => {
+            if (modifyHandlers[0]) {
+                console.log(submitted_object);
+                modifyHandlers[0](submitted_object, objects[0]);
+                console.log(submitted_object);
+            } else {
+                for (const [key, value] of Object.entries(object)) {
+                    if (key[0] != '_' && !blocked_keys.has(key)) {
+                        if (value != submitted_object[key]) {
+                            console.log(key);
+                            console.log(submitted_object[key]);
+                            console.log(value);
+                        }
+                        submitted_object[key] = value;
+                    }
+                }
+            }
+            this.updateObject(submitted_object);
+        });
+
+        objects[0].on('removed', () => {
+            if (removeHandlers) {
+                removeHandler[0](submitted_object, objects[0]);
+            }
+            this.deleteObject(submitted_object);
+        });
+
+        this.updateObject(submitted_object);
     }
 }
 

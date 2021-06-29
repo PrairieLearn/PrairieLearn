@@ -541,6 +541,132 @@ class Vector(BaseElement):
         return ['x1', 'y1', 'anchor-is-tail', 'width', 'angle', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward', 'optional-grading']
 
 
+class PairedVector(BaseElement):
+    def generate(el, data):
+        grid_size = pl.get_integer_attrib(el, 'grid-size', 20)
+        color = pl.get_color_attrib(el, 'color', 'red3')
+        anchor_is_tail = pl.get_boolean_attrib(el, 'anchor-is-tail', True)
+        # This is the anchor point for Grading
+        x1 = pl.get_float_attrib(el, 'x1', 2*grid_size)
+        y1 = pl.get_float_attrib(el, 'y1', grid_size)
+
+        x2 = pl.get_float_attrib(el, 'x2', 3*grid_size)
+        y2 = pl.get_float_attrib(el, 'y2', 2*grid_size)
+
+        # This is the end point used for plotting
+        left1 = x1
+        top1 = y1
+
+        left2 = x2
+        top2 = y2
+
+        # common arrow length
+        w = pl.get_float_attrib(el, 'width', drawing_defaults['force-width'])
+
+        angle1 = pl.get_float_attrib(el, 'angle1', 0)
+        angle2 = pl.get_float_attrib(el, 'angle2', 0)
+        theta1 = angle1 * math.pi / 180
+        theta2 = angle2 * math.pi / 180
+        if not anchor_is_tail:
+            left1 -= w * math.cos(theta1)
+            left2 -= w * math.cos(theta1)
+            top1 -= w * math.sin(theta2)
+            top2 -= w * math.sin(theta2)
+        
+        # Error box for grading
+        disregard_sense = pl.get_boolean_attrib(el, 'disregard-sense', False)
+        if disregard_sense:
+            offset_forward_default = w
+        else:
+            offset_forward_default = 0
+        offset_forward = pl.get_float_attrib(el, 'offset-forward', offset_forward_default)
+        offset_backward = pl.get_float_attrib(el, 'offset-backward', w)
+
+        tol = pl.get_float_attrib(el, 'tol', grid_size / 2)
+        pc1, hbox1, wbox1, _, _ = get_error_box(x1, y1, theta1, tol, offset_forward, offset_backward)
+        pc2, hbox2, wbox2, _, _ = get_error_box(x2, y2, theta2, tol, offset_forward, offset_backward)
+
+        if 'draw-error-box' in el.attrib:
+            obj_draw = el.attrib['draw-error-box'] == 'true'
+        else:
+            obj_draw = None
+
+        return {
+            'left1': left1,
+            'top1': top1,
+            'left2': left2,
+            'top2': top2,
+            'x1': x1,
+            'y1': y1,
+            'x2': x2,
+            'y2': y2,
+            'width': w,
+            'angle1': angle1,
+            'angle2': angle2,
+            'label': pl.get_string_attrib(el, 'label', ''),
+            'offsetx': pl.get_float_attrib(el, 'offsetx', 2),
+            'offsety': pl.get_float_attrib(el, 'offsety', 2),
+            'stroke': color,
+            'strokeWidth': pl.get_float_attrib(el, 'stroke-width', 3),
+            'arrowheadWidthRatio': pl.get_float_attrib(el, 'arrow-head-width', 1),
+            'arrowheadOffsetRatio': pl.get_float_attrib(el, 'arrow-head-length', 1),
+            'drawStartArrow': False,
+            'drawEndArrow': True,
+            'originY': 'center',
+            'trueHandles': ['mtr'],
+            'disregard_sense': disregard_sense,
+            'optional_grading': pl.get_boolean_attrib(el, 'optional-grading', False),
+            'objectDrawErrorBox': obj_draw,
+            'XcenterErrorBox1': pc1[0] if pc1 is not None else pc1,
+            'YcenterErrorBox1': pc1[1] if pc1 is not None else pc1,
+            'XcenterErrorBox2': pc2[0] if pc2 is not None else pc2,
+            'YcenterErrorBox2': pc2[1] if pc2 is not None else pc2,
+            'widthErrorBox1': wbox1,
+            'heightErrorBox1': hbox1,
+            'widthErrorBox2': wbox2,
+            'heightErrorBox2': hbox2,
+            'offset_forward': offset_forward,
+            'offset_backward': offset_backward,
+            'selectable': drawing_defaults['selectable'],
+            'evented': drawing_defaults['selectable']
+        }
+
+    def is_gradable():
+        return True
+
+    def grade(ref, st, tol, angtol):
+        dup_attrs = ['top', 'left', 'angle', 'XcenterErrorBox', 'YcenterErrorBox', 'widthErrorBox', 'heightErrorBox']
+        ref['x3']= ref['x2']
+        ref['y3']= ref['y2']
+        st['x3']= st['x2']
+        st['y3']= st['y2']
+        ref['x2']= ref['x1']
+        ref['y2']= ref['y1']
+        st['x2']= st['x1']
+        st['y2']= st['y1']
+
+        poss = [[False for i in range(2)] for j in range(2)]
+        counter= 0
+        for i in range(2):
+            for j in range(2):
+                for attr in dup_attrs:
+                        ref[attr]= ref[attr+str(i+1)]
+                        st[attr] = st[attr + str(j+1)]
+                for attr in ['x', 'y']:
+                    ref[attr+'1']= ref[attr+str(i+2)]
+                    st[attr+'1'] = st[attr + str(j+2)]
+                poss[i][j]= Vector.grade(ref, st, tol, angtol)
+                counter+= 1
+        angdiff = abs(st['angle1'] - st['angle2'])
+        angdiff = abs(angdiff - 180)
+        # print(angdiff < 2*angtol)
+        # print(poss)
+        return ((poss[0][1] and poss[1][0]) or (poss[0][0] and poss[1][1])) and angdiff < 2*angtol
+
+    def get_attributes():
+        return ['x1', 'y1', 'x2', 'y2', 'anchor-is-tail', 'width', 'angle1', 'angle2', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward', 'optional-grading']
+
+
 class DoubleHeadedVector(BaseElement):
     def generate(el, data):
         obj = Vector.generate(el, data)
@@ -1333,7 +1459,7 @@ elements['pl-spring'] = Spring
 elements['pl-text'] = Text
 elements['pl-triangle'] = Triangle
 elements['pl-vector'] = Vector
-
+elements['pl-paired-vector'] = PairedVector
 
 # Base Elements
 

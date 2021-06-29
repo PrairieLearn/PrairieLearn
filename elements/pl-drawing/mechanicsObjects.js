@@ -2788,6 +2788,165 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
     }
 };
 
+mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement {
+    static generate(canvas, options, submittedAnswer) {
+        if (typeof this.myIndex == 'undefined') {
+            this.myIndex = 0;
+        }
+        else {
+            this.myIndex += 1;
+        }
+
+        const myColors = ['orange', 'green', 'purple', 'pink'];
+
+        options.stroke = myColors[this.myIndex % myColors.length];
+
+        const includedAttributes = ['width', 'label', 'offsetx',
+            'offsety', 'stroke', 'strokeWidth', 'arrowheadWidthRatio', 'arrowheadOffsetRatio',
+            'drawStartArrow', 'drawEndArrow', 'originY', 'trueHandles',
+            'disregard_sense', 'optional_grading', 'objectDrawErrorBox',
+            'offset_forward', 'offset_backward', 'selectable', 'evented']
+
+        var options1 = {}
+        var options2 = {}
+        for (var i = 0; i < includedAttributes.length; i++) {
+            if (typeof (options[includedAttributes[i]]) != typeof (options['abcnonsense'])) {
+                options1[includedAttributes[i]] = options2[includedAttributes[i]] = options[includedAttributes[i]];
+            }
+        }
+        options1.x1 = options.x1;
+        options1.y1 = options.y1;
+        options2.x1 = options.x2;
+        options2.y1 = options.y2;
+        const varyingAttributes = ['left', 'top', 'angle', 'XcenterErrorBox', 'YcenterErrorBox', 'widthErrorBox', 'heightErrorBox']
+        for (var i = 0; i < varyingAttributes.length; i++) {
+            if (typeof (options[varyingAttributes[i].concat('1')]) != typeof (options['abcnonsense'])) {
+                options1[varyingAttributes[i]] = options[varyingAttributes[i].concat('1')];
+                options2[varyingAttributes[i]] = options[varyingAttributes[i].concat('2')];
+            }
+        }
+
+        var obj1 = new mechanicsObjects.Arrow(options1);
+        if (!('id' in obj1)) {
+            obj1.id = window.PLDrawingApi.generateID();
+        }
+        canvas.add(obj1);
+
+        var obj2 = new mechanicsObjects.Arrow(options2);
+        if (!('id' in obj2)) {
+            obj2.id = window.PLDrawingApi.generateID();
+        }
+        canvas.add(obj2);
+
+        if (options.drawErrorBox) {
+            console.log('entered');
+            var error_box1 = new fabric.Rect(
+                {
+                    left: options.XcenterErrorBox1,
+                    top: options.YcenterErrorBox1,
+                    originX: 'center',
+                    originY: 'center',
+                    width: options.widthErrorBox1,
+                    height: options.heightErrorBox1,
+                    angle: options.angle1,
+                    fill: '',
+                    stroke: myColors[this.myIndex % myColors.length]
+                },
+            );
+            var error_box2 = new fabric.Rect(
+                {
+                    left: options.XcenterErrorBox2,
+                    top: options.YcenterErrorBox2,
+                    originX: 'center',
+                    originY: 'center',
+                    width: options.widthErrorBox2,
+                    height: options.heightErrorBox2,
+                    angle: options.angle2,
+                    fill: '',
+                    stroke: myColors[this.myIndex % myColors.length]
+                },
+            );
+            canvas.add(error_box1);
+            canvas.add(error_box2);
+        }
+
+        var angle_rad = Math.PI * obj1.angle / 180;
+        var dx = obj1.width * Math.cos(angle_rad);
+        var dy = obj1.width * Math.sin(angle_rad);
+        let textObj = null;
+        if (obj1.label) {
+            textObj = new mechanicsObjects.LatexText(obj1.label, {
+                left: obj1.left + dx + obj1.offsetx,
+                top: obj1.top + dy + obj1.offsety,
+                fontSize: 20,
+                textAlign: 'left',
+                selectable: false,
+            });
+            canvas.add(textObj);
+        }
+
+        var angle_rad2 = Math.PI * obj2.angle / 180;
+        var dx2 = obj2.width * Math.cos(angle_rad2);
+        var dy2 = obj2.width * Math.sin(angle_rad2);
+        let textObj2 = null;
+        if (obj2.label) {
+            textObj2 = new mechanicsObjects.LatexText(obj2.label, {
+                left: obj2.left + dx2 + obj2.offsetx,
+                top: obj2.top + dy2 + obj2.offsety,
+                fontSize: 20,
+                textAlign: 'left',
+                selectable: false,
+            });
+            canvas.add(textObj2);
+        }
+
+        if (options.selectable) {
+            submittedAnswer.registerAnswerObjects(options, [obj1, obj2],
+                [(submitted_object, canvas_object) => {
+                    console.log('can you see me')
+                    for (const key of ['left', 'top', 'angle']) {
+                        submitted_object[key.concat('1')] = canvas_object[key];
+                        console.log(key.concat('1'));
+                        console.log(submitted_object[key.concat('1')]);
+                    }
+                },
+                (submitted_object, canvas_object) => {
+                    console.log("no I can't")
+                    for (const key of ['left', 'top', 'angle']) {
+                        submitted_object[key.concat('2')] = canvas_object[key];
+                        console.log(key.concat('2'));
+                        console.log(submitted_object[key.concat('2')]);
+                    }
+                }
+                ],
+            );
+
+            obj1.on('moving', () => {
+                if (textObj) {
+                    textObj.left = obj1.left + dx + obj1.offsetx;
+                    textObj.top = obj1.top + dy + obj1.offsety;
+                }
+            });
+            // submittedAnswer.registerAnswerObject(options, obj2, (submitted_object, canvas_object) => {
+            //     submitted_object.left = canvas_object.left;
+            //     submitted_object.top = canvas_object.top;
+            // });
+            // obj2.on('moving', () => {
+            //     if (textObj2) {
+            //         textObj2.left = obj2.left + dx2 + obj2.offsetx;
+            //         textObj2.top = obj2.top + dy2 + obj2.offsety;
+            //     }
+            // });
+        }
+
+        return [obj1, obj2];
+    }
+
+    static get_button_tooltip() {
+        return 'Add paired vector';
+    }
+};
+
 mechanicsObjects.byType['pl-double-headed-vector'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         var obj = new mechanicsObjects.DoubleArrow(options);
