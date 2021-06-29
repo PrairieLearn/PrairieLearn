@@ -734,7 +734,7 @@ module.exports.getSearchSchema = function() {
 /**
  * Generate, set, and return a random schema name.
  *
- * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used.
+ * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used (after lowercasing).
  * @param {(error: Error | null, schema: String) => void} callback
  */
 module.exports.setRandomSearchSchema = function(prefix, callback) {
@@ -748,7 +748,7 @@ module.exports.setRandomSearchSchema = function(prefix, callback) {
 
     // schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6)
     // which is the default PostgreSQL identifier limit
-    const schema = `${truncPrefix}_${timestamp}_${suffix}`;
+    const schema = `${truncPrefix}_${timestamp}_${suffix}`.toLowerCase();
     module.exports.setSearchSchema(schema, (err) => {
         if (ERR(err, callback)) return;
         callback(null, schema);
