@@ -183,7 +183,7 @@ module.exports.getClient = function(callback) {
             return ERR(err, callback); // unconditionally return
         }
         if (searchSchema != null) {
-            const setSearchPathSql = `SET search_path TO ${searchSchema},public`;
+            const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
             module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
                 if (err) {
                     done(client);
@@ -205,7 +205,12 @@ module.exports.getClient = function(callback) {
  */
 module.exports.setSearchSchema = function(schema, callback) {
     searchSchema = schema;
-    module.exports.query('CREATE SCHEMA IF NOT EXISTS ' + schema, [], (err) => {
+    /* Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
+     * https://github.com/brianc/node-postgres/pull/396
+     * https://github.com/brianc/node-postgres/issues/1978
+     * https://www.postgresql.org/docs/12/sql-syntax-lexical.html
+     */
+    module.exports.query(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`, [], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
     });
@@ -482,7 +487,7 @@ module.exports.query = function(sql, params, callback) {
 
         const setSearchPath = function(callback) {
             if (searchSchema != null) {
-                const setSearchPathSql = `SET search_path TO ${searchSchema},public`;
+                const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
                 module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
                     if (err) {
                         if (client) {
