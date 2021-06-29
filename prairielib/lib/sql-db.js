@@ -209,6 +209,7 @@ module.exports.getClient = function(callback) {
  */
 module.exports.setSearchSchema = function(schema, callback) {
     searchSchema = schema;
+    if (schema == null) return;
     /* Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
      * https://github.com/brianc/node-postgres/pull/396
      * https://github.com/brianc/node-postgres/issues/1978
