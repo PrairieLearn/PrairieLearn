@@ -208,8 +208,10 @@ module.exports.getClient = function(callback) {
  * @param {(error: Error | null) => void} callback
  */
 module.exports.setSearchSchema = function(schema, callback) {
-    searchSchema = schema;
-    if (schema == null) return;
+    if (schema == null) {
+        searchSchema = schema;
+        return;
+    }
     /* Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
      * https://github.com/brianc/node-postgres/pull/396
      * https://github.com/brianc/node-postgres/issues/1978
@@ -217,6 +219,8 @@ module.exports.setSearchSchema = function(schema, callback) {
      */
     module.exports.query(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`, [], (err) => {
         if (ERR(err, callback)) return;
+        // we only set searchSchema after CREATE to avoid the above query() call using searchSchema
+        searchSchema = schema;
         callback(null);
     });
 };
