@@ -420,52 +420,12 @@ module.exports.endTransactionAsync = promisify(module.exports.endTransaction);
 module.exports.query = function(sql, params, callback) {
     debug('query()', 'sql:', debugString(sql));
     debug('query()', 'params:', debugParams(params));
-    if (!pool) {
-        return callback(new Error('Connection pool is not open'));
-    }
-    pool.connect(function(err, client, done) {
-        const handleError = function(err) {
-            if (!err) return false;
-            if (client) {
-                done(client);
-            }
-            const sqlError = JSON.parse(JSON.stringify(err));
-            sqlError.message = err.message;
-            err = error.addData(err, {sqlError: sqlError, sql: sql, sqlParams: params});
-            ERR(err, callback);
-            return true;
-        };
-        if (handleError(err)) return;
-
-        const setSearchPath = function(callback) {
-            if (searchSchema != null) {
-                const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
-                module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
-                    if (err) {
-                        if (client) {
-                            done(client);
-                        }
-                        return ERR(err, callback); // unconditionally return
-                    }
-                    callback(null);
-                });
-            } else {
-                callback(null);
-            }
-        };
-
-        setSearchPath(function (err) {
+    module.exports.getClient((err, client, done) => {
+        if (ERR(err, callback)) return;
+        module.exports.queryWithClient(client, sql, params, (err, result) => {
+            done(client);
             if (ERR(err, callback)) return;
-            paramsToArray(sql, params, function(err, newSql, newParams) {
-                if (err) err = error.addData(err, {sql: sql, sqlParams: params});
-                if (ERR(err, callback)) return;
-                client.query(newSql, newParams, function(err, result) {
-                    if (handleError(err)) return;
-                    done();
-                    debug('query() success', 'rowCount:', result.rowCount);
-                    callback(null, result);
-                });
-            });
+            callback(null, result);
         });
     });
 };
