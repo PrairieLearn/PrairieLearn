@@ -205,7 +205,7 @@ module.exports.getClient = function(callback) {
  */
 module.exports.setSearchSchema = function(schema, callback) {
     searchSchema = schema;
-    module.exports.query('CREATE SCHEMA ' + schema, [], (err) => {
+    module.exports.query('CREATE SCHEMA IF NOT EXISTS ' + schema, [], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
     });
