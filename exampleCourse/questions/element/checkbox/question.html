@@ -186,12 +186,13 @@
     <div class="card-body">
 
         <pl-question-panel>
-            <p>Here, partial credit is given with <code>partial-credit="true"</code>, using the "coverage (COV)" grading algorithm with <code>partial-credit-method="COV"</code> (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).</p>
+            <p>Here, partial credit is given with <code>partial-credit="true"</code>, using the "coverage (COV)" grading algorithm with <code>partial-credit-method="COV"</code> (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).
+                We have also set <code>show-number-correct="true"</code> so that the number of correct options is displayed in the help text at the bottom of the question.</p>
 
             <p> Group work provides which of the following benefits: </p>
         </pl-question-panel>
 
-        <pl-checkbox answers-name="group_ans_v7" partial-credit="true" partial-credit-method="COV">
+        <pl-checkbox answers-name="group_ans_v7" partial-credit="true" partial-credit-method="COV" show-number-correct="true">
           <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
           <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
           <pl-answer>               The ability to work on a project by yourself.</pl-answer>

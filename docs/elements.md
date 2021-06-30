@@ -177,6 +177,9 @@ Attribute | Type | Default | Description
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `hide-score-badge` | boolean | false | Hide badges next to selected answers.
+`min-select` | integer | special | The minimum number of answers that must be selected in any valid submission.
+`max-select` | integer | special | The maximum number of answers that can be selected in any valid submission.
+`show-number-correct` | boolean | false | Display the number of correct choices in the help text.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:

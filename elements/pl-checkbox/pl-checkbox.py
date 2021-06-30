@@ -15,16 +15,21 @@ HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
 HIDE_LETTER_KEYS_DEFAULT = False
 HIDE_SCORE_BADGE_DEFAULT = False
+SHOW_NUMBER_CORRECT_DEFAULT = False
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge', 'min-select', 'max-select', 'show-number-correct']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
+
+    if ((pl.has_attrib(element, 'min-correct') or pl.has_attrib(element, 'max-correct')) and
+            (pl.has_attrib(element, 'min-select') or pl.has_attrib(element, 'max-select'))):
+        raise Exception('Cannot use min-correct or max-correct if using min-select or max-select')
 
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', None)
@@ -155,18 +160,31 @@ def render(element_html, data):
         if not hide_help_text:
             # Should we reveal the depth of the choice?
             detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
+            show_number_correct = pl.get_boolean_attrib(element, 'show-number-correct', SHOW_NUMBER_CORRECT_DEFAULT)
             min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+
+            if show_number_correct:
+                if max_correct == 1:
+                    number_correct_text = ' There is exactly <b>1</b> correct option in the list above.'
+                else:
+                    number_correct_text = ' There are exactly <b>%d</b> correct options in the list above.' % (max_correct)
+            else:
+                number_correct_text = ''
+
             if detailed_help_text:
                 if min_correct != max_correct:
                     insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
+                    insert_text += number_correct_text
                     helptext = '<small class="form-text text-muted">Select ' + insert_text + '</small>'
                 else:
                     insert_text = ' exactly <b>%d</b> options.' % (max_correct)
+                    insert_text += number_correct_text
                     helptext = '<small class="form-text text-muted">Select' + insert_text + '</small>'
             else:
                 insert_text = ' at least one option.'
-                helptext = '<small class="form-text text-muted">Select all possible options that apply.</small>'
+                insert_text += number_correct_text
+                helptext = '<small class="form-text text-muted">Select all possible options that apply.' + number_correct_text + '</small>'
 
             if partial_credit:
                 if partial_credit_method == 'PC':
