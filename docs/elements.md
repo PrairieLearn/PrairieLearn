@@ -171,8 +171,8 @@ Attribute | Type | Default | Description
 `max-correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 `partial-credit` | boolean | false | Enable partial credit scores. By default, the choice of grading method is "all-or-nothing".
-`partial-credit-method` | string | 'PC' | Two grading methods for partial credit: 'EDC' (Every Decision Counts) and 'PC' (Percent Correct). See explanation below.
-`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
+`partial-credit-method` | string | 'PC' | Three grading methods for partial credit: 'COV' (Coverage), 'EDC' (Every Decision Counts), and 'PC' (Percent Correct). See explanation below.
+`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'COV', 'EDC' or 'PC')
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
@@ -187,7 +187,11 @@ Attribute | Type | Default | Description
 
 #### Details
 
-Two grading methods are available when using `partial-credit="true"`:
+Three grading methods are available when using `partial-credit="true"`:
+
+* `'COV'` (Coverage): in this method, the final score is calculated by multiplying the **base score** (the proportion of correct answers that are chosen) with 
+the **guessing factor** (the proportion of chosen answers that are correct). Specifically, if `t` is the number of correct answers chosen, `c` is the total number
+of correct answers, and `n` is the total number of answers chosen, then the final score is `(t / c) * (t / n)`.
 
 * `'EDC'` (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
 

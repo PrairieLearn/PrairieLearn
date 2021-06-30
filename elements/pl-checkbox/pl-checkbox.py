@@ -170,14 +170,18 @@ def render(element_html, data):
 
             if partial_credit:
                 if partial_credit_method == 'PC':
-                    gradingtext = 'You must select ' + insert_text + ' You will receive a score of <code>100% * (t - f) / n</code>, ' \
+                    gradingtext = 'You must select' + insert_text + ' You will receive a score of <code>100% * (t - f) / n</code>, ' \
                         + 'where <code>t</code> is the number of true options that you select, <code>f</code> ' \
                         + 'is the number of false options that you select, and <code>n</code> is the total number of true options. ' \
                         + 'At minimum, you will receive a score of 0%.'
-                else:
-                    gradingtext = 'You must select ' + insert_text + ' You will receive a score of <code>100% * (t + f) / ' + str(len(display_answers)) + '</code>, ' \
+                elif partial_credit_method == 'EDC':
+                    gradingtext = 'You must select' + insert_text + ' You will receive a score of <code>100% * (t + f) / ' + str(len(display_answers)) + '</code>, ' \
                         + 'where <code>t</code> is the number of true options that you select and <code>f</code> ' \
                         + 'is the number of false options that you do not select.'
+                else:   # this is the COV method
+                    gradingtext = 'You must select' + insert_text + ' You will receive a score of <code>100% * (t / c) * (t / n)</code>, ' \
+                        + 'where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, ' \
+                        + 'and <code>n</code> is the total number of options you select.'
             else:
                 gradingtext = 'You must select' + insert_text + ' You will receive a score of 100% ' \
                     + 'if you select all options that are true and no options that are false. ' \
@@ -352,9 +356,14 @@ def grade(element_html, data):
                 n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
                 points = n_correct_answers - len(submittedSet - correctSet)
                 score = max(0, points / len(correctSet))
-        else:  # this is the default EDC method
+        elif partial_credit_method == 'EDC':
             number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)
             score = 1 - 1.0 * number_wrong / number_answers
+        else:   # this is the COV method
+            n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
+            base_score = n_correct_answers / len(correctSet)
+            guessing_factor = n_correct_answers / len(submittedSet)
+            score = base_score * guessing_factor
 
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
@@ -403,9 +412,14 @@ def test(element_html, data):
                     n_correct_answers = len(set(correct_keys)) - len(set(correct_keys) - set(ans))
                     points = n_correct_answers - len(set(ans) - set(correct_keys))
                     score = max(0, points / len(set(correct_keys)))
-            else:  # this is the EDC method
+            elif partial_credit_method == 'EDC':
                 number_wrong = len(set(ans) - set(correct_keys)) + len(set(correct_keys) - set(ans))
                 score = 1 - 1.0 * number_wrong / number_answers
+            else:   # this is the COV method
+                n_correct_answers = len(set(correct_keys)) - len(set(correct_keys) - set(ans))
+                base_score = n_correct_answers / len(set(correct_keys))
+                guessing_factor = n_correct_answers / len(set(ans))
+                score = base_score * guessing_factor
         else:
             score = 0
         data['raw_submitted_answers'][name] = ans
