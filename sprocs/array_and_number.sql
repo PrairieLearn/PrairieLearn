@@ -1,6 +1,7 @@
--- We do not test whether the type already exists.
--- This is because we will be creating it within the current default schema, which will be empty.
--- We could test whether the type exists in any schema by querying pg_type like in migrations/000_initial_state.sql.
--- But that would test for the type in any schema, and we only care about schema on the search path.
--- It's hard to restrict the "does this type exist" query to just the current search path.
+-- Ideally, we'd use something like `CREATE TYPE IF NOT EXISTS` here, but Postgres doesn't offer that.
+-- We used to approximate this by checking `IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = ...)`.
+-- However, now that we're creating sprocs and types in a local per-process schema, this would no longer work,
+-- as the type would exist in `pg_type` but not necessarily in the schemas on the search path.
+-- So, instead, we blindly create the type without checking if it first exists, as it should never exist since we're
+-- creating it in a fresh, empty schema.
 CREATE TYPE array_and_number AS (arr DOUBLE PRECISION[], number INTEGER);
