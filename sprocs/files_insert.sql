@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS files_insert(text,text,text,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS files_insert(text,text,text,bigint,bigint,bigint,bigint,enum_file_storage_type);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     files_insert(
         IN display_filename text,
         IN storage_filename text,
