@@ -2799,7 +2799,7 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
             this.myIndex += 1;
         }
 
-        const myColors = ['orange', 'green', 'purple', 'pink'];
+        const myColors = ['lightblue', 'orange', 'lightgreen', 'pink', 'darksalmon'];
 
         options.stroke = myColors[this.myIndex % myColors.length];
 
