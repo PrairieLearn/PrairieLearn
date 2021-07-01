@@ -13,6 +13,7 @@
         {"name": "math", "heading": "Week 3: Math"},
         {"name": "fun", "heading": "Week 4: Extras for fun"}
     ],
+    "groupBy": "unit",
     "topics": [
         {"name": "Template", "color": "orange1", "description": "Templates to copy as the start for a new question."},
         {"name": "Autograder", "color": "orange2", "description": "Questions using the external code grading feature."},
