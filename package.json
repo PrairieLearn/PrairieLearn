@@ -127,7 +127,7 @@
         "@types/chai": "^4.2.19",
         "@types/fs-extra": "^9.0.8",
         "@types/mocha": "^8.2.2",
-        "@types/node": "^15.12.1",
+        "@types/node": "^15.12.5",
         "@types/pg": "^8.6.0",
         "chai": "^4.3.1",
         "chai-as-promised": "^7.1.1",
