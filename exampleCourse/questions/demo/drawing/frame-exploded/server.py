@@ -19,7 +19,9 @@ def generate(data):
         x['neg_theta1']= 180 + x['theta1']
         x['theta2']= 180/math.pi * math.atan2(x['y1']-x['y4'], x['x2']-x['x1'])
         x['neg_theta2']= 180 + x['theta2']
-        x['width_arrow']= 60
+        x['width_arrow']= 48
+        x['arrowhead_width']= 0.8
+        x['arrowhead_length']= 0.8
 
         x['x5']= x['x4'] + 75
         x['x6']= x['x5'] + 120

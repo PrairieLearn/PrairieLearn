@@ -22,29 +22,33 @@
 </pl-question-panel>
 
 <p>
-    <pl-drawing grid-size="20" gradable="true" answers-name="box" hide-answer-panel="false"
+    <pl-drawing grid-size="15" gradable="true" answers-name="box" hide-answer-panel="false"
         width={{params.width_canvas}} height={{params.height_canvas}}>
 
         <pl-drawing-answer draw-error-box="true">
             <!--external forces-->
-            <pl-vector x1={{params.x2}} y1={{params.y1}} angle={{params.neg_theta2}}></pl-vector>
-            <pl-vector x1={{params.x5}} y1={{params.y1}} angle={{params.neg_theta2}}></pl-vector>
-            <pl-vector x1={{params.x2}} y1={{params.y4}} angle="0" anchor-is-tail="false"></pl-vector>
-            <pl-vector x1={{params.x5}} y1={{params.y4}} angle="0" anchor-is-tail="false"></pl-vector>
-            <pl-vector x1={{params.x2}} y1={{params.y4}} angle="-90" anchor-is-tail="false"></pl-vector>
-            <pl-vector x1={{params.x5}} y1={{params.y4}} angle="-90" anchor-is-tail="false"></pl-vector>
-            <pl-vector x1={{params.x4}} y1={{params.y2}} angle="90"></pl-vector>
-            <pl-vector x1={{params.x9}} y1={{params.y7}} angle="90"></pl-vector>
+            <pl-vector x1={{params.x2}} y1={{params.y1}} angle={{params.neg_theta2}} arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-vector>
+            <pl-vector x1={{params.x5}} y1={{params.y1}} angle={{params.neg_theta2}} arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-vector>
+            <pl-vector x1={{params.x2}} y1={{params.y4}} angle="0" anchor-is-tail="false" arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-vector>
+            <pl-vector x1={{params.x5}} y1={{params.y4}} angle="0" anchor-is-tail="false" arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-vector>
+            <pl-vector x1={{params.x2}} y1={{params.y4}} angle="-90" anchor-is-tail="false" arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-vector>
+            <pl-vector x1={{params.x5}} y1={{params.y4}} angle="-90" anchor-is-tail="false" arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-vector>
+            <pl-vector x1={{params.x4}} y1={{params.y2}} angle="90" arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-vector>
+            <pl-vector x1={{params.x9}} y1={{params.y7}} angle="90" arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-vector>
 
             <!--internal forces-->
             <pl-paired-vector x1={{params.x5}} y1={{params.y3}} x2={{params.x7}} y2={{params.y6}} 
-                angle1={{params.neg_theta1}} angle2={{params.theta1}} disregard-sense="true"></pl-paired-vector>
+                angle1={{params.neg_theta1}} angle2={{params.theta1}} disregard-sense="true"
+                arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-paired-vector>
             <pl-paired-vector x1={{params.x5}} y1={{params.y2}} x2={{params.x6}} y2={{params.y7}} 
-                disregard-sense="true" angle1="0" angle2="180"></pl-paired-vector>
+                disregard-sense="true" angle1="0" angle2="180" 
+                arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-paired-vector>
             <pl-paired-vector x1={{params.x5}} y1={{params.y2}} x2={{params.x6}} y2={{params.y7}} 
-                angle1="-90" angle2="90" disregard-sense="true"></pl-paired-vector>
+                angle1="-90" angle2="90" disregard-sense="true" arrow-head-width="0.8" 
+                arrow-head-length="0.8" width="48"></pl-paired-vector>
             <pl-paired-vector x1={{params.x8}} y1={{params.y5}} x2={{params.x10}} y2={{params.y7}} 
-                angle1={{params.theta1}} angle2={{params.neg_theta1}} disregard-sense="true"></pl-paired-vector>
+                angle1={{params.theta1}} angle2={{params.neg_theta1}} disregard-sense="true" 
+                arrow-head-width="0.8" arrow-head-length="0.8" width="48"></pl-paired-vector>
         </pl-drawing-answer>
 
 
@@ -60,8 +64,8 @@
 
         <pl-controls>
             <pl-controls-group>
-                <pl-drawing-button type="pl-vector" width={{params.width_arrow}}></pl-drawing-button>
-                <pl-drawing-button type="pl-paired-vector" width={{params.width_arrow}}></pl-drawing-button>
+                <pl-drawing-button type="pl-vector" width={{params.width_arrow}} arrow-head-width={{params.arrowhead_width}} arrow-head-length={{params.arrowhead_length}} ></pl-drawing-button>
+                <pl-drawing-button type="pl-paired-vector" width={{params.width_arrow}} arrow-head-width={{params.arrowhead_width}} arrow-head-length="0.8" ></pl-drawing-button>
             </pl-controls-group>
             <pl-controls-group>
                 <pl-drawing-button type="delete"></pl-drawing-button>

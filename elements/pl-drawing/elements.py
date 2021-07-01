@@ -574,7 +574,7 @@ class PairedVector(BaseElement):
             top2 -= w * math.sin(theta2)
         
         # Error box for grading
-        disregard_sense = pl.get_boolean_attrib(el, 'disregard-sense', False)
+        disregard_sense = pl.get_boolean_attrib(el, 'disregard-sense', True)
         if disregard_sense:
             offset_forward_default = w
         else:
@@ -635,29 +635,31 @@ class PairedVector(BaseElement):
         return True
 
     def grade(ref, st, tol, angtol):
+        ref2= ref.copy()
+        st2= st.copy()
         dup_attrs = ['top', 'left', 'angle', 'XcenterErrorBox', 'YcenterErrorBox', 'widthErrorBox', 'heightErrorBox']
-        ref['x3']= ref['x2']
-        ref['y3']= ref['y2']
-        st['x3']= st['x2']
-        st['y3']= st['y2']
-        ref['x2']= ref['x1']
-        ref['y2']= ref['y1']
-        st['x2']= st['x1']
-        st['y2']= st['y1']
+        ref2['x3']= ref2['x2']
+        ref2['y3']= ref2['y2']
+        st2['x3']= st2['x2']
+        st2['y3']= st2['y2']
+        ref2['x2']= ref2['x1']
+        ref2['y2']= ref2['y1']
+        st2['x2']= st2['x1']
+        st2['y2']= st2['y1']
 
         poss = [[False for i in range(2)] for j in range(2)]
         counter= 0
         for i in range(2):
             for j in range(2):
                 for attr in dup_attrs:
-                        ref[attr]= ref[attr+str(i+1)]
-                        st[attr] = st[attr + str(j+1)]
+                        ref2[attr]= ref2[attr+str(i+1)]
+                        st2[attr] = st2[attr + str(j+1)]
                 for attr in ['x', 'y']:
-                    ref[attr+'1']= ref[attr+str(i+2)]
-                    st[attr+'1'] = st[attr + str(j+2)]
-                poss[i][j]= Vector.grade(ref, st, tol, angtol)
+                    ref2[attr+'1']= ref2[attr+str(i+2)]
+                    st2[attr+'1'] = st2[attr + str(j+2)]
+                poss[i][j]= Vector.grade(ref2, st2, tol, angtol)
                 counter+= 1
-        angdiff = abs(st['angle1'] - st['angle2'])
+        angdiff = abs(st2['angle1'] - st2['angle2'])
         angdiff = abs(angdiff - 180)
         # print(angdiff < 2*angtol)
         # print(poss)

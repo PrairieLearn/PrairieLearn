@@ -2790,6 +2790,8 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
+        
+        // pick matching colors for both arrows
         if (typeof this.myIndex == 'undefined') {
             this.myIndex = 0;
         }
@@ -2801,12 +2803,12 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
 
         options.stroke = myColors[this.myIndex % myColors.length];
 
+        // attributes common to both canvas vectors
         const includedAttributes = ['width', 'label', 'offsetx',
             'offsety', 'stroke', 'strokeWidth', 'arrowheadWidthRatio', 'arrowheadOffsetRatio',
             'drawStartArrow', 'drawEndArrow', 'originY', 'trueHandles',
             'disregard_sense', 'optional_grading', 'objectDrawErrorBox',
             'offset_forward', 'offset_backward', 'selectable', 'evented']
-
         var options1 = {}
         var options2 = {}
         for (var i = 0; i < includedAttributes.length; i++) {
@@ -2814,6 +2816,8 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
                 options1[includedAttributes[i]] = options2[includedAttributes[i]] = options[includedAttributes[i]];
             }
         }
+
+        // options that need to be duplicated for each canvas vector
         options1.x1 = options.x1;
         options1.y1 = options.y1;
         options2.x1 = options.x2;
@@ -2839,7 +2843,7 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
         canvas.add(obj2);
 
         if (options.drawErrorBox) {
-            console.log('entered');
+            // console.log('entered');
             var error_box1 = new fabric.Rect(
                 {
                     left: options.XcenterErrorBox1,

@@ -361,9 +361,7 @@ class PLDrawingAnswerState {
         this.updateObject(submitted_object);
         object.on('modified', () => {
             if (modifyHandler) {
-                console.log(submitted_object);
                 modifyHandler(submitted_object, object);
-                console.log(submitted_object);
             } else {
                 for (const [key, value] of Object.entries(object)) {
                     if (key[0] != '_' && !blocked_keys.has(key)) {
@@ -425,17 +423,10 @@ class PLDrawingAnswerState {
 
         objects[1].on('modified', () => {
             if (modifyHandlers[1]) {
-                console.log(submitted_object);
                 modifyHandlers[1](submitted_object, objects[1]);
-                console.log(submitted_object);
             } else {
                 for (const [key, value] of Object.entries(object)) {
                     if (key[0] != '_' && !blocked_keys.has(key)) {
-                        if (value != submitted_object[key]) {
-                            console.log(key);
-                            console.log(submitted_object[key]);
-                            console.log(value);
-                        }
                         submitted_object[key] = value;
                     }
                 }
@@ -452,17 +443,10 @@ class PLDrawingAnswerState {
 
         objects[0].on('modified', () => {
             if (modifyHandlers[0]) {
-                console.log(submitted_object);
                 modifyHandlers[0](submitted_object, objects[0]);
-                console.log(submitted_object);
             } else {
                 for (const [key, value] of Object.entries(object)) {
                     if (key[0] != '_' && !blocked_keys.has(key)) {
-                        if (value != submitted_object[key]) {
-                            console.log(key);
-                            console.log(submitted_object[key]);
-                            console.log(value);
-                        }
                         submitted_object[key] = value;
                     }
                 }
