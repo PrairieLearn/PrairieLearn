@@ -40,7 +40,7 @@ BEGIN
 				instance_id
 			FROM assessment_instances_insert(assessment_id, user_id, group_work, authn_user_id, mode, time_limit_min, date) AS tmp;
 
-			SELECT ai.max_points INTO max_points FROM assessment_instances AS ai WHERE ai.id = instance_id;
+			max_points := 1;
 		ELSE
 			RAISE EXCEPTION 'no such assessment_instance_id: %', assessment_instance_id;
 		END IF;

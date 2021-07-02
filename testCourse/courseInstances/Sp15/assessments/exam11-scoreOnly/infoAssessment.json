@@ -5,6 +5,7 @@
     "set": "Exam",
     "number": "11",
     "scoreOnly": true,
+    "multipleInstance": true,
     "allowAccess": [
         {
             "mode": "Public",
