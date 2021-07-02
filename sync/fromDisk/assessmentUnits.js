@@ -30,7 +30,7 @@ module.exports.sync = async function(courseId, courseData) {
     const knownAssessmentUnitNames = new Set();
     Object.values(courseData.courseInstances).forEach(ci => {
         Object.values(ci.assessments).forEach(a => {
-            if (!infofile.hasErrors(a)) {
+            if (!infofile.hasErrors(a) && a.data.unit !== undefined) {
                 knownAssessmentUnitNames.add(a.data.unit);
             }
         });

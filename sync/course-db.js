@@ -135,6 +135,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
  * @property {AssessmentUnit[]} assessmentUnits
+ * @property {string} groupBy
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
@@ -653,6 +654,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
         assessmentUnits,
         tags,
         topics,
+        groupBy: info.groupBy || 'set',
         exampleCourse,
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
