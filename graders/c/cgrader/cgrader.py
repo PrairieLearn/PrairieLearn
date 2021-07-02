@@ -82,7 +82,7 @@ class CGrader:
         out = ''
         std_obj_files = []
         for std_c_file in (c_file if isinstance(c_file, list) else [c_file]):
-            obj_file = re.sub('\.c$', '', std_c_file) + '.o'
+            obj_file = re.sub('\.[^.]*$', '', std_c_file) + '.o'
             out += self.run_command([self.compiler, '-c', std_c_file, '-o', obj_file] + flags,
                                     sandboxed=False)
             std_obj_files.append(obj_file)
@@ -92,7 +92,7 @@ class CGrader:
             
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
-                obj_file = re.sub('\.c$', '', added_c_file) + '.o'
+                obj_file = re.sub('\.[^.]*$', '', added_c_file) + '.o'
                 out += self.run_command([self.compiler, '-c', added_c_file, 
                                          '-o', obj_file] + flags, sandboxed=False)
                 objs.append(obj_file)
