@@ -27,10 +27,6 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
-    if ((pl.has_attrib(element, 'min-correct') or pl.has_attrib(element, 'max-correct')) and
-            (pl.has_attrib(element, 'min-select') or pl.has_attrib(element, 'max-select'))):
-        raise Exception('Cannot use min-correct or max-correct if using min-select or max-select')
-
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', None)
     if not partial_credit and partial_credit_method is not None:
@@ -172,13 +168,24 @@ def render(element_html, data):
             else:
                 number_correct_text = ''
 
-            if detailed_help_text:
-                if min_correct != max_correct:
-                    insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
+            if pl.has_attrib(element, 'min-select') or pl.has_attrib(element, 'max-select'):
+                min_select = pl.get_integer_attrib(element, 'min-select', 1)
+                max_select = pl.get_integer_attrib(element, 'max-select', len(display_answers))
+                restrict_num_submitted_answers = True
+            elif detailed_help_text:
+                min_select = min_correct
+                max_select = max_correct
+                restrict_num_submitted_answers = True
+            else:
+                restrict_num_submitted_answers = False
+
+            if restrict_num_submitted_answers:
+                if min_select != max_select:
+                    insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_select, max_select)
                     insert_text += number_correct_text
                     helptext = '<small class="form-text text-muted">Select ' + insert_text + '</small>'
                 else:
-                    insert_text = ' exactly <b>%d</b> options.' % (max_correct)
+                    insert_text = ' exactly <b>%d</b> options.' % (max_select)
                     insert_text += number_correct_text
                     helptext = '<small class="form-text text-muted">Select' + insert_text + '</small>'
             else:
@@ -338,13 +345,23 @@ def parse(element_html, data):
         data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(str(one_bad_key))
         return
 
-    # Check that the number of submitted answers is in range when 'detailed_help_text="true"'
-    if pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
-        min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
-        max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+    # Get minimum and maximum number of options to be selected
+    if pl.has_attrib(element, 'min-select') or pl.has_attrib(element, 'max-select'):
+        min_select = pl.get_integer_attrib(element, 'min-select', 1)
+        max_select = pl.get_integer_attrib(element, 'max-select', len(data['params'].get(name, [])))
+        restrict_num_submitted_answers = True
+    elif pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
+        min_select = pl.get_integer_attrib(element, 'min-correct', 1)
+        max_select = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+        restrict_num_submitted_answers = True
+    else:
+        restrict_num_submitted_answers = False
+
+    # Check that the number of submitted answers is in the interval [min_select, max_select], if needed
+    if restrict_num_submitted_answers:
         n_submitted = len(submitted_key)
-        if n_submitted > max_correct or n_submitted < min_correct:
-            data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
+        if n_submitted > max_select or n_submitted < min_select:
+            data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_select, max_select)
             return
 
 
