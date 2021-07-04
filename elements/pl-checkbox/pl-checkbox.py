@@ -179,23 +179,23 @@ def render(element_html, data):
                 number_correct_text = ''
 
             if pl.has_attrib(element, 'min-select') or pl.has_attrib(element, 'max-select'):
-                min_select = pl.get_integer_attrib(element, 'min-select', 1)
-                max_select = pl.get_integer_attrib(element, 'max-select', len(display_answers))
+                min_submitted_answers = pl.get_integer_attrib(element, 'min-select', 1)
+                max_submitted_answers = pl.get_integer_attrib(element, 'max-select', len(display_answers))
                 restrict_num_submitted_answers = True
             elif detailed_help_text:
-                min_select = min_correct
-                max_select = max_correct
+                min_submitted_answers = min_correct
+                max_submitted_answers = max_correct
                 restrict_num_submitted_answers = True
             else:
                 restrict_num_submitted_answers = False
 
             if restrict_num_submitted_answers:
-                if min_select != max_select:
-                    insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_select, max_select)
+                if min_submitted_answers != max_submitted_answers:
+                    insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_submitted_answers, max_submitted_answers)
                     insert_text += number_correct_text
                     helptext = '<small class="form-text text-muted">Select ' + insert_text + '</small>'
                 else:
-                    insert_text = ' exactly <b>%d</b> options.' % (max_select)
+                    insert_text = ' exactly <b>%d</b> options.' % (max_submitted_answers)
                     insert_text += number_correct_text
                     helptext = '<small class="form-text text-muted">Select' + insert_text + '</small>'
             else:
@@ -357,21 +357,21 @@ def parse(element_html, data):
 
     # Get minimum and maximum number of options to be selected
     if pl.has_attrib(element, 'min-select') or pl.has_attrib(element, 'max-select'):
-        min_select = pl.get_integer_attrib(element, 'min-select', 1)
-        max_select = pl.get_integer_attrib(element, 'max-select', len(data['params'].get(name, [])))
+        min_submitted_answers = pl.get_integer_attrib(element, 'min-select', 1)
+        max_submitted_answers = pl.get_integer_attrib(element, 'max-select', len(data['params'].get(name, [])))
         restrict_num_submitted_answers = True
     elif pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
-        min_select = pl.get_integer_attrib(element, 'min-correct', 1)
-        max_select = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+        min_submitted_answers = pl.get_integer_attrib(element, 'min-correct', 1)
+        max_submitted_answers = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
         restrict_num_submitted_answers = True
     else:
         restrict_num_submitted_answers = False
 
-    # Check that the number of submitted answers is in the interval [min_select, max_select], if needed
+    # Check that the number of submitted answers is in the interval [min_submitted_answers, max_submitted_answers], if needed
     if restrict_num_submitted_answers:
         n_submitted = len(submitted_key)
-        if n_submitted > max_select or n_submitted < min_select:
-            data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_select, max_select)
+        if n_submitted > max_submitted_answers or n_submitted < min_submitted_answers:
+            data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_submitted_answers, max_submitted_answers)
             return
 
 
