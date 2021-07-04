@@ -15,10 +15,24 @@ Despite all our best efforts, sometimes we put a broken question onto an exam. T
 
 ## 1. Regrading a broken question for a given student
 
-If you find a bug in `server.py`, you can fix the question by writing your own grade function. The procedure to regrade a question is illustrated using the example question `demo/calculation`, which has the following  `server.py` code:
+If you find a bug in a question, you can fix the question by writing your own grade function in `server.py`. To illustrate the regrading procedure, we use the `demo/calculation` question in the example course. The `question.html` and `server.py` files have been reproduced below.
+
+File `question.html`:
+
+```html
+<pl-question-panel>
+  <p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
+  <p> What is the sum $c = a + b$?</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="c" comparison="sigfig" digits="3" label="$c=$"></pl-number-input>
+```
+
+File `server.py`:
 
 ```python
 import random, copy
+
 def generate(data):
     # Sample two random integers between 5 and 10 (inclusive)
     a = random.randint(5, 10)
@@ -32,34 +46,57 @@ def generate(data):
     data['correct_answers']['c'] = c
 ```
 
-Suppose this question had a typo, and the last line was instead written as:
+Now suppose we made a typo in `server.py` by writing the last line of the `generate()` function as follows:
+
 ```python
 data['correct_answers']['c'] = a
 ```
 
-When solving this question, a student that submits the answer correctly (the result of `a+b`) will get the question marked as incorrect.
+When solving this question, a student who submits the correct answer (the result of `a + b`) will get their submission marked as incorrect. How do we fix this?
 
-In `Homework` mode, all you need to do is to update the `correct_answers` in the `generate` function, and next time a student generates another instance of the question (click "Try question again"), the question will be graded correctly.
+First, we must fix the typo in the `generate()` function to ensure that question variants generated in the future contain no errors. On `Homework` questions that allow students to generate new variants (using the "Try question again" button), all future variants will be graded correctly. Since there is no penalty for generating new variants of a `Homework` question, fixing the typo is probably sufficient in this case.
 
-In `Exam` mode (or `Homework` with `singleVariant="true"`) students will not get another instance of the question, and hence the function `generate` will not be called again. In this case, we will need to fix the question by adding a custom grade function to the `server.py` file:
+However, students cannot generate new variants for `Exam` questions or `Homework` questions with `singleVariant="true"`. Unfortunately, fixing the `generate()` function does not fix question variants that have already been generated. To ensure that all question variants are correctly graded in the future, we must write a custom `grade()` function in the `server.py` file as shown below.
 
 ```python
+import random, copy
 import math
+
+def generate(data):
+    # Sample two random integers between 5 and 10 (inclusive)
+    a = random.randint(5, 10)
+    b = random.randint(5, 10)
+    # Put these two integers into data['params']
+    data['params']['a'] = a
+    data['params']['b'] = b
+    # Compute the sum of these two integers
+    c = a + b
+    # Put the sum into data['correct_answers']
+    data['correct_answers']['c'] = c
+
 def grade(data):
+    # Explicitly compute the correct answer
     c = data['params']['a'] + data['params']['b']
+
     if data['submitted_answers']['c'] is not None:
         if math.isclose(data['submitted_answers']['c'], c, rel_tol=1e-3, abs_tol=1e-6):
             data['partial_scores']['c'] = {'score': 1, 'weight': 1}
             data['score'] = 1
 ```
 
-The next time a student submits another attempt of the correct answer (`a+b`), the question will be marked as correct. In `Homework` mode this may be sufficient, since students are not penalized for multiple submissions. In `Exam` mode, this additional attempt may have reduced credit, or the student may have reached the maximum number of attempts. To adjust the score, the instructor can use the `Regrade` functionality from the student assessment instance page. In the example below, the student eventually received 22/25 for the question, but they actually entered the  correct answer in the first attempt.
+The next time a student submits the correct answer (`a + b`), the question will be marked as correct. This may suffice for `Homework` questions since students are not penalized for making multiple submissions. However, on `Exam` questions, additional submissions may have reduced credit, or students may have run out of attempts. Thus, we may wish to regrade all past submissions using the new `grade()` function.
+
+To regrade all past submissions for a specific student, the instructor can use the `Regrade` functionality on the student assessment instance page. To access this page, go to the "Students" tab in the assessment, then click "Details" in the rightmost column of the row containing the student's information.
+
+As an example, consider a student who made two correct submissions, but ended up receiving 22/25 points because the first submission was mistakenly marked as incorrect before the `server.py` file was fixed.
 
 ![](regradingBeforeClick.png)
 
-Upon clicking the `Regrade` button, the custom grading function is called again for all the submitted attempts, adjusting the score for this student.
+Upon clicking the `Regrade` button, the custom `grade()` function is called again for all submissions, and the score is adjusted to reflect the number of points the student would have earned if the question had been using the custom `grade()` function all along.
 
 ![](regradingAfterClick.png)
+
+Both `Homework` and `Exam` questions can be regraded. However, for now, questions with external graders cannot be regraded using this procedure.
 
 ## 2. Regrading an assessment
 
