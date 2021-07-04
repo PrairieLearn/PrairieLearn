@@ -57,6 +57,8 @@ def prepare(element_html, data):
     number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
     min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
     max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
+    min_select = pl.get_integer_attrib(element, 'min-select', 1)
+    max_select = pl.get_integer_attrib(element, 'max-select', number_answers)
 
     if min_correct < 1:
         raise ValueError('The attribute min-correct is {:d} but must be at least 1'.format(min_correct))
@@ -73,6 +75,13 @@ def prepare(element_html, data):
     max_incorrect = number_answers - min_correct
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError('INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)' % (min_incorrect, max_incorrect, len_incorrect, len_correct))
+
+    if min_select < 1:
+        raise ValueError('The attribute min-select is {:d} but must be at least 1'.format(min_select))
+    if min_select > max_select:
+        raise ValueError('min-select (%d) is greater than max-select (%d)' % (min_select, max_select))
+    if min_select > number_answers:
+        raise ValueError('min-select (%d) is greater than the total number of answers (%d)' % (min_select, number_answers))
 
     number_correct = random.randint(min_correct, max_correct)
     number_incorrect = number_answers - number_correct
