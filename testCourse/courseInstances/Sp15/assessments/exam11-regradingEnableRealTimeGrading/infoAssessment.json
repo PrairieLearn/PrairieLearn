@@ -1,0 +1,22 @@
+{
+    "uuid": "e429e4a6-c362-4fed-a986-2c83f3b335bf",
+    "type": "Exam",
+    "title": "Test regrading with real-time grading enabled",
+    "set": "Exam",
+    "number": "11",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100,
+            "timeLimitMin": 50
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "addVectors", "points": [11, 8]},
+                {"id": "partialCredit3", "points": [13, 12, 11]}
+            ]
+        }
+    ]
+}

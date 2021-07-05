@@ -42,7 +42,8 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
-                    NULL::JSONB AS data
+                    NULL::JSONB AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     assessment_instances AS ai
                     LEFT JOIN users AS u ON (u.user_id = ai.auth_user_id)
@@ -69,7 +70,8 @@ BEGIN
                         'params', v.params,
                         'true_answer', v.true_answer,
                         'options', v.options
-                    ) AS data
+                    ) AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     variants AS v
                     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
@@ -97,7 +99,8 @@ BEGIN
                     jsonb_build_object(
                       'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                       'correct', s.correct
-                    ) AS data
+                    ) AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     submissions AS s
                     JOIN variants AS v ON (v.id = s.variant_id)
@@ -123,7 +126,8 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     gj.id AS submission_id,
-                    to_jsonb(gj.*) AS data
+                    to_jsonb(gj.*) AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     grading_jobs AS gj
                     JOIN submissions AS s ON (s.id = gj.submission_id)
@@ -158,7 +162,8 @@ BEGIN
                         'feedback', gj.feedback,
                         'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                         'submission_id', s.id
-                    ) AS data
+                    ) AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     grading_jobs AS gj
                     JOIN submissions AS s ON (s.id = gj.submission_id)
@@ -193,7 +198,8 @@ BEGIN
                         'feedback', gj.feedback,
                         'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                         'true_answer', v.true_answer
-                    ) AS data
+                    ) AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     grading_jobs AS gj
                     JOIN submissions AS s ON (s.id = gj.submission_id)
@@ -227,7 +233,8 @@ BEGIN
                         'max_points', qsl.max_points,
                         'score_perc', qsl.score_perc,
                         'correct', s.correct
-                    ) AS data
+                    ) AS data,
+                    qsl.id AS tie_breaker
                 FROM
                     question_score_logs AS qsl
                     JOIN instance_questions AS iq ON (iq.id = qsl.instance_question_id)
@@ -259,7 +266,8 @@ BEGIN
                         'points', asl.points,
                         'max_points', asl.max_points,
                         'score_perc', asl.score_perc
-                    ) AS data
+                    ) AS data,
+                    asl.id AS tie_breaker
                 FROM
                     assessment_score_logs AS asl
                     LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
@@ -297,7 +305,8 @@ BEGIN
                          END
                     )
                     ELSE NULL::JSONB
-                    END AS data
+                    END AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     assessment_state_logs AS asl
                     JOIN assessment_instances AS ai ON (ai.id = ai_id)
@@ -322,7 +331,8 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     NULL::INTEGER AS submission_id,
-                    NULL::JSONB AS data
+                    NULL::JSONB AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     page_view_logs AS pvl
                     JOIN variants AS v ON (v.id = pvl.variant_id)
@@ -350,7 +360,8 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
-                    NULL::JSONB AS data
+                    NULL::JSONB AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     page_view_logs AS pvl
                     JOIN users AS u ON (u.user_id = pvl.authn_user_id)
@@ -375,7 +386,8 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
-                    jsonb_build_object('user', gu.uid) AS data
+                    jsonb_build_object('user', gu.uid) AS data,
+                    NULL::INTEGER AS tie_breaker
                 FROM
                     assessment_instances AS ai
                     JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
@@ -384,7 +396,7 @@ BEGIN
                 WHERE
                     ai.id = ai_id
             )
-            ORDER BY date, event_order, question_id
+            ORDER BY date, event_order, question_id, tie_breaker
         ),
         question_data AS (
             SELECT

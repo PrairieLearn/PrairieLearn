@@ -29,6 +29,7 @@ require('./testRealTimeGradingDisabled');
 require('./testShowClosedAssessmentScore');
 require('./testGradeRate');
 require('./testBonusPoints');
+require('./testRegrading/testRegrading');
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testCourseElementExtension');

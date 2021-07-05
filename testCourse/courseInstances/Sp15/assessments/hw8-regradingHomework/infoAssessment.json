@@ -1,0 +1,20 @@
+{
+    "uuid": "d5019576-8553-484f-8913-5976c432b8ea",
+    "type": "Homework",
+    "title": "Test Regrading for Homework Assessment",
+    "set": "Homework",
+    "number": "8",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "partialCredit3", "points": 1, "maxPoints": 6, "triesPerVariant": 2}
+            ]
+        }
+    ]
+}

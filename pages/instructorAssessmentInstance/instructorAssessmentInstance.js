@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
+const question = require('../../lib/question');
 const router = express.Router();
 const error = require('../../prairielib/lib/error');
 const sqlDb = require('../../prairielib/lib/sql-db');
@@ -9,6 +10,8 @@ const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
+
+const config = require('../../lib/config');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -158,6 +161,20 @@ router.post('/', (req, res, next) => {
                 res.redirect(req.originalUrl);
             });
         });
+    } else if (req.body.__action == 'regrade_question') {
+        if (!config.regradeActive) {
+            return next(error.make(400, 'regrade disabled', {locals: res.locals, body: req.body}));
+        }
+        let instance_question_id = req.body.instance_question_id;
+        let course_id = res.locals.course.id;
+        let authn_user_id = res.locals.authn_user.user_id;
+        let update_method = req.body.update_method;
+        let keep_highest_score = update_method == 'highest-score-update';
+        question.regradeQuestion(authn_user_id, course_id, instance_question_id, keep_highest_score, (err, job_sequence_id) => {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }

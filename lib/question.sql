@@ -121,3 +121,107 @@ FROM
     variants AS v
     JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE v.id = $variant_id;
+
+--BLOCK select_graded_submissions_and_other_data
+SELECT s.*, v.variant_seed, v.options, v.question_id, ci.course_id, aq.init_points, q.qid, iq.assessment_instance_id
+FROM submissions AS s
+JOIN variants AS v ON (v.id = s.variant_id)
+JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
+LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+JOIN questions AS q ON (q.id = aq.question_id)
+WHERE 
+    iq.id = $instance_question_id 
+    AND s.graded_at IS NOT NULL 
+    AND (s.gradable OR s.broken) -- broken submissions are due to question code error, not student error, so we should regrade broken submissions too
+ORDER BY s.id ASC;
+
+--BLOCK select_course
+SELECT c.*
+FROM pl_courses AS c
+WHERE c.id = $course_id;
+
+--BLOCK select_question
+SELECT q.*
+FROM questions AS q
+WHERE q.id = $question_id;
+
+--BLOCK select_instance_question
+SELECT iq.*
+FROM instance_questions AS iq
+WHERE iq.id = $instance_question_id;
+
+--BLOCK select_variant
+SELECT v.*
+FROM variants AS v
+WHERE v.id = $variant_id;
+
+--BLOCK select_instance_question_points_by_variant_id
+SELECT iq.points
+FROM variants AS v
+JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
+WHERE v.id = $variant_id;
+
+--BLOCK select_variants_info_for_instance_question
+SELECT v.open, v.num_tries, v.id
+FROM variants AS v
+WHERE v.instance_question_id = $instance_question_id;
+
+--BLOCK reset_variants
+UPDATE variants AS v
+SET
+    open = true,
+    num_tries = 0
+WHERE v.instance_question_id = $instance_question_id;
+
+--BLOCK restore_variant
+UPDATE variants AS v
+SET
+    open = $variant_open,
+    num_tries = $variant_num_tries
+WHERE v.id = $variant_id;
+
+--BLOCK reset_instance_question
+UPDATE instance_questions AS iq
+SET
+    open = true,
+    status = 'unanswered',
+    points = 0,
+    score_perc = 0,
+    highest_submission_score = 0,
+    current_value = $init_points,
+    points_list = iq.points_list_original,
+    number_attempts = 0,
+    variants_points_list = ARRAY[]::double precision[],
+    submission_score_array = null,
+    incremental_submission_score_array = null,
+    modified_at = now()
+WHERE
+    iq.id = $instance_question_id;
+
+--BLOCK restore_instance_question
+UPDATE instance_questions AS iq
+SET
+    open = $open,
+    status = $status,
+    points = $points,
+    points_in_grading = $points_in_grading,
+    score_perc = $score_perc,
+    score_perc_in_grading = $score_perc_in_grading,
+    highest_submission_score = $highest_submission_score,
+    current_value = $current_value,
+    points_list = $points_list::double precision[],
+    variants_points_list = $variants_points_list::double precision[],
+    number_attempts = $number_attempts,
+    modified_at = now()
+WHERE
+    iq.id = $id;
+
+--BLOCK reset_instance_assessment
+UPDATE assessment_instances AS ai
+SET
+    points = 0,
+    score_perc = 0.0,
+    score_perc_in_grading = 0.0
+WHERE
+    ai.id = $assessment_instance_id;
