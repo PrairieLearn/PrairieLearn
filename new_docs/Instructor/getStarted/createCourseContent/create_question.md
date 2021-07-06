@@ -220,7 +220,43 @@ Rather than explicitly typing the values of the correct and incorrect answers, w
 
 * go to the `Preview` tab to see your question. Try it out! Check a different variant and see how the variables change.
 
-### 4) Copying a question from the example course
+### 4) Creating a symbolic question
+Not all questions must have numerical answers; there is also support for symbolic inputs such as algebra expressions.  Our fourth question will demonstrate this feature.
+
+* Navigate to the `Questions` tab and select `Add question`.
+
+* Once the question is created, click on the `Files` tab, and open `server.py` for editing.  Input the following:
+```python
+import numpy
+import sympy
+
+def generate(data):
+
+    # Create a variable
+    x = sympy.symbols('x')
+
+    # degree of polynomial
+    degree = 3
+
+    # Randomize the coefficients (make sure the leading coefficient is non-zero)
+    coeffs = numpy.random.random_integers(-9,9,size = degree+1)
+    if coeffs[0]==0:
+        coeffs[0]=1
+
+    # Create the polynomial
+    f = coeffs[0]*x**3 + coeffs[1]*x**2 + coeffs[2]*x + coeffs[3]
+
+    # Compute derivative with respect to x
+    df = 3*coeffs[0]*x**2 + 2*coeffs[1]*x + coeffs[2]
+
+    # Modify data and return
+    data["params"]["x"] = sympy.latex(x)
+    data["params"]["f"] = sympy.latex(f)
+    data["correct_answers"]["df"] = str(df)
+```
+We are using two new libraries, `numpy` and `sympy`.
+
+### 5) Copying a question from the example course
 
 You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to (depicted in red in the figure below). Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
