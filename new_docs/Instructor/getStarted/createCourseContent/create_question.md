@@ -283,6 +283,50 @@ data["params"]["x"] = sympy.latex(x)
 data["params"]["f"] = sympy.latex(f)
 data["correct_answers"]["df"] = str(df)
 ```
+The first two calls just perform formatting so that the variables can be expressed nicely in math mode.  The last line saves the answer as a Python `string` which the students answer will be compared against.
+
+* Click `Save and sync` to save changes and edit the `question.html` file from the `Files` tab.
+
+* Input the following:
+```html
+<pl-question-panel>
+    <p>
+        Find the derivative of
+    </p>
+    <p>
+        $\qquad f(x) = {{params.f}}$
+    </p>
+    <p>
+        with respect to ${{params.x}}$:
+    </p>
+</pl-question-panel>$\qquad\dfrac{df(x)}{dx}$ = <pl-symbolic-input answers-name="df" variables="{{params.x}}"></pl-symbolic-input>
+```
+Once again, use `{{params.var}}` in order to read the variables created in `server.py`.  (In this case "var" is either `f` or `x`).  The `$` formats the output in math-mode and the command [\qquad](https://tex.stackexchange.com/questions/119068/meaning-of-quad) just indents the equation.
+
+We now define the expected student input using the `pl-symbolic-input` element, which allows us to take in algebraic expressions.  The `variables` argument references the expected input variable(s) as defined in `server.py`.
+
+* Click `Save and sync`.
+
+* Here is a demonstration of the behavior of the question, which you can try be clicking the `Preview` tab:
+
+![](symbolic-question.png)
+
+* Now go to the `Settings` tab and change the `QID` and `info.json` file.  For example, you can change the `QID` to "poly_derivative" and you can edit the `title`, `topic`, and `tags` in `info.json` to read:
+```json
+"title": "Derivative of a Polynomial",
+"topic": "Calculus",
+"tags": [
+    "userid",
+    "fa21",
+    "symbolic",
+    "derivatives",
+    "rand"
+],
+```
+
+* Like always, click `Save and sync` to save your changes.
+
+
 
 ### 5) Copying a question from the example course
 
