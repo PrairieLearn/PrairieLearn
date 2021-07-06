@@ -2791,7 +2791,7 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement {
     static generate(canvas, options, submittedAnswer) {
         
-        // pick matching colors for both arrows
+        // pick matching colors for both arrows; these rotate throughout the page
         if (typeof this.myIndex == 'undefined') {
             this.myIndex = 0;
         }
@@ -2830,12 +2830,14 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
             }
         }
 
+        // add first arrow
         var obj1 = new mechanicsObjects.Arrow(options1);
         if (!('id' in obj1)) {
             obj1.id = window.PLDrawingApi.generateID();
         }
         canvas.add(obj1);
 
+        // add second arrow
         var obj2 = new mechanicsObjects.Arrow(options2);
         if (!('id' in obj2)) {
             obj2.id = window.PLDrawingApi.generateID();
@@ -2843,7 +2845,6 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
         canvas.add(obj2);
 
         if (options.drawErrorBox) {
-            // console.log('entered');
             var error_box1 = new fabric.Rect(
                 {
                     left: options.XcenterErrorBox1,
@@ -2874,19 +2875,19 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
             canvas.add(error_box2);
         }
 
-        var angle_rad = Math.PI * obj1.angle / 180;
-        var dx = obj1.width * Math.cos(angle_rad);
-        var dy = obj1.width * Math.sin(angle_rad);
-        let textObj = null;
+        var angle_rad1 = Math.PI * obj1.angle / 180;
+        var dx1 = obj1.width * Math.cos(angle_rad1);
+        var dy1 = obj1.width * Math.sin(angle_rad1);
+        let textObj1 = null;
         if (obj1.label) {
-            textObj = new mechanicsObjects.LatexText(obj1.label, {
-                left: obj1.left + dx + obj1.offsetx,
-                top: obj1.top + dy + obj1.offsety,
+            textObj1 = new mechanicsObjects.LatexText(obj1.label, {
+                left: obj1.left + dx1 + obj1.offsetx,
+                top: obj1.top + dy1 + obj1.offsety,
                 fontSize: 20,
                 textAlign: 'left',
                 selectable: false,
             });
-            canvas.add(textObj);
+            canvas.add(textObj1);
         }
 
         var angle_rad2 = Math.PI * obj2.angle / 180;
@@ -2904,50 +2905,38 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
             canvas.add(textObj2);
         }
 
-        if (options.selectable) {
-            submittedAnswer.registerAnswerObjects(options, [obj1, obj2],
-                [(submitted_object, canvas_object) => {
-                    console.log('can you see me')
-                    for (const key of ['left', 'top', 'angle']) {
-                        submitted_object[key.concat('1')] = canvas_object[key];
-                        console.log(key.concat('1'));
-                        console.log(submitted_object[key.concat('1')]);
-                    }
-                },
-                (submitted_object, canvas_object) => {
-                    console.log("no I can't")
-                    for (const key of ['left', 'top', 'angle']) {
-                        submitted_object[key.concat('2')] = canvas_object[key];
-                        console.log(key.concat('2'));
-                        console.log(submitted_object[key.concat('2')]);
-                    }
-                }
-                ],
-            );
-
-            obj1.on('moving', () => {
-                if (textObj) {
-                    textObj.left = obj1.left + dx + obj1.offsetx;
-                    textObj.top = obj1.top + dy + obj1.offsety;
-                }
+        var subObj= mechanicsObjects.cloneMechanicsObject('pl-paired-vector', options);
+        mechanicsObjects.attachHandlersNoClone(subObj, obj1, submittedAnswer, 
+            function(){console.log('can you see me')
+            for (const key of ['left', 'top', 'angle']) {
+                subObj[key.concat('1')] = obj1[key];
+                console.log(key.concat('1'));
+                console.log(subObj[key.concat('1')]);
+            }
+            },
+            function(){
+                canvas.remove(obj1);
+                canvas.remove(obj2);
             });
-            // submittedAnswer.registerAnswerObject(options, obj2, (submitted_object, canvas_object) => {
-            //     submitted_object.left = canvas_object.left;
-            //     submitted_object.top = canvas_object.top;
-            // });
-            // obj2.on('moving', () => {
-            //     if (textObj2) {
-            //         textObj2.left = obj2.left + dx2 + obj2.offsetx;
-            //         textObj2.top = obj2.top + dy2 + obj2.offsety;
-            //     }
-            // });
-        }
+
+        mechanicsObjects.attachHandlersNoClone(subObj, obj2, submittedAnswer, 
+            function(){console.log('no I can"t')
+            for (const key of ['left', 'top', 'angle']) {
+                subObj[key.concat('2')] = obj2[key];
+                    console.log(key.concat('2'));
+                    console.log(subObj[key.concat('2')]);
+            }
+        },
+        function(){
+            canvas.remove(obj1);
+            canvas.remove(obj2);
+        });
 
         return [obj1, obj2];
     }
 
     static get_button_tooltip() {
-        return 'Add paired vector';
+        return 'Add paired vectors';
     }
 };
 
