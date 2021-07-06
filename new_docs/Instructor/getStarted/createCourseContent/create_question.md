@@ -254,7 +254,35 @@ def generate(data):
     data["params"]["f"] = sympy.latex(f)
     data["correct_answers"]["df"] = str(df)
 ```
-We are using two new libraries, `numpy` and `sympy`.
+We are using two new libraries, `numpy` and `sympy`.  [Numpy](https://numpy.org) is a comprehensive scientific computing library for Python; for this example, we are only importing it to allow us to generate multiple random numbers in a single line.  [Sympy](https://sympy.org) is a library for symbolic mathematics; this library is essential for this example.
+
+Let's examine some of the new features of this file.
+```python
+x = sympy.symbols('x')
+```
+Here, we create a `Symbol` object using the string `'x'`.  This is basically an algebraic variable, and mathematical operations can be performed with it.
+
+```python
+coeffs = numpy.random.random_integers(-9,9,size = degree+1)
+if coeffs[0]==0:
+    coeffs[0]=1
+```
+We wish to define a polynomial of degree 3, i.e. an expression $ax^3 + bx^2 + cx + d$, where the leading coefficient $a$ is non-zero.  The coefficients are generated randomly in the range $[-9,9]$ using `numpy.random.random_integers`, and we generate 4 of them, which is the polynomial degree $+1$.  To ensure the polynomial is truly of degree 3, the first coefficient can't equal to zero.  Python starts counting at zero, not one, so we test if `coeffs[0]` was set equal to zero.  If so, we change its value to 1.
+```python
+f = coeffs[0]*x**3 + coeffs[1]*x**2 + coeffs[2]*x + coeffs[3]
+```
+We define a degree 3 polynomial using the symbol `x` and the coefficents just generated.  The `**` operation in Python corresponds to exponentiation, so an expression like `x**3` corresponds to $x^3$.
+
+```python
+df = 3*coeffs[0]*x**2 + 2*coeffs[1]*x + coeffs[2]
+```
+We compute the first derivate of the polynomial `f` and save it to another polynomial called `df`.  This is the answer the student will be asked for.
+
+```python
+data["params"]["x"] = sympy.latex(x)
+data["params"]["f"] = sympy.latex(f)
+data["correct_answers"]["df"] = str(df)
+```
 
 ### 5) Copying a question from the example course
 
