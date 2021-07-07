@@ -700,15 +700,16 @@ module.exports.getSearchSchema = function() {
 module.exports.setRandomSearchSchema = function(prefix, callback) {
     // truncated prefix (max 28 characters)
     const truncPrefix = prefix.substring(0, 28);
-    // 27-character timestamp in format YYYY-MM-DDTHH-MM-SS-SSSZ
-    const timestamp = (new Date()).toISOString().replace(/-/g, '_').replace(/:/g, '_').replace(/[.]/g, '_');
-    // random 6-character suffix to avoid clashes (approx 2 billion values)
+    // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
+    const timestamp = (new Date()).toISOString();
+    // random 6-character suffix to avoid clashes (approx 2 billion possible values)
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     const suffix = _.times(6, function() {return _.sample(chars);}).join('');
 
-    // schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6)
-    // which is the default PostgreSQL identifier limit
-    const schema = `${truncPrefix}_${timestamp}_${suffix}`.toLowerCase();
+    // Schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6),
+    // which is the default PostgreSQL identifier limit.
+    // Note that this schema name will need quoting because of characters like ':', '-', etc
+    const schema = `${truncPrefix}_${timestamp}_${suffix}`;
     module.exports.setSearchSchema(schema, (err) => {
         if (ERR(err, callback)) return;
         callback(null, schema);
