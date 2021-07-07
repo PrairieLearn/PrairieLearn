@@ -334,10 +334,61 @@ You should also have access to the example course `XC 101`. From the top menu, n
 
 You will find a variety of questions in the example course. This is probably your best starting point when creating questions for the first time. Let's see how you can copy one of the example questions to your own course:
 
-* from the `Questions` tab, click on the question `Template pl-integer-input: randomized input parameters` (QID: `template/integerInput`).
+* from the `Questions` tab, click on the question `Demo: Matrix algebra` (QID: `demo/matrixAlgebra`).
 
 * click on the `Settings` tab.
 
 * click the button `Make a copy of this question`. Select your course "MATH 101" and click `Submit`.
 
-* That is it! Go to the `Questions` tab and you will see the question was added to your course. You can modify the question following the steps from the section above.
+* That is it! Go to the `Questions` tab and you will see the question was added to your course. You can modify the question following the steps from the section above.  You can start by navigating to the `Settings` tab and changing the `QID` to something else if you prefer (the `QID` will carry over from the example course as `demo/matrixAlgebra`).  You can also change the `title`, `topic`, and `tags` in the `info.json` file.
+
+* Navigate to the `Files` tab; we will look at new features in this question.  The `server.py` file is as follows:
+```python
+import numpy as np
+import prairielearn as pl
+
+def generate(data):
+
+    # Dimensions
+    nInnerMin = 2
+    nMax = 5
+    nRows = np.random.randint(1,nMax+1)
+    nInner = np.random.randint(nInnerMin,nMax+1)
+    nCols = np.random.randint(1,nMax+1)
+
+    # Number of digits after the decimal
+    nDigits = 1
+
+    # Range of entries
+    numMax = 10
+
+    # The two matrices to be multiplied
+    A = np.random.random_integers(-numMax,numMax,(nRows,nInner))/(10**nDigits)
+    B = np.random.random_integers(-numMax,numMax,(nInner,nCols))/(10**nDigits)
+
+    # Product of these two matrices
+    C = A.dot(B)
+
+    # Modify data and return
+    data["params"]["A"] = pl.to_json(A)
+    data["params"]["B"] = pl.to_json(B)
+    data["correct_answers"]["C"] = pl.to_json(C)
+```
+
+* The `question.html` file contains:
+```html
+<pl-question-panel>
+<p>
+Two matrices $A$ and $B$ are given as follows:
+</p>
+<pl-variable-output>
+    <variable params-name="A">A</variable>
+    <variable params-name="B">B</variable>
+</pl-variable-output>
+<p>
+Find the product of these two matrices:
+</p>
+</pl-question-panel>
+
+<pl-matrix-input answers-name="C" comparison="sigfig" digits="3" label="$AB=$"></pl-matrix-input>
+```
