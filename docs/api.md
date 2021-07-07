@@ -48,6 +48,10 @@ In the endpoint list below, path components starting with a colon like
     - `/pl/api/v1/course_instances/:course_instance_id/gradebook`
     - All of the data available in the course gradebook, with one entry per user containing summary data on all assessments.
 
+* **Course instance access rules list:**
+    - `/pl/api/v1/course_instances/:course_instance_id/course_instance_access_rules`
+    - All access rules for the course instance.
+
 * **Assessments list:**
     - `/pl/api/v1/course_instances/:course_instance_id/assessments`
     - All assessments in the course instance.
