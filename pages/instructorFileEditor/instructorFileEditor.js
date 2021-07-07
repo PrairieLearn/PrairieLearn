@@ -27,6 +27,7 @@ const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
+const { getPaths } = require('../../lib/getPaths');
 
 router.get('/*', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
@@ -197,9 +198,13 @@ router.get('/*', (req, res, next) => {
             fileEdit.origHash = fileEdit.diskHash;
         }
 
-        debug('Render');
-        res.locals.fileEdit = fileEdit;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        getPaths(req, res, (err, paths) => {
+            if (ERR(err, next)) return;
+            debug('Render');
+            res.locals.fileEdit = fileEdit;
+            res.locals.fileEdit.paths = paths;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
     });
 });
 
