@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION format_interval_short(d interval) RETURNS text AS $$
+CREATE FUNCTION format_interval_short(d interval) RETURNS text AS $$
 DECLARE
     days integer;
     hours integer;

@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS sync_course_tags(JSONB, bigint);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_course_tags(
         IN valid_course_info boolean,
         IN delete_unused boolean,

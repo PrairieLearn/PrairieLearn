@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     chunks_insert(
         IN in_course_id bigint,
         IN generated_chunks json[]
