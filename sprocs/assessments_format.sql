@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessments_format(
         assessment_id bigint
     ) RETURNS JSONB
