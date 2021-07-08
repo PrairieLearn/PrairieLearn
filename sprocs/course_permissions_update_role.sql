@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     course_permissions_update_role(
         course_id bigint,
         user_id bigint,

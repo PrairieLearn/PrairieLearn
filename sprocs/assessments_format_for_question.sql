@@ -2,9 +2,7 @@
 -- question_id for course instance course_instance_id. If skip_assessment_id
 -- is provided then that individual assessment is not included.
 
-DROP FUNCTION IF EXISTS assessments_for_question(bigint,bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessments_format_for_question(
         question_id bigint,
         course_instance_id bigint,

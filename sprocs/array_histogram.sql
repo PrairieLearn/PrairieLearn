@@ -1,7 +1,7 @@
 
 -- Based on: https://wiki.postgresql.org/wiki/Aggregate_Histogram
 
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     array_histogram_sfunc (state INTEGER[], val anyelement, thresholds anyarray) RETURNS INTEGER[] AS $$
 DECLARE
     nbuckets INTEGER;
@@ -28,7 +28,6 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Tell Postgres how to use the new function
-DROP AGGREGATE IF EXISTS array_histogram (anyelement, anyarray) CASCADE;
 CREATE AGGREGATE array_histogram (anyelement, anyarray) (
     SFUNC = array_histogram_sfunc,
     STYPE = INTEGER[]
