@@ -2808,9 +2808,9 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
             'offsety', 'stroke', 'strokeWidth', 'arrowheadWidthRatio', 'arrowheadOffsetRatio',
             'drawStartArrow', 'drawEndArrow', 'originY', 'trueHandles',
             'disregard_sense', 'optional_grading', 'objectDrawErrorBox',
-            'offset_forward', 'offset_backward', 'selectable', 'evented']
-        var options1 = {}
-        var options2 = {}
+            'offset_forward', 'offset_backward', 'selectable', 'evented'];
+        var options1 = {};
+        var options2 = {};
         for (var i = 0; i < includedAttributes.length; i++) {
             if (typeof (options[includedAttributes[i]]) != typeof (options['abcnonsense'])) {
                 options1[includedAttributes[i]] = options2[includedAttributes[i]] = options[includedAttributes[i]];
@@ -2822,8 +2822,8 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
         options1.y1 = options.y1;
         options2.x1 = options.x2;
         options2.y1 = options.y2;
-        const varyingAttributes = ['left', 'top', 'angle', 'XcenterErrorBox', 'YcenterErrorBox', 'widthErrorBox', 'heightErrorBox']
-        for (var i = 0; i < varyingAttributes.length; i++) {
+        const varyingAttributes = ['left', 'top', 'angle', 'XcenterErrorBox', 'YcenterErrorBox', 'widthErrorBox', 'heightErrorBox'];
+        for (i = 0; i < varyingAttributes.length; i++) {
             if (typeof (options[varyingAttributes[i].concat('1')]) != typeof (options['abcnonsense'])) {
                 options1[varyingAttributes[i]] = options[varyingAttributes[i].concat('1')];
                 options2[varyingAttributes[i]] = options[varyingAttributes[i].concat('2')];
@@ -2855,7 +2855,7 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
                     height: options.heightErrorBox1,
                     angle: options.angle1,
                     fill: '',
-                    stroke: myColors[this.myIndex % myColors.length]
+                    stroke: myColors[this.myIndex % myColors.length],
                 },
             );
             var error_box2 = new fabric.Rect(
@@ -2868,7 +2868,7 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
                     height: options.heightErrorBox2,
                     angle: options.angle2,
                     fill: '',
-                    stroke: myColors[this.myIndex % myColors.length]
+                    stroke: myColors[this.myIndex % myColors.length],
                 },
             );
             canvas.add(error_box1);
@@ -2907,7 +2907,7 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
 
         var subObj= mechanicsObjects.cloneMechanicsObject('pl-paired-vector', options);
         mechanicsObjects.attachHandlersNoClone(subObj, obj1, submittedAnswer, 
-            function(){console.log('can you see me')
+            function(){
             for (const key of ['left', 'top', 'angle']) {
                 subObj[key.concat('1')] = obj1[key];
                 console.log(key.concat('1'));
@@ -2920,7 +2920,7 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
             });
 
         mechanicsObjects.attachHandlersNoClone(subObj, obj2, submittedAnswer, 
-            function(){console.log('no I can"t')
+            function(){
             for (const key of ['left', 'top', 'angle']) {
                 subObj[key.concat('2')] = obj2[key];
                     console.log(key.concat('2'));
