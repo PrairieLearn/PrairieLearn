@@ -7,7 +7,9 @@ CREATE OR REPLACE FUNCTION update_group_pogil_roles (
 RETURNS boolean AS $success$
 DECLARE
     success boolean;
+    num_managers bigint;
 BEGIN
+    DROP TABLE IF EXISTS proposed_roles;
     -- Create temporary table to run constraints on
     CREATE TEMP TABLE proposed_roles (
         group_id bigint,
@@ -16,20 +18,29 @@ BEGIN
     );
 
     -- Insert arguments into temp table
+    -- Ensure every student is assigned to a role
     FOR counter IN 1..ARRAY_LENGTH(arg_group_roles, 1) LOOP
+        IF arg_group_roles[counter]::enum_pogil_role = 'None'::enum_pogil_role THEN
+            RETURN FALSE;
+        END IF;
         INSERT INTO proposed_roles VALUES (arg_group_id, arg_group_roles[counter]::enum_pogil_role, arg_user_ids[counter]);
         RAISE NOTICE 'group role: %', arg_group_roles[counter]::enum_pogil_role;
     END LOOP;
 
-    -- 1. TODO: Run constraint checks (i.e. no duplicate roles, etc.)
-    -- 2. Delete the role in "user_roles" for every user in that group
+    -- Check that there's exactly 1 manager
+    SELECT COUNT(*) INTO num_managers FROM proposed_roles WHERE group_role = 'Manager'::enum_pogil_role;
+    IF num_managers <> 1 THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Delete the role in "user_roles" for every user in that group
     DELETE FROM user_roles WHERE group_id = arg_group_id;
 
-    -- 3. TODO: Insert all new roles
+    -- Insert all new roles
     INSERT INTO user_roles(group_id, pogil_role, user_id) (SELECT * FROM proposed_roles);
 
     DROP TABLE proposed_roles;
     
     RETURN TRUE;
 END;
-$total$ LANGUAGE plpgsql VOLATILE;
+$success$ LANGUAGE plpgsql VOLATILE;
