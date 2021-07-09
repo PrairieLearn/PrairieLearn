@@ -4,12 +4,11 @@ CREATE OR REPLACE FUNCTION update_group_pogil_roles (
     IN arg_user_ids bigint[],
     IN arg_group_id bigint
 )
-RETURNS integer AS $total$
+RETURNS boolean AS $success$
 DECLARE
-    total integer;
+    success boolean;
 BEGIN
     -- Create temporary table to run constraints on
-    DROP TABLE IF EXISTS proposed_roles;
     CREATE TEMP TABLE proposed_roles (
         group_id bigint,
         group_role enum_pogil_role,
@@ -17,7 +16,7 @@ BEGIN
     );
 
     -- Insert arguments into temp table
-    FOR counter IN 1..3 LOOP
+    FOR counter IN 1..ARRAY_LENGTH(arg_group_roles, 1) LOOP
         INSERT INTO proposed_roles VALUES (arg_group_id, arg_group_roles[counter]::enum_pogil_role, arg_user_ids[counter]);
         RAISE NOTICE 'group role: %', arg_group_roles[counter]::enum_pogil_role;
     END LOOP;
@@ -29,10 +28,8 @@ BEGIN
     -- 3. TODO: Insert all new roles
     INSERT INTO user_roles(group_id, pogil_role, user_id) (SELECT * FROM proposed_roles);
 
-    SELECT count(*) into total FROM proposed_roles;
-
     DROP TABLE proposed_roles;
     
-    RETURN total;
+    RETURN TRUE;
 END;
 $total$ LANGUAGE plpgsql VOLATILE;
