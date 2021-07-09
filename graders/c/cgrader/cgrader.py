@@ -60,8 +60,10 @@ class CGrader:
                     out += out2.decode('utf-8', 'backslashreplace')
                 return out + tostr
 
-    def test_compile_file(self, c_file, exec_file, main_file=None, add_c_file=None,
-                          points=1, field=None, flags=None, name='Compilation',
+    def test_compile_file(self, c_file, exec_file, main_file=None,
+                          add_c_file=None, compiler=None,
+                          points=1, field=None, flags=None,
+                          name='Compilation',
                           add_warning_result_msg=True,
                           ungradable_if_failed=True):
 
@@ -79,11 +81,14 @@ class CGrader:
         if add_c_file:
             flags.append('-Wl,--allow-multiple-definition')
 
+        if not compiler:
+            compiler = self.compiler
+
         out = ''
         std_obj_files = []
         for std_c_file in (c_file if isinstance(c_file, list) else [c_file]):
             obj_file = re.sub('\.[^.]*$', '', std_c_file) + '.o'
-            out += self.run_command([self.compiler, '-c', std_c_file, '-o', obj_file] + flags,
+            out += self.run_command([compiler, '-c', std_c_file, '-o', obj_file] + flags,
                                     sandboxed=False)
             std_obj_files.append(obj_file)
 
@@ -93,12 +98,12 @@ class CGrader:
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
                 obj_file = re.sub('\.[^.]*$', '', added_c_file) + '.o'
-                out += self.run_command([self.compiler, '-c', added_c_file, 
+                out += self.run_command([compiler, '-c', added_c_file, 
                                          '-o', obj_file] + flags, sandboxed=False)
                 objs.append(obj_file)
 
             # The student C files must be the last so its functions can be overwritten
-            out += self.run_command([self.compiler] + objs + std_obj_files +
+            out += self.run_command([compiler] + objs + std_obj_files +
                                     ['-o', exec_file, '-lm'] + flags, sandboxed=False)
         
         if os.path.isfile(exec_file):
