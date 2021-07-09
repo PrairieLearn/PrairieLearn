@@ -374,6 +374,13 @@ def generate(data):
     data["params"]["B"] = pl.to_json(B)
     data["correct_answers"]["C"] = pl.to_json(C)
 ```
+The first two lines import the libraries `numpy` and `prairielearn`, and gives them the abbreviations `np` and `pl` for convenience.
+
+The question will ask the student to take two matrices `A` and `B` and multiply them together to obtain `C`.  The dimensions of the matrices are defined through the variables `nRows`, `nInner`, and `nCols`.  `nRows` refers to the number of rows of `A`, the variable `nInner` refers to the number of columns of `A`, which is equal to the number of rows of `B`, and finally, `nCols` refers to the number of columns of `B`.  These variables are defined randomly, and in turn the two matrices are generated randomly using [np.random.random_integers](https://numpy.org/doc/stable/reference/random/generated/numpy.random.random_integers.html).
+
+Finally, we compute matrix-matrix product using Numpy's [.dot() method](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.dot.html?highlight=dot#numpy.ndarray.dot).
+
+Finally, when saving the matrices to the data dictionary, we use the method `pl.to_json` which converts the matrices into objects useable by the Prairielearn system.
 
 * The `question.html` file contains:
 ```html
@@ -392,3 +399,14 @@ Find the product of these two matrices:
 
 <pl-matrix-input answers-name="C" comparison="sigfig" digits="3" label="$AB=$"></pl-matrix-input>
 ```
+The question uses the [pl-variable-output](course.md/#variable-output) to display a formatted list of the matrices that a student can easily import into a supported programming environment.
+
+The input element, [pl-matrix-input](course.md/#tags), is also new.  The answer will be checked using `comparison="sigfig"` and `digits="3"`.  For a more detailed explanation of setting input element options, see [choosing grading options](course.md/#grading).  For now, it is enough to know that for every entry of the student's matrix, the first 3 digits will be compared to the true solution.
+
+* Save and sync your changes and click on the `Preview` tab:
+
+![](matrix-algebra.png)
+
+The picture above shows the formatted output provided by `pl-variable-output` and how an answer is entered by the student.  They are able to choose one of four supported languages: `Matlab`, `Mathematica`, `Python`, and `R`.  To see valid input formats for the `pl-matrix-input` answer, see the documentation for [pl-matrix-input](course.md/#tags).
+
+We now have 5 questions in our course.  Our last step in this tutorial will be to use these questions to create [assessments](course.md/#next).
