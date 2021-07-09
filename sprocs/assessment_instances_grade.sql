@@ -1,9 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean);
-DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean,boolean);
-DROP FUNCTION IF EXISTS assessment_points(bigint,integer);
-DROP FUNCTION IF EXISTS assessment_points(bigint,integer,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_grade(
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,

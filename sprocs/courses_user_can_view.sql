@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     courses_user_can_view (
         IN user_id bigint,
         IN is_administrator boolean,

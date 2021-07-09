@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_points_exam(bigint,boolean);
-DROP FUNCTION IF EXISTS instance_questions_points_exam(bigint,double precision);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_points_exam(
         IN instance_question_id bigint,
         IN submission_score DOUBLE PRECISION,
