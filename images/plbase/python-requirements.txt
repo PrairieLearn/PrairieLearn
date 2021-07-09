@@ -3,7 +3,7 @@ flake8==3.9.2
 flake8-quotes==3.2.0
 lxml==4.6.3
 matplotlib==3.4.2
-networkx==2.5.1
+networkx==2.6.1
 numpy==1.20.3
 pandas==1.2.4
 pycryptodome==3.10.1
