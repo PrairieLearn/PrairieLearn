@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,boolean);
-DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_select_submission_for_grading (
         IN variant_id bigint,
         IN check_submission_id bigint DEFAULT NULL

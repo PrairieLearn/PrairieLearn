@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_lock (
         instance_question_id bigint
     ) RETURNS void
