@@ -26,11 +26,11 @@ BEGIN
                 number,
                 course_id
             ) SELECT
-                aunit->>0,
-                aunit->>1,
+                au->>0,
+                au->>1,
                 number,
                 syncing_course_id
-            FROM UNNEST(course_info_assessment_units) WITH ORDINALITY AS t(aunit, number)
+            FROM UNNEST(course_info_assessment_units) WITH ORDINALITY AS t(au, number)
             ON CONFLICT (name, course_id) DO UPDATE
             SET
                 heading = EXCLUDED.heading,
@@ -51,8 +51,8 @@ BEGIN
     -- conditions, because we will use this as a last resort for
     -- assessments.
     INSERT INTO assessment_units (
-              name,      heading,        number, course_id
-    ) VALUES ('Default', 'Default unit', 1,      syncing_course_id)
+              number, course_id
+    ) VALUES (1,      syncing_course_id)
     ON CONFLICT (name, course_id) DO NOTHING;
 
     IF ('Default' != ALL(used_assessment_unit_names)) THEN
@@ -92,10 +92,10 @@ BEGIN
     -- accidentally delete something that was in a temporarily-invalid
     -- JSON file.
     IF (valid_course_info AND delete_unused) THEN
-        DELETE FROM assessment_units AS aunit
+        DELETE FROM assessment_units AS au
         WHERE
-            aunit.course_id = syncing_course_id
-            AND aunit.name NOT IN (SELECT unnest(used_assessment_unit_names));
+            au.course_id = syncing_course_id
+            AND au.name NOT IN (SELECT unnest(used_assessment_unit_names));
     END IF;
 
     -- Internal consistency check. All assessments should have an

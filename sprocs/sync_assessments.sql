@@ -446,8 +446,14 @@ BEGIN
         AND a.deleted_at IS NOT NULL
         AND a.course_instance_id = syncing_course_instance_id;
 
+    -- Delete unused assessment units
+    DELETE FROM assessment_units AS au
+    USING assessments AS a
+    WHERE
+
+
     -- Internal consistency check. All assessments should have an
-    -- assessment set and a number.
+    -- assessment set, assessment unit, and number.
     SELECT string_agg(a.id::text, ', ')
     INTO bad_assessments
     FROM assessments AS a
@@ -457,6 +463,7 @@ BEGIN
         AND (
             a.assessment_set_id IS NULL
             OR a.number IS NULL
+            OR a.assessment_unit_id IS NULL
         );
     IF (bad_assessments IS NOT NULL) THEN
         RAISE EXCEPTION 'Assertion failure: Assessment IDs without set or number: %', bad_assessments;
