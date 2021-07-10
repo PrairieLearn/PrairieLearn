@@ -23,12 +23,15 @@ WITH
             NULL::integer AS assessment_instance_id,
             NULL::integer AS assessment_instance_number,
             NULL::integer AS assessment_instance_score_perc,
-            NULL::boolean AS assessment_instance_open
+            NULL::boolean AS assessment_instance_open,
+            au.name AS assessment_unit_name,
+            au.heading AS assessment_unit_heading
         FROM
             assessments AS a
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+            LEFT JOIN assessment_units AS au ON au.id = a.assessment_unit_id
         WHERE
             ci.id = $course_instance_id
             AND a.multiple_instance
@@ -58,10 +61,14 @@ WITH
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc,
-            ai.open AS assessment_instance_open
+            ai.open AS assessment_instance_open,
+            au.name AS assessment_unit_name,
+            au.heading AS assessment_unit_heading
         FROM
             assessment_instances AS ai
             JOIN multiple_instance_assessments AS mia ON (mia.assessment_id = ai.assessment_id)
+            LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
+            LEFT JOIN assessment_units AS au ON (au.id = a.assessment_unit_id)
         WHERE
             ai.user_id = $user_id
     ),
@@ -89,7 +96,9 @@ WITH
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc,
-            ai.open AS assessment_instance_open
+            ai.open AS assessment_instance_open,
+            au.name AS assessment_unit_name,
+            au.heading AS assessment_unit_heading
         FROM
             -- join group_users first to find all group assessments
             group_configs AS gc
@@ -100,6 +109,7 @@ WITH
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
             LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND (ai.user_id = $user_id OR ai.group_id = gu.group_id))
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+            LEFT JOIN assessment_units AS au ON (au.id = a.assessment_unit_id)
         WHERE
             ci.id = $course_instance_id
             AND NOT a.multiple_instance
