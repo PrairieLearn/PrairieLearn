@@ -52,7 +52,7 @@ BEGIN
     -- assessments.
     INSERT INTO assessment_units (
               number, course_id
-    ) VALUES (1,      syncing_course_id)
+    ) VALUES (0,      syncing_course_id)
     ON CONFLICT (name, course_id) DO NOTHING;
 
     IF ('Default' != ALL(used_assessment_unit_names)) THEN
@@ -87,7 +87,7 @@ BEGIN
 
     used_assessment_unit_names := array_cat(used_assessment_unit_names, inserted_assessment_unit_names);
 
-    -- Finally delete unused assessment sets. We only do this if all
+    -- Finally delete unused assessment units. We only do this if all
     -- the JSON files (course and assessments) were valid, so we won't
     -- accidentally delete something that was in a temporarily-invalid
     -- JSON file.
@@ -95,7 +95,8 @@ BEGIN
         DELETE FROM assessment_units AS au
         WHERE
             au.course_id = syncing_course_id
-            AND au.name NOT IN (SELECT unnest(used_assessment_unit_names));
+            AND au.name NOT IN (SELECT unnest(used_assessment_unit_names))
+            AND au.number != 0;
     END IF;
 
     -- Internal consistency check. All assessments should have an

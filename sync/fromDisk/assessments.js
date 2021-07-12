@@ -63,6 +63,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         max_points: assessment.maxPoints,
         max_bonus_points: assessment.maxBonusPoints,
         set_name: assessment.set,
+        assessment_unit_name: assessment.unit,
         text: assessment.text,
         constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
         group_work: !!assessment.groupWork,
