@@ -5,7 +5,7 @@ const querystring = require('querystring');
 const config = require('../lib/config');
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
-const sqlDb = require('../../prairielib/lib/sql-db');
+const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
