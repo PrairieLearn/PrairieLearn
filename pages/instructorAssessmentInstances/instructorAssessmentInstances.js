@@ -4,11 +4,11 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const regrading = require('../../lib/regrading');
 const assessment = require('../../lib/assessment');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -104,6 +104,14 @@ router.post('/', function(req, res, next) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
+        });
+    } else if (req.body.__action == 'grade_all' || req.body.__action == 'close_all') {
+        const assessment_id = res.locals.assessment.id;
+        const close = req.body.__action == 'close_all';
+        const overrideGradeRate = true;
+        assessment.gradeAllAssessmentInstances(assessment_id, res.locals.user.user_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err, job_sequence_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'delete_all') {
         const params = [

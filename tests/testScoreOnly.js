@@ -1,8 +1,8 @@
 const ERR = require('async-stacktrace');
 
 const config = require('../lib/config');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../prairielib/sql-db');
+const sqlLoader = require('../prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 

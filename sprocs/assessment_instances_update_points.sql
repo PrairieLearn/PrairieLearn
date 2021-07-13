@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_update_points(bigint,double precision,bigint,bigint,varchar,timestamptz,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_update_points(
         IN assessment_instance_id bigint,
         IN new_points double precision,

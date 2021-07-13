@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_assessments(
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
@@ -140,6 +136,7 @@ BEGIN
             multiple_instance = (valid_assessment.data->>'multiple_instance')::boolean,
             shuffle_questions = (valid_assessment.data->>'shuffle_questions')::boolean,
             max_points = (valid_assessment.data->>'max_points')::double precision,
+            max_bonus_points = (valid_assessment.data->>'max_bonus_points')::double precision,
             auto_close = (valid_assessment.data->>'auto_close')::boolean,
             text = valid_assessment.data->>'text',
             assessment_set_id = aggregates.assessment_set_id,

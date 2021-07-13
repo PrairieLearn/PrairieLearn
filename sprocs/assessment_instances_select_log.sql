@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint);
-DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_select_log ( 
         ai_id bigint,
         include_files boolean
@@ -359,6 +356,30 @@ BEGIN
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentAssessmentInstance'
                     AND pvl.authn_user_id = ai.user_id
+            )
+            UNION
+            (
+                SELECT
+                    10 AS event_order,
+                    ('Group ' || gl.action)::TEXT AS event_name,
+                    'gray2'::TEXT AS event_color,
+                    gl.date,
+                    u.user_id AS auth_user_id,
+                    u.uid AS auth_user_uid,
+                    NULL::TEXT AS qid,
+                    NULL::INTEGER AS question_id,
+                    NULL::INTEGER AS instance_question_id,
+                    NULL::INTEGER AS variant_id,
+                    NULL::INTEGER AS variant_number,
+                    NULL::INTEGER AS submission_id,
+                    jsonb_build_object('user', gu.uid) AS data
+                FROM
+                    assessment_instances AS ai
+                    JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
+                    JOIN users AS u ON (u.user_id = gl.authn_user_id)
+                    LEFT JOIN users AS gu ON (gu.user_id = gl.user_id)
+                WHERE
+                    ai.id = ai_id
             )
             ORDER BY date, event_order, question_id
         ),

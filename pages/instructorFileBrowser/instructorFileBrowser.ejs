@@ -38,10 +38,7 @@
 
               <% if (file_browser.isFile) { %>
 
-              <!-------------------->
-              <!-- FILE HEAD      -->
-              <!-------------------->
-
+              <%# File head %>
               <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
                 <i class="fa fa-edit"></i>
                 <span>Edit</span>
@@ -65,10 +62,7 @@
 
               <% } else { %>
 
-              <!-------------------->
-              <!-- DIRECTORY HEAD -->
-              <!-------------------->
-
+              <%# Directory head %> 
               <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
               <% if (file_browser.paths.specialDirs) { %>
                 <% file_browser.paths.specialDirs.forEach((d) => { %>
@@ -92,10 +86,7 @@
 
         <% if (file_browser.isFile) { %>
 
-        <!-------------------->
-        <!-- FILE BODY      -->
-        <!-------------------->
-
+        <%# File body %> 
         <div class="card-body">
           <% if (file_browser.isImage) { %>
           <img src="<%= file_browser.paths.urlPrefix %>/file_download/<%= file_browser.paths.workingPathRelativeToCourse %>" class="img-fluid">
@@ -114,10 +105,7 @@
 
         <% } else { %>
 
-        <!-------------------->
-        <!-- DIRECTORY BODY -->
-        <!-------------------->
-
+        <%# Directory body %> 
         <table class="table table-sm table-hover">
           <tbody>
             <% file_browser.files.forEach(function(f) { %>

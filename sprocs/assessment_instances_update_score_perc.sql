@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_update_score_perc(bigint,double precision,bigint,bigint,varchar,timestamptz,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_update_score_perc(
         IN assessment_instance_id bigint,
         IN new_score_perc double precision,
