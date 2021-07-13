@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS jsonb_array_to_double_precision_array(jsonb);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     jsonb_array_to_double_precision_array(
         IN jsonb_array jsonb
     ) RETURNS double precision[]

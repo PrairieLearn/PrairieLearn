@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS grading_jobs_insert_external_manual(bigint, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_insert_external_manual (
         IN submission_id bigint,
         IN authn_user_id bigint,

@@ -4,11 +4,11 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
