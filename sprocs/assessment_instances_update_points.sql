@@ -24,8 +24,6 @@ BEGIN
 
     IF NOT FOUND THEN
 		IF score_only THEN
-			SELECT u.user_id INTO user_id FROM users AS u WHERE u.uid = user_uid;
-
 			SELECT 
 				a.group_work,
 				a.mode
@@ -33,6 +31,24 @@ BEGIN
 				group_work,
 				mode
 			FROM assessments AS a WHERE a.id = assessment_id;
+
+			IF group_work THEN
+				SELECT
+					gu.user_id
+				INTO
+					user_id
+				FROM
+					group_users as gu
+					JOIN groups AS g ON (g.id = gu.group_id)
+					JOIN group_configs AS gc ON (gc.id = g.group_config_id)
+				WHERE 
+					g.name = user_uid
+					AND gc.assessment_id = assessment_instances_update_points.assessment_id
+					AND gc.deleted_at IS NULL
+					AND g.deleted_at IS NULL;
+			ELSE
+				SELECT u.user_id INTO user_id FROM users AS u WHERE u.uid = user_uid;
+			END IF;
 			
 			SELECT
 				tmp.assessment_instance_id
