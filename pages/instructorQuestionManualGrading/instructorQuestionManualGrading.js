@@ -7,7 +7,7 @@ const config = require('../../lib/config');
 const question = require('../../lib/question');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sqlDb = require('../../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
