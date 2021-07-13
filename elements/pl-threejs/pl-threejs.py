@@ -28,7 +28,7 @@ GRADE_DEFAULT = True
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
-        'answer_name',          # key for 'submitted_answers' and 'true_answers'
+        'answer-name',          # key for 'submitted_answers' and 'true_answers'
     ]
     optional_attribs = [
         'body-position',        # [x, y, z]

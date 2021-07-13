@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval);
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval,interval,double precision, double precision);
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval,interval,double precision, double precision, double precision);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grader_loads_current(
         IN queue_name text,
         IN grader_load_interval interval,   -- how far back to look to estimate current load

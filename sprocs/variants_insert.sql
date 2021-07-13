@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint, boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_insert(
         IN variant_seed text,
         IN params jsonb,

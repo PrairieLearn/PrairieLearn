@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS server_usage_current(interval);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     server_usage_current (
         IN current_interval interval,
         OUT user_count integer,

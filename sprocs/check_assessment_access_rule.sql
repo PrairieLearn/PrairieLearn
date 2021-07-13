@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS check_assessment_access_rule(assessment_access_rules,enum_mode,enum_role,text,timestamp with time zone,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     check_assessment_access_rule (
         IN assessment_access_rule assessment_access_rules,
         IN mode enum_mode,

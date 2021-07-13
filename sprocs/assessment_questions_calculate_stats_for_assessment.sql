@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_questions_calculate_stats_for_assessment (
         assessment_id_var bigint
     ) RETURNS VOID
