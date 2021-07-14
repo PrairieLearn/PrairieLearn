@@ -48,4 +48,4 @@ module.exports.sync = async function(courseId, courseData) {
     perf.start('sproc:sync_assessment_units');
     await sqldb.callOneRowAsync('sync_assessment_units', params);
     perf.end('sproc:sync_assessment_units');
-}
+};
