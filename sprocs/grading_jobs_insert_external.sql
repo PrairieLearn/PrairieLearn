@@ -1,5 +1,5 @@
 CREATE FUNCTION
-    grading_jobs_insert_external_manual (
+    grading_jobs_insert_external (
         IN submission_id bigint,
         IN authn_user_id bigint,
         IN grading_method enum_grading_method,
