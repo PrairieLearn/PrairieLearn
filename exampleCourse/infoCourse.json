@@ -8,10 +8,10 @@
     "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
     "assessmentSets": [],
     "assessmentUnits": [
-        {"name": "intro", "heading": "Week 1: Introduction to XC 101"},
-        {"name": "physics", "heading": "Week 2: Physics"},
-        {"name": "math", "heading": "Week 3: Math"},
-        {"name": "fun", "heading": "Week 4: Extras for fun"}
+        {"name": "intro", "heading": "Unit 1: Introduction to XC 101"},
+        {"name": "physics", "heading": "Unit 2: Physics"},
+        {"name": "math", "heading": "Unit 3: Math"},
+        {"name": "fun", "heading": "Unit 4: Extras for fun"}
     ],
     "groupBy": "unit",
     "topics": [
