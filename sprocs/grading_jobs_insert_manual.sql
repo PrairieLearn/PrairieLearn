@@ -39,7 +39,7 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such arg_submission_id: %', arg_submission_id; END IF;
     IF grading_method != 'Manual'::enum_grading_method THEN
-        RAISE EXCEPTION 'grading_method is not External for submission_id: %', submission_id;
+        RAISE EXCEPTION 'grading_method is not Manual for submission_id: %', submission_id;
     END IF;
 
     -- ######################################################################
@@ -84,7 +84,7 @@ BEGIN
         graded_at = now(),
         score = arg_manual_grade_score,
         feedback = arg_manual_grade_feedback,
-        grading_method = 'Manual'::enum_grading_method
+        grading_method_manual = TRUE
     WHERE
         s.id = arg_submission_id;
 

@@ -9,7 +9,9 @@ columns
     format_errors: jsonb
     gradable: boolean default true
     graded_at: timestamp with time zone
-    grading_method: enum_grading_method
+    grading_method_external: boolean default false
+    grading_method_internal: boolean default true
+    grading_method_manual: boolean default false
     grading_requested_at: timestamp with time zone
     id: bigint not null default nextval('submissions_id_seq'::regclass)
     mode: enum_mode

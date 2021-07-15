@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval);
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval,interval,double precision, double precision);
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval,interval,double precision, double precision, double precision);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grader_loads_current(
         IN queue_name text,
         IN grader_load_interval interval,   -- how far back to look to estimate current load
@@ -123,7 +119,7 @@ BEGIN
         JOIN questions AS q ON (q.id = cp.question_id)
     WHERE
         cp.date > now() - interval '1 hour'
-        AND q.grading_method = 'External';
+        AND q.grading_method_external = True;
 
     -- ######################################################################
     -- load per user

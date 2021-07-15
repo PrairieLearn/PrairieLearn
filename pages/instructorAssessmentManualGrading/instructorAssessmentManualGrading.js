@@ -4,8 +4,8 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const config = require('../../lib/config');
-const {sqlDb, sqlLoader} = require('@prairielearn/prairielib');
-
+const sqlDb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {

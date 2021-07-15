@@ -6,6 +6,6 @@ JOIN variants AS v ON (v.id = s.variant_id)
 JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
 JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
 JOIN questions AS q ON (q.id = aq.question_id)
-WHERE q.grading_method = 'External'
+WHERE q.grading_method_external = True
 AND q.external_grading_image IS NOT NULL
 AND s.date >= (NOW() - INTERVAL '1 hour');

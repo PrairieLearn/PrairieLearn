@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     course_permissions_insert_by_user_uid(
         course_id bigint,
         uid text,

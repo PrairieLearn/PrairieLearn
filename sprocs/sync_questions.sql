@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS sync_questions(JSONB, bigint);
-DROP FUNCTION IF EXISTS sync_questions(JSONB[], bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_questions(
         IN disk_questions_data JSONB[],
         IN syncing_course_id bigint,
@@ -121,7 +118,9 @@ BEGIN
         options = (src.data->'options')::JSONB,
         client_files = jsonb_array_to_text_array(src.data->'client_files'),
         partial_credit = (src.data->>'partial_credit')::boolean,
-        grading_method = (src.data->>'grading_method')::enum_grading_method,
+        grading_method_internal = (src.data->>'grading_method_internal')::boolean,
+        grading_method_external = (src.data->>'grading_method_external')::boolean,
+        grading_method_manual = (src.data->>'grading_method_manual')::boolean,
         single_variant = (src.data->>'single_variant')::boolean,
         template_directory = src.data->>'template_directory',
         topic_id = aggregates.topic_id,

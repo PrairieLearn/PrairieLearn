@@ -3,11 +3,11 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

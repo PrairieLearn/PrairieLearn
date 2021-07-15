@@ -19,7 +19,7 @@
               <th>Submission time</th>
               <td><%- submission.formatted_date %></td>
             </tr>
-            <% if (question.grading_method == 'External') { %>
+            <% if (question.grading_method_external) { %>
             <tr>
               <th><span class="text-dark mr-2">&bull;</span>Submit duration</th>
               <td><%- submission.grading_job_stats.submitDuration %>s</td>
@@ -47,7 +47,7 @@
             <% } %>
           </tbody>
         </table>
-        <% if (question.grading_method == 'External') { %>
+        <% if (question.grading_method_external) { %>
         <div class="d-flex mt-2 mb-2">
           <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[0] %>%; height: 10px;" class="bg-dark m-0"></span>
           <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[1] %>%; height: 10px;" class="bg-warning m-0"></span>

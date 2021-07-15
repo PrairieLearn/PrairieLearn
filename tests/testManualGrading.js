@@ -4,8 +4,8 @@ const fetch = require('node-fetch');
 const querystring = require('querystring');
 const config = require('../lib/config');
 const helperServer = require('./helperServer');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -196,7 +196,11 @@ describe('Manual grading', function() {
             }
         });
         it('db should contain 12 submissions (1 per question x 4 students for 4 questions = 12 submissions)', async () => {
+<<<<<<< HEAD
             const context = await sqldb.queryAsync(sql.get_all_submissions, []);
+=======
+            const context = await sqlDb.queryAsync(sql.get_all_submissions, []);
+>>>>>>> manual-grading-spin-lock-col-split-merge
             const groupedByStudent = {};
 
             context.rows.forEach((submission) => {
@@ -333,7 +337,11 @@ describe('Manual grading', function() {
         it('instructor becomes the manual grading user when first within manual grading expiry time range', async () => {
             setUser(mockInstructors[1]);
             const instanceQuestionId = parseInstanceQuestionId(manualGradingWarningUrl);
+<<<<<<< HEAD
             await sqldb.queryAsync(sql.set_last_date_started_by_user, {
+=======
+            await sqlDb.queryAsync(sql.set_last_date_started_by_user, {
+>>>>>>> manual-grading-spin-lock-col-split-merge
                 instanceQuestionId,
                 uid: mockInstructors[0].authUid,
                 dateTime: new Date('2999-01-01T01:00:00Z').toISOString(),
@@ -351,7 +359,11 @@ describe('Manual grading', function() {
             gradingConflictUrl = iqManualGradingUrl;
 
             const instanceQuestionId = parseInstanceQuestionId(submission2.url);
+<<<<<<< HEAD
             const gradingJob = (await sqldb.queryOneRowAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows[0];
+=======
+            const gradingJob = (await sqlDb.queryOneRowAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows[0];
+>>>>>>> manual-grading-spin-lock-col-split-merge
             assert.isTrue(gradingJob.manual_grading_conflict);
 
             // instructor 1 sees a new question to grade
@@ -371,8 +383,13 @@ describe('Manual grading', function() {
             assert.include(submission2Body, 'Incoming Grade');
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
+<<<<<<< HEAD
             const grading_job_user = (await sqldb.queryOneRowAsync(sql.get_grading_job_manual_grader, {gradingJobId: gradingJob.id})).rows[0];
             const auth_user = (await sqldb.queryOneRowAsync(sql.get_user, {uid: mockInstructors[1].authUid})).rows[0];
+=======
+            const grading_job_user = (await sqlDb.queryOneRowAsync(sql.get_grading_job_manual_grader, {gradingJobId: gradingJob.id})).rows[0];
+            const auth_user = (await sqlDb.queryOneRowAsync(sql.get_user, {uid: mockInstructors[1].authUid})).rows[0];
+>>>>>>> manual-grading-spin-lock-col-split-merge
 
             const $gradingConflictPage = cheerio.load(submission2Body);
             const existingGradePanelBody = $gradingConflictPage('div:contains("Existing Grade")').parent().html();
@@ -423,7 +440,11 @@ describe('Manual grading', function() {
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
             const instanceQuestionId = parseInstanceQuestionId(gradingConflictUrl);
+<<<<<<< HEAD
             await sqldb.queryAsync(sql.set_all_date_started_by_iq, {
+=======
+            await sqlDb.queryAsync(sql.set_all_date_started_by_iq, {
+>>>>>>> manual-grading-spin-lock-col-split-merge
                 instanceQuestionId,
                 dateTime: new Date('1900-01-01T01:00:00Z').toISOString(),
             });
@@ -451,8 +472,13 @@ describe('Manual grading', function() {
             assert.equal(nextPage.status, 200);
 
             const instanceQuestionId = parseInstanceQuestionId(gradingConflictUrl);
+<<<<<<< HEAD
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+=======
+            const instanceQuestion = (await sqlDb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqlDb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+>>>>>>> manual-grading-spin-lock-col-split-merge
 
             // application layer back-end will divide payload score by 100
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
@@ -470,7 +496,11 @@ describe('Manual grading', function() {
             const {submission2} = await createGradingConflict(iqManualGradingUrl);
 
             const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+<<<<<<< HEAD
             let gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+=======
+            let gradingJobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+>>>>>>> manual-grading-spin-lock-col-split-merge
             assert.lengthOf(gradingJobs, 2);
 
             const $gradingConflictPage = cheerio.load(await submission2.text());
@@ -486,10 +516,17 @@ describe('Manual grading', function() {
 
             assert.equal(response.status, 200);
 
+<<<<<<< HEAD
             gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
             assert.lengthOf(gradingJobs, 2);
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+=======
+            gradingJobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 2);
+            const instanceQuestion = (await sqlDb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqlDb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+>>>>>>> manual-grading-spin-lock-col-split-merge
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
@@ -505,7 +542,11 @@ describe('Manual grading', function() {
             const {submission2} = await createGradingConflict(iqManualGradingUrl);
 
             const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+<<<<<<< HEAD
             let gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+=======
+            let gradingJobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+>>>>>>> manual-grading-spin-lock-col-split-merge
             assert.lengthOf(gradingJobs, 2);
 
             const $gradingConflictPage = cheerio.load(await submission2.text());
@@ -521,10 +562,17 @@ describe('Manual grading', function() {
 
             assert.equal(response.status, 200);
 
+<<<<<<< HEAD
             gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
             assert.lengthOf(gradingJobs, 3);
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+=======
+            gradingJobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+            assert.lengthOf(gradingJobs, 3);
+            const instanceQuestion = (await sqlDb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqlDb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+>>>>>>> manual-grading-spin-lock-col-split-merge
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
@@ -591,7 +639,11 @@ describe('Manual grading', function() {
             assert.include(resolution2Body, 'Manual Grading Conflict');
 
             const instanceQuestionId = parseInstanceQuestionId(iqManualGradingUrl);
+<<<<<<< HEAD
             const conflictGradingJobs = (await sqldb.queryAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+=======
+            const conflictGradingJobs = (await sqlDb.queryAsync(sql.get_conflict_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+>>>>>>> manual-grading-spin-lock-col-split-merge
             assert.lengthOf(conflictGradingJobs, 1);
 
             const $resolution2Page = cheerio.load(resolution2Body);
@@ -603,13 +655,22 @@ describe('Manual grading', function() {
                 body: querystring.encode(user1Payload),
             });
 
+<<<<<<< HEAD
             const instanceQuestion = (await sqldb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
             const assessmentQuestion = (await sqldb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+=======
+            const instanceQuestion = (await sqlDb.queryOneRowAsync(sql.get_instance_question, {id: instanceQuestionId})).rows[0];
+            const assessmentQuestion = (await sqlDb.queryOneRowAsync(sql.get_assessment_question, {id: instanceQuestion.assessment_question_id})).rows[0];
+>>>>>>> manual-grading-spin-lock-col-split-merge
 
             assert.equal(instanceQuestion.points, (finalPayload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (finalPayload.submissionScore / 100) * 100);
 
+<<<<<<< HEAD
             const gradingJobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+=======
+            const gradingJobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {id: instanceQuestionId})).rows;
+>>>>>>> manual-grading-spin-lock-col-split-merge
             assert.lengthOf(gradingJobs, 5);
         });
     });

@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
-
-DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_insert_internal (
         IN submission_id bigint,
         IN authn_user_id bigint,
@@ -25,15 +21,17 @@ DECLARE
     variant_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
-    grading_method enum_grading_method;
+    grading_method_internal boolean;
+    grading_method_external boolean;
+    grading_method_manual boolean;
     new_correct boolean;
 BEGIN
     -- ######################################################################
     -- get the related objects
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id, q.grading_method,              iq.id,                  ai.id
-    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id, q.grading_method_internal, q.grading_method_external, q.grading_method_manual,                iq.id,                  ai.id
+    INTO     credit, variant_id,   grading_method_internal,   grading_method_external,   grading_method_manual, instance_question_id, assessment_instance_id
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -67,7 +65,9 @@ BEGIN
         correct = new_correct,
         feedback = new_feedback,
         submitted_answer = new_submitted_answer,
-        grading_method = main.grading_method
+        grading_method_internal = main.grading_method_internal,
+        grading_method_external = main.grading_method_external,
+        grading_method_manual   = main.grading_method_manual
     WHERE
         s.id = submission_id;
 
@@ -85,10 +85,10 @@ BEGIN
 
     INSERT INTO grading_jobs AS gj
         (submission_id,     score,     v2_score, correct,     feedback,
-            partial_scores, auth_user_id,  grading_method, gradable)
+            partial_scores, auth_user_id, grading_method, gradable)
     VALUES
         (submission_id, new_score, new_v2_score, new_correct, new_feedback,
-        new_partial_scores, authn_user_id, grading_method, new_gradable)
+        new_partial_scores, authn_user_id, 'Internal', new_gradable)
     RETURNING gj.*
     INTO grading_job;
 

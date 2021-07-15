@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const {sqlDb} = require('@prairielearn/prairielib');
+const sqlDb = require('../../prairielib/lib/sql-db');
 
 router.get('/', (req, res, next) => {
     const params = [

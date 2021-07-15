@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS authz_course_instance(bigint,bigint,boolean);
-DROP FUNCTION IF EXISTS authz_course_instance(bigint,bigint,boolean,timestamptz);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     authz_course_instance(
         user_id bigint,
         course_instance_id bigint,

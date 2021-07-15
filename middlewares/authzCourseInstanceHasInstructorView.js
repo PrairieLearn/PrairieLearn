@@ -1,4 +1,4 @@
-var error = require('@prairielearn/prairielib/error');
+var error = require('../prairielib/lib/error');
 
 module.exports = function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_view) {

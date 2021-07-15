@@ -2,10 +2,10 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const question = require('../../lib/question');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
@@ -27,7 +27,7 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'test_100') {
-        if (res.locals.question.grading_method !== 'External') {
+        if (!res.locals.question.grading_method_external) {
             const count = 100;
             const showDetails = false;
             const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;

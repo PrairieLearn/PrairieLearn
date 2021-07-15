@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     random_unique(
         lower INTEGER,
         upper INTEGER, -- may expand range if needed, so true upper bound might be higher than this

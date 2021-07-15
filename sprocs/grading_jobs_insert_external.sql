@@ -1,7 +1,8 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_insert_external (
         IN submission_id bigint,
         IN authn_user_id bigint,
+        IN grading_method enum_grading_method,
         OUT grading_job grading_jobs
     )
 AS $$
@@ -11,14 +12,14 @@ DECLARE
     variant_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
-    grading_method enum_grading_method;
+    grading_method_external boolean;
 BEGIN
     -- ######################################################################
     -- get the related objects
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id, q.grading_method,                iq.id,                  ai.id
-    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id, q.grading_method_external,  iq.id,                  ai.id
+    INTO     credit, variant_id,   grading_method_external,  instance_question_id, assessment_instance_id
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -28,12 +29,12 @@ BEGIN
     WHERE s.id = submission_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
-    IF grading_method != 'External' THEN
+    IF grading_method_external != 'External' AND grading_method_external != True THEN
         RAISE EXCEPTION 'grading_method is not External for submission_id: %', submission_id;
     END IF;
 
     -- ######################################################################
-    -- cancel any outstanding grading jobs
+    -- cancel any outstanding grading jobs of this type
 
     FOR grading_job IN
         UPDATE grading_jobs AS gj
@@ -49,6 +50,7 @@ BEGIN
             AND gj.graded_at IS NULL
             AND gj.grading_requested_at IS NOT NULL
             AND gj.grading_request_canceled_at IS NULL
+            AND gj.grading_method = grading_method
         RETURNING gj.*
     LOOP
         UPDATE submissions AS s
@@ -71,8 +73,7 @@ BEGIN
 
     UPDATE submissions AS s
     SET
-        grading_requested_at = now(),
-        grading_method = main.grading_method
+        grading_requested_at = now()
     WHERE s.id = submission_id;
 
     -- ######################################################################
