@@ -195,7 +195,7 @@ describe('Manual grading', function() {
                 });
             }
         });
-        it('db should contain 12 submissions (1 per question x 4 students for 3 questions = 12 submissions)', async () => {
+        it('db should contain 12 submissions (1 per question for each 4 students x 3 questions = 12 submissions)', async () => {
             const context = await sqlDb.queryAsync(sql.get_all_submissions, []);
             const groupedByStudent = {};
 
