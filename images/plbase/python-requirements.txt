@@ -18,7 +18,7 @@ scikit-learn==0.24.2
 nltk==3.6.2
 tzlocal==2.1
 Pygments==2.9.0
-sphinx==4.0.1
+sphinx==4.1.1
 sphinx-markdown-builder==0.5.4
 recommonmark==0.7.1
 mkdocs-material==7.1.8
