@@ -158,7 +158,7 @@ describe('Manual grading', function() {
         });
 
         it('students should be able to save submissions on instance questions', async () => {
-            // 'save' 1 answer for each question for each mock students; 1 x 4 x 4 = 16 submissions
+            // 'save' 1 answer for each question for each mock students; 1 x 4 x 3 = 12 submissions
             for await(const student of mockStudents) {
                 setUser(student);
 
@@ -195,7 +195,7 @@ describe('Manual grading', function() {
                 });
             }
         });
-        it('db should contain 12 submissions (1 per question x 4 students for 4 questions = 12 submissions)', async () => {
+        it('db should contain 12 submissions (1 per question x 4 students for 3 questions = 12 submissions)', async () => {
             const context = await sqlDb.queryAsync(sql.get_all_submissions, []);
             const groupedByStudent = {};
 
