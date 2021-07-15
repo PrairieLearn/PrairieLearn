@@ -196,11 +196,7 @@ describe('Manual grading', function() {
             }
         });
         it('db should contain 12 submissions (1 per question x 4 students for 4 questions = 12 submissions)', async () => {
-<<<<<<< HEAD
-            const context = await sqldb.queryAsync(sql.get_all_submissions, []);
-=======
             const context = await sqlDb.queryAsync(sql.get_all_submissions, []);
->>>>>>> manual-grading-spin-lock-col-split-merge
             const groupedByStudent = {};
 
             context.rows.forEach((submission) => {
