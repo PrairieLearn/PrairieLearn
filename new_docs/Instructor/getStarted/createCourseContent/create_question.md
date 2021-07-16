@@ -229,6 +229,7 @@ Not all questions must have numerical answers; there is also support for symboli
 ```python
 import numpy
 import sympy
+import prairielearn
 
 def generate(data):
 
@@ -252,9 +253,9 @@ def generate(data):
     # Modify data and return
     data["params"]["x"] = sympy.latex(x)
     data["params"]["f"] = sympy.latex(f)
-    data["correct_answers"]["df"] = str(df)
+    data["correct_answers"]["df"] = prairielearn.to_json(df)
 ```
-We are using two new libraries, `numpy` and `sympy`.  [Numpy](https://numpy.org) is a comprehensive scientific computing library for Python; for this example, we are only importing it to allow us to generate multiple random numbers in a single line.  [Sympy](https://sympy.org) is a library for symbolic mathematics; this library is essential for this example.
+We are using three new libraries, `numpy`, `sympy`, and `prairielearn`.  [Numpy](https://numpy.org) is a comprehensive scientific computing library for Python; for this example, we are only importing it to allow us to generate multiple random numbers in a single line.  [Sympy](https://sympy.org) is a library for symbolic mathematics; this library is essential for this example.  [Prairielearn](https://github.com/PrairieLearn/PrairieLearn/blob/master/question-servers/freeformPythonLib/prairielearn.py) is a Python library that helps convert different types of data.
 
 Let's examine some of the new features of this file.
 ```python
@@ -281,9 +282,9 @@ We compute the first derivate of the polynomial `f` and save it to another polyn
 ```python
 data["params"]["x"] = sympy.latex(x)
 data["params"]["f"] = sympy.latex(f)
-data["correct_answers"]["df"] = str(df)
+data["correct_answers"]["df"] = prairielearn.to_json(df)
 ```
-The first two calls just perform formatting so that the variables can be expressed nicely in math mode.  The last line saves the answer as a Python `string` which the students answer will be compared against.
+The first two calls just perform formatting so that the variables can be expressed nicely in math mode.  The last line converts the symbol into an object that is useable by the Prairielearn system.
 
 * Click `Save and sync` to save changes and edit the `question.html` file from the `Files` tab.
 
@@ -378,9 +379,9 @@ The first two lines import the libraries `numpy` and `prairielearn`, and gives t
 
 The question will ask the student to take two matrices `A` and `B` and multiply them together to obtain `C`.  The dimensions of the matrices are defined through the variables `nRows`, `nInner`, and `nCols`.  `nRows` refers to the number of rows of `A`, the variable `nInner` refers to the number of columns of `A`, which is equal to the number of rows of `B`, and finally, `nCols` refers to the number of columns of `B`.  These variables are defined randomly, and in turn the two matrices are generated randomly using [np.random.random_integers](https://numpy.org/doc/stable/reference/random/generated/numpy.random.random_integers.html).
 
-Finally, we compute matrix-matrix product using Numpy's [.dot() method](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.dot.html?highlight=dot#numpy.ndarray.dot).
+Next, we compute matrix-matrix product using Numpy's [.dot() method](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.dot.html?highlight=dot#numpy.ndarray.dot).
 
-Finally, when saving the matrices to the data dictionary, we use the method `pl.to_json` which converts the matrices into objects useable by the Prairielearn system.
+Finally, when saving the matrices to the data dictionary, we use the method `pl.to_json` to convert the matrices into a format compatible with Prairilearn.
 
 * The `question.html` file contains:
 ```html
@@ -409,4 +410,6 @@ The input element, [pl-matrix-input](course.md/#tags), is also new.  The answer 
 
 The picture above shows the formatted output provided by `pl-variable-output` and how an answer is entered by the student.  They are able to choose one of four supported languages: `Matlab`, `Mathematica`, `Python`, and `R`.  To see valid input formats for the `pl-matrix-input` answer, see the documentation for [pl-matrix-input](course.md/#tags).
 
-We now have 5 questions in our course.  Our last step in this tutorial will be to use these questions to create [assessments](course.md/#next).
+We now have 5 questions in our course.  Our last step in this tutorial will be to use these questions to create [assessments](create_assessment.md).
+
+Note that there are seven "Gallery" questions in the `Questions` menu that were generated when the course instance was created.  These demonstrate other features that are possible in Prairielearn questions.  You can experiment with these questions yourself, or see the [How-To](course.md/#how-to) section of the documentation for more info on specific question types.
