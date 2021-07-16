@@ -1,0 +1,24 @@
+digraph prairielearn_high_level {
+
+    rankdir = TB;
+    node [fontsize = 10, height = 0.3, width = 0.5];
+    graph [nodesep = 0.2, ranksep = 0.3];
+    edge [fontsize = 10, arrowsize = 0.7];
+
+    { rank = same; instructor; student; }
+    { rank = same; repo; server; }
+    { rank = same; db; }
+
+    instructor [label="Instructor", style=filled, fillcolor=moccasin]
+    student [label="Student", style=filled, fillcolor=moccasin]
+    repo [label="Course git repo", style=filled, fillcolor=powderblue]
+    server [label="PL server", style=filled, fillcolor=palegreen]
+    db [label="Database", style=filled, fillcolor=gainsboro]
+
+    instructor -> { repo }
+    repo -> { server }
+    server -> { db }
+    student -> { server }
+    db -> server
+    server -> { instructor; student }
+}

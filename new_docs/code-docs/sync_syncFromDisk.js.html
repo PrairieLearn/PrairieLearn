@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: sync/syncFromDisk.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: sync/syncFromDisk.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>// @ts-check
+const ERR = require('async-stacktrace');
+const util = require('util');
+
+const namedLocks = require('../lib/named-locks');
+const courseDB = require('./course-db');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+
+const config = require('../lib/config');
+
+const syncCourseInfo = require('./fromDisk/courseInfo');
+const syncCourseInstances = require('./fromDisk/courseInstances');
+const syncTopics = require('./fromDisk/topics');
+const syncQuestions = require('./fromDisk/questions');
+const syncTags = require('./fromDisk/tags');
+const syncAssessmentSets = require('./fromDisk/assessmentSets');
+const syncAssessments = require('./fromDisk/assessments');
+const freeformServer = require('../question-servers/freeform');
+const perf = require('./performance')('sync');
+const { chalk, chalkDim } = require('../lib/chalk');
+
+const { promisify } = require('util');
+
+// Performance data can be logged by setting the `PROFILE_SYNC` environment variable
+
+/**
+ * @typedef {Object} SyncResults
+ * @property {boolean} hadJsonErrors
+ * @property {string} courseId
+ * @property {import('./course-db').CourseData} courseData
+ */
+
+/**
+ *
+ * @param {string} courseDir
+ * @param {any} courseId
+ * @param {any} logger
+ * @returns Promise&lt;SyncResults>
+ */
+async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
+    logger.info('Loading info.json files from course repository');
+    perf.start('sync');
+
+    const courseData = await perf.timedAsync('loadCourseData', () => courseDB.loadFullCourseNew(courseDir));
+    // Write any errors and warnings to sync log
+    courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, line => logger.info(line || ''));
+    logger.info('Syncing info to database');
+    await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
+    const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () => syncCourseInstances.sync(courseId, courseData));
+    await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
+    const questionIds = await perf.timedAsync('syncQuestions', () => syncQuestions.sync(courseId, courseData));
+    await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
+    await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
+    perf.start('syncAssessments');
+    await Promise.all(Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
+        const courseInstanceId = courseInstanceIds[ciid];
+        await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.sync(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
+    }));
+    perf.end('syncAssessments');
+    if (config.devMode) {
+        logger.info('Flushing course element and extensions cache...');
+        freeformServer.flushElementCache();
+    }
+    const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
+    const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
+    if (courseDataHasErrors) {
+        logger.info(chalk.yellow('⚠ Some JSON files contained errors and were unable to be synced'));
+    } else {
+        logger.info(chalk.green('✓ Course sync successful'));
+    }
+    perf.end('sync');
+    return {
+        hadJsonErrors: courseDataHasErrors,
+        hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
+        courseId,
+        courseData,
+    };
+}
+
+/**
+ * @param {string} courseDir
+ * @param {any} course_id
+ * @param {any} logger
+ * @param {(err: Error | null, result: SyncResults) => void} callback
+ */
+module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
+    util.callbackify(async () => {
+        return await syncDiskToSqlWithLock(courseDir, course_id, logger);
+    })(callback);
+};
+
+/**
+ * @param {string} courseDir
+ * @param {string} course_id
+ * @param {any} logger
+ * @param {(err: Error | null, result?: SyncResults) => void} callback
+ */
+module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
+    const lockName = 'coursedir:' + courseDir;
+    logger.verbose(chalkDim(`Trying lock ${lockName}`));
+    namedLocks.tryLock(lockName, (err, lock) => {
+        if (ERR(err, callback)) return;
+        if (lock == null) {
+            logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
+            callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
+        } else {
+            logger.verbose(chalkDim(`Acquired lock ${lockName}`));
+            module.exports._syncDiskToSqlWithLock(courseDir, course_id, logger, (err, result) => {
+                namedLocks.releaseLock(lock, (lockErr) => {
+                    if (ERR(lockErr, callback)) return;
+                    if (ERR(err, callback)) return;
+                    logger.verbose(chalkDim(`Released lock ${lockName}`));
+                    callback(null, result);
+                });
+            });
+        }
+    });
+};
+module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
+
+/**
+ * @param {string} courseDir
+ * @param {any} logger
+ * @param {(err: Error | null, result?: SyncResults) => void} callback
+ */
+module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
+    sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
+        if (ERR(err, callback)) return;
+        const course_id = result.rows[0].course_id;
+        module.exports.syncDiskToSql(courseDir, course_id, logger, function(err, result) {
+            if (ERR(err, callback)) return;
+            callback(null, result);
+        });
+    });
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-assessment.html">assessment</a></li><li><a href="module-question.html">question</a></li><li><a href="module-question-servers.html">question-servers</a></li></ul><h3>Classes</h3><ul><li><a href="LocalCache.html">LocalCache</a></li><li><a href="LocalLock.html">LocalLock</a></li><li><a href="module-question-NoSubmissionError.html">NoSubmissionError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#_generateAllChunksForCourseListWithJobSequence">_generateAllChunksForCourseListWithJobSequence</a></li><li><a href="global.html#_generateAllChunksForCourseWithJob">_generateAllChunksForCourseWithJob</a></li><li><a href="global.html#_getLock">_getLock</a></li><li><a href="global.html#_syncDiskToSqlWithLock">_syncDiskToSqlWithLock</a></li><li><a href="global.html#_updateScoreWithClient">_updateScoreWithClient</a></li><li><a href="global.html#addError">addError</a></li><li><a href="global.html#addErrors">addErrors</a></li><li><a href="global.html#addWarning">addWarning</a></li><li><a href="global.html#addWarnings">addWarnings</a></li><li><a href="global.html#assetPath">assetPath</a></li><li><a href="global.html#buildDirectory">buildDirectory</a></li><li><a href="global.html#checkAllowAccessDates">checkAllowAccessDates</a></li><li><a href="global.html#checkDuplicateUUIDs">checkDuplicateUUIDs</a></li><li><a href="global.html#close">close</a></li><li><a href="global.html#courseDataHasErrors">courseDataHasErrors</a></li><li><a href="global.html#courseDataHasErrorsOrWarnings">courseDataHasErrorsOrWarnings</a></li><li><a href="global.html#createAndUploadChunks">createAndUploadChunks</a></li><li><a href="global.html#delete">delete</a></li><li><a href="global.html#deleteFromS3Async">deleteFromS3Async</a></li><li><a href="global.html#describe">describe</a></li><li><a href="global.html#downloadFromS3Async">downloadFromS3Async</a></li><li><a href="global.html#ensureChunk">ensureChunk</a></li><li><a href="global.html#ensureChunksForCourseAsync">ensureChunksForCourseAsync</a></li><li><a href="global.html#ERR">ERR</a></li><li><a href="global.html#extractAndSaveCSRFToken">extractAndSaveCSRFToken</a></li><li><a href="global.html#extractAndSaveVariantId">extractAndSaveVariantId</a></li><li><a href="global.html#fetchCheerio">fetchCheerio</a></li><li><a href="global.html#generateAllChunksForCourseList">generateAllChunksForCourseList</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getAllChunksForCourse">getAllChunksForCourse</a></li><li><a href="global.html#getChunksDirectoriesForCourseId">getChunksDirectoriesForCourseId</a></li><li><a href="global.html#getDetailsForFile">getDetailsForFile</a></li><li><a href="global.html#getDevHostJobDirectory">getDevHostJobDirectory</a></li><li><a href="global.html#getDevJobDirectory">getDevJobDirectory</a></li><li><a href="global.html#getErrorsAndWarningsForFilePath">getErrorsAndWarningsForFilePath</a></li><li><a href="global.html#getFromS3Async">getFromS3Async</a></li><li><a href="global.html#getJobDirectory">getJobDirectory</a></li><li><a href="global.html#getJobSequenceWithFormattedOutput">getJobSequenceWithFormattedOutput</a></li><li><a href="global.html#getOrUpdateCourseCommitHash">getOrUpdateCourseCommitHash</a></li><li><a href="global.html#getRuntimeDirectoryForCourse">getRuntimeDirectoryForCourse</a></li><li><a href="global.html#getStream">getStream</a></li><li><a href="global.html#getTemplateQuestionIdsAsync">getTemplateQuestionIdsAsync</a></li><li><a href="global.html#hasErrors">hasErrors</a></li><li><a href="global.html#hasErrorsOrWarnings">hasErrorsOrWarnings</a></li><li><a href="global.html#hasUuid">hasUuid</a></li><li><a href="global.html#hasWarnings">hasWarnings</a></li><li><a href="global.html#identifyChangedFiles">identifyChangedFiles</a></li><li><a href="global.html#identifyChunksFromChangedFiles">identifyChunksFromChangedFiles</a></li><li><a href="global.html#identifyChunksToGenerate">identifyChunksToGenerate</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#loadAndValidateJson">loadAndValidateJson</a></li><li><a href="global.html#loadAssessments">loadAssessments</a></li><li><a href="global.html#loadConfigSecrets">loadConfigSecrets</a></li><li><a href="global.html#loadCourseInfo">loadCourseInfo</a></li><li><a href="global.html#loadCourseInstances">loadCourseInstances</a></li><li><a href="global.html#loadFullCourse">loadFullCourse</a></li><li><a href="global.html#loadFullCourseNew">loadFullCourseNew</a></li><li><a href="global.html#loadInfoFile">loadInfoFile</a></li><li><a href="global.html#loadInfoForDirectory">loadInfoForDirectory</a></li><li><a href="global.html#loadQuestions">loadQuestions</a></li><li><a href="global.html#makeError">makeError</a></li><li><a href="global.html#makeGradingResult">makeGradingResult</a></li><li><a href="global.html#makeWarning">makeWarning</a></li><li><a href="global.html#nodeModulesAssetPath">nodeModulesAssetPath</a></li><li><a href="global.html#nonblockingStringify">nonblockingStringify</a></li><li><a href="global.html#pendingChunksMap">pendingChunksMap</a></li><li><a href="global.html#RandomGenerator">RandomGenerator</a></li><li><a href="global.html#readInfoJSON">readInfoJSON</a></li><li><a href="global.html#readJSON">readJSON</a></li><li><a href="global.html#readJSONSyncOrDie">readJSONSyncOrDie</a></li><li><a href="global.html#releaseLock">releaseLock</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#sendCourseRequestMessage">sendCourseRequestMessage</a></li><li><a href="global.html#sendProctorMessage">sendProctorMessage</a></li><li><a href="global.html#sendSlackAlmaMessage">sendSlackAlmaMessage</a></li><li><a href="global.html#Stringifier">Stringifier</a></li><li><a href="global.html#stringifyErrors">stringifyErrors</a></li><li><a href="global.html#stringifyWarnings">stringifyWarnings</a></li><li><a href="global.html#syncDiskToSql">syncDiskToSql</a></li><li><a href="global.html#syncDiskToSqlWithLock">syncDiskToSqlWithLock</a></li><li><a href="global.html#syncOrCreateDiskToSql">syncOrCreateDiskToSql</a></li><li><a href="global.html#tryLock">tryLock</a></li><li><a href="global.html#updateChunksForCourse">updateChunksForCourse</a></li><li><a href="global.html#updateCourseCommitHash">updateCourseCommitHash</a></li><li><a href="global.html#updateScore">updateScore</a></li><li><a href="global.html#upload">upload</a></li><li><a href="global.html#uploadDirectoryToS3Async">uploadDirectoryToS3Async</a></li><li><a href="global.html#uploadToS3Async">uploadToS3Async</a></li><li><a href="global.html#validateAssessment">validateAssessment</a></li><li><a href="global.html#validateCourseInstance">validateCourseInstance</a></li><li><a href="global.html#validateJSON">validateJSON</a></li><li><a href="global.html#validateJSONAsync">validateJSONAsync</a></li><li><a href="global.html#validateOptions">validateOptions</a></li><li><a href="global.html#validateQuestion">validateQuestion</a></li><li><a href="global.html#visitMathBlock">visitMathBlock</a></li><li><a href="global.html#waitLock">waitLock</a></li><li><a href="global.html#writeErrorsAndWarningsForCourseData">writeErrorsAndWarningsForCourseData</a></li><li><a href="global.html#writeErrorsAndWarningsForInfoFileIfNeeded">writeErrorsAndWarningsForInfoFileIfNeeded</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Jun 02 2021 10:45:55 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

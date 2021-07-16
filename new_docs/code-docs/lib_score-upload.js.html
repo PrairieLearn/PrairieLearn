@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: lib/score-upload.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: lib/score-upload.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const ERR = require('async-stacktrace');
+const util = require('util');
+const _ = require('lodash');
+const path = require('path');
+const streamifier = require('streamifier');
+const csvtojson = require('csvtojson');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+
+const logger = require('../lib/logger');
+const serverJobs = require('../lib/server-jobs');
+const error = require('@prairielearn/prairielib/error');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
+module.exports = {
+
+    /**
+     * Update question instance scores from a CSV file.
+     *
+     * @param {number} assessment_id - The assessment to update.
+     * @param {csvFile} csvFile - An object with keys {originalname, size, buffer}.
+     * @param {number} user_id - The current user performing the update.
+     * @param {number} authn_user_id - The current authenticated user.
+     * @param {function} callback - A callback(err, job_sequence_id) function.
+     */
+    uploadInstanceQuestionScores(assessment_id, csvFile, user_id, authn_user_id, callback) {
+        debug('uploadInstanceQuestionScores()');
+        if (csvFile == null) {
+            return callback(new Error('No CSV file uploaded'));
+        }
+        const params = {assessment_id};
+        sqldb.queryOneRow(sql.select_assessment_info, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            const assessment_label = result.rows[0].assessment_label;
+            const course_instance_id = result.rows[0].course_instance_id;
+            const course_id = result.rows[0].course_id;
+            
+            const options = {
+                course_id: course_id,
+                course_instance_id: course_instance_id,
+                assessment_id: assessment_id,
+                user_id: user_id,
+                authn_user_id: authn_user_id,
+                type: 'upload_instance_question_scores',
+                description: 'Upload question scores for ' + assessment_label,
+            };
+            serverJobs.createJobSequence(options, function(err, job_sequence_id) {
+                if (ERR(err, callback)) return;
+                callback(null, job_sequence_id);
+
+                // We've now triggered the callback to our caller, but we
+                // continue executing below to launch the jobs themselves.
+
+                const jobOptions = {
+                    course_id: course_id,
+                    course_instance_id: course_instance_id,
+                    assessment_id: assessment_id,
+                    user_id: user_id,
+                    authn_user_id: authn_user_id,
+                    type: 'upload_instance_question_scores',
+                    description: 'Upload question scores for ' + assessment_label,
+                    job_sequence_id: job_sequence_id,
+                    last_in_sequence: true,
+                };
+                serverJobs.createJob(jobOptions, function(err, job) {
+                    if (err) {
+                        logger.error('Error in createJob()', err);
+                        serverJobs.failJobSequence(job_sequence_id);
+                        return;
+                    }
+                    job.verbose('Uploading question scores for ' + assessment_label);
+
+                    // acculumate output lines in the "output" variable and actually
+                    // output put them in blocks, to avoid spamming the updates
+                    let output = null;
+                    let outputCount = 0;
+                    let outputThreshold = 100;
+
+                    job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
+                    job.verbose(`----------------------------------------`);
+                    const csvStream = streamifier.createReadStream(csvFile.buffer, {encoding: 'utf8'});
+                    const csvConverter = csvtojson({
+                        colParser:{
+                            instance: 'number',
+                            score_perc: 'number',
+                            points: 'number',
+                            submission_id: 'number',
+                        },
+                        maxRowLength: 10000,
+                    });
+                    let successCount = 0, errorCount = 0;
+                    csvConverter
+                        .fromStream(csvStream)
+                        .subscribe((json, number) => {
+                            return new Promise((resolve, _reject) => {
+                                // Replace all keys with their lower-case values
+                                json = _.mapKeys(json, (v, k) => { return k.toLowerCase(); });
+                                const msg = `Processing CSV record ${number}: ${JSON.stringify(json)}`;
+                                if (output == null) {
+                                    output = msg;
+                                } else {
+                                    output += '\n' + msg;
+                                }
+                                module.exports._updateInstanceQuestionFromJson(json, assessment_id, authn_user_id, (err) => {
+                                    if (err) {
+                                        errorCount++;
+                                        const msg = String(err);
+                                        if (output == null) {
+                                            output = msg;
+                                        } else {
+                                            output += '\n' + msg;
+                                        }
+                                    } else {
+                                        successCount++;
+                                    }
+                                    outputCount++;
+                                    if (outputCount >= outputThreshold) {
+                                        job.verbose(output);
+                                        output = null;
+                                        outputCount = 0;
+                                        outputThreshold *= 2; // exponential backoff
+                                    }
+                                    resolve();
+                                });
+                            });
+                        })
+                        .then(() => {
+                            if (output != null) {
+                                job.verbose(output);
+                            }
+                            job.verbose(`----------------------------------------`);
+                            if (errorCount == 0) {
+                                job.verbose(`Successfully updated scores for ${successCount} questions, with no errors`);
+                                job.succeed();
+                            } else {
+                                job.verbose(`Successfully updated scores for ${successCount} questions`);
+                                job.fail(`Error updating ${errorCount} questions`);
+                            }
+                        })
+                        .catch((err) => {
+                            if (output != null) {
+                                job.verbose(output);
+                            }
+                            job.fail(error.newMessage(err, 'Error processing CSV'));
+                        });
+                });
+            });
+        });
+    },
+
+    /**
+     * Update assessment instance scores from a CSV file.
+     *
+     * @param {number} assessment_id - The assessment to update.
+     * @param {csvFile} csvFile - An object with keys {originalname, size, buffer}.
+     * @param {number} user_id - The current user performing the update.
+     * @param {number} authn_user_id - The current authenticated user.
+     * @param {function} callback - A callback(err, job_sequence_id) function.
+     */
+    uploadAssessmentInstanceScores(assessment_id, csvFile, user_id, authn_user_id, callback) {
+        debug('uploadAssessmentInstanceScores()');
+        if (csvFile == null) {
+            return callback(new Error('No CSV file uploaded'));
+        }
+        const params = {assessment_id};
+        sqldb.queryOneRow(sql.select_assessment_info, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            const assessment_label = result.rows[0].assessment_label;
+            const course_instance_id = result.rows[0].course_instance_id;
+            const course_id = result.rows[0].course_id;
+
+            const options = {
+                course_id: course_id,
+                course_instance_id: course_instance_id,
+                assessment_id: assessment_id,
+                user_id: user_id,
+                authn_user_id: authn_user_id,
+                type: 'upload_assessment_instance_scores',
+                description: 'Upload total scores for ' + assessment_label,
+            };
+            serverJobs.createJobSequence(options, function(err, job_sequence_id) {
+                if (ERR(err, callback)) return;
+                callback(null, job_sequence_id);
+
+                // We've now triggered the callback to our caller, but we
+                // continue executing below to launch the jobs themselves.
+
+                const jobOptions = {
+                    course_id: course_id,
+                    course_instance_id: course_instance_id,
+                    assessment_id: assessment_id,
+                    user_id: user_id,
+                    authn_user_id: authn_user_id,
+                    type: 'upload_assessment_instance_scores',
+                    description: 'Upload total scores for ' + assessment_label,
+                    job_sequence_id: job_sequence_id,
+                    last_in_sequence: true,
+                };
+                serverJobs.createJob(jobOptions, function(err, job) {
+                    if (err) {
+                        logger.error('Error in createJob()', err);
+                        serverJobs.failJobSequence(job_sequence_id);
+                        return;
+                    }
+                    job.verbose('Uploading total scores for ' + assessment_label);
+
+                    // acculumate output lines in the "output" variable and actually
+                    // output put them in blocks, to avoid spamming the updates
+                    let output = null;
+                    let outputCount = 0;
+                    let outputThreshold = 100;
+
+                    job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
+                    job.verbose(`----------------------------------------`);
+                    const csvStream = streamifier.createReadStream(csvFile.buffer, {encoding: 'utf8'});
+                    const csvConverter = csvtojson({
+                        colParser:{
+                            instance: 'number',
+                            score_perc: 'number',
+                            points: 'number',
+                        },
+                        maxRowLength: 1000,
+                    });
+                    let successCount = 0, errorCount = 0;
+                    csvConverter
+                        .fromStream(csvStream)
+                        .subscribe((json, number) => {
+                            return new Promise((resolve, _reject) => {
+                                // Replace all keys with their lower-case values
+                                json = _.mapKeys(json, (v, k) => { return k.toLowerCase(); });
+                                const msg = `Processing CSV record ${number}: ${JSON.stringify(json)}`;
+                                if (output == null) {
+                                    output = msg;
+                                } else {
+                                    output += '\n' + msg;
+                                }
+                                module.exports._updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id, (err) => {
+                                    if (err) {
+                                        errorCount++;
+                                        const msg = String(err);
+                                        if (output == null) {
+                                            output = msg;
+                                        } else {
+                                            output += '\n' + msg;
+                                        }
+                                    } else {
+                                        successCount++;
+                                    }
+                                    outputCount++;
+                                    if (outputCount >= outputThreshold) {
+                                        job.verbose(output);
+                                        output = null;
+                                        outputCount = 0;
+                                        outputThreshold *= 2; // exponential backoff
+                                    }
+                                    resolve();
+                                });
+                            });
+                        })
+                        .then(() => {
+                            if (output != null) {
+                                job.verbose(output);
+                            }
+                            job.verbose(`----------------------------------------`);
+                            if (errorCount == 0) {
+                                job.verbose(`Successfully updated scores for ${successCount} assessment instances, with no errors`);
+                                job.succeed();
+                            } else {
+                                job.verbose(`Successfully updated scores for ${successCount} assessment instances`);
+                                job.fail(`Error updating ${errorCount} assessment instances`);
+                            }
+                        })
+                        .catch((err) => {
+                            if (output != null) {
+                                job.verbose(output);
+                            }
+                            job.fail(error.newMessage(err, 'Error processing CSV'));
+                        });
+                });
+            });
+        });
+    },
+
+    // missing values and empty strings get mapped to null
+    _getJsonPropertyOrNull(json, key, default_value = null) {
+        const value = _.get(json, key, default_value);
+        if (value == '') {
+            return default_value;
+        }
+        return value;
+    },
+
+    // "feedback" gets mapped to {manual: "XXX"} and overrides the contents of "feedback_json"
+    _getFeedbackOrNull(json) {
+        const feedback_string = module.exports._getJsonPropertyOrNull(json, 'feedback');
+        const feedback_json = module.exports._getJsonPropertyOrNull(json, 'feedback_json');
+        let feedback = null;
+        if (feedback_string != null) {
+            feedback = {manual: feedback_string};
+        }
+        if (feedback_json != null) {
+            let feedback_obj = null;
+            try {
+                feedback_obj = JSON.parse(feedback_json);
+            } catch (e) {
+                throw new Error(`Unable to parse "feedback_json" field as JSON: ${e}`);
+            }
+            if (!_.isPlainObject(feedback_obj)) {
+                throw new Error(`Parsed "feedback_json" is not a JSON object: ${feedback_obj}`);
+            }
+            feedback = feedback_obj;
+            if (feedback_string != null) {
+                feedback.manual = feedback_string;
+            }
+        }
+        return feedback;
+    },
+
+    _updateInstanceQuestionFromJson(json, assessment_id, authn_user_id, callback) {
+        util.callbackify(async () => {
+            const params = [
+                assessment_id,
+                null, // assessment_instance_id
+                module.exports._getJsonPropertyOrNull(json, 'submission_id'),
+                null, // instance_question_id
+                module.exports._getJsonPropertyOrNull(json, 'group_name', module.exports._getJsonPropertyOrNull(json, 'uid')),
+                module.exports._getJsonPropertyOrNull(json, 'instance'),
+                module.exports._getJsonPropertyOrNull(json, 'qid'),
+                module.exports._getJsonPropertyOrNull(json, 'score_perc'),
+                module.exports._getJsonPropertyOrNull(json, 'points'),
+                module.exports._getFeedbackOrNull(json),
+                authn_user_id,
+            ];
+            await sqldb.callAsync('instance_questions_update_score', params);
+        })(callback);
+    },
+
+    _updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id, callback) {
+        let query, id;
+        if (_.has(json, 'uid')) {
+            query = sql.select_assessment_instance_uid;
+            id = json.uid;
+        } else if (_.has(json, 'group_name')) {
+            query = sql.select_assessment_instance_group;
+            id = json.group_name;
+        } else {
+            return callback(new Error('"uid" or "group_name" not found'));
+        }
+        if (!_.has(json, 'instance')) return callback(new Error('"instance" not found'));
+
+        const params = {
+            assessment_id,
+            uid: json.uid,
+            group_name: json.group_name,
+            instance_number: json.instance,
+        };
+        sqldb.queryOneRow(query, params, function(err, result) {
+            if (err) return callback(new Error(`unable to locate instance ${json.instance} for ${id}`));
+            const assessment_instance_id = result.rows[0].assessment_instance_id;
+
+            if (_.has(json, 'score_perc')) {
+                const params = [
+                    assessment_instance_id,
+                    json.score_perc,
+                    authn_user_id,
+                ];
+                sqldb.call('assessment_instances_update_score_perc', params, (err, _result) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            } else if (_.has(json, 'points')) {
+                const params = [
+                    assessment_instance_id,
+                    json.points,
+                    authn_user_id,
+                ];
+                sqldb.call('assessment_instances_update_points', params, (err, _result) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            } else {
+                return callback(new Error('must specify either "score_perc" or "points"'));
+            }
+        });
+    },
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-assessment.html">assessment</a></li><li><a href="module-question.html">question</a></li><li><a href="module-question-servers.html">question-servers</a></li></ul><h3>Classes</h3><ul><li><a href="LocalCache.html">LocalCache</a></li><li><a href="LocalLock.html">LocalLock</a></li><li><a href="module-question-NoSubmissionError.html">NoSubmissionError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#_generateAllChunksForCourseListWithJobSequence">_generateAllChunksForCourseListWithJobSequence</a></li><li><a href="global.html#_generateAllChunksForCourseWithJob">_generateAllChunksForCourseWithJob</a></li><li><a href="global.html#_getLock">_getLock</a></li><li><a href="global.html#_syncDiskToSqlWithLock">_syncDiskToSqlWithLock</a></li><li><a href="global.html#_updateScoreWithClient">_updateScoreWithClient</a></li><li><a href="global.html#addError">addError</a></li><li><a href="global.html#addErrors">addErrors</a></li><li><a href="global.html#addWarning">addWarning</a></li><li><a href="global.html#addWarnings">addWarnings</a></li><li><a href="global.html#assetPath">assetPath</a></li><li><a href="global.html#buildDirectory">buildDirectory</a></li><li><a href="global.html#checkAllowAccessDates">checkAllowAccessDates</a></li><li><a href="global.html#checkDuplicateUUIDs">checkDuplicateUUIDs</a></li><li><a href="global.html#close">close</a></li><li><a href="global.html#courseDataHasErrors">courseDataHasErrors</a></li><li><a href="global.html#courseDataHasErrorsOrWarnings">courseDataHasErrorsOrWarnings</a></li><li><a href="global.html#createAndUploadChunks">createAndUploadChunks</a></li><li><a href="global.html#delete">delete</a></li><li><a href="global.html#deleteFromS3Async">deleteFromS3Async</a></li><li><a href="global.html#describe">describe</a></li><li><a href="global.html#downloadFromS3Async">downloadFromS3Async</a></li><li><a href="global.html#ensureChunk">ensureChunk</a></li><li><a href="global.html#ensureChunksForCourseAsync">ensureChunksForCourseAsync</a></li><li><a href="global.html#ERR">ERR</a></li><li><a href="global.html#extractAndSaveCSRFToken">extractAndSaveCSRFToken</a></li><li><a href="global.html#extractAndSaveVariantId">extractAndSaveVariantId</a></li><li><a href="global.html#fetchCheerio">fetchCheerio</a></li><li><a href="global.html#generateAllChunksForCourseList">generateAllChunksForCourseList</a></li><li><a href="global.html#get">get</a></li><li><a href="global.html#getAllChunksForCourse">getAllChunksForCourse</a></li><li><a href="global.html#getChunksDirectoriesForCourseId">getChunksDirectoriesForCourseId</a></li><li><a href="global.html#getDetailsForFile">getDetailsForFile</a></li><li><a href="global.html#getDevHostJobDirectory">getDevHostJobDirectory</a></li><li><a href="global.html#getDevJobDirectory">getDevJobDirectory</a></li><li><a href="global.html#getErrorsAndWarningsForFilePath">getErrorsAndWarningsForFilePath</a></li><li><a href="global.html#getFromS3Async">getFromS3Async</a></li><li><a href="global.html#getJobDirectory">getJobDirectory</a></li><li><a href="global.html#getJobSequenceWithFormattedOutput">getJobSequenceWithFormattedOutput</a></li><li><a href="global.html#getOrUpdateCourseCommitHash">getOrUpdateCourseCommitHash</a></li><li><a href="global.html#getRuntimeDirectoryForCourse">getRuntimeDirectoryForCourse</a></li><li><a href="global.html#getStream">getStream</a></li><li><a href="global.html#getTemplateQuestionIdsAsync">getTemplateQuestionIdsAsync</a></li><li><a href="global.html#hasErrors">hasErrors</a></li><li><a href="global.html#hasErrorsOrWarnings">hasErrorsOrWarnings</a></li><li><a href="global.html#hasUuid">hasUuid</a></li><li><a href="global.html#hasWarnings">hasWarnings</a></li><li><a href="global.html#identifyChangedFiles">identifyChangedFiles</a></li><li><a href="global.html#identifyChunksFromChangedFiles">identifyChunksFromChangedFiles</a></li><li><a href="global.html#identifyChunksToGenerate">identifyChunksToGenerate</a></li><li><a href="global.html#init">init</a></li><li><a href="global.html#loadAndValidateJson">loadAndValidateJson</a></li><li><a href="global.html#loadAssessments">loadAssessments</a></li><li><a href="global.html#loadConfigSecrets">loadConfigSecrets</a></li><li><a href="global.html#loadCourseInfo">loadCourseInfo</a></li><li><a href="global.html#loadCourseInstances">loadCourseInstances</a></li><li><a href="global.html#loadFullCourse">loadFullCourse</a></li><li><a href="global.html#loadFullCourseNew">loadFullCourseNew</a></li><li><a href="global.html#loadInfoFile">loadInfoFile</a></li><li><a href="global.html#loadInfoForDirectory">loadInfoForDirectory</a></li><li><a href="global.html#loadQuestions">loadQuestions</a></li><li><a href="global.html#makeError">makeError</a></li><li><a href="global.html#makeGradingResult">makeGradingResult</a></li><li><a href="global.html#makeWarning">makeWarning</a></li><li><a href="global.html#nodeModulesAssetPath">nodeModulesAssetPath</a></li><li><a href="global.html#nonblockingStringify">nonblockingStringify</a></li><li><a href="global.html#pendingChunksMap">pendingChunksMap</a></li><li><a href="global.html#RandomGenerator">RandomGenerator</a></li><li><a href="global.html#readInfoJSON">readInfoJSON</a></li><li><a href="global.html#readJSON">readJSON</a></li><li><a href="global.html#readJSONSyncOrDie">readJSONSyncOrDie</a></li><li><a href="global.html#releaseLock">releaseLock</a></li><li><a href="global.html#reset">reset</a></li><li><a href="global.html#sendCourseRequestMessage">sendCourseRequestMessage</a></li><li><a href="global.html#sendProctorMessage">sendProctorMessage</a></li><li><a href="global.html#sendSlackAlmaMessage">sendSlackAlmaMessage</a></li><li><a href="global.html#Stringifier">Stringifier</a></li><li><a href="global.html#stringifyErrors">stringifyErrors</a></li><li><a href="global.html#stringifyWarnings">stringifyWarnings</a></li><li><a href="global.html#syncDiskToSql">syncDiskToSql</a></li><li><a href="global.html#syncDiskToSqlWithLock">syncDiskToSqlWithLock</a></li><li><a href="global.html#syncOrCreateDiskToSql">syncOrCreateDiskToSql</a></li><li><a href="global.html#tryLock">tryLock</a></li><li><a href="global.html#updateChunksForCourse">updateChunksForCourse</a></li><li><a href="global.html#updateCourseCommitHash">updateCourseCommitHash</a></li><li><a href="global.html#updateScore">updateScore</a></li><li><a href="global.html#upload">upload</a></li><li><a href="global.html#uploadDirectoryToS3Async">uploadDirectoryToS3Async</a></li><li><a href="global.html#uploadToS3Async">uploadToS3Async</a></li><li><a href="global.html#validateAssessment">validateAssessment</a></li><li><a href="global.html#validateCourseInstance">validateCourseInstance</a></li><li><a href="global.html#validateJSON">validateJSON</a></li><li><a href="global.html#validateJSONAsync">validateJSONAsync</a></li><li><a href="global.html#validateOptions">validateOptions</a></li><li><a href="global.html#validateQuestion">validateQuestion</a></li><li><a href="global.html#visitMathBlock">visitMathBlock</a></li><li><a href="global.html#waitLock">waitLock</a></li><li><a href="global.html#writeErrorsAndWarningsForCourseData">writeErrorsAndWarningsForCourseData</a></li><li><a href="global.html#writeErrorsAndWarningsForInfoFileIfNeeded">writeErrorsAndWarningsForInfoFileIfNeeded</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.6</a> on Wed Jun 02 2021 10:45:55 GMT-0500 (Central Daylight Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
