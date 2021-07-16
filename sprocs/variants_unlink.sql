@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS variants_unlink(bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_unlink(
         variant_id bigint
     ) RETURNS void

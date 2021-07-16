@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS check_course_instance_access(bigint, enum_role, text, timestamptz);
-DROP FUNCTION IF EXISTS check_course_instance_access(bigint, enum_role, text, bigint, timestamptz);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     check_course_instance_access (
         course_instance_id bigint,
         role enum_role,

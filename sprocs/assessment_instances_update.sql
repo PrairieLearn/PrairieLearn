@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_update(bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_update (
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,

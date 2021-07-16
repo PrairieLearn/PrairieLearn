@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     course_requests_insert(
         IN user_id bigint,
         IN short_name text,

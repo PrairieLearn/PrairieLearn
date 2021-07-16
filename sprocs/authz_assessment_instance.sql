@@ -1,9 +1,4 @@
-DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb);
-DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,text);
-DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,timestamp with time zone,text);
-DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,timestamp with time zone,text, boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     authz_assessment_instance (
         IN assessment_instance_id bigint,
         IN authz_data JSONB,

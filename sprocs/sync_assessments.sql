@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_assessments(
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,

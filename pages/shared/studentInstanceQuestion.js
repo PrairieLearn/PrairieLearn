@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 
 const fileStore = require('../../lib/file-store');
 

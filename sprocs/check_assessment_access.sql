@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,text,timestamp with time zone);
-DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,text,timestamp with time zone,text);
-DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,bigint,text,timestamp with time zone,text);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     check_assessment_access (
         IN assessment_id bigint,
         IN authz_mode enum_mode,
