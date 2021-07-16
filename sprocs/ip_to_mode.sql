@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS ip_to_mode(inet,timestamptz);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     ip_to_mode(
         IN ip inet,
         IN date timestamptz,

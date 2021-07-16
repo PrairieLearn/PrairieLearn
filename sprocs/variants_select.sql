@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS variants_select(bigint);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_select (
         IN variant_id bigint,
         OUT variant jsonb

@@ -8,8 +8,8 @@ const AWS = require('aws-sdk');
 const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
-const { sqldb } = require('@prairielearn/prairielib');
-const sanitizeObject = require('@prairielearn/prairielib').util.sanitizeObject;
+const sqldb = require('../prairielib/lib/sql-db');
+const sanitizeObject = require('../prairielib/lib/util').sanitizeObject;
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');

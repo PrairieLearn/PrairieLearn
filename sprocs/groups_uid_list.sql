@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS groups_uid_list(bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     groups_uid_list (
         IN group_id bigint,
         OUT uid_list text[]

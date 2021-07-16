@@ -7,8 +7,8 @@ var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
-var sqldb = require('@prairielearn/prairielib').sqldb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var page, form, elemList; 
 const helperServer = require('./helperServer');

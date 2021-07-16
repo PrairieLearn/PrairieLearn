@@ -3,8 +3,8 @@ var assert = require('chai').assert;
 var debug = require('debug')('prairielearn:testSproc-users_select_or_insert');
 var _ = require('lodash');
 
-var sqldb = require('@prairielearn/prairielib').sqldb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperDb = require('./helperDb');
 

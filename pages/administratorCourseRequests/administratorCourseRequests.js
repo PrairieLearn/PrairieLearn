@@ -3,8 +3,9 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 
-const error = require('@prairielearn/prairielib/error');
-const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
+const error = require('../../prairielib/lib/error');
+const sqlDb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const github = require('../../lib/github');
 const config = require('../../lib/config');
