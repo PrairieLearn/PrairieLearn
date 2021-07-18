@@ -122,50 +122,17 @@ let watcher;
 async.series([
     async () => {
         if (config.runningInEc2) {
-            /* If we're in EC2, find the host's instance_id and hostname */
-            const MetadataService = new AWS.MetadataService();
-            /* Every other AWS call supports promise() except MetadataService, annoyingly enough */
-            const request_promise = util.promisify((path, callback) => MetadataService.request(path, callback));
-            const document = await request_promise('/latest/dynamic/instance-identity/document');
-            const data = JSON.parse(document);
-            debug('instance-identity', data);
-            AWS.config.update({'region': data.region});
-            workspace_server_settings.instance_id = data.instanceId;
-
-            const hostname = await request_promise('/latest/meta-data/local-hostname');
-            workspace_server_settings.hostname = hostname;
-            workspace_server_settings.server_to_container_hostname = hostname;
+            await aws.loadConfigSecrets(); // sets config.* variables
+            // copy discovered variables into workspace_server_settings
+            workspace_server_settings.instance_id = config.instanceId;
+            workspace_server_settings.hostname = config.hostname;
+            workspace_server_settings.server_to_container_hostname = config.hostname;
         } else {
             /* Otherwise, just use the defaults in the config file */
             workspace_server_settings.instance_id = config.workspaceDevHostInstanceId;
             workspace_server_settings.hostname = config.workspaceDevHostHostname;
             workspace_server_settings.server_to_container_hostname = config.workspaceDevContainerHostname;
         }
-    },
-    async () => {
-        if (!config.runningInEc2) return;
-        /* If we're inside EC2, look up a special tag and use its value to
-           find a secret containing the configuration data.  This is JSON
-           with a single object in the same format as the "config" object. */
-        const ec2 = new AWS.EC2();
-        const tags = (await ec2.describeTags({ Filters: [{ Name: 'resource-id', Values: [ workspace_server_settings.instance_id ] }] }).promise()).Tags;
-        logger.info('Instance tags', tags);
-
-        const secret_tag = _.find(tags, { Key: 'ConfSecret' });
-        if (!secret_tag) return;
-
-        const secret_id = secret_tag.Value;
-        logger.info(`Secret ID: ${secret_id}`);
-
-        const secretsManager = new AWS.SecretsManager();
-        const secret_value = await secretsManager.getSecretValue({ SecretId: secret_id }).promise();
-
-        if (!secret_value.SecretString) return;
-        logger.info(`Secret value: ${secret_value.SecretString}`);
-        const secret_config = JSON.parse(secret_value.SecretString);
-        logger.info('Parsed secret config', secret_config);
-
-        _.assign(config, secret_config);
     },
     async () => {
         /* Always grab the port from the config */
