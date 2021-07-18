@@ -177,8 +177,8 @@ Attribute | Type | Default | Description
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `hide-score-badge` | boolean | false | Hide badges next to selected answers.
-`min-select` | integer | special | The minimum number of answers that must be selected in any valid submission.
-`max-select` | integer | special | The maximum number of answers that can be selected in any valid submission.
+`min-select` | integer | special | The minimum number of answers that must be selected in any valid submission. Defaults to `min-correct` if that attribute is specified; otherwise, defaults to 1.
+`max-select` | integer | special | The maximum number of answers that can be selected in any valid submission. Defaults to `max-correct` if that attribute is specified; otherwise, defaults to the number of displayed answers.
 `show-number-correct` | boolean | false | Display the number of correct choices in the help text.
 
 Inside the `pl-checkbox` element, each choice must be specified with
@@ -194,7 +194,7 @@ Three grading methods are available when using `partial-credit="true"`:
 
 * `'COV'` (Coverage): in this method, the final score is calculated by multiplying the **base score** (the proportion of correct answers that are chosen) with 
 the **guessing factor** (the proportion of chosen answers that are correct). Specifically, if `t` is the number of correct answers chosen, `c` is the total number
-of correct answers, and `n` is the total number of answers chosen, then the final score is `(t / c) * (t / n)`.
+of correct answers, and `n` is the total number of answers chosen, then the final score is `(t / c) * (t / n)`. This grading scheme rewards submissions that include (i.e. "cover") all true options.
 
 * `'EDC'` (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
 

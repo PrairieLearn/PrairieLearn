@@ -16,6 +16,8 @@ DETAILED_HELP_TEXT_DEFAULT = False
 HIDE_LETTER_KEYS_DEFAULT = False
 HIDE_SCORE_BADGE_DEFAULT = False
 SHOW_NUMBER_CORRECT_DEFAULT = False
+MIN_CORRECT_DEFAULT = 1
+MIN_SELECT_DEFAULT = 1
 
 
 def prepare(element_html, data):
@@ -55,7 +57,7 @@ def prepare(element_html, data):
         raise ValueError('At least one option must be true.')
 
     number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
-    min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
+    min_correct = pl.get_integer_attrib(element, 'min-correct', MIN_CORRECT_DEFAULT)
     max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
     if min_correct < 1:
@@ -74,15 +76,21 @@ def prepare(element_html, data):
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError('INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)' % (min_incorrect, max_incorrect, len_incorrect, len_correct))
 
-    min_select = pl.get_integer_attrib(element, 'min-select', 1)
+    min_select = pl.get_integer_attrib(element, 'min-select', MIN_SELECT_DEFAULT)
     max_select = pl.get_integer_attrib(element, 'max-select', number_answers)
 
     if min_select < 1:
-        raise ValueError('The attribute min-select is {:d} but must be at least 1'.format(min_select))
+        raise ValueError(f'The attribute min-select is {min_select} but must be at least 1')
+
+    # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
     if min_select > max_select:
-        raise ValueError('min-select (%d) is greater than max-select (%d)' % (min_select, max_select))
+        raise ValueError(f'min-select ({min_select}) is greater than max-select ({max_select})')
     if min_select > number_answers:
-        raise ValueError('min-select (%d) is greater than the total number of answers (%d)' % (min_select, number_answers))
+        raise ValueError(f'min-select ({min_select}) is greater than the total number of answers to display ({number_answers})')
+    if min_select > min_correct:
+        raise ValueError(f'min-select ({min_select}) is greater than the minimum possible number of correct answers ({min_correct})')
+    if max_select < max_correct:
+        raise ValueError(f'max-select ({max_select}) is less than the maximum possible number of correct answers ({max_correct})')
 
     number_correct = random.randint(min_correct, max_correct)
     number_incorrect = number_answers - number_correct
@@ -167,40 +175,56 @@ def render(element_html, data):
             # Should we reveal the depth of the choice?
             detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
             show_number_correct = pl.get_boolean_attrib(element, 'show-number-correct', SHOW_NUMBER_CORRECT_DEFAULT)
-            min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
+            min_correct = pl.get_integer_attrib(element, 'min-correct', MIN_CORRECT_DEFAULT)
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
 
             if show_number_correct:
-                if max_correct == 1:
+                if len(correct_answer_list) == 1:
                     number_correct_text = ' There is exactly <b>1</b> correct option in the list above.'
                 else:
-                    number_correct_text = ' There are exactly <b>%d</b> correct options in the list above.' % (max_correct)
+                    number_correct_text = f' There are exactly <b>{len(correct_answer_list)}</b> correct options in the list above.'
             else:
                 number_correct_text = ''
 
-            if pl.has_attrib(element, 'min-select') or pl.has_attrib(element, 'max-select'):
-                min_submitted_answers = pl.get_integer_attrib(element, 'min-select', 1)
-                max_submitted_answers = pl.get_integer_attrib(element, 'max-select', len(display_answers))
-                restrict_num_submitted_answers = True
-            elif detailed_help_text:
-                min_submitted_answers = min_correct
-                max_submitted_answers = max_correct
-                restrict_num_submitted_answers = True
-            else:
-                restrict_num_submitted_answers = False
+            # Note: MAX_SELECT_DEFAULT is not a global constant. The name is capitalized to match MIN_SELECT_DEFAULT.
+            MAX_SELECT_DEFAULT = len(display_answers)
 
-            if restrict_num_submitted_answers:
-                if min_submitted_answers != max_submitted_answers:
-                    insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_submitted_answers, max_submitted_answers)
-                    insert_text += number_correct_text
-                    helptext = '<small class="form-text text-muted">Select ' + insert_text + '</small>'
+            min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
+            max_options_to_select = _get_max_options_to_select(element, MAX_SELECT_DEFAULT)
+
+            # Now we determine what the help text will be.
+            #
+            # If detailed_help_text is True, we reveal the values of min_options_to_select and max_options_to_select.
+            #
+            # If detailed_help_text is False, we reveal min_options_to_select if the following conditions are met (analogous
+            # conditions are used for determining whether or not to reveal max_options_to_select):
+            # 1. The "min-select" attribute is specified.
+            # 2. min_options_to_select != MIN_SELECT_DEFAULT.
+
+            if detailed_help_text or (min_options_to_select != MIN_SELECT_DEFAULT and max_options_to_select != MAX_SELECT_DEFAULT
+                        and pl.has_attrib(element, 'min-select') and pl.has_attrib(element, 'max-select')):
+                # If we get here, we always reveal min_options_to_select and max_options_to_select.
+                if min_options_to_select != max_options_to_select:
+                    insert_text = f' between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options.'
                 else:
-                    insert_text = ' exactly <b>%d</b> options.' % (max_submitted_answers)
-                    insert_text += number_correct_text
-                    helptext = '<small class="form-text text-muted">Select' + insert_text + '</small>'
+                    insert_text = f' exactly <b>{min_options_to_select}</b> options.'
             else:
-                insert_text = ' at least one option.'
-                insert_text += number_correct_text
+                # If we get here, at least one of min_options_to_select and max_options_to_select should *not* be revealed.
+                if min_options_to_select != MIN_SELECT_DEFAULT and pl.has_attrib(element, 'min-select'):
+                    insert_text = f' at least <b>{min_options_to_select}</b> options.'
+                elif max_options_to_select != MAX_SELECT_DEFAULT and pl.has_attrib(element, 'max-select'):
+                    insert_text = f' at most <b>{max_options_to_select}</b> options.'
+                else:
+                    # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
+                    insert_text = ' at least 1 option.'
+
+            insert_text += number_correct_text
+
+            if (detailed_help_text or (min_options_to_select != MIN_SELECT_DEFAULT and pl.has_attrib(element, 'min-select')
+                    or (max_options_to_select != MAX_SELECT_DEFAULT and pl.has_attrib(element, 'max-select')))):
+                helptext = '<small class="form-text text-muted">Select ' + insert_text + '</small>'
+            else:
+                # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
                 helptext = '<small class="form-text text-muted">Select all possible options that apply.' + number_correct_text + '</small>'
 
             if partial_credit:
@@ -213,10 +237,12 @@ def render(element_html, data):
                     gradingtext = 'You must select' + insert_text + ' You will receive a score of <code>100% * (t + f) / ' + str(len(display_answers)) + '</code>, ' \
                         + 'where <code>t</code> is the number of true options that you select and <code>f</code> ' \
                         + 'is the number of false options that you do not select.'
-                else:   # this is the COV method
+                elif partial_credit_method == 'COV':
                     gradingtext = 'You must select' + insert_text + ' You will receive a score of <code>100% * (t / c) * (t / n)</code>, ' \
                         + 'where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, ' \
                         + 'and <code>n</code> is the total number of options you select.'
+                else:
+                    raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
             else:
                 gradingtext = 'You must select' + insert_text + ' You will receive a score of 100% ' \
                     + 'if you select all options that are true and no options that are false. ' \
@@ -332,7 +358,6 @@ def render(element_html, data):
 
 
 def parse(element_html, data):
-
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -355,24 +380,20 @@ def parse(element_html, data):
         data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(str(one_bad_key))
         return
 
-    # Get minimum and maximum number of options to be selected
-    if pl.has_attrib(element, 'min-select') or pl.has_attrib(element, 'max-select'):
-        min_submitted_answers = pl.get_integer_attrib(element, 'min-select', 1)
-        max_submitted_answers = pl.get_integer_attrib(element, 'max-select', len(data['params'].get(name, [])))
-        restrict_num_submitted_answers = True
-    elif pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
-        min_submitted_answers = pl.get_integer_attrib(element, 'min-correct', 1)
-        max_submitted_answers = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
-        restrict_num_submitted_answers = True
-    else:
-        restrict_num_submitted_answers = False
+    detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
 
-    # Check that the number of submitted answers is in the interval [min_submitted_answers, max_submitted_answers], if needed
-    if restrict_num_submitted_answers:
-        n_submitted = len(submitted_key)
-        if n_submitted > max_submitted_answers or n_submitted < min_submitted_answers:
-            data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_submitted_answers, max_submitted_answers)
-            return
+    # Get minimum and maximum number of options to be selected
+    min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
+    max_options_to_select = _get_max_options_to_select(element, len(data['params'][name]))
+
+    # Check that the number of submitted answers is in the interval [min_options_to_select, max_options_to_select].
+    n_submitted = len(submitted_key)
+    if n_submitted > max_options_to_select or n_submitted < min_options_to_select:
+        if min_options_to_select != max_options_to_select:
+            data['format_errors'][name] = f'You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options.'
+        else:
+            data['format_errors'][name] = f'You must select exactly <b>{min_options_to_select}</b> options.'
+        return
 
 
 def grade(element_html, data):
@@ -404,11 +425,13 @@ def grade(element_html, data):
         elif partial_credit_method == 'EDC':
             number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)
             score = 1 - 1.0 * number_wrong / number_answers
-        else:   # this is the COV method
-            n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
+        elif partial_credit_method == 'COV':
+            n_correct_answers = len(correctSet & submittedSet)
             base_score = n_correct_answers / len(correctSet)
             guessing_factor = n_correct_answers / len(submittedSet)
             score = base_score * guessing_factor
+        else:
+            raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
 
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
@@ -445,9 +468,9 @@ def test(element_html, data):
                     if not pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
                         break
                     else:
-                        min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
-                        max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
-                        if len(ans) <= max_correct and len(ans) >= min_correct:
+                        min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
+                        max_options_to_select = _get_max_options_to_select(element, number_answers)
+                        if len(ans) <= max_options_to_select and len(ans) >= min_options_to_select:
                             break
         if partial_credit:
             if partial_credit_method == 'PC':
@@ -460,11 +483,13 @@ def test(element_html, data):
             elif partial_credit_method == 'EDC':
                 number_wrong = len(set(ans) - set(correct_keys)) + len(set(correct_keys) - set(ans))
                 score = 1 - 1.0 * number_wrong / number_answers
-            else:   # this is the COV method
-                n_correct_answers = len(set(correct_keys)) - len(set(correct_keys) - set(ans))
+            elif partial_credit_method == 'COV':
+                n_correct_answers = len(set(correct_keys) & set(ans))
                 base_score = n_correct_answers / len(set(correct_keys))
                 guessing_factor = n_correct_answers / len(set(ans))
                 score = base_score * guessing_factor
+            else:
+                raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
         else:
             score = 0
         data['raw_submitted_answers'][name] = ans
@@ -475,3 +500,47 @@ def test(element_html, data):
         data['format_errors'][name] = 'You must select at least one option.'
     else:
         raise Exception('invalid result: %s' % result)
+
+
+def _get_min_options_to_select(element, default_val):
+    """
+    Given an HTML fragment containing a pl-checkbox element, returns the minimum number of options that must be selected in
+    the checkbox element for a submission to be valid. In order of descending priority, the returned value equals:
+        1. The value of the "min-select" attribute, if specified.
+        2. The value of the "min-correct" attribute, if the "detailed-help-text" attribute is set to True.
+        3. default_val otherwise.
+
+    Note: this function should only be called from within this file.
+    """
+    detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
+
+    if pl.has_attrib(element, 'min-select'):
+        min_options_to_select = pl.get_integer_attrib(element, 'min-select')
+    elif pl.has_attrib(element, 'min-correct') and detailed_help_text:
+        min_options_to_select = pl.get_integer_attrib(element, 'min-correct')
+    else:
+        min_options_to_select = default_val
+
+    return min_options_to_select
+
+
+def _get_max_options_to_select(element, default_val):
+    """
+    Given an HTML fragment containing a pl-checkbox element, returns the maximum number of options that can be selected in
+    the checkbox element for a submission to be valid. In order of descending priority, the returned value equals:
+        1. The value of the "max-select" attribute, if specified.
+        2. The value of the "max-correct" attribute, if the "detailed-help-text" attribute is set to True.
+        3. default_val otherwise.
+
+    Note: this function should only be called from within this file.
+    """
+    detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
+
+    if pl.has_attrib(element, 'max-select'):
+        max_options_to_select = pl.get_integer_attrib(element, 'max-select')
+    elif pl.has_attrib(element, 'max-correct') and detailed_help_text:
+        max_options_to_select = pl.get_integer_attrib(element, 'max-correct')
+    else:
+        max_options_to_select = default_val
+
+    return max_options_to_select
