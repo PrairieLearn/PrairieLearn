@@ -130,7 +130,8 @@ async.series([
             workspace_server_settings.hostname = config.hostname;
             workspace_server_settings.server_to_container_hostname = config.hostname;
         } else {
-            /* Otherwise, just use the defaults in the config file */
+            /* Otherwise, use the defaults in the config file */
+            config.instanceId = config.workspaceDevHostInstanceId;
             workspace_server_settings.instance_id = config.workspaceDevHostInstanceId;
             workspace_server_settings.hostname = config.workspaceDevHostHostname;
             workspace_server_settings.server_to_container_hostname = config.workspaceDevContainerHostname;
