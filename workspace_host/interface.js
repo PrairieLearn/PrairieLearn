@@ -10,11 +10,6 @@ const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
-const dockerUtil = require('../lib/dockerUtil');
-const awsHelper = require('../lib/aws');
-const socketServer = require('../lib/socket-server'); // must load socket server before workspace
-const workspaceHelper = require('../lib/workspace');
-const logger = require('../lib/logger');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
@@ -24,8 +19,15 @@ const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
 const stream = require('stream');
-const LocalLock = require('../lib/local-lock');
 const asyncHandler = require('express-async-handler');
+
+const dockerUtil = require('../lib/dockerUtil');
+const awsHelper = require('../lib/aws');
+const socketServer = require('../lib/socket-server'); // must load socket server before workspace
+const workspaceHelper = require('../lib/workspace');
+const logger = require('../lib/logger');
+const sprocs = require('../sprocs');
+const LocalLock = require('../lib/local-lock');
 
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
@@ -134,6 +136,12 @@ async.series([
             workspace_server_settings.server_to_container_hostname = config.workspaceDevContainerHostname;
         }
     },
+    (callback) => {
+        util.callbackify(awsHelper.init)(err => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
     async () => {
         /* Always grab the port from the config */
         workspace_server_settings.port = config.workspaceHostPort;
@@ -161,7 +169,13 @@ async.series([
         });
     },
     (callback) => {
-        util.callbackify(awsHelper.init)(err => {
+        sqldb.setRandomSearchSchema(config.instanceId, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        sprocs.init(function(err) {
             if (ERR(err, callback)) return;
             callback(null);
         });
