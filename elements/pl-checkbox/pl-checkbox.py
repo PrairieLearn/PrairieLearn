@@ -175,8 +175,6 @@ def render(element_html, data):
             # Should we reveal the depth of the choice?
             detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
             show_number_correct = pl.get_boolean_attrib(element, 'show-number-correct', SHOW_NUMBER_CORRECT_DEFAULT)
-            min_correct = pl.get_integer_attrib(element, 'min-correct', MIN_CORRECT_DEFAULT)
-            max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
 
             if show_number_correct:
                 if len(correct_answer_list) == 1:
@@ -186,11 +184,8 @@ def render(element_html, data):
             else:
                 number_correct_text = ''
 
-            # Note: MAX_SELECT_DEFAULT is not a global constant. The name is capitalized to match MIN_SELECT_DEFAULT.
-            MAX_SELECT_DEFAULT = len(display_answers)
-
             min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
-            max_options_to_select = _get_max_options_to_select(element, MAX_SELECT_DEFAULT)
+            max_options_to_select = _get_max_options_to_select(element, len(display_answers))
 
             # Now we determine what the help text will be.
             #
@@ -201,8 +196,10 @@ def render(element_html, data):
             # 1. The "min-select" attribute is specified.
             # 2. min_options_to_select != MIN_SELECT_DEFAULT.
 
-            if detailed_help_text or (min_options_to_select != MIN_SELECT_DEFAULT and max_options_to_select != MAX_SELECT_DEFAULT
-                        and pl.has_attrib(element, 'min-select') and pl.has_attrib(element, 'max-select')):
+            show_min_select = pl.has_attrib(element, 'min-select') and min_options_to_select != MIN_SELECT_DEFAULT
+            show_max_select = pl.has_attrib(element, 'max-select') and max_options_to_select != len(display_answers)
+
+            if detailed_help_text or (show_min_select and show_max_select):
                 # If we get here, we always reveal min_options_to_select and max_options_to_select.
                 if min_options_to_select != max_options_to_select:
                     insert_text = f' between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options.'
@@ -210,9 +207,9 @@ def render(element_html, data):
                     insert_text = f' exactly <b>{min_options_to_select}</b> options.'
             else:
                 # If we get here, at least one of min_options_to_select and max_options_to_select should *not* be revealed.
-                if min_options_to_select != MIN_SELECT_DEFAULT and pl.has_attrib(element, 'min-select'):
+                if show_min_select:
                     insert_text = f' at least <b>{min_options_to_select}</b> options.'
-                elif max_options_to_select != MAX_SELECT_DEFAULT and pl.has_attrib(element, 'max-select'):
+                elif show_max_select:
                     insert_text = f' at most <b>{max_options_to_select}</b> options.'
                 else:
                     # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
@@ -220,8 +217,7 @@ def render(element_html, data):
 
             insert_text += number_correct_text
 
-            if (detailed_help_text or (min_options_to_select != MIN_SELECT_DEFAULT and pl.has_attrib(element, 'min-select')
-                    or (max_options_to_select != MAX_SELECT_DEFAULT and pl.has_attrib(element, 'max-select')))):
+            if detailed_help_text or show_min_select or show_max_select:
                 helptext = '<small class="form-text text-muted">Select ' + insert_text + '</small>'
             else:
                 # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
@@ -363,7 +359,6 @@ def parse(element_html, data):
 
     submitted_key = data['submitted_answers'].get(name, None)
     all_keys = [a['key'] for a in data['params'][name]]
-    correct_answer_list = data['correct_answers'].get(name, [])
 
     # Check that at least one option was selected
     if submitted_key is None:
@@ -379,8 +374,6 @@ def parse(element_html, data):
         # FIXME: escape one_bad_key
         data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(str(one_bad_key))
         return
-
-    detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
 
     # Get minimum and maximum number of options to be selected
     min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
