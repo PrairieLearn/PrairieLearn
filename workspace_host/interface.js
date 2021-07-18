@@ -124,7 +124,7 @@ let watcher;
 async.series([
     async () => {
         if (config.runningInEc2) {
-            await aws.loadConfigSecrets(); // sets config.* variables
+            await awsHelper.loadConfigSecrets(); // sets config.* variables
             // copy discovered variables into workspace_server_settings
             workspace_server_settings.instance_id = config.instanceId;
             workspace_server_settings.hostname = config.hostname;
