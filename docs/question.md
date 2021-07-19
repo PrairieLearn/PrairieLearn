@@ -202,7 +202,7 @@ def parse(data):
 
 def grade(data):
     # All elements will have already graded their answers (if any) before this point.
-    # data["partial_scores"][NAME] is the individual element scores (0 to 1).
+    # data["partial_scores"][NAME]["score"] is the individual element scores (0 to 1).
     # data["score"] is the total score for the question (0 to 1).
     # We can modify or delete any of these if we have a custom grading method.
     # This function only runs if `parse()` did not produce format errors, so we can assume all data is valid.
@@ -213,7 +213,7 @@ def grade(data):
     # As an example, we will give half points for incorrect answers larger than "x":
     if data["score"] == 0: # only if not already correct
         if data["submitted_answers"]["y"] > data["params"]["x"]:
-            data["partial_scores"]["y"] = 0.5
+            data["partial_scores"]["y"]["score"] = 0.5
             data["score"] = 0.5
 ```
 
@@ -344,6 +344,10 @@ When a question is displayed to a student, there are three "panels" that will be
 All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
 
 Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
+
+## Hiding staff comments in `question.html`
+
+Please note that HTML or JavaScript comments in your `question.html` source may be visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you may prefer to use a Mustache comment that will stay hidden. Please refer to [this FAQ item](faq.md#how-can-i-add-comments-in-my-questionhtml-source-that-wont-be-visible-to-students).
 
 ## How questions are rendered
 

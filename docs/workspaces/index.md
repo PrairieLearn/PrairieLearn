@@ -63,7 +63,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     * `gradedFiles` (optional, default none): list of files or directories that will be copied out of the workspace container for grading
     * `args` (optional, default none): command line arguments to pass to the Docker image
     * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
-    * `urlRewrite` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
+    * `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
 #### `info.json` for ungraded workspace
 
