@@ -345,6 +345,10 @@ All three panels display the same `question.html` template, but elements will re
 
 Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
 
+## Hiding staff comments in `question.html`
+
+Please note that HTML or JavaScript comments in your `question.html` source may be visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you may prefer to use a Mustache comment that will stay hidden. Please refer to [this FAQ item](faq.md#how-can-i-add-comments-in-my-questionhtml-source-that-wont-be-visible-to-students).
+
 ## How questions are rendered
 
 Questions are rendered in two possible ways: with the "legacy renderer" and the "new renderer". Currently, the legacy renderer is the default, but the new renderer will eventually replace the legacy renderer entirely. The new renderer uses a different HTML parser, which behaves differently than the old one for malformed HTML and could result in breaking changes.
