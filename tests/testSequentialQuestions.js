@@ -56,7 +56,7 @@ describe('Assessment that forces students to complete questions in-order', funct
     const assessmentCreateResponse = await helperClient.fetchCheerio(context.assessmentUrl);
     helperClient.extractAndSaveCSRFToken(context, assessmentCreateResponse.$, 'form');
     const form = {
-      __action: 'newInstance',
+      __action: 'new_instance',
       __csrf_token: context.__csrf_token,
     };
     const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form });
