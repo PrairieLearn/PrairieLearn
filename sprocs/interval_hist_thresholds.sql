@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     interval_hist_thresholds (duration INTERVAL) RETURNS INTERVAL[] AS $$
     WITH candidates AS (
         SELECT
@@ -46,13 +46,13 @@ CREATE OR REPLACE FUNCTION
     generate_series(0, num_steps) AS i
 $$ LANGUAGE SQL IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     interval_array_to_seconds (durations INTERVAL[]) RETURNS DOUBLE PRECISION[] AS $$
     SELECT array_agg(EXTRACT(EPOCH FROM d))
     FROM unnest(durations) AS vals (d)
 $$ LANGUAGE SQL IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     interval_array_to_strings (durations INTERVAL[]) RETURNS TEXT[] AS $$
     SELECT array_agg(format_interval_short(d))
     FROM unnest(durations) AS vals (d)

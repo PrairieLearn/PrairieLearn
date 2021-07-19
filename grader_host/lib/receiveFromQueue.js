@@ -3,7 +3,8 @@ const async = require('async');
 const fs = require('fs-extra');
 const path = require('path');
 const Ajv = require('ajv').default;
-const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const globalLogger = require('./logger');
 const config = require('./config').config;

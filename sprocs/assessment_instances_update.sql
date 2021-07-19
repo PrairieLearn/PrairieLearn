@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_update(bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_update (
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,
@@ -19,8 +17,11 @@ DECLARE
     assessment_type enum_assessment_type;
     assessment_instance_open boolean;
     new_instance_questions_count integer;
+    zones_total_max_points double precision;
     assessment_max_points double precision;
+    assessment_max_bonus_points double precision;
     old_assessment_instance_max_points double precision;
+    old_assessment_instance_max_bonus_points double precision;
     new_assessment_instance_max_points double precision;
 BEGIN
     PERFORM assessment_instances_lock(assessment_instance_id);
@@ -42,10 +43,12 @@ BEGIN
     SELECT
         c.id,      g.id,   u.user_id,            a.id,          a.type,
         a.max_points,          ai.max_points,
+        COALESCE(a.max_bonus_points, 0),    ai.max_bonus_points,
         ai.open
     INTO
         course_id, group_id,  user_id,   assessment_id, assessment_type,
         assessment_max_points, old_assessment_instance_max_points,
+        assessment_max_bonus_points, old_assessment_instance_max_bonus_points,
         assessment_instance_open
     FROM
         assessment_instances AS ai
@@ -102,24 +105,24 @@ BEGIN
     -- did we add any instance questions above?
     updated := updated OR (cardinality(new_instance_question_ids) > 0);
 
+    SELECT sum(zmp.max_points)
+    INTO zones_total_max_points
+    FROM assessment_instances_points(assessment_instance_id) AS zmp;
+    
     -- determine the correct max_points
-    new_assessment_instance_max_points := assessment_max_points;
-    IF new_assessment_instance_max_points IS NULL THEN
-        SELECT
-            sum(zmp.max_points)
-        INTO
-            new_assessment_instance_max_points
-        FROM
-            assessment_instances_points(assessment_instance_id) AS zmp;
-    END IF;
+    new_assessment_instance_max_points := COALESCE(assessment_max_points, GREATEST(zones_total_max_points - assessment_max_bonus_points, 0));
+
+    -- ensure that max_bonus_points is not greater than the number of available points
+    assessment_max_bonus_points := GREATEST(LEAST(assessment_max_bonus_points, zones_total_max_points - new_assessment_instance_max_points), 0);
 
     -- update max_points if necessary and log it
-    IF new_assessment_instance_max_points IS DISTINCT FROM old_assessment_instance_max_points THEN
+    IF new_assessment_instance_max_points IS DISTINCT FROM old_assessment_instance_max_points OR assessment_max_bonus_points IS DISTINCT FROM old_assessment_instance_max_bonus_points THEN
         updated := TRUE;
 
         UPDATE assessment_instances AS ai
         SET
             max_points = new_assessment_instance_max_points,
+            max_bonus_points = assessment_max_bonus_points,
             modified_at = now()
         WHERE
             ai.id = assessment_instance_id;
@@ -132,8 +135,8 @@ BEGIN
         VALUES
             (authn_user_id, course_id, user_id, group_id,
             'assessment_instances', 'max_points', assessment_instance_id,
-            'update', jsonb_build_object('max_points', old_assessment_instance_max_points),
-            jsonb_build_object('max_points', new_assessment_instance_max_points));
+            'update', jsonb_build_object('max_points', old_assessment_instance_max_points, 'max_bonus_points', old_assessment_instance_max_bonus_points),
+            jsonb_build_object('max_points', new_assessment_instance_max_points, 'max_bonus_points', assessment_max_bonus_points));
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
