@@ -3,7 +3,7 @@ const async = require('async');
 const AWS = require('aws-sdk');
 
 const config = require('../lib/config');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../prairielib/lib/sql-db');
 
 module.exports = {};
 

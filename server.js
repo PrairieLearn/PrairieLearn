@@ -31,7 +31,8 @@ const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
 const assessment = require('./lib/assessment');
-const { sqldb, migrations } = require('@prairielearn/prairielib');
+const sqldb = require('./prairielib/lib/sql-db');
+const migrations = require('./prairielib/lib/migrations');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
@@ -1131,6 +1132,21 @@ if (config.startServer) {
         },
         function(callback) {
             migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            // We create and activate a random DB schema name
+            // (https://www.postgresql.org/docs/12/ddl-schemas.html)
+            // after we have run the migrations but before we create
+            // the sprocs. This means all tables (from migrations) are
+            // in the public schema, but all sprocs are in the random
+            // schema. Every server invocation thus has its own copy
+            // of its sprocs, allowing us to update servers while old
+            // servers are still running. See docs/dev-guide.md for
+            // more info.
+            sqldb.setRandomSearchSchema(config.instanceId, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

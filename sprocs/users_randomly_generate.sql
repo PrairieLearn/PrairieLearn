@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS users_randomly_generate(int, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_randomly_generate(
         count int,
         course_instance_id bigint DEFAULT NULL

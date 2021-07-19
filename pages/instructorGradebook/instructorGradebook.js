@@ -4,10 +4,10 @@ var csvStringify = require('../../lib/nonblocking-csv-stringify');
 var express = require('express');
 var router = express.Router();
 
-var error = require('@prairielearn/prairielib/error');
+var error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../../prairielib/lib/sql-db');
+var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
