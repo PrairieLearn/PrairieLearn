@@ -221,7 +221,7 @@
               <button type="button" class="btn btn-light dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 Action for all instances <span class="caret"></span>
               </button>
-              <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+              <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
               <div class="dropdown-menu dropdown-menu-right" onclick="window.event.preventDefault();">
                 
                 <% if (authz_data.has_instructor_edit) { %>
@@ -273,7 +273,7 @@
             </thead>
             <tbody>
               <% user_scores.forEach(function(row, iRow) { %>
-                <!-- Not showing already deleted group -->
+                <%# Not showing already deleted group %>
                 <% if (assessment.group_work && !row.group_name) { %>
                   <% return; %>
                 <% } %>
@@ -334,10 +334,8 @@
                                        ">
                     </div>
 
-                    <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+                    <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
                     <div class="dropdown-menu" onclick="window.event.preventDefault();">
-
-                      <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
                       <a class="dropdown-item"
@@ -352,8 +350,6 @@
                         <i class="fa fa-times" aria-hidden="true"></i> Delete
                       </a>
                       <% } %>
-
-                      <!-- ################################################## -->
 
                       <% if (authz_data.has_instructor_edit) { %>
                       <a role="button" tabindex="0" class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %>>

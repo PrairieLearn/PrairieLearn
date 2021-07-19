@@ -5,10 +5,10 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sanitizeName = require('../../lib/sanitize-name');
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const groupUpdate = require('../../lib/group-update');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
