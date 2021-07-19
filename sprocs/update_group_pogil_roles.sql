@@ -11,6 +11,7 @@ DECLARE
     num_managers bigint;
     num_recorders bigint;
     num_reflectors bigint;
+    num_contributors bigint;
 BEGIN
     DROP TABLE IF EXISTS proposed_roles;
     -- Create temporary table to run constraints on
@@ -20,20 +21,22 @@ BEGIN
         user_id bigint
     );
 
-    group_size := ARRAY_LENGTH(arg_group_roles, 1);
-
     -- Insert arguments into temp table
-    -- Ensure every student is assigned to a role
-    FOR counter IN 1..group_size LOOP
+    FOR counter IN 1..ARRAY_LENGTH(arg_group_roles, 1) LOOP
+        -- Ensure every student is assigned to a role
         IF arg_group_roles[counter]::enum_pogil_role = 'None'::enum_pogil_role THEN
             RETURN FALSE;
         END IF;
-        IF arg_group_roles[counter]::enum_pogil_role = 'Contributor'::enum_pogil_role AND group_size <= 3 THEN
-            RETURN FALSE;
-        END IF;
         INSERT INTO proposed_roles VALUES (arg_group_id, arg_group_roles[counter]::enum_pogil_role, arg_user_ids[counter]);
-        RAISE NOTICE 'group role: %', arg_group_roles[counter]::enum_pogil_role;
     END LOOP;
+
+    SELECT COUNT(DISTINCT user_id) INTO group_size FROM proposed_roles;
+    
+    -- Check that no contributors are present in group size <= 3
+    SELECT COUNT(*) INTO num_contributors FROM proposed_roles WHERE group_role = 'Contributor'::enum_pogil_role;
+    IF group_size <= 3 AND num_contributors > 0 THEN
+        RETURN FALSE;
+    END IF;
 
     -- Check that there's exactly 1 manager
     SELECT COUNT(*) INTO num_managers FROM proposed_roles WHERE group_role = 'Manager'::enum_pogil_role;
