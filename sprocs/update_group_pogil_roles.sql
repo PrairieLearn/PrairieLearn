@@ -7,7 +7,10 @@ CREATE OR REPLACE FUNCTION update_group_pogil_roles (
 RETURNS boolean AS $success$
 DECLARE
     success boolean;
+    group_size bigint;
     num_managers bigint;
+    num_recorders bigint;
+    num_reflectors bigint;
 BEGIN
     DROP TABLE IF EXISTS proposed_roles;
     -- Create temporary table to run constraints on
@@ -17,10 +20,15 @@ BEGIN
         user_id bigint
     );
 
+    group_size := ARRAY_LENGTH(arg_group_roles, 1);
+
     -- Insert arguments into temp table
     -- Ensure every student is assigned to a role
-    FOR counter IN 1..ARRAY_LENGTH(arg_group_roles, 1) LOOP
+    FOR counter IN 1..group_size LOOP
         IF arg_group_roles[counter]::enum_pogil_role = 'None'::enum_pogil_role THEN
+            RETURN FALSE;
+        END IF;
+        IF arg_group_roles[counter]::enum_pogil_role = 'Contributor'::enum_pogil_role AND group_size <= 3 THEN
             RETURN FALSE;
         END IF;
         INSERT INTO proposed_roles VALUES (arg_group_id, arg_group_roles[counter]::enum_pogil_role, arg_user_ids[counter]);
@@ -30,6 +38,18 @@ BEGIN
     -- Check that there's exactly 1 manager
     SELECT COUNT(*) INTO num_managers FROM proposed_roles WHERE group_role = 'Manager'::enum_pogil_role;
     IF num_managers <> 1 THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Check that there's exactly 1 recorder
+    SELECT COUNT(*) INTO num_recorders FROM proposed_roles WHERE group_role = 'Recorder'::enum_pogil_role;
+    IF num_recorders <> 1 THEN
+        RETURN FALSE;
+    END IF;
+
+    -- Check that there's exactly 1 reflector
+    SELECT COUNT(*) INTO num_reflectors FROM proposed_roles WHERE group_role = 'Reflector'::enum_pogil_role;
+    IF num_reflectors <> 1 THEN
         RETURN FALSE;
     END IF;
 
