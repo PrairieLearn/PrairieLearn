@@ -547,11 +547,11 @@ class PairedVector(BaseElement):
         color = pl.get_color_attrib(el, 'color', 'red3')
         anchor_is_tail = pl.get_boolean_attrib(el, 'anchor-is-tail', True)
         # This is the anchor point for Grading
-        x1 = pl.get_float_attrib(el, 'x1', 2*grid_size)
+        x1 = pl.get_float_attrib(el, 'x1', 2 * grid_size)
         y1 = pl.get_float_attrib(el, 'y1', grid_size)
 
-        x2 = pl.get_float_attrib(el, 'x2', 3*grid_size)
-        y2 = pl.get_float_attrib(el, 'y2', 2*grid_size)
+        x2 = pl.get_float_attrib(el, 'x2', 3 * grid_size)
+        y2 = pl.get_float_attrib(el, 'y2', 2 * grid_size)
 
         # This is the end point used for plotting
         left1 = x1
@@ -572,7 +572,7 @@ class PairedVector(BaseElement):
             left2 -= w * math.cos(theta1)
             top1 -= w * math.sin(theta2)
             top2 -= w * math.sin(theta2)
-        
+
         # Error box for grading
         disregard_sense = pl.get_boolean_attrib(el, 'disregard-sense', True)
         if disregard_sense:
@@ -635,35 +635,35 @@ class PairedVector(BaseElement):
         return True
 
     def grade(ref, st, tol, angtol):
-        ref2= ref.copy()
-        st2= st.copy()
+        ref2 = ref.copy()
+        st2 = st.copy()
         dup_attrs = ['top', 'left', 'angle', 'XcenterErrorBox', 'YcenterErrorBox', 'widthErrorBox', 'heightErrorBox']
-        ref2['x3']= ref2['x2']
-        ref2['y3']= ref2['y2']
-        st2['x3']= st2['x2']
-        st2['y3']= st2['y2']
-        ref2['x2']= ref2['x1']
-        ref2['y2']= ref2['y1']
-        st2['x2']= st2['x1']
-        st2['y2']= st2['y1']
+        ref2['x3'] = ref2['x2']
+        ref2['y3'] = ref2['y2']
+        st2['x3'] = st2['x2']
+        st2['y3'] = st2['y2']
+        ref2['x2'] = ref2['x1']
+        ref2['y2'] = ref2['y1']
+        st2['x2'] = st2['x1']
+        st2['y2'] = st2['y1']
 
         poss = [[False for i in range(2)] for j in range(2)]
-        counter= 0
+        counter = 0
         for i in range(2):
             for j in range(2):
                 for attr in dup_attrs:
-                        ref2[attr]= ref2[attr+str(i+1)]
-                        st2[attr] = st2[attr + str(j+1)]
+                    ref2[attr] = ref2[attr + str(i + 1)]
+                    st2[attr] = st2[attr + str(j + 1)]
                 for attr in ['x', 'y']:
-                    ref2[attr+'1']= ref2[attr+str(i+2)]
-                    st2[attr+'1'] = st2[attr + str(j+2)]
-                poss[i][j]= Vector.grade(ref2, st2, tol, angtol)
-                counter+= 1
+                    ref2[attr + '1'] = ref2[attr + str(i + 2)]
+                    st2[attr + '1'] = st2[attr + str(j + 2)]
+                poss[i][j] = Vector.grade(ref2, st2, tol, angtol)
+                counter += 1
         angdiff = abs(st2['angle1'] - st2['angle2'])
         angdiff = abs(angdiff - 180)
         # print(angdiff < 2*angtol)
         # print(poss)
-        return ((poss[0][1] and poss[1][0]) or (poss[0][0] and poss[1][1])) and angdiff < 2*angtol
+        return ((poss[0][1] and poss[1][0]) or (poss[0][0] and poss[1][1])) and angdiff < 2 * angtol
 
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'anchor-is-tail', 'width', 'angle1', 'angle2', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward', 'optional-grading']
@@ -1464,6 +1464,7 @@ elements['pl-vector'] = Vector
 elements['pl-paired-vector'] = PairedVector
 
 # Base Elements
+
 
 class UnplaceableBaseElement(BaseElement):
     # Used only to get attributes
