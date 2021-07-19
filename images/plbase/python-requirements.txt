@@ -4,7 +4,7 @@ flake8-quotes==3.2.0
 lxml==4.6.3
 matplotlib==3.4.2
 networkx==2.5.1
-numpy==1.20.3
+numpy==1.21.1
 pandas==1.2.4
 pycryptodome==3.10.1
 pyquaternion==0.9.9
