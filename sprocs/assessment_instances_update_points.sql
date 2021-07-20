@@ -4,9 +4,7 @@ CREATE FUNCTION
         IN new_points double precision,
         IN authn_user_id bigint,
         IN assessment_id bigint,
-        IN user_uid varchar,
-        IN date timestamptz,
-        IN score_only boolean
+        IN user_uid varchar
     ) RETURNS void
 AS $$
 DECLARE
@@ -15,21 +13,24 @@ DECLARE
     instance_id bigint := assessment_instance_id;
     user_id bigint;
     group_work boolean;
+    score_only boolean;
     mode enum_mode;
     time_limit_min integer := 0;
 BEGIN
     SELECT ai.max_points INTO max_points FROM assessment_instances AS ai WHERE ai.id = assessment_instance_id;
 
     IF NOT FOUND THEN
-		IF score_only THEN
-			SELECT 
-				a.group_work,
-				a.mode
-			INTO
-				group_work,
-				mode
-			FROM assessments AS a WHERE a.id = assessment_id;
+		SELECT 
+			a.group_work,
+			a.mode,
+			a.score_only
+		INTO
+			group_work,
+			mode,
+			score_only
+		FROM assessments AS a WHERE a.id = assessment_id;
 
+		IF score_only THEN
 			IF group_work THEN
 				SELECT
 					gu.user_id
@@ -52,7 +53,7 @@ BEGIN
 				tmp.assessment_instance_id
 			INTO
 				instance_id
-			FROM assessment_instances_insert(assessment_id, user_id, group_work, authn_user_id, mode, time_limit_min, date) AS tmp;
+			FROM assessment_instances_insert(assessment_id, user_id, group_work, authn_user_id, mode, time_limit_min, current_timestamp) AS tmp;
 
 			max_points := 1;
 		ELSE

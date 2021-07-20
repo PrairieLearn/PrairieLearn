@@ -68,6 +68,8 @@ router.post('/', function(req, res, next) {
             req.body.assessment_instance_id,
             req.body.score_perc,
             res.locals.authn_user.user_id,
+            null,
+            null
         ];
         sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
             if (ERR(err, next)) return;
