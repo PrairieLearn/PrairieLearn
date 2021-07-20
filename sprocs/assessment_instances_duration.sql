@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_duration(
         IN assessment_instance_id bigint,
         OUT duration interval

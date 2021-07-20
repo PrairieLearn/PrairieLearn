@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS sync_news_items(jsonb);
-DROP FUNCTION IF EXISTS sync_news_items(jsonb,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_news_items (
         IN news_items_on_disk jsonb,
         IN notify_with_new_server boolean -- should we send notifications on a new server install (a blank DB)

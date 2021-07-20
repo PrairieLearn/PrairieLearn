@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS workspace_hosts_find_terminable(integer, integer);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     workspace_hosts_find_terminable(
         IN unhealthy_timeout_sec integer,
         IN launch_timeout_sec integer,

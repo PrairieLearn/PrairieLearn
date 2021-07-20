@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_lock (
         assessment_instance_id bigint
     ) RETURNS void
