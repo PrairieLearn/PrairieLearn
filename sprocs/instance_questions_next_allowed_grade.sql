@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_next_allowed_grade(bigint);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_next_allowed_grade (
         IN instance_question_id BIGINT,
         OUT allow_grade_date TIMESTAMPTZ,

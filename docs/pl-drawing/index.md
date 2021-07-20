@@ -30,7 +30,7 @@ Attribute | Type | Default | Description
 `height` | integer | 320 | Vertical height of the canvas (in pixels).
 `grid-size` | integer | 20 | Size of the square grid for the canvas background (in pixels). If `grid-size = 0`, then the background is white.
 `snap-to-grid` | boolean | false | If true, objects placed in the canvas snap to closest grid point. Otherwise, they can be placed outside of the grid.
-`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
+`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
 `tol` | float | `0.5*grid-size` | Tolerance to check the position of objects (in pixels). The error is calculated as the absolute difference between expected position and submitted one.
 `angle-tol` | float | 10 | Tolerance to check angles (in degrees). The error is calculated as the absolute difference between expected angle and submitted one.
 `show-tolerance-hint` | boolean | true | Show tolerance hint under the canvas. The default is `true` when `gradable = true`.
@@ -785,7 +785,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `x1` | float | 20 | `x` position for the center of the arc, i.e., the horizontal distance from the left border of the canvas.
 `y1` | float | 20 | `y` position for the center of the arc, i.e., the vertical distance from the top border of the canvas.
-`radius` | float | 40 | Radius of the arc.
+`radius` | float | 20 | Radius of the arc.
 `start-angle` | float | 0 | Start angle of the arc.  Angles are measured from the horizontal axis and are positive clockwise.
 `end-angle` | float | 60 | End angle of the arc. Angles are measured from the horizontal axis and are positive clockwise. Arcs are formed from `start-angle` to `end-angle` going on clockwise orientation.
 `start-support-line` | boolean | false | When `true` it draws a dashed line from the reference point `(x1,y1)` with width `1.5*radius` and orientation given by `start-angle`,

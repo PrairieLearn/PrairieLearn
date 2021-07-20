@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS workspace_loads_current(double precision, double precision);
-
 CREATE FUNCTION
     workspace_loads_current(
         IN workspace_capacity_factor double precision,

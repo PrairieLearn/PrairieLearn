@@ -1,6 +1,6 @@
 // @ts-check
 const _ = require('lodash');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 
 const infofile = require('../infofile');
 const perf = require('../performance')('question');
@@ -29,6 +29,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
         long_name: courseInstance.longName,
         number: courseInstance.number,
         question_params: courseInstance.questionParams || {},
+        hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
         display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
         access_rules: accessRules,
         user_roles: userRoles,

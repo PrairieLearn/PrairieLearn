@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_regrade(
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,

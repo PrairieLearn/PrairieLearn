@@ -5,7 +5,8 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const _ = require('lodash');
 
-const { sqldb, migrations } = require('@prairielearn/prairielib');
+const sqldb = require('../prairielib/lib/sql-db');
+const migrations = require('../prairielib/lib/migrations');
 const sprocs = require('../sprocs');
 
 const postgresqlUser = 'postgres';
@@ -72,6 +73,12 @@ var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
         function(callback) {
             debug('createFullDatabase(): running migrations');
             migrations.init(path.join(__dirname, '..', 'migrations'), 'prairielearn', function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            sqldb.setRandomSearchSchema('test', (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

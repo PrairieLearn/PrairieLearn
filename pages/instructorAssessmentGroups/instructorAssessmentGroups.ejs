@@ -61,7 +61,7 @@
                         groupA,two@example.com<br>
                         groupB,three@example.com<br>
                         groupB,four@example.com</code>
-              <!-- Closing code tag not on its own line to improve copy/paste formatting -->
+              <%# Closing code tag not on its own line to improve copy/paste formatting %>
             </div>
             <div class="modal-body">
               <p>
@@ -320,30 +320,22 @@
                         data-content="<%= include('formDeleteGroup.ejs', {row: row, iRow: iRow }); %>">
                   </div>
 
-                  <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+                  <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
                   <div class="dropdown-menu" onclick="window.event.preventDefault();">
-
-                    <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverAdd').popover('show')" href="#">
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                     </a>
 
-                    <!-- ################################################## -->
-
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')" href="#">
                       <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                     </a>
-
-                    <!-- ################################################## -->
 
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletegroup').popover('show')" href="#">
                       <i class="fa fa-times" aria-hidden="true"></i> Delete this group
                     </a>
                     <% } %>
-
-                    <!-- ################################################## -->
 
                   </div>
                 </div>
