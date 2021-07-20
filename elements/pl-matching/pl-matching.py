@@ -16,7 +16,7 @@ HIDE_SCORE_BADGE_DEFAULT = False
 BLANK_DEFAULT = False
 BLANK_ANSWER = ' '
 NOTA_DEFAULT = False
-COUNTER_TYPE_DEFAULT = 'decimal'
+COUNTER_TYPE_DEFAULT = 'lower-alpha'
 
 
 def get_form_name(answers_name, index):
@@ -187,20 +187,13 @@ def render(element_html, data):
     display_answers, display_options = data['params'].get(name)
     submitted_answers = data['submitted_answers']
     counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     hide_score_badge = pl.get_boolean_attrib(element, 'hide-score-badge', HIDE_SCORE_BADGE_DEFAULT)
     blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
-    editable = data['editable']
+    show_answer_feedback = not hide_score_badge
 
     dropdown_options = [get_counter(i + 1, counter_type) for i in range(len(display_options))]
     if blank_start:
         dropdown_options.insert(0, BLANK_ANSWER)
-
-    # answer feedback is not displayed when partial credit is True
-    # (unless the question is disabled)
-    show_answer_feedback = True
-    if (partial_credit and editable) or hide_score_badge:
-        show_answer_feedback = False
 
     html = ''
 
@@ -220,8 +213,7 @@ def render(element_html, data):
                 'options': get_select_options(dropdown_options, submitted_answers.get(form_name, None)),
                 'name': form_name,
                 'display_score_badge': display_score_badge,
-                'correct': display_score_badge and student_answer == correct_answer,
-                'incorrect': display_score_badge and student_answer != correct_answer,
+                'correct': display_score_badge and student_answer == correct_answer
             }
             answerset.append(answer_html)
 
@@ -275,7 +267,6 @@ def render(element_html, data):
                     'options': get_select_options(dropdown_options, submitted_answers.get(form_name, None)),
                     'display_score_badge': display_score_badge,
                     'correct': display_score_badge and student_answer == correct_answer,
-                    'incorrect': display_score_badge and student_answer != correct_answer,
                     'parse_error': parse_error
                 }
                 answerset.append(answer_html)
