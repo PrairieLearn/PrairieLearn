@@ -3,7 +3,9 @@ const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
-const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
+const error = require('../../prairielib/lib/error');
+const sqlDb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
@@ -36,7 +38,7 @@ router.get('/', (req, res, next) => {
                 if (ERR(err, next)) return;
                 res.locals.instance_questions = result.rows;
 
-                const params = [res.locals.assessment_instance.id];
+                const params = [res.locals.assessment_instance.id, false];
                 sqlDb.call('assessment_instances_select_log', params, (err, result) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
@@ -58,7 +60,7 @@ router.get('/', (req, res, next) => {
 
 router.get('/:filename', (req, res, next) => {
     if (req.params.filename == logCsvFilename(res.locals)) {
-        const params = [res.locals.assessment_instance.id];
+        const params = [res.locals.assessment_instance.id, false];
         sqlDb.call('assessment_instances_select_log', params, (err, result) => {
             if (ERR(err, next)) return;
             const log = result.rows;

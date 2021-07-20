@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_select_or_insert_lti(
         IN uid text,
         IN name text,

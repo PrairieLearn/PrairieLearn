@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     questions_select (
         IN question_id bigint,
         OUT question questions

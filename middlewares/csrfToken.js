@@ -2,7 +2,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var config = require('../lib/config');
-var error = require('@prairielearn/prairielib/error');
+var error = require('../prairielib/lib/error');
 var csrf = require('../lib/csrf');
 
 module.exports = function(req, res, next) {

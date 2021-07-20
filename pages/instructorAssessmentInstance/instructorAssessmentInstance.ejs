@@ -16,9 +16,6 @@
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
@@ -86,9 +83,6 @@
           </tbody>
         </table>
       </div>
-
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -177,9 +171,6 @@
         </table>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
@@ -233,9 +224,6 @@
         </script>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
@@ -248,9 +236,10 @@
         </div>
         <div class="card-body">
           <small>
-            Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
-
             Click on a column header to sort. Shift-click on a second header to sub-sort.
+            Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Uploaded student files are not shown above or in the CSV file.
+            Student files can be downloaded on the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads">Downloads</a> tab.
           </small>
         </div>
 
@@ -311,12 +300,11 @@
         <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Uploaded student files are not shown above or in the CSV file.
+            Student files can be downloaded on the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads">Downloads</a> tab.
           </small>
         </div>
       </div>
-
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
 
     </div>
   </body>

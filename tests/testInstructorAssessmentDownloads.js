@@ -238,7 +238,7 @@ describe('Instructor Assessment Downloads', function() {
         });
         it('should contain correct data', function() {
             let data = csvParse(page, {columns: true, cast: true});
-            assert.equal(data[0]['UID'], 'dev@illinois.edu');
+            assert.equal(data[0]['uid'], 'dev@illinois.edu');
             assert.equal(data[0]['qid'], 'addNumbers');
         });
     });

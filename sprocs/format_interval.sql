@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION format_interval(d interval) RETURNS text AS $$
+CREATE FUNCTION format_interval(d interval) RETURNS text AS $$
     WITH parts AS (
         SELECT
             div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60 * 24)     AS days,

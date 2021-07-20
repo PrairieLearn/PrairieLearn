@@ -7,6 +7,8 @@ const { promisify } = require('util');
 
 const error = require('./error');
 
+let searchSchema = null;
+
 /**
  * Formats a string for debugging.
  *
@@ -165,7 +167,11 @@ module.exports.close = function(callback) {
 module.exports.closeAsync = promisify(module.exports.close);
 
 /**
- * Gets a new client from the connection pool.
+ * Gets a new client from the connection pool. If `err` is not null
+ * then `client` and `done` are undefined. If `err` is null then
+ * `client` is valid and can be used. The caller MUST call
+ * `done(client)` to release the client, whether or not errors occured
+ * while using `client`.
  *
  * @param {(error: Error | null, client: import("pg").PoolClient, done: (release?: any) => void) => void} callback
  */
@@ -180,7 +186,18 @@ module.exports.getClient = function(callback) {
             }
             return ERR(err, callback); // unconditionally return
         }
-        callback(null, client, done);
+        if (searchSchema != null) {
+            const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
+            module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
+                if (err) {
+                    done(client);
+                    return ERR(err, callback); // unconditionally return
+                }
+                callback(null, client, done);
+            });
+        } else {
+            callback(null, client, done);
+        }
     });
 };
 
@@ -403,31 +420,12 @@ module.exports.endTransactionAsync = promisify(module.exports.endTransaction);
 module.exports.query = function(sql, params, callback) {
     debug('query()', 'sql:', debugString(sql));
     debug('query()', 'params:', debugParams(params));
-    if (!pool) {
-        return callback(new Error('Connection pool is not open'));
-    }
-    pool.connect(function(err, client, done) {
-        const handleError = function(err) {
-            if (!err) return false;
-            if (client) {
-                done(client);
-            }
-            const sqlError = JSON.parse(JSON.stringify(err));
-            sqlError.message = err.message;
-            err = error.addData(err, {sqlError: sqlError, sql: sql, sqlParams: params});
-            ERR(err, callback);
-            return true;
-        };
-        if (handleError(err)) return;
-        paramsToArray(sql, params, function(err, newSql, newParams) {
-            if (err) err = error.addData(err, {sql: sql, sqlParams: params});
+    module.exports.getClient((err, client, done) => {
+        if (ERR(err, callback)) return;
+        module.exports.queryWithClient(client, sql, params, (err, result) => {
+            done(client);
             if (ERR(err, callback)) return;
-            client.query(newSql, newParams, function(err, result) {
-                if (handleError(err)) return;
-                done();
-                debug('query() success', 'rowCount:', result.rowCount);
-                callback(null, result);
-            });
+            callback(null, result);
         });
     });
 };
@@ -659,3 +657,61 @@ module.exports.callWithClientZeroOrOneRow = function(client, functionName, param
  * Errors if the function returns more than one row.
  */
 module.exports.callWithClientZeroOrOneRowAsync = promisify(module.exports.callWithClientZeroOrOneRow);
+
+/**
+ * Set the schema to use for the search path.
+ *
+ * @param {string} schema - The schema name to use (can be "null" to unset the search path)
+ * @param {(error: Error | null) => void} callback
+ */
+module.exports.setSearchSchema = function(schema, callback) {
+    if (schema == null) {
+        searchSchema = schema;
+        return;
+    }
+    /* Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
+     * https://github.com/brianc/node-postgres/pull/396
+     * https://github.com/brianc/node-postgres/issues/1978
+     * https://www.postgresql.org/docs/12/sql-syntax-lexical.html
+     */
+    module.exports.query(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`, [], (err) => {
+        if (ERR(err, callback)) return;
+        // we only set searchSchema after CREATE to avoid the above query() call using searchSchema
+        searchSchema = schema;
+        callback(null);
+    });
+};
+
+/**
+ * Get the schema that is currently used for the search path.
+ *
+ * @return {string} schema in use (may be "null" to indicate no schema)
+ */
+module.exports.getSearchSchema = function() {
+    return searchSchema;
+};
+
+/**
+ * Generate, set, and return a random schema name.
+ *
+ * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used (after lowercasing).
+ * @param {(error: Error | null, schema: String) => void} callback
+ */
+module.exports.setRandomSearchSchema = function(prefix, callback) {
+    // truncated prefix (max 28 characters)
+    const truncPrefix = prefix.substring(0, 28);
+    // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
+    const timestamp = (new Date()).toISOString();
+    // random 6-character suffix to avoid clashes (approx 2 billion possible values)
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const suffix = _.times(6, function() {return _.sample(chars);}).join('');
+
+    // Schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6),
+    // which is the default PostgreSQL identifier limit.
+    // Note that this schema name will need quoting because of characters like ':', '-', etc
+    const schema = `${truncPrefix}_${timestamp}_${suffix}`;
+    module.exports.setSearchSchema(schema, (err) => {
+        if (ERR(err, callback)) return;
+        callback(null, schema);
+    });
+};

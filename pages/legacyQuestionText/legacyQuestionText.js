@@ -10,16 +10,23 @@ router.get('/:filename', function(req, res, next) {
     const course = res.locals.course;
     const filename = 'text/' + req.params.filename;
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    const chunk = {
-        'type': 'question',
-        'questionId': question.id,
-    };
 
-    chunks.ensureChunksForCourse(course.id, chunk, (err) => {
+    chunks.getTemplateQuestionIds(question, (err, questionIds) => {
         if (ERR(err, next)) return;
-        filePaths.questionFilePath(filename, question.directory, coursePath, question, function(err, fullPath, effectiveFilename, rootPath) {
+
+        const templateQuestionChunks = questionIds.map(id => ({'type': 'question', questionId: id}));
+        const chunksToLoad = [
+            {
+                'type': 'question',
+                'questionId': question.id,
+            },
+        ].concat(templateQuestionChunks);
+        chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
             if (ERR(err, next)) return;
-            res.sendFile(effectiveFilename, {root: rootPath});
+            filePaths.questionFilePath(filename, question.directory, coursePath, question, function(err, fullPath, effectiveFilename, rootPath) {
+                if (ERR(err, next)) return;
+                res.sendFile(effectiveFilename, {root: rootPath});
+            });
         });
     });
 });
