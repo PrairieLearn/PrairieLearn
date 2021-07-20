@@ -109,7 +109,6 @@
         "supports-color": "^8.1.1",
         "tablesorter": "^2.31.3",
         "tar": "^6.1.0",
-        "terminal-link": "^2.1.1",
         "three": "^0.130.1",
         "tmp-promise": "^3.0.2",
         "unified": "^9.2.1",
