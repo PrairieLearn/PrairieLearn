@@ -21,5 +21,4 @@ PuLP==2.4
 ipython==7.25.0
 nbformat==5.1.2
 nbconvert==6.1.0
-tensorflow==2.5.0
 automata-lib==4.0.0.post1
