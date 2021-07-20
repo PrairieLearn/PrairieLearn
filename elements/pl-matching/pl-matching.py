@@ -369,7 +369,6 @@ def grade(element_html, data):
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
 
-
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
