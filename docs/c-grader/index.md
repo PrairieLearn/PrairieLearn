@@ -1,12 +1,12 @@
-# C Autograder
+# C/C++ Autograder
 
-This file documents the default C autograder included in the `prairielearn/grader-c` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default C/C++ autograder included in the `prairielearn/grader-c` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
 
 ## Setting up
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings.  To use the specific C autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-c"` and `"entrypoint"` should point to a test file in the question, which will then invoke the autograder.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings.  To use the specific C/C++ autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-c"` and `"entrypoint"` should point to a test file in the question, which will then invoke the autograder.
 
 A full `info.json` file should look something like:
 
@@ -47,7 +47,7 @@ Most questions using this autograder will contain a `pl-file-editor` or `pl-file
 
 ### `tests/test.py`
 
-The `test.py` file will contain the basic tests that must be executed by the C grader. A simple `test.py` will look like this:
+The `test.py` file will contain the basic tests that must be executed by the C/C++ grader. A simple `test.py` to grade C code will look like this:
 
 ```python
 #! /usr/bin/python3
@@ -63,21 +63,31 @@ g = QuestionGrader()
 g.start()
 ```
 
-The `tests` method above will contain the basis for user tests, and will have access to some regular functions provided by the C grader. Some methods that can be called are listed below.
+A simple `test.py` to grade C++ code will look like this (the only difference is the parent class):
 
-Any file submitted using a `pl-file-editor` or `pl-file-upload` will
-be available for use by the C grader. To create tests based on
-parameters defined by `server.py`, or to have access to submitted data
-from other elements such as `pl-string-input` elements, you can access
-the `self.data` dictionary. This dictionary contains the similar keys
-to those found in the `grade()` function in `server.py`, such as
-`self.data["params"]` or `self.data["submitted_answers"]`.
+```python
+#! /usr/bin/python3
+
+import cgrader
+
+class QuestionGrader(cgrader.CPPGrader):
+
+    def tests(self):
+        # Include tests here
+
+g = QuestionGrader()
+g.start()
+```
+
+The `tests` method above will contain the basis for user tests, and will have access to some regular functions provided by the C/C++ grader. Some methods that can be called are listed below.
+
+Any file submitted using a `pl-file-editor` or `pl-file-upload` will be available for use by the C/C++ grader. To create tests based on parameters defined by `server.py`, or to have access to submitted data from other elements such as `pl-string-input` elements, you can access the `self.data` dictionary. This dictionary contains the similar keys to those found in the `grade()` function in `server.py`, such as `self.data["params"]` or `self.data["submitted_answers"]`.
 
 ## Available test options
 
-### Compiling a C program
+### Compiling a C/C++ program
 
-To compile a C file, you may use the `self.test_compile_file()` method. A simple invocation of this method, assuming the students write a complete C file including the `main` function, will include two parameters: the name of the C file to be compiled (typically the same name used in the `pl-file-upload` or `pl-file-editor` elements listed above), and the name of an executable file to be created.
+To compile a C or C++ file, you may use the `self.test_compile_file()` method. A simple invocation of this method, assuming the students write a complete C file including the `main` function, will include two parameters: the name of the C or C++ file to be compiled (typically the same name used in the `pl-file-upload` or `pl-file-editor` elements listed above), and the name of an executable file to be created.
 
 ```python
 self.test_compile_file('square.c', 'square')
@@ -101,22 +111,22 @@ The results of the compilation will show up as a test named "Compilation", worth
 self.test_compile_file('square.c', 'square', name='Compilation of the first file', points=3)
 ```
 
-You may also include additional compilation flags accepted by `gcc` with the `flags` argument, which can be invoked with a single string for flags, or with an array of strings:
+You may also include additional compilation flags accepted by `gcc` (or `g++`) with the `flags` argument, which can be invoked with a single string for flags, or with an array of strings:
 
 ```python
 self.test_compile_file('square.c', 'square', flags='-Wall -O3') # single string
 self.test_compile_file('square.c', 'square', flags=['-Wall', '-O3']) # array
 ```
 
-It is also possible to test a program that is not complete on its own. To compile the C file submitted by the user with a `main` function implemented by the instructor, you can save a `main.c` file inside the `tests` folder and run:
+It is also possible to test a program that is not complete on its own. To compile the C/C++ file submitted by the user with a `main` function implemented by the instructor, you can save a `main.c` (or `main.cpp`) file inside the `tests` folder and run:
 
 ```python
 self.test_compile_file('square.c', 'square', main_file='/grade/tests/main.c')
 ```
 
-The instruction above will compile the student-provided C file with the instructor-provided C file into the same executable. If the student provides a `main` function, it will be ignored, and the instructor-provided main file will take precedence.
+The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable. If the student provides a `main` function, it will be ignored, and the instructor-provided main file will take precedence.
 
-In some situations you may want to include or replace other functions besides `main`. You may do that by placing these functions in a `.c` file inside the `tests` folder and run:
+In some situations you may want to include or replace other functions besides `main`. You may do that by placing these functions in a `.c` or `.cpp` file inside the `tests` folder and run:
 
 ```python
 self.test_compile_file('square.c', 'square', add_c_file='/grade/tests/otherfunctions.c')
