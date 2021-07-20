@@ -4,6 +4,7 @@
     "title": "PrairieLearn demo questions for Workspaces",
     "set": "Homework",
     "number": "9",
+    "unit": "fun",
     "allowAccess": [
         {
             "mode": "Public",

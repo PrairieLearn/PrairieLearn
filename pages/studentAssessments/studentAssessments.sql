@@ -23,12 +23,17 @@ WITH
             NULL::integer AS assessment_instance_id,
             NULL::integer AS assessment_instance_number,
             NULL::integer AS assessment_instance_score_perc,
-            NULL::boolean AS assessment_instance_open
+            NULL::boolean AS assessment_instance_open,
+            au.id AS assessment_unit_id,
+            au.name AS assessment_unit_name,
+            au.heading AS assessment_unit_heading,
+            au.number AS assessment_unit_number
         FROM
             assessments AS a
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+            LEFT JOIN assessment_units AS au ON au.id = a.assessment_unit_id
         WHERE
             ci.id = $course_instance_id
             AND a.multiple_instance
@@ -58,10 +63,16 @@ WITH
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc,
-            ai.open AS assessment_instance_open
+            ai.open AS assessment_instance_open,
+            au.id AS assessment_unit_id,
+            au.name AS assessment_unit_name,
+            au.heading AS assessment_unit_heading,
+            au.number AS assessment_unit_number
         FROM
             assessment_instances AS ai
             JOIN multiple_instance_assessments AS mia ON (mia.assessment_id = ai.assessment_id)
+            LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
+            LEFT JOIN assessment_units AS au ON (au.id = a.assessment_unit_id)
         WHERE
             ai.user_id = $user_id
     ),
@@ -89,7 +100,11 @@ WITH
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc,
-            ai.open AS assessment_instance_open
+            ai.open AS assessment_instance_open,
+            au.id AS assessment_unit_id,
+            au.name AS assessment_unit_name,
+            au.heading AS assessment_unit_heading,
+            au.number AS assessment_unit_number
         FROM
             -- join group_users first to find all group assessments
             group_configs AS gc
@@ -100,6 +115,7 @@ WITH
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
             LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND (ai.user_id = $user_id OR ai.group_id = gu.group_id))
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+            LEFT JOIN assessment_units AS au ON (au.id = a.assessment_unit_id)
         WHERE
             ci.id = $course_instance_id
             AND NOT a.multiple_instance
@@ -121,10 +137,19 @@ SELECT
         WHEN assessment_instance_id IS NULL THEN '/assessment/' || assessment_id || '/'
         ELSE '/assessment_instance/' || assessment_instance_id || '/'
     END AS link,
-    (lag(assessment_set_id) OVER (PARTITION BY assessment_set_id ORDER BY assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST) IS NULL) AS start_new_set
+    (
+        LAG (CASE WHEN $assessments_group_by = 'set' THEN assessment_set_id ELSE assessment_unit_id END) 
+        OVER (
+            PARTITION BY (CASE WHEN $assessments_group_by = 'set' THEN assessment_set_id ELSE assessment_unit_id END) 
+            ORDER BY assessment_set_id, assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST
+        ) IS NULL
+    ) AS start_new_assessment_group,
+    (CASE WHEN $assessments_group_by = 'set' THEN assessment_set_heading ELSE assessment_unit_heading END) AS assessment_group_heading
 FROM
     all_rows
 WHERE
     authorized
-ORDER BY
-    assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST;
+ORDER BY 
+    (CASE WHEN $assessments_group_by = 'unit' THEN assessment_unit_number END),
+    assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number 
+    NULLS FIRST;

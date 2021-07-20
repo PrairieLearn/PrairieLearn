@@ -34,6 +34,10 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 
 You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets).
 
+## Assessment units
+
+An assessment will belong to the unit named by its `unit` property. By default, an assessment defined without an explicit unit will belong to the "Default" unit. Units are optional fields that are used to control the order that assessments are displayed to students. For more information, see [Course configuration](course.md#assessment-units).
+
 ## Assessment types
 
 Each assessment has a `type`, as listed below. A randomized assessment is one where each student gets a different set of questions in a randomized order, while a non-randomized assessment shows all students the same list of questions in the same order. Broadly speaking, randomized assessments are designed for exams and non-randomized assessments are designed for homeworks.

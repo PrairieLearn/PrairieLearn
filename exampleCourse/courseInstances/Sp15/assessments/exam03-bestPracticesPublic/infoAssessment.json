@@ -4,6 +4,7 @@
     "title": "Exam Design: Best Practices (Public Access)",
     "set": "Exam",
     "number": "3",
+    "unit": "math",
     "allowAccess": [
         {
             "role": "TA",

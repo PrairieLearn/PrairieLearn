@@ -124,6 +124,31 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
     ],
 ```
 
+## Units
+
+Each assessment in the course belongs to a *unit* defined in `infoCourse.json`. Units should be thought of as a unit of instruction, typically with a consistent number of assessments per unit, such as 3 homeworks, 2 labs, and 1 exam. Properties for assessment units are as follows.
+
+Property | Description
+--- | ---
+`name` | One word to identify the unit, lowercase.
+`heading` | Longer title for the unit, displayed to users.
+
+Units are optional and do not affect any behavior by default. Setting the `infoCourse.json` property `"groupBy"` to `"unit"` (over the default `"set"`) will cause assessments to be grouped together by unit on the student assessments overview page. Because units are defined in an array, the order that they are defined in will be the order that they display in, top-down, to students. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
+
+```json
+"assessmentUnits": [
+    {"name": "intro", "heading": "Unit 1: Introduction to XC 101"},
+    {"name": "physics", "heading": "Unit 2: Physics"},
+    {"name": "math", "heading": "Unit 3: Math"},
+    {"name": "fun", "heading": "Unit 4: Extras for fun"}
+],
+"groupBy": "unit",
+```
+
+The above configuration can result in the following view for students:
+
+![Assessments grouped by unit on the student assessments overview.](assessment-units.png)
+
 ## Topics
 
 Each question in the course has a topic from the list specified in the `infoCourse.json` file. Topics should be thought of as chapters or sections in a textbook, and there should be about 10 to 30 topics in a typical course. The topic properties are as follows.

@@ -116,6 +116,12 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} color
  */
 
+/**
+ * @typedef AssessmentUnit
+ * @property {string} name
+ * @property {string} heading
+ */
+
 /** 
  * @typedef {Object} Course
  * @property {string} uuid
@@ -128,6 +134,8 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {AssessmentUnit[]} assessmentUnits
+ * @property {string} groupBy
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
@@ -213,6 +221,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
+ * @property {string} unit
  * @property {string} number
  * @property {boolean} allowIssueReporting
  * @property {boolean} allowRealTimeGrading
@@ -585,77 +594,51 @@ module.exports.loadCourseInfo = async function(coursePath) {
 
     const info = loadedData.data;
 
-    // Make a first pass over assessment sets, warn about duplicates
-    /** @type {Map<string, AssessmentSet>} */
-    const knownAssessmentSets = new Map();
-    /** @type{Set<string>} */
-    const duplicateAssessmentSetNames = new Set();
-    (info.assessmentSets || []).forEach(aset => {
-        if (knownAssessmentSets.has(aset.name)) {
-            duplicateAssessmentSetNames.add(aset.name);
+    /**
+     * Used to retrieve fields such as "assessmentSets" and "topics". 
+     * Adds a warning when syncing if duplicates are found.
+     * If defaults are provided, the entries from defaults not present in the resulting list are merged.
+     * @param {string} fieldName The member of `info` to inspect
+     * @param {string} entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
+     * @param {array} defaults 
+     */
+    function getFieldWithoutDuplicates(fieldName, entryIdentifier, defaults) {
+
+        const known = new Map();
+        const duplicateEntryIds = new Set();
+        
+        (info[fieldName] || []).forEach(entry => {
+            const entryId = entry[entryIdentifier];
+            if (known.has(entryId)) {
+                duplicateEntryIds.add(entryId);
+            }
+            known.set(entryId, entry);
+        });
+
+        if (duplicateEntryIds.size > 0) {
+            const duplicateIdsString = [...duplicateEntryIds.values()].map(name => `"${name}"`).join(', ');
+            const warning = `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
+            infofile.addWarning(loadedData, warning);
         }
-        knownAssessmentSets.set(aset.name, aset);
-    });
-    if (duplicateAssessmentSetNames.size > 0) {
-        const quotedNames = [...duplicateAssessmentSetNames.values()].map(name => `"${name}"`);
-        const duplicateNamesString = quotedNames.join(', ');
-        infofile.addWarning(loadedData, `Found duplicate assessment sets: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
+
+        if (defaults) {
+            defaults.forEach(defaultEntry => {
+                const defaultEntryId = defaultEntry[entryIdentifier];
+                if (!known.has(defaultEntryId)) {
+                    known.set(defaultEntryId, defaultEntry);
+                }
+            });
+        }
+
+        // Turn the map back into a list; the JS spec ensures that Maps remember
+        // insertion order, so the order is preserved.
+        return [...known.values()];
     }
 
-    // Add any default assessment sets that weren't also defined by the course
-    DEFAULT_ASSESSMENT_SETS.forEach(aset => {
-        if (!knownAssessmentSets.has(aset.name)) {
-            knownAssessmentSets.set(aset.name, aset);
-        }
-    });
-
-    // Turn the map back into a list; the JS spec ensures that Maps remember
-    // insertion order, so the order is preserved.
-    const assessmentSets = [...knownAssessmentSets.values()];
-
-    // Now, we do the same thing for tags
-    // Make a first pass over tags, warn about duplicates
-    const knownTags = new Map();
-    const duplicateTagNames = new Set();
-    (info.tags || []).forEach(tag => {
-        if (knownTags.has(tag.name)){
-            duplicateTagNames.add(tag.name);
-        }
-        knownTags.set(tag.name, tag);
-    });
-    if (duplicateTagNames.size > 0) {
-        const quotedNames = [...duplicateTagNames.values()].map(name => `"${name}"`);
-        const duplicateNamesString = quotedNames.join(', ');
-        infofile.addWarning(loadedData, `Found duplicate tags: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
-    }
-
-    // Add any default tags that weren't also defined by the course
-    DEFAULT_TAGS.forEach(tag => {
-        if (!knownTags.has(tag.name)) {
-            knownTags.set(tag.name, tag);
-        }
-    });
-
-    // Turn the map back into a list; the JS spec ensures that Maps remember
-    // insertion order, so the order is preserved.
-    const tags = [...knownTags.values()];
-
-    // Finally, handle duplicate topics
-    const knownTopics = new Map();
-    const duplicateTopicNames = new Set();
-    (info.topics || []).forEach(topic => {
-        if (knownTopics.has(topic.name)) {
-            duplicateTopicNames.add(topic.name);
-        }
-        knownTopics.set(topic.name, topic);
-    });
-    if (duplicateTopicNames.size > 0) {
-        const quotedNames = [...duplicateTopicNames.values()].map(name => `"${name}"`);
-        const duplicateNamesString = quotedNames.join(', ');
-        infofile.addWarning(loadedData, `Found duplicate topics: ${duplicateNamesString}. Only the last of each duplicate will be synced.`);
-    }
-
-    const topics = [...knownTopics.values()];
+    const assessmentSets = getFieldWithoutDuplicates('assessmentSets', 'name', DEFAULT_ASSESSMENT_SETS);
+    const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
+    const topics = getFieldWithoutDuplicates('topics', 'name', null);
+    const assessmentUnits = getFieldWithoutDuplicates('assessmentUnits', 'name', null);
 
     const exampleCourse = info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5'
         && info.title === 'Example Course'
@@ -668,8 +651,10 @@ module.exports.loadCourseInfo = async function(coursePath) {
         title: info.title,
         timezone: info.timezone,
         assessmentSets,
+        assessmentUnits,
         tags,
         topics,
+        groupBy: info.groupBy || 'set',
         exampleCourse,
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),

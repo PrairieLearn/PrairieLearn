@@ -32,6 +32,7 @@ module.exports.sync = async function(courseData, courseId) {
         example_course: courseInfo.exampleCourse,
         options: courseInfo.options || {},
         sync_warnings: infofile.stringifyWarnings(courseData.course),
+        group_by: courseInfo.groupBy,
     };
     const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course, params);
     if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);

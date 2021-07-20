@@ -34,6 +34,7 @@
               <tr>
                 <th style="width: 1%"></th>
                 <th></th>
+                <th>Unit</th>
                 <th>AID</th>
                 <th class="text-center">Students</th>
                 <th class="text-center">Scores</th>
@@ -65,6 +66,7 @@
                   <% } %></a>
                   <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
                 </td>
+                <td><%= row.assessment_unit_name %></td>
                 <td class="align-middle"><%= row.tid %></td>
 
                 <td class="text-center align-middle"><%= row.number %></td>

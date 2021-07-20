@@ -10,6 +10,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     var params = {
         course_instance_id: res.locals.course_instance.id,
+        assessments_group_by: res.locals.course.assessments_group_by,
         authz_data: res.locals.authz_data,
         user_id: res.locals.user.user_id,
         req_date: res.locals.req_date,

@@ -28,9 +28,9 @@
           </thead>
           <tbody>
             <% rows.forEach(function(row) { %>
-            <% if (row.start_new_set) { %>
+            <% if (row.start_new_assessment_group) { %>
             <tr>
-              <th colspan="4"><%= row.assessment_set_heading %></th>
+              <th class="pl-assessment-group-heading" colspan="4"><%= row.assessment_group_heading %></th>
             </tr>
             <% } %>
             <tr>

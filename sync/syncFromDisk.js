@@ -14,6 +14,7 @@ const syncTopics = require('./fromDisk/topics');
 const syncQuestions = require('./fromDisk/questions');
 const syncTags = require('./fromDisk/tags');
 const syncAssessmentSets = require('./fromDisk/assessmentSets');
+const syncAssessmentUnits = require('./fromDisk/assessmentUnits');
 const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
@@ -51,6 +52,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     const questionIds = await perf.timedAsync('syncQuestions', () => syncQuestions.sync(courseId, courseData));
     await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
     await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
+    await perf.timedAsync('syncAssessmentUnits', () => syncAssessmentUnits.sync(courseId, courseData));
     perf.start('syncAssessments');
     await Promise.all(Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
         const courseInstanceId = courseInstanceIds[ciid];
