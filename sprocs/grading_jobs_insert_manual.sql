@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS grading_jobs_insert_manual(bigint, bigint, double precision, jsonb);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_insert_manual (
         IN arg_submission_id bigint,
         IN arg_authn_user_id bigint,

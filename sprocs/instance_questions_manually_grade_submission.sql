@@ -1,7 +1,5 @@
 -- BLOCK instance_questions_manually_grade_submission
-DROP FUNCTION IF EXISTS instance_questions_manually_grade_submission(bigint, bigint, double precision, text, jsonb);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_manually_grade_submission(
         IN arg_instance_question_id bigint,
         IN arg_user_id bigint,

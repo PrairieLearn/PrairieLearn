@@ -1,7 +1,6 @@
 -- BLOCK instance_questions_select_manual_grading_objects
-DROP FUNCTION IF EXISTS instance_questions_select_manual_grading_objects(bigint, bigint, bigint);
 
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_select_manual_grading_objects(
         IN arg_instance_question_id bigint,
         IN arg_user_id bigint,

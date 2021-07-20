@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_manually_grade(bigint,double precision);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_manually_grade (
         arg_instance_question_id bigint,
         arg_manual_grade_score double precision

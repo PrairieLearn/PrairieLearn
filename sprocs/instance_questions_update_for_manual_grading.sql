@@ -1,7 +1,5 @@
-DROP FUNCTION IF EXISTS instance_questions_update_for_manual_grading(bigint, bigint, bigint);
-
 -- Determines next eligible instance question for grading
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_update_for_manual_grading(
         IN arg_assessment_id bigint, -- endpoint auth redundancy
         IN arg_assessment_question_id bigint,
