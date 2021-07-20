@@ -369,10 +369,12 @@ def grade(element_html, data):
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
 
+
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
 
     _, display_options = data['params'][name]
     correct_answers = data['correct_answers'].get(name, [])
@@ -381,14 +383,14 @@ def test(element_html, data):
     if result == 'correct':
         for i in range(len(correct_answers)):
             expected_html_name = get_form_name(name, i)
-            correct_answer = str(correct_answers[i])
-            data['raw_submitted_answers'][expected_html_name] = correct_answer
+            correct_answer = int(correct_answers[i])
+            data['raw_submitted_answers'][expected_html_name] = get_counter(correct_answer, counter_type)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
         for i in range(len(correct_answers)):
             expected_html_name = get_form_name(name, i)
-            incorrect_answer = str(correct_answers[i] % len(display_options) + 1)
-            data['raw_submitted_answers'][expected_html_name] = incorrect_answer
+            incorrect_answer = int(correct_answers[i] % len(display_options) + 1)
+            data['raw_submitted_answers'][expected_html_name] = get_counter(incorrect_answer, counter_type)
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif result == 'invalid':
         for i in range(len(correct_answers)):
