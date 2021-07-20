@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,bigint,bigint,bigint,text,integer,text,double precision,double precision,jsonb,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_update_score(
         -- identify the assessment/assessment_instance
         IN arg_assessment_id bigint,          -- must provide assessment_id
