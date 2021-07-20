@@ -133,6 +133,7 @@
         "chai-as-promised": "^7.1.1",
         "colors": "^1.4.0",
         "coveralls": "^3.1.1",
+        "depcheck": "^1.4.2",
         "eslint": "^7.31.0",
         "jsdoc": "^3.6.7",
         "json-stable-stringify": "^1.0.1",
