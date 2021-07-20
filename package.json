@@ -109,7 +109,6 @@
         "three": "^0.130.1",
         "tmp-promise": "^3.0.2",
         "unified": "^9.2.1",
-        "unified-stream": "^1.0.6",
         "unist-util-visit": "^2.0.3",
         "unzipper": "^0.10.11",
         "uuid": "^8.3.2",
