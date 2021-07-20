@@ -1,0 +1,4 @@
+{
+    "controller": "pl-xss-safe.py",
+    "dependencies": {}
+}

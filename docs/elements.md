@@ -60,6 +60,7 @@ images, files, and code display. The following **decorative** elements are avail
   collection of graphic objects
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
+- [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1542,6 +1543,36 @@ Attribute | Type | Default | Description
 - [demo/autograder/python/pandas]
 - [demo/autograder/python/plots]
 - [demo/autograder/python/random]
+
+### `pl-xss-safe` element
+
+Removes potentially dangerous scripts from an HTML code. This is recommended when parsing and displaying student-provided code. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
+
+#### Sample element
+
+```html
+<pl-xss-safe>
+{{{submitted_answers.answer}}}
+</pl-xss-safe>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`source-file-name` | string | - | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet).
+`submitted-file-name` | string | - | Name of the file submitted by the user to (typically using a `pl-file-editor` or `pl-file-upload` element) with the code to be used.
+`language` | string | html | Language of the provided code. The values "html" or "markdown" are currently supported.
+
+#### Example implementations
+
+- [demo/markdownEditorLivePreview]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+-----
 
 ## Conditional Elements
 
