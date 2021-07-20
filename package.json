@@ -121,7 +121,7 @@
         "winston": "^3.3.3",
         "xss": "^1.0.9",
         "yargs": "^16.2.0",
-        "yargs-parser": "^20.2.7"
+        "yargs-parser": "^20.2.9"
     },
     "devDependencies": {
         "@types/chai": "^4.2.19",
