@@ -22,3 +22,9 @@ lint-python:
 	python3 -m flake8 ./
 typecheck:
 	tsc
+depcheck:
+	-npx depcheck
+	@echo WARNING:
+	@echo WARNING: Also check that unused packages are not used by client-side code.
+	@echo WARNING: Do this by running '"git grep <packagename>"'
+	@echo WARNING:
