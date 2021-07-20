@@ -23,8 +23,11 @@ lint-python:
 typecheck:
 	tsc
 depcheck:
-	-npx depcheck
+	-npx depcheck --ignore-patterns=public/**
 	@echo WARNING:
-	@echo WARNING: Also check that unused packages are not used by client-side code.
-	@echo WARNING: Do this by running '"git grep <packagename>"'
+	@echo WARNING: Before removing an unused package, also check that it is not used
+	@echo WARNING: by client-side code. Do this by running '"git grep <packagename>"'
+	@echo WARNING:
+	@echo WARNING: Note that many devDependencies will show up as unused. This is not
+	@echo WARNING: a problem.
 	@echo WARNING:
