@@ -121,3 +121,75 @@ FROM
     variants AS v
     JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE v.id = $variant_id;
+
+--BLOCK select_all_submissions_and_other_data
+SELECT s.*, v.variant_seed, v.options, v.question_id, ci.course_id, aq.init_points, q.qid, iq.assessment_instance_id
+FROM submissions AS s
+JOIN variants AS v ON (v.id = s.variant_id)
+JOIN course_instances AS ci on (ci.id = v.course_instance_id)
+LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+JOIN questions AS q ON (q.id = aq.question_id)
+WHERE iq.id = $instance_question_id
+ORDER BY s.id ASC;
+
+--BLOCK select_course
+SELECT c.*
+FROM pl_courses AS c
+WHERE c.id = $course_id;
+
+--BLOCK select_question
+SELECT q.*
+FROM questions AS q
+WHERE q.id = $question_id;
+
+--BLOCK select_instance_question
+SELECT iq.*
+FROM instance_questions as iq
+WHERE iq.id = $instance_question_id;
+
+--BLOCK select_variant
+SELECT v.*
+FROM variants AS v
+WHERE v.id = $variant_id;
+
+--BLOCK reset_instance_question
+UPDATE instance_questions as iq
+SET
+    points = 0,
+    score_perc = 0,
+    current_value = $init_points,
+    number_attempts = 0,
+    status = 'unanswered',
+    variants_points_list = ARRAY[]::double precision[],
+    submission_score_array = null,
+    incremental_submission_score_array = null,
+    modified_at = now()
+WHERE
+    iq.id = $instance_question_id;
+
+--BLOCK restore_instance_question
+UPDATE instance_questions as iq
+SET
+    points = $points,
+    points_in_grading = $points_in_grading,
+    score_perc = $score_perc,
+    score_perc_in_grading = $score_perc_in_grading,
+    current_value = $current_value,
+    number_attempts = $number_attempts,
+    points_list = $points_list,
+    status = $status,
+    points_list_original = $points_list_original,
+    variants_points_list = $variants_points_list::double precision[],
+    modified_at = now()
+WHERE
+    iq.id = $id;
+
+--BLOCK reset_instance_assessment
+UPDATE assessment_instances as ai
+SET
+    points = 0,
+    score_perc = 0.0,
+    score_perc_in_grading = 0.0
+WHERE
+    ai.id = $assessment_instance_id;

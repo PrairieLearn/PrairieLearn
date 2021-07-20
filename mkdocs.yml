@@ -28,7 +28,7 @@ pages:
   - 'Remote exams': 'remoteExams.md'
   - 'clientFiles and serverFiles': 'clientServerFiles.md'
   - 'UUIDs in JSON files': 'uuid.md'
-  - 'Regrading assessments': 'regrading.md'
+  - 'Regrading options': 'regrading.md'
   - 'Element for drawing': 'pl-drawing/index.md'
   - 'External grading': 'externalGrading.md'
   - 'Python autograder': 'python-grader/index.md'

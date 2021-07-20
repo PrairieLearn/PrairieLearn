@@ -1,0 +1,15 @@
+<form name="edit-question-points-form" method="POST">
+    <input type="hidden" name="__action" value="regrade_question">
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+    <input type="hidden" name="instance_question_id" value="<%= instance_question.id %>">
+    <p><small>This will reparse, then regrade all the submissions for this question. By default, we only update the score when it's higher, but you can choose to always update the score.</small></p>
+    <input type="radio" id="highest-score-update" value="highest-score-update" name="update_method" checked>
+    <label for="highest-score-update">Keep Highest Score</label><br>
+    <input type="radio" id="allow-decrease" value="allow-decrease" name="update_method">
+    <label for="allow-decrease">Allow Decrease</label><br>
+    <div class="text-right">
+      <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+  </form>
+  
