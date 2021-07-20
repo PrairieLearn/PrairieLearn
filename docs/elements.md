@@ -612,7 +612,7 @@ Attribute | Type | Default | Description
 
 ### `pl-matching` element
 
-Given a list of questions, select a matching option for each entry from  a drop-down list.
+Given a list of questions, select a matching option for each entry from a drop-down list.
 
 #### Sample element
 
@@ -641,25 +641,23 @@ Attribute | Type | Default | Description
 `number-answers` | integer | special | The number of answers to display. Defaults to all answers.
 `number-options` | integer | special | The number of options to display. Defaults to all options.
 `none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options. Automatically set to true if number-options is less than the total number of options.
-`blank` | boolean | False | Option to add blank dropdown entry as default selection in each drop-down list..
-`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" | "decimal" | The type of counter to use when enumerating the options. 
+`blank` | boolean | False | Option to add blank dropdown entry as the default selection in each drop-down list..
+`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" | "decimal" | The type of counter to use when enumerating the options.
+`hide-score-badge` | boolean | false | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.
 
 Inside the `pl-matching` element, a series of `pl-answer` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively.
 
-The content of a `pl-answer` can be any HTML element, including other PrairieLearn eleemnts. A `pl-answer` must be specified with these attributes:
+The content of a `pl-answer` can be any HTML element, including other PrairieLearn elements. A `pl-answer` must be specified with these attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `match` | string | — | Must be equal to the `name` of one of the `pl-option` elements, and identifies that option as the correct response for this `pl-answer.`
-
 
 The content of a `pl-option` can be any HTML element, including other PrairieLearn eleemnts. `A pl-option` must be specified with these attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `name` | string | special | A key used to match this option as the correct response to a `pl-answer`. If not given, the attribute is set to the inner HTML of the `pl-option`.
-
-
 
 #### Example implementations
 
