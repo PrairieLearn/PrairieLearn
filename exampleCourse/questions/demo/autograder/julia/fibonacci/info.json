@@ -1,0 +1,15 @@
+{
+    "uuid": "29fff7a7-9f67-4dc2-93d1-6d05486bfd3a",
+    "title": "Demo: Julia code, fibonacci function, in-browser editor, external grading",
+    "topic": "Autograder",
+    "tags": ["code", "v3", "julia"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-julia",
+        "entrypoint": "/run.sh",
+        "timeout": 20
+    }
+}

@@ -17,6 +17,8 @@ jobs:
       run: sh ./tools/build-image-if-needed.sh graders/c prairielearn/grader-c
     - name: Build the grader-java docker image if needed
       run: sh ./tools/build-image-if-needed.sh graders/java prairielearn/grader-java
+    - name: Build the grader-julia docker image if needed
+      run: sh ./tools/build-image-if-needed.sh graders/julia prairielearn/grader-julia
     - name: Build the grader-python docker image if needed
       run: sh ./tools/build-image-if-needed.sh graders/python prairielearn/grader-python
     - name: Build the grader-r docker image if needed
