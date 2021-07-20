@@ -58,7 +58,7 @@
         "folder-hash": "^4.0.0",
         "fs-extra": "^10.0.0",
         "googleapis": "^82.0.0",
-        "highlight.js": "^11.0.1",
+        "highlight.js": "^11.1.0",
         "http-proxy-middleware": "^1.0.6",
         "http-status": "^1.5.0",
         "isbinaryfile": "^4.0.8",
