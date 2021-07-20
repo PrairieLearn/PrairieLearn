@@ -43,6 +43,7 @@ SELECT
     aset.heading,
     aset.color,
     (aset.abbreviation || a.number) as label,
+    au.name AS assessment_unit_name,
     (lag(aset.id) OVER (PARTITION BY aset.id ORDER BY a.order_by, a.id) IS NULL) AS start_new_set,
     coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
@@ -53,6 +54,7 @@ FROM
     LEFT JOIN LATERAL assessments_duration_stats(a.id) AS dstats ON TRUE
     LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
     LEFT JOIN issue_count AS ic ON (ic.assessment_id = a.id)
+    LEFT JOIN assessment_units AS au ON (au.id = a.assessment_unit_id)
 WHERE
     ci.id = $course_instance_id
     AND a.deleted_at IS NULL
