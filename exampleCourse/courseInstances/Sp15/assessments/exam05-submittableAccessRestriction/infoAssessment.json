@@ -1,7 +1,7 @@
 {
     "uuid": "75be4222-e9d1-11eb-9a03-0242ac130003",
     "type": "Exam",
-    "title": "Submittable Access Rule Demo",
+    "title": "Submittable Access Restriction Demo",
     "set": "Exam",
     "number": "5",
     "allowAccess": [
