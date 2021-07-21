@@ -44,6 +44,13 @@
       })
     });
   </script>
+  <style>
+    .sticky-column {
+      position: sticky;
+      left: 0;
+      background: white;
+    }
+  </style>
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
@@ -59,11 +66,10 @@
 
         <table data-classes="table table-sm table-hover"
                data-toggle="table" data-search="true"
-               data-fixed-columns="true" data-fixed-number="3"
                data-sticky-header="true">
             <thead>
               <tr>
-                <th data-sortable="true">UID</th>
+                <th data-sortable="true" data-class="sticky-column bg-white">UID</th>
                 <th data-sortable="true">UIN</th>
                 <th data-sortable="true">Name</th>
                 <th data-sortable="true">Role</th>
