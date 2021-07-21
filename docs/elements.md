@@ -278,6 +278,7 @@ Attribute | Type | Default | Description
 `size` | integer | 35 | Size of the input box.
 `show-correct-answer` | boolean | true | Whether to show the correct answer in the submitted answers panel.
 `allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
+`custom-format` | string | special | Custom format to use when formatting the submitted or correct answer. By default, submitted answers are shown with the format `.12g`, while the correct answer uses `.12g` if the comparison method is `relabs`, or a custom format based on the number of digits if the comparison method is `sigfig` or `decdig`. A full description of the format can be found [on the Python documentation page](https://docs.python.org/3/library/string.html#format-specification-mini-language).
 
 #### Example implementations
 
