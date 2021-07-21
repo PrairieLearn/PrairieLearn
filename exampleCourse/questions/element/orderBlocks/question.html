@@ -1,4 +1,4 @@
-<pl-question-panel>
+<!-- <pl-question-panel>
 <p>
 This question illustrates different use cases for the
 <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element"><code>pl-order-blocks</code></a>.
@@ -22,7 +22,7 @@ This question illustrates different use cases for the
   <pl-answer correct="true">5</pl-answer>
   <pl-answer correct="false">6</pl-answer>
   <pl-answer correct="true">7</pl-answer>
-</pl-order-blocks>
+</pl-order-blocks> -->
 
 <hr>
 
@@ -82,7 +82,7 @@ This question illustrates different use cases for the
 
 <pl-question-panel>
 <p>
-  <strong>Example 4:</strong> Use a proof by contrapositive to show that if $2m^2 + n + 1$ is even then either $m$ or $n$ are odd.
+  <strong>Example 4:</strong> Prove that $A \land B \land C \rightarrow A \land C$
 </p>
 
 <p>This example uses the attribute <code>grading-method="dag"</code> to control how the correct solution is ordered.
@@ -94,40 +94,9 @@ The attribute <code>solution-placement="bottom"</code> is used
 to display the input area above the output area.</p>
 </pl-question-panel>
 
-<pl-order-blocks answers-name="even-implies-odd" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
-  <pl-answer correct="true" id="1"  depends=""  > Proof by Contrapositive:</pl-answer>
-  <pl-answer correct="true" id="2"  depends="1" > Take some $m \in \mathbb{Z}$ </pl-answer>
-  <pl-answer correct="true" id="3"  depends="1" > Take some $n \in \mathbb{Z}$ </pl-answer>
-  <pl-answer correct="true" id="4"  depends="2" > Assume $m$ is even</pl-answer>
-  <pl-answer correct="true" id="5"  depends="3" > Assume $n$ is even</pl-answer>
-  <pl-answer correct="true" id="6"  depends="4" > $\exists l \in \mathbb{Z}$ such that $m = 2l$</pl-answer>
-  <pl-answer correct="true" id="7"  depends="5" > $\exists k \in \mathbb{Z}$ such that $n = 2k$</pl-answer>
-  <pl-answer correct="true" id="8"  depends="6,7" > $2m^2 + n + 1 = 2(2l)^2 + 2k + 1 = 2(4l^2 + k) + 1$ </pl-answer>
-  <pl-answer correct="true" id="9" depends="8" > Then since $2(4l^2 + k)$ is even, $2(4l^2 + k) + 1$ is odd. </pl-answer>
-</pl-order-blocks>
-
-<hr>
-
-<pl-question-panel>
-
-<p>
-  <strong>Example 5:</strong>Let $A, B,$ and $C$ be propositions. Prove that $(A \land C) \lor (A \land B) \rightarrow A $
-</p>
-
-This example uses the <code>subproof</code> attribute, which can be used to divide a proof into cases.
-</pl-question-panel>
-
-
-<pl-order-blocks answers-name="proof-by-cases" source-blocks-order="random" grading-method="dag">
-  <pl-answer correct="true" id="1" depends=""  > Proof by Cases:</pl-answer>
-  <pl-answer correct="true" id="2" depends="1" subproof="1" > Case $A \land C$: </pl-answer>
-  <pl-answer correct="true" id="3" depends="2" subproof="1" > Since $A \land C$ is true, we know $A$ is true.</pl-answer>
-  <pl-answer correct="true" id="4" depends="1" subproof="2" > Case $A \land B$: </pl-answer>
-  <pl-answer correct="true" id="5" depends="4" subproof="2" > Since $A \land B$ is true, we know $A$ is true.</pl-answer>
-
-  <!-- Distractors -->
-  <!-- <pl-answer correct="false" id="" depends="" > Case $C$: </pl-answer>
-  <pl-answer correct="false" id="" depends="" > Case $B \land C$: </pl-answer>
-  <pl-answer correct="false" id="" depends="" > Since $A$ is true, $A \lor B$ is true. </pl-answer> -->
-
+<pl-order-blocks answers-name="conjunction-implies-conjunction" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
+  <pl-answer correct="true" label="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" label="2" depends="1" > Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" label="3" depends="1" > Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" label="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
 </pl-order-blocks>

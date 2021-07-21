@@ -25,6 +25,7 @@ TAB_SIZE_PX = 50
 
 
 def filter_multiple_from_array(data, keys):
+    # return [{key: item[key] for key in keys} for item in data]
     result = []
     for item in data:
         dic = {}
@@ -68,17 +69,25 @@ def prepare(element_html, data):
         if grading_method == 'external':
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
         else:
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent', 'id', 'depends', 'subproof'])
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent', 'label', 'depends'])
 
         is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
         answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1) - 1
 
+        label = pl.get_string_attrib(html_tags, 'label', None)
+        depends = pl.get_string_attrib(html_tags, 'depends', '')            
+        depends = depends.strip().split(',') if depends else []
+       
         answer_data_dict = {'inner_html': inner_html,
                             'indent': answer_indent,
                             'ranking': ranking,
-                            'index': index}
+                            'index': index,
+                            'label': label, # only used with DAG grader
+                            'depends': depends, # only used with DAG grader
+                            'group': None # only used with DAG grader
+                            }
 
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
@@ -279,30 +288,14 @@ def parse(element_html, data):
     correct_answers = data['correct_answers'][answer_name]
 
     if grading_mode == 'ranking':
-        index = 0
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
-            if search is not None:
-                ranking = search['ranking']
-            else:
-                ranking = -1   # wrong answers have no ranking
-            student_answer[index]['ranking'] = ranking
-            index += 1
+            answer['ranking'] = search['ranking'] if search is not None else -1 # wrong answers have no ranking
 
-    elif grading_mode.lower() == 'dag':
-        pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
-        children = pl_drag_drop_element.getchildren()
-        stringToId = {}
-
-        for child in children:
-            if not isinstance(child, lxml.html.HtmlElement):
-                continue
-            if pl.get_string_attrib(child, 'correct') != 'true':
-                continue
-            content = child.text_content().strip()
-            stringToId[content] = pl.get_string_attrib(child, 'id')
-        student_answer = [s.strip() for s in student_answer]
-        student_answer_ranking = [stringToId.get(answer) for answer in student_answer]
+    elif grading_mode == 'dag':
+        for answer in student_answer:
+            search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
+            answer['label'] = search['label'] if search is not None else None
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         for html_tags in element:
@@ -352,8 +345,10 @@ def grade(element_html, data):
         final_score = float((len(correct_selections) - len(incorrect_selections)) / len(true_answer_list))
         final_score = max(0.0, final_score)  # scores cannot be below 0
     elif grading_mode == 'ordered':
-        student_answer = filter_multiple_from_array(student_answer, ['inner_html'])
-        final_score = 1.0 if student_answer == true_answer_list else 0.0
+        student_answer = [ans['inner_html'] for ans in student_answer]
+        true_answer = [ans['inner_html'] for ans in true_answer_list]
+        final_score = 1 if student_answer == true_answer else 0
+
     elif grading_mode == 'ranking':
         ranking = filter_multiple_from_array(data['submitted_answers'][answer_name], ['ranking'])
         ranking = list(map(lambda x: x['ranking'], ranking))
@@ -369,26 +364,17 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer_list))
     elif grading_mode == 'dag':
-        order = data['submitted_answers'][answer_name]['student_submission_ordering']
-        depends_graph = {}
-        subproof_belonging = {}
-        pl_drag_drop_element = lxml.html.fragment_fromstring(element_html)
-        children = pl_drag_drop_element.getchildren()
-        for child in children:
-            if not isinstance(child, lxml.html.HtmlElement):
-                continue
-            if pl.get_string_attrib(child, 'correct') != 'true':
-                continue
+        order = [ans['label'] for ans in student_answer]
+        depends_graph = {ans['label']: ans['depends'] for ans in true_answer_list}
+        group_belonging = {ans['label']: ans['group'] for ans in true_answer_list}
 
-            stmtId = pl.get_string_attrib(child, 'id')
-            depends = pl.get_string_attrib(child, 'depends', '')
-            depends = depends.strip().split(',') if depends else []
-            depends_graph[stmtId] = depends
+        # print(order)
+        # print(depends_graph)
+        # print(group_belonging)
 
-            subproof = pl.get_string_attrib(child, 'subproof', '')
-            subproof_belonging[stmtId] = subproof if subproof else None
+        correctness, first_wrong = grade_dag(order, depends_graph, group_belonging)
 
-        correctness, first_wrong = grade_dag(order, depends_graph, subproof_belonging)
+        # print(correctness, first_wrong)
 
         if correctness == len(depends_graph.keys()):
             final_score = 1
