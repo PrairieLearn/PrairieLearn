@@ -1,0 +1,79 @@
+<style>
+ img {
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+     margin-top: 15px;
+     margin-bottom: 15px;
+ }
+ .code-block {
+     width: 60%;
+     margin-left: auto;
+     margin-right: auto;
+     overflow: hidden;
+     margin-bottom: 1rem;
+     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+     background: #f0f0f0;
+     padding: 1em;
+     padding-bottom: 0em;
+ }
+ .code-block div {
+     padding: 0.5rem;
+     display: block;
+     margin-bottom: -1em;
+     line-height: 125%;
+ }
+</style>
+
+<p>
+  Thanks to great work by 
+  <a href="https://github.com/echau01">Eugene Chau</a>, a student in
+  the University of British Columbia, it is now possible to allow
+  students to see assessments that are not available for submission,
+  either before their release date, or after their deadline.
+</p>
+
+<p>
+  This feature allows students to visualize and plan for future
+  assessments, potentially from the start of the term. It also allows
+  instructors to release completed assessments for review while
+  blocking any further submission.
+</p>
+
+<img class="border rounded" src="non-submittable-exam.png" width="900px">
+
+<p>
+  You can set up your assessments to be visible, but not submittable
+  by creating a new access rule with the <code>submittable</code>
+  setting set to <code>false</code>. This will allow students that
+  have not started the assessment to see it while prevent them from
+  starting a new instance of the assessment. It will also allow
+  students that completing the assessment to see their answers, but
+  not to submit new ones.
+</p>
+
+<div class="mb-2 rounded code-block">
+<pre><code>"allowAccess": [
+    {
+        "startDate": "2015-02-16T00:00:01",
+        "endDate": "2015-02-16T23:59:59",
+        "timeLimitMin": 50,
+        "credit": 100
+    },
+    {
+        "startDate": "2015-01-01T00:00:01",
+        "endDate": "2015-05-15T23:59:59",
+        "submittable": false
+    }
+]
+</code></pre>
+</div>
+
+
+<p> For more information, see the <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/#submittable-assessments">documentation</a>. </p>
+
+<hr class="mt-5">
+<p class="text-right small">
+    Want to help make PrairieLearn better? It's open source and <a href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
+</p>
+
