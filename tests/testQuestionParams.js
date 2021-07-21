@@ -1,15 +1,15 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const assert = require('chai').assert;
+const request = require('request');
+const cheerio = require('cheerio');
 
-var config = require('../lib/config');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const config = require('../lib/config');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-var helperServer = require('./helperServer');
+const helperServer = require('./helperServer');
 //var helperQuestion = require('./helperQuestion');
 
 const locals = {};
