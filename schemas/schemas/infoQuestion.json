@@ -77,12 +77,24 @@
             "type": "string"
         },
         "gradingMethod": {
-            "description": "The grading method used for this question.",
+            "description": "The grading method used for this question. (DEPRECATED - Use `gradingMethods` below)",
             "enum": [
                 "Internal",
                 "External",
                 "Manual"
             ]
+        },
+        "gradingMethods": {
+            "description": "The grading methods to enable during question grading. (Overrides `gradingMethod` if implemented`)",
+            "type": "array",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "Internal",
+                    "External",
+                    "Manual"
+                ]
+            }
         },
         "singleVariant": {
             "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
