@@ -7,6 +7,11 @@
     <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
@@ -29,13 +34,14 @@
                 <th width="100">Question score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              <% questions.forEach(function(question, i) { %>
+              <% questions.forEach(function(question, iRow) { %>
               <% if (question.start_new_zone) { %>
               <tr>
-                <th colspan="9">
+                <th colspan="10">
                   Zone <%= question.zone_number %>. <%= question.zone_title %>
                   <% if (question.zone_number_choose == null) { %>
                   (Choose all questions)
@@ -55,7 +61,7 @@
               <% } %>
               <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
               <tr>
-                <td colspan="9">
+                <td colspan="10">
                   <%= question.alternative_group_number %>.
                   <% if (question.alternative_group_number_choose == null) { %>
                   Choose all questions from:
@@ -111,7 +117,7 @@
                       width: 60,
                       height: 20,
                     };
-                    histmini("#attemptsHist<%= i %>", data, options);
+                    histmini("#attemptsHist<%= iRow %>", data, options);
                   });
                 </script>
                 <td>
@@ -120,6 +126,30 @@
                   <%- include('../partials/assessment', {assessment: assessment}); %>
                   <% }); %>
                   <% } %>
+                </td>
+                <td class="text-center">
+                  <div class="dropdown">
+                    <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Action <span class="caret"></span>
+                    </button>
+
+                    <div id="row<%= iRow %>PopoverBreak"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Confirm mark as broken"
+                         data-content="<%= include('popoverBreakVariants', {iRow: iRow, question: question}) %>">
+                    </div>
+
+                    <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
+                    <div class="dropdown-menu" onclick="window.event.preventDefault();">
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverBreak').popover('show')" href="#">
+                        <i class="fa fa-times mr-1 text-danger" aria-hidden="true"></i> Mark as broken
+                      </a>
+                      <% } %>
+
+                    </div>
+                  </div>
                 </td>
               </tr>
               <% }); %>
