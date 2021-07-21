@@ -41,6 +41,12 @@
                 {"id": "subfolder/nestedQuestion",   "points": 2, "maxPoints": 10},
                 {"id": "workspace",                  "points": 2, "maxPoints": 10}
             ]
+        },
+        {
+            "title": "Manual grading questions",
+            "questions": [
+                {"id": "addNumbersManual",              "points": 2, "maxPoints": 10}
+              ]
         }
     ]
 }

@@ -27,7 +27,7 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'test_100') {
-        if (res.locals.question.grading_method !== 'External') {
+        if (!res.locals.question.grading_method_external) {
             const count = 100;
             const showDetails = false;
             const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;

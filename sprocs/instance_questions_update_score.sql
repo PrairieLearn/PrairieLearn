@@ -117,7 +117,7 @@ BEGIN
                 ELSE arg_feedback
             END,
             graded_at = now(),
-            grading_method = 'External',
+            grading_method_external = True,
             override_score = new_score,
             score = COALESCE(new_score, score),
             correct = COALESCE(new_correct, correct),

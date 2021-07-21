@@ -119,7 +119,7 @@ BEGIN
         JOIN questions AS q ON (q.id = cp.question_id)
     WHERE
         cp.date > now() - interval '1 hour'
-        AND q.grading_method = 'External';
+        AND q.grading_method_external = True;
 
     -- ######################################################################
     -- load per user
