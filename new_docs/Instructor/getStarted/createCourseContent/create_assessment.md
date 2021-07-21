@@ -10,41 +10,42 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 * click the `Edit` button next to `infoAssessment.json`.
 
-* The [assessment type](assessment.md#assessment-types) is currently set to `Homework`, so we'll leave it as is.  to be either `Homework` or `Exam`. For this example, we will use `Homework`.
+* The [assessment type](assessment.md#assessment-types) is currently set to `Homework`, so we'll leave it as is.  The other possible [assessment type](#course.md/assessments) is `Exam`.
 
-* change the `title`. Try:
+* change the `title`. We'll call it:
 ```json
 "title": "Math Review",
 ```
 
-* you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course.md#assessment-sets).
+* The next entry, the assessment `set` is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course.md#assessment-sets).  We'll leave it as "Homework".
 
-* change the number of the assessment (within its set). This number will be used to sort the assessments in the `Assessment` page.
+* the `number` entry corresponds to the order of the assessmen within its set. This number will be used to sort the assessments in the `Assessments` page.  Since this is the first assessement, again, we can leave it as 1. 
 
-* in `allowAccess` you should set the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, we will use:
+* `allowAccess` sets the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, our assessment will be available from 10 p.m. September 1st, until 10 p.m. September 8; the assessment will be worth full-credit during this time:
 
 ```json
 "allowAccess": [
     {
-        "startDate": "2020-09-01T20:00:00",
-        "endDate": "2020-09-06T20:00:00",
+        "startDate": "2021-09-01T20:00:00",
+        "endDate": "2021-09-08T20:00:00",
         "credit": 100
     }
-]
+],
 ```
 
-* in `zones` you should enter the questions to be included in that assessment. We will add the two questions that we just created:
+* in `zones` you should enter the questions to be included in that assessment. We will add two of the questions that we just created:
 
 ```json
 "zones": [
     {
         "questions": [
-            {"id": "find_rectangle_area_rand", "points": 1, "maxPoints": 5},
-            {"id": "integerInput", "points": 1, "maxPoints": 5}
+            {"id": "sum_two_numbers", "points": 1, "maxPoints": 2},
+            {"id": "find_rectangle_area", "points": 2, "maxPoints": 2}
         ]
     }
 ]
 ```
+
 
 * click `Save and sync`.
 
