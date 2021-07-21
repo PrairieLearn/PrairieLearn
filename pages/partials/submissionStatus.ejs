@@ -6,13 +6,13 @@
             <span class="badge badge-danger">invalid, not gradable</span>
         <% } %>
     <% } else { %>
-        <% if (submission.grading_method == 'External') { %>
+        <% if (submission.grading_method_external) { %>
             <% if (submission.gradable) { %>
                 <span id="grading-status-<%= submission.id %>" class="badge badge-secondary"></span>
             <% } else { %>
                 <span class="badge badge-danger">invalid, not gradable</span>
             <% } %>
-        <% } else if (submission.grading_method == 'Manual') { %>
+        <% } else if (submission.grading_method_manual) { %>
             <span class="badge badge-secondary">waiting for manual grading</span>
         <% } else { %>
             <span class="badge badge-secondary">waiting for grading</span>
