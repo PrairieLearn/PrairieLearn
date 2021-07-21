@@ -42,6 +42,5 @@
                 {"id": "demo/demoNewton-page2",        "points": 1, "maxPoints": 5}
             ]
         }
-    ],
-    "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+    ]
 }
