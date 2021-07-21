@@ -1,0 +1,18 @@
+{
+    "controller": "pl-rich-text-editor.py",
+    "dependencies": {
+        "nodeModulesScripts": [
+            "quill/dist/quill.min.js"
+        ],
+        "nodeModulesStyles": [
+            "quill/dist/quill.snow.css",
+            "quill/dist/quill.bubble.css"
+        ],
+        "elementScripts": [
+            "pl-rich-text-editor.js"
+        ],
+        "elementStyles": [
+            "pl-rich-text-editor.css"
+        ]
+    }
+}
