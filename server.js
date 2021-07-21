@@ -1137,6 +1137,21 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            // We create and activate a random DB schema name
+            // (https://www.postgresql.org/docs/12/ddl-schemas.html)
+            // after we have run the migrations but before we create
+            // the sprocs. This means all tables (from migrations) are
+            // in the public schema, but all sprocs are in the random
+            // schema. Every server invocation thus has its own copy
+            // of its sprocs, allowing us to update servers while old
+            // servers are still running. See docs/dev-guide.md for
+            // more info.
+            sqldb.setRandomSearchSchema(config.instanceId, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
             sprocs.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);

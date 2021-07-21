@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     config_select(
         IN key text,
         OUT value text

@@ -78,6 +78,12 @@ var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
             });
         },
         function(callback) {
+            sqldb.setRandomSearchSchema('test', (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
             debug('createFullDatabase(): initializing sprocs');
             sprocs.init(function(err) {
                 if (ERR(err, callback)) return;
