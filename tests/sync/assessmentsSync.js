@@ -336,17 +336,17 @@ describe('Assessment syncing', () => {
     assert.match(syncedAssessment.sync_errors, /Invalid allowAccess rule: endDate \(not a valid date\) is not valid/);
   });
 
-  it('records an error if an access rule sets submittable to false and has nonzero credit', async () => {
+  it('records an error if an access rule sets active to false and has nonzero credit', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.allowAccess.push({
       credit: 100,
-      submittable: false,
+      active: false,
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
-    assert.match(syncedAssessment.sync_errors, /Invalid allowAccess rule: credit must be 0 if submittable is false/);
+    assert.match(syncedAssessment.sync_errors, /Invalid allowAccess rule: credit must be 0 if active is false/);
   });
 
   it('records an error if a question specifies neither an ID nor an alternative', async () => {

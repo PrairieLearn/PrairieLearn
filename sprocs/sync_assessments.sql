@@ -212,7 +212,7 @@ BEGIN
                 end_date,
                 show_closed_assessment,
                 show_closed_assessment_score,
-                submittable)
+                active)
             (
                 SELECT
                     new_assessment_id,
@@ -229,7 +229,7 @@ BEGIN
                     input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     (access_rule->>'show_closed_assessment')::boolean,
                     (access_rule->>'show_closed_assessment_score')::boolean,
-                    (access_rule->>'submittable')::boolean
+                    (access_rule->>'active')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -251,7 +251,7 @@ BEGIN
                 end_date = EXCLUDED.end_date,
                 show_closed_assessment = EXCLUDED.show_closed_assessment,
                 show_closed_assessment_score = EXCLUDED.show_closed_assessment_score,
-                submittable = EXCLUDED.submittable;
+                active = EXCLUDED.active;
         END LOOP;
 
         -- Delete excess access rules

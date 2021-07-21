@@ -28,7 +28,7 @@ require('./testExam');
 require('./testRealTimeGradingDisabled');
 require('./testShowClosedAssessment');
 require('./testShowClosedAssessmentScore');
-require('./testSubmittable');
+require('./testActiveAccessRestriction');
 require('./testGradeRate');
 require('./testBonusPoints');
 require('./testAccess');

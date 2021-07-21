@@ -1,7 +1,7 @@
 {
     "uuid": "75be4222-e9d1-11eb-9a03-0242ac130003",
     "type": "Exam",
-    "title": "Submittable Access Restriction Demo",
+    "title": "Active Access Restriction Demo",
     "set": "Exam",
     "number": "5",
     "allowAccess": [
@@ -12,7 +12,7 @@
         {
             "mode": "Public",
             "endDate": "1999-12-31T23:59:59",
-            "submittable": false,
+            "active": false,
             "comment": "This access rule allows students to see the exam on the Assessments page before it starts. Students cannot begin the exam at this time."
         },
         {
@@ -25,7 +25,7 @@
         },
         {
             "mode": "Public",
-            "submittable": false,
+            "active": false,
             "startDate": "2000-01-04T00:00:01",
             "comment": "This access rule allows students to view their exams two days after all exams finish. Note that students who did not write the exam cannot view it."
         }

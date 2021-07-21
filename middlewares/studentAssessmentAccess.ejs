@@ -22,7 +22,7 @@
 
             <div class="card-body">
 
-                <% if (typeof assessment_instance !== 'undefined' && (assessment_instance.open === false || authz_result.submittable === false) && prompt !== 'closedAssessmentNotSubmittableHiddenGrade') { %>
+                <% if (typeof assessment_instance !== 'undefined' && (assessment_instance.open === false || authz_result.active === false) && prompt !== 'closedAssessmentNotActiveHiddenGrade') { %>
 
                     <div class="row align-items-center">
                       <div class="col-md-3 col-sm-6">
@@ -37,13 +37,13 @@
                         <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
                             Assessment is <strong>closed</strong> and is no longer available.
                         </div>
-                      <% } else if (authz_result.next_submittable_time === null) { %>
+                      <% } else if (authz_result.next_active_time === null) { %>
                         <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
                             Assessment is no longer available.
                         </div>
                       <% } else { %>
                         <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
-                            Assessment will become available on <%= authz_result.next_submittable_time %>.
+                            Assessment will become available on <%= authz_result.next_active_time %>.
                         </div>
                       <% } %>
                     </div>
@@ -66,13 +66,13 @@
                 
                 <% } else if (typeof assessment_instance === 'undefined' || assessment_instance.open) { %>
 
-                    <% if (authz_result.next_submittable_time === null) { %>
+                    <% if (authz_result.next_active_time === null) { %>
                         <div class="test-suite-assessment-closed-message">
                             Assessment is no longer available.
                         </div>
                     <% } else { %>
                         <div class="test-suite-assessment-closed-message">
-                            Assessment will become available on <%= authz_result.next_submittable_time %>.
+                            Assessment will become available on <%= authz_result.next_active_time %>.
                         </div>
                     <% } %>
 

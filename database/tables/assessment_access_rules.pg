@@ -1,4 +1,5 @@
 columns
+    active: boolean not null default true
     assessment_id: bigint not null
     credit: integer
     end_date: timestamp with time zone
@@ -12,7 +13,6 @@ columns
     show_closed_assessment: boolean not null default true
     show_closed_assessment_score: boolean not null default true
     start_date: timestamp with time zone
-    submittable: boolean not null default true
     time_limit_min: integer
     uids: text[]
 

@@ -93,7 +93,7 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'leave_group') {
-        if (!res.locals.authz_result.submittable) return next(error.make(400, 'Unauthorized request.'));
+        if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
         const params = {
             assessment_instance_id: res.locals.assessment_instance.id,
             user_id: res.locals.user.user_id,

@@ -1,7 +1,7 @@
 {
     "uuid": "db241fb7-8ca4-4316-a92d-85c7753c6d9c",
     "type": "Exam",
-    "title": "Test Submittable Access Rule",
+    "title": "Test Active Access Rule",
     "set": "Exam",
     "number": "11",
     "allowAccess": [
@@ -16,14 +16,14 @@
             "mode": "Public",
             "startDate": "2020-01-01T00:00:01Z",
             "endDate": "2021-01-01T00:00:01Z",
-            "submittable": false,
+            "active": false,
             "showClosedAssessment": false
         },
         {
             "mode": "Public",
             "startDate": "2030-01-01T00:00:01Z",
             "endDate": "2031-01-01T00:00:01Z",
-            "submittable": false,
+            "active": false,
             "showClosedAssessment": false,
             "showClosedAssessmentScore": false
         },
@@ -31,7 +31,7 @@
             "mode": "Public",
             "startDate": "1900-01-01T00:00:01Z",
             "endDate": "2100-01-01T00:00:01Z",
-            "submittable": false
+            "active": false
         }
     ],
     "zones": [

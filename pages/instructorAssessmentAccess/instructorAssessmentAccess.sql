@@ -41,9 +41,9 @@ SELECT
             || ps_c.rubric || ': ' || e.exam_string || '</a>'
     END AS exam,
     CASE
-        WHEN aar.submittable THEN 'True'
+        WHEN aar.active THEN 'True'
         ELSE 'False'
-    END AS submittable
+    END AS active
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)

@@ -1,7 +1,7 @@
 {
     "uuid": "1f7b004e-1431-48ba-8bac-ca5c14a80cfb",
     "type": "Homework",
-    "title": "Homework to test Submittable Rule",
+    "title": "Homework to test Active Rule",
     "set": "Homework",
     "number": "8",
     "allowAccess": [
@@ -18,12 +18,12 @@
         {
             "startDate": "2000-01-01T00:00:01Z",
             "endDate": "2024-12-31T23:59:59Z",
-            "submittable": false
+            "active": false
         },
         {
             "startDate": "2025-01-01T00:00:01Z",
             "endDate": "2039-12-31T23:59:59Z",
-            "submittable": false,
+            "active": false,
             "showClosedAssessment": false
         }
     ],

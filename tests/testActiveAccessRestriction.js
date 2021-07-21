@@ -10,7 +10,7 @@ const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
 const { step } = require('mocha-steps');
 
-describe('Exam and homework assessment with submittable rule', function() {
+describe('Exam and homework assessment with active access restriction', function() {
     this.timeout(60000);
 
     const storedConfig = {};
@@ -64,7 +64,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 0);
+        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0);
     });
 
     step('try to access the exam when no access rule applies', async () => {
@@ -74,17 +74,17 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(response.status, 403);
     });
 
-    step('ensure that the exam is visible without a link on the assessments page if student has not started the exam and submittable is false', async () => {
+    step('ensure that the exam is visible without a link on the assessments page if student has not started the exam and active is false', async () => {
         headers.cookie = 'pl_requested_date=2000-06-01T00:00:01Z';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('td:contains("Test Submittable Access Rule")'), 1);
-        assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 0); // there should be no link
+        assert.lengthOf(response.$('td:contains("Test Active Access Rule")'), 1);
+        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 0); // there should be no link
     });
 
-    step('try to access the exam when it is not submittable', async () => {
+    step('try to access the exam when it is not active', async () => {
         headers.cookie = 'pl_requested_date=2000-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.examUrl, { headers });
@@ -100,16 +100,16 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(results.rowCount, 0);
     });
 
-    step('ensure that a link to the exam is visible on the assessments page if submittable is true', async () => {
+    step('ensure that a link to the exam is visible on the assessments page if active is true', async () => {
         headers.cookie = 'pl_requested_date=2010-01-01T23:50:01Z';
         
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 1);
+        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
     });
 
-    step('visit start exam page when the exam is submittable', async () => {
+    step('visit start exam page when the exam is active', async () => {
         headers.cookie = 'pl_requested_date=2010-01-01T23:50:01Z';
 
         const response = await helperClient.fetchCheerio(context.examUrl, { headers });
@@ -163,16 +163,16 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(results.rows[0].open, false);
     });
 
-    step('ensure that a link to the exam is visible on the assessments page if student has started the exam and submittable is false', async () => {
+    step('ensure that a link to the exam is visible on the assessments page if student has started the exam and active is false', async () => {
         headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
 
-        assert.lengthOf(response.$('a:contains("Test Submittable Access Rule")'), 1);
+        assert.lengthOf(response.$('a:contains("Test Active Access Rule")'), 1);
     });
 
-    step('access the exam when it is no longer submittable', async () => {
+    step('access the exam when it is no longer active', async () => {
         headers.cookie = 'pl_requested_date=2010-01-02T00:01:01Z';
 
         const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
@@ -183,7 +183,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed\./);
     });
 
-    step('access the exam when submittable and showClosedAssessment are false', async () => {
+    step('access the exam when active and showClosedAssessment are false', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
@@ -193,7 +193,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     });
 
-    step('access the exam when submittable, showClosedAssessment, and showClosedAssessmentScore are false', async () => {
+    step('access the exam when active, showClosedAssessment, and showClosedAssessmentScore are false', async () => {
         headers.cookie = 'pl_requested_date=2030-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
@@ -203,7 +203,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
     });
 
-    step('try to access the homework when it is not submittable', async () => {
+    step('try to access the homework when it is not active', async () => {
         headers.cookie = 'pl_requested_date=2000-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwUrl, { headers });
@@ -214,7 +214,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.match(msg.text(), /Assessment will become available on 2020-01-01 00:00:01/);
     });
 
-    step('access the homework when it is submittable', async () => {
+    step('access the homework when it is active', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwUrl, { headers });
@@ -233,7 +233,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         context.hwQuestionUrl = `${context.siteUrl}${hwQuestionUrl}`;
     });
 
-    step('access a question when homework is submittable', async () => {
+    step('access a question when homework is active', async () => {
         headers.cookie = 'pl_requested_date=2020-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
@@ -243,7 +243,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
     });
 
-    step('access the homework when it is no longer submittable', async () => {
+    step('access the homework when it is no longer active', async () => {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
@@ -254,7 +254,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.match(msg.text(), /Attachments can't be added or deleted because the assessment is closed\./);
     });
 
-    step('access a question when homework is no longer submittable', async () => {
+    step('access a question when homework is no longer active', async () => {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
@@ -265,7 +265,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.lengthOf(response.$('button.question-grade'), 0);
     });
 
-    step('access the homework when submittable and showClosedAssessment are false, but the homework will be submittable later', async () => {
+    step('access the homework when active and showClosedAssessment are false, but the homework will be active later', async () => {
         headers.cookie = 'pl_requested_date=2026-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
@@ -278,14 +278,14 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     });
 
-    step('access the homework when a submittable and a non-submittable access rule are both satisfied, and both have nonzero credit', async () => {
+    step('access the homework when an active and a non-active access rule are both satisfied, and both have nonzero credit', async () => {
         headers.cookie = 'pl_requested_date=2030-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
         assert.isTrue(response.ok);
     });
 
-    step('access the homework when submittable and showClosedAssessment are false, and the homework will never be submittable again', async () => {
+    step('access the homework when active and showClosedAssessment are false, and the homework will never be active again', async () => {
         headers.cookie = 'pl_requested_date=2036-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
@@ -298,7 +298,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.lengthOf(response.$('div.progress'), 1); // score should be shown
     });
 
-    step('submit an answer to a question when submittable is false', async () => {
+    step('submit an answer to a question when active is false', async () => {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const form = {
@@ -312,7 +312,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         assert.equal(response.status, 400);
     });
 
-    step('check that no credit is received for an answer submitted when submittable is false', async () => {
+    step('check that no credit is received for an answer submitted when active is false', async () => {
         const params = {
             assessment_id: context.hwId,
         };
@@ -331,7 +331,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         helperClient.extractAndSaveVariantId(context, response.$, '.attach-file-form');
     });
 
-    step('try to attach a file to a question when submittable is false', async () => {
+    step('try to attach a file to a question when active is false', async () => {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const form = {
@@ -355,7 +355,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
     });
 
-    step('try to attach a file to the assessment when submittable is false', async () => {
+    step('try to attach a file to the assessment when active is false', async () => {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const form = {
@@ -380,7 +380,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         helperClient.extractAndSaveVariantId(context, response.$, '.attach-text-form');
     });
 
-    step('try to attach text to a question when submittable is false', async () => {
+    step('try to attach text to a question when active is false', async () => {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const form = {
@@ -404,7 +404,7 @@ describe('Exam and homework assessment with submittable rule', function() {
         helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
     });
 
-    step('try to attach text to the assessment when submittable is false', async () => {
+    step('try to attach text to the assessment when active is false', async () => {
         headers.cookie = 'pl_requested_date=2021-06-01T00:00:01Z';
 
         const form = {

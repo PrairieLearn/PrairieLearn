@@ -24,7 +24,7 @@ To allow students to see their entire exam after the semester is over you can ad
     {
         "startDate": "2015-01-19T00:00:01",
         "mode": "Public",
-        "submittable": false
+        "active": false
     }
 ]
 ```
