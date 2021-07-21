@@ -21,7 +21,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 * the `number` entry corresponds to the order of the assessment within its set. This number will be used to sort the assessments in the `Assessments` page.  Since this is the first assessement, again, we can leave it as 1. 
 
-* `allowAccess` sets the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, our assessment will be available from 10 p.m. September 1st, until 10 p.m. September 8; the assessment will be worth full-credit during this time:
+* `allowAccess` sets the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, our assessment will be available from 8 p.m. September 1st, until 8 p.m. September 8; the assessment will be worth full-credit during this time:
 
 ```json
 "allowAccess": [
@@ -50,9 +50,37 @@ Both questions have `maxPoints` set equal to 2, so that both questions are worth
 
 * click `Save and sync`.
 
-* You can test your assessment as a student.  In the upper right corner, click the red box `Instructor view`, and a dropdown menu will give you the option to `Switch to student view`.  This allows you to navigate the course instance as a student, including testing out assessments.  Take the assessment you just created to see how the questions are graded.
+* You can take your assessment as if you were a student.  In the upper right corner, click the red box `Instructor view`, and a dropdown menu will give you the option to `Switch to student view`.  This allows you to navigate the course instance as a student, including testing out assessments.  Take the assessment you just created to see how the questions are graded.
 
+* We will create one more assessment, the first exam.  Again, select `Add assessment` in the Assessments section of the course instance.  Change the AID to `Exam1`.
 
+* Change the `infoAssessment.json` to say the following:
+```json
+"type": "Exam",
+"title": "Exam 1",
+"set": "Exam",
+"number": "1",
+"allowAccess": [
+    {
+        "startDate": "2021-10-01T10:00:00",
+        "endDate": "2021-10-01T13:00:00",
+        "credit": 100
+    }
+],
+"zones": [
+    {
+        "questions": [
+            {"id": "find_rectangle_area_rand", "points": 2},
+            {"id": "poly_derivative", "points": 2},
+            {"id": "demo/matrixAlgebra", "points": 2}
+        ]
+    }
+]
+```
+Everything here is pretty straightforward.  One thing to note is that for assessments of type `Exam`, the field `maxPoints` is not allowed.  You can now hit `Save and sync` and test this out in student mode.
+
+This brings us to the end of the introductory tutorial for Prairielearn.  See the [How-to Guides](#course.md/how-to), to learn other Prairielearn features.
+ 
 **Learn more:**
 
 - [Quick reference guide about question structure and PrairieLearn elements](https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
