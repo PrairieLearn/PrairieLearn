@@ -2,7 +2,12 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <script src="/node_modules/floatthead/dist/jquery.floatThead.min.js"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/fixed-columns/bootstrap-table-fixed-columns.min.js') %>"></script>
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/fixed-columns/bootstrap-table-fixed-columns.min.css') %>" rel="stylesheet" />
   </head>
   <script>
     $(function() {
@@ -38,20 +43,7 @@
         trigger: 'click',
       })
     });
-    $(function() {
-        $('.table-sticky-header').floatThead({
-            responsiveContainer: function($table) {
-                return $table.closest('.table-responsive');
-            }
-        });
-    });
   </script>
-  <style>
-    .sticky-column {
-      position: sticky;
-      left: 0;
-    }
-  </style>
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
@@ -65,23 +57,25 @@
           Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
-        <div class="table-responsive table-no-wrap">
-          <table class="table table-sm table-hover table-sticky-header">
-            <thead class="bg-white">
+        <table data-classes="table table-sm table-hover"
+               data-toggle="table" data-search="true"
+               data-fixed-columns="true" data-fixed-number="3"
+               data-sticky-header="true">
+            <thead>
               <tr>
-                <th class="sticky-column bg-white">UID</th>
-                <th>UIN</th>
-                <th>Name</th>
-                <th>Role</th>
+                <th data-sortable="true">UID</th>
+                <th data-sortable="true">UIN</th>
+                <th data-sortable="true">Name</th>
+                <th data-sortable="true">Role</th>
                 <% course_assessments.forEach(function(assessment) { %>
-                <th><%- include('../partials/assessment', {assessment: assessment}); %></th>
+                <th data-sortable="true"><%- include('../partials/assessment', {assessment: assessment}); %></th>
                 <% }); %>
               </tr>
             </thead>
             <tbody>
               <% user_scores.forEach(function(row, iRow) { %>
               <tr>
-                <td class="sticky-column bg-white"><%= row.uid %></td>
+                <td><%= row.uid %></td>
                 <td><%= row.uin %></td>
                 <td><%= row.user_name %></td>
                 <td><%= row.role %></td>
@@ -108,7 +102,6 @@
               <% }); %>
             </tbody>
           </table>
-        </div>
 
         <div class="card-footer">
           <p>Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a></p>
