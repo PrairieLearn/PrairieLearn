@@ -84,7 +84,6 @@ no mode set | Access is allowed anytime, both during CBTF exams and outside of e
 
 In general usage it is best to set `"mode": "Public"` for any homework (assessments that students should do at home or without special access control), and to set both `"mode": "Exam"` and `"examUuid"` for exams in the Computer-Based Testing Facility (CBTF). This will make it so that exams are only accessible in the CBTF, and homework is _not_ accessible during exams.
 
-Depending on how 
 
 ## Credit
 
