@@ -95,6 +95,8 @@ router.post('/', (req, res, next) => {
             res.locals.assessment_instance.id,
             req.body.points,
             res.locals.authn_user.user_id,
+            null,
+            null
         ];
         sqlDb.call('assessment_instances_update_points', params, (err, _result) => {
             if (ERR(err, next)) return;
@@ -108,6 +110,8 @@ router.post('/', (req, res, next) => {
             res.locals.assessment_instance.id,
             req.body.score_perc,
             res.locals.authn_user.user_id,
+            null,
+            null
         ];
         sqlDb.call('assessment_instances_update_score_perc', params, (err, _result) => {
             if (ERR(err, next)) return;

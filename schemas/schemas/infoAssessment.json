@@ -50,6 +50,11 @@
             "type": "boolean",
             "default": false
         },
+        "scoreOnly": {
+			"description": "Whether the assessment is only for score upload",
+			"type": "boolean",
+			"default": false
+		},
         "shuffleQuestions": {
             "description": "Whether the questions will be shuffled in the student view of an assessment (Homework only)",
             "type": "boolean",
