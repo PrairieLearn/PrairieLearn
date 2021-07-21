@@ -1,4 +1,4 @@
-# Creating an assessment
+# Creating assessments
 
 Before you create an assessment, make sure you are in the desired course instance.  For this tutorial, we want to create assessments in the "Fall 2021" course instance we created previously.
 
@@ -19,7 +19,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 * The next entry, the assessment `set` is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course.md#assessment-sets).  We'll leave it as "Homework".
 
-* the `number` entry corresponds to the order of the assessmen within its set. This number will be used to sort the assessments in the `Assessments` page.  Since this is the first assessement, again, we can leave it as 1. 
+* the `number` entry corresponds to the order of the assessment within its set. This number will be used to sort the assessments in the `Assessments` page.  Since this is the first assessement, again, we can leave it as 1. 
 
 * `allowAccess` sets the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, our assessment will be available from 10 p.m. September 1st, until 10 p.m. September 8; the assessment will be worth full-credit during this time:
 
@@ -45,9 +45,12 @@ Before you create an assessment, make sure you are in the desired course instanc
     }
 ]
 ```
+Both questions have `maxPoints` set equal to 2, so that both questions are worth a total of two points.  Thus, the assessment is worth a total of 4 points.  The first question, which is randomly generated, must be answered correctly twice for full credit.  The second question, which is not randomized, gives full credit for a single correct answer.  This can be an effective way to ensure that a student understands the material, and helps mitigate possible cheating. 
 
 
 * click `Save and sync`.
+
+* You can test your assessment as a student.  In the upper right corner, click the red box `Instructor view`, and a dropdown menu will give you the option to `Switch to student view`.  This allows you to navigate the course instance as a student, including testing out assessments.  Take the assessment you just created to see how the questions are graded.
 
 
 **Learn more:**
