@@ -1,0 +1,44 @@
+{
+    "uuid": "75be4222-e9d1-11eb-9a03-0242ac130003",
+    "type": "Exam",
+    "title": "Submittable Access Rule Demo",
+    "set": "Exam",
+    "number": "5",
+    "allowAccess": [
+        {
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "timeLimitMin": 50,
+            "startDate": "2000-01-02T00:00:01",
+            "endDate": "2000-01-02T23:59:59",
+            "showClosedAssessment": false
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "timeLimitMin": 50,
+            "startDate": "2100-01-02T00:00:01",
+            "endDate": "2100-01-02T23:59:59",
+            "showClosedAssessment": false
+        },
+        {
+            "mode": "Public",
+            "submittable": false,
+            "showClosedAssessment": false
+        }
+    ],
+    "zones": [
+        {
+            "title": "Math Questions",
+            "questions": [
+                {"id": "demo/calculation",              "points": [10, 9, 8, 7, 6]},
+                {"id": "demo/randomMultipleChoice",     "points": [25, 24, 23, 22, 21]},
+                {"id": "demo/randomCheckbox",           "points": [25, 24, 23, 22, 21]}
+            ]
+        }
+    ]
+}
