@@ -201,7 +201,7 @@ The `showClosedAssessment` access rule restriction is only useful in conjunction
 
 ## Submittable assessments
 
-The `submittable` access rule restriction is useful for allowing students to see what assessments they have coming up. If `submittable` is set to `false`, students can see the assessment on the Assessments page, but they cannot create a new assessment instance or submit answers to questions. If an assessment is currently not submittable but will be in the future, students can see when the assessment will become submittable by looking at the `Available credit` column on the Assessments page. Assessments are submittable by default.
+The `submittable` access rule restriction is useful for allowing students to see what assessments they have coming up. It should also be used when [returning exams to students](faq.md#how-do-i-give-students-access-to-view-their-exams-after-they-are-over). If `submittable` is set to `false`, students can see the assessment on the Assessments page, but they cannot create a new assessment instance or submit answers to questions. If an assessment is currently not submittable but will be in the future, students can see when the assessment will become submittable by looking at the `Available credit` column on the Assessments page. The `submittable` property in an access rule is `true` by default.
 
 **Note**: if `submittable` is set to `false` in an access rule, the available `credit` cannot be set to any value other than 0 (the default value).
 
