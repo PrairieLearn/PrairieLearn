@@ -4,10 +4,8 @@
     <%- include('../partials/head'); %>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
-    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/fixed-columns/bootstrap-table-fixed-columns.min.js') %>"></script>
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
-    <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/fixed-columns/bootstrap-table-fixed-columns.min.css') %>" rel="stylesheet" />
   </head>
   <script>
     $(function() {
@@ -66,6 +64,7 @@
 
         <table data-classes="table table-sm table-hover"
                data-toggle="table" data-search="true"
+               data-show-columns="true"
                data-sticky-header="true">
             <thead>
               <tr>
