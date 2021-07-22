@@ -42,10 +42,10 @@
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#partially_correct}}
-            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>{{partially_correct}}%</span>{{feedback}}
+            <span class="badge badge-warning"><i class="fa fa-times" aria-hidden="true"></i>{{partially_correct}}%</span>
         {{/partially_correct}}
         {{#incorrect}}
-            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{feedback}}
+            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
             </li>
         </ul>
@@ -54,6 +54,7 @@
             	<li class="list-group-item">{{inner_html}}</li>
             {{/student_submission}}
         </ul>
+        {{{feedback}}}
     {{/parse-error}}
 
     {{#parse-error}}
