@@ -1,4 +1,4 @@
-# How do I create my own assessment set?
+# How do I create my own assessment set or change existing ones?
 
 [//]: # (A lot of this content was copied from course.md - "Course Configuration".  Delete from there?)
 
@@ -48,27 +48,41 @@ Worksheet | `WS` | Worksheets | purple1
 
 ## Adding your own assessment sets
 
-You can add more assessment sets by listing them in the `infoCourse.json` file as follows. Note that HW and Q don't need to be listed because they are automatically available as standardized sets (see above).
+To add an assessment set that does not belong to the standardized collection, navigate to the main page of your course by selecting its name from the drop-down menu in the upper left corner.
+
+* Navigate to the `Settings` tab and click the `Edit` button next to `infoCourse.json`.
+
+* Add a property called `assessmentSets` and provide the four required properties listed above.  For example:
+```json
+    "assessmentSets": [
+        {"abbreviation": "PR", "name": "Project", "heading": "Projects", "color": "pink2"},
+        {"abbreviation": "IC", "name": "In-Class", "heading": "In-Class Examples", "color": "yellow3"}
+    ],
+```
+
+You do not need to add the standardized assessment sets to `infoCourse.json`; they will remain available in your course.
+
+## Editing standardized assessment sets
+
+The assessment set order in `infoCourse.json` is the order in which the assessments will be shown within PrairieLearn (for both instructors and students). If you want to change the order of standardized assessment sets then you can re-list them in whatever order you like. For example, to put Exams and Quizzes first, you could enter the following into the `infoCourse.json`:
 
 ```json
     "assessmentSets": [
+        {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1"},
+        {"abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
+        {"abbreviation": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"},
+        {"abbreviation": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "pink1"},
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
-        {"abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"}
+        {"abbreviation": "P", "name": "Prep", "heading": "Question Preparation", "color": "gray1"},
+        {"abbreviation": "MP", "name": "Machine Problem", "heading": "Machine Problems", "color": "turquoise1"},
+        {"abbreviation": "WS", "name": "Worksheet", "heading": "Worksheets", "color": "purple1"}
     ],
 ```
 
-The assessment set order in `infoCourse.json` is the order in which the assessments will be shown within PrairieLearn (for both instructors and students). If you want to change the order of standardized assessment sets then you can re-list them in whatever order you like. For example, to put Exams and Quizzes first, you could use:
+You can also change the headings, abbreviations, etc. if so desired.  Of course, you can add in your own assessment sets at the same time, in the order in which you want them to appear.  
 
-```json
-    "assessmentSets": [
-        {'abbreviation': 'E', 'name': 'Exam', 'heading': 'Exams', 'color': 'brown1'},
-        {'abbreviation': 'Q', 'name': 'Quiz', 'heading': 'Quizzes', 'color': 'red1'},
-        {'abbreviation': 'PE', 'name': 'Practice Exam', 'heading': 'Practice Exams', 'color': 'yellow1'},
-        {'abbreviation': 'PQ', 'name': 'Practice Quiz', 'heading': 'Practice Quizzes', 'color': 'pink1'},
-        {'abbreviation': 'HW', 'name': 'Homework', 'heading': 'Homeworks', 'color': 'green1'},
-        {'abbreviation': 'P', 'name': 'Prep', 'heading': 'Question Preparation', 'color': 'gray1'},
-        {'abbreviation': 'MP', 'name': 'Machine Problem', 'heading': 'Machine Problems', 'color': 'turquoise1'},
-        {'abbreviation': 'WS', 'name': 'Worksheet', 'heading': 'Worksheets', 'color': 'purple1'}
-    ],
-```
+## Colors
 
+The possible colors for assessment sets are the following: 
+
+![Colors](colors.png)
