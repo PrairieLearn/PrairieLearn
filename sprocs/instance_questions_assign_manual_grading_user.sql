@@ -3,9 +3,8 @@ CREATE FUNCTION
     instance_questions_assign_manual_grading_user(
         IN arg_assessment_question_id bigint,
         IN arg_instance_question_id bigint,
-        IN arg_user_id bigint,
-        OUT instance_question jsonb
-    )
+        IN arg_user_id bigint
+    ) RETURNS VOID
 AS $$
 BEGIN
 

@@ -52,7 +52,7 @@ BEGIN
     ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
-    instance_question := instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
+    PERFORM instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
     grading_job := to_jsonb(grading_jobs_insert_manual(last_submission.id, arg_user_id, arg_score, arg_manual_note, is_conflict));
 
     -- Resolve original conflict even if a new one occurs
