@@ -9,6 +9,7 @@
   </head>
   <script>
     $(function() {
+      $('#gradebook-table').bootstrapTable();
       $('button.edit-score').popover({
         sanitize: false,
         placement: 'auto',
@@ -41,31 +42,6 @@
         trigger: 'click',
       })
     });
-    function scoreFormatter(value, row, index, field) {
-        let score = JSON.parse(value);
-        if (score.score_perc === null) {
-            return "—";
-        } else {
-        console.log(score, score.score_perc);
-            return `<a href="<%= urlPrefix %>/assessment_instance/${score.assessment_instance_id}">` +
-                Math.floor(score.score_perc) + `%</a>` <% if (authz_data.has_instructor_edit) { %> +
-                ` <button type="button" class="btn btn-xs btn-secondary edit-score" tabindex="0"
-                         data-ai-id="${score.assessment_instance_id}"
-                         data-score="${score.score_perc}">
-                   <i class="fa fa-edit" aria-hidden="true"></i>
-                  </button>` <% } %>;
-        }
-    }
-    function scoreSorter(value1, value2, row1, row2) {
-        let score1 = JSON.parse(value1);
-        let score2 = JSON.parse(value2);
-        if (score1.score_perc === null)
-            return score2.score_perc === null ? 0 : -1;
-        else if (score2.score_perc === null)
-            return +1;
-        else
-            return score1.score_perc - score2.score_perc;
-    }
   </script>
   <style>
     .sticky-column {
@@ -87,8 +63,9 @@
           Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
-        <table data-classes="table table-sm table-hover table-bordered table-responsive"
-               data-toggle="table" data-search="true"
+        <table id="gradebook-table"
+               data-classes="table table-sm table-hover table-bordered"
+               data-search="true"
                data-show-columns="true" data-show-columns-toggle-all="true"
                data-show-toggle="true"
                data-toolbar="#table-toolbar"
@@ -104,12 +81,12 @@
                     data-switchable="false">Name</th>
                 <th data-sortable="false"
                     data-switchable="false">Role</th>
-                <% course_assessments.forEach(function(assessment) { %>
+                <% course_assessments.forEach(function(assessment, iAssessment) { %>
                 <th data-sortable="true"
                     data-class="text-nowrap"
-                    data-formatter="scoreFormatter"
-                    data-sort-order="desc"
-                    data-sorter="scoreSorter"><%- include('../partials/assessment', {assessment: assessment}); %></th>
+                    data-sort-name="grade<%= iAssessment %>"
+                    data-sort-order="desc"><%- include('../partials/assessment', {assessment: assessment}); %></th>
+                <th data-field="grade<%= iAssessment %>" data-visible="false"></th>
                 <% }); %>
               </tr>
             </thead>
@@ -122,7 +99,24 @@
                 <td><%= row.role %></td>
                 <% row.scores.forEach(function(score, iScore) { %>
                 <td>
-                  <%= JSON.stringify(score) %>
+                  <% if (score.score_perc === null) { %>
+                  —
+                  <% } else { %>
+                  <a href="<%= urlPrefix %>/assessment_instance/<%= score.assessment_instance_id %>">
+                    <%= Math.floor(score.score_perc) %>%
+                  </a>
+                  <% if (authz_data.has_instructor_edit) { %>
+                  <button type="button" class="btn btn-xs btn-secondary edit-score"
+                     tabindex="0"
+                     data-ai-id="<%= score.assessment_instance_id%>"
+                     data-score="<%= score.score_perc %>">
+                    <i class="fa fa-edit" aria-hidden="true"></i>
+                  </button>
+                  <% } %>
+                  <% } %>
+                </td>
+                <td class="d-none"><%# Display none so this text does not show between loading page and the bs-table load %>
+                  <%= score.score_perc === null ? Number.NEGATIVE_INFINITY : score.score_perc %>
                 </td>
                 <% }); %>
               </tr>
