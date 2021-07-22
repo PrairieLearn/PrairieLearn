@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_select_for_auto_close(integer);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_select_for_auto_close(
         age_mins integer -- time in minutes (after last activity) when we auto-close an exam
     ) RETURNS TABLE (assessment_instance_id bigint)

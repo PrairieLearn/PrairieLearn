@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,integer,enum_mode,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,boolean,integer,enum_mode,bigint,bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     submissions_insert(
         IN submitted_answer jsonb,
         IN raw_submitted_answer jsonb,

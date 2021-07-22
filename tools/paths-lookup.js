@@ -7,7 +7,8 @@
 // database to print out course and question ID
 //
 const ERR = require('async-stacktrace');
-const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
 const readline = require('readline');
