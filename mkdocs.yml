@@ -29,7 +29,9 @@ pages:
     - 'Pitfalls': 'Instructor/getStarted/pitfalls/index.md'
   - How-to Guides:
     - 'Adding Staff to Course Instance': 'Instructor/howTos/howtoAddUserRoles.md'
-    - 'Assessments': 'Instructor/howTos/howtoAssessments.md'
+    - Assessments:
+      - 'Add Assessment Sets': 'Instructor/HowTos/Assessments/howtoAddAssessmentSet.md'
+      - 'Assessments': 'Instructor/HowTos/Assessments/howtoAttempts.md'
   - References:
     - 'Elements for writing questions': 'Instructor/references/elements.md'
 
