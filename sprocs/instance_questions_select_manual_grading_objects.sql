@@ -32,7 +32,7 @@ BEGIN
 
     PERFORM instance_questions_assign_manual_grading_user(assessment_question_id, instance_question_id, arg_user_id);
 
-    -- conflict df: when TA 'x' submits manual grade while TA 'y' is grading same submission
+    -- conflict df: when TA 'x' loads manual grade, TA 'y' also loads same manual grade page, and both submit grade. Second submission encounters conflict.
     IF arg_conflicting_grading_job_id IS NOT NULL THEN
         SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'diffType', 'grading_job')
         INTO incoming_conflict
