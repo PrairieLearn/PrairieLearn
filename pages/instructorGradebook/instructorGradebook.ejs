@@ -10,6 +10,9 @@
   <script>
     $(function() {
         $('#gradebook-table').bootstrapTable({
+            onPreBody: function() {
+                $('button.edit-score').popover('hide');
+            },
             onResetView: function () {
                 $('button.edit-score').popover({
                     sanitize: false,
@@ -41,6 +44,8 @@
                     },
                     title: 'Change total percentage score',
                     trigger: 'click',
+                }).on('show.bs.popover', function(e) {
+                    $('button.edit-score').not(this).popover('hide');
                 });
             },
         });
