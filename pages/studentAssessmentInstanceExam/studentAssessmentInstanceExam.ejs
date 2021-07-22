@@ -159,7 +159,7 @@
           <% } %>
         </div>
 
-        <table class="table table-sm table-hover">
+        <table id="assessment-questions" class="table table-sm table-hover">
           <thead>
             <tr>
               <th>Question</th>
@@ -183,11 +183,13 @@
             </tr>
           </thead>
           <tbody>
-          <% instance_questions.forEach(function(instance_question) { %>
+          <% instance_questions.forEach(function(instance_question, iq_index) { %>
             <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
               <th colspan="5">
-                <%= instance_question.zone_title %>
+                <span class="mr-1">
+                  <%= instance_question.zone_title %>
+                </span>
                 <% if (instance_question.zone_has_max_points) { %>
                   <%- include('../partials/zoneInfoBadge', { zoneInfo: {
                     popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
@@ -203,16 +205,11 @@
               </th>
             </tr>
             <% } %>
-            <tr>
+            <tr class="<% if (instance_question.sequence_locked) { %>bg-light pl-sequence-locked<% } %>">
               <td>
-                <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/">
-                  Question <%= instance_question.question_number %>
-                </a>
-                <% if (instance_question.file_count > 0) { %>
-                  <i class="fas fa-paperclip"></i>
-                <% } %>
+                <% instance_question.rowLabelText = `Question ${instance_question.question_number}`;%>
+                <%- include('../partials/studentAssessmentInstanceRowLabel.ejs', instance_question); %>
               </td>
-
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
                 <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>

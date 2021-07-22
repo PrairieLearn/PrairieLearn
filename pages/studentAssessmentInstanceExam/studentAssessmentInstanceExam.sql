@@ -13,6 +13,10 @@ SELECT
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
     (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count,
+    qo.sequence_locked AS sequence_locked,
+    (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
+    'Question ' || (lag(qo.question_number) OVER w) AS prev_title,
+    (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked,
     iqnag.*
 FROM
     instance_questions AS iq
