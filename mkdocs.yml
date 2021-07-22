@@ -34,6 +34,7 @@ pages:
       - 'Assessments': 'Instructor/HowTos/Assessments/howtoAttempts.md'
   - References:
     - 'Elements for writing questions': 'Instructor/references/elements.md'
+    - 'Assessments': 'Instructor/references/assessment.md'
 
 - Student Manual:
   - Get Started:
