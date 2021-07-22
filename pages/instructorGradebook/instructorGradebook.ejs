@@ -68,9 +68,11 @@
 
         <table id="gradebook-table"
                data-classes="table table-sm table-hover table-bordered"
+               data-minimum-count-columns="0"
                data-search="true"
                data-show-columns="true"
                data-show-toggle="true"
+               data-show-columns-toggle-all="true"
                data-toolbar="#table-toolbar"
                data-sticky-header="true">
             <thead>
@@ -127,7 +129,7 @@
               </tr>
               <% }); %>
             </tbody>
-          </table>
+        </table>
 
         <div class="card-footer">
           <p>Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a></p>
