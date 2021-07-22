@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_questions_calculate_stats (
         assessment_question_id_param bigint
     ) RETURNS VOID

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_process_external(
         grading_job_id bigint,
         score double precision,

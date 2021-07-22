@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint);
-DROP FUNCTION IF EXISTS assessment_instances_select_log(bigint,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_select_log ( 
         ai_id bigint,
         include_files boolean

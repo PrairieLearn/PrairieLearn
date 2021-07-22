@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_grade(bigint,boolean,bigint);
-DROP FUNCTION IF EXISTS instance_questions_grade(bigint,double precision,bigint);
-DROP FUNCTION IF EXISTS instance_questions_grade(bigint,double precision,bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_grade(
         instance_question_id bigint,
         submission_score DOUBLE PRECISION,

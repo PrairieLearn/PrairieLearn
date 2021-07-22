@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS users_is_course_staff(bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_is_course_staff (
         IN user_id bigint,
         OUT is_course_staff boolean
