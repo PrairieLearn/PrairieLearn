@@ -69,7 +69,7 @@
         <table id="gradebook-table"
                data-classes="table table-sm table-hover table-bordered"
                data-search="true"
-               data-show-columns="true" data-show-columns-toggle-all="true"
+               data-show-columns="true"
                data-show-toggle="true"
                data-toolbar="#table-toolbar"
                data-sticky-header="true">
@@ -89,7 +89,9 @@
                     data-class="text-nowrap"
                     data-sort-name="grade<%= iAssessment %>"
                     data-sort-order="desc"><%- include('../partials/assessment', {assessment: assessment}); %></th>
-                <th data-field="grade<%= iAssessment %>" data-visible="false"></th>
+                <th data-field="grade<%= iAssessment %>"
+                    data-visible="false"
+                    data-switchable="false"></th>
                 <% }); %>
               </tr>
             </thead>
