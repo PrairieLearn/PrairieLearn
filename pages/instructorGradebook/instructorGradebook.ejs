@@ -107,7 +107,7 @@
                 <td><%= row.role %></td>
                 <% row.scores.forEach(function(score, iScore) { %>
                 <td>
-                  <% if (score.score_perc === null) { %>
+                  <% if (score.score_perc == null) { %>
                   —
                   <% } else { %>
                   <a href="<%= urlPrefix %>/assessment_instance/<%= score.assessment_instance_id %>">
@@ -124,7 +124,7 @@
                   <% } %>
                 </td>
                 <td class="d-none"><%# Display none so this text does not show between loading page and the bs-table load %>
-                  <%= score.score_perc === null ? Number.NEGATIVE_INFINITY : score.score_perc %>
+                  <%= score.score_perc == null ? Number.NEGATIVE_INFINITY : score.score_perc %>
                 </td>
                 <% }); %>
               </tr>
