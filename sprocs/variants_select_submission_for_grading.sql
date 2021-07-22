@@ -24,9 +24,9 @@ BEGIN
         RAISE EXCEPTION 'check_submission_id mismatch: % vs %', check_submission_id, submission.id;
     END IF;
 
-    -- mark submission as eligible for regrading
+    -- mark submission as regradable
     UPDATE submissions AS s
-    SET eligible_for_regrading = TRUE
+    SET regradable = TRUE
     WHERE s.id = submission.id;
 
     -- does the most recent submission actually need grading?

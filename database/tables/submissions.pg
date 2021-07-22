@@ -5,7 +5,6 @@ columns
     credit: integer
     date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
-    eligible_for_regrading: boolean not null default false
     feedback: jsonb
     format_errors: jsonb
     gradable: boolean default true
@@ -18,6 +17,7 @@ columns
     params: jsonb
     partial_scores: jsonb
     raw_submitted_answer: jsonb
+    regradable: boolean not null default false
     score: double precision
     sid: text
     submitted_answer: jsonb
