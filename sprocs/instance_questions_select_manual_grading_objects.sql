@@ -41,7 +41,7 @@ BEGIN
             JOIN users AS u ON (u.user_id = gj.auth_user_id)
         WHERE gj.id = arg_conflicting_grading_job_id;
     ELSE
-        -- always check if grading conflict needs to be resolved
+        -- always check if grading conflict needs to be resolved in case second submitter closed browser on conflict resolution view.
         SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'diffType', 'grading_job')
         INTO incoming_conflict
         FROM
