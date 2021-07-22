@@ -3,7 +3,7 @@
   <head>
     <%- include('../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
     <%- include('../partials/mathjax'); %>
-    <script src="/node_modules/socket.io-client/dist/socket.io.slim.js"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
