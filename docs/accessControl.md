@@ -201,7 +201,7 @@ The `showClosedAssessment` access rule restriction is only useful in conjunction
 
 ## Active assessments
 
-The `active` access rule restriction is useful for allowing students to see what assessments they have coming up. It should also be used when [returning exams to students](faq.md#how-do-i-give-students-access-to-view-their-exams-after-they-are-over). If `active` is set to `false`, students can see the assessment on the Assessments page, but they cannot create a new assessment instance or submit answers to questions. If an assessment is currently not active but will be in the future, students can see when the assessment will become active by looking at the `Available credit` column on the Assessments page. The `active` property in an access rule is `true` by default.
+The `active` access rule restriction is useful for allowing students to see what assessments they have coming up. It should also be used when [returning exams to students](faq.md#how-do-i-give-students-access-to-view-their-exams-after-they-are-over). If `active` is set to `false`, students can see the assessment on the Assessments page, but they cannot start the assessment, create a new assessment instance, or submit answers to questions. If an assessment is currently not active but will be in the future, students can see when the assessment will become active by looking at the `Available credit` column on the Assessments page. The `active` property in an access rule is `true` by default.
 
 **Note**: if `active` is set to `false` in an access rule, the available `credit` cannot be set to any value other than 0 (the default value).
 
