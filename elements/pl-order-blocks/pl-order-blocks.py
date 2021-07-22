@@ -52,26 +52,31 @@ def prepare(element_html, data):
     if grading_method not in accepted_grading_method:
         raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
 
-    index = 0
-    for html_tags in element:  # iterate through the html tags inside pl-order-blocks
-        if html_tags.tag is lxml.etree.Comment:
-            continue
-        elif html_tags.tag != 'pl-answer':
-            raise Exception('Any html tags nested inside <pl-order-blocks> must be <pl-answer>.')
+    def prepare_tag(html_tags, index, group=None):
+        if html_tags.tag != 'pl-answer':
+            raise Exception('Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
+                Any html tags nested inside <pl-block-group> must be <pl-answer>')
 
         if grading_method == 'external':
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
-        else:
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent', 'label', 'depends'])
+        elif grading_method == 'unordered':
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'indent'])
+        elif grading_method in ['ranking', 'ordered']:
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
+        elif grading_method == 'dag':
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'label', 'depends'])
 
         is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
         answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
         inner_html = pl.inner_html(html_tags)
-        ranking = pl.get_integer_attrib(html_tags, 'ranking', -1) - 1
+        ranking = pl.get_integer_attrib(html_tags, 'ranking', -1)
 
         label = pl.get_string_attrib(html_tags, 'label', None)
         depends = pl.get_string_attrib(html_tags, 'depends', '')
         depends = depends.strip().split(',') if depends else []
+
+        if check_indentation is False and answer_indent is not None:
+            raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
 
         answer_data_dict = {'inner_html': inner_html,
                             'indent': answer_indent,
@@ -79,17 +84,31 @@ def prepare(element_html, data):
                             'index': index,
                             'label': label,      # only used with DAG grader
                             'depends': depends,  # only used with DAG grader
-                            'group': None        # only used with DAG grader
+                            'group': group       # only used with DAG grader
                             }
-
-        if check_indentation is False and answer_indent is not None:
-            raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
-
         if is_correct:
             correct_answers.append(answer_data_dict)
         else:
             incorrect_answers.append(answer_data_dict)
-        index += 1
+
+    index = 0
+    group_counter = 0
+    for html_tags in element:  # iterate through the html tags inside pl-order-blocks
+        if html_tags.tag is lxml.etree.Comment:
+            continue
+        elif html_tags.tag == 'pl-block-group':
+            if grading_method != 'dag':
+               raise Exception('Block groups only supported in the DAG grading mode.')
+            group_counter += 1
+            for grouped_tag in html_tags:
+                if html_tags.tag is lxml.etree.Comment:
+                    continue
+                else:
+                    prepare_tag(grouped_tag, index, group_counter)
+                    index += 1
+        else:
+            prepare_tag(html_tags, index)
+            index += 1
 
     if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
