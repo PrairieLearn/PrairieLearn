@@ -25,14 +25,7 @@ TAB_SIZE_PX = 50
 
 
 def filter_multiple_from_array(data, keys):
-    # return [{key: item[key] for key in keys} for item in data]
-    result = []
-    for item in data:
-        dic = {}
-        for key in keys:
-            dic[key] = item[key]
-        result.append(dic)
-    return result
+    return [{key: item[key] for key in keys} for item in data]
 
 
 def prepare(element_html, data):
@@ -62,7 +55,7 @@ def prepare(element_html, data):
     index = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
         if html_tags.tag is lxml.etree.Comment:
-            continue    
+            continue
         elif html_tags.tag != 'pl-answer':
             raise Exception('Any html tags nested inside <pl-order-blocks> must be <pl-answer>.')
 
@@ -77,16 +70,16 @@ def prepare(element_html, data):
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1) - 1
 
         label = pl.get_string_attrib(html_tags, 'label', None)
-        depends = pl.get_string_attrib(html_tags, 'depends', '')            
+        depends = pl.get_string_attrib(html_tags, 'depends', '')
         depends = depends.strip().split(',') if depends else []
-       
+
         answer_data_dict = {'inner_html': inner_html,
                             'indent': answer_indent,
                             'ranking': ranking,
                             'index': index,
-                            'label': label, # only used with DAG grader
-                            'depends': depends, # only used with DAG grader
-                            'group': None # only used with DAG grader
+                            'label': label,      # only used with DAG grader
+                            'depends': depends,  # only used with DAG grader
+                            'group': None        # only used with DAG grader
                             }
 
         if check_indentation is False and answer_indent is not None:
@@ -151,7 +144,6 @@ def render(element_html, data):
         mcq_options = data['params'][answer_name]
         mcq_options = filter_multiple_from_array(mcq_options, ['inner_html', 'uuid'])
         # mcq_options = [opt.strip() for opt in mcq_options] Still needed?
-
 
         if answer_name in data['submitted_answers']:
             student_previous_submission = filter_multiple_from_array(data['submitted_answers'][answer_name], ['inner_html', 'uuid', 'indent'])
@@ -290,8 +282,7 @@ def parse(element_html, data):
     if grading_mode == 'ranking':
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
-            answer['ranking'] = search['ranking'] if search is not None else -1 # wrong answers have no ranking
-
+            answer['ranking'] = search['ranking'] if search is not None else -1  # wrong answers have no ranking
     elif grading_mode == 'dag':
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
@@ -368,13 +359,7 @@ def grade(element_html, data):
         depends_graph = {ans['label']: ans['depends'] for ans in true_answer_list}
         group_belonging = {ans['label']: ans['group'] for ans in true_answer_list}
 
-        # print(order)
-        # print(depends_graph)
-        # print(group_belonging)
-
         correctness, first_wrong = grade_dag(order, depends_graph, group_belonging)
-
-        # print(correctness, first_wrong)
 
         if correctness == len(depends_graph.keys()):
             final_score = 1
