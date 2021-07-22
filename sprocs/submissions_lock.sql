@@ -11,7 +11,7 @@ BEGIN
     INTO variant_id, assessment_instance_id
     FROM
         submissions AS s
-        JOIN variants AS v ON (v.id = s.varia_nt_id)
+        JOIN variants AS v ON (v.id = s.variant_id)
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE s.id = submission_id;
