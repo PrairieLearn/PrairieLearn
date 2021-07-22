@@ -98,7 +98,7 @@ def prepare(element_html, data):
             continue
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
-               raise Exception('Block groups only supported in the DAG grading mode.')
+                raise Exception('Block groups only supported in the DAG grading mode.')
             group_counter += 1
             for grouped_tag in html_tags:
                 if html_tags.tag is lxml.etree.Comment:
