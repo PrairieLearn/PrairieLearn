@@ -40,6 +40,19 @@
                         })
                         form.append(cancel)
                         form.append('<button type="submit" class="btn btn-primary">Change</button>')
+                        form.submit(function(e) {
+                            e.preventDefault();
+                            $.post($(this).attr('action'), $(this).serialize(), function(data) {
+                                data.forEach(score => {
+                                    $('#gradebook-table').bootstrapTable('updateCellByUniqueId', {
+                                        id: score.user_id,
+                                        field: `grade${score.assessment_id}`,
+                                        value: score.score_perc,
+                                    });
+                                })
+                            }, 'json');
+                            $(that).popover('hide');
+                        })
                         return form
                     },
                     title: 'Change total percentage score',
@@ -50,6 +63,23 @@
             },
         });
     });
+    function gradeFormatter(score, row, index, field) {
+        var assessment_instance_id = row[field + '-ai'];
+        if (score == '') {
+            return "—";
+        } else {
+            var container = $('<div>');
+            var link = $('<a/>').attr('href', `<%= urlPrefix %>/assessment_instance/${assessment_instance_id}`)
+                .text(Math.floor(score) + '%').appendTo(container);
+            if (<%= authz_data.has_instructor_edit %>) {
+                var button = $('<button/>').attr('type', 'button').addClass('btn btn-xs btn-secondary edit-score')
+                    .attr('tabindex', 0).attr('data-ai-id', assessment_instance_id).attr('data-score', score)
+                    .append($('<i class="fa fa-edit" aria-hidden="true"></i>'))
+                    .appendTo(container);
+            }
+            return container.html();
+        }
+    }
   </script>
   <style>
     .sticky-column {
@@ -73,6 +103,7 @@
         </div>
 
         <table id="gradebook-table"
+               data-unique-id="user-id"
                data-classes="table table-sm table-hover table-bordered"
                data-minimum-count-columns="0"
                data-search="true"
@@ -82,6 +113,9 @@
                data-sticky-header="true">
             <thead>
               <tr>
+                <th data-field="user-id"
+                    data-visible="false"
+                    data-switchable="false"></th>
                 <th data-sortable="true"
                     data-class="sticky-column bg-white"
                     data-switchable="false">UID</th>
@@ -94,9 +128,10 @@
                 <% course_assessments.forEach(function(assessment, iAssessment) { %>
                 <th data-sortable="true"
                     data-class="text-nowrap"
-                    data-sort-name="grade<%= iAssessment %>"
+                    data-field="grade<%= assessment.assessment_id %>"
+                    data-formatter="gradeFormatter"
                     data-sort-order="desc"><%- include('../partials/assessment', {assessment: assessment}); %></th>
-                <th data-field="grade<%= iAssessment %>"
+                <th data-field="grade<%= assessment.assessment_id %>-ai"
                     data-visible="false"
                     data-switchable="false"></th>
                 <% }); %>
@@ -105,30 +140,17 @@
             <tbody>
               <% user_scores.forEach(function(row, iRow) { %>
               <tr>
+                <td class="d-none"><%= row.user_id %></td>
                 <td><%= row.uid %></td>
                 <td><%= row.uin %></td>
                 <td><%= row.user_name %></td>
                 <td><%= row.role %></td>
                 <% row.scores.forEach(function(score, iScore) { %>
                 <td>
-                  <% if (score.score_perc == null) { %>
-                  —
-                  <% } else { %>
-                  <a href="<%= urlPrefix %>/assessment_instance/<%= score.assessment_instance_id %>">
-                    <%= Math.floor(score.score_perc) %>%
-                  </a>
-                  <% if (authz_data.has_instructor_edit) { %>
-                  <button type="button" class="btn btn-xs btn-secondary edit-score"
-                     tabindex="0"
-                     data-ai-id="<%= score.assessment_instance_id%>"
-                     data-score="<%= score.score_perc %>">
-                    <i class="fa fa-edit" aria-hidden="true"></i>
-                  </button>
-                  <% } %>
-                  <% } %>
+                  <%= score.score_perc %>
                 </td>
-                <td class="d-none"><%# Display none so this text does not show between loading page and the bs-table load %>
-                  <%= score.score_perc == null ? Number.NEGATIVE_INFINITY : score.score_perc %>
+                <td class="d-none">
+                  <%= score.assessment_instance_id %>
                 </td>
                 <% }); %>
               </tr>
