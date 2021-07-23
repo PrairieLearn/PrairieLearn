@@ -39,6 +39,7 @@ pages:
       - 'Changing Homework Attempts': 'Instructor/HowTos/Assessments/howtoAttempts.md'
       - 'Collaborative Assessments': 'Instructor/HowTos/Assessments/howtoCollaborative.md'
       - 'Disable real-time grading': 'Instructor/HowTos/Assessments/howtoDisableRealTime.md'
+      - 'Limit the rate for grading': 'Instructor/HowTos/Assessments/howtoLimitGradeRate.md'
       - 'Allow students to report issues': 'Instructor/HowTos/Assessments/howtoAllowIssues.md' 
   - References:
     - 'Elements for writing questions': 'Instructor/references/elements.md'
