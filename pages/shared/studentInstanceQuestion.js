@@ -28,6 +28,7 @@ module.exports.getValidVariantId = async (req, res) => {
 
 module.exports.processFileUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+    if (!res.locals.authz_result.active) throw new Error(`This assessment is not accepting submissions at this time.`);
     await fileStore.upload(req.file.originalname, req.file.buffer, 'student_upload', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
     const variant_id = await module.exports.getValidVariantId(req, res);
     return variant_id;
@@ -35,6 +36,7 @@ module.exports.processFileUpload = async (req, res) => {
 
 module.exports.processTextUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+    if (!res.locals.authz_result.active) throw new Error(`This assessment is not accepting submissions at this time.`);
     await fileStore.upload(req.body.filename, Buffer.from(req.body.contents), 'student_upload', res.locals.assessment_instance.id, res.locals.instance_question.id, res.locals.user.user_id, res.locals.authn_user.user_id);
     const variant_id = await module.exports.getValidVariantId(req, res);
     return variant_id;
@@ -42,6 +44,7 @@ module.exports.processTextUpload = async (req, res) => {
 
 module.exports.processDeleteFile = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+    if (!res.locals.authz_result.active) throw new Error(`This assessment is not accepting submissions at this time.`);
 
     // Check the requested file belongs to the current instance question
     const validFiles = _.filter(res.locals.file_list, file => (file.id == req.body.file_id));

@@ -44,6 +44,7 @@ Access restriction                                          | courseInstance | a
 [`examUuid`](#exam-uuids)                                   |   | ✓ | Exam scheduler UUID that students must register for. | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
 [`showClosedAssessment`](#showinghiding-closed-assessments) |   | ✓ | Whether to allow viewing of assessment contents when closed (default `true`). | `"showClosedAssessment": false`
 [`showClosedAssessmentScore`](#showinghiding-all-score-information) |   | ✓ | Whether to allow viewing of the score of a closed assessment  (default `true`). | `"showClosedAssessmentScore": false`
+[`active`](#active-assessments) |   | ✓ | Whether the student can create a new assessment instance and submit answers to questions (default `true`). | `"active": false`
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -201,6 +202,32 @@ To block students from viewing closed assessment scores, set `"showClosedAssessm
 ```
 
 The `showClosedAssessment` access rule restriction is only useful in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`.
+
+## Active assessments
+
+The `active` access rule restriction is useful for allowing students to see what assessments they have coming up. It should also be used when [returning exams to students](faq.md#how-do-i-give-students-access-to-view-their-exams-after-they-are-over). If `active` is set to `false`, students can see the assessment on the Assessments page, but they cannot start the assessment, create a new assessment instance, or submit answers to questions. If an assessment is currently not active but will be in the future, students can see when the assessment will become active by looking at the `Available credit` column on the Assessments page. The `active` property in an access rule is `true` by default.
+
+**Note**: if `active` is set to `false` in an access rule, the available `credit` cannot be set to any value other than 0 (the default value).
+
+An example of the `active` access rule restriction is shown below:
+
+```json
+"allowAccess": [
+    {
+        "startDate": "2015-02-16T00:00:01",
+        "endDate": "2015-02-16T23:59:59",
+        "timeLimitMin": 50,
+        "credit": 100
+    },
+    {
+        "startDate": "2015-01-01T00:00:01",
+        "endDate": "2015-02-15T23:59:59",
+        "active": false
+    }
+]
+```
+
+In the example above, from January 1st to February 15th, students can see the assessment on the Assessments page but cannot begin the assessment. They will see a message saying that the assessment will be available on February 16th. The first access rule applies on February 16th, and since `active` is `true` (by default), students can start the assessment and submit answers to questions on that day.
 
 
 
