@@ -359,7 +359,7 @@ describe('Manual grading', function() {
             assert.equal(submission1.status, 200);
             assert.notEqual(submission1.url, gradingConflictUrl);
             assert.include(submission1Body, 'Grading Panel');
-            assert.notInclude(submission1Body, 'Existing Grade');
+            assert.notInclude(submission1Body, 'Current Grade');
             assert.notInclude(submission1Body, 'Incoming Grade');
 
             // instructor 2 redirects back to same page to resolve conflict
@@ -367,7 +367,7 @@ describe('Manual grading', function() {
             assert.equal(submission2.status, 200);
             assert.include(submission2.url, gradingConflictUrl);
             assert.notInclude(submission2Body, 'Grading Panel');
-            assert.include(submission2Body, 'Existing Grade');
+            assert.include(submission2Body, 'Current Grade');
             assert.include(submission2Body, 'Incoming Grade');
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
@@ -375,7 +375,7 @@ describe('Manual grading', function() {
             const auth_user = (await sqlDb.queryOneRowAsync(sql.get_user, {uid: mockInstructors[1].authUid})).rows[0];
 
             const $gradingConflictPage = cheerio.load(submission2Body);
-            const existingGradePanelBody = $gradingConflictPage('div:contains("Existing Grade")').parent().html();
+            const existingGradePanelBody = $gradingConflictPage('div:contains("Current Grade")').parent().html();
             const incomingGradePanelBody = $gradingConflictPage('div:contains("Incoming Grade")').parent().html();
 
             // each panel draws upon different user sources
@@ -439,7 +439,7 @@ describe('Manual grading', function() {
                 await (await fetch(gradingConflictUrl)).text(),
             );
             
-            // could use Existing or Incoming Grade
+            // could use Current or Incoming Grade
             const payload = getConflictPayload($gradingConflictPage, 'Incoming'); 
 
             const nextPage = await fetch(gradingConflictUrl, {
@@ -474,7 +474,7 @@ describe('Manual grading', function() {
             assert.lengthOf(gradingJobs, 2);
 
             const $gradingConflictPage = cheerio.load(await submission2.text());
-            const payload = getConflictPayload($gradingConflictPage, 'Existing'); 
+            const payload = getConflictPayload($gradingConflictPage, 'Current'); 
             assert.equal(payload.diffType, 'submission');
 
             setUser(mockInstructors[1]);
@@ -543,7 +543,7 @@ describe('Manual grading', function() {
             const submission2Body = await submission2.text();
             assert.equal(submission2.status, 200);
             assert.notInclude(submission2Body, 'Grading Panel');
-            assert.include(submission2Body, 'Existing Grade');
+            assert.include(submission2Body, 'Current Grade');
             assert.include(submission2Body, 'Incoming Grade');
             assert.include(submission2Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
@@ -557,7 +557,7 @@ describe('Manual grading', function() {
             const submission3Body = await submission3.text();
             assert.equal(submission3.status, 200);
             assert.notInclude(submission3Body, 'Grading Panel');
-            assert.include(submission3Body, 'Existing Grade');
+            assert.include(submission3Body, 'Current Grade');
             assert.include(submission3Body, 'Incoming Grade');
             assert.include(submission3Body, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');
 
