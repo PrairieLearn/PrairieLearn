@@ -13,6 +13,7 @@
         $('#gradebook-table').bootstrapTable({
             data: gradeData,
             onPreBody: function() {
+                $('.spinning-wheel').show();
                 $('button.edit-score').popover('hide');
             },
             onResetView: function () {
@@ -62,6 +63,7 @@
                 }).on('show.bs.popover', function(e) {
                     $('button.edit-score').not(this).popover('hide');
                 });
+                $('.spinning-wheel').hide();
             },
         });
     });
@@ -100,6 +102,8 @@
           Users
         </div>
 
+        <div class="spinning-wheel card-body"><i class="fas fa-spinner fa-spin"></i></div>
+        
         <div id="table-toolbar" class="p-2 pl-3">
           Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
