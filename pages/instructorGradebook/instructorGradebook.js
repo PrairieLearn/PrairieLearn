@@ -33,9 +33,9 @@ router.get('/', function(req, res, next) {
             res.locals.user_scores_data = _.map(result.rows, function(row) {
                 var scores = {
                     user_id: row.user_id,
-                    uid: row.uid,
-                    uin: row.uin ?? '',
-                    user_name: row.user_name ?? '',
+                    uid: _.escape(row.uid),
+                    uin: _.escape(row.uin ?? ''),
+                    user_name: _.escape(row.user_name ?? ''),
                     role: row.role,
                 };
                 row.scores.forEach(function(score) {
