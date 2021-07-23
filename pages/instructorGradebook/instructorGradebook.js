@@ -41,6 +41,7 @@ router.get('/', function(req, res, next) {
                 row.scores.forEach(function(score) {
                     scores[`score_${score.assessment_id}`] = score.score_perc;
                     scores[`score_${score.assessment_id}_ai_id`] = score.assessment_instance_id;
+                    scores[`score_${score.assessment_id}_other`] = _.map(score.uid_other_users_group, _.escape);
                 });
                 return scores;
             });

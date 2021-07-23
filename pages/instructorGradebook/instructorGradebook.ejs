@@ -28,6 +28,7 @@
                         var that = this
                         var assessmentInstanceId = $(this).data('ai-id')
                         var score = $(this).data('score')
+                        var otherUsers = $(this).data('other-users')
                         var form = $('<form name="edit-total-score-perc-form" method="POST"></form>')
                         form.append('<input type="hidden" name="__action" value="edit_total_score_perc">')
                         form.append('<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">')
@@ -38,6 +39,14 @@
                         inputGroup.append('<div class="input-group-append"><span class="input-group-text">%</span></div>')
                         formGroup.append(inputGroup)
                         form.append(formGroup)
+                        if (otherUsers && otherUsers.length) {
+                            var warning = $('<div class="alert alert-info"><small>This is a group assessment. Updating this grade will also update grades for:</small></div>')
+                            var list = $('<ul/>')
+                            otherUsers.forEach(uid => {
+                                list.append('<li><small>' + uid + '</small></li>')
+                            })
+                            warning.append(list).appendTo(form)
+                        }
                         form.append('<p><small>This change will be overwritten if further questions are answered by the student.</small></p>')
                         var cancel = $('<button type="button" class="btn btn-secondary mr-2">Cancel</button>')
                         cancel.on('click', function() {
@@ -71,6 +80,7 @@
     });
     function gradeFormatter(score, row, index, field) {
         var assessment_instance_id = row[field + '_ai_id'];
+        var other_users = row[field + '_other'];
         if (score == null) {
             return "—";
         } else {
@@ -80,6 +90,7 @@
             if (<%= authz_data.has_instructor_edit %>) {
                 var button = $('<button/>').attr('type', 'button').addClass('btn btn-xs btn-secondary edit-score')
                     .attr('tabindex', 0).attr('data-ai-id', assessment_instance_id).attr('data-score', score)
+                    .attr('data-other-users', JSON.stringify(other_users))
                     .append($('<i class="fa fa-edit" aria-hidden="true"></i>'))
                     .appendTo(container);
             }

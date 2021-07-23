@@ -19,7 +19,7 @@ course_assessments AS (
     AND a.course_instance_id = $course_instance_id
 ),
 course_assessment_instances AS (
-    SELECT ai.id, COALESCE(ai.user_id, gu.user_id) AS user_id
+    SELECT ai.id, COALESCE(ai.user_id, gu.user_id) AS user_id, ai.group_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -31,7 +31,7 @@ course_assessment_instances AS (
 ),
 course_scores AS (
     SELECT DISTINCT ON (cai.user_id, a.id)
-        cai.user_id, a.id AS assessment_id, ai.score_perc, ai.id AS assessment_instance_id
+        cai.user_id, a.id AS assessment_id, ai.score_perc, ai.id AS assessment_instance_id, cai.group_id
     FROM
         course_assessment_instances AS cai
         JOIN assessment_instances AS ai ON (ai.id = cai.id)
@@ -56,7 +56,14 @@ course_users AS (
 scores AS (
     SELECT u.user_id,u.uid,u.uin,u.user_name,u.role,
         a.id AS assessment_id,a.assessment_order_by,a.assessment_set_number,
-        s.score_perc, s.assessment_instance_id
+        s.score_perc, s.assessment_instance_id,
+        ARRAY(
+            SELECT ou.uid
+            FROM group_users AS ogu
+                 LEFT JOIN course_users AS ou ON (ou.user_id = ogu.user_id)
+            WHERE ogu.group_id = s.group_id
+              AND ogu.user_id != u.user_id
+        ) AS uid_other_users_group
     FROM
         course_users AS u
         CROSS JOIN course_assessments AS a
@@ -67,7 +74,8 @@ SELECT user_id,uid,uin,user_name,role,
         json_build_object(
             'score_perc', score_perc,
             'assessment_id', assessment_id,
-            'assessment_instance_id', assessment_instance_id
+            'assessment_instance_id', assessment_instance_id,
+            'uid_other_users_group', uid_other_users_group
         )
         ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
     ) AS scores
