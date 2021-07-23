@@ -29,7 +29,13 @@ router.get('/', function(req, res, next) {
 
             res.locals.user_scores = result.rows;
             res.locals.user_scores_data = _.map(result.rows, function(row) {
-                var scores = _.pick(row, ['user_id', 'uid', 'uin', 'user_name', 'role']);
+                var scores = {
+                    user_id: row.user_id,
+                    uid: row.uid,
+                    uin: row.uin ?? '',
+                    user_name: row.user_name ?? '',
+                    role: row.role,
+                };
                 row.scores.forEach(function(score) {
                     scores[`score_${score.assessment_id}`] = score.score_perc;
                     scores[`score_${score.assessment_id}_ai`] = score.assessment_instance_id;
