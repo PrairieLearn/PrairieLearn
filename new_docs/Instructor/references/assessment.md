@@ -32,7 +32,7 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 
 * Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
 
-You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets).
+You can select a set from the list of standardized assessment sets, or create your own.  See [here](course.md/#asses) for details.
 
 ## Assessment types
 
