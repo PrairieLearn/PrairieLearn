@@ -7,9 +7,11 @@
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
   </head>
+  <script id="grade-data">
+    let gradeData = <%- JSON.stringify(user_scores_data) %>;
+  </script>
   <script>
     $(function() {
-        let gradeData = <%- JSON.stringify(user_scores_data) %>;
         $('#gradebook-table').bootstrapTable({
             data: gradeData,
             onPreBody: function() {

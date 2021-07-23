@@ -1,6 +1,7 @@
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
+var _ = require('lodash');
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
@@ -475,13 +476,23 @@ describe('Instructor assessment editing', function() {
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
-        it('should contain a row for the dev user', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu")');
-            assert.lengthOf(elemList, 1);
+        it('should contain a data object with grade data', function() {
+            let dataScript = locals.$('#grade-data');
+            assert.lengthOf(dataScript, 1);
+            gradeData = dataScript.text();
+            gradeData = gradeData.substring(gradeData.indexOf('=') + 1);
+            gradeData = gradeData.substring(0, gradeData.lastIndexOf(';')).trim();
+            locals.gradebookData = JSON.parse(gradeData);
         });
-        it('should contain the assessment instance column with the correct score', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td:contains("' + assessmentSetScorePerc + '")');
-            assert.lengthOf(elemList, 1);
+        it('should contain a row for the dev user', function() {
+            locals.gradebookDataRow = _.filter(locals.gradebookData, row => row.uid == 'dev@illinois.edu');
+            assert.lengthOf(locals.gradebookDataRow, 1);
+        });
+        it('should contain the correct score in the dev user row', function() {
+            assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}`], assessmentSetScorePerc);
+        });
+        it('should contain the correct assessment instance id in the dev user row', function() {
+            assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}_ai`], 1);
         });
     });
 
