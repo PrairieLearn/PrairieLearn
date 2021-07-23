@@ -8,8 +8,8 @@ const archiver = require('archiver');
 const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -199,7 +199,8 @@ router.get('/:filename', function(req, res, next) {
                 ['params', 'params'],
                 ['true_answer', 'true_answer'],
                 ['submitted_answer', 'submitted_answer'],
-                ['partial_scores', 'partial_scores'],
+                ['old_partial_scores', 'partial_scores'],
+                ['partial_scores', null],
                 ['score_perc', null],
                 ['feedback', null],
             ]);

@@ -23,12 +23,13 @@ To allow students to see their entire exam after the semester is over you can ad
     ...
     {
         "startDate": "2015-01-19T00:00:01",
-        "mode": "Public"
+        "mode": "Public",
+        "active": false
     }
 ]
 ```
 
-This will give all students public access to their exams after the `startDate` until the end of the course instance. The will not be able to answer questions for further credit (there is no `"credit": 100` line), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing (limited access post-exam under controlled conditions)[#should-students-be-able-to-review-their-exams-after-they-are-over] (although this requires in-person access by students and doesn't work online).
+Students who took the exam will then have public access to their exams after the `startDate` until the end of the course instance, while students who did not take the exam will not be able to view it. Students will not be able to answer questions for further credit (due to `"active": false`), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing (limited access post-exam under controlled conditions)[#should-students-be-able-to-review-their-exams-after-they-are-over] (although this requires in-person access by students and doesn't work online).
 
 ## How can question pool development be managed over semesters?
 
@@ -348,3 +349,14 @@ The HTML specification disallows inserting special characters onto the page (i.e
 ## Why can't I connect to PrairieLearn with Docker Toolbox?
 
 Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
+
+## How can I add comments in my `question.html` source that won't be visible to students?
+
+Course staff members may want to write small maintenance comments in the `question.html` source, but HTML or JavaScript comments will remain visible in the rendered page's source (as can be seen in the browser dev tools). To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. To be safe, never put sensitive information such as solutions in a comment.
+
+Example:
+
+``` html
+<!-- This is an HTML comment. It will not be visible to students in the web page, but *will be included* in the rendered page source, so students may be able to see it by reading the HTML source. -->
+{{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
+```

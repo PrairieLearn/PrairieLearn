@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS grading_jobs_stats_day();
-DROP FUNCTION IF EXISTS grading_jobs_stats_day(bigint,double precision,double precision,double precision,double precision,double precision);
-DROP FUNCTION IF EXISTS grading_jobs_stats_day(bigint,double precision,double precision,double precision,double precision,double precision,double precision,double precision,double precision,double precision,double precision);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_stats_day(
         OUT count bigint,
         OUT delta_total double precision,
