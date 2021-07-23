@@ -95,22 +95,6 @@ PrairieLearn distinguishes between *assessments* and *assessment instances*. An 
 
 **`Homework` assessment updates:** New questions added to Homeworks will be automatically integrated into student homeworks currently in progress. Updates to `maxPoints` or `maxBonusPoints` will take effect the next time a student grades a question. A student's "points" and "percentage score" will never decrease.
 
-## Assessment points
-
-A student's percentage score will be determined by the number of points they have obtained, divided by the value of `maxPoints` (subject to the rules associated to [`credit`](accessControl.md#credit) in assessment access rules).
-
-```json
-{
-    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-    "maxPoints": 50,
-    "maxBonusPoints": 5,
-    ...
-}
-```
-
-The `maxPoints` determines the number of points a student is required to obtain to get a score of 100%. The percentage score will thus be computed based on the points the student obtained divided by the value of `maxPoints`. If not provided, `maxPoints` is computed based on the maximum number of points that can be obtained from all questions in all zones.
-
-By default, once a student obtains enough points to reach the value of `maxPoints`, any further points do not affect the assessment score. However, if a value is set for `maxBonusPoints`, the student can obtain additional points, up to a total of `maxPoints + maxBonusPoints`. The percentage is still based on `maxPoints`, so the use of `maxBonusPoints` allows students to obtain a percentage above 100%. If `maxBonusPoints` is set, but `maxPoints` is not provided, then `maxPoints` will be computed by subtracting `maxBonusPoints` from the maximum number of points in all questions.
 
 ## Multiple-instance versus single-instance assessments
 
@@ -153,30 +137,6 @@ The purpose of this is to allow students to take extra notes during exams, for l
 
 This file attachment functionality does not provide a way for students to attach files before an exam starts, so it can't be used for student-provided "formula sheets" on exams.
 
-
-## Limiting the number of attempts for each question
-
-The number of times each student will be allowed to attempt each question can be set in different ways, depending on the type of question and assessment.
-
-For assessments with type "Exam", each student will only be presented with a single variant of each question. The number of attempts will be determined by the `points` setting: if there is a single `points` value there will be a single attempt at the question; if `points` is set to a list of points, then there will be one attempt for each value in that list. In other words, the number of attempts is determined based on the number of values in the list of points.
-
-For assessments with type "Homework", students will be presented with an unlimited number of attempts for each question. By default, every new attempt corresponds to a different variant of the question, unless:
-
-* the question is set to [`"singleVariant": true` in the question configuration file](question.md#the-singleVariant-option-for-non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
-
-* the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
-
-```json
-"zones": [
-    {
-        "questions": [
-            {"id": "singleAttemptQ", "points": 10},
-            {"id": "tryOncePerVar", "points": 10},
-            {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
-        ]
-    }
-],
-```
 
 ## Limiting the rate at which answers can be graded
 

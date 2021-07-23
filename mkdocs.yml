@@ -31,12 +31,13 @@ pages:
     - 'Adding Staff to Course Instance': 'Instructor/howTos/howtoAddUserRoles.md'
     - Assessments:
       - 'Creating Assessment Sets': 'Instructor/HowTos/Assessments/howtoAddAssessmentSet.md'
+      - 'Setting points': 'Instructor/HowTos/Assessments/howtoAssessmentPoints.md'
       - 'Randomizing Question Order': 'Instructor/HowTos/Assessments/howtoRandomizeOrder.md'
       - 'Randomizing Question Selection': 'Instructor/HowTos/Assessments/howtoRandomizeQuestions.md'
       - 'Organizing Questions': 'Instructor/HowTos/Assessments/howtoZones.md'
       - 'Changing Homework Attempts': 'Instructor/HowTos/Assessments/howtoAttempts.md'
       - 'Collaborative Assessments': 'Instructor/HowTos/Assessments/howtoCollaborative.md'
-      - 'Disable real-time grading': 'Instructor/HowTos/Assessments/howtoDisableRealTime.md' 
+      - 'Disable real-time grading': 'Instructor/HowTos/Assessments/howtoDisableRealTime.md'
   - References:
     - 'Elements for writing questions': 'Instructor/references/elements.md'
     - 'Assessments': 'Instructor/references/assessment.md'
