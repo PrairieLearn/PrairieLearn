@@ -44,6 +44,7 @@ router.get('/', (req, res, next) => {
                 res.locals.grading_user = result.rows[0].grading_user;
 
                 if (result.rows[0].incoming_conflict) {
+                    // if conflict found in data layer, build 
                     res.locals.conflict_diff = {
                         grading_job_id: result.rows[0].incoming_conflict.id,
                         existing: {
@@ -105,7 +106,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'abort_manual_grading') {
         res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
     } else if (req.body.__action == 'resolve_manual_grading_conflict') {
-        // do not grade submission obj conflicts payloads again
+        // MUST NOT grade submission obj conflicts payloads again, or conflict resolution algorithm breaks
         if (req.body.diffType === 'submission') {
             sqlDb.queryOneRow(sql.remove_grading_job_conflict, {id: gradingJobId}, (err) => {
                 if (ERR(err, next)) return;
