@@ -44,7 +44,7 @@ router.get('/', (req, res, next) => {
                 res.locals.grading_user = result.rows[0].grading_user;
 
                 if (result.rows[0].incoming_conflict) {
-                    // if conflict found in post action, data layer builds incoming conflict object
+                    // if conflict found in post 'add_manual_grade' action, data layer builds incoming conflict object
                     res.locals.conflict_diff = {
                         grading_job_id: result.rows[0].incoming_conflict.id,
                         existing: {
