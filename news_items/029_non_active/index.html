@@ -29,27 +29,33 @@
   Thanks to great work by 
   <a href="https://github.com/echau01">Eugene Chau</a>, a student in
   the University of British Columbia, it is now possible to allow
-  students to see assessments that are not available for submission,
-  either before their release date, or after their deadline.
-</p>
-
-<p>
-  This feature allows students to visualize and plan for future
-  assessments, potentially from the start of the term. It also allows
-  instructors to release completed assessments for review while
-  blocking any further submission.
+  students to see, in the course homepage, a list of future
+  assessments, before they are made active. This list allows students
+  to plan ahead for future assessments, as it includes the release
+  date, but students are unable to see the assessment questions or to
+  submit any work.
 </p>
 
 <img class="border rounded" src="non-active-exam.png" width="900px">
 
 <p>
-  You can set up your assessments to be visible, but not active,
-  by creating a new access rule with the <code>active</code>
-  setting set to <code>false</code>. This will allow students who
-  have not started the assessment to see it listed on the course homepage,
-  but will prevent them from starting a new instance of the assessment.
-  It will also allow students who have completed the assessment to see their
-  answers, but not to submit new ones.
+  The same feature can also be used to allow students to see their
+  completed assessments for review after the deadline has
+  passed. Students can review the questions, their answers and their
+  scores, but are unable to submit any further answers. Students that
+  had not yet started the assessment by this time are unable to view
+  the assessment questions at all.
+</p>
+
+<p>
+  You can set up your assessments to be visible, but not active, by
+  creating a new access rule with the <code>active</code> setting set
+  to <code>false</code>. For students that have not yet started the
+  assessment, this will allow them to see it listed on the course
+  homepage, but will prevent them from starting a new instance of the
+  assessment. For students that have already started the assessment,
+  this will allow them to see the assessment questions and previously
+  submitted answers, but not to submit new ones.
 </p>
 
 <div class="mb-2 rounded code-block">
