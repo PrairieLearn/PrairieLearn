@@ -1,8 +1,9 @@
 -- BLOCK select_questions_manual_grading
 WITH iq_with_last_submission AS (
     SELECT DISTINCT ON (iq.id)
-        iq.id, s.graded_at,
+        iq.id,
         iq.assessment_question_id,
+        s.graded_at,
         umg.user_id,
         gj.manual_grading_conflict
     FROM
