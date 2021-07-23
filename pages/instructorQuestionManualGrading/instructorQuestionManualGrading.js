@@ -43,17 +43,21 @@ router.get('/', (req, res, next) => {
                 res.locals.submission = result.rows[0].submission;
                 res.locals.grading_user = result.rows[0].grading_user;
 
-                if (result.rows[0].incoming_conflict) {
-                    // if conflict found in post 'add_manual_grade' action, data layer builds incoming conflict object
+                if (result.rows[0].conflict_grading_job) {
+                    // During a normal POST 'add_manual_grade' action, a grading job is produced and a submission score/feedback is updated.
+                    // But IFF the action results in a grading conflict, the 'add_manual_grade' produces a grading job without updating the submission score/feedback.
+                    // Therefore, to resolve the conflict we either (a.) keep the current submission or (b.) update the submission with the latest grading job data,
+                    // and remove the grading_job conflict flag. Student sees grade when on submission object.
+                    // If conflict grading job found, this code will fire to load front-end resolve conflict view.
                     res.locals.conflict_diff = {
-                        grading_job_id: result.rows[0].incoming_conflict.id,
+                        grading_job_id: result.rows[0].conflict_grading_job.id,
                         existing: {
                             diffType: 'submission',
                             feedback: result.rows[0].submission.feedback,
                             score: result.rows[0].submission.score,
                             graded_by: `${result.rows[0].grading_user.name} (${result.rows[0].grading_user.uid})`,
                         },
-                        incoming: result.rows[0].incoming_conflict,
+                        incoming: result.rows[0].conflict_grading_job,
                     };
                 }
 
@@ -106,7 +110,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'abort_manual_grading') {
         res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
     } else if (req.body.__action == 'resolve_manual_grading_conflict') {
-        // MUST NOT grade submission diffType conflicts again
+        // MUST NOT grade submission 'diffType', as already current grade reflected in student and instructor views
         if (req.body.diffType === 'submission') {
             sqlDb.queryOneRow(sql.remove_grading_job_conflict, {id: gradingJobId}, (err) => {
                 if (ERR(err, next)) return;
