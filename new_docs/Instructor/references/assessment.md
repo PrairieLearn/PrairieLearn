@@ -44,48 +44,6 @@ Type        | Randomized | Description
 `Exam`      | Yes        | An exam where students can grade their answers at any time, and retry questions for reduced points.
 
 
-## Question specification
-
-An assessment is broken down in to a list of zones, like this:
-
-```json
-"zones": [
-    {
-        "title": "Easy questions",
-        "comment": "These are new questions created for this exam",
-        "questions": [
-            {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
-            {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
-        ]
-    },
-    {
-        "title": "Hard questions",
-        "comment": "These are new questions created for this exam",
-        "questions": [
-            {"id": "hardQV1", "points": 10},
-            {"id": "reallyHardQ", "points": [10, 10, 10]},
-            {
-                "numberChoose": 1,
-                "points": 5,
-                "alternatives": [
-                    {"id": "FirstAltQ", "points": 10},
-                    {"id": "SecondAltQ"}
-                ]
-            }
-        ]
-    }
-],
-```
-
-* Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
-
-* Within each zone the question order is randomized for `Exam` assessments.
-
-* An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
-
-* If a zone has `maxPoints`, then, of the points that are awarded for answering questions in this zone, at most `maxPoints` will count toward the total points.
-
-* If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
 
 ## Assessment and question instances and resetting assessments
 
@@ -107,17 +65,6 @@ For practice exams it is often desirable to make a *multiple instance* assessmen
 
 By default Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicity close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
 
-## Issue reporting
-
-To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file, or set it to `false` to disallow reporting. This option defaults to `true`.
-
-When issue reporting is allowed, students see a button labeled "Report an error in this question" and they can submit a short text form.
-
-![Report an issue button](assessment-report1.png) ![Describe the issue](assessment-report2.png)
-
-Course staff see any reported issues show up on the "Issues" tab.
-
-![Issue report](assessment-report4.png)
 
 ## Access control
 
@@ -125,9 +72,6 @@ See the [Access control page](accessControl.md) for details.
 
 By default, an assessment is only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
 
-## Adding text and links to assessments
-
-See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details, and [`exam1` in the example course](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/assessments/exam1/) for an example.
 
 ## Student-attached files
 
