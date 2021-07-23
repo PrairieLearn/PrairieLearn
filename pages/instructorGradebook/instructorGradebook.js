@@ -9,6 +9,8 @@ const sanitizeName = require('../../lib/sanitize-name');
 var sqldb = require('../../prairielib/lib/sql-db');
 var sqlLoader = require('../../prairielib/lib/sql-loader');
 
+var course = require('../../lib/course');
+
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var csvFilename = function(locals) {
@@ -78,21 +80,28 @@ router.get('/:filename', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'edit_total_score_perc') {
-        let params = [
-            req.body.assessment_instance_id,
-            req.body.score_perc,
-            res.locals.authn_user.user_id,
-        ];
-        sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
+        
+        const course_instance_id = res.locals.course_instance.id;
+        const assessment_instance_id = req.body.assessment_instance_id;
+        course.checkBelongs(assessment_instance_id, course_instance_id, (err) => {
             if (ERR(err, next)) return;
-
-            params = {
-                assessment_instance_id: req.body.assessment_instance_id,
-            };
-
-            sqldb.query(sql.assessment_instance_score, params, function(err, result) {
+            
+            let params = [
+                req.body.assessment_instance_id,
+                req.body.score_perc,
+                res.locals.authn_user.user_id,
+            ];
+            sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
                 if (ERR(err, next)) return;
-                res.send(JSON.stringify(result.rows));
+                
+                params = {
+                    assessment_instance_id: req.body.assessment_instance_id,
+                };
+                
+                sqldb.query(sql.assessment_instance_score, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.send(JSON.stringify(result.rows));
+                });
             });
         });
     } else {
