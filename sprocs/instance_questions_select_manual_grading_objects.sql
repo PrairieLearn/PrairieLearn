@@ -33,7 +33,7 @@ BEGIN
 
     -- conflict df: when TA 'x' and TA 'y' have same manual grading page open at same time and both submit a grade. Second submitter must decide whether first or second grade valid.
     IF arg_conflicting_grading_job_id IS NOT NULL THEN
-        SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'diffType', 'grading_job')
+        SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'conflictDataSource', 'grading_job')
         INTO conflict_grading_job
         FROM
             grading_jobs AS gj
@@ -41,7 +41,7 @@ BEGIN
         WHERE gj.id = arg_conflicting_grading_job_id;
     ELSE
         -- always check if grading conflict needs to be resolved in case second submitter closed browser on conflict resolution view.
-        SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'diffType', 'grading_job')
+        SELECT json_build_object('id', gj.id, 'score', gj.score, 'feedback', gj.feedback, 'graded_by', CONCAT(u.name, ' (', u.uid, ')'), 'conflictDataSource', 'grading_job')
         INTO conflict_grading_job
         FROM
             grading_jobs AS gj

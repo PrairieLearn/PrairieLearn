@@ -52,7 +52,7 @@ router.get('/', (req, res, next) => {
                     res.locals.conflict_diff = {
                         grading_job_id: result.rows[0].conflict_grading_job.id,
                         existing: {
-                            diffType: 'submission',
+                            conflictDataSource: 'submission',
                             feedback: result.rows[0].submission.feedback,
                             score: result.rows[0].submission.score,
                             graded_by: `${result.rows[0].grading_user.name} (${result.rows[0].grading_user.uid})`,
@@ -110,8 +110,8 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'abort_manual_grading') {
         res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
     } else if (req.body.__action == 'resolve_manual_grading_conflict') {
-        // MUST NOT grade submission 'diffType', as already current grade reflected in student and instructor views
-        if (req.body.diffType === 'submission') {
+        // MUST NOT grade submission 'conflictDataSource', as already current grade reflected in student and instructor views
+        if (req.body.conflictDataSource === 'submission') {
             sqlDb.queryOneRow(sql.remove_grading_job_conflict, {id: gradingJobId}, (err) => {
                 if (ERR(err, next)) return;
                 res.redirect(`${res.locals.urlPrefix}/assessment/${assessmentId}/assessment_question/${assessmentQuestionId}/next_ungraded`);

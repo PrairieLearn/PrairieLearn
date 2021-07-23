@@ -46,7 +46,7 @@
                 <button style="width: 100%" name="__action" value="abort_manual_grading" class="btn btn-danger">Skip and Leave Grading</button>
               <% } else { %>
                 <input type="hidden" name="gradingJobId" value="<%= typeof conflict_diff !== 'undefined' && conflict_diff.grading_job_id %>">
-                <input type="hidden" name="diffType" value="<%= submission.diffType %>">
+                <input type="hidden" name="conflictDataSource" value="<%= submission.conflictDataSource %>">
                 <button name="__action" value="resolve_manual_grading_conflict" class="btn btn-primary">Accept <%= diff %> Grade</button>
               <% }%>
             </div>

@@ -47,7 +47,7 @@ const getConflictPayload = ($page, type) => {
 
         // These only appear on conflict resolutions
         gradingJobId: $page(`div:contains("${wildcard}") > form > div > input[name="gradingJobId"]`).val(),
-        diffType: $page(`div:contains("${wildcard}") > form > div > input[name="diffType"]`).val(),
+        conflictDataSource: $page(`div:contains("${wildcard}") > form > div > input[name="conflictDataSource"]`).val(),
     };
 };
 
@@ -475,7 +475,7 @@ describe('Manual grading', function() {
 
             const $gradingConflictPage = cheerio.load(await submission2.text());
             const payload = getConflictPayload($gradingConflictPage, 'Current'); 
-            assert.equal(payload.diffType, 'submission');
+            assert.equal(payload.conflictDataSource, 'submission');
 
             setUser(mockInstructors[1]);
             const response = await fetch(submission2.url, {
@@ -493,7 +493,7 @@ describe('Manual grading', function() {
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
-        it('grading conflict `submission` diffType resolution should count as graded on Assessment Manual Grading View', () => {
+        it('grading conflict `submission` conflictDataSource resolution should count as graded on Assessment Manual Grading View', () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 2);
             assert.equal($addNumbersRow('.graded-value').text(), 2);
         });
@@ -510,7 +510,7 @@ describe('Manual grading', function() {
 
             const $gradingConflictPage = cheerio.load(await submission2.text());
             const payload = getConflictPayload($gradingConflictPage, 'Incoming'); 
-            assert.equal(payload.diffType, 'grading_job');
+            assert.equal(payload.conflictDataSource, 'grading_job');
 
             setUser(mockInstructors[1]);
             const response = await fetch(submission2.url, {
@@ -528,7 +528,7 @@ describe('Manual grading', function() {
             assert.equal(instanceQuestion.points, (payload.submissionScore / 100) * assessmentQuestion.max_points);
             assert.equal(instanceQuestion.score_perc, (payload.submissionScore / 100) * 100);
         });
-        it('grading conflict `grading_job` diffType resolution should count as graded on Assessment Manual Grading View', () => {
+        it('grading conflict `grading_job` conflictDataSource resolution should count as graded on Assessment Manual Grading View', () => {
             assert.equal($addNumbersRow('.ungraded-value').text(), 1);
             assert.equal($addNumbersRow('.graded-value').text(), 3);
         });
