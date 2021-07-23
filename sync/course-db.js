@@ -128,6 +128,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Object} questionParams
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
@@ -152,6 +153,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
+ * @property {Object} questionParams
  */
 
 /**
@@ -183,6 +185,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {boolean} forceMaxPoints
   * @property {number} triesPerVariant
   * @property {number} gradeRateMinutes
+  * @property {Object} questionParams
   */
 
 /**
@@ -195,6 +198,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} numberChoose
  * @property {number} triesPerVariant
  * @property {number} gradeRateMinutes
+ * @property {Object} questionParams
  */
 
 /**
@@ -205,6 +209,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
  * @property {number} gradeRateMinutes
+ * @property {Object} questionParams
  */
 
 /**
@@ -232,6 +237,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
  * @property {number} gradeRateMinutes
+ * @property {Object} questionParams
  */
 
 /**
@@ -674,6 +680,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
         },
+        questionParams: info.questionParams,
     };
 
     loadedData.data = course;

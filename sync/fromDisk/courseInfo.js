@@ -31,6 +31,7 @@ module.exports.sync = async function(courseData, courseId) {
         grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
         example_course: courseInfo.exampleCourse,
         options: courseInfo.options || {},
+        question_params: courseInfo.questionParams || {},
         sync_warnings: infofile.stringifyWarnings(courseData.course),
     };
     const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course, params);

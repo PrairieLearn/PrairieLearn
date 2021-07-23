@@ -1,0 +1,31 @@
+{
+    "uuid": "b1aac554-e238-46fe-b678-e2ca01dd3542",
+    "type": "Homework",
+    "title": "Examples of parameterized questions",
+    "set": "Homework",
+    "number": "11",
+    "allowAccess": [
+        {
+            "role": "Instructor",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "title": "Questions parameterized by the course instance",
+            "questions": [
+                {"id": "demo/questionParamsCalculation", "points": 1}
+            ]
+        },
+        {
+            "title": "Questions parameterized by the assessment",
+            "questions": [
+                {"id": "demo/questionParamsRandomSymbolic", "points": 1,
+                 "questionParams": {
+                     "coeff_lower_bound": 3
+                 }}
+            ]
+        }
+    ],
+    "text": "As an instructor, you will view questions parameterized only by the course they are in. If you view as a student, the questions will inherit parameters from the course instance and assessment."
+}

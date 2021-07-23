@@ -144,6 +144,7 @@ BEGIN
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
+            question_params = (valid_assessment.data->>'question_params')::JSONB,
             group_work = (valid_assessment.data->>'group_work')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
@@ -266,21 +267,24 @@ BEGIN
                 title,
                 max_points,
                 number_choose,
-                best_questions
+                best_questions,
+                question_params
             ) VALUES (
                 new_assessment_id,
                 (zone->>'number')::integer,
                 zone->>'title',
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
-                (zone->>'best_questions')::integer
+                (zone->>'best_questions')::integer,
+                (zone->>'question_params')::JSONB
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
                 title = EXCLUDED.title,
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
-                best_questions = EXCLUDED.best_questions
+                best_questions = EXCLUDED.best_questions,
+                question_params = EXCLUDED.question_params
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
@@ -289,16 +293,19 @@ BEGIN
                     number,
                     number_choose,
                     assessment_id,
-                    zone_id
+                    zone_id,
+                    question_params
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
                     new_assessment_id,
-                    new_zone_id
+                    new_zone_id,
+                    (alternative_group->>'question_params')::JSONB
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
-                    zone_id = EXCLUDED.zone_id
+                    zone_id = EXCLUDED.zone_id,
+                    question_params = EXCLUDED.question_params
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
@@ -315,7 +322,8 @@ BEGIN
                         assessment_id,
                         question_id,
                         alternative_group_id,
-                        number_in_alternative_group
+                        number_in_alternative_group,
+                        question_params
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         (assessment_question->>'max_points')::double precision,
@@ -328,7 +336,8 @@ BEGIN
                         new_assessment_id,
                         (assessment_question->>'question_id')::bigint,
                         new_alternative_group_id,
-                        (assessment_question->>'number_in_alternative_group')::integer
+                        (assessment_question->>'number_in_alternative_group')::integer,
+                        (assessment_question->>'question_params')::JSONB
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -341,7 +350,8 @@ BEGIN
                         deleted_at = EXCLUDED.deleted_at,
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
-                        question_id = EXCLUDED.question_id
+                        question_id = EXCLUDED.question_id,
+                        question_params = EXCLUDED.question_params
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
                 END LOOP;

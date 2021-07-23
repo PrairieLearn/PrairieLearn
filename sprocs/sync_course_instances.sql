@@ -22,7 +22,7 @@ BEGIN
     -- Move all our data into a temporary table so it's easier to work with
 
     CREATE TEMPORARY TABLE disk_course_instances (
-        short_name TEXT NOT NULL,
+        short_name TEXT NOT NULL,        
         uuid uuid,
         errors TEXT,
         warnings TEXT,
@@ -120,6 +120,7 @@ BEGIN
     SET
         long_name = src.data->>'long_name',
         display_timezone = src.data->>'display_timezone',
+        question_params = (src.data->>'question_params')::JSONB,
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings

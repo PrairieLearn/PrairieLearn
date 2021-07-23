@@ -7,6 +7,7 @@ SET
     grading_queue = $grading_queue,
     example_course = $example_course,
     options = $options,
+    question_params = $question_params,
     sync_errors = NULL,
     sync_warnings = $sync_warnings
 WHERE
