@@ -75,12 +75,16 @@ Every course belongs to an **institution** and by default access is only allowed
 
 ## Server modes
 
-Each user accesses the PrairieLearn server in a `mode`, as listed below. This can be used to restrict access to assessments based on the current mode.
+Each user accesses the PrairieLearn server in a `mode`, as listed below. This can be used to restrict access to assessments based on the current mode. The `mode` setting of an access rule has the following effect:
 
-Mode      | When active
----       | ---
-`Exam`    | When the student is on a computer in the Computer-Based Testing Facility (CBTF) labs (determined by IP range), or when the user has overridden the mode to be `Exam` (only possible for `Instructor`).
-`Public`  | In all other cases.
+Mode | When is access allowed?
+--- | ---
+`Public` | Access is normally allowed, but is blocked when the student is signed in for an exam in the Computer-Based Testing Facility (CBTF).
+`Exam` | Access is normally blocked, and is only allowed when the student is signed in to the Computer-Based Testing Facility (CBTF). The `examUuid` should also be specified in the same access rule to limit access to a specific exam.
+no mode set | Access is allowed anytime, both during CBTF exams and outside of exams.
+
+In general usage it is best to set `"mode": "Public"` for any homework (assessments that students should do at home or without special access control), and to set both `"mode": "Exam"` and `"examUuid"` for exams in the Computer-Based Testing Facility (CBTF). This will make it so that exams are only accessible in the CBTF, and homework is _not_ accessible during exams.
+
 
 ## Credit
 
