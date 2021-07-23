@@ -72,10 +72,4 @@ __pycache__/
 .RData
 .Ruserdata
 
-# VSCode files
-.vscode
-
-# tmux
-.tmux.conf
-output.txt
 
