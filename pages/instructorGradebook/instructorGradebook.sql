@@ -73,3 +73,16 @@ SELECT user_id,uid,uin,user_name,role,
 FROM scores
 GROUP BY user_id,uid,uin,user_name,role
 ORDER BY role DESC, uid;
+
+-- BLOCK assessment_instance_score
+SELECT
+    COALESCE(ai.user_id, gu.user_id) AS user_id,
+    ai.assessment_id,
+    ai.score_perc,
+    ai.id AS assessment_instance_id
+FROM
+    assessment_instances AS ai
+    LEFT JOIN groups AS g ON (g.id = ai.group_id)
+    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+WHERE
+    ai.id = $assessment_instance_id
