@@ -199,7 +199,8 @@ router.get('/:filename', function(req, res, next) {
                 ['params', 'params'],
                 ['true_answer', 'true_answer'],
                 ['submitted_answer', 'submitted_answer'],
-                ['partial_scores', 'partial_scores'],
+                ['old_partial_scores', 'partial_scores'],
+                ['partial_scores', null],
                 ['score_perc', null],
                 ['feedback', null],
             ]);
