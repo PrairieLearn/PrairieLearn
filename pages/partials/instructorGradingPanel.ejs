@@ -1,4 +1,7 @@
 <% if (authz_data.has_instructor_view || authz_data.has_course_permission_view) { %>
+    <!--Instructor Grading Panel: 
+    - Renders Grading Panel view to manually grade submissions.
+    - View re-used to resolve manual grading conflict-->
     <div class="card mb-4 border-success">
       <% if (typeof diff !== 'undefined') { %>
         <div class="card-header bg-success"><%= diff %> Grade</div>
