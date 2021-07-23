@@ -11,6 +11,7 @@ const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('../../prairielib/lib/sql-db');
 
 function processSubmission(req, res, callback) {
+    if (!res.locals.authz_result.active) return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
     let variant_id, submitted_answer;
     if (res.locals.question.type == 'Freeform') {
         variant_id = req.body.__variant_id;

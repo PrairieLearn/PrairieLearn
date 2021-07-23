@@ -15,15 +15,21 @@ router.all('/', function(req, res, next) {
         checkUserAgent(res, req.headers['user-agent']);
     }
 
+    if (typeof res.locals.assessment_instance === 'undefined' && !_.get(res.locals, 'authz_result.active', true)) {
+        // Student did not start the assessment, and the assessment is not active
+        assessmentNotStartedNotActive(res);
+        return;
+    }
+
     if (
         !_.get(res.locals, 'authz_result.show_closed_assessment', true) &&
-        !_.get(res.locals, 'assessment_instance.open', true)
+        (!_.get(res.locals, 'assessment_instance.open', true) || !_.get(res.locals, 'authz_result.active', true))
     ) {
         // This assessment instance is closed and can no longer be viewed
         if (!_.get(res.locals, 'authz_result.show_closed_assessment_score', true)){
-            closedAssessmentNotViewableHiddenGrade(res);
+            closedAssessmentNotActiveHiddenGrade(res);
         } else {
-            closedAssessmentNotViewable(res);
+            closedAssessmentNotActive(res);
         }
         return;
     }
@@ -120,12 +126,17 @@ function checkUserAgent(res, userAgent) {
     }
 }
 
-function closedAssessmentNotViewable(res) {
-    res.locals.prompt = 'closedAssessmentNotViewable';
+function closedAssessmentNotActive(res) {
+    res.locals.prompt = 'closedAssessmentNotActive';
     res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
 
-function closedAssessmentNotViewableHiddenGrade(res) {
-    res.locals.prompt = 'closedAssessmentNotViewableHiddenGrade';
+function closedAssessmentNotActiveHiddenGrade(res) {
+    res.locals.prompt = 'closedAssessmentNotActiveHiddenGrade';
+    res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+}
+
+function assessmentNotStartedNotActive(res) {
+    res.locals.prompt = 'assessmentNotStartedNotActive';
     res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
