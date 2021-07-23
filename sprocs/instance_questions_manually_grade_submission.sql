@@ -39,7 +39,7 @@ BEGIN
         is_conflict = TRUE;
     END IF;
 
-    -- Create grading job even if a conflict will exist
+    -- Create grading job even if a conflict will exist so record of it exists in db
     SELECT s.*
     INTO last_submission
     FROM
