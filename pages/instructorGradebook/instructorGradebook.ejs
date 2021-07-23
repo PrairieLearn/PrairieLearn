@@ -70,7 +70,7 @@
         });
     });
     function gradeFormatter(score, row, index, field) {
-        var assessment_instance_id = row[field + '_ai'];
+        var assessment_instance_id = row[field + '_ai_id'];
         if (score == null) {
             return "—";
         } else {
@@ -145,7 +145,7 @@
                     data-class="text-nowrap"
                     data-formatter="gradeFormatter"
                     data-sort-order="desc"><%- include('../partials/assessment', {assessment: assessment}); %></th>
-                <th data-field="score_<%= assessment.assessment_id %>_ai"
+                <th data-field="score_<%= assessment.assessment_id %>_ai_id"
                     data-visible="false"
                     data-switchable="false"></th>
                 <% }); %>

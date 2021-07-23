@@ -492,7 +492,7 @@ describe('Instructor assessment editing', function() {
             assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}`], assessmentSetScorePerc);
         });
         it('should contain the correct assessment instance id in the dev user row', function() {
-            assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}_ai`], 1);
+            assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}_ai_id`], 1);
         });
     });
 
