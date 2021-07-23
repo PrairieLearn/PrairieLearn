@@ -479,7 +479,7 @@ describe('Instructor assessment editing', function() {
         it('should contain a data object with grade data', function() {
             let dataScript = locals.$('#grade-data');
             assert.lengthOf(dataScript, 1);
-            gradeData = dataScript.text();
+            let gradeData = dataScript.text();
             gradeData = gradeData.substring(gradeData.indexOf('=') + 1);
             gradeData = gradeData.substring(0, gradeData.lastIndexOf(';')).trim();
             locals.gradebookData = JSON.parse(gradeData);
