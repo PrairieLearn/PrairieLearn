@@ -118,65 +118,6 @@ By default all assessments are *single instance*, meaning that each student has 
 
 For practice exams it is often desirable to make a *multiple instance* assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
 
-## Enabling group work for collaborative assessments
-
-By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
-Information about the group configuration can be set in the `infoAssessment.json` file. For example: 
-```json
-{
-        "groupWork": true,
-        "groupMaxSize": 6,
-        "groupMinSize": 2,
-        "studentGroupCreate": true,
-        "studentGroupJoin": true,
-        "studentGroupLeave": true,
-}
-```
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`groupWork` | boolean | false | Enable the group work for the assessment.
-`groupMaxSize` | integer | - | The maximum size of a group (default: no minimum).
-`groupMinSize` | integer | - | The minimum size of a group (default: no maximum).
-`studentGroupCreate` | boolean | false | Allow students to create groups.
-`studentGroupJoin` | boolean | false | Allow students to join other groups by join code.
-`studentGroupLeave` | boolean | false | Allow students to leave groups.
-
-Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
-
-### Instructor options for groupWork
-
-![Instructor group assignment page](groupwork_instructor_interface.png)
-
-Underneath the "Groups" tab in an assessment, instructors have three ways of assigning students to different groups:
-
-1. Uploading a CSV file in the following format:
-```
-groupName,UID
-groupA,one@example.com
-groupA,two@example.com
-groupB,three@example.com
-groupB,four@example.com
-```
-
-2. Automatically assigning students, either to fill out existing groups or to make entirely new ones.
-
-3. Copying the group assignments from another assessment.
-
-A copy of the current group assignments can be saved from the "Downloads" tab, under `<assessment>_group_configs.csv`
-
-### Student options for groupWork
-
-![Student perspective for joining a group](groupwork_student_perspective_join.png)
-
-If an instructor does not assign a student to a group, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing group via a join code, which they can get from another classmate.
-
-When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
-
-> Note: Students cannot see eachother's edits in real-time, although this is planned for a future version of PrairieLearn.
-
-![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
-
-Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with eachother outside of PrairieLearn. They are also able to leave their group to join a different one.
 
 ## Auto-closing Exam assessments
 
@@ -212,40 +153,6 @@ The purpose of this is to allow students to take extra notes during exams, for l
 
 This file attachment functionality does not provide a way for students to attach files before an exam starts, so it can't be used for student-provided "formula sheets" on exams.
 
-## Disabling real-time grading
-
-PrairieLearn is designed to give students immediate feedback on their work. However, if you wish to more closely replicate a paper exam experience, you can prevent students from grading their work as they go (what we call "real-time grading").
-
-*Note that students generally expect and benefit from having immediate feedback, so this setting should only be enabled if you have a specific reason for it.*
-
-To disable real-time grading for an assessment, add `"allowRealTimeGrading": false` to the assessment's `infoAssessment.json` file. This will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden. Note that real-time grading can only be disabled for `Exam` assessments, as immediate feedback is a core part of the `Homework` experience.
-
-An assessment without real-time grading will not show any score information during the exam. However, if a [time limit](accessControl.md#time-limits) is used then when it runs out the assessment will auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](accessControl.md#showinghiding-closed-assessments).
-
-Disabling real-time grading changes a lot of fundamental details of how PrairieLearn is used. To account for that, the student assessment overview page displays less information about points and grading than for usual exams.
-
-Here is the assessment page for a normal exam with real-time grading enabled:
-
-![Normal assessment](assessment-grading-normal.png)
-
-Here is the assessment page for an open exam with real-time grading disabled:
-
-![Open assessment with real-time grading disabled](assessment-grading-disabled-open.png)
-
-Compared to the normal assessment, there are a number of differences:
-
-* A warning explaining that real-time grading has been disabled is shown
-* Total points is listed as a number, not as an "X/Y" score
-* The percentage bar is not displayed
-* The "Best submission" column is renamed to "Submission status"
-* The "Available points" column has been removed
-* The "Awarded points" column has been renamed to "Points" and only shows the max points
-
-Here is the assessment page for a closed exam with real-time grading disabled:
-
-![Closed assessment with real-time grading disabled](assessment-grading-disabled-closed.png)
-
-Note that after the exam has closed and been graded, more information about points will be visible.
 
 ## Limiting the number of attempts for each question
 
