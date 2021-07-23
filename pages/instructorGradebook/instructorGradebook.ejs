@@ -9,7 +9,9 @@
   </head>
   <script>
     $(function() {
+        let gradeData = <%- JSON.stringify(user_scores_data) %>;
         $('#gradebook-table').bootstrapTable({
+            data: gradeData,
             onPreBody: function() {
                 $('button.edit-score').popover('hide');
             },
@@ -46,7 +48,7 @@
                                 data.forEach(score => {
                                     $('#gradebook-table').bootstrapTable('updateCellByUniqueId', {
                                         id: score.user_id,
-                                        field: `grade${score.assessment_id}`,
+                                        field: `score_${score.assessment_id}`,
                                         value: score.score_perc,
                                     });
                                 })
@@ -64,8 +66,8 @@
         });
     });
     function gradeFormatter(score, row, index, field) {
-        var assessment_instance_id = row[field + '-ai'];
-        if (score == '') {
+        var assessment_instance_id = row[field + '_ai'];
+        if (score == null) {
             return "—";
         } else {
             var container = $('<div>');
@@ -103,7 +105,7 @@
         </div>
 
         <table id="gradebook-table"
-               data-unique-id="user-id"
+               data-unique-id="user_id"
                data-classes="table table-sm table-hover table-bordered"
                data-minimum-count-columns="0"
                data-search="true"
@@ -113,51 +115,36 @@
                data-sticky-header="true">
             <thead>
               <tr>
-                <th data-field="user-id"
+                <th data-field="user_id"
                     data-visible="false"
                     data-switchable="false"></th>
-                <th data-sortable="true"
+                <th data-field="uid"
+                    data-sortable="true"
                     data-class="sticky-column bg-white text-nowrap"
                     data-switchable="false">UID</th>
-                <th data-sortable="true"
+                <th data-field="uin"
+                    data-sortable="true"
                     data-class="text-nowrap"
                     data-switchable="false">UIN</th>
-                <th data-sortable="true"
+                <th data-field="user_name"
+                    data-sortable="true"
                     data-class="text-nowrap"
                     data-switchable="false">Name</th>
-                <th data-sortable="false"
+                <th data-field="role"
+                    data-sortable="false"
                     data-switchable="false">Role</th>
                 <% course_assessments.forEach(function(assessment, iAssessment) { %>
-                <th data-sortable="true"
+                <th data-field="score_<%= assessment.assessment_id %>"
+                    data-sortable="true"
                     data-class="text-nowrap"
-                    data-field="grade<%= assessment.assessment_id %>"
                     data-formatter="gradeFormatter"
                     data-sort-order="desc"><%- include('../partials/assessment', {assessment: assessment}); %></th>
-                <th data-field="grade<%= assessment.assessment_id %>-ai"
+                <th data-field="score_<%= assessment.assessment_id %>_ai"
                     data-visible="false"
                     data-switchable="false"></th>
                 <% }); %>
               </tr>
             </thead>
-            <tbody>
-              <% user_scores.forEach(function(row, iRow) { %>
-              <tr>
-                <td class="d-none"><%= row.user_id %></td>
-                <td><%= row.uid %></td>
-                <td><%= row.uin %></td>
-                <td><%= row.user_name %></td>
-                <td><%= row.role %></td>
-                <% row.scores.forEach(function(score, iScore) { %>
-                <td>
-                  <%= score.score_perc %>
-                </td>
-                <td class="d-none">
-                  <%= score.assessment_instance_id %>
-                </td>
-                <% }); %>
-              </tr>
-              <% }); %>
-            </tbody>
         </table>
 
         <div class="card-footer">

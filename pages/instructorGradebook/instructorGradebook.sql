@@ -66,6 +66,7 @@ SELECT user_id,uid,uin,user_name,role,
     ARRAY_AGG(
         json_build_object(
             'score_perc', score_perc,
+            'assessment_id', assessment_id,
             'assessment_instance_id', assessment_instance_id
         )
         ORDER BY (assessment_set_number, assessment_order_by, assessment_id)

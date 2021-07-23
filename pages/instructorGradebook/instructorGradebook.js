@@ -28,6 +28,14 @@ router.get('/', function(req, res, next) {
             if (ERR(err, next)) return;
 
             res.locals.user_scores = result.rows;
+            res.locals.user_scores_data = _.map(result.rows, function(row) {
+                var scores = _.pick(row, ['user_id', 'uid', 'uin', 'user_name', 'role']);
+                row.scores.forEach(function(score) {
+                    scores[`score_${score.assessment_id}`] = score.score_perc;
+                    scores[`score_${score.assessment_id}_ai`] = score.assessment_instance_id;
+                });
+                return scores;
+            });
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     });
