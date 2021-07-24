@@ -151,7 +151,12 @@
                 <th data-field="role"
                     data-sortable="true"
                     data-sorter="roleSorter"
-                    data-switchable="false">Role</th>
+                    data-switchable="false">
+                  Role
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="fas fa-question-circle" aria-hidden="true"></i>
+                  </button>
+                </th>
                 <% course_assessments.forEach(function(assessment, iAssessment) { %>
                 <th data-field="score_<%= assessment.assessment_id %>"
                     data-sortable="true"
@@ -163,17 +168,28 @@
             </thead>
         </table>
 
-        <div class="card-footer">
-          <p>Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a></p>
-          <small>
-            <strong>Roles:</strong>
-             <ul>
-                 <li><strong>Instructor</strong> is a person in charge of the course. They have full permission to see and edit the information of other users.</li>
-                 <li><strong>TA</strong> is a teaching assistant. They can see the data of all users, but can only edit their own information.</li>
-                 <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
-                 <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
-            </ul>
-          </small>
+        <div class="modal fade" id="role-help" tabindex="-1" role="dialog">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title" id="role-help-title">Roles</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <ul>
+                  <li><strong>Instructor</strong> is a person in charge of the course. They have full permission to see and edit the information of other users.</li>
+                  <li><strong>TA</strong> is a teaching assistant. They can see the data of all users, but can only edit their own information.</li>
+                  <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
+                  <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
+                </ul>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
         </div>
 
       </div>
