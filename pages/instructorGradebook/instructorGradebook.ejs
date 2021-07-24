@@ -109,6 +109,10 @@
       background: white;
       box-shadow: inset -1px 0 #dee2e6;
     }
+    .table-hover tbody tr:hover td.sticky-column {
+        color: #212529;
+        background-color: #efefef;
+    }
   </style>
   <body>
     <%- include('../partials/navbar'); %>
@@ -138,7 +142,7 @@
               <tr>
                 <th data-field="uid"
                     data-sortable="true"
-                    data-class="sticky-column bg-white text-nowrap"
+                    data-class="sticky-column text-nowrap"
                     data-switchable="false">UID</th>
                 <th data-field="uin"
                     data-sortable="true"
