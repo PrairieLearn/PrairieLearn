@@ -5,8 +5,8 @@ const router = express.Router({
     mergeParams: true,
 });
 
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../../../prairielib/sql-db');
+const sqlLoader = require('../../../../prairielib/sql-loader');
 
 const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
 
