@@ -88,7 +88,7 @@
             var link = $('<a/>').attr('href', `<%= urlPrefix %>/assessment_instance/${assessment_instance_id}`)
                 .text(Math.floor(score) + '%').appendTo(container);
             if (<%= authz_data.has_instructor_edit %>) {
-                var button = $('<button/>').attr('type', 'button').addClass('btn btn-xs btn-secondary edit-score')
+                var button = $('<button/>').attr('type', 'button').addClass('btn btn-xs btn-secondary edit-score ml-1')
                     .attr('tabindex', 0).attr('data-ai-id', assessment_instance_id).attr('data-score', score)
                     .attr('data-other-users', JSON.stringify(other_users))
                     .append($('<i class="fa fa-edit" aria-hidden="true"></i>'))
@@ -96,6 +96,10 @@
             }
             return container.html();
         }
+    }
+    function roleSorter(roleA, roleB) {
+        const roles = ['Instructor', 'TA', 'Student', 'None'];
+        return roles.indexOf(roleA) - roles.indexOf(roleB);
     }
   </script>
   <style>
@@ -145,7 +149,8 @@
                     data-class="text-nowrap"
                     data-switchable="false">Name</th>
                 <th data-field="role"
-                    data-sortable="false"
+                    data-sortable="true"
+                    data-sorter="roleSorter"
                     data-switchable="false">Role</th>
                 <% course_assessments.forEach(function(assessment, iAssessment) { %>
                 <th data-field="score_<%= assessment.assessment_id %>"
