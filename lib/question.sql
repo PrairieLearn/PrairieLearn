@@ -122,7 +122,7 @@ FROM
     JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE v.id = $variant_id;
 
---BLOCK select_graded_submissions_and_other_data
+--BLOCK select_submission_data_for_regrading
 SELECT s.*, v.variant_seed, v.options, v.question_id, ci.course_id, aq.init_points, q.qid, iq.assessment_instance_id
 FROM submissions AS s
 JOIN variants AS v ON (v.id = s.variant_id)
@@ -131,9 +131,8 @@ LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
 JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
 JOIN questions AS q ON (q.id = aq.question_id)
 WHERE 
-    iq.id = $instance_question_id 
-    AND s.graded_at IS NOT NULL 
-    AND (s.gradable OR s.broken) -- broken submissions are due to question code error, not student error, so we should regrade broken submissions too
+    iq.id = $instance_question_id
+    AND s.regradable
 ORDER BY s.id ASC;
 
 --BLOCK select_course
