@@ -1137,6 +1137,14 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
+                logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+                process.exit(0);
+            } else {
+                callback(null);
+            }
+        },
+        function(callback) {
             // We create and activate a random DB schema name
             // (https://www.postgresql.org/docs/12/ddl-schemas.html)
             // after we have run the migrations but before we create
@@ -1156,14 +1164,6 @@ if (config.startServer) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        },
-        function(callback) {
-            if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
-                logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-                process.exit(0);
-            } else {
-                callback(null);
-            }
         },
         function(callback) {
             const notify_with_new_server = false;
