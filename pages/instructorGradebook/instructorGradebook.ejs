@@ -123,8 +123,6 @@
           Users
         </div>
 
-        <div class="spinning-wheel card-body"><i class="fas fa-spinner fa-spin"></i></div>
-        
         <div id="table-toolbar" class="p-2 pl-3">
           Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
@@ -172,6 +170,8 @@
             </thead>
         </table>
 
+        <div class="spinning-wheel card-body spinner-border"><span class="sr-only">Loading...</span></div>
+        
         <div class="modal fade" id="role-help" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
