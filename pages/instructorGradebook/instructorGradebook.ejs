@@ -132,9 +132,6 @@
                data-sticky-header="true">
             <thead>
               <tr>
-                <th data-field="user_id"
-                    data-visible="false"
-                    data-switchable="false"></th>
                 <th data-field="uid"
                     data-sortable="true"
                     data-class="sticky-column bg-white text-nowrap"
@@ -156,9 +153,6 @@
                     data-class="text-nowrap"
                     data-formatter="gradeFormatter"
                     data-sort-order="desc"><%- include('../partials/assessment', {assessment: assessment}); %></th>
-                <th data-field="score_<%= assessment.assessment_id %>_ai_id"
-                    data-visible="false"
-                    data-switchable="false"></th>
                 <% }); %>
               </tr>
             </thead>
