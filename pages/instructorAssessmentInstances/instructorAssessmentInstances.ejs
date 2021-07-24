@@ -2,13 +2,27 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <link href="<%= node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
-    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
-    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
   </head>
   <body>
     <script>
       $(function () {
+          alert('<%= urlPrefix %>/instructor/assessment/<%= assessment.id %>/instances/raw_data');
+          $('#usersTable').bootstrapTable({
+              url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/raw_data',
+              onPreBody: function() {
+                  $('.spinning-wheel').show();
+              },
+              onResetView: function () {
+                  $('.spinning-wheel').hide();
+              },
+          });
+
+
+          
           $('[data-toggle="popover"]').popover({sanitize: false});
           $('.time-limit-edit-button').popover({
               sanitize: false,
@@ -230,7 +244,7 @@
                    data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
                   <i class="fas fa-times" aria-hidden="true"></i> Delete all instances
                 </a>
-                <a role="button" tabindex="0" class="dropdown-item time-limit-edit-button" data-row="<%= JSON.stringify(time_limit_totals) %>">
+                <a role="button" tabindex="0" class="dropdown-item time-limit-edit-button">
                   <i class="far fa-clock" aria-hidden="true"></i> Change time limit for all instances
                 </a>
                 <a class="dropdown-item"
@@ -250,161 +264,106 @@
           </div>
         </div>
 
-        <div class="table-responsive">
-          <table id="usersTable" class="table table-sm table-hover tablesorter">
-            <thead>
-              <tr>
-                <% if (assessment.group_work) { %>
-                  <th>Name</th>
-                  <th>Group Members</th>
-                <% } else { %>
-                  <th>UID</th>
-                  <th>Name</th>
-                  <th class="text-center">Role</th>
-                <% } %>
-                <th class="text-center">Instance</th>
-                <th class="text-center">Score</th>
-                <th class="text-center">Date started</th>
-                <th class="text-center">Duration</th>
-                <th class="text-center">Remaining</th>
-                <th class="text-center"></th>
-                <th class="text-center"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% user_scores.forEach(function(row, iRow) { %>
-                <%# Not showing already deleted group %>
-                <% if (assessment.group_work && !row.group_name) { %>
-                  <% return; %>
-                <% } %>
-              <tr>
-                <% if (assessment.group_work) { %>
-                  <td class="align-middle"><%= row.group_name %></td>
-                  <td class="text-center align-middle" style ="word-break:break-all;"><small><%= row.uid_list %></small></td>
-                <% } else { %>
-                <td class="align-middle"><%= row.uid %></td>
-                <td class="align-middle"><%= row.name %></td>
-                <td class="text-center align-middle"><%= row.role %></td>
-                <% } %>
-                <td class="text-center align-middle"><%= row.number %></td>
-                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
-                <td class="text-center align-middle"><%= row.date_formatted %></td>
-                <td class="text-center align-middle" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
-                <td class="text-center align-middle">
-                  <%= row.time_remaining %>
-                  <% if (authz_data.has_instructor_edit) { %>
-                  <a role="button" tabindex="0" class="btn btn-xs time-limit-edit-button" data-row="<%= JSON.stringify(row) %>" >
-                    <i class="fas fa-edit" aria-hidden="true"></i>
-                  </a>
-                  <% } %>
-                </td>
-                <td class="text-center align-middle">
-                  <div class="dropdown">
-                    <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                      Action <span class="caret"></span>
-                    </button>
-                    <div id="row<%= iRow %>PopoverClose"
-                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                         data-html="true" data-placement="auto" title="Confirm close"
-                         data-content="
-                                       <form name=&quot;close-form&quot; method=&quot;POST&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;close&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverClose').popover('hide')&quot;>
-                                           Cancel
-                                         </button>
-                                         <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Grade and close</button>
-                                       </form>
-                                       ">
-                    </div>
-                    <div id="row<%= iRow %>PopoverRegrade"
-                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                         data-html="true" data-placement="auto" title="Confirm regrade"
-                         data-content="
-                                       <form name=&quot;regrade-form&quot; method=&quot;POST&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;regrade&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
-                                           Cancel
-                                         </button>
-                                         <button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;>Regrade</button>
-                                       </form>
-                                       ">
-                    </div>
+        <table id="usersTable"
+               data-unique-id="assessment_instance_id"
+               data-classes="table table-sm table-hover table-bordered"
+               data-search="true"
+               data-show-columns="true"
+               data-sticky-header="true">
+          <thead>
+            <tr>
+              <% if (assessment.group_work) { %>
+              <th data-field="group_name"
+                  data-sortable="true"
+                  data-class="align-middle"
+                  data-switchable="true">Name</th>
+              <th data-field="uid_list"
+                  data-sortable="true"
+                  data-class="text-center align-middle text-wrap"
+                  data-switchable="true">Group Members</th>
+              <% } else { %>
+              <th data-field="uid"
+                  data-sortable="true"
+                  data-class="align-middle"
+                  data-switchable="true">UID</th>
+              <th data-field="name"
+                  data-sortable="true"
+                  data-class="align-middle"
+                  data-switchable="true">Name</th>
+              <th data-field="name"
+                  data-sortable="true"
+                  data-class="text-center align-middle"
+                  data-switchable="true">Role
+                <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button>
+              </th>
+              <% } %>
+              <th data-field="number"
+                  data-sortable="true"
+                  data-class="text-center align-middle"
+                  data-switchable="true">Instance</th>
+              <th data-field="score_perc"
+                  data-sortable="true"
+                  data-class="text-center align-middle"
+                  data-formatter="scorebarFormatter"
+                  data-switchable="true">Score</th>
+              <th data-field="date_formatted"
+                  data-sortable="true"
+                  data-sort-name="date"
+                  data-class="text-center align-middle"
+                  data-switchable="true">Date started</th>
+              <th data-field="duration"
+                  data-sortable="true"
+                  data-sort-name="duration_secs"
+                  data-class="text-center align-middle"
+                  data-switchable="true">Duration</th>
+              <th data-field="time_remaining"
+                  data-sortable="true"
+                  data-sort-name="time_remaining_sec"
+                  data-formatter="timeRemainingFormatter"
+                  data-class="text-center align-middle"
+                  data-switchable="true">Remaining</th>
+              <th data-field="action_button"
+                  data-sortable="false"
+                  data-formatter="actionButtonFormatter"
+                  data-class="text-center align-middle"
+                  data-switchable="false"></th>
+              <th data-field="details_link"
+                  data-sortable="false"
+                  data-formatter="detailsLinkFormatter"
+                  data-class="text-center align-middle"
+                  data-switchable="false"></th>
+            </tr>
+          </thead>
+        </table>
 
-                    <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
-                    <div class="dropdown-menu" onclick="window.event.preventDefault();">
-
-                      <% if (authz_data.has_instructor_edit) { %>
-                      <a class="dropdown-item"
-                         role="button" tabindex="0"
-                         data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
-                         data-uid="<%= row.uid %>" data-name="<%= row.name %>"
-                         data-number="<%= row.number %>"
-                         data-date-formatted="<%= row.date_formatted %>"
-                         data-score-perc="<%= Math.floor(row.score_perc) %>"
-                         data-assessment-instance-id="<%= row.assessment_instance_id %>"
-                         >
-                        <i class="fa fa-times" aria-hidden="true"></i> Delete
-                      </a>
-                      <% } %>
-
-                      <% if (authz_data.has_instructor_edit) { %>
-                      <a role="button" tabindex="0" class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %>>
-                        <i class="fa fa-ban" aria-hidden="true"></i> Grade & Close
-                      </a>
-                      <% } %>
-
-                      <% if (authz_data.has_instructor_edit) { %>
-                      <a role="button" tabindex="0" class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')">
-                        <i class="fa fa-sync" aria-hidden="true"></i> Regrade
-                      </a>
-                      <% } %>
-
-                    </div>
-                  </div>
-                </td>
-                <td class="text-center align-middle">
-                  <a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a>
-                </td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
-          
-          <div class="card-footer">
-            <small>
-              <strong>Roles:</strong>
-              <ul>
-                 <li><strong>Instructor</strong> is a person in charge of the course. They have full permission to see and edit the information of other users.</li>
-                 <li><strong>TA</strong> is a teaching assistant. They can see the data of all users, but can only edit their own information.</li>
-                 <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
-                 <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
-              </ul>
-            </small>
+        <div class="spinning-wheel card-body spinner-border"><span class="sr-only">Loading...</span></div>
+        
+        <div class="modal fade" id="role-help" tabindex="-1" role="dialog">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title" id="role-help-title">Roles</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <ul>
+                  <li><strong>Instructor</strong> is a person in charge of the course. They have full permission to see and edit the information of other users.</li>
+                  <li><strong>TA</strong> is a teaching assistant. They can see the data of all users, but can only edit their own information.</li>
+                  <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
+                  <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
+                </ul>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
           </div>
         </div>
-        <script>
-          $(function(){
-              $("#usersTable").tablesorter({
-                  theme: "bootstrap",
-                  widthFixed: true,
-                  headerTemplate: '{content} {icon}',
-                  widgets: ["uitheme"],
-                  headers: {
-                    <% if (assessment.group_work) { %>
-                      7: {sorter: false},
-                      8: {sorter: false},
-                    <% } else { %>
-                      8: {sorter: false},
-                      9: {sorter: false},
-                    <% } %>
-                  },
-              });
-          });
-        </script>
+        
       </div>
 
     </div>
