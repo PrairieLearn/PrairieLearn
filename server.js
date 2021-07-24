@@ -1131,6 +1131,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            if (!config.runMigrations) return callback(null);
             migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
