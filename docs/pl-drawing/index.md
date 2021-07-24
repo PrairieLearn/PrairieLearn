@@ -785,7 +785,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `x1` | float | 20 | `x` position for the center of the arc, i.e., the horizontal distance from the left border of the canvas.
 `y1` | float | 20 | `y` position for the center of the arc, i.e., the vertical distance from the top border of the canvas.
-`radius` | float | 40 | Radius of the arc.
+`radius` | float | 20 | Radius of the arc.
 `start-angle` | float | 0 | Start angle of the arc.  Angles are measured from the horizontal axis and are positive clockwise.
 `end-angle` | float | 60 | End angle of the arc. Angles are measured from the horizontal axis and are positive clockwise. Arcs are formed from `start-angle` to `end-angle` going on clockwise orientation.
 `start-support-line` | boolean | false | When `true` it draws a dashed line from the reference point `(x1,y1)` with width `1.5*radius` and orientation given by `start-angle`,

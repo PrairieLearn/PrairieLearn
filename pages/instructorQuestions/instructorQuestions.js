@@ -1,13 +1,13 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const {escapeRegExp} = require('../../prairielib/util');
 const path = require('path');
 const logger = require('../../lib/logger');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const { QuestionAddEditor } = require('../../lib/editors');
 const fs = require('fs-extra');

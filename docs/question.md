@@ -202,7 +202,7 @@ def parse(data):
 
 def grade(data):
     # All elements will have already graded their answers (if any) before this point.
-    # data["partial_scores"][NAME] is the individual element scores (0 to 1).
+    # data["partial_scores"][NAME]["score"] is the individual element scores (0 to 1).
     # data["score"] is the total score for the question (0 to 1).
     # We can modify or delete any of these if we have a custom grading method.
     # This function only runs if `parse()` did not produce format errors, so we can assume all data is valid.
@@ -213,7 +213,7 @@ def grade(data):
     # As an example, we will give half points for incorrect answers larger than "x":
     if data["score"] == 0: # only if not already correct
         if data["submitted_answers"]["y"] > data["params"]["x"]:
-            data["partial_scores"]["y"] = 0.5
+            data["partial_scores"]["y"]["score"] = 0.5
             data["score"] = 0.5
 ```
 
@@ -345,6 +345,10 @@ All three panels display the same `question.html` template, but elements will re
 
 Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
 
+## Hiding staff comments in `question.html`
+
+Please note that HTML or JavaScript comments in your `question.html` source may be visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you may prefer to use a Mustache comment that will stay hidden. Please refer to [this FAQ item](faq.md#how-can-i-add-comments-in-my-questionhtml-source-that-wont-be-visible-to-students).
+
 ## How questions are rendered
 
 Questions are rendered in two possible ways: with the "legacy renderer" and the "new renderer". Currently, the legacy renderer is the default, but the new renderer will eventually replace the legacy renderer entirely. The new renderer uses a different HTML parser, which behaves differently than the old one for malformed HTML and could result in breaking changes.
@@ -449,6 +453,6 @@ For most [elements] there are four different ways of grading the student answer.
 
 3. Write a [custom `grade(data)`](#question-serverpy) function in server.py that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
 
-4. Write an [external grader](externalGrading), though this is typically applied to more complex questions like coding.
+4. Write an [external grader](externalGrading.md), though this is typically applied to more complex questions like coding.
 
 If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements/#pl-answer-panel-element) that any correct answer would be accepted and this displayed answer is only an example.

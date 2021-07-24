@@ -1,7 +1,7 @@
 // @ts-check
 const _ = require('lodash');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const config = require('../../lib/config');
 const perf = require('../performance')('assessments');
@@ -61,6 +61,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         require_honor_code: requireHonorCode,
         auto_close: !!_.get(assessment, 'autoClose', true),
         max_points: assessment.maxPoints,
+        max_bonus_points: assessment.maxBonusPoints,
         set_name: assessment.set,
         text: assessment.text,
         constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
@@ -88,6 +89,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
             show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
             show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
+            active: !!_.get(accessRule, 'active', true),
         };
     });
 

@@ -6,14 +6,14 @@ const plist = require('plist');
 const fs = require('fs');
 const zlib = require('zlib');
 const crypto = require('crypto');
-const jscryptor = require('jscryptor');
+//const jscryptor = require('jscryptor'); // temporarily disabled, see commit 192dda72f
 const _ = require('lodash');
 
 const csrf = require('../../lib/csrf');
 const config = require('../../lib/config');
-const sqldb = require('@prairielearn/prairielib').sqlDb;
-const sqlLoader = require('@prairielearn/prairielib').sqlLoader;
-const error = require('@prairielearn/prairielib').error;
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
+const error = require('../../prairielib/lib/error');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -142,7 +142,7 @@ function dressPassword(obj, password, callback) {
     zlib.gzip(plist.build(obj), function(err, result) {
         if (ERR(err)) return;
         var SEBinner = result;
-        var SEBencrypted = jscryptor.Encrypt(SEBinner, password);
+        var SEBencrypted = SEBinner; // jscryptor.Encrypt(SEBinner, password); // temporarily disabled, see commit 192dda72f
         var SEBheader = Buffer.from('pswd', 'utf8');
         var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBencrypted, 'base64')]);
         zlib.gzip(SEBfile, function(err, result) {

@@ -67,7 +67,11 @@
             "type": "string"
         },
         "maxPoints": {
-            "description": "The maximum number of points that can be earned for this assessment.",
+            "description": "The number of points that must be earned in this assessment to achieve a score of 100%.",
+            "type": "number"
+        },
+        "maxBonusPoints": {
+            "description": "The maximum number of additional points that can be earned beyond maxPoints.",
             "type": "number"
         },
         "autoClose": {
@@ -224,6 +228,11 @@
                 },
                 "showClosedAssessmentScore": {
                     "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
+                    "type": "boolean",
+                    "default": true
+                },
+                "active": {
+                    "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
                     "type": "boolean",
                     "default": true
                 }

@@ -59,7 +59,7 @@ def render(element_html, data):
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    operators = ['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
+    operators = ['cos', 'sin', 'tan', 'arccos', 'arcsin', 'arctan', 'acos', 'asin', 'atan', 'arctan2', 'atan2', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
     constants = ['pi', 'e']
 
     if data['panel'] == 'question':
@@ -399,9 +399,9 @@ def test(element_html, data):
             s += '<br><br><pre>' + phs.point_to_error('1 and 0', 0) + '</pre>'
             data['format_errors'][name] = s
         elif invalid_type == 'function':
-            data['raw_submitted_answers'][name] = 'atan(x)'
-            s = 'Your answer calls an invalid function "' + 'atan' + '". '
-            s += '<br><br><pre>' + phs.point_to_error('atan(x)', 0) + '</pre>'
+            data['raw_submitted_answers'][name] = 'aatan(x)'
+            s = 'Your answer calls an invalid function "' + 'aatan' + '". '
+            s += '<br><br><pre>' + phs.point_to_error('aatan(x)', 0) + '</pre>'
             data['format_errors'][name] = s
         elif invalid_type == 'variable':
             data['raw_submitted_answers'][name] = 'x + y'
