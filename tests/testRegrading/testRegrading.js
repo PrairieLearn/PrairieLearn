@@ -149,11 +149,11 @@ describe('Regrading', function() {
                 locals.$ = cheerio.load(page);
             });
             it(`should contain ${assessmentCode}`, function() {
-                if (assessmentCode == 'HW8') {
+                if (assessmentCode == 'HW9') {
                     elemList = locals.$('td a:contains("Test Regrading for Homework Assessment")');
-                } else if (assessmentCode == 'E11') {
+                } else if (assessmentCode == 'E12') {
                     elemList = locals.$('td a:contains("Test regrading with real-time grading enabled")');
-                } else { // assessmentCode == 'E12'
+                } else { // assessmentCode == 'E13'
                     elemList = locals.$('td a:contains("Test regrading with real-time grading disabled")');
                 }
                 assert.lengthOf(elemList, 1);
@@ -539,7 +539,7 @@ describe('Regrading', function() {
 
     describe('Regrading questions on exam with real-time grading enabled', function() {
         useIncorrectServerFiles();
-        startAssessment(11, true);
+        startAssessment(12, true);
 
         describe('Make submissions for addVectors', function() {
             describe('Save an incorrect answer', function() {
@@ -806,7 +806,7 @@ describe('Regrading', function() {
 
     describe('Regrading questions on exam with real-time grading disabled', function() {
         useIncorrectServerFiles();
-        startAssessment(12, true);
+        startAssessment(13, true);
 
         describe('Make submissions for addVectors', function() {
             describe('Save an incorrect answer', function() {
@@ -1023,7 +1023,7 @@ describe('Regrading', function() {
 
     describe('Regrading questions on homework assessment', function() {
         useIncorrectServerFiles();
-        startAssessment(8, false);
+        startAssessment(9, false);
         
         // Here, we test how regrading handles multiple variants in one instance question.
         // We especially want to test what happens if a variant closes early when regrading,

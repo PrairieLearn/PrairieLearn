@@ -3,7 +3,7 @@
     "type": "Exam",
     "title": "Test regrading with real-time grading enabled",
     "set": "Exam",
-    "number": "11",
+    "number": "12",
     "allowAccess": [
         {
             "mode": "Public",
