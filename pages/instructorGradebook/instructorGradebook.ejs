@@ -91,7 +91,7 @@
                 var button = $('<button/>').attr('type', 'button').addClass('btn btn-xs btn-secondary edit-score ml-1')
                     .attr('tabindex', 0).attr('data-ai-id', assessment_instance_id).attr('data-score', score)
                     .attr('data-other-users', JSON.stringify(other_users))
-                    .append($('<i class="fa fa-edit" aria-hidden="true"></i>'))
+                    .append($('<i class="bi-pencil-square" aria-hidden="true"></i>'))
                     .appendTo(container);
             }
             return container.html();

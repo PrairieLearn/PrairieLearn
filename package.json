@@ -30,6 +30,7 @@
         "blocked-at": "^1.2.0",
         "body-parser": "^1.19.0",
         "bootstrap": "^4.6.0",
+        "bootstrap-icons": "^1.5.0",
         "bootstrap-table": "^1.18.3",
         "bowser": "^2.11.0",
         "byline": "^5.0.0",
