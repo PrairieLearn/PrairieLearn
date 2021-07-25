@@ -30,6 +30,7 @@ SELECT
             THEN greatest(0, extract(epoch from (ai.date_limit - ai.date)))
         ELSE NULL
     END AS total_time_sec,
+    ai.date,
     format_date_full_compact(ai.date, ci.display_timezone) AS date_formatted,
     format_interval(ai.duration) AS duration,
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs,

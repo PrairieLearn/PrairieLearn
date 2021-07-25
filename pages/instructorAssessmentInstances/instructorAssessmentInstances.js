@@ -12,8 +12,8 @@ const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/raw_data', function(req, res, next) {
-    debug('GET /');
+router.get('/raw_data.json', function(req, res, next) {
+    debug('GET /raw_data.json');
     const params = {
         assessment_id: res.locals.assessment.id, 
         group_work: res.locals.assessment.group_work,
@@ -21,7 +21,13 @@ router.get('/raw_data', function(req, res, next) {
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, next)) return;
         res.send(result.rows);
+        return;
     });
+});
+
+router.get('/client.js', function(req, res, next) {
+    debug('GET /client.js');
+    res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
 });
 
 router.get('/', function(req, res, next) {
