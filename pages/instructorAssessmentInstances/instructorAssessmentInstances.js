@@ -25,12 +25,12 @@ router.get('/raw_data.json', function(req, res, next) {
     });
 });
 
-router.get('/client.js', function(req, res, next) {
+router.get('/client.js', function(req, res, _next) {
     debug('GET /client.js');
     res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
 });
 
-router.get('/', function(req, res, next) {
+router.get('/', function(req, res, _next) {
     debug('GET /');
     debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
