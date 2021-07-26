@@ -1142,10 +1142,19 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            if (!config.runMigrations) return callback(null);
             migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
+        },
+        function(callback) {
+            if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
+                logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+                process.exit(0);
+            } else {
+                callback(null);
+            }
         },
         function(callback) {
             // We create and activate a random DB schema name
@@ -1167,14 +1176,6 @@ if (config.startServer) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        },
-        function(callback) {
-            if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
-                logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-                process.exit(0);
-            } else {
-                callback(null);
-            }
         },
         function(callback) {
             const notify_with_new_server = false;
