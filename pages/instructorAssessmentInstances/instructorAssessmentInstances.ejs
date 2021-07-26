@@ -2,11 +2,14 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
+    
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
-    <script src="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/client.js"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js') %>"></script>
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
+
+    <script src="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/client.js"></script>
   </head>
   <body>
     <script>
@@ -166,6 +169,10 @@
                data-search="true"
                data-show-columns="true"
                data-show-refresh="true"
+               data-auto-refresh="true"
+               data-auto-refresh-status="false"
+               data-auto-refresh-interval="30"
+               data-buttons-order="['refresh', 'autoRefresh', 'columns']"
                data-thead-classes="thead-light"
                data-pagination="true"
                data-page-list="[50,100,200,500,unlimited]"
