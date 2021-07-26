@@ -182,8 +182,15 @@
                data-sticky-header="true">
           <thead>
             <tr>
+              <th data-field="assessment_instance_id"
+                  data-sortable="true"
+                  data-sorter="detailsLinkSorter"
+                  data-formatter="detailsLinkFormatter"
+                  data-class="align-middle"
+                  data-switchable="false">Instance</th>
               <% if (assessment.group_work) { %>
               <th data-field="group_name"
+                  data-visible="false"
                   data-sortable="true"
                   data-class="align-middle"
                   data-switchable="true">Name</th>
@@ -193,6 +200,7 @@
                   data-switchable="true">Group Members</th>
               <% } else { %>
               <th data-field="uid"
+                  data-visible="false"
                   data-sortable="true"
                   data-class="align-middle"
                   data-switchable="true">UID</th>
@@ -211,6 +219,7 @@
               </th>
               <% } %>
               <th data-field="number"
+                  data-visible="<%= assessment.multiple_instance %>"
                   data-sortable="true"
                   data-class="text-center align-middle"
                   data-switchable="true">Instance</th>
@@ -245,11 +254,6 @@
               <th data-field="action_button"
                   data-sortable="false"
                   data-formatter="actionButtonFormatter"
-                  data-class="text-center align-middle"
-                  data-switchable="false"></th>
-              <th data-field="details_link"
-                  data-sortable="false"
-                  data-formatter="detailsLinkFormatter"
                   data-class="text-center align-middle"
                   data-switchable="false"></th>
             </tr>

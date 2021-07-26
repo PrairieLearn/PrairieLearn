@@ -152,8 +152,28 @@ function timeRemainingLimitFormatter(value, row) {
     return value;
 }
 
-function detailsLinkFormatter(_value, row) {
-    return `<a href="<%= urlPrefix %>/assessment_instance/${row.assessment_instance_id}" class="btn btn-xs btn-info">Details</a>`;
+function detailsLinkFormatter(value, row) {
+    var name = <% if (assessment.group_work) { %> row.group_name <% } else { %> row.uid <% } %>;
+    var number = <% if (!assessment.multiple_instance) { %> row.number ==  1 ? '' : <% } %> `#{row.number}`;
+    return `<a href="<%= urlPrefix %>/assessment_instance/${value}"><%= assessment_set.abbreviation %><%= assessment.number %>${number} for ${name}</a>`;
+}
+
+function detailsLinkSorter(valueA, valueB, rowA, rowB) {
+    //<% if (assessment.group_work) { %>
+    var nameA = rowA.group_name, nameB = rowB.group_name;
+    var idA = rowA.group_id, idB = rowB.group_id;
+    //<% } else { %>
+    var nameA = rowA.uid, nameB = rowB.uid;
+    var idA = rowA.user_id, idB = rowB.user_id;
+    //<% } %>
+    // Compare first by UID/group name, then user/group ID, then
+    // instance number, then by instance ID.
+    var compare = nameA.localeCompare(nameB);
+    console.log(nameA, nameB, compare);
+    if (!compare) compare = idA - idB;
+    if (!compare) compare = rowA.number - nowB.number;
+    if (!compare) compare = valueA - valueB;
+    return compare;
 }
 
 function actionButtonFormatter(_value, row, index) {
