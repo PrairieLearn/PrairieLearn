@@ -138,8 +138,7 @@ function scorebarFormatter(score, row) {
     }
 }
 
-function timeRemainingFormatter(value, row) {
-    console.log('formatter', row);
+function timeRemainingLimitFormatter(value, row) {
     //<% if (authz_data.has_instructor_edit) { %>
     var container = $('<span>');
     var link = $('<a>')

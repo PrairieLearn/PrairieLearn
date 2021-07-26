@@ -220,9 +220,16 @@
               <th data-field="time_remaining"
                   data-sortable="true"
                   data-sort-name="time_remaining_sec"
-                  data-formatter="timeRemainingFormatter"
+                  data-formatter="timeRemainingLimitFormatter"
                   data-class="text-center align-middle"
                   data-switchable="true">Remaining</th>
+              <th data-field="total_time"
+                  data-visible="false"
+                  data-sortable="true"
+                  data-sort-name="total_time_sec"
+                  data-formatter="timeRemainingLimitFormatter"
+                  data-class="text-center align-middle"
+                  data-switchable="true">Total Time Limit</th>
               <th data-field="action_button"
                   data-sortable="false"
                   data-formatter="actionButtonFormatter"
