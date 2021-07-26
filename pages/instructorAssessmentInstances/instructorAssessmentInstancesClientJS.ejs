@@ -1,6 +1,8 @@
+var bsTable;
+
 $(function() {
 
-    var bsTable = $('#usersTable').bootstrapTable({
+    bsTable = $('#usersTable').bootstrapTable({
         onPreBody: function() {
             $('.spinning-wheel').show();
         },
@@ -35,30 +37,53 @@ $(function() {
             
         },
     });
+    
+    $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget); // Button that triggered the modal
+        var uid = button.data('uid'); // Extract info from data-* attributes
+        var name = button.data('name');
+        var number = button.data('number');
+        var date_formatted = button.data('date-formatted');
+        var score_perc = button.data('score-perc');
+        var assessment_instance_id = button.data('assessment-instance-id');
+        var modal = $(this);
+        
+        modal.find('form').submit(e => {
+            e.preventDefault();
+            $.post($(e.target).attr('action'), $(e.target).serialize(), function(data) {
+                refreshTable();
+            }, 'json');
+            modal.modal('hide');
+        });
+        
+        modal.find('.modal-uid').text(uid);
+        modal.find('.modal-name').text(name);
+        modal.find('.modal-number').text(number);
+        modal.find('.modal-date').text(date_formatted);
+        modal.find('.modal-score-perc').text(score_perc);
+        modal.find('.modal-assessment-instance-id').val(assessment_instance_id);
+    });
+    
+    $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function (event) {
+        var modal = $(this);
+        
+        modal.find('form').submit(e => {
+            e.preventDefault();
+            $.post($(e.target).attr('action'), $(e.target).serialize(), function(data) {
+                refreshTable();
+            }, 'json');
+            modal.modal('hide');
+        });
+    });
 });
 
-$('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
-    var button = $(event.relatedTarget); // Button that triggered the modal
-    var uid = button.data('uid'); // Extract info from data-* attributes
-    var name = button.data('name');
-    var number = button.data('number');
-    var date_formatted = button.data('date-formatted');
-    var score_perc = button.data('score-perc');
-    var assessment_instance_id = button.data('assessment-instance-id');
-    var modal = $(this);
-    
-    modal.find('.modal-uid').text(uid);
-    modal.find('.modal-name').text(name);
-    modal.find('.modal-number').text(number);
-    modal.find('.modal-date').text(date_formatted);
-    modal.find('.modal-score-perc').text(score_perc);
-    modal.find('.modal-assessment-instance-id').val(assessment_instance_id);
-});
+function refreshTable() {
+    bsTable.bootstrapTable('refresh', {silent: true});
+}
 
 function timeLimitEditPopoverContent() {
     let that = this;
     let row = $(this).data('row');
-    console.log(row);
     let form = $('<form name="set-time-limit-form" method="POST">');
     let action = row.action ? row.action : 'set_time_limit';
     form.append(`<p>Total time limit: ${row.total_time}<br/>
@@ -115,6 +140,13 @@ function timeLimitEditPopoverContent() {
     buttons.append(cancel_button);
     buttons.append('<button type="submit" class="btn btn-success">Set</button>');
     form.append(buttons);
+    form.submit(e => {
+        e.preventDefault();
+        $.post(form.attr('action'), form.serialize(), function(data) {
+            refreshTable();
+        }, 'json');
+        $(that).popover('hide');
+    });
     return form;
 };
 
@@ -166,10 +198,10 @@ function detailsLinkSorter(valueA, valueB, rowA, rowB) {
     var nameA = rowA.uid, nameB = rowB.uid;
     var idA = rowA.user_id, idB = rowB.user_id;
     //<% } %>
+
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.
     var compare = nameA.localeCompare(nameB);
-    console.log(nameA, nameB, compare);
     if (!compare) compare = idA - idB;
     if (!compare) compare = rowA.number - nowB.number;
     if (!compare) compare = valueA - valueB;

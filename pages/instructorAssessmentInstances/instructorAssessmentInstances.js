@@ -63,7 +63,7 @@ router.post('/', function(req, res, next) {
             ];
             sqldb.call('assessment_instances_delete', params, function(err) {
                 if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
+                res.send(JSON.stringify({}));
             });
         });
     } else if (req.body.__action == 'grade_all' || req.body.__action == 'close_all') {
@@ -81,7 +81,7 @@ router.post('/', function(req, res, next) {
         ];
         sqldb.call('assessment_instances_delete_all', params, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            res.send(JSON.stringify({}));
         });
     } else if (req.body.__action == 'regrade') {
         const assessment_id = res.locals.assessment.id;
@@ -118,7 +118,7 @@ router.post('/', function(req, res, next) {
         }
         sqldb.query(sql.set_time_limit, params, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            res.send(JSON.stringify({}));
         });
     } else if (req.body.__action == 'set_time_limit_all') {
         const params = {
@@ -144,7 +144,7 @@ router.post('/', function(req, res, next) {
         }
         sqldb.query(sql.set_time_limit_all, params, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            res.send(JSON.stringify({}));
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
