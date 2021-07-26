@@ -1,7 +1,6 @@
 $(function() {
 
     var bsTable = $('#usersTable').bootstrapTable({
-        url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/raw_data.json',
         onPreBody: function() {
             $('.spinning-wheel').show();
         },
@@ -237,6 +236,14 @@ function actionButtonFormatter(_value, row, index) {
         .append($('<i>').addClass('fas fa-sync')
                 .attr('aria-hidden', 'true'))
         .append('Regrade')
+        .appendTo(menu);
+
+    //<% } else { %>
+    $('<a>')
+        .addClass('dropdown-item disabled')
+        .attr('role', 'button')
+        .attr('tabindex', '0')
+        .append('Must have instructor permission')
         .appendTo(menu);
 
     //<% } %>

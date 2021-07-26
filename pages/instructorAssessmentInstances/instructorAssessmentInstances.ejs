@@ -148,6 +148,10 @@
                    data-toggle="modal" data-target="#closeAllAssessmentInstancesModal">
                   <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all instances
                 </a>
+                <% } else { %>
+                <a class="dropdown-item disabled" role="button" tabindex="0">
+                  Must have instructor permission
+                </a>
                 <% } %>
                 
               </div>
@@ -158,6 +162,7 @@
         <table id="usersTable"
                data-unique-id="assessment_instance_id"
                data-classes="table table-sm table-hover table-bordered"
+               data-url="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/raw_data.json"
                data-search="true"
                data-show-columns="true"
                data-show-refresh="true"
