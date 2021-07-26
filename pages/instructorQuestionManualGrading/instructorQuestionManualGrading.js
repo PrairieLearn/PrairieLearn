@@ -46,7 +46,7 @@ router.get('/', (req, res, next) => {
                 if (result.rows[0].conflict_grading_job) {
                     // During a normal POST 'add_manual_grade' action, a grading job is produced and a submission score/feedback is updated.
                     // IFF a grading conflict occurs, the 'add_manual_grade' produces a grading job without updating the submission score/feedback.
-                    // Hence, conflictDataSource has `submission` and `gradingJob` types. Types used in algorithm to resolve grading conflict.
+                    // Hence, conflictDataSource has `submission` and `gradingJob` types. Relevant in 'resolve_manual_grading_conflict' action
                     res.locals.conflict_diff = {
                         grading_job_id: result.rows[0].conflict_grading_job.id,
                         existing: {
