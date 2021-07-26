@@ -64,14 +64,14 @@ def prepare(element_html, data):
         elif grading_method in ['ranking', 'ordered']:
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
         elif grading_method == 'dag':
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'label', 'depends'])
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'tag', 'depends'])
 
         is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
         answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1)
 
-        label = pl.get_string_attrib(html_tags, 'label', None)
+        tag = pl.get_string_attrib(html_tags, 'tag', None)
         depends = pl.get_string_attrib(html_tags, 'depends', '')
         depends = depends.strip().split(',') if depends else []
 
@@ -82,7 +82,7 @@ def prepare(element_html, data):
                             'indent': answer_indent,
                             'ranking': ranking,
                             'index': index,
-                            'label': label,      # only used with DAG grader
+                            'tag': tag,      # only used with DAG grader
                             'depends': depends,  # only used with DAG grader
                             'group': group       # only used with DAG grader
                             }
@@ -305,7 +305,7 @@ def parse(element_html, data):
     elif grading_mode == 'dag':
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
-            answer['label'] = search['label'] if search is not None else None
+            answer['tag'] = search['tag'] if search is not None else None
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         for html_tags in element:
@@ -374,23 +374,23 @@ def grade(element_html, data):
         correctness = max(correctness, partial_credit)
         final_score = float(correctness / len(true_answer_list))
     elif grading_mode == 'dag':
-        order = [ans['label'] for ans in student_answer]
-        depends_graph = {ans['label']: ans['depends'] for ans in true_answer_list}
-        group_belonging = {ans['label']: ans['group'] for ans in true_answer_list}
+        order = [ans['tag'] for ans in student_answer]
+        depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
+        group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
         correctness, first_wrong = grade_dag(order, depends_graph, group_belonging)
 
         if correctness == len(depends_graph.keys()):
             final_score = 1
         elif correctness < len(depends_graph.keys()):
-            final_score = float(correctness) / len(depends_graph.keys())
+            final_score = 0  # TODO figure out a partial credit scheme
             if first_wrong == -1:
                 feedback = 'Your answer is correct so far, but it is incomplete.'
             else:
-                feedback = r"""Your answer is incorrect starting at <span style="color:red;">line number """ + str(first_wrong + 1) + \
+                feedback = r"""Your answer is incorrect starting at <span style="color:red;">block number """ + str(first_wrong + 1) + \
                     r"""</span>. The problem is most likely one of the following:
-                    <ul><li> This line is not a part of the correct solution </li>
-                    <li> This line is not adequately supported by previous lines </li>
+                    <ul><li> This block is not a part of the correct solution </li>
+                    <li> This block is not adequately supported by previous block </li>
                     <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
 
     if check_indentation:

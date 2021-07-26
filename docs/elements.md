@@ -396,8 +396,8 @@ Attribute | Type | Default | Description
 `correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
 `ranking` | positive integer | — | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
 `indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.
-`depends` | string | "" | This attribute is used when `grading-method="dag"` to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `label`. For example, if `depends=1,3` for a particular block, it must appear later in the proof than the block with `label="1"` and the block with `label="3"`.
-`label` | string | "" | Optional attribute when `grading-method="dag"`. Used to identify the block when declaring which other blocks depend on it.
+`depends` | string | "" | This attribute is used when `grading-method="dag"` to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends=1,3` for a particular block, it must appear later in the proof than the block with `tag="1"` and the block with `tag="3"`.
+`tag` | string | "" | Optional attribute when `grading-method="dag"`. Used to identify the block when declaring which other blocks depend on it.
 
 #### Details
 
