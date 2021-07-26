@@ -48,7 +48,7 @@ router.post('/', function(req, res, next) {
             const overrideGradeRate = true;
             assessment.gradeAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err) {
                 if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
+                res.send(JSON.stringify({}));
             });
         });
     } else if (req.body.__action == 'delete') {

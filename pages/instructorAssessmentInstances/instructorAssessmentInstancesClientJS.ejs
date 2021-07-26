@@ -81,6 +81,14 @@ function refreshTable() {
     bsTable.bootstrapTable('refresh', {silent: true});
 }
 
+function popoverSubmitViaAjax(e, popover) {
+    e.preventDefault();
+    $.post($(e.target).attr('action'), $(e.target).serialize(), function(data) {
+        refreshTable();
+    }, 'json');
+    $(popover).popover('hide');
+}
+
 function timeLimitEditPopoverContent() {
     let that = this;
     let row = $(this).data('row');
@@ -141,11 +149,7 @@ function timeLimitEditPopoverContent() {
     buttons.append('<button type="submit" class="btn btn-success">Set</button>');
     form.append(buttons);
     form.submit(e => {
-        e.preventDefault();
-        $.post(form.attr('action'), form.serialize(), function(data) {
-            refreshTable();
-        }, 'json');
-        $(that).popover('hide');
+        popoverSubmitViaAjax(e, that);
     });
     return form;
 };
@@ -226,7 +230,7 @@ function actionButtonFormatter(_value, row, index) {
         .attr('data-toggle', 'popover')
         .attr('title', 'Confirm close')
         .attr('data-content',
-              `<form name="close-form" method="POST">
+              `<form name="close-form" method="POST" onsubmit="popoverSubmitViaAjax(event, '#row${ai_id}PopoverClose')">
                  <input type="hidden" name="__action" value="close">
                  <input type="hidden" name="__csrf_token" value="${window.csrf_token}">
                  <input type="hidden" name="assessment_instance_id" value="${ai_id}">
