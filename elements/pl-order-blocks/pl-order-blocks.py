@@ -98,7 +98,7 @@ def prepare(element_html, data):
             continue
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
-                raise Exception('Block groups only supported in the DAG grading mode.')
+                raise Exception('Block groups only supported in the "dag" grading mode.')
             group_counter += 1
             for grouped_tag in html_tags:
                 if html_tags.tag is lxml.etree.Comment:
@@ -162,7 +162,6 @@ def render(element_html, data):
 
         mcq_options = data['params'][answer_name]
         mcq_options = filter_multiple_from_array(mcq_options, ['inner_html', 'uuid'])
-        # mcq_options = [opt.strip() for opt in mcq_options] Still needed?
 
         if answer_name in data['submitted_answers']:
             student_previous_submission = filter_multiple_from_array(data['submitted_answers'][answer_name], ['inner_html', 'uuid', 'indent'])
