@@ -147,13 +147,28 @@ describe('Instructor assessment editing', function() {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        it('should contain the assessment instance', function() {
-            elemList = locals.$('#usersTable tr td:contains("dev@illinois.edu") ~ td a:contains("Details")');
-            assert.lengthOf(elemList, 1);
+        it('should load raw data file successfully', function(callback) {
+            locals.instructorAssessmentInstancesUrl = locals.instructorAssessmentUrl + 'instances/raw_data.json';
+            request(locals.instructorAssessmentInstancesUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
         });
-        it('should have the correct link for the assessment instance', function() {
-            locals.instructorAssessmentInstanceUrl = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(locals.instructorAssessmentInstanceUrl, locals.instructorBaseUrl + '/assessment_instance/1');
+        it('should parse as JSON array of objects', function() {
+            locals.pageData = JSON.parse(page);
+            assert.isArray(locals.pageData);
+            locals.pageData.forEach(obj => assert.isObject(obj));
+        });
+        it('should contain the assessment instance', function() {
+            elemList = _.filter(locals.pageData, row => row.uid == 'dev@illinois.edu');
+            assert.lengthOf(elemList, 1);
+            locals.instructorAssessmentInstanceUrl = locals.instructorBaseUrl + '/assessment_instance/' + elemList[0].assessment_instance_id;
         });
     });
 
