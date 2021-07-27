@@ -257,7 +257,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  */
 
  /**
-  * @typedef {"Internal" | "External" | "Manual"} gradingMethod
+  * @typedef {"Internal" | "External" | "Manual"} GradingMethod
   */
 
  /**
@@ -272,7 +272,8 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {string[]} clientFiles
   * @property {string[]} clientTemplates
   * @property {string} template
-  * @property {gradingMethod | gradingMethod[]} gradingMethod
+  * @property {GradingMethod} gradingMethod
+  * @property {GradingMethod[]} gradingMethods
   * @property {boolean} singleVariant
   * @property {boolean} partialCredit
   * @property {Object} options
