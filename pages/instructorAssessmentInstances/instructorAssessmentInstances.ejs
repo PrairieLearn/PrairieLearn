@@ -237,13 +237,20 @@
                   data-sortable="true"
                   data-sort-name="duration_secs"
                   data-class="text-center align-middle"
-                  data-switchable="true">Duration</th>
+                  data-switchable="true">Duration
+                <button class="btn btn-xs" type="button" title="Show duration help" data-toggle="modal" data-target="#duration-help">
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button>
+              </th>
               <th data-field="time_remaining"
                   data-sortable="true"
                   data-sort-name="time_remaining_sec"
                   data-formatter="timeRemainingLimitFormatter"
                   data-class="text-center align-middle"
-                  data-switchable="true">Remaining</th>
+                  data-switchable="true">Remaining
+                <button class="btn btn-xs" type="button" title="Show remaining time help" data-toggle="modal" data-target="#time-remaining-help">
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button></th>
               <th data-field="total_time"
                   data-visible="false"
                   data-sortable="true"
@@ -286,6 +293,76 @@
           </div>
         </div>
         
+        <div class="modal fade" id="duration-help" tabindex="-1" role="dialog">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title" id="role-help-title">Duration</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <p>The "Duration" is the amount of time that a student
+                  has spent actively working on the assessment. The
+                  duration time measurement begins when the student
+                  starts the assessment and continues until the most
+                  recent answer submission. A student is considered to
+                  be actively working if they have at least one answer
+                  submission per hour, so the duration measurement is
+                  paused if there is a gap of more than one hour
+                  between answer submissions. For example:</p>
+                <ul>
+                  <li>08:00 - student starts assessment;</li>
+                  <li>08:30 - student submits answer;</li>
+                  <li>09:00 - student submits answer;</li>
+                  <li>(gap of more than one hour)</li>
+                  <li>11:00 - student submits answer;</li>
+                  <li>11:30 - student submits answer;</li>
+                  <li>12:00 - student submits answer.</li>
+                </ul>
+                <p>In the above example, the "duration" would be 2
+                  hours: one hour from 08:00 to 09:00, and another
+                  hour from 11:00 to 12:00. The two-hour gap between
+                  09:00 to 11:00 is not counted as part of the
+                  duration.</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal fade" id="time-remaining-help" tabindex="-1" role="dialog">
+          <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h4 class="modal-title" id="role-help-title">Time Remaining</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <p>For open assessments with a time limit, this column
+                  will indicate the number of minutes (rounded down)
+                  the student has left to complete the assessment. If
+                  the value is <strong>0 min</strong>, the student has
+                  less than one minute to complete it. This column may
+                  also contain one of the following special
+                  values.</p>
+                <ul>
+                  <li><strong>Expired</strong> indicates the assessment time limit has expired, and will be automatically closed as soon as possible. If an assessment is Expired for a prolonged period of time, this typically means the student has closed their browser or lost connectivity, and the assessment will be closed as soon as the student opens the assessment. No further submissions are accepted at this point.</li>
+                  <li><strong>Closed</strong> indicates the assessment has been closed, and no further submissions are accepted.</li>
+                  <li><strong>Open (no time limit)</strong> indicates that the assessment is still open and accepting submissions, and there is no time limit to submit the assessment (other than those indicated by access rules).</li>
+                </ul>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
