@@ -3,5 +3,6 @@
     "title": "Add two numbers",
     "topic": "Algebra",
     "tags": ["mwest", "fa17", "tpl101", "v3"],
-    "type": "v3"
+    "type": "v3",
+    "gradingMethods": ["Internal", "Manual"]
 }

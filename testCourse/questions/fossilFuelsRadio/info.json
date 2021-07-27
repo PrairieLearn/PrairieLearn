@@ -22,5 +22,6 @@
             "Low energy return"
         ],
         "numberAnswers": 5
-    }
+    },
+    "gradingMethods": ["Internal", "External", "Manual"]
 }
