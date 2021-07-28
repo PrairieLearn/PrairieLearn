@@ -13,7 +13,7 @@ BEGIN
 
     -- Get random ungraded instance question with last submission (include manual grading conflicts as eligible)
     WITH iq_with_last_submission AS (
-        SELECT DISTINCT ON (iq.id) iq.*, s.graded_at, gj.manual_grading_conflict
+        SELECT DISTINCT ON (iq.id) iq.*, s.graded_at, gj.manual_grading_conflict, gj.grading_method
         FROM
             instance_questions AS iq
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -31,7 +31,7 @@ BEGIN
     FROM
         iq_with_last_submission AS iqwls
     WHERE
-        iqwls.graded_at IS NULL OR iqwls.manual_grading_conflict IS TRUE
+        iqwls.graded_at IS NULL OR iqwls.manual_grading_conflict IS TRUE OR iqwls.grading_method != 'Manual'::enum_grading_method
     ORDER BY RANDOM()
     LIMIT 1
     FOR UPDATE;
