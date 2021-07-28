@@ -23,5 +23,5 @@
         ],
         "numberAnswers": 5
     },
-    "gradingMethods": ["Internal", "External", "Manual"]
+    "gradingMethods": ["Internal", "Manual"]
 }
