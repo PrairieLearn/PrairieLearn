@@ -64,6 +64,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     * `args` (optional, default none): command line arguments to pass to the Docker image
     * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
     * `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
+    * `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode.
 
 #### `info.json` for ungraded workspace
 
