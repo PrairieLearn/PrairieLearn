@@ -200,8 +200,6 @@ describe('Manual grading', function() {
             const groupedByStudent = {};
 
             context.rows.forEach((submission) => {
-                assert.isNull(submission.graded_at);
-
                 if (!groupedByStudent[submission.auth_user_id]) {groupedByStudent[submission.auth_user_id] = [];}
                 groupedByStudent[submission.auth_user_id].push(submission);
             });
