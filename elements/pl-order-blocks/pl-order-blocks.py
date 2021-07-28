@@ -14,6 +14,7 @@ INDENTION_DEFAULT = False
 MAX_INDENTION_DEFAULT = 4
 SOURCE_BLOCKS_ORDER_DEFAULT = 'random'
 GRADING_METHOD_DEFAULT = 'ordered'
+FEEDBACK_DEFAULT = 'none'
 SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Construct your solution here:'
 FILE_NAME_DEFAULT = 'user_code.py'
@@ -38,19 +39,25 @@ def prepare(element_html, data):
                         'solution-header', 'file-name',
                         'solution-placement', 'max-incorrect',
                         'min-incorrect', 'weight',
-                        'inline', 'max-indent']
+                        'inline', 'max-indent',
+                        'feedback']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
-    correct_answers = []
-    incorrect_answers = []
-
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
+    feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
 
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
         raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
+
+    if (grading_method != 'dag' and feedback_type != 'none') or \
+       (grading_method == 'dag' and feedback_type not in ['none', 'first-wrong']):
+        raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
+
+    correct_answers = []
+    incorrect_answers = []
 
     def prepare_tag(html_tags, index, group=None):
         if html_tags.tag != 'pl-answer':
@@ -334,6 +341,7 @@ def grade(element_html, data):
     student_answer = data['submitted_answers'][answer_name]
     grading_mode = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
+    feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
     true_answer_list = data['correct_answers'][answer_name]
@@ -383,14 +391,17 @@ def grade(element_html, data):
             final_score = 1
         elif correctness < len(depends_graph.keys()):
             final_score = 0  # TODO figure out a partial credit scheme
-            if first_wrong == -1:
-                feedback = 'Your answer is correct so far, but it is incomplete.'
-            else:
-                feedback = r"""Your answer is incorrect starting at <span style="color:red;">block number """ + str(first_wrong + 1) + \
-                    r"""</span>. The problem is most likely one of the following:
-                    <ul><li> This block is not a part of the correct solution </li>
-                    <li> This block is not adequately supported by previous block </li>
-                    <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
+            if feedback_type == 'none':
+                feedback = ''
+            elif feedback_type == 'first-wrong':
+                if first_wrong == -1:
+                    feedback = 'Your answer is correct so far, but it is incomplete.'
+                else:
+                    feedback = r"""Your answer is incorrect starting at <span style="color:red;">block number """ + str(first_wrong + 1) + \
+                        r"""</span>. The problem is most likely one of the following:
+                        <ul><li> This block is not a part of the correct solution </li>
+                        <li> This block is not adequately supported by previous block </li>
+                        <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
 
     if check_indentation:
         student_answer_indent = filter_multiple_from_array(data['submitted_answers'][answer_name], ['indent'])

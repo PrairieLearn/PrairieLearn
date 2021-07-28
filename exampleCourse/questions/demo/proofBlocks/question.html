@@ -4,7 +4,9 @@
     attribute on each line is to denote which lines of the proof must appear
     before that line. The autograder will use this dependency information to
     construct the dependency graph of the proof. Then a correct answer is a
-    topological sort of the lines of the proof.
+    topological sort of the lines of the proof. This example also uses the option
+    <code>feedback="first-wrong"</code> to give the student feedback about where
+    the first wrong line of their proof was.
   </p>
 
   <p>
@@ -14,7 +16,7 @@
 
   </pl-question-panel>
 
-  <pl-order-blocks answers-name="even-implies-odd" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
+  <pl-order-blocks answers-name="even-implies-odd" source-blocks-order="random" grading-method="dag" feedback="first-wrong" solution-placement="bottom">
     <pl-answer correct="true" tag="1" depends=""  > Proof by Contrapositive:</pl-answer>
     <pl-answer correct="true" tag="2" depends="1" > Take some $m \in \mathbb{Z}$ </pl-answer>
     <pl-answer correct="true" tag="3" depends="1" > Take some $n \in \mathbb{Z}$ </pl-answer>
