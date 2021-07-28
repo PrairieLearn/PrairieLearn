@@ -418,6 +418,17 @@ describe('Manual grading', function() {
                 body: querystring.encode(payload),
             }).to.be.rejected);
         });
+        it('instructor should NOT see questions that are NOT configured for manual grading', async () => {
+            const question = (await sqlDb.queryAsync(sql.get_question, {qid: 'partialCredit1'})).rows[0];
+            assert.isFalse(question.grading_method_manual);
+
+            const instructorCourseInstanceUrl = baseUrl + '/course_instance/1/instructor/instance_admin/assessments';
+            const instructorCourseInstanceBody = await (await fetch(instructorCourseInstanceUrl)).text();
+
+            manualGradingUrl = siteUrl + cheerio.load(instructorCourseInstanceBody)('a:contains("Homework for automatic test suite")').attr('href') + 'manual_grading';
+            const manualGradingBody = await (await fetch(manualGradingUrl)).text();
+            assert.notInclude(manualGradingBody, 'partialCredit1');
+            });
         it('grading conflict should persist when loaded by any instructor (even beyond manual grading expiry time)', async () => {
             let gradingConflictBody = await (await fetch(gradingConflictUrl)).text();
             assert.include(gradingConflictBody, 'Manual Grading Conflict: Another Grading Job Was Submitted While Grading');

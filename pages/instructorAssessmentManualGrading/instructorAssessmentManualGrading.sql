@@ -57,4 +57,5 @@ WHERE
     aq.assessment_id = $assessment_id
     AND aq.deleted_at IS NULL
     AND q.deleted_at IS NULL
+    AND q.grading_method_manual = TRUE
 ORDER BY aq.number;

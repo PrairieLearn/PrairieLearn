@@ -64,3 +64,8 @@ FROM
     JOIN users AS u ON (gj.auth_user_id = u.user_id)
 WHERE
     gj.id = $gradingJobId;
+
+-- BLOCK get_question
+SELECT *
+FROM questions
+WHERE qid = $qid
