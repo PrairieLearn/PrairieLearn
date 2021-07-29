@@ -1,3 +1,49 @@
+# Setting Points for the Assessment
+
+## Changing the available amount of credit
+An instructor can choose the percentage of available credit for a given assessment.  The most straightforward option is to give 100%, but values less than or greater than 100 are allowed.
+
+This is set in the `allowAccess` field in `infoAssessment.json`.  Once you have opened `infoAssessment.json` for editing, you can input:
+```json
+"allowAccess": [ {"credit": 120} ]
+```
+This allows 120% total possible credit for the assessment.  How this interacts with the available points in the assessment will be explained in [`Assessment points`](howtoAssessmentPoints.md#Assessment points) below.
+
+## Changing credit for different time periods
+You can also use `allowAccess` to set a specific time range for which credit is available.  For example,
+```json
+"allowAccess": [ 
+
+{
+"startDate": "2021-10-01T20:00:00",
+"endDate": "2021-10-05T20:00:00",
+"credit": 120
+} 
+
+{
+"startDate": "2021-10-05T20:00:01",
+"endDate": "2021-10-10T20:00:00",
+"credit": 100
+}
+
+{
+"startDate": "2021-10-10T20:00:01",
+"endDate": "2021-10-15T20:00:00",
+"credit": 50
+}
+
+{
+"startDate": "2021-10-15T20:00:01",
+"endDate": "2021-10-20T20:00:00",
+"credit": 0
+}
+
+]
+
+```
+In this example, starting at 8pm on October 1st, 2021, the assessment will be worth 120%, but only until October 5th at 8pm.  At this time (or precisely, 1 second after 8pm) the assessment will be worth 100% until October 10th.  This continues decreasing - 50% October 10-15, and 0% credit between October 15-20.  0% credit allows students to continue working on homework after the due date in order to help prepare for exams.
+
+
 ## Assessment points
 
 A student's percentage score will be determined by the number of points they have obtained, divided by the value of `maxPoints` (subject to the rules associated to [`credit`](accessControl.md#credit) in assessment access rules).
