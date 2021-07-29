@@ -654,4 +654,4 @@ const testManualGradingAction = (action) => {
 
 // Run tests using both of these submission types and ensure manual grading passes against both submission types.
 testManualGradingAction('save');
-// testManualGradingAction('grade');
+testManualGradingAction('grade');
