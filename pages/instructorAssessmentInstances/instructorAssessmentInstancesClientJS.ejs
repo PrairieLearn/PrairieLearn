@@ -190,7 +190,7 @@ function timeRemainingLimitFormatter(value, row) {
 
 function detailsLinkFormatter(value, row) {
     var name = <% if (assessment.group_work) { %> row.group_name <% } else { %> row.uid <% } %>;
-    var number = <% if (!assessment.multiple_instance) { %> row.number ==  1 ? '' : <% } %> `#{row.number}`;
+    var number = <% if (!assessment.multiple_instance) { %> row.number ==  1 ? '' : <% } %> `#${row.number}`;
     return `<a href="<%= urlPrefix %>/assessment_instance/${value}"><%= assessment_set.abbreviation %><%= assessment.number %>${number} for ${name}</a>`;
 }
 
@@ -207,7 +207,7 @@ function detailsLinkSorter(valueA, valueB, rowA, rowB) {
     // instance number, then by instance ID.
     var compare = nameA.localeCompare(nameB);
     if (!compare) compare = idA - idB;
-    if (!compare) compare = rowA.number - nowB.number;
+    if (!compare) compare = rowA.number - rowB.number;
     if (!compare) compare = valueA - valueB;
     return compare;
 }
