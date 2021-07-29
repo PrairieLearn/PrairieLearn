@@ -6,7 +6,8 @@ SELECT
     c.short_name AS course,
     ci.id AS course_instance_id,
     ci.short_name AS course_instance,
-    a.title AS assessment_title,
+    a.id AS assessment_id,
+    a.title AS assessment,
     aii.assessment_instance_id
 FROM
     assessments AS a
