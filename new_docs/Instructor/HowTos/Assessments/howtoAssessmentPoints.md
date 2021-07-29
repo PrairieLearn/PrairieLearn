@@ -57,11 +57,22 @@ A student's percentage score will be determined by the number of points they hav
     ...
 }
 ```
+If `maxPoints` is not defined, then its value is calculated by the maximum number of points that can be obtained from all questions in all zones (see [`points for each question`](howtoAssessmentPoints.md/#question) below.
 
 ## How credit is calculated
+
+### Credit < 100
+
+If `credit` is set to a value less than 100 in `allowAccess`, then the property `maxBonusPoints` has no effect; there are no Bonus Points available in the assessment.
+
+### Credit = 100
 
 The `maxPoints` determines the number of points a student is required to obtain to get a score of 100%. The percentage score will thus be computed based on the points the student obtained divided by the value of `maxPoints`. If not provided, `maxPoints` is computed based on the maximum number of points that can be obtained from all questions in all zones.
 
 By default, once a student obtains enough points to reach the value of `maxPoints`, any further points do not affect the assessment score. However, if a value is set for `maxBonusPoints`, the student can obtain additional points, up to a total of `maxPoints + maxBonusPoints`. The percentage is still based on `maxPoints`, so the use of `maxBonusPoints` allows students to obtain a percentage above 100%. If `maxBonusPoints` is set, but `maxPoints` is not provided, then `maxPoints` will be computed by subtracting `maxBonusPoints` from the maximum number of points in all questions.
+
+
+### Credit > 100
+The choice of using `maxBonusPoints` or a `credit` value above 100 is based on instructor's choice. Additional points based on `maxBonusPoints` are intended to be credited based on extra work, while `credit` above 100 is to be awarded for early completion.  It is possible to combine them, and use them together in the same assessment.  If `maxBonusPoints` is set while the `credit` is above 100, then the percentage is based on both `maxBonusPoints` and `credit` (see [`credit`](course.md/#credit) for details).
 
 ## Controlling points for each question
