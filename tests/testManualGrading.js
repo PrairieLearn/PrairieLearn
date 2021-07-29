@@ -23,8 +23,7 @@ const mockInstructors = [
 ];
 
 /**
- * Adds manual grade note and manual grade score to scraped payload information necessary for
- * manual grading action.
+ * Scrapes instructorQuestionManualGrading.ejs to make payload for POST 'add_manual_grade' action.
  * @param {object} $page Cheerio wrapped instance question manual grading page
  * @param {string} submissionNote Grading message instructor wants student to see.
  * @param {number} submissionScore Percentage below 100 divisible by 5.
@@ -43,9 +42,8 @@ const getManualGradePayload = ($page, submissionNote, submissionScore) => {
 };
 
 /**
- * Scrapes instructorQuestionManualGrading.ejs page for necessary information to resolve conflict.
- * Wildcard specifies 'Current' or 'Incoming', meaning taking the current grade reflected for student or
- * incoming grade that led to the conflict.
+ * Scrapes instructorQuestionManualGrading.ejs page to make payload for POST 'resolve_manual_grading_conflict' action.
+ * 'Current' or 'Incoming' option takes current grade reflected for student or incoming grade that caused conflict.
  * @param {object} $page Cheerio wrapped instance question manual grading page
  * @param {string} type 'Current' or 'Incoming' enums.
  * @returns {object} json payload to send to endpoint
@@ -96,7 +94,7 @@ const gradeSubmission = async (iqManualGradeUrl, submissionNote, submissionScore
 };
 
 /**
- * Acts as 'save' or 'save and grade' button click on front-end with your payload aka. answer.
+ * Acts as 'save' or 'save and grade' button click on student instance question page.
  * @param {string} instanceQuestionUrl the instance question url the student is answering the question on.
  * @param {object} payload json data structure type formed on the basis of the question
  * @param {string} 'save' or 'grade' enums
@@ -181,7 +179,7 @@ const testManualGradingAction = (action) => {
             });
 
             it('students should be able to save submissions on instance questions', async () => {
-                // 'save' 1 answer for each question for each mock students; 1 x 4 x 3 = 12 submissions
+                // 'save' or 'grade' 1 answer for each question for each mock students; 1 x 4 x 3 = 12 submissions
                 for await(const student of mockStudents) {
                     setUser(student);
 
