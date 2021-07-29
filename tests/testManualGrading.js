@@ -22,6 +22,14 @@ const mockInstructors = [
     {authUid: 'mwest@illinois.edu', authName: '', uin: ''},
 ];
 
+/**
+ * Adds manual grade note and manual grade score to scraped payload information necessary for
+ * manual grading action.
+ * @param {object} $page Cheerio wrapped instance question manual grading page
+ * @param {string} submissionNote Grading message instructor wants student to see.
+ * @param {number} submissionScore Percentage below 100 divisible by 5.
+ * @returns {object} json payload to send to endpoint
+ */
 const getManualGradePayload = ($page, submissionNote, submissionScore) => {
     return {
         instanceQuestionModifiedAt: $page('form > input[name="instanceQuestionModifiedAt"]').val(),
@@ -34,6 +42,14 @@ const getManualGradePayload = ($page, submissionNote, submissionScore) => {
     };
 };
 
+/**
+ * Scrapes instructorQuestionManualGrading.ejs page for necessary information to resolve conflict.
+ * Wildcard specifies 'Current' or 'Incoming', meaning taking the current grade reflected for student or
+ * incoming grade that led to the conflict.
+ * @param {object} $page Cheerio wrapped instance question manual grading page
+ * @param {string} type 'Current' or 'Incoming' enums.
+ * @returns {object} json payload to send to endpoint
+ */
 const getConflictPayload = ($page, type) => {
     const wildcard = `${type} Grade`;
     return {
