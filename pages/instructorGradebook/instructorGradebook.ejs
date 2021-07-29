@@ -8,13 +8,10 @@
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
   </head>
-  <script id="grade-data">
-    let gradeData = <%- JSON.stringify(user_scores_data) %>;
-  </script>
   <script>
     $(function() {
         $('#gradebook-table').bootstrapTable({
-            data: gradeData,
+            url: '<%= urlPrefix %>/<%= navPage %>/gradebook/raw_data.json',
             onPreBody: function() {
                 $('.spinning-wheel').show();
                 $('button.edit-score').popover('hide');
@@ -133,6 +130,7 @@
                data-search="true"
                data-show-columns="true"
                data-show-columns-toggle-all="true"
+               data-show-refresh="true"
                data-pagination="true"
                data-page-list="[50,100,200,500,unlimited]"
                data-page-size="50"

@@ -491,13 +491,22 @@ describe('Instructor assessment editing', function() {
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
-        it('should contain a data object with grade data', function() {
-            let dataScript = locals.$('#grade-data');
-            assert.lengthOf(dataScript, 1);
-            let gradeData = dataScript.text();
-            gradeData = gradeData.substring(gradeData.indexOf('=') + 1);
-            gradeData = gradeData.substring(0, gradeData.lastIndexOf(';')).trim();
-            locals.gradebookData = JSON.parse(gradeData);
+        it('should load raw data file successfully', function(callback) {
+            request(locals.instructorGradebookUrl + '/raw_data.json', function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON array of objects', function() {
+            locals.gradebookData = JSON.parse(page);
+            assert.isArray(locals.gradebookData);
+            locals.gradebookData.forEach(obj => assert.isObject(obj));
         });
         it('should contain a row for the dev user', function() {
             locals.gradebookDataRow = _.filter(locals.gradebookData, row => row.uid == 'dev@illinois.edu');
