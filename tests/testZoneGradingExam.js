@@ -5,8 +5,8 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 var config = require('../lib/config');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var res, page, elemList;
@@ -160,7 +160,7 @@ describe('Zone grading exam assessment', function() {
         describe('startExam-6. POST to assessment URL', function() {
             it('should load successfully', function(callback) {
                 var form = {
-                    __action: 'newInstance',
+                    __action: 'new_instance',
                     __csrf_token: locals.__csrf_token,
                 };
                 locals.preStartTime = Date.now();

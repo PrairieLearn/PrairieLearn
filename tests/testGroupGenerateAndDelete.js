@@ -2,8 +2,8 @@ var ERR = require('async-stacktrace');
 var assert = require('chai').assert;
 var path = require('path');
 
-var sqldb = require('@prairielearn/prairielib').sqldb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 var groupUpdate = require('../lib/group-update');
@@ -34,7 +34,12 @@ describe('test auto group and delete groups', function() {
     });
 
     it('auto assign groups', (callback) => {
-        groupUpdate.autoGroups(locals.assessment_id, 1, 1, 10, 10, 1, function(err, job_sequence_id) {
+        const user_id = 1;
+        const authn_user_id = 1;
+        const max_group_size = 10;
+        const min_group_size = 10;
+        const option = 1;
+        groupUpdate.autoGroups(locals.assessment_id, user_id, authn_user_id, max_group_size, min_group_size, option, function(err, job_sequence_id) {
             if (ERR(err, callback)) return;
             locals.job_sequence_id = job_sequence_id;
             var checkComplete = function() {

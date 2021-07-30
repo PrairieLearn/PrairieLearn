@@ -148,6 +148,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string} longName
  * @property {number} number
  * @property {string} timezone
+ * @property {boolean} hideInEnrollPage
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
@@ -169,6 +170,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} credit
  * @property {string} startDate
  * @property {string} endDate
+ * @property {boolean} active
  * @property {number} timeLimitMin
  * @property {string} password
  * @property {SEBConfig} SEBConfig
@@ -181,6 +183,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
   * @property {string} id
   * @property {boolean} forceMaxPoints
   * @property {number} triesPerVariant
+  * @property {number} gradeRateMinutes
   */
 
 /**
@@ -192,6 +195,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -201,6 +205,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -216,11 +221,18 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {boolean} shuffleQuestions
  * @property {AssessmentAllowAccess[]} allowAccess
  * @property {string} text
+ * @property {number} maxBonusPoints
  * @property {number} maxPoints
  * @property {boolean} autoClose
  * @property {Zone[]} zones
  * @property {boolean} constantQuestionValue
  * @property {boolean} groupWork
+ * @property {number} groupMaxSize
+ * @property {number} groupMinSize
+ * @property {boolean} studentGroupCreate
+ * @property {boolean} studentGroupJoin
+ * @property {boolean} studentGroupLeave
+ * @property {number} gradeRateMinutes
  */
 
 /**
@@ -905,6 +917,11 @@ async function validateAssessment(assessment, questions) {
     // Check assessment access rules
     (assessment.allowAccess || []).forEach(rule => {
         const allowAccessErrors = checkAllowAccessDates(rule);
+
+        if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
+            errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
+        }
+
         errors.push(...allowAccessErrors);
     });
 

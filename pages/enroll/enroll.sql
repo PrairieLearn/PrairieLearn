@@ -19,6 +19,7 @@ WHERE
     AND c.example_course IS FALSE
     AND users_is_instructor_in_course(u.user_id, c.id) IS FALSE
     AND check_course_instance_access(ci.id, u.uid, u.institution_id, $req_date)
+    AND NOT ci.hide_in_enroll_page
 ORDER BY
     c.short_name, c.title, c.id, d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC;
 

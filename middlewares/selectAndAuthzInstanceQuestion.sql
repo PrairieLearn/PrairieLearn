@@ -36,7 +36,7 @@ SELECT
     END AS assessment_instance_time_limit_ms,
     to_jsonb(u) AS instance_user,
     users_get_displayed_role(u.user_id, ci.id) AS instance_role,
-    to_jsonb(iq) AS instance_question,
+    to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
         'prev_instance_question_id', iqi.prev_instance_question_id,
@@ -69,6 +69,7 @@ FROM
     LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
     JOIN users AS u ON (u.user_id = gu.user_id OR u.user_id = ai.user_id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
+    JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
     CROSS JOIN file_list AS fl
 WHERE
     iq.id = $instance_question_id

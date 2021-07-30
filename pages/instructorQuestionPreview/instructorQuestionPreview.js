@@ -3,9 +3,9 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const question = require('../../lib/question');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
@@ -35,7 +35,8 @@ function processSubmission(req, res, callback) {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
         if (req.body.__action == 'grade') {
-            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            const overrideRateLimits = true;
+            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_are_instructors_in_any_course () RETURNS TABLE (
         user_id bigint,
         is_instructor boolean

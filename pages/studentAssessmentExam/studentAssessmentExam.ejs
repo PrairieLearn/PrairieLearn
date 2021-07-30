@@ -49,7 +49,7 @@
           <% } %>
 
           <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-center">
-            <input type="hidden" name="__action" value="newInstance">
+            <input type="hidden" name="__action" value="new_instance">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <button id="start-assessment" type="submit" class="btn btn-primary"<% if (locals.assessment.require_honor_code) { %> disabled<% } %>>Start assessment</button>
           </form>
@@ -62,7 +62,6 @@
             certify.onchange = () => {
               start.disabled = !certify.checked;
             };
-
             form.onsubmit = () => {
                 start.disabled = true;
                 start.html = '<i class="fa fa-sync fa-spin fa-fw"></i> Generating assessment…';

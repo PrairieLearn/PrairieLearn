@@ -85,26 +85,39 @@
   <% } %>
   <% } %>
 
-  <% if (typeof assessment !== "undefined") { %>
+  <% 
+     let ip_assessment = null;
+     let ip_assessment_instance = null;
+     if (typeof assessment_instance !== "undefined") {
+        ip_assessment = assessment;
+        ip_assessment_instance = assessment_instance;
+     }
+     if (typeof variant !== "undefined" && variant.assessment_instance) {
+        ip_assessment = variant.assessment;
+        ip_assessment_instance = variant.assessment_instance;
+     }
+     if (ip_assessment && ip_assessment_instance) {
+        let instructorUrlPrefix = `${plainUrlPrefix}/course_instance/${ip_assessment.course_instance_id}/instructor`;
+     %>
       <hr>
       <h5 class="card-title">Assessment Instance:</h5>
       <div class="d-flex flex-wrap">
           <div class="pr-1">AID:</div>
-          <div><a href="<%= urlPrefix %>/instructor/assessment/<%= assessment.id %>"><%= assessment.tid %></a></div>
+          <div><a href="<%= instructorUrlPrefix %>/assessment/<%= ip_assessment.id %>"><%= ip_assessment.tid %></a></div>
       </div>
 
       <div class="d-flex flex-wrap">
           <div class="pr-1">Started at: </div>
-          <div><%= assessment_instance.formatted_date %></div>
+          <div><%= ip_assessment_instance.formatted_date %></div>
       </div>
 
       <div class="d-flex flex-wrap">
           <div class="pr-1">Duration:</div>
-          <div><%= assessment_instance.duration %></div>
+          <div><%= ip_assessment_instance.duration %></div>
       </div>
 
       <div class="pb-2">
-          <a href="<%= urlPrefix %>/instructor/assessment_instance/<%= assessment_instance.id %>">View log</a>
+          <a href="<%= instructorUrlPrefix %>/assessment_instance/<%= ip_assessment_instance.id %>">View log</a>
       </div>
   <% } %>
 

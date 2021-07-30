@@ -60,10 +60,10 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
     * `port`: port number used by the workspace app inside the Docker image
     * `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
-    * `gradedFiles` (optional, default none): list of files or directories that will be copied out of the workspace container for grading
+    * `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container for grading. Files can be in subdirectories, but the files must be explicitly listed (e.g. listing `dir/file.txt` is okay, but specifying `dir` alone is not). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder.
     * `args` (optional, default none): command line arguments to pass to the Docker image
     * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
-    * `urlRewrite` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
+    * `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
 
 #### `info.json` for ungraded workspace
 
@@ -78,7 +78,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode",
+        "image": "codercom/code-server",
         "port": 8080,
         "home": "/home/coder",
         "args": "--auth none",
@@ -102,13 +102,14 @@ For an externally graded workspace, a full `info.json` file should look somethin
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "prairielearn/workspace-vscode",
+        "image": "codercom/code-server",
         "port": 8080,
         "home": "/home/coder",
         "args": "--auth none",
         "gradedFiles": [
             "starter_code.h",
-            "starter_code.c"
+            "starter_code.c",
+            "docs/writeup.txt"
         ],
         "syncIgnore": [
             ".local/share/code-server/"
@@ -242,3 +243,15 @@ Set these variables in your `config.json`:
 * `workspaceJobsDirectory`
 * `workspaceMainZipsDirectory`
 * `workspaceHostZipsDirectory`
+
+
+## Permissions in production
+
+When running a workspace container locally the user/group is the default setting for docker, which is typically root. In production, workspaces are run with user:group set to 1001:1001. If the workspace relies on root permissions (e.g., uses a port number below 1024) then it may work locally and fail in production. To test a workspace locally, run it like this:
+```sh
+docker run -it --rm -p HOST_PORT:CLIENT_PORT --user 1001:1001 IMAGE_NAME
+```
+For example, the [example Jupyter workspace](https://www.prairielearn.org/pl/course/108/question/9045312/preview) using the [Jupyter image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab) uses port 8080 and so can be run successfully like this:
+```
+docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyter
+```

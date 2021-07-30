@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS sync_question_tags(JSONB);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_question_tags(
         IN new_question_tags JSONB[]
     ) RETURNS void

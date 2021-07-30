@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
-
-DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_insert_internal (
         IN submission_id bigint,
         IN authn_user_id bigint,
@@ -43,10 +39,6 @@ BEGIN
     WHERE s.id = submission_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
-
-    IF grading_method != 'Internal' THEN
-        RAISE EXCEPTION 'grading_method is not Internal for submission_id: %', submission_id;
-    END IF;
 
     -- ######################################################################
     -- update the submission

@@ -5,10 +5,10 @@ const express = require('express');
 const router = express.Router();
 const SearchString = require('search-string');
 
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const paginate = require('../../lib/paginate');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -108,16 +108,14 @@ router.get('/', function(req, res, next) {
         if (result.rowCount != 2) return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
         res.locals.closedCount = result.rows[0].count;
         res.locals.openCount = result.rows[1].count;
-        res.locals.issueCount = res.locals.closedCount + res.locals.openCount;
-
-        _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE));
-        res.locals.shouldPaginate = res.locals.issueCount > PAGE_SIZE;
 
         var params = {
             course_id: res.locals.course.id,
-            offset: (res.locals.currPage - 1) * PAGE_SIZE,
+            offset: 0,
             limit: PAGE_SIZE,
         };
+        if (_.isInteger(Number(req.query.page)))
+            params.offset = (Number(req.query.page) - 1) * PAGE_SIZE;
         _.assign(params, filters);
 
         sqldb.query(sql.select_issues, params, function(err, result) {
@@ -125,6 +123,11 @@ router.get('/', function(req, res, next) {
 
             // Set of IDs of course instances to which the effective user has access
             const linkable_course_instance_ids = res.locals.authz_data.course_instances.reduce((acc, ci) => {acc.add(ci.id); return acc;}, new Set());
+
+            res.locals.issueCount = result.rowCount ? result.rows[0].issue_count : 0;
+
+            _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE));
+            res.locals.shouldPaginate = res.locals.issueCount > PAGE_SIZE;
 
             result.rows.forEach((row) => {
                 // Add human-readable relative dates to each row

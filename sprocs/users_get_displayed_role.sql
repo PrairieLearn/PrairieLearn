@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_get_displayed_role (
         IN user_id bigint,
         IN course_instance_id bigint,

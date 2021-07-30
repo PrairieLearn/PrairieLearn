@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     question_order (
         assessment_instance_id BIGINT
     ) RETURNS TABLE (instance_question_id BIGINT, row_order INTEGER, question_number TEXT)

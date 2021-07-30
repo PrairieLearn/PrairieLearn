@@ -35,6 +35,10 @@
             <div class="col-md-3 col-sm-6 col-xs-12">
               <%- include('../partials/pointsFormatter'); %>
               Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= assessment_instance.max_points %>
+              <% if (assessment_instance.max_bonus_points) { %>
+              <br />(<%= assessment_instance.max_bonus_points %> bonus
+              point<% if (assessment_instance.max_bonus_points > 1) { %>s<% } %> possible)
+              <% } %>
             </div>
             <div class="col-md-3 col-sm-6 col-xs-12">
               <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
@@ -49,7 +53,7 @@
             </div>
           </div>
           <% if (assessment.group_work) { %>
-            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: groupinfo[0], groupinfo: groupinfo}); %>
+            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: group_info[0], group_info: group_info}); %>
           <% } %>
           <% if (assessment_text_templated) { %>
           <div class="alert alert-secondary mb-0">

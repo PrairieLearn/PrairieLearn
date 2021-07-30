@@ -2,11 +2,11 @@
 <html lang="en">
   <head>
     <%- include('../partials/head', {pageTitle: 'Statistics'}); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/d3.min.js"></script>
-    <script src="/localscripts/histogram.js"></script>
-    <script src="/localscripts/scatter.js"></script>
-    <script src="/localscripts/parallel_histograms.js"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histogram.js') %>"></script>
+    <script src="<%= asset_path('localscripts/scatter.js') %>"></script>
+    <script src="<%= asset_path('localscripts/parallel_histograms.js') %>"></script>
   </head>
   <body>
     <script>
@@ -17,9 +17,6 @@
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
-
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -71,9 +68,6 @@
         <% }%>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Duration statistics
@@ -122,9 +116,6 @@
         <% }%>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Duration versus score
@@ -163,9 +154,6 @@
 
         <% }%>
       </div>
-
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_groups_delete_all(
         assessment_id bigint,
         authn_user_id bigint
@@ -6,13 +6,13 @@ CREATE OR REPLACE FUNCTION
 AS $$
 BEGIN
     WITH log AS (
-        UPDATE groups gr
+        UPDATE groups g
         SET deleted_at = NOW()
-        WHERE gr.id IN (SELECT gr.id
+        WHERE g.id IN (SELECT g.id
                         FROM group_configs AS gc
-                        JOIN groups AS gr ON gr.group_config_id = gc.id
+                        JOIN groups AS g ON g.group_config_id = gc.id
                         WHERE gc.assessment_id = assessment_groups_delete_all.assessment_id 
-                        AND gr.deleted_at IS NULL
+                        AND g.deleted_at IS NULL
                         AND gc.deleted_at IS NULL)
         RETURNING id
     ) 

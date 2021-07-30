@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS server_loads_current(text,interval);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     server_loads_current (
         IN group_name text,
         IN current_interval interval

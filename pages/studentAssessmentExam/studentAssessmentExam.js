@@ -2,10 +2,10 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var error = require('@prairielearn/prairielib/error');
+var error = require('../../prairielib/lib/error');
 var assessment = require('../../lib/assessment');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../../prairielib/lib/sql-db');
+var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -41,7 +41,7 @@ router.post('/', function(req, res, next) {
     // student data in the course instance (which has already been checked), exactly the
     // permission required to create an assessment for the effective user.
 
-    if (req.body.__action == 'newInstance') {
+    if (req.body.__action == 'new_instance') {
         assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.req_date, (err, assessment_instance_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);

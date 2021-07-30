@@ -7,8 +7,8 @@ const logger = require('../../lib/logger');
 const config = require('../../lib/config.js');
 const path = require('path');
 
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 function get(req, res, next)  {
@@ -96,7 +96,7 @@ router.post('/', function(req, res, next) {
                                 display_timezone: result.rows[0].display_timezone,
                                 path: path.join(config.coursesRoot, repo_short_name),
                                 repo_short_name: repo_short_name,
-                                github_user: github_user.length > 0 ? github_user : null,
+                                github_user,
                                 course_request_id: creq_id,
                             };
                             github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, _job) => {

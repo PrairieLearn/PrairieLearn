@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var path = require('path');
 var _ = require('lodash');
 
-var error = require('@prairielearn/prairielib/error');
+var error = require('../prairielib/lib/error');
 var chunks = require('../lib/chunks');
 var filePaths = require('../lib/file-paths');
 var requireFrontend = require('../lib/require-frontend');
@@ -10,39 +10,48 @@ var requireFrontend = require('../lib/require-frontend');
 module.exports = {
     loadServer: function(question, course, callback) {
         const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-        const chunksToLoad = [
-            {
-                'type': 'question',
-                'questionId': question.id,
-            },
-            {
-                'type': 'serverFilesCourse',
-            },
-        ];
-        chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
+
+        chunks.getTemplateQuestionIds(question, (err, questionIds) => {
             if (ERR(err, callback)) return;
-            filePaths.questionFilePath('server.js', question.directory, coursePath, question, function(err, questionServerPath) {
+
+            const templateQuestionChunks = questionIds.map(id => ({'type': 'question', questionId: id}));
+            const chunksToLoad = [
+                {
+                    'type': 'question',
+                    'questionId': question.id,
+                },
+                {
+                    'type': 'clientFilesCourse',
+                },
+                {
+                    'type': 'serverFilesCourse',
+                },
+            ].concat(templateQuestionChunks);
+            chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
                 if (ERR(err, callback)) return;
-                var configRequire = requireFrontend.config({
-                    paths: {
-                        clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
-                        serverFilesCourse: path.join(coursePath, 'serverFilesCourse'),
-                        clientCode: path.join(coursePath, 'clientFilesCourse'),
-                        serverCode: path.join(coursePath, 'serverFilesCourse'),
-                    },
-                });
-                configRequire([questionServerPath], function(server) {
-                    if (server === undefined) return callback('Unable to load "server.js" for qid: ' + question.qid);
-                    setTimeout(function() {
-                        // use a setTimeout() to get out of requireJS error handling
-                        return callback(null, server);
-                    }, 0);
-                }, (err) => {
-                    const e = error.makeWithData(`Error loading server.js for QID ${question.qid}`, err);
-                    if (err.originalError != null) {
-                        e.stack = err.originalError.stack + '\n\n' + err.stack;
-                    }
-                    return callback(e);
+                filePaths.questionFilePath('server.js', question.directory, coursePath, question, function(err, questionServerPath) {
+                    if (ERR(err, callback)) return;
+                    var configRequire = requireFrontend.config({
+                        paths: {
+                            clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
+                            serverFilesCourse: path.join(coursePath, 'serverFilesCourse'),
+                            clientCode: path.join(coursePath, 'clientFilesCourse'),
+                            serverCode: path.join(coursePath, 'serverFilesCourse'),
+                        },
+                    });
+                    configRequire([questionServerPath], function(server) {
+                        if (server === undefined) return callback('Unable to load "server.js" for qid: ' + question.qid);
+                        setTimeout(function() {
+                            // use a setTimeout() to get out of requireJS error handling
+                            return callback(null, server);
+                        }, 0);
+                    }, (err) => {
+                        const e = error.makeWithData(`Error loading server.js for QID ${question.qid}`, err);
+                        if (err.originalError != null) {
+                            e.stack = err.originalError.stack + '\n\n' + err.stack;
+                        }
+                        return callback(e);
+                    });
                 });
             });
         });

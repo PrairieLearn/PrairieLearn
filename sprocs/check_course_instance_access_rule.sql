@@ -1,9 +1,4 @@
-DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, timestamptz);
-DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, bigint, timestamptz);
-DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, bigint, bigint, timestamptz);
-DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, text, bigint, bigint, timestamptz);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     check_course_instance_access_rule (
         course_instance_access_rule course_instance_access_rules,
         uid text,

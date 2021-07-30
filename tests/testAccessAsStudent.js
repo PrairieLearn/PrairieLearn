@@ -1,6 +1,13 @@
 const config = require('../lib/config');
 const request = require('request');
 const helperServer = require('./helperServer');
+const cheerio = require('cheerio');
+const assert = require('chai').assert;
+
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseInstanceUrl = baseUrl + '/course_instance/1';
@@ -8,7 +15,9 @@ const assessmentsUrl = courseInstanceUrl + '/assessments';
 
 const storedConfig = {};
 
-describe('Test access with authn as student', function() {
+var newAssessmentsUrl;
+
+describe('Test student auto-enrollment', function() {
     this.timeout(20000);
 
     before('set authenticated user', function(callback) {
@@ -27,9 +36,43 @@ describe('Test access with authn as student', function() {
         callback(null);
     });
 
-    describe('The student user', function() {
-        it('should not have access to the assessments page', function(callback) {
+    describe('A student user with access to course instance', function() {
+        it('should have access to the assessments page', function(callback) {
             request(assessmentsUrl, function (error, response) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            });
+        });
+        it('should be enrolled in course instance', function(callback) {
+            request(baseUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                var $ = cheerio.load(body);
+                var linkList = $('a[href="/pl/course_instance/1"]');
+                assert.lengthOf(linkList, 1);
+                callback(null);
+            });
+        });
+    });
+
+    describe('A student user with no access to course instance', function() {
+
+        before('add course instance with no access rule', async function() {
+            const result = (await sqldb.queryAsync(sql.insert_course_instance, {})).rows[0];
+            newAssessmentsUrl = baseUrl + `/course_instance/${result.id}/assessments`;
+        });
+
+        it('should not have access to the assessments page', function(callback) {
+            request(newAssessmentsUrl, function (error, response) {
                 if (error) {
                     return callback(error);
                 }

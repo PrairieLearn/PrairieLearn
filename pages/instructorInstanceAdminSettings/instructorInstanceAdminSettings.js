@@ -1,16 +1,17 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
+const config = require('../../lib/config');
 
-const sqldb = require('@prairielearn/prairielib').sqldb;
-const sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const async = require('async');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const logger = require('../../lib/logger');
 const { CourseInstanceCopyEditor, CourseInstanceRenameEditor, CourseInstanceDeleteEditor } = require('../../lib/editors');
 const { encodePath } = require('../../lib/uri-util');
@@ -29,6 +30,8 @@ router.get('/', function(req, res, next) {
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');
+        let host = config.serverCanonicalHost || ('https://' + req.headers.host);
+        res.locals.studentLink = host + res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id;
         res.locals.infoCourseInstancePath = encodePath(path.join('courseInstances', res.locals.course_instance.short_name, 'infoCourseInstance.json'));
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

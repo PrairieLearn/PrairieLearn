@@ -19,12 +19,15 @@ SHOW_HELP_TEXT_DEFAULT = True
 SHOW_PLACEHOLDER_DEFAULT = True
 SHOW_CORRECT_ANSWER_DEFAULT = True
 ALLOW_FRACTIONS_DEFAULT = True
+ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = 0
+CUSTOM_FORMAT_DEFAULT = '.12g'
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text', 'size', 'show-correct-answer', 'show-placeholder', 'allow-fractions']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex', 'show-help-text', 'size', 'show-correct-answer', 'show-placeholder', 'allow-fractions', 'allow-blank', 'blank-value', 'custom-format']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -34,13 +37,23 @@ def prepare(element_html, data):
             raise Exception('duplicate correct_answers variable name: %s' % name)
         data['correct_answers'][name] = correct_answer
 
+    custom_format = pl.get_string_attrib(element, 'custom-format', None)
+    if custom_format is not None:
+        try:
+            _ = ('{:' + custom_format + '}').format(0)
+        except ValueError:
+            raise Exception('invalid custom format: %s' % custom_format) from None
+
 
 def format_true_ans(element, data, name):
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is not None:
-        # Get comparison parameters
+        # Get format and comparison parameters
+        custom_format = pl.get_string_attrib(element, 'custom-format', None)
         comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
-        if comparison == 'relabs':
+        if custom_format is not None:
+            a_tru = ('{:' + custom_format + '}').format(a_tru)
+        elif comparison == 'relabs':
             # FIXME: render correctly with respect to rtol and atol
             a_tru = '{:.12g}'.format(a_tru)
         elif comparison == 'sigfig':
@@ -61,6 +74,7 @@ def render(element_html, data):
     suffix = pl.get_string_attrib(element, 'suffix', None)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
     allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
+    custom_format = pl.get_string_attrib(element, 'custom-format', CUSTOM_FORMAT_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -177,7 +191,7 @@ def render(element_html, data):
             a_sub = pl.from_json(a_sub)
 
             html_params['suffix'] = suffix
-            html_params['a_sub'] = '{:.12g}'.format(a_sub)
+            html_params['a_sub'] = ('{:' + custom_format + '}').format(a_sub)
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
@@ -244,8 +258,12 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, 'blank-value', str(BLANK_VALUE_DEFAULT))
 
     a_sub = data['submitted_answers'].get(name, None)
+    if allow_blank and a_sub is not None and a_sub.strip() == '':
+        a_sub = blank_value
     value, newdata = pl.string_fraction_to_number(a_sub, allow_fractions, allow_complex)
 
     if value is not None:

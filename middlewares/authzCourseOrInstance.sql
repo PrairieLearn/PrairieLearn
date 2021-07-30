@@ -11,7 +11,7 @@ FROM
     pl_courses AS c
     LEFT JOIN course_instances AS ci ON (c.id = ci.course_id) AND (ci.id = $course_instance_id) AND (ci.deleted_at IS NULL)
     JOIN LATERAL authz_course($user_id, c.id, $is_administrator, $req_course_role) AS permissions_course ON TRUE
-    JOIN LATERAL authz_course_instance($user_id, ci.id, $is_administrator, $req_date, $req_course_instance_role) AS permissions_course_instance ON TRUE
+    JOIN LATERAL authz_course_instance($user_id, ci.id, $is_administrator, $req_date, TRUE, $req_course_instance_role) AS permissions_course_instance ON TRUE
 WHERE
     c.id = coalesce($course_id, ci.course_id)
     AND c.deleted_at IS NULL

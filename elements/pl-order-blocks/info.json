@@ -1,0 +1,14 @@
+{
+    "controller": "pl-order-blocks.py",
+    "dependencies": {
+        "nodeModulesScripts": [
+            "jquery-ui-dist/jquery-ui.min.js"
+        ],
+        "elementStyles": [
+            "pl-order-blocks.css"
+        ],
+        "elementScripts": [
+            "pl-order-blocks.js"
+        ]
+    }
+}

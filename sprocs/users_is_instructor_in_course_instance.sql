@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_is_instructor_in_course_instance (
         IN user_id bigint,
         IN course_instance_id bigint,

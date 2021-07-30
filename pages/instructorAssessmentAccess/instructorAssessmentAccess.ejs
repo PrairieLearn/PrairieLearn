@@ -15,7 +15,7 @@
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <%= assessment_set.name %> <%= assessment.number %>: Access rules
+          <%= assessment_set.name %> <%= assessment.number %>: Access
         </div>
 
         <div class="table-responsive">
@@ -26,6 +26,7 @@
                 <th>UIDs</th>
                 <th>Start date</th>
                 <th>End date</th>
+                <th>Active</th>
                 <th>Credit</th>
                 <th>Time limit</th>
                 <th>Password</th>
@@ -54,6 +55,7 @@
                 </td>
                 <td><%= access_rule.start_date %></td>
                 <td><%= access_rule.end_date %></td>
+                <td><%= access_rule.active %></td>
                 <td><%= access_rule.credit %></td>
                 <td><%= access_rule.time_limit %></td>
                 <td><%= access_rule.password %></td>
@@ -62,6 +64,9 @@
               <% }); %>
             </tbody>
           </table>
+        </div>
+        <div class="card-footer">
+          <small>Instructions on how to change the access rules can be found in the <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/" target="_blank">PrairieLearn documentation</a>. Note that changing time limit rules does not affect assessments in progress; to change the time limit for these exams please visit the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances">Students tab</a>.</small>
         </div>
       </div>
 

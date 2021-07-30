@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS authz_course(bigint,bigint,boolean);
-DROP FUNCTION IF EXISTS authz_course(bigint,bigint,boolean,enum_course_role);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     authz_course(
         user_id bigint,
         course_id bigint,

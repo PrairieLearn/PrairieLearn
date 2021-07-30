@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS users_select_or_insert_lti(text,text,bigint,text,text);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_select_or_insert_and_enroll_lti(
         IN uid text,
         IN name text,

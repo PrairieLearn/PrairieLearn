@@ -4,8 +4,8 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 var config = require('../lib/config');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
@@ -254,7 +254,7 @@ describe('Access control', function() {
 
     var postAssessment = function(cookies, includePassword, expectedStatusCode, callback) {
         var form = {
-            __action: 'newInstance',
+            __action: 'new_instance',
             __csrf_token: __csrf_token,
         };
         if (includePassword) form.password = 'secret';

@@ -4,16 +4,17 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 
 function processSubmission(req, res, callback) {
     if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessment_instance is closed'));
     if (!res.locals.instance_question.open) return callback(error.make(400, 'instance_question is closed'));
+    if (!res.locals.authz_result.active) return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
     let variant_id, submitted_answer;
     if (res.locals.question.type == 'Freeform') {
         variant_id = req.body.__variant_id;
@@ -40,7 +41,8 @@ function processSubmission(req, res, callback) {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
         if (req.body.__action == 'grade') {
-            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            const overrideRateLimits = false;
+            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
@@ -72,7 +74,8 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.__action == 'timeLimitFinish') {
         const closeExam = true;
-        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
+        const overrideGradeRate = false;
+        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, overrideGradeRate, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });

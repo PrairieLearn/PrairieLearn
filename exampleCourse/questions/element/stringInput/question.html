@@ -94,3 +94,20 @@ This will autoconvert both the student answer and the correct answer to lower ca
 <p>
     <pl-string-input answers-name="ans7" label="Small box = " show-help-text="false" size="5"></pl-string-input>
 </p>
+
+<pl-question-panel>
+    <p>
+      8) For students using non-latin keyboards, it is possible that non-English characters may be introduced into the box. This can cause confusion if these characters resemble a latin character (e.g., the cyrillic character <strong>&#x0430;</strong> looks a lot like the latin character <strong>a</strong>). Similarly, students may copy from text editors and paste into the answer box, causing characters like fancy quotes to be introduced. The attribute <code>normalize-to-ascii="true"</code> converts many Unicode characters to the ASCII character that mostly resembles it.
+    </p>
+    <p>
+      The box below contains an input using a Greek Epsilon, a Cyrillic ie, and fancy quotes. Copying this text into the answer box below should result in the appropriate text (<code>"Ee"</code>) being accepted.
+    </p>
+
+<div>
+{{{params.g}}}
+</div>
+</pl-question-panel>
+
+<p>
+    <pl-string-input answers-name="ans8" label="Weird text = " normalize-to-ascii="true"></pl-string-input>
+</p>

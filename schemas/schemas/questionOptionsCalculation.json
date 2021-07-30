@@ -3,5 +3,10 @@
     "title": "Calculation question options",
     "description": "Options for a Calculation question.",
     "type": "object",
-    "properties": {}
+    "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        }
+    }
 }

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     course_instance_permissions_delete_all(
         course_id bigint,
         authn_user_id bigint

@@ -8,6 +8,10 @@
         "controller"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "controller": {
             "description": "The name of the element's controller file.",
             "type": "string"
@@ -17,6 +21,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "coreStyles": {
                     "description": "The styles required by this element from /public/stylesheets.",
                     "type": "array",

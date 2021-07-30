@@ -7,9 +7,9 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const moment = require('moment');
 const config = require('../lib/config');
-const error = require('@prairielearn/prairielib/error');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const error = require('../prairielib/error');
+const sqldb = require('../prairielib/sql-db');
+const sqlLoader = require('../prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

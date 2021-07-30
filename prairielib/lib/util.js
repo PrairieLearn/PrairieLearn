@@ -6,7 +6,9 @@
  * @return {Object}     The sanitized object.
  */
 module.exports.sanitizeObject = function sanitizeObject(value) {
-    if (Array.isArray(value)) {
+    if (value === null) {
+        return null;
+    } else if (Array.isArray(value)) {
         return value.map(sanitizeObject);
     } else if (typeof value === 'string') {
         return value.replace('\u0000', '\\u0000');
@@ -21,4 +23,14 @@ module.exports.sanitizeObject = function sanitizeObject(value) {
     } else {
         return value;
     }
+};
+
+/**
+ * Escape special characters in a RegExp string
+ * Source: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Using_special_characters
+ * @param {string} string A literal string to act as a match for RegExp objects
+ * @return {string} A string literal ready to match
+ */
+module.exports.escapeRegExp = function escapeRegExp(string) {
+    return string.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
 };

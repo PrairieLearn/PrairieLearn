@@ -19,9 +19,10 @@ class UngradableException(Exception):
 
 class CGrader:
 
-    def __init__(self):
+    def __init__(self, compiler='gcc'):
         with open(DATAFILE) as file:
             self.data = json.load(file)
+        self.compiler = compiler
 
     def run_command(self, command, input=None, sandboxed=True, timeout=None):
         if isinstance(command, str):
@@ -59,8 +60,10 @@ class CGrader:
                     out += out2.decode('utf-8', 'backslashreplace')
                 return out + tostr
 
-    def test_compile_file(self, c_file, exec_file, main_file=None, add_c_file=None,
-                          points=1, field=None, flags=None, name='Compilation',
+    def test_compile_file(self, c_file, exec_file, main_file=None,
+                          add_c_file=None, compiler=None,
+                          points=1, field=None, flags=None,
+                          name='Compilation',
                           add_warning_result_msg=True,
                           ungradable_if_failed=True):
 
@@ -68,34 +71,39 @@ class CGrader:
             flags = shlex.split(flags)
         elif not flags:
             flags = []
-        
-        obj_file = re.sub('\.c$', '', c_file) + '.o'
-        out = self.run_command(['gcc', '-c', c_file, '-o', obj_file] + flags, sandboxed=False)
-        if os.path.isfile(obj_file):
 
+        if not add_c_file:
+            add_c_file = []
+        elif not isinstance(add_c_file, list):
+            add_c_file = [add_c_file]
+        if main_file: # Kept for compatibility reasons, but could be set as an added file
+            add_c_file.append(main_file)
+        if add_c_file:
+            flags.append('-Wl,--allow-multiple-definition')
+
+        if not compiler:
+            compiler = self.compiler
+
+        out = ''
+        std_obj_files = []
+        for std_c_file in (c_file if isinstance(c_file, list) else [c_file]):
+            obj_file = re.sub('\.[^.]*$', '', std_c_file) + '.o'
+            out += self.run_command([compiler, '-c', std_c_file, '-o', obj_file] + flags,
+                                    sandboxed=False)
+            std_obj_files.append(obj_file)
+
+        if all(os.path.isfile(obj) for obj in std_obj_files):
             objs = []
             
-            if add_c_file:
-                # Add new C file that maybe overwrites some existing functions.
-                add_obj_file = re.sub('\.c$', '', add_c_file) + '.o'
-                out += self.run_command(['gcc', '-c', add_c_file,
-                                         '-o', add_obj_file] + flags, sandboxed=False)
-                objs.append(add_obj_file)
-                flags.append('-Wl,--allow-multiple-definition')
+            # Add new C files that maybe overwrite some existing functions.
+            for added_c_file in add_c_file:
+                obj_file = re.sub('\.[^.]*$', '', added_c_file) + '.o'
+                out += self.run_command([compiler, '-c', added_c_file, 
+                                         '-o', obj_file] + flags, sandboxed=False)
+                objs.append(obj_file)
 
-            if main_file:
-                main_obj_file = re.sub('\.c$', '', main_file) + '.o'
-                out += self.run_command(['strip', '-N', 'main', obj_file], sandboxed=False)
-                out += self.run_command(['gcc', '-c', main_file,
-                                         '-o', main_obj_file] + flags, sandboxed=False)
-                objs.append(main_obj_file)
-                flags.append('-Wl,--allow-multiple-definition')
-
-            # The main C file must be the last so its functions can be
-            # overwritten
-            objs.append(obj_file)
-            
-            out += self.run_command(['gcc'] + objs +
+            # The student C files must be the last so its functions can be overwritten
+            out += self.run_command([compiler] + objs + std_obj_files +
                                     ['-o', exec_file, '-lm'] + flags, sandboxed=False)
         
         if os.path.isfile(exec_file):
@@ -128,7 +136,9 @@ class CGrader:
                  ignore_consec_spaces=True,
                  args=None, name=None, msg=None, max_points=1):
         
-        if args is not None and not isinstance(args, list): args = [args] 
+        if args is not None:
+            if not isinstance(args, list): args = [args]
+            args = list(map(str, args))
         
         if name is None and input is not None:
             name = 'Test with input "%s"' % ' '.join(input.splitlines())
@@ -279,5 +289,10 @@ class CGrader:
 
     def tests(self):
         pass
+
+class CPPGrader(CGrader):
+
+    def __init__(self, compiler='g++'):
+        super(CPPGrader, self).__init__(compiler)
 
 CGrader().start()

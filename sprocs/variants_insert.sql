@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint, boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_insert(
         IN variant_seed text,
         IN params jsonb,
@@ -38,7 +34,7 @@ BEGIN
     IF instance_question_id IS NOT NULL THEN
         PERFORM instance_questions_lock(instance_question_id);
 
-        SELECT           q.id,          gr.id,    u.user_id,                  ai.id,                   ci.id
+        SELECT           q.id,          g.id,    u.user_id,                  ai.id,                   ci.id
         INTO real_question_id, real_group_id, real_user_id, assessment_instance_id, real_course_instance_id
         FROM
             instance_questions AS iq
@@ -47,7 +43,7 @@ BEGIN
             JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
             JOIN assessments AS a ON (a.id = ai.assessment_id)
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-            LEFT OUTER JOIN groups AS gr ON (gr.id = ai.group_id AND gr.deleted_at IS NULL)
+            LEFT OUTER JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
             LEFT OUTER JOIN users AS u ON (u.user_id = ai.user_id)
         WHERE
             iq.id = instance_question_id;

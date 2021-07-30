@@ -1,9 +1,8 @@
 
-    <!-------------------------------------------------------------------------------->
-    <!-- Course Admin ---------------------------------------------------------------->
-
-    <li class="nav-item btn-group <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %>">
-        <a class="nav-link" href="<%= urlPrefix %>/course_admin" role="button">
+    <%# Course admin %> 
+    <li class="nav-item btn-group">
+        <a class="nav-link" <% if (navPage == "course_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "issues" || navSubPage == "questions" || navSubPage == "syncs"))) { %>active<% } %> <% if (! authz_data.has_course_permission_view) { %> disabled <% } %>"
+         href="<%= urlPrefix %>/course_admin" role="button">
             <%= course.short_name %>
         </a>
         <% if ((authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) && authz_data.authn_courses && authz_data.authn_courses.length > 0) { %>
@@ -31,9 +30,7 @@
 
     <% if (locals.course_instance) { %>
 
-        <!-------------------------------------------------------------------------------->
-        <!-- Instance Admin -------------------------------------------------------------->
-
+        <%# Instance admin %> 
         <span class="navbar-text mx-2 no-select">/</span>
         <li class="nav-item btn-group">
             <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
@@ -54,9 +51,7 @@
             <% } %>
         </li>
 
-        <!-------------------------------------------------------------------------------->
-        <!-- Instance Other -------------------------------------------------------------->
-
+        <%# Instance non-admin %> 
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/assessments">Assessments</a></li>
 
         <% if (authz_data.has_course_instance_permission_view) { %>

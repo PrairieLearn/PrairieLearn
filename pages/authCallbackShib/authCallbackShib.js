@@ -4,7 +4,7 @@ var router = express.Router();
 
 var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
-var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqldb = require('../../prairielib/lib/sql-db');
 
 router.get('/:action?/:target(*)?', function(req, res, next) {
     if (!config.hasShib) return next(new Error('Shibboleth login is not enabled'));

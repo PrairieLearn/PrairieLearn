@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS course_permissions_insert_by_user_uid(bigint, text, enum_course_role, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     course_permissions_insert_by_user_uid(
         IN course_id bigint,
         IN uid text,

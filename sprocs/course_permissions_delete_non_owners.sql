@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     course_permissions_delete_non_owners(
         course_id bigint,
         authn_user_id bigint

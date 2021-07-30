@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_questions_calculate_stats (
         assessment_question_id_param bigint
     ) RETURNS VOID
@@ -10,8 +10,8 @@ relevant_assessment_instances AS (
         assessment_questions AS aq
         JOIN assessments AS a ON (a.id = aq.assessment_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        LEFT JOIN groups AS gr ON (gr.id = ai.group_id AND gr.deleted_at IS NULL)
-        LEFT JOIN group_users AS gu ON (gu.group_id = gr.id)
+        LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
+        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
         JOIN enrollments AS e ON ((e.user_id = ai.user_id OR e.user_id = gu.user_id) AND e.course_instance_id = a.course_instance_id)
     WHERE
         aq.id = assessment_question_id_param

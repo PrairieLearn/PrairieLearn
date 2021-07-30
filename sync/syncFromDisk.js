@@ -4,7 +4,7 @@ const util = require('util');
 
 const namedLocks = require('../lib/named-locks');
 const courseDB = require('./course-db');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../prairielib/lib/sql-db');
 
 const config = require('../lib/config');
 
@@ -57,7 +57,6 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
         await perf.timedAsync(`syncAssessments${ciid}`, () => syncAssessments.sync(courseId, courseInstanceId, courseInstanceData.assessments, questionIds));
     }));
     perf.end('syncAssessments');
-    await freeformServer.reloadElementsForCourse(courseDir, courseId);
     if (config.devMode) {
         logger.info('Flushing course element and extensions cache...');
         freeformServer.flushElementCache();

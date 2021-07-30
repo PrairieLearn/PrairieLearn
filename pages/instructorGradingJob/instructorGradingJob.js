@@ -3,11 +3,11 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const AWS = require('aws-sdk');
-const error = require('@prairielearn/prairielib/error');
 
 const config = require('../../lib/config');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const error = require('../../prairielib/error');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

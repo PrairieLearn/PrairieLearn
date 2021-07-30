@@ -5,8 +5,8 @@ const request = require('request');
 const cheerio = require('cheerio');
 
 const config = require('../lib/config');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 // sorted alphabetically by qid
@@ -139,7 +139,7 @@ module.exports = {
         describe('startExam-6. POST to assessment URL', function() {
             it('should load successfully', function(callback) {
                 var form = {
-                    __action: 'newInstance',
+                    __action: 'new_instance',
                     __csrf_token: locals.__csrf_token,
                 };
                 locals.preStartTime = Date.now();

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { decodePath } = require('../../lib/uri-util');
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/error');
 
 router.get('/*', function(req, res, next) {
     if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be course viewer)'));

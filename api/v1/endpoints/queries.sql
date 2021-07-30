@@ -46,6 +46,7 @@ WITH object_data AS (
         u.name AS user_name,
         users_get_displayed_role(u.user_id, ci.id) AS user_role,
         ai.max_points,
+        ai.max_bonus_points,
         ai.points,
         ai.score_perc,
         ai.number AS assessment_instance_number,
@@ -92,7 +93,6 @@ WITH object_data AS (
         aar.exam_uuid,
         aar.id AS assessment_access_rule_id,
         aar.mode,
-        aar.number,
         aar.number AS assessment_access_rule_number,
         aar.password,
         aar.seb_config,
@@ -118,6 +118,34 @@ SELECT
 FROM
     object_data;
 
+-- BLOCK select_course_instance_access_rules
+WITH object_data AS (
+    SELECT
+        ci.id AS course_instance_id,
+        ci.short_name AS course_instance_short_name,
+        ci.long_name AS course_instance_long_name,
+        ci.course_id AS course_instance_course_id,
+        format_date_iso8601(ciar.end_date, ci.display_timezone) AS end_date,
+        ciar.id AS course_instance_access_rule_id,
+        ciar.institution,
+        ciar.number AS course_instance_access_rule_number,
+        ciar.role,
+        format_date_iso8601(ciar.start_date, ci.display_timezone) AS start_date,
+        ciar.uids
+    FROM
+        course_instances AS ci
+        JOIN course_instance_access_rules AS ciar ON (ciar.course_instance_id = ci.id)
+    WHERE
+        ci.id = $course_instance_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY course_instance_access_rule_number, course_instance_access_rule_id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
 -- BLOCK select_instance_questions
 WITH object_data AS (
     SELECT
@@ -127,7 +155,11 @@ WITH object_data AS (
         iq.number AS instance_question_number,
         aq.max_points AS assessment_question_max_points,
         iq.points AS instance_question_points,
-        iq.score_perc AS instance_question_score_perc
+        iq.score_perc AS instance_question_score_perc,
+        iq.highest_submission_score,
+        iq.last_submission_score,
+        iq.number_attempts,
+        extract(epoch FROM iq.duration) AS duration_seconds
     FROM
         assessment_instances AS ai
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
