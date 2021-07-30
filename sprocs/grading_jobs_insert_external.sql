@@ -1,8 +1,8 @@
 CREATE FUNCTION
     grading_jobs_insert_external (
-        IN submission_id bigint,
-        IN authn_user_id bigint,
-        IN grading_method enum_grading_method,
+        IN arg_submission_id bigint,
+        IN arg_authn_user_id bigint,
+        IN arg_grading_method enum_grading_method,
         OUT grading_job grading_jobs
     )
 AS $$
@@ -26,11 +26,11 @@ BEGIN
         JOIN questions AS q ON (q.id = v.question_id)
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    WHERE s.id = submission_id;
+    WHERE s.id = arg_submission_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
-    IF grading_method_external != 'External' AND grading_method_external != True THEN
-        RAISE EXCEPTION 'grading_method is not External for submission_id: %', submission_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', arg_submission_id; END IF;
+    IF arg_grading_method != 'External' AND grading_method_external != True THEN
+        RAISE EXCEPTION 'grading_method is not External for submission_id: %', arg_submission_id;
     END IF;
 
     -- ######################################################################
@@ -40,7 +40,7 @@ BEGIN
         UPDATE grading_jobs AS gj
         SET
             grading_request_canceled_at = now(),
-            grading_request_canceled_by = grading_jobs_insert_external.authn_user_id
+            grading_request_canceled_by = grading_jobs_insert_external.arg_authn_user_id
         FROM
             variants AS v
             JOIN submissions AS s ON (s.variant_id = v.id)
@@ -50,7 +50,7 @@ BEGIN
             AND gj.graded_at IS NULL
             AND gj.grading_requested_at IS NOT NULL
             AND gj.grading_request_canceled_at IS NULL
-            AND gj.grading_method = grading_method
+            AND gj.grading_method = arg_grading_method::enum_grading_method
         RETURNING gj.*
     LOOP
         UPDATE submissions AS s
@@ -64,7 +64,7 @@ BEGIN
     INSERT INTO grading_jobs AS gj
         (submission_id,  auth_user_id, grading_method, grading_requested_at)
     VALUES
-        (submission_id, authn_user_id, grading_method, now())
+        (arg_submission_id, arg_authn_user_id, arg_grading_method, now())
     RETURNING gj.*
     INTO grading_job;
 
@@ -74,14 +74,14 @@ BEGIN
     UPDATE submissions AS s
     SET
         grading_requested_at = now()
-    WHERE s.id = submission_id;
+    WHERE s.id = arg_submission_id;
 
     -- ######################################################################
     -- update all parent objects
 
     IF assessment_instance_id IS NOT NULL THEN
-        PERFORM instance_questions_update_in_grading(instance_question_id, authn_user_id);
-        PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit);
+        PERFORM instance_questions_update_in_grading(instance_question_id, arg_authn_user_id);
+        PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit);
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
