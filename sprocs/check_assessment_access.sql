@@ -102,8 +102,8 @@ BEGIN
             next_active_credit
         FROM
             assessment_access_rules AS aar
-            JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
-            check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
+            JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
+                check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
         WHERE
             aar.assessment_id = check_assessment_access.assessment_id
             AND aar.start_date IS NOT NULL
