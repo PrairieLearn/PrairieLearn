@@ -8,4 +8,4 @@ docker/start_redis.sh
 git config --global user.email "dev@illinois.edu"
 git config --global user.name "Dev User"
 
-npm test
+make test

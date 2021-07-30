@@ -1,4 +1,4 @@
-PATH := /PrairieLearn/node_modules/.bin/:$(PATH)
+PATH := node_modules/.bin/:$(PATH)
 
 start:
 	node server.js
@@ -23,7 +23,7 @@ lint-python:
 typecheck:
 	tsc
 depcheck:
-	-npx depcheck --ignore-patterns=public/**
+	-depcheck --ignore-patterns=public/**
 	@echo WARNING:
 	@echo WARNING: Before removing an unused package, also check that it is not used
 	@echo WARNING: by client-side code. Do this by running '"git grep <packagename>"'
