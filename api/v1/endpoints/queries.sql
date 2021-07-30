@@ -129,7 +129,6 @@ WITH object_data AS (
         ciar.id AS course_instance_access_rule_id,
         ciar.institution,
         ciar.number AS course_instance_access_rule_number,
-        ciar.role,
         format_date_iso8601(ciar.start_date, ci.display_timezone) AS start_date,
         ciar.uids
     FROM
