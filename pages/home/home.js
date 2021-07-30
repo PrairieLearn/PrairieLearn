@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
+var config = require('../../lib/config');
 var sqldb = require('../../prairielib/lib/sql-db');
 var sqlLoader = require('../../prairielib/lib/sql-loader');
 
@@ -19,7 +20,7 @@ router.get('/', function(req, res, next) {
             if (ERR(err, next)) return;
 
             res.locals.instructor_courses = result.rows[0].instructor_courses;
-            if (res.locals.instructor_courses.length > 0) {
+            if (res.locals.instructor_courses.length > 0 || config.devMode) {
                 // If the list of instructor courses is non-empty, then prepend
                 // with the list of example courses (otherwise, discard the list
                 // of example courses).
