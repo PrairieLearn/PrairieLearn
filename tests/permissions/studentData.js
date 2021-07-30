@@ -67,7 +67,7 @@ describe('student data access', function() {
 
     step('student can start E1 in exam mode', async () => {
         const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
-        const form = { __action: 'newInstance', __csrf_token: context.__csrf_token };
+        const form = { __action: 'new_instance', __csrf_token: context.__csrf_token };
         const response = await helperClient.fetchCheerio(context.examAssessmentUrl, { method: 'POST', form, headers});
         assert.isTrue(response.ok);
         const assessmentInstanceUrl = response.url;
