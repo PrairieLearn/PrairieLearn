@@ -78,6 +78,7 @@ var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
             });
         },
         function(callback) {
+            debug('createFullDatabase(): setting random search schema');
             sqldb.setRandomSearchSchema('test', (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
@@ -141,6 +142,20 @@ var createFromTemplate = function(dbName, dbTemplateName, dropFirst, mochaThis, 
             debug('createFromTemplate(): ending client');
             client.end();
             callback(null);
+        },
+        function(callback) {
+            debug('createFromTemplate(): setting random search schema');
+            sqldb.setRandomSearchSchema('test', (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            debug('createFromTemplate(): initializing sprocs');
+            sprocs.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
     ], function(err) {
         debug('createFromTemplate(): complete');
