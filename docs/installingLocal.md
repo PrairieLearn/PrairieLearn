@@ -38,10 +38,11 @@ docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairiel
 
 # following commands are inside the container:
 cd /PrairieLearn
-./docker/lint_js.sh
-./docker/lint_python.sh
-./docker/test_js.sh
-./docker/test_python.sh
+docker/start_support.sh
+make lint-js
+make lint-python
+make test-js
+make test-python
 ```
 
 

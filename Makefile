@@ -10,10 +10,13 @@ start-s3rver:
 
 test:
 	nyc --reporter=lcov mocha tests/index.js
+test-js: test
 test-sync:
 	mocha tests/sync/index.js
 test-nocoverage:
 	mocha tests/index.js
+test-python:
+	python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
 
 lint: lint-js lint-python
 lint-js:
