@@ -4,9 +4,9 @@
   "description": "PrairieLearn's grading agent",
   "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=test jest",
-    "lint": "eslint --ext js \"**/*.js\"",
-    "start": "node index.js"
+    "test": "make test",
+    "lint": "make lint",
+    "start": "make start"
   },
   "repository": {
     "type": "git",
