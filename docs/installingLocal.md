@@ -20,9 +20,9 @@ docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairiel
 cd /PrairieLearn
 npm ci                   # install packages, repeat this after switching branches or pulling new code
 docker/start_support.sh  # start the DB, cache, etc.
-node server              # run PrairieLearn itself
+make start               # run PrairieLearn itself
 
-# now you can Ctrl-C and run "node server" again to restart PrairieLearn (after code edits, for example)
+# now you can Ctrl-C and run "make start" again to restart PrairieLearn (after code edits, for example)
 # or Ctrl-C to stop PL and Ctrl-D to exit the container
 ```
 
