@@ -62,6 +62,7 @@ npm-debug.log
 ### Tests
 /tests/testFileEditor/courseLive/
 /tests/testFileEditor/courseOrigin/
+/tests/testFileEditor/courseDev/
 
 ## Programming languages
 
