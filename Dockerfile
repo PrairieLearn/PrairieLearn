@@ -3,6 +3,8 @@ FROM prairielearn/plbase
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
 COPY package.json package-lock.json /PrairieLearn/
+COPY grader_host/package.json grader_host/package-lock.json /PrairieLearn/grader_host/
+COPY prairielib/package.json prairielib/package-lock.json /PrairieLearn/prairielib/
 RUN cd /PrairieLearn \
     && npm ci \
     && npm --force cache clean \
