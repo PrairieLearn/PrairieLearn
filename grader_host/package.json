@@ -3,11 +3,6 @@
   "version": "0.0.3",
   "description": "PrairieLearn's grading agent",
   "main": "index.js",
-  "scripts": {
-    "test": "make test",
-    "lint": "make lint",
-    "start": "make start"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PrairieLearn/PrairieGrader.git"

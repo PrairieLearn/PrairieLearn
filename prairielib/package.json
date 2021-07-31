@@ -11,10 +11,6 @@
     "util.js",
     "config.js"
   ],
-  "scripts": {
-    "test": "make test",
-    "lint": "make lint"
-  },
   "author": "",
   "license": "AGPL-3.0",
   "dependencies": {
