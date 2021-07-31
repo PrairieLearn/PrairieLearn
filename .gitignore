@@ -59,6 +59,10 @@ npm-debug.log
 /coverage/
 /.nyc_output/
 
+### Tests
+/tests/testFileEditor/courseLive/
+/tests/testFileEditor/courseOrigin/
+
 ## Programming languages
 
 ### Python
