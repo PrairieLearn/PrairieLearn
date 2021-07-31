@@ -62,7 +62,7 @@ PrairieLearn
 
 ```sh
 # make sure you are in the top-level PrairieLearn/ directory
-npm test
+make test
 make lint
 ```
 
