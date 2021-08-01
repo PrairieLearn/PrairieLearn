@@ -1,4 +1,4 @@
-PATH := /PrairieLearn/node_modules/.bin/:$(PATH)
+PATH := node_modules/.bin/:$(PATH)
 
 ifdef NODEMON
 start: start-nodemon
@@ -14,10 +14,13 @@ start-s3rver:
 
 test:
 	nyc --reporter=lcov mocha tests/index.js
+test-js: test
 test-sync:
 	mocha tests/sync/index.js
 test-nocoverage:
 	mocha tests/index.js
+test-python:
+	python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
 
 lint: lint-js lint-python
 lint-js:
@@ -27,7 +30,7 @@ lint-python:
 typecheck:
 	tsc
 depcheck:
-	-npx depcheck --ignore-patterns=public/**
+	-depcheck --ignore-patterns=public/**
 	@echo WARNING:
 	@echo WARNING: Before removing an unused package, also check that it is not used
 	@echo WARNING: by client-side code. Do this by running '"git grep <packagename>"'
