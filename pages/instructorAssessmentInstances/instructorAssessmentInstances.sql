@@ -9,6 +9,8 @@ SELECT
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL AND ai.date_limit <= current_timestamp
             THEN 'Expired'
+        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(extract(epoch from (ai.date_limit - current_timestamp))) < 60
+            THEN '< 1 min'
         WHEN ai.open AND ai.date_limit IS NOT NULL
             THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open (no time limit)'
@@ -20,6 +22,8 @@ SELECT
         ELSE NULL
     END AS time_remaining_sec,
     CASE
+        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(extract(epoch from (ai.date_limit - ai.date))) < 60
+            THEN '< 1 min'
         WHEN ai.open AND ai.date_limit IS NOT NULL
             THEN greatest(0, floor(extract(epoch from (ai.date_limit - ai.date)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open (no time limit)'
