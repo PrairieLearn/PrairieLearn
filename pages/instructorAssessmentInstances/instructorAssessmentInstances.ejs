@@ -12,6 +12,16 @@
     <script src="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances/client.js"></script>
   </head>
   <style>
+    .sticky-column {
+      position: sticky;
+      left: 0;
+      background: white;
+      box-shadow: inset -1px 0 #dee2e6;
+    }
+    .table-hover tbody tr:hover td.sticky-column {
+        color: #212529;
+        background-color: #efefef;
+    }
     .fixed-table-toolbar {
         padding: 0 1em 0 1em;
     }
@@ -196,7 +206,7 @@
                   data-sortable="true"
                   data-sorter="detailsLinkSorter"
                   data-formatter="detailsLinkFormatter"
-                  data-class="align-middle"
+                  data-class="align-middle sticky-column"
                   data-switchable="false"></th>
               <% if (assessment.group_work) { %>
               <th data-field="group_name"
