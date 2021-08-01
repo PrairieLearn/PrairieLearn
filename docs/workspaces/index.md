@@ -232,9 +232,17 @@ docker run -it --rm -p 3000:3000 \
 Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
 
 
-#### Developing with workspaces
+## Developing with workspaces (in Docker)
 
-For development, run the docker command with a final extra argument of `/PrairieLearn/docker/start_workspace.sh` to load PL and the workspace host interface in separate tmux panes.
+For development, run the docker container as described in [Installing with local source code](installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
+
+```
+make start-workspace-host
+make start
+```
+
+For development it is helpful to run the above two commands in separate `tmux` windows.
+
 
 ## Running locally (natively, not on Docker)
 

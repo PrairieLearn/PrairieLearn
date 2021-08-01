@@ -1,5 +1,3 @@
 #!/bin/bash
 
-cd /PrairieLearn
-docker/start_support.sh
-make test
+make -s -C /PrairieLearn test-js
