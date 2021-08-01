@@ -222,7 +222,7 @@ function actionButtonFormatter(_value, row, index) {
     var container = $('<div>');
     var dropdown = $('<div class="dropdown">').appendTo(container);
     $('<button type="button">')
-        .addClass('btn btn-xs dropdown-toggle')
+        .addClass('btn btn-secondary btn-xs dropdown-toggle')
         .attr('data-toggle', 'dropdown')
         .attr('aria-haspopup', 'true')
         .attr('aria-expanded', 'false')
@@ -274,7 +274,7 @@ function actionButtonFormatter(_value, row, index) {
         .attr('data-date-formatted', row.date_formatted)
         .attr('data-score-perc', Math.floor(row.score_perc))
         .attr('data-assessment-instance-id', row.assessment_instance_id)
-        .append($('<i>').addClass('fas fa-times')
+        .append($('<i>').addClass('fas fa-times mr-2')
                 .attr('aria-hidden', 'true'))
         .append('Delete')
         .appendTo(menu);
@@ -284,7 +284,7 @@ function actionButtonFormatter(_value, row, index) {
         .attr('role', 'button')
         .attr('tabindex', '0')
         .attr('onclick', `$("#row${ai_id}PopoverClose").popover("show")`)
-        .append($('<i>').addClass('fas fa-ban')
+        .append($('<i>').addClass('fas fa-ban mr-2')
                 .attr('aria-hidden', 'true'))
         .append('Grade &amp; Close')
         .appendTo(menu);
@@ -294,7 +294,7 @@ function actionButtonFormatter(_value, row, index) {
         .attr('role', 'button')
         .attr('tabindex', '0')
         .attr('onclick', `$("#row${ai_id}PopoverRegrade").popover("show")`)
-        .append($('<i>').addClass('fas fa-sync')
+        .append($('<i>').addClass('fas fa-sync mr-2')
                 .attr('aria-hidden', 'true'))
         .append('Regrade')
         .appendTo(menu);
