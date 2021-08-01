@@ -12,6 +12,15 @@
     $(function() {
         $('#gradebook-table').bootstrapTable({
             url: '<%= urlPrefix %>/<%= navPage %>/gradebook/raw_data.json',
+            buttons: {
+                download: {
+                    text: 'Download',
+                    icon: 'fa-download',
+                    event: () => {
+                        window.location.href = '<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>';
+                    },
+                }
+            },
             onPreBody: function() {
                 $('.spinning-wheel').show();
                 $('button.edit-score').popover('hide');
@@ -119,9 +128,11 @@
           Users
         </div>
 
+        <!--
         <div id="table-toolbar" class="p-2 pl-3">
           Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
+        -->
 
         <table id="gradebook-table"
                data-unique-id="user_id"
