@@ -118,6 +118,12 @@
         color: #212529;
         background-color: #efefef;
     }
+    .fixed-table-toolbar {
+        padding: 0 1em 0 1em;
+    }
+    div.pagination {
+        margin: 0 0 0 1em;
+    }
   </style>
   <body>
     <%- include('../partials/navbar'); %>
@@ -143,11 +149,12 @@
                data-show-columns-toggle-all="true"
                data-show-refresh="true"
                data-pagination="true"
+               data-pagination-v-align="top"
                data-page-list="[50,100,200,500,unlimited]"
                data-page-size="50"
                data-smart-display="false"
                data-show-extended-pagination="true"
-               data-toolbar="#table-toolbar"
+               data-toolbar=".fixed-table-pagination"
                data-sticky-header="true">
             <thead>
               <tr>
