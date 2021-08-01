@@ -11,10 +11,6 @@
     "util.js",
     "config.js"
   ],
-  "scripts": {
-    "test": "NODE_ENV=test jest",
-    "lint": "eslint --ext js \"**/*.js\""
-  },
   "author": "",
   "license": "AGPL-3.0",
   "dependencies": {

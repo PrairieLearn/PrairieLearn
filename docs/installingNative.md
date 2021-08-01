@@ -77,7 +77,7 @@ psql -c "ALTER USER postgres WITH SUPERUSER;"
 
 ```sh
 cd PrairieLearn
-npm test
+make test
 ```
 
 * Run the linters:
