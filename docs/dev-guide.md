@@ -62,7 +62,7 @@ PrairieLearn
 
 ```sh
 # make sure you are in the top-level PrairieLearn/ directory
-npm test
+make test
 make lint
 ```
 
@@ -75,7 +75,7 @@ make lint
 * Individual tests can be run with:
 
 ```sh
-npx mocha tests/[testName].js
+node_modules/.bin/mocha tests/[testName].js
 ```
 
 ## Debugging server-side JavaScript
@@ -104,7 +104,7 @@ debug('func()', 'param:', param);
 
 * As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
 
-* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `npx mocha --trace-warnings tests/index.js`.
+* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
 
 ## Debugging client-side JavaScript
 
