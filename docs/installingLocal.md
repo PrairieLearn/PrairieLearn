@@ -39,6 +39,16 @@ make lint   # or run "make lint-js" and "make lint-python" separately
 make test   # or "make test-js" and "make test-python"
 ```
 
+To run specific tests you first need to run `make start-support` to start the database and other services:
+
+```sh
+docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+
+# following commands are inside the container:
+make start-support
+mocha tests/testGetHomepage.js
+```
+
 
 ## Updating or building the Docker image
 
