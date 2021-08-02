@@ -422,10 +422,9 @@ def test(element_html, data):
     answer_name_field = answer_name + '-input'
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
-    # Right now invalid input must mean an empty response.
-    # Because user input is only through drag and drop, there is no other
-    # way for their to be invalid input. This may change in the future if
-    # we have nested input boxes (like faded parsons' problems).
+    # Right now invalid input must mean an empty response. Because user input is only
+    # through drag and drop, there is no other way for their to be invalid input. This
+    # may change in the future if we have nested input boxes (like faded parsons' problems).
     if data['test_type'] == 'invalid':
         data['raw_submitted_answers'][answer_name_field] = json.dumps([])
         data['format_errors'][answer_name] = 'No answer was submitted.'
