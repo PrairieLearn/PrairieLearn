@@ -50,7 +50,7 @@ docker pull prairielearn/prairielearn
 
 You can also build a local copy of this image and use it to make sure you have a version that corresponds exactly to your local source:
 
-```
+```sh
 cd /path/to/PrairieLearn
 docker build -t prairielearn/plbase images/plbase
 docker build -t prairielearn/prairielearn .
@@ -75,8 +75,14 @@ Note that any forward slashes (`/`) in the branch name will be need to be conver
 
 The description at the start of this page suggests manually stopping and restarting PrairieLearn after you have edited any JavaScript files. You can alternatively use the `nodemon` package to watch for changes to code and auto-restart PrairieLearn. To do this, run the PrairieLearn container as described at the start of this page and then run:
 
-```
+```sh
 make start-nodemon
+```
+
+Alternatively, you can set the `NODEMON=true` environment variable while running PrairieLearn automatically:
+
+```sh
+docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
 
