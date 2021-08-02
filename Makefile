@@ -1,11 +1,7 @@
 PATH := node_modules/.bin/:$(PATH)
 
-ifdef NODEMON
-start: start-nodemon
-else
 start:
-	@node server.js
-endif
+	node server.js
 start-nodemon:
 	nodemon -L server.js
 start-s3rver:
