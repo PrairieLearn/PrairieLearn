@@ -20,22 +20,15 @@ if [[ ! -z "$CONTAINERS" ]] ; then
     docker rm $CONTAINERS
 fi
 
-if [[ -f /efs/container/config.json ]] ; then
-    # we are running in production mode
-    node server --config /efs/container/config.json
-else
-    # we are running in local development mode
-    docker/start_s3rver.sh
-    docker/start_postgres.sh
-    docker/gen_ssl.sh
-    docker/start_redis.sh
-    if [[ $DONT_START_WORKSPACE_HOST_IN_INIT != "true" ]]; then
-        node workspace_host/interface &
-    fi
 
-    if [[ $NODEMON == "true" ]]; then
-        make start-nodemon
-    else
-        make --silent start
-    fi
+docker/start_support.sh
+
+if [[ $DONT_START_WORKSPACE_HOST_IN_INIT != "true" ]]; then
+    node workspace_host/interface &
+fi
+
+if [[ $NODEMON == "true" ]]; then
+    make start-nodemon
+else
+    make --silent start
 fi
