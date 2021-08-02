@@ -37,7 +37,7 @@ const qidsExampleCourse = [
     'demo/randomSymbolic',
     'demo/studentFaces',
     'demo/studentNames',
-    'demo/proofBlocks',
+    // FIXME: 'demo/proofBlocks',
     'element/checkbox',
     'element/code',
     // FIXME: 'demo/drawing/centroid',
