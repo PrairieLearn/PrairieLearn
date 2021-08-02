@@ -7,25 +7,14 @@
         selected; we accomplish this by setting <code>max-select="3"</code> in the <code>pl-checkbox</code>
         attributes.
     </p>
+    <p>
+        Integer Review: Which of these mathematical statements are true?
+    </p>
 </pl-question-panel>
 
-<div class="card my-2">
-    <div class="card-header">
-        Integer Review
-    </div>
-
-    <div class="card-body">
-        <pl-question-panel>
-            <p>
-                Which of these mathematical statements are true?
-            </p>
-        </pl-question-panel>
-
-        <pl-checkbox answers-name="ans" partial-credit="true" partial-credit-method="COV" max-select="3">
-            <pl-answer correct="true">If an integer is divisible by 4, it must be divisible by 2.</pl-answer>
-            <pl-answer>If an integer is divisible by 2, it must be divisible by 4.</pl-answer>
-            <pl-answer>An integer divided by an integer is always an integer.</pl-answer>
-            <pl-answer>The number 3.5 is an integer.</pl-answer>
-        </pl-checkbox>
-    </div>
-</div>
+<pl-checkbox answers-name="ans" partial-credit="true" partial-credit-method="COV" max-select="3">
+    <pl-answer correct="true">If an integer is divisible by 4, it must be divisible by 2.</pl-answer>
+    <pl-answer>If an integer is divisible by 2, it must be divisible by 4.</pl-answer>
+    <pl-answer>An integer divided by an integer is always an integer.</pl-answer>
+    <pl-answer>The number 3.5 is an integer.</pl-answer>
+</pl-checkbox>
