@@ -389,7 +389,7 @@ Attribute | Type | Default | Description
 `source-header` | string | "Drag from here" | The text that appears at the start of the source area.
 `solution-header` | string| "Construct your solution here" |  The text that appears at the start of the solution area.
 `solution-placement` | string | "right" | "right" shows the source and solution areas aligned side-by-side. "bottom" shows the solution area below the source area.
-
+`feedback` | string | "none" | "first-wrong" | The level of feedback the student will recieve upon giving an incorrect answer. Currently only available with the `dag` grading mode. "first-wrong" will tell the student which block in their answer was the first to be incorrect.
 Within the `pl-order-blocks` element, each answer block must be specified with a `pl-answer` that has the following attributes:
 
 Attribute | Type | Default | Description
