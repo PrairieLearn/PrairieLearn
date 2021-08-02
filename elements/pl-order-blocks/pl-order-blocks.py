@@ -432,7 +432,7 @@ def test(element_html, data):
 
     # TODO grading modes 'dag' and 'ranking' allow multiple different possible correct answers,
     # we should check multiple of them at random instead of just the provided solution
-    elif data['test_type'] == 'correct':
+    elif data['test_type'] == 'correct' or data['test_type'] == 'incorrect':
         answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': '', 'first_wrong': -1}
@@ -442,8 +442,8 @@ def test(element_html, data):
     # TODO: This test doesn't handle the case where grading-mode='dag' and feedback='first-wrong'
     elif data['test_type'] == 'incorrect':
         answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
-        incorrect_answer = answer[1:]
-        data['raw_submitted_answers'][answer_name_field] = json.dumps(incorrect_answer)
+        answer.pop(0)
+        data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': '', 'first_wrong': 1}
 
     else:
