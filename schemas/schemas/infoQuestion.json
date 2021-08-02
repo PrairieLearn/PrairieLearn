@@ -263,6 +263,10 @@
                         "description": "A single file or directory that will be excluded from sync.",
                         "type": "string"
                     }
+                },
+                "enableNetworking": {
+                    "description": "Whether the workspace should have network access. Access is disabled by default.",
+                    "type": "boolean"
                 }
             }
         }
