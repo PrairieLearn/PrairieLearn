@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# FIXME: temporary check until all developers have upgraded their docker images
+# FIXME: should be removed soon
+if ! command -v lsof > /dev/null ; then
+    echo "Docker image is outdated. Please run:"
+    echo -e "\tdocker pull prairielearn/prairielearn"
+    exit 1
+fi
+
 # exit if s3rver is already running
 if lsof -i :5000 > /dev/null ; then
     exit
