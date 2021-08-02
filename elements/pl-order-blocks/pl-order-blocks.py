@@ -418,6 +418,7 @@ def grade(element_html, data):
 
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
     answer_name = pl.get_string_attrib(element, 'answers-name')
     answer_name_field = answer_name + '-input'
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -442,8 +443,10 @@ def test(element_html, data):
     elif data['test_type'] == 'incorrect':
         answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
         answer.pop(0)
+        score = float(len(answer)) / (len(answer) + 1) if grading_mode == 'unordered' else 0
+        first_wrong = 0 if grading_mode == 'dag' else -1
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
-        data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': '', 'first_wrong': 1}
+        data['partial_scores'][answer_name] = {'score': score, 'weight': weight, 'feedback': '', 'first_wrong': first_wrong}
 
     else:
         raise Exception('invalid result: %s' % data['test_type'])
