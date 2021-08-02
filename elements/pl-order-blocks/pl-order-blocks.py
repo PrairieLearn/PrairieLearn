@@ -314,7 +314,6 @@ def parse(element_html, data):
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
             answer['tag'] = search['tag'] if search is not None else None
 
-
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         for html_tags in element:
             if html_tags.tag == 'pl-answer':
@@ -430,7 +429,6 @@ def test(element_html, data):
     if data['test_type'] == 'invalid':
         data['raw_submitted_answers'][answer_name_field] = json.dumps([])
         data['format_errors'][answer_name] = 'No answer was submitted.'
-        # data['partial_scores'][answer_name] = {'score': 0, 'feedback': '', 'first_wrong': -1}
 
     # TODO grading modes 'dag' and 'ranking' allow multiple different possible correct answers,
     # we should check multiple of them at random instead of just the provided solution
