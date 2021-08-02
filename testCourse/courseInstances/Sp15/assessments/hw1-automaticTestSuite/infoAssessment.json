@@ -3,6 +3,7 @@
     "type": "Homework",
     "title": "Homework for automatic test suite",
     "set": "Homework",
+    "unit": "pl",
     "number": "1",
     "allowAccess": [
         {

@@ -6,6 +6,13 @@
         "useNewQuestionRenderer": true
     },
     "assessmentSets": [],
+    "assessmentUnits": [
+        {"name": "pl", "heading": "Unit 1: Intro to PrairieLearn"},
+        {"name": "cbtf", "heading": "Unit 2: Examination with proctors"},
+        {"name": "grading", "heading": "Unit 3: Alternate grading techniques"},
+        {"name": "groups", "heading": "Unit 4: Working with partners"},
+        {"name": "misc", "heading": "Unit 5: Miscellaneous assessments"}
+    ],
     "topics": [
         {"name": "Algebra", "color": "red3", "description": "Basic algebra."},
         {"name": "Calculus", "color": "yellow3", "description": "Single and multiple variable calculus."},

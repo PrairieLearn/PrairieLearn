@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Miscellaneous exam",
     "set": "Exam",
+    "unit": "pl",
     "number": "2",
     "allowAccess": [
         {

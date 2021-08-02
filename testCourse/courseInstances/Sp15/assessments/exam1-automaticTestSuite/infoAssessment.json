@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Exam for automatic test suite",
     "set": "Exam",
+    "unit": "pl",
     "number": "1",
     "allowAccess": [
         {

@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Test disabling real-time grading",
     "set": "Exam",
+    "unit": "grading",
     "number": "8",
     "allowRealTimeGrading": false,
     "allowAccess": [

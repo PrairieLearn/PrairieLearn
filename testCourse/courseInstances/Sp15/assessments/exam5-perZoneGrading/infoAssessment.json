@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Exam to test per-zone grading",
     "set": "Exam",
+    "unit": "grading",
     "number": "5",
     "allowAccess": [{
             "mode": "Public",

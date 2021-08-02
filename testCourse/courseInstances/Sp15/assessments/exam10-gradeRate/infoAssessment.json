@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Test limiting grade rate",
     "set": "Exam",
+    "unit": "misc",
     "number": "10",
     "gradeRateMinutes": 10,
     "allowAccess": [
