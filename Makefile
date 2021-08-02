@@ -27,9 +27,9 @@ test-python:
 	@python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
 
 lint: lint-js lint-python
-lint-js: start-support
+lint-js:
 	@eslint --ext js "**/*.js"
-lint-python: start-support
+lint-python:
 	@python3 -m flake8 ./
 
 typecheck:
