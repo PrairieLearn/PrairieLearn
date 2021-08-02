@@ -1,5 +1,7 @@
 FROM prairielearn/plbase
 
+ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
+
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
 COPY package.json package-lock.json /PrairieLearn/
