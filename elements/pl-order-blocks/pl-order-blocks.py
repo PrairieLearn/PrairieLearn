@@ -24,6 +24,14 @@ WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 0
 TAB_SIZE_PX = 50
 
+DAG_FIRST_WRONG_FEEDBACK = [
+    'Your answer is correct so far, but it is incomplete.',
+    r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
+    The problem is most likely one of the following:
+    <ul><li> This block is not a part of the correct solution </li>
+    <li> This block is not adequately supported by previous block </li>
+    <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
+]
 
 def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
@@ -396,13 +404,9 @@ def grade(element_html, data):
                 feedback = ''
             elif feedback_type == 'first-wrong':
                 if first_wrong == -1:
-                    feedback = 'Your answer is correct so far, but it is incomplete.'
+                    feedback = DAG_FIRST_WRONG_FEEDBACK[0]
                 else:
-                    feedback = r"""Your answer is incorrect starting at <span style="color:red;">block number """ + str(first_wrong + 1) + \
-                        r"""</span>. The problem is most likely one of the following:
-                        <ul><li> This block is not a part of the correct solution </li>
-                        <li> This block is not adequately supported by previous block </li>
-                        <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
+                    feedback = DAG_FIRST_WRONG_FEEDBACK[1].format(str(first_wrong + 1))
 
     if check_indentation:
         student_answer_indent = filter_multiple_from_array(data['submitted_answers'][answer_name], ['indent'])
@@ -422,6 +426,7 @@ def test(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
     answer_name_field = answer_name + '-input'
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -445,8 +450,9 @@ def test(element_html, data):
         answer.pop(0)
         score = float(len(answer)) / (len(answer) + 1) if grading_mode == 'unordered' else 0
         first_wrong = 0 if grading_mode == 'dag' else -1
+        feedback = DAG_FIRST_WRONG_FEEDBACK[1].format(1) if grading_mode == 'dag' and feedback_type == 'first-wrong' else ''
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
-        data['partial_scores'][answer_name] = {'score': score, 'weight': weight, 'feedback': '', 'first_wrong': first_wrong}
+        data['partial_scores'][answer_name] = {'score': score, 'weight': weight, 'feedback': feedback, 'first_wrong': first_wrong}
 
     else:
         raise Exception('invalid result: %s' % data['test_type'])
