@@ -14,13 +14,11 @@ git clone https://github.com/PrairieLearn/PrairieLearn.git
 * Run PrairieLearn with:
 
 ```sh
-docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 
 # following commands are inside the container:
-cd /PrairieLearn
 npm ci                   # install packages, repeat this after switching branches or pulling new code
-docker/start_support.sh  # start the DB, cache, etc.
-make start               # run PrairieLearn itself
+make start               # run PrairieLearn
 
 # now you can Ctrl-C and run "make start" again to restart PrairieLearn (after code edits, for example)
 # or Ctrl-C to stop PL and Ctrl-D to exit the container
@@ -31,18 +29,24 @@ The path `/path/to/PrairieLearn` above should be replaced with the *absolute* pa
 
 ## Running the test suite
 
-The linters and tests for the Python and JavaScript code can be run with the following commands in a shell instance:
+The linters and tests for the JavaScript and Python code can be run with the following commands inside the container:
 
 ```sh
-docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 
 # following commands are inside the container:
-cd /PrairieLearn
-docker/start_support.sh
-make lint-js
-make lint-python
-make test-js
-make test-python
+make lint   # or run "make lint-js" and "make lint-python" separately
+make test   # or "make test-js" and "make test-python"
+```
+
+To run specific tests you first need to run `make start-support` to start the database and other services:
+
+```sh
+docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
+
+# following commands are inside the container:
+make start-support
+mocha tests/testGetHomepage.js
 ```
 
 
@@ -56,15 +60,11 @@ docker pull prairielearn/prairielearn
 
 You can also build a local copy of this image and use it to make sure you have a version that corresponds exactly to your local source:
 
-```
+```sh
 cd /path/to/PrairieLearn
-docker build -t local_prairielearn .
-
-# now use it with:
-docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn local_prairielearn /bin/bash
+docker build -t prairielearn/plbase images/plbase
+docker build -t prairielearn/prairielearn .
 ```
-
-Above we are using the `local_prairielearn` image in place of the pre-built `prairielearn/prairielearn` image.
 
 
 ## Running a specific branch in a pre-built container
@@ -74,45 +74,22 @@ By default, the commands above will run PrairieLearn from the branch that is cur
 It is also possible to run a branch other than `master` without cloning or checking out the code for that branch, as long as the branch has been pushed to GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
 
 ```sh
+docker pull prairielearn/prairielearn:BRANCH_NAME   # make sure we have the latest version
 docker run -it --rm -p 3000:3000 prairielearn/prairielearn:BRANCH_NAME
 ```
 
-Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`). Also note that docker does not pull branch changes by default, so you are encouraged to update the local docker cached image by using this command before starting the container above:
-
-```sh
-docker pull prairielearn/prairielearn:BRANCH_NAME
-docker run -it --rm -p 3000:3000 prairielearn/prairielearn:BRANCH_NAME
-```
-
-
-## Running commands in Docker
-
-If needed, you can run the container with a different command:
-
-```sh
-docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn COMMAND
-```
-
-This can be used to, e.g., run scripts distributed with PrairieLearn by opening a bash shell:
-
-```sh
-docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
-```
-
-You can also run only package installation with:
-
-```sh
-docker run --rm -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /usr/local/bin/npm ci
-```
+Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`).
 
 
 ## Auto-restarting the node server
 
-The description at the start of this page suggests manually stopping and restarting PrairieLearn after you have edited any JavaScript files. You can alternatively use the `nodemon` package to watch for changes to code and auto-restart PrairieLearn. Two different ways to do this are:
+The description at the start of this page suggests manually stopping and restarting PrairieLearn after you have edited any JavaScript files. You can alternatively use the `nodemon` package to watch for changes to code and auto-restart PrairieLearn. To do this, run the PrairieLearn container as described at the start of this page and then run:
 
-* Run PrairieLearn as described at the start of this page, but replace `make start` with `make start-nodemon`.
+```sh
+make start-nodemon
+```
 
-* Run PrairieLearn automatically in the container and pass the `-e NODEMON=true` environment variable:
+Alternatively, you can set the `NODEMON=true` environment variable while running PrairieLearn automatically:
 
 ```sh
 docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
