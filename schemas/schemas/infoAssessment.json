@@ -50,8 +50,8 @@
             "type": "boolean",
             "default": false
         },
-        "scoreOnly": {
-			"description": "Whether the assessment is only for score upload",
+        "createInstanceOnGrading": {
+			"description": "Whether new instances should be created when the assessment is graded",
 			"type": "boolean",
 			"default": false
 		},

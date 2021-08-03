@@ -217,7 +217,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {boolean} allowIssueReporting
  * @property {boolean} allowRealTimeGrading
  * @property {boolean} multipleInstance
- * @property {boolean} scoreOnly
+ * @property {boolean} createInstanceOnGrading
  * @property {boolean} shuffleQuestions
  * @property {AssessmentAllowAccess[]} allowAccess
  * @property {string} text

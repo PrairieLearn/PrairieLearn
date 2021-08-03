@@ -13,7 +13,7 @@ DECLARE
     instance_id bigint := assessment_instance_id;
     user_id bigint;
     group_work boolean;
-    score_only boolean;
+    create_on_grading boolean;
     mode enum_mode;
     time_limit_min integer := 0;
 BEGIN
@@ -23,14 +23,14 @@ BEGIN
 		SELECT 
 			a.group_work,
 			a.mode,
-			a.score_only
+			a.create_instance_on_grading
 		INTO
 			group_work,
 			mode,
-			score_only
+			create_on_grading
 		FROM assessments AS a WHERE a.id = assessment_id;
 
-		IF score_only THEN
+		IF create_instance_on_grading THEN
 			IF group_work THEN
 				SELECT
 					gu.user_id

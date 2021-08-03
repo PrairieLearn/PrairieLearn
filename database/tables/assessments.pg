@@ -17,7 +17,7 @@ columns
     obj: jsonb
     order_by: integer
     require_honor_code: boolean default true
-    score_only: boolean default false
+    create_instance_on_grading: boolean default false
     shuffle_questions: boolean default false
     stats_last_updated: timestamp with time zone
     sync_errors: text

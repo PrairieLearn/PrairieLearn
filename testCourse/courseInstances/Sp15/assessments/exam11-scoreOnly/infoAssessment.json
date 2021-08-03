@@ -4,7 +4,7 @@
     "title": "Score Only Assessment",
     "set": "Exam",
     "number": "11",
-    "scoreOnly": true,
+    "createInstanceOnGrading": true,
     "multipleInstance": true,
     "allowAccess": [
         {
