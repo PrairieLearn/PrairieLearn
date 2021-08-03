@@ -31,9 +31,9 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
 
-    IF grading_method_enum = 'External' AND grading_method_external != True THEN
+    IF grading_method = 'External' AND grading_method_external != True THEN
         RAISE EXCEPTION 'grading_method is not External for submission_id: %', submission_id;
-    ELSIF grading_method_enum = 'Manual' AND grading_method_internal != True THEN
+    ELSIF grading_method = 'Manual' AND grading_method_manual != True THEN
         RAISE EXCEPTION 'grading_method is not Manual for submission_id: %', submission_id;
     END IF;
 
@@ -54,7 +54,7 @@ BEGIN
             AND gj.graded_at IS NULL
             AND gj.grading_requested_at IS NOT NULL
             AND gj.grading_request_canceled_at IS NULL
-            AND gj.grading_method = grading_method
+            AND gj.grading_method = grading_jobs_insert_external_manual.grading_method
         RETURNING gj.*
     LOOP
         UPDATE submissions AS s
