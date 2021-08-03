@@ -73,7 +73,7 @@ Key | Type | Description
 `data["params"]` | dict | Parameters that describe the question variant.
 `data["correct_answers"]` | dict | The true answer (if any) for the variant.
 `data["submitted_answers"]` | dict | The answer submitted by the student (after parsing).
-`data["format_errors"]` | dict | Any errors encountered while parsign the student input.
+`data["format_errors"]` | dict | Any errors encountered while parsing the student input.
 `data["partial_scores"]` | dict | Partial scores for individual variables in the question.
 `data["score"]` | float | The total final score for the question.
 `data["feedback"]` | dict | Any feedback to the student on their submitted answer.

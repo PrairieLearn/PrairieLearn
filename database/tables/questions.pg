@@ -28,6 +28,7 @@ columns
     type: enum_question_type
     uuid: uuid
     workspace_args: text
+    workspace_enable_networking: boolean
     workspace_graded_files: text[] default ARRAY[]::text[]
     workspace_home: text
     workspace_image: text

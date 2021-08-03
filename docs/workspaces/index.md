@@ -64,6 +64,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     * `args` (optional, default none): command line arguments to pass to the Docker image
     * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
     * `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
+    * `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode.
 
 #### `info.json` for ungraded workspace
 
@@ -232,9 +233,17 @@ docker run -it --rm -p 3000:3000 \
 Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
 
 
-#### Developing with workspaces
+## Developing with workspaces (in Docker)
 
-For development, run the docker command with a final extra argument of `/PrairieLearn/docker/start_workspace.sh` to load PL and the workspace host interface in separate tmux panes.
+For development, run the docker container as described in [Installing with local source code](installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
+
+```
+make start-workspace-host
+make start
+```
+
+For development it is helpful to run the above two commands in separate `tmux` windows.
+
 
 ## Running locally (natively, not on Docker)
 
@@ -251,7 +260,7 @@ When running a workspace container locally the user/group is the default setting
 ```sh
 docker run -it --rm -p HOST_PORT:CLIENT_PORT --user 1001:1001 IMAGE_NAME
 ```
-For example, the [example Jupyter workspace](https://www.prairielearn.org/pl/course/108/question/9045312/preview) using the [Jupyter image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab) uses port 8080 and so can be run successfully like this:
+For example, the [example JupyterLab workspace](https://www.prairielearn.org/pl/course/108/question/9045312/preview) using the [JupyterLab image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab) uses port 8080 and so can be run successfully like this:
 ```
-docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyter
+docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab
 ```

@@ -292,16 +292,17 @@ def parse(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     answer_raw_name = answer_name + '-input'
-    student_answer = ''
+    student_answer = None
 
     if answer_raw_name in data['raw_submitted_answers']:
         student_answer = data['raw_submitted_answers'][answer_raw_name]
-    if student_answer is None or student_answer == '':
+
+    student_answer = json.loads(student_answer)
+    if student_answer is None or student_answer == []:
         data['format_errors'][answer_name] = 'No answer was submitted.'
         return
 
     grading_mode = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
-    student_answer = json.loads(student_answer)
     correct_answers = data['correct_answers'][answer_name]
 
     if grading_mode == 'ranking':
@@ -417,31 +418,35 @@ def grade(element_html, data):
 
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
     answer_name = pl.get_string_attrib(element, 'answers-name')
     answer_name_field = answer_name + '-input'
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
-    # incorrect and correct answer test cases
-    # this creates the EXPECTED SUBMISSION field for test cases
-    if data['test_type'] == 'correct':
-        true_answer = data['correct_answers'][answer_name]['correct_answers']
-        true_answer_indent = data['correct_answers'][answer_name]['correct_answers_indent']
+    # Right now invalid input must mean an empty response. Because user input is only
+    # through drag and drop, there is no other way for their to be invalid input. This
+    # may change in the future if we have nested input boxes (like faded parsons' problems).
+    if data['test_type'] == 'invalid':
+        data['raw_submitted_answers'][answer_name_field] = json.dumps([])
+        data['format_errors'][answer_name] = 'No answer was submitted.'
 
-        data['raw_submitted_answers'][answer_name_field] = {'answers': true_answer, 'answer_indent': true_answer_indent}
-        data['partial_scores'][answer_name] = {'score': 1, 'feedback': '', 'first_wrong': -1}
+    # TODO grading modes 'dag' and 'ranking' allow multiple different possible correct answers,
+    # we should check multiple of them at random instead of just the provided solution
+    elif data['test_type'] == 'correct':
+        answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
+        data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
+        data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': '', 'first_wrong': -1}
+
+    # TODO: The only wrong answer being tested is the correct answer with the first
+    # block mising. We should instead do a random selection of correct and incorrect blocks.
+    # TODO: This test doesn't handle the case where grading-mode='dag' and feedback='first-wrong'
     elif data['test_type'] == 'incorrect':
-        temp = data['correct_answers'][answer_name]['correct_answers'].copy()  # temp array to hold the correct answers
-        incorrect_answers = []
-        for html_tags in element:
-            if html_tags.tag == 'pl-answer':
-                incorrect_answers.append(html_tags.text)
-        incorrect_answers = list(filter(lambda x: x not in temp, incorrect_answers))
+        answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
+        answer.pop(0)
+        score = float(len(answer)) / (len(answer) + 1) if grading_mode == 'unordered' else 0
+        first_wrong = 0 if grading_mode == 'dag' else -1
+        data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
+        data['partial_scores'][answer_name] = {'score': score, 'weight': weight, 'feedback': '', 'first_wrong': first_wrong}
 
-        incorrect_answers_indent = ['0'] * len(incorrect_answers)
-        data['raw_submitted_answers'][answer_name_field] = {'answers': incorrect_answers, 'answer_indent': incorrect_answers_indent}
-        data['partial_scores'][answer_name] = {'score': 0, 'feedback': '', 'first_wrong': -1}
-
-    elif data['test_type'] == 'invalid':
-        data['raw_submitted_answers'][answer_name] = 'bad input'
-        data['format_errors'][answer_name] = 'format error message'
     else:
         raise Exception('invalid result: %s' % data['test_type'])

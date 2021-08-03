@@ -2,18 +2,25 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
+    <script src="<%= node_modules_asset_path('underscore/underscore-min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
   </head>
-  <script id="grade-data">
-    let gradeData = <%- JSON.stringify(user_scores_data) %>;
-  </script>
   <script>
     $(function() {
         $('#gradebook-table').bootstrapTable({
-            data: gradeData,
+            url: '<%= urlPrefix %>/<%= navPage %>/gradebook/raw_data.json',
+            buttons: {
+                download: {
+                    text: 'Download',
+                    icon: 'fa-download',
+                    event: () => {
+                        window.location.href = '<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>';
+                    },
+                }
+            },
             onPreBody: function() {
                 $('.spinning-wheel').show();
                 $('button.edit-score').popover('hide');
@@ -80,21 +87,19 @@
     });
     function gradeFormatter(score, row, index, field) {
         var assessment_instance_id = row[field + '_ai_id'];
-        var other_users = row[field + '_other'];
+        var other_users = _.escape(JSON.stringify(row[field + '_other']));
         if (score == null) {
             return "—";
         } else {
-            var container = $('<div>');
-            var link = $('<a/>').attr('href', `<%= urlPrefix %>/assessment_instance/${assessment_instance_id}`)
-                .text(Math.floor(score) + '%').appendTo(container);
+            var text = `<a href="<%= urlPrefix %>/assessment_instance/${assessment_instance_id}">${Math.floor(score)}%</a>`;
             if (<%= authz_data.has_instructor_edit %>) {
-                var button = $('<button/>').attr('type', 'button').addClass('btn btn-xs btn-secondary edit-score ml-1')
-                    .attr('tabindex', 0).attr('data-ai-id', assessment_instance_id).attr('data-score', score)
-                    .attr('data-other-users', JSON.stringify(other_users))
-                    .append($('<i class="bi-pencil-square" aria-hidden="true"></i>'))
-                    .appendTo(container);
+                text += `<button type="button" class="btn btn-xs btn-secondary edit-score ml-1" tabindex="0"
+                                 data-ai-id="${assessment_instance_id}" data-score="${score}"
+                                 data-other-users="${other_users}">
+                           <i class="bi-pencil-square" aria-hidden="true"></i>
+                         </button>`;
             }
-            return container.html();
+            return text;
         }
     }
     function roleSorter(roleA, roleB) {
@@ -113,6 +118,12 @@
         color: #212529;
         background-color: #efefef;
     }
+    .fixed-table-toolbar {
+        padding: 0 1em 0 1em;
+    }
+    div.pagination {
+        margin: 0 0 0 1em;
+    }
   </style>
   <body>
     <%- include('../partials/navbar'); %>
@@ -123,9 +134,11 @@
           Users
         </div>
 
+        <!--
         <div id="table-toolbar" class="p-2 pl-3">
           Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
+        -->
 
         <table id="gradebook-table"
                data-unique-id="user_id"
@@ -134,7 +147,14 @@
                data-search="true"
                data-show-columns="true"
                data-show-columns-toggle-all="true"
-               data-toolbar="#table-toolbar"
+               data-show-refresh="true"
+               data-pagination="true"
+               data-pagination-v-align="top"
+               data-page-list="[50,100,200,500,unlimited]"
+               data-page-size="50"
+               data-smart-display="false"
+               data-show-extended-pagination="true"
+               data-toolbar=".fixed-table-pagination"
                data-sticky-header="true">
             <thead>
               <tr>

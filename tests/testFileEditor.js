@@ -1,9 +1,8 @@
 const ERR = require('async-stacktrace');
 const request = require('request');
 const assert = require('chai').assert;
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
-const rimraf = require('rimraf');
 const async = require('async');
 const ncp = require('ncp');
 const config = require('../lib/config');
@@ -347,6 +346,12 @@ function badPost(action, fileEditContents, url) {
 function createCourseFiles(callback) {
     async.series([
         (callback) => {
+            deleteCourseFiles((err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
             const execOptions = {
                 cwd: '.',
                 env: process.env,
@@ -421,19 +426,19 @@ function createCourseFiles(callback) {
 function deleteCourseFiles(callback) {
     async.series([
         (callback) => {
-            rimraf(courseOriginDir, (err) => {
+            fs.remove(courseOriginDir, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         (callback) => {
-            rimraf(courseLiveDir, (err) => {
+            fs.remove(courseLiveDir, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         (callback) => {
-            rimraf(courseDevDir, (err) => {
+            fs.remove(courseDevDir, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
