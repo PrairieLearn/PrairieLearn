@@ -278,6 +278,7 @@ Attribute | Type | Default | Description
 `size` | integer | 35 | Size of the input box.
 `show-correct-answer` | boolean | true | Whether to show the correct answer in the submitted answers panel.
 `allow-fractions` | boolean | true | Whether to allow answers expressed as a rational number of the format `a/b`.
+`custom-format` | string | special | Custom format to use when formatting the submitted or correct answer. By default, submitted answers are shown with the format `.12g`, while the correct answer uses `.12g` if the comparison method is `relabs`, or a custom format based on the number of digits if the comparison method is `sigfig` or `decdig`. A full description of the format can be found [on the Python documentation page](https://docs.python.org/3/library/string.html#format-specification-mini-language).
 
 #### Example implementations
 
@@ -379,7 +380,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over all elements in a question.
-`grading-method` | string | "ordered" | One of the following: `ordered`, `unordered`, `ranking`, `external`. See more details below.
+`grading-method` | string | "ordered" | One of the following: `ordered`, `unordered`, `ranking`, `dag`, `external`. See more details below.
 `file-name` | string | `user_code.py`  | Name of the file where the information from the blocks will be saved, to be used by the external grader.
 `source-blocks-order` | string | "random" | The order of the blocks in the source area. One of the following: `random` or `ordered`. See more details below.
 `indentation` | boolean | false | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).
@@ -388,7 +389,7 @@ Attribute | Type | Default | Description
 `source-header` | string | "Drag from here" | The text that appears at the start of the source area.
 `solution-header` | string| "Construct your solution here" |  The text that appears at the start of the solution area.
 `solution-placement` | string | "right" | "right" shows the source and solution areas aligned side-by-side. "bottom" shows the solution area below the source area.
-
+`feedback` | string | "none" | "first-wrong" | The level of feedback the student will recieve upon giving an incorrect answer. Currently only available with the `dag` grading mode. "first-wrong" will tell the student which block in their answer was the first to be incorrect.
 Within the `pl-order-blocks` element, each answer block must be specified with a `pl-answer` that has the following attributes:
 
 Attribute | Type | Default | Description
@@ -396,6 +397,8 @@ Attribute | Type | Default | Description
 `correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
 `ranking` | positive integer | — | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
 `indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.
+`depends` | string | "" | This attribute is used when `grading-method="dag"` to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends=1,3` for a particular block, it must appear later in the proof than the block with `tag="1"` and the block with `tag="3"`.
+`tag` | string | "" | Optional attribute when `grading-method="dag"`. Used to identify the block when declaring which other blocks depend on it.
 
 #### Details
 
@@ -405,6 +408,7 @@ Different grading options are defined via the attribute `grading-method`:
 the correct answers (defined in `pl-answer`) appear in the HTML file. There is no partial credit for this option.
 * `unordered`: in this method, if `n` is the total number of correct blocks, each correct block moved to the solution area is given `1/n` points, and each incorrect block moved to the solution area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only moving incorrect answers). Note the ordering of the blocks does not matter. That is, any permutation of the answers within the solution area is accepted. There is partial credit for this option.
 * `ranking`: in this method, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block *X* should have a `ranking` integer that is less than or equal to the answer block immediately below *X*. That is, the sequence of `ranking` integers of all the answer blocks should form a *nonstrictly increasing* sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer. There is partial credit for this option.
+* `dag`: in this method, the `depends` attibute of the `pl-answer` options are used to declare the directed acyclic graph relation between the blocks, and a correct answer is any topological sort of that directed acyclic graph. If `pl-block-group` elements are used to divide some blocks into groups, then a correct answer is a topological sort of the lines of the proof with the added condition that the lines of each group must be listed contiguously.
 * `external`: in this method, the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader. Depending on the external grader grading code logic, it may be possible to enable or disable partial credit. The attribute `correct` for `pl-answer` can still be used in conjunction with `min-incorrect` and `max-incorrect` for display purposes only, but not used for grading purposes. The attributes `ranking` and `indent` are not allowed for this grading method.
 
 Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
@@ -820,7 +824,6 @@ in [the format expected by externally graded questions](externalGrading.md#file-
 
 Attribute | Type | Default | description
 --- | --- | --- | ---
-`answers-name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
 `file-names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
 
 
@@ -1793,7 +1796,7 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/autograder/python/orderBlocksRandomParams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/orderBlocksRandomParams
 [demo/autograder/python/orderBlocksAddNumpy]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/orderBlocksAddNumpy
 
-<!-- Manual grading examples --> 
+<!-- Manual grading examples -->
 [demo/manualGrade/codeUpload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/manualGrade/codeUpload
 
 <!-- High quality questions -->

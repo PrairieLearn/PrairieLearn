@@ -9,6 +9,8 @@ const sanitizeName = require('../../lib/sanitize-name');
 var sqldb = require('../../prairielib/lib/sql-db');
 var sqlLoader = require('../../prairielib/lib/sql-loader');
 
+var course = require('../../lib/course');
+
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var csvFilename = function(locals) {
@@ -22,14 +24,31 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.course_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.course_assessments = result.rows;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
+});
 
-        var params = {course_instance_id: res.locals.course_instance.id};
-        sqldb.query(sql.user_scores, params, function(err, result) {
-            if (ERR(err, next)) return;
+router.get('/raw_data.json', function(req, res, next) {
+    var params = {course_instance_id: res.locals.course_instance.id};
+    sqldb.query(sql.user_scores, params, function(err, result) {
+        if (ERR(err, next)) return;
 
-            res.locals.user_scores = result.rows;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.locals.user_scores_data = _.map(result.rows, function(row) {
+            var scores = {
+                user_id: row.user_id,
+                uid: _.escape(row.uid),
+                uin: _.escape(row.uin ?? ''),
+                user_name: _.escape(row.user_name ?? ''),
+                role: row.role,
+            };
+            row.scores.forEach(function(score) {
+                scores[`score_${score.assessment_id}`] = score.score_perc;
+                scores[`score_${score.assessment_id}_ai_id`] = score.assessment_instance_id;
+                scores[`score_${score.assessment_id}_other`] = _.map(score.uid_other_users_group, _.escape);
+            });
+            return scores;
         });
+        res.send(JSON.stringify(res.locals.user_scores_data));
     });
 });
 
@@ -64,16 +83,30 @@ router.get('/:filename', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'edit_total_score_perc') {
-        let params = [
-            req.body.assessment_instance_id,
-            req.body.score_perc,
-            res.locals.authn_user.user_id,
-            null,
-            null
-        ];
-        sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
+        const course_instance_id = res.locals.course_instance.id;
+        const assessment_instance_id = req.body.assessment_instance_id;
+        course.checkBelongs(assessment_instance_id, course_instance_id, (err) => {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            
+            let params = [
+                req.body.assessment_instance_id,
+                req.body.score_perc,
+                res.locals.authn_user.user_id,
+                null,
+                null
+            ];
+            sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
+                if (ERR(err, next)) return;
+                
+                params = {
+                    assessment_instance_id: req.body.assessment_instance_id,
+                };
+                
+                sqldb.query(sql.assessment_instance_score, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.send(JSON.stringify(result.rows));
+                });
+            });
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

@@ -90,6 +90,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
             show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
             show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
+            active: !!_.get(accessRule, 'active', true),
         };
     });
 
