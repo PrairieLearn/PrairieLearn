@@ -33,6 +33,7 @@ DAG_FIRST_WRONG_FEEDBACK = [
     <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
 ]
 
+
 def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
 
