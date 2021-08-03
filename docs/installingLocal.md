@@ -33,6 +33,8 @@ By default, PrairieLearn does not monitor for server-side changes, so it will **
 docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
+**NOTE**: On MacOS with "Apple Silicon" (ARM64) hardware, the use of R is not currently supported.
+
 ### Running a specific branch
 
 By default, the above command will run PrairieLearn from the branch that is currently checked out in the directory `/path/to/PrairieLearn`. So, to run a different branch, just use commands like `git checkout BRANCH_NAME` or equivalent.

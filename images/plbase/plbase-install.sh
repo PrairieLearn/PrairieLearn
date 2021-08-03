@@ -46,17 +46,24 @@ su postgres -c "initdb -D /var/postgres"
 
 echo "setting up conda..."
 cd /
-curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
-bash Miniforge3-Linux-x86_64.sh -b -p /usr/local -f
+arch=`uname -m`
+curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh
+bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
-echo "installing R..."
-conda install r-essentials
+if [[ "${arch}" != "aarch64" ]]; then # R is not yet supported on ARM64.
+    echo "installing R..."
+    conda install r-essentials
 
-echo "installing Python packages..."
-python3 -m pip install --no-cache-dir -r /python-requirements.txt
+    echo "installing Python packages..."
+    python3 -m pip install --no-cache-dir -r /python-requirements.txt
 
-echo "installing R packages..."
-echo "set SKIP_R_PACKAGS=yes to skip this step"
-if [[ "${SKIP_R_PACKAGES}" != "yes" ]] ; then
-    Rscript /r-requirements.R
+    echo "installing R packages..."
+    echo "set SKIP_R_PACKAGS=yes to skip this step"
+    if [[ "${SKIP_R_PACKAGES}" != "yes" ]] ; then
+        Rscript /r-requirements.R
+    fi
+else
+    sed '/rpy2/d' /python-requirements.txt > /py_req_no_r.txt # Remove rpy2 package.
+    echo "installing Python packages..."
+    python3 -m pip install --no-cache-dir -r /py_req_no_r.txt
 fi
