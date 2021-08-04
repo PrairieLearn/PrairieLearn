@@ -24,14 +24,14 @@ WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 0
 TAB_SIZE_PX = 50
 
-DAG_FIRST_WRONG_FEEDBACK = [
-    'Your answer is correct so far, but it is incomplete.',
-    r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
+DAG_FIRST_WRONG_FEEDBACK = {
+    'incomplete': 'Your answer is correct so far, but it is incomplete.',
+    'wrong-at-block': r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
     The problem is most likely one of the following:
     <ul><li> This block is not a part of the correct solution </li>
     <li> This block is not adequately supported by previous block </li>
     <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
-]
+}
 
 
 def filter_multiple_from_array(data, keys):
@@ -405,9 +405,9 @@ def grade(element_html, data):
                 feedback = ''
             elif feedback_type == 'first-wrong':
                 if first_wrong == -1:
-                    feedback = DAG_FIRST_WRONG_FEEDBACK[0]
+                    feedback = DAG_FIRST_WRONG_FEEDBACK['incomplete']
                 else:
-                    feedback = DAG_FIRST_WRONG_FEEDBACK[1].format(str(first_wrong + 1))
+                    feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(str(first_wrong + 1))
 
     if check_indentation:
         student_answer_indent = filter_multiple_from_array(data['submitted_answers'][answer_name], ['indent'])
@@ -450,7 +450,7 @@ def test(element_html, data):
         answer.pop(0)
         score = float(len(answer)) / (len(answer) + 1) if grading_mode == 'unordered' else 0
         first_wrong = 0 if grading_mode == 'dag' else -1
-        feedback = DAG_FIRST_WRONG_FEEDBACK[1].format(1) if grading_mode == 'dag' and feedback_type == 'first-wrong' else ''
+        feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1) if grading_mode == 'dag' and feedback_type == 'first-wrong' else ''
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': score, 'weight': weight, 'feedback': feedback, 'first_wrong': first_wrong}
 
