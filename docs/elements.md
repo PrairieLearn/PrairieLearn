@@ -388,16 +388,18 @@ Attribute | Type | Default | Description
 `min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
 `source-header` | string | "Drag from here" | The text that appears at the start of the source area.
 `solution-header` | string| "Construct your solution here" |  The text that appears at the start of the solution area.
-`solution-placement` | string | "right" | "right" shows the source and solution areas aligned side-by-side. "bottom" shows the solution area below the source area.
-`feedback` | string | "none" | "first-wrong" | The level of feedback the student will recieve upon giving an incorrect answer. Currently only available with the `dag` grading mode. "first-wrong" will tell the student which block in their answer was the first to be incorrect.
-Within the `pl-order-blocks` element, each answer block must be specified with a `pl-answer` that has the following attributes:
+`solution-placement` | "right" or "bottom" | "right" | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.
+`feedback` | "none" or "first-wrong" | "none" | The level of feedback the student will recieve upon giving an incorrect answer. Currently only available with the `dag` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.
+
+
+Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
 `ranking` | positive integer | — | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
 `indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.
-`depends` | string | "" | This attribute is used when `grading-method="dag"` to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends=1,3` for a particular block, it must appear later in the proof than the block with `tag="1"` and the block with `tag="3"`.
+`depends` | string | "" | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends=1,3` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.
 `tag` | string | "" | Optional attribute when `grading-method="dag"`. Used to identify the block when declaring which other blocks depend on it.
 
 #### Details
@@ -420,6 +422,7 @@ Different ordering of the blocks in the source area defined via the attribute `s
 #### Example implementations
 
 - [element/orderBlocks]
+- [demo/proofBlocks]
 - [demo/autograder/python/orderBlocksRandomParams]
 - [demo/autograder/python/orderBlocksAddNumpy]
 
@@ -1810,9 +1813,9 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/randomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
 [demo/randomPlot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomPlot
 [demo/randomSymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomSymbolic
+[demo/proofBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/proofBlocks
 
 <!-- Element option overview questions -->
-[element/orderBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/checkbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/checkbox
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
@@ -1828,6 +1831,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/matrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
 [element/multipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
 [element/numberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
+[element/orderBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/prairieDrawFigure
