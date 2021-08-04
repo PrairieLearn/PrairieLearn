@@ -27,10 +27,10 @@ TAB_SIZE_PX = 50
 DAG_FIRST_WRONG_FEEDBACK = {
     'incomplete': 'Your answer is correct so far, but it is incomplete.',
     'wrong-at-block': r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
-    The problem is most likely one of the following:
-    <ul><li> This block is not a part of the correct solution </li>
-    <li> This block is not adequately supported by previous block </li>
-    <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
+        The problem is most likely one of the following:
+        <ul><li> This block is not a part of the correct solution </li>
+        <li> This block is not adequately supported by previous block </li>
+        <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
 }
 
 
