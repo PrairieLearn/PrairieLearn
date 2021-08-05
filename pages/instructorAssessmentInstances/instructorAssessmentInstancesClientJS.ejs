@@ -3,6 +3,20 @@ var bsTable;
 $(function() {
 
     bsTable = $('#usersTable').bootstrapTable({
+        buttons: {
+            studentsOnly: {
+                text: 'Students Only',
+                icon: 'fa-user-graduate',
+                event: () => {
+                    const table = $('#usersTable');
+                    const filterOn = !table.data('filter-student-only');
+                    table.data('filter-student-only', filterOn);
+
+                    $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
+                    table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                },
+            },
+        },
         onPreBody: function() {
             $('.spinning-wheel').show();
         },

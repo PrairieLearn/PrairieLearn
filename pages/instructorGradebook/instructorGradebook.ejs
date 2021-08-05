@@ -19,7 +19,19 @@
                     event: () => {
                         window.location.href = '<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>';
                     },
-                }
+                },
+                studentsOnly: {
+                    text: 'Students Only',
+                    icon: 'fa-user-graduate',
+                    event: () => {
+                        const table = $('#gradebook-table');
+                        const filterOn = !table.data('filter-student-only');
+                        table.data('filter-student-only', filterOn);
+
+                        $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
+                        table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    },
+                },
             },
             onPreBody: function() {
                 $('.spinning-wheel').show();
