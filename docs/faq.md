@@ -8,27 +8,28 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessement is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using the CBTF and have a new reservation, otherwise they will need a custom [access rule](allowAccess) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessement is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using the CBTF and have a new reservation, otherwise they will need a custom [access rule](accessControl.md) with their UID.
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using the CBTF they need to sign up for a new reservation, or outside the CBTF they will need a custom [access rule](allowAccess) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using the CBTF they need to sign up for a new reservation, or outside the CBTF they will need a custom [access rule](accessControl.md) with their UID.
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl) like this:
+To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl.md) like this:
 
 ```json
 "allowAccess": [
     ...
     {
         "startDate": "2015-01-19T00:00:01",
-        "mode": "Public"
+        "mode": "Public",
+        "active": false
     }
 ]
 ```
 
-This will give all students public access to their exams after the `startDate` until the end of the course instance. The will not be able to answer questions for further credit (there is no `"credit": 100` line), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing (limited access post-exam under controlled conditions)[#should-students-be-able-to-review-their-exams-after-they-are-over] (although this requires in-person access by students and doesn't work online).
+Students who took the exam will then have public access to their exams after the `startDate` until the end of the course instance, while students who did not take the exam will not be able to view it. Students will not be able to answer questions for further credit (due to `"active": false`), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing [limited access post-exam under controlled conditions](faq.md#should-students-be-able-to-review-their-exams-after-they-are-over) (although this requires in-person access by students and doesn't work online).
 
 ## How can question pool development be managed over semesters?
 
