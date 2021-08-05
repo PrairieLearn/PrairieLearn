@@ -554,9 +554,9 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'settings'; next();},
         require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
     ]);
-    app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/access', [
+    app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/staff', [
         function(req, res, next) {res.locals.navSubPage = 'staff'; next();},
-        require('./pages/instructorCourseAdminAccess/instructorCourseAdminAccess'),
+        require('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sets', [
         function(req, res, next) {res.locals.navSubPage = 'sets'; next();},
@@ -856,9 +856,9 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navSubPage = 'settings'; next();},
         require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
     ]);
-    app.use('/pl/course/:course_id/course_admin/access', [
-        function(req, res, next) {res.locals.navSubPage = 'access'; next();},
-        require('./pages/instructorCourseAdminAccess/instructorCourseAdminAccess'),
+    app.use('/pl/course/:course_id/course_admin/staff', [
+        function(req, res, next) {res.locals.navSubPage = 'staff'; next();},
+        require('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff'),
     ]);
     app.use('/pl/course/:course_id/course_admin/sets', [
         function(req, res, next) {res.locals.navSubPage = 'sets'; next();},
