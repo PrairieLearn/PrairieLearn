@@ -2923,8 +2923,6 @@ mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement
             function(){
             for (const key of ['left', 'top', 'angle']) {
                 subObj[key.concat('2')] = obj2[key];
-                    console.log(key.concat('2'));
-                    console.log(subObj[key.concat('2')]);
             }
         },
         function(){
