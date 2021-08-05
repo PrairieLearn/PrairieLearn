@@ -555,7 +555,7 @@ module.exports.initExpress = function() {
         require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/access', [
-        function(req, res, next) {res.locals.navSubPage = 'access'; next();},
+        function(req, res, next) {res.locals.navSubPage = 'staff'; next();},
         require('./pages/instructorCourseAdminAccess/instructorCourseAdminAccess'),
     ]);
     app.use('/pl/course_instance/:course_instance_id/instructor/course_admin/sets', [
