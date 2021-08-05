@@ -26,7 +26,8 @@ SELECT
     CASE
         WHEN s.grading_requested_at IS NOT NULL THEN format_interval($req_date - s.grading_requested_at)
         ELSE NULL
-    END AS elapsed_grading_time
+    END AS elapsed_grading_time,
+    to_json(gjs.*) AS grading_jobs
 FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
@@ -43,6 +44,12 @@ FROM
         ORDER BY id DESC
         LIMIT 1
     ) AS gj ON TRUE
+    LEFT JOIN LATERAL (
+        SELECT *
+        FROM grading_jobs
+        WHERE submission_id = s.id
+        ORDER BY id DESC
+    ) AS gjs ON TRUE
 WHERE
     v.id = $variant_id
 ORDER BY

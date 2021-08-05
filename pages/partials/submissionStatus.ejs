@@ -1,39 +1,114 @@
+<!--New Logic `gradingMethods` array on question/info.json
+
+    Signs that we are dealing with deprecated logic:
+
+    - BASICALLY, if multiple grading methods are enabled, then we know it is the new feature.
+    - If ONLY internal grading is enabled on gradingMethods or gradingMethod, we cannot tell, but this case is
+      fortunately a distinction without a difference
+-->
+
+<!--Problem 1. If something is ungradable internally, it could still be graded externally as it is a disjointed operation. 
+
+    Solution: We can grade both and label a portion as internally ungradable and/or externally ungradable, but another problem is that students
+    will likely have no idea what this means. Implemented to try to bring this logic forward either way.
+
+-->
+
+<!-- Probably want tests to reinforce these cases new logic-->
+
 <% if (submission.graded_at == null) { %>
-    <% if (submission.grading_requested_at == null) { %>
-        <% if (submission.gradable) { %>
-            <span class="badge badge-info">saved, not graded</span>
-        <% } else { %>
-            <span class="badge badge-danger">invalid, not gradable</span>
-        <% } %>
-    <% } else { %>
-        <% if (submission.grading_method_external) { %>
+
+    <!--Universal for all Grading Methods-->
+
+    <!--Grading Method - Internal-->
+    <% if (submission.grading_method_internal) { %>
+        <% if (submission.graded_at == null && submission.grading_requested_at == null) { %> <!--case: aka 'save' and not graded-->
             <% if (submission.gradable) { %>
-                <span id="grading-status-<%= submission.id %>" class="badge badge-secondary"></span>
+                <span class="badge badge-info">saved, not graded</span>
             <% } else { %>
-                <span class="badge badge-danger">invalid, not gradable</span>
+                <span class="badge badge-danger">invalid, not internally gradable</span>
             <% } %>
-        <% } else if (submission.grading_method_manual) { %>
-            <span class="badge badge-secondary">waiting for manual grading</span>
-        <% } else { %>
+        <% } else { %> <!--'save and graded' but not processed yet-->
             <span class="badge badge-secondary">waiting for grading</span>
         <% } %>
     <% } %>
-<% } else if (!submission.gradable) { %>
-    <% /* If an error ocurred during grading, there will be a `graded_at` timestamp but the submission will be marked ungradable. */ %>
-    <span class="badge badge-danger">invalid, not gradable</span>
-<% } else if (submission.score == 1) { %>
-    <% if ((typeof submission.v2_score !== 'undefined') && (submission.v2_score !== null) && (submission.v2_score < 1)) { %>
-        <span class="badge badge-success">correct: 100% (rounded up from <%= Math.floor(submission.v2_score * 100) %>%)</span>
-        <span><%= submission.v2_score > 0 %></span>
-    <% } else { %>
-        <span class="badge badge-success">correct: 100%</span>
+
+    <!--Grading Method - External-->
+    <% if (submission.grading_method_external) { %>
+        <% if (submission.grading_method_internal) { %>
+            <!--UNKNOWN: Is it possible for something to be externally graded while being internally ungradable?
+                         Need clarity on what should happen in an ungradable case and when it arises. 
+                         My suspicion is that an unparsable/wrong format submission will be caught internally but not necessarily
+                         externally -->
+            <% if (submission.grading_method_external) { %>
+                <% if (submission.gradable) { %>
+                    <span id="grading-status-<%= submission.id %>" class="badge badge-secondary"></span>
+                <% } else { %>
+                    <span class="badge badge-danger">invalid, not gradable</span>
+                <% } %>
+            <% } else if (submission.grading_method_manual) { %>
+                <span class="badge badge-secondary">waiting for manual grading</span>
+            <% } else { %>
+                <span class="badge badge-secondary">waiting for grading</span>
+            <% } %>
+        <% } %>
     <% } %>
-<% } else if (submission.score > 0) { %>
-    <span class="badge badge-warning">partially correct: <%= Math.floor(submission.score * 100) %>%</span>
+
+    <!--Grading Method - Manual-->
+    <% if (submission.grading_method_manual) { %>
+        <!-- TO DO: Implement socket here for live update-->
+        <!--If awaiting manual grading-->
+        
+        <!-- We will need the grading job here to determine if something has been manually graded, as graded_at will not be null if internally or extenrally graded already-->
+        <!--if grading_job something something-->
+            
+        <!--If manual grading complete -->
+    <% } %>
+
+<!--Deprecated Logic only `gradingMethod` property on question/info.json
+
+    As the old feature only has one grading method enabled, we just display one grading method possibility.
+    We re-use this old logic for the new feature if and only if 'Internal' is the only grading method enabled
+-->
 <% } else { %>
-    <% if ((typeof submission.v2_score !== 'undefined') && (submission.v2_score !== null) && (submission.v2_score >= 0.01)) { %>
-        <span class="badge badge-danger">incorrect: 0% (rounded down from <%= Math.floor(submission.v2_score * 100) %>%)</span>
+    <% if (submission.graded_at == null) { %>
+        <% if (submission.grading_requested_at == null) { %>
+            <% if (submission.gradable) { %>
+                <span class="badge badge-info">saved, not graded</span>
+            <% } else { %>
+                <span class="badge badge-danger">invalid, not gradable</span>
+            <% } %>
+        <% } else { %>
+            <% if (submission.grading_method_external) { %>
+                <% if (submission.gradable) { %>
+                    <span id="grading-status-<%= submission.id %>" class="badge badge-secondary"></span>
+                <% } else { %>
+                    <span class="badge badge-danger">invalid, not gradable</span>
+                <% } %>
+            <% } else if (submission.grading_method_manual) { %>
+                <span class="badge badge-secondary">waiting for manual grading</span>
+            <% } else { %>
+                <span class="badge badge-secondary">waiting for grading</span>
+            <% } %>
+        <% } %>
+    <% } else if (!submission.gradable) { %>
+        <% /* If an error ocurred during grading, there will be a `graded_at` timestamp but the submission will be marked ungradable. */ %>
+        <span class="badge badge-danger">invalid, not gradable</span>
+    <% } else if (submission.score == 1) { %>
+        <% if ((typeof submission.v2_score !== 'undefined') && (submission.v2_score !== null) && (submission.v2_score < 1)) { %>
+            <span class="badge badge-success">correct: 100% (rounded up from <%= Math.floor(submission.v2_score * 100) %>%)</span>
+            <span><%= submission.v2_score > 0 %></span>
+        <% } else { %>
+            <span class="badge badge-success">correct: 100%</span>
+        <% } %>
+    <% } else if (submission.score > 0) { %>
+        <span class="badge badge-warning">partially correct: <%= Math.floor(submission.score * 100) %>%</span>
     <% } else { %>
-        <span class="badge badge-danger">incorrect: 0%</span>
+        <% if ((typeof submission.v2_score !== 'undefined') && (submission.v2_score !== null) && (submission.v2_score >= 0.01)) { %>
+            <span class="badge badge-danger">incorrect: 0% (rounded down from <%= Math.floor(submission.v2_score * 100) %>%)</span>
+        <% } else { %>
+            <span class="badge badge-danger">incorrect: 0%</span>
+        <% } %>
     <% } %>
+
 <% } %>
