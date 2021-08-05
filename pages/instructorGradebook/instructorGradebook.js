@@ -25,29 +25,31 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.course_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.course_assessments = result.rows;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
+});
 
-        var params = {course_instance_id: res.locals.course_instance.id};
-        sqldb.query(sql.user_scores, params, function(err, result) {
-            if (ERR(err, next)) return;
+router.get('/raw_data.json', function(req, res, next) {
+    var params = {course_instance_id: res.locals.course_instance.id};
+    sqldb.query(sql.user_scores, params, function(err, result) {
+        if (ERR(err, next)) return;
 
-            res.locals.user_scores = result.rows;
-            res.locals.user_scores_data = _.map(result.rows, function(row) {
-                var scores = {
-                    user_id: row.user_id,
-                    uid: _.escape(row.uid),
-                    uin: _.escape(row.uin ?? ''),
-                    user_name: _.escape(row.user_name ?? ''),
-                    role: row.role,
-                };
-                row.scores.forEach(function(score) {
-                    scores[`score_${score.assessment_id}`] = score.score_perc;
-                    scores[`score_${score.assessment_id}_ai_id`] = score.assessment_instance_id;
-                    scores[`score_${score.assessment_id}_other`] = _.map(score.uid_other_users_group, _.escape);
-                });
-                return scores;
+        res.locals.user_scores_data = _.map(result.rows, function(row) {
+            var scores = {
+                user_id: row.user_id,
+                uid: _.escape(row.uid),
+                uin: _.escape(row.uin ?? ''),
+                user_name: _.escape(row.user_name ?? ''),
+                role: row.role,
+            };
+            row.scores.forEach(function(score) {
+                scores[`score_${score.assessment_id}`] = score.score_perc;
+                scores[`score_${score.assessment_id}_ai_id`] = score.assessment_instance_id;
+                scores[`score_${score.assessment_id}_other`] = _.map(score.uid_other_users_group, _.escape);
             });
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            return scores;
         });
+        res.send(JSON.stringify(res.locals.user_scores_data));
     });
 });
 

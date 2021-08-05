@@ -158,6 +158,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string[]} gradedFiles
  * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
+ * @property {boolean=} enableNetworking
  */
 
  /**

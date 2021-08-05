@@ -331,7 +331,7 @@
                   <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
                   <div class="dropdown-menu" onclick="window.event.preventDefault();">
 
-                    <% if (authz_data.has_instructor_edit) { %>
+                    <% if (authz_data.has_course_instance_permission_edit) { %>
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverAdd').popover('show')" href="#">
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                     </a>

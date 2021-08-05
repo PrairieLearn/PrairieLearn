@@ -58,25 +58,16 @@ PrairieLearn
 
 ## Unit tests and integration tests
 
-* Tests are stored in the `tests/` directory. They are run with:
+* Tests are stored in the `tests/` directory and listed in `tests/index.js`.
 
-```sh
-# make sure you are in the top-level PrairieLearn/ directory
-make test
-make lint
-```
+* To run the tests during development, see [Running the test suite](installingLocal/#running-the-test-suite).
 
-* The above tests are run by the CI server on every push to GitHub.
+* The tests are run by the CI server on every push to GitHub.
 
 * The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web browser that answers questions on assessments. If a test fails then it is often easiest to debug by recreating the error by doing questions yourself against a locally-running server.
 
 * If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
 
-* Individual tests can be run with:
-
-```sh
-node_modules/.bin/mocha tests/[testName].js
-```
 
 ## Debugging server-side JavaScript
 

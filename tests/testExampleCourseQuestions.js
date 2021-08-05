@@ -37,7 +37,7 @@ const qidsExampleCourse = [
     'demo/randomSymbolic',
     'demo/studentFaces',
     'demo/studentNames',
-    // FIXME: 'demo/proofBlocks'
+    'demo/proofBlocks',
     'element/checkbox',
     'element/code',
     // FIXME: 'demo/drawing/centroid',
@@ -66,7 +66,7 @@ const qidsExampleCourse = [
     // FIXME: 'element/symbolicInput',
     // FIXME: 'element/threeJS',
     'element/variableOutput',
-    // FIXME: 'element/orderBlocks',
+    'element/orderBlocks',
 ];
 
 describe('Auto-test questions in exampleCourse', function() {
