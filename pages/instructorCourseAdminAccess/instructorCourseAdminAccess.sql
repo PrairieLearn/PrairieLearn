@@ -24,4 +24,6 @@ FROM
 WHERE
     cp.course_id = $course_id
 GROUP BY
-    u.user_id, cp.course_role;
+    u.user_id, cp.course_role
+ORDER BY
+    u.uid, u.name, u.user_id;
