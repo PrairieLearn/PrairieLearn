@@ -36,12 +36,12 @@
             <tr>
               <td class="align-middle" style="width: 1%">
                 <% if (row.multiple_instance_header) { %>
-                  <span class="badge color-<%= row.assessment_set_color %>">
+                  <span class="pl-assessment-set-badge badge color-<%= row.assessment_set_color %>">
                     <%= row.label %>
                   </span>
                 <% } else { %>
                 <a href="<%= urlPrefix %><%= row.link %>"
-                   class="badge color-<%= row.assessment_set_color %> color-hover">
+                   class="pl-assessment-set-badge badge color-<%= row.assessment_set_color %> color-hover">
                   <%= row.label %>
                 </a>
                 <% } %>
