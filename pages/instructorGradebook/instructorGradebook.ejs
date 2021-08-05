@@ -96,6 +96,11 @@
                 $('.spinning-wheel').hide();
             },
         });
+
+        $('[data-toggle="modal"]').click(function (e) {
+            e.stopPropagation(); // Keep click from changing sort
+            $($(e.currentTarget).data('target')).modal('show');
+        })
     });
     function gradeFormatter(score, row, index, field) {
         var assessment_instance_id = row[field + '_ai_id'];
