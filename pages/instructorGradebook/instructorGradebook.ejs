@@ -102,10 +102,6 @@
             return text;
         }
     }
-    function roleSorter(roleA, roleB) {
-        const roles = ['Staff', 'Student', 'None'];
-        return roles.indexOf(roleA) - roles.indexOf(roleB);
-    }
   </script>
   <style>
     .sticky-column {
@@ -172,7 +168,7 @@
                     data-switchable="false">Name</th>
                 <th data-field="role"
                     data-sortable="true"
-                    data-sorter="roleSorter"
+                    data-sort-order="desc"
                     data-switchable="false">
                   Role
                   <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
