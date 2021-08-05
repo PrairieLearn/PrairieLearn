@@ -661,8 +661,6 @@ class PairedVector(BaseElement):
                 counter += 1
         angdiff = abs(st2['angle1'] - st2['angle2'])
         angdiff = abs(angdiff - 180)
-        # print(angdiff < 2*angtol)
-        # print(poss)
         return ((poss[0][1] and poss[1][0]) or (poss[0][0] and poss[1][1])) and angdiff < 2 * angtol
 
     def get_attributes():
