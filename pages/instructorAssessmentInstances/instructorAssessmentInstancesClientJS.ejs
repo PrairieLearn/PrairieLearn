@@ -304,7 +304,7 @@ function actionButtonFormatter(_value, row, index) {
         .addClass('dropdown-item disabled')
         .attr('role', 'button')
         .attr('tabindex', '0')
-        .append('Must have instructor permission')
+        .append('Must have editor permission')
         .appendTo(menu);
 
     //<% } %>
@@ -370,6 +370,6 @@ function updateTotals(data) {
 }
 
 function roleSorter(roleA, roleB) {
-    const roles = ['Instructor', 'TA', 'Student', 'None'];
+    const roles = ['Staff', 'Student', 'None'];
     return roles.indexOf(roleA) - roles.indexOf(roleB);
 }
