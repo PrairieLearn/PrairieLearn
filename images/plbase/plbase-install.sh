@@ -17,6 +17,7 @@ yum -y install \
     emacs-nox \
     gcc \
     make \
+    lsof \
     openssl \
     dos2unix \
     tar \
