@@ -18,16 +18,16 @@ BEGIN
         RAISE EXCEPTION 'no user with uid: %', uid;
     END IF;
 
-    BEGIN
-        INSERT INTO course_permissions AS cp
-            (user_id, course_id, course_role)
-        VALUES
-            (user_id, course_id, course_role)
-        RETURNING
-            cp.* INTO new_row;
-    EXCEPTION
-        WHEN unique_violation THEN RAISE EXCEPTION 'user already in course, uid: %', uid;
-    END;
+    INSERT INTO course_permissions AS cp
+        (user_id, course_id, course_role)
+    VALUES
+        (user_id, course_id, course_role)
+    ON CONFLICT ON CONSTRAINT course_permissions_user_id_course_id_key
+    DO UPDATE
+    SET course_role = EXCLUDED.course_role
+    WHERE cp.course_role < EXCLUDED.course_role
+    RETURNING
+        cp.* INTO new_row;
 
     INSERT INTO audit_logs
         (authn_user_id, course_id, user_id, table_name,
