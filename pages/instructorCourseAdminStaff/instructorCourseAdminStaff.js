@@ -47,6 +47,10 @@ router.post('/', (req, res, next) => {
             if (!course_instance) return next(error.make(400, `Invalid requested course instance role`));
         }
 
+        // Verify the requested course instance role is valid
+        if (course_instance && !['Student Data Viewer', 'Student Data Editor'].includes(req.body.course_instance_role)) {
+            return next(error.make(400, `Invalid requested course instance role: ${req.body.course_instance_role}`));
+        }
         // Iterate through UIDs in parallel
         async.reduce(uids, {given_cp: [], not_given_cp: [], not_given_cip: [], errors: []}, (memo, uid, callback) => {
             const c_params = [
@@ -70,7 +74,7 @@ router.post('/', (req, res, next) => {
                     res.locals.course.id,
                     result.rows[0].user_id,
                     course_instance.id,
-                    'Student Data Viewer',
+                    req.body.course_instance_role,
                     res.locals.authz_data.authn_user.user_id,
                 ];
                 sqldb.call('course_instance_permissions_insert', ci_params, (err, _result) => {

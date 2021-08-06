@@ -26,12 +26,18 @@
   <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
     <div class="form-group">
       <label for="addMultiUserInputCourseInstance">Student data access for all new users:</label>
-      <select class="form-control form-control-sm" id="addMultiUserInputCourseInstance" name="course_instance_id">
-        <option selected value>None</option>
-        <% authz_data.course_instances.forEach(function(ci) { %>
-          <option value="<%= ci.id %>"><%= ci.short_name %> (Viewer)</option>
-        <% }); %>
-      </select>
+      <div class="input-group">
+        <select class="form-control form-control-sm" id="addMultiUserInputCourseInstance" name="course_instance_id">
+          <option selected value>None</option>
+          <% authz_data.course_instances.forEach(function(ci) { %>
+          <option value="<%= ci.id %>"><%= ci.short_name %></option>
+          <% }); %>
+        </select>
+        <select class="form-control form-control-sm" id="addMultiUserInputCourseInstanceRole" name="course_instance_role">
+          <option value="Student Data Viewer" selected>Viewer</option>
+          <option value="Student Data Editor">Editor</option>
+        </select>
+      </div>
     </div>
   <% } %>
 
