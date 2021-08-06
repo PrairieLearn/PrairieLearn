@@ -31,7 +31,7 @@ function updatePermissions(users, uid, cr, cir) {
 }
 
 function runTest(context) {
-    context.pageUrl = `${context.baseUrl}/course_admin/access`;
+    context.pageUrl = `${context.baseUrl}/course_admin/staff`;
     context.userId = 2;
 
     const headers = {
