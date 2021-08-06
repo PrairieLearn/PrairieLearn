@@ -29,16 +29,16 @@ BEGIN
         RAISE EXCEPTION 'no course permission for user with uid: %', uid;
     END IF;
 
-    BEGIN
-        INSERT INTO course_instance_permissions AS cip
-            (course_instance_id, course_instance_role, course_permission_id)
-        VALUES
-            (course_instance_id, course_instance_role, course_permission_id)
-        RETURNING
-            cip.* INTO new_row;
-    EXCEPTION
-        WHEN unique_violation THEN RAISE EXCEPTION 'user already has student data acess in course instance, uid: %', uid;
-    END;
+    INSERT INTO course_instance_permissions AS cip
+        (course_instance_id, course_instance_role, course_permission_id)
+    VALUES
+        (course_instance_id, course_instance_role, course_permission_id)
+    ON CONFLICT ON CONSTRAINT course_instance_permissions_course_permission_id_course_ins_key
+    DO UPDATE
+    SET course_instance_role = EXCLUDED.course_instance_role
+    WHERE cip.course_instance_role < EXCLUDED.course_instance_role
+    RETURNING
+        cip.* INTO new_row;
 
     INSERT INTO audit_logs
         (
