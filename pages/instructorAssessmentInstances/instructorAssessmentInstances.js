@@ -26,13 +26,15 @@ router.get('/raw_data.json', function(req, res, next) {
     });
 });
 
-router.get('/client.js', function(req, res, _next) {
+router.get('/client.js', function(req, res, next) {
     debug('GET /client.js');
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
 });
 
-router.get('/', function(req, res, _next) {
+router.get('/', function(req, res, next) {
     debug('GET /');
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
