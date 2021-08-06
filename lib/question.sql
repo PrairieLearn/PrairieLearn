@@ -27,7 +27,8 @@ SELECT
         WHEN s.grading_requested_at IS NOT NULL THEN format_interval($req_date - s.grading_requested_at)
         ELSE NULL
     END AS elapsed_grading_time,
-    to_json(gjs.*) AS grading_jobs
+    COALESCE(NULLIF(json_agg(gjs)::text, '[null]'), '[]')::jsonb AS grading_jobs
+
 FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
@@ -52,6 +53,8 @@ FROM
     ) AS gjs ON TRUE
 WHERE
     v.id = $variant_id
+GROUP BY
+    s.id, gj.id, gj.*, ci.display_timezone, c.display_timezone, gjs.id, gjs.date, gjs.submission_id, gjs.grading_method, gjs.*
 ORDER BY
     s.date DESC;
 
