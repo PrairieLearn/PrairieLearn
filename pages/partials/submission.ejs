@@ -11,7 +11,7 @@
         </span>
         <span>submissionStatus:<%- include('submissionStatus', {submission: submission}); %></span>
         <span>gradingJobs:<%= JSON.stringify(submission.grading_jobs) %> </span>
-        <span>gradingStatus: <%= JSON.stringify(submission.grading_status) %> </span>
+        <span>gradingStages: <%= JSON.stringify(submission.grading_stages) %> </span>
       </div>
       <small>Submitted at <%- submission.formatted_date %></small>
     </div>
