@@ -349,9 +349,21 @@ describe('student data access', function() {
         assert.isTrue(response.ok);
     });
 
+    step('instructor (student data editor) can view gradebook raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`, { headers });
+        assert.isTrue(response.ok);
+    });
+
     step('instructor (student data editor) can view homework assessment instances', async () => {
         const headers = { cookie: 'pl_test_user=test_instructor' };
         let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`, { headers });
+        assert.isTrue(response.ok);
+    });
+
+    step('instructor (student data editor) can view homework assessment instances raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`, { headers });
         assert.isTrue(response.ok);
     });
 
@@ -361,9 +373,21 @@ describe('student data access', function() {
         assert.isTrue(response.ok);
     });
 
+    step('instructor (student data editor) can view exam assessment instances raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`, { headers });
+        assert.isTrue(response.ok);
+    });
+
     step('instructor (student data viewer) can view gradebook', async () => {
         const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer' };
         let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`, { headers });
+        assert.isTrue(response.ok);
+    });
+
+    step('instructor (student data viewer) can view gradebook raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`, { headers });
         assert.isTrue(response.ok);
     });
 
@@ -373,9 +397,21 @@ describe('student data access', function() {
         assert.isTrue(response.ok);
     });
 
+    step('instructor (student data viewer) can view homework assessment instances raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`, { headers });
+        assert.isTrue(response.ok);
+    });
+
     step('instructor (student data viewer) can view exam assessment instances', async () => {
         const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer' };
         let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`, { headers });
+        assert.isTrue(response.ok);
+    });
+
+    step('instructor (student data viewer) can view exam assessment instances raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`, { headers });
         assert.isTrue(response.ok);
     });
 
@@ -385,15 +421,33 @@ describe('student data access', function() {
         assert.equal(response.status, 403);
     });
 
+    step('instructor (no role) cannot view gradebook raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`, { headers });
+        assert.equal(response.status, 403);
+    });
+
     step('instructor (no role) cannot view homework assessment instances', async () => {
         const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None' };
         let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`, { headers });
         assert.equal(response.status, 403);
     });
 
+    step('instructor (no role) cannot view homework assessment instances raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`, { headers });
+        assert.equal(response.status, 403);
+    });
+
     step('instructor (no role) cannot view exam assessment instances', async () => {
         const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None' };
         let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`, { headers });
+        assert.equal(response.status, 403);
+    });
+
+    step('instructor (no role) cannot view exam assessment instances raw data', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None' };
+        let response = await helperClient.fetchCheerio(`${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`, { headers });
         assert.equal(response.status, 403);
     });
 });
