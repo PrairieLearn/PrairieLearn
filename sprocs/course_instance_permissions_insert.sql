@@ -7,6 +7,8 @@ CREATE FUNCTION
         authn_user_id bigint
     ) returns void
 AS $$
+-- prefer column references over variables, needed for ON CONFLICT
+#variable_conflict use_column
 DECLARE
     uid text;
     course_permission_id bigint;
@@ -33,7 +35,7 @@ BEGIN
         (course_instance_id, course_instance_role, course_permission_id)
     VALUES
         (course_instance_id, course_instance_role, course_permission_id)
-    ON CONFLICT ON CONSTRAINT course_instance_permissions_course_permission_id_course_ins_key
+    ON CONFLICT (course_instance_id, course_permission_id)
     DO UPDATE
     SET course_instance_role = EXCLUDED.course_instance_role
     WHERE cip.course_instance_role < EXCLUDED.course_instance_role

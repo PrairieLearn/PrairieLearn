@@ -7,6 +7,8 @@ CREATE FUNCTION
         OUT user_id bigint
     )
 AS $$
+-- prefer column references over variables, needed for ON CONFLICT
+#variable_conflict use_column
 DECLARE
     new_row course_permissions;
 BEGIN
@@ -22,7 +24,7 @@ BEGIN
         (user_id, course_id, course_role)
     VALUES
         (user_id, course_id, course_role)
-    ON CONFLICT ON CONSTRAINT course_permissions_user_id_course_id_key
+    ON CONFLICT (user_id, course_id)
     DO UPDATE
     SET course_role = EXCLUDED.course_role
     WHERE cp.course_role < EXCLUDED.course_role
