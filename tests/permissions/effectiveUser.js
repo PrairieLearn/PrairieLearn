@@ -59,12 +59,6 @@ describe('effective user', function() {
         assert.equal(response.status, 403);
     });
 
-    step('instructor can access course instance', async () => {
-        const headers = { cookie: 'pl_test_user=test_instructor' };
-        const response = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
-        assert.isTrue(response.ok);
-    });
-
     step('instructor can override date (and becomes enrolled)', async () => {
         let result = await sqldb.queryAsync(sql.select_enrollment, {user_id: 2, course_instance_id: 1});
         assert.lengthOf(result.rows, 0);
@@ -73,6 +67,12 @@ describe('effective user', function() {
         assert.isTrue(response.ok);
         result = await sqldb.queryAsync(sql.select_enrollment, {user_id: 2, course_instance_id: 1});
         assert.lengthOf(result.rows, 1);
+    });
+
+    step('instructor can access course instance', async () => {
+        const headers = { cookie: 'pl_test_user=test_instructor' };
+        const response = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
+        assert.isTrue(response.ok);
     });
 
     step('instructor (no course instance role) cannot emulate student', async () => {
