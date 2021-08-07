@@ -41,7 +41,7 @@
 
 <img class="img-fluid" src="staff.png" width="1077px">
 
-<h3>Course content access</h3>
+<h3 class="mt-5">Course content access</h3>
 
 <p>
   The new permissions separate out access to course content
@@ -55,7 +55,7 @@
     <th class="text-center" scope="col" colspan="5">Course content access</th>
   </tr>
   <tr>
-    <th></th>
+    <th scope="col">Action</th>
     <th class="text-center" scope="col">None</th>
     <th class="text-center" scope="col">Previewer</th>
     <th class="text-center" scope="col">Viewer</th>
@@ -128,7 +128,7 @@
   </tr>
 </table>
 
-<h3>Student data access</h3>
+<h3 class="mt-5">Student data access</h3>
 
 <p>
   Student data access permissions apply for individual course
@@ -139,13 +139,13 @@
   from access to student data. The new student data permissions are:
 </p>
 
-<table class="table table-striped table-sm border mx-auto" style="max-width: 40em">
+<table class="table table-striped table-sm border mx-auto" style="max-width: 30em">
   <tr>
     <th></th>
     <th class="text-center" scope="col" colspan="5">Student data access</th>
   </tr>
   <tr>
-    <th></th>
+    <th scope="col">Action</th>
     <th class="text-center" scope="col">None</th>
     <th class="text-center" scope="col">Viewer</th>
     <th class="text-center" scope="col">Editor</th>
@@ -176,7 +176,52 @@
   </tr>
 </table>
 
-<h3>Remove old Instructor/TA access rules</h3>
+<h3 class="mt-5">Recommended access levels</h3>
+
+<p>
+  While every course should use the different permissions in way that
+  best suits the course needs, some recommended guidelines are:
+</p>
+
+<table class="table table-striped table-sm border mx-auto" style="max-width: 45em">
+  <tr>
+    <th scope="col">Role</th>
+    <th class="text-center" scope="col">Course content access</th>
+    <th class="text-center" scope="col">Student data access</th>
+  </tr>
+  <tr>
+    <td>Instructor</td>
+    <td class="text-center">Course content owner</td>
+    <td class="text-center">Student data editor</td>
+  </tr>
+  <tr>
+    <td>TAs developing course content</td>
+    <td class="text-center">Course content editor</td>
+    <td class="text-center">Student data editor</td>
+  </tr>
+  <tr>
+    <td>Student content developers (not TAs)</td>
+    <td class="text-center">Course content editor</td>
+    <td class="text-center">None</td>
+  </tr>
+  <tr>
+    <td>TAs involved in grading</td>
+    <td class="text-center">None</td>
+    <td class="text-center">Student data editor</td>
+  </tr>
+  <tr>
+    <td>Other TAs</td>
+    <td class="text-center">None</td>
+    <td class="text-center">Student data viewer</td>
+  </tr>
+  <tr>
+    <td>Instructors from other classes</td>
+    <td class="text-center">Course content viewer</td>
+    <td class="text-center">None</td>
+  </tr>
+</table>
+
+<h3 class="mt-5">Remove old Instructor/TA access rules</h3>
 
 <p>
   The new course staff permissions are managed entirely on the "Staff"
