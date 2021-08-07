@@ -16,6 +16,7 @@
                 download: {
                     text: 'Download',
                     icon: 'fa-download',
+                    attributes: { title: 'Download' },
                     event: () => {
                         window.location.href = '<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>';
                     },
@@ -23,6 +24,7 @@
                 studentsOnly: {
                     text: 'Students Only',
                     icon: 'fa-user-graduate',
+                    attributes: { title: 'List only enrolled students' },
                     event: () => {
                         const table = $('#gradebook-table');
                         const filterOn = !table.data('filter-student-only');

@@ -7,6 +7,7 @@ $(function() {
             studentsOnly: {
                 text: 'Students Only',
                 icon: 'fa-user-graduate',
+                attributes: { title: 'List only enrolled students' },
                 event: () => {
                     const table = $('#usersTable');
                     const filterOn = !table.data('filter-student-only');
