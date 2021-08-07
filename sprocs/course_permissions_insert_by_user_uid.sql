@@ -17,7 +17,9 @@ BEGIN
     WHERE u.uid = course_permissions_insert_by_user_uid.uid;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'no user with uid: %', uid;
+        INSERT INTO users AS u (uid)
+        VALUES (uid)
+        RETURNING u.user_id INTO user_id;
     END IF;
 
     INSERT INTO course_permissions AS cp
