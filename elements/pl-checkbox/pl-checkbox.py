@@ -441,6 +441,9 @@ def test(element_html, data):
     number_answers = len(data['params'][name])
     all_keys = [pl.index2key(i) for i in range(number_answers)]
 
+    min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
+    max_options_to_select = _get_max_options_to_select(element, number_answers)
+
     result = data['test_type']
 
     if result == 'correct':
@@ -456,15 +459,8 @@ def test(element_html, data):
             # select answer keys at random
             ans = [k for k in all_keys if random.choice([True, False])]
             # break and use this choice if it isn't correct
-            if (len(ans) >= 1):
-                if set(ans) != set(correct_keys):
-                    if not pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT):
-                        break
-                    else:
-                        min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
-                        max_options_to_select = _get_max_options_to_select(element, number_answers)
-                        if len(ans) <= max_options_to_select and len(ans) >= min_options_to_select:
-                            break
+            if set(ans) != set(correct_keys) and min_options_to_select <= len(ans) <= max_options_to_select:
+                break
         if partial_credit:
             if partial_credit_method == 'PC':
                 if set(ans) == set(correct_keys):
