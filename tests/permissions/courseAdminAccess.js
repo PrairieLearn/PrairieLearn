@@ -49,6 +49,8 @@ function runTest(context) {
         {uid: 'staff05@illinois.edu', name: 'Staff Five', uin: null, cr: null, cir: null},
     ];
 
+    var new_user = 'garbage@illinois.edu';
+
     before('set up testing server', async function() {
         await util.promisify(helperServer.before().bind(this))();
     });
@@ -58,6 +60,9 @@ function runTest(context) {
             await sqldb.callAsync('users_select_or_insert', [user.uid, user.name, user.uin, 'Shibboleth']);
         }
         await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [1, 'instructor@illinois.edu', 'Owner', 1]);
+        const result = await sqldb.queryAsync(sql.select_non_existent_user, {});
+        if (result.rowCount)
+            new_user = result.rows[0].uid;
     });
 
     after('shut down testing server', helperServer.after);
@@ -105,13 +110,13 @@ function runTest(context) {
         const form = {
             __action: 'course_permissions_insert_by_multi_user_uid',
             __csrf_token: context.__csrf_token,
-            uid: 'staff03@illinois.edu, staff05@illinois.edu, staff06@illinois.edu',
+            uid: `staff03@illinois.edu, staff05@illinois.edu, ${new_user}`,
             course_role: 'None',
         };
         response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff05@illinois.edu', 'None', null);
-        updatePermissions(users, 'staff06@illinois.edu', 'None', null);
+        updatePermissions(users, new_user, 'None', null);
         await checkPermissions(users);
     });
 
@@ -347,7 +352,7 @@ function runTest(context) {
         response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', null, null);
-        updatePermissions(users, 'staff06@illinois.edu', null, null);
+        updatePermissions(users, new_user, null, null);
         await checkPermissions(users);
     });
 
