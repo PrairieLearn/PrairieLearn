@@ -25,7 +25,11 @@ async function checkPermissions(users) {
 }
 
 function updatePermissions(users, uid, cr, cir) {
-    const user = users.find(user => (user.uid == uid));
+    var user = users.find(user => (user.uid == uid));
+    if (!user) {
+        user = {uid: uid};
+        users.push(user);
+    }
     user.cr = cr;
     user.cir = cir;
 }
@@ -101,12 +105,13 @@ function runTest(context) {
         const form = {
             __action: 'course_permissions_insert_by_multi_user_uid',
             __csrf_token: context.__csrf_token,
-            uid: 'staff03@illinois.edu, staff05@illinois.edu, garbage',
+            uid: 'staff03@illinois.edu, staff05@illinois.edu, staff06@illinois.edu',
             course_role: 'None',
         };
         response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
-        assert.equal(response.status, 409);
+        assert.isTrue(response.ok);
         updatePermissions(users, 'staff05@illinois.edu', 'None', null);
+        updatePermissions(users, 'staff06@illinois.edu', 'None', null);
         await checkPermissions(users);
     });
 
@@ -342,6 +347,7 @@ function runTest(context) {
         response = await helperClient.fetchCheerio(context.pageUrl, { method: 'POST', form: form, headers: headers });
         assert.isTrue(response.ok);
         updatePermissions(users, 'staff03@illinois.edu', null, null);
+        updatePermissions(users, 'staff06@illinois.edu', null, null);
         await checkPermissions(users);
     });
 
