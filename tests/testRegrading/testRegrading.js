@@ -629,7 +629,7 @@ describe('Regrading', function() {
                     assessment_instance_score_perc: (assessmentInstancePoints / examMaxPoints) * 100,
                 };
 
-                submitAnswer(['grade', 'save'], 'grade', examQuestions.partialCredit3, expectedResult, function(_variant) {
+                submitAnswer(['grade', 'save'], 'save', examQuestions.partialCredit3, expectedResult, function(_variant) {
                     return {
                         s: 90,
                     };
