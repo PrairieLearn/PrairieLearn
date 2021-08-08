@@ -13,6 +13,8 @@ const FileType = require('file-type');
 const util = require('util');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
 const { encodePath, decodePath } = require('../../lib/uri-util');
+const editorUtil = require('../../lib/editorUtil');
+const { default: AnsiUp } = require('ansi_up');
 
 function contains(parentPath, childPath) {
     const relPath = path.relative(parentPath, childPath);
@@ -32,6 +34,7 @@ function isHidden(item) {
 function getPaths(req, res, callback) {
     let paths = {
         coursePath: res.locals.course.path,
+        courseId: res.locals.course.id,
     };
 
     if (res.locals.navPage == 'course_admin') {
@@ -217,6 +220,17 @@ function browseDirectory(file_browser, callback) {
 
 function browseFile(file_browser, callback) {
     async.waterfall([
+        (callback) => {
+            util.callbackify(editorUtil.getErrorsAndWarningsForFilePath)(file_browser.paths.courseId, file_browser.paths.workingPathRelativeToCourse, (err, data) => {
+                if (ERR(err, callback)) return;
+                const ansiUp = new AnsiUp();
+                file_browser.sync_errors = data.errors;
+                file_browser.sync_errors_ansified = ansiUp.ansi_to_html(file_browser.sync_errors);
+                file_browser.sync_warnings = data.warnings;
+                file_browser.sync_warnings_ansified = ansiUp.ansi_to_html(file_browser.sync_warnings);
+                callback(null);
+            });
+        },
         (callback) => {
             fs.readFile(file_browser.paths.workingPath, (err, contents) => {
                 if (ERR(err, callback)) return;

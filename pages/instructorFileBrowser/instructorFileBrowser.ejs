@@ -19,6 +19,38 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+
+      <% if (file_browser.sync_errors) { %>
+      <div class="alert alert-danger" role="alert">
+        <h2 class="h5 alert-heading">Sync error</h2>
+        <p>
+          There were one or more errors in this file the last time you tried to sync.
+          This file will not be able to be synced until the errors are corrected.
+          The errors are listed below.
+        </p>
+        <pre class="text-white rounded p-3" style="background-color: black;"><code><%- file_browser.sync_errors_ansified %></code></pre>
+        <a tabindex="0" class="btn btn-sm btn-primary <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
+          <i class="fa fa-edit"></i>
+          <span>Edit file to fix this error</span>
+        </a>
+      </div>
+      <% } %>
+      <% if (file_browser.sync_warnings) { %>
+      <div class="alert alert-warning" role="alert">
+        <h2 class="h5 alert-heading">Sync warning</h2>
+        <p>
+          There were one or more warnings in this file the last time you tried to sync.
+          These warnings do not prevent this file from being synced, but they should still be fixed.
+          The warnings are listed below.
+        </p>
+        <pre class="text-white rounded p-3" style="background-color: black;"><code><%- file_browser.sync_warnings_ansified %></code></pre>
+        <a tabindex="0" class="btn btn-sm btn-primary <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
+          <i class="fa fa-edit"></i>
+          <span>Edit file to fix this warning</span>
+        </a>
+      </div>
+      <% } %>
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <div class="row align-items-center justify-content-between">
