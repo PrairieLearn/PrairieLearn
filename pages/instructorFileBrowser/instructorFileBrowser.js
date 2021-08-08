@@ -212,6 +212,22 @@ function browseDirectory(file_browser, callback) {
                 callback(null);
             });
         },
+        (callback) => {
+            async.eachOfSeries(file_browser.files, (file, index, callback) => {
+                util.callbackify(editorUtil.getErrorsAndWarningsForFilePath)(file_browser.paths.courseId, file.path, (err, data) => {
+                    if (ERR(err, callback)) return;
+                    const ansiUp = new AnsiUp();
+                    file.sync_errors = data.errors;
+                    file.sync_errors_ansified = ansiUp.ansi_to_html(file.sync_errors);
+                    file.sync_warnings = data.warnings;
+                    file.sync_warnings_ansified = ansiUp.ansi_to_html(file.sync_warnings);
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null);
