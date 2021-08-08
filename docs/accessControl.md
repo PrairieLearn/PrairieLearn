@@ -201,7 +201,7 @@ To block students from viewing closed assessment scores, set `"showClosedAssessm
 ]
 ```
 
-The `showClosedAssessment` access rule restriction is only useful in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`.
+The `showClosedAssessmentScore` access rule restriction is only useful in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`.
 
 ## Active assessments
 

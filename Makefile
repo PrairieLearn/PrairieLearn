@@ -1,29 +1,41 @@
-PATH := /PrairieLearn/node_modules/.bin/:$(PATH)
+PATH := node_modules/.bin/:$(PATH)
 
-start:
-	node server.js
-start-nodemon:
-	nodemon -L server.js
+start: start-support
+	@node server.js
+start-nodemon: start-support
+	@nodemon -L server.js
+start-workspace-host: start-support kill-running-workspaces
+	@node workspace_host/interface.js &
+
+kill-running-workspaces:
+	@docker/kill_running_workspaces.sh
+
+start-support: start-postgres start-redis start-s3rver
+start-postgres:
+	@docker/start_postgres.sh
+start-redis:
+	@docker/start_redis.sh
 start-s3rver:
-	mkdir -p /s3rver
-	s3rver --directory /s3rver --port 5000 --configure-bucket workspaces --configure-bucket chunks --configure-bucket file-store
+	@docker/start_s3rver.sh
 
-test:
-	nyc --reporter=lcov mocha tests/index.js
-test-sync:
-	mocha tests/sync/index.js
-test-nocoverage:
-	mocha tests/index.js
+test: test-js test-python
+test-js: start-support
+	@nyc --reporter=lcov mocha tests/index.js
+test-nocoverage: start-support
+	@mocha tests/index.js
+test-python:
+	@python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
 
 lint: lint-js lint-python
 lint-js:
-	eslint --ext js "**/*.js"
+	@eslint --ext js "**/*.js"
 lint-python:
-	python3 -m flake8 ./
+	@python3 -m flake8 ./
+
 typecheck:
-	tsc
+	@tsc
 depcheck:
-	-npx depcheck --ignore-patterns=public/**
+	-depcheck --ignore-patterns=public/**
 	@echo WARNING:
 	@echo WARNING: Before removing an unused package, also check that it is not used
 	@echo WARNING: by client-side code. Do this by running '"git grep <packagename>"'
