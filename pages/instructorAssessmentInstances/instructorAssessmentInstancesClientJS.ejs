@@ -3,6 +3,21 @@ var bsTable;
 $(function() {
 
     bsTable = $('#usersTable').bootstrapTable({
+        buttons: {
+            studentsOnly: {
+                text: 'Students Only',
+                icon: 'fa-user-graduate',
+                attributes: { title: 'List only enrolled students' },
+                event: () => {
+                    const table = $('#usersTable');
+                    const filterOn = !table.data('filter-student-only');
+                    table.data('filter-student-only', filterOn);
+
+                    $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
+                    table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                },
+            },
+        },
         onPreBody: function() {
             $('.spinning-wheel').show();
         },
@@ -75,6 +90,11 @@ $(function() {
             modal.modal('hide');
         });
     });
+
+    $('[data-toggle="modal"]').click(function (e) {
+        e.stopPropagation(); // Keep click from changing sort
+        $($(e.currentTarget).data('target')).modal('show');
+    })
 });
 
 function refreshTable() {
