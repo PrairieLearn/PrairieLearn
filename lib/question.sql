@@ -215,12 +215,3 @@ SET
     modified_at = now()
 WHERE
     iq.id = $id;
-
---BLOCK reset_instance_assessment
-UPDATE assessment_instances AS ai
-SET
-    points = 0,
-    score_perc = 0.0,
-    score_perc_in_grading = 0.0
-WHERE
-    ai.id = $assessment_instance_id;
