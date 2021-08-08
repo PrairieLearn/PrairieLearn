@@ -1,9 +1,9 @@
 {
     "uuid": "b5561b51-7d73-444f-895a-ad9a60093bfe",
     "type": "Exam",
-    "title": "Score Only Assessment",
+    "title": "Create Instance on Grading",
     "set": "Exam",
-    "number": "11",
+    "number": "12",
     "createInstanceOnGrading": true,
     "multipleInstance": true,
     "allowAccess": [

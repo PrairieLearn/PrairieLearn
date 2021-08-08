@@ -6,6 +6,7 @@ columns
     config: jsonb
     constant_question_value: boolean default false
     course_instance_id: bigint not null
+    create_instance_on_grading: boolean default false
     deleted_at: timestamp with time zone
     group_work: boolean default false
     id: bigint not null default nextval('assessments_id_seq'::regclass)
@@ -17,7 +18,6 @@ columns
     obj: jsonb
     order_by: integer
     require_honor_code: boolean default true
-    create_instance_on_grading: boolean default false
     shuffle_questions: boolean default false
     stats_last_updated: timestamp with time zone
     sync_errors: text

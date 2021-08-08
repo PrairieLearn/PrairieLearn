@@ -1,4 +1,4 @@
--- BLOCK select_e11
+-- BLOCK select_e12
 SELECT
     a.id
 FROM
@@ -7,4 +7,4 @@ FROM
 WHERE
     a.course_instance_id = 1
     AND aset.abbreviation = 'E'
-    AND a.number = '11';
+    AND a.number = '12';

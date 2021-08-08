@@ -14,17 +14,21 @@ const baseUrl = siteUrl + '/pl';
 const locals = {};
 const maxPoints = 1;
 
-describe('Score only assessment', function () {
+locals.siteUrl = 'http://localhost:' + config.serverPort;
+locals.baseUrl = locals.siteUrl + '/pl';
+locals.courseBaseUrl = locals.baseUrl + '/course/1';
+locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
+locals.isStudentPage = false;
+
+describe('Create instance on grading', function () {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
     describe('1. the database', function () {
-        locals.courseInstanceBaseUrl = baseUrl + '/course_instance/1';
-
-        it('should contain E11', function(callback) {
-            sqldb.queryOneRow(sql.select_e11, [], function(err, result) {
+        it('should contain E12', function(callback) {
+            sqldb.queryOneRow(sql.select_e12, [], function(err, result) {
                 if (ERR(err, callback)) return;
                 locals.assessment_id = result.rows[0].id;
                 callback(null);

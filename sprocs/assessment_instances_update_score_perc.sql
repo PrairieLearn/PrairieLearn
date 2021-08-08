@@ -13,7 +13,7 @@ DECLARE
     instance_id bigint := assessment_instance_id;
     user_id bigint;
     group_work boolean;
-    create_on_grading boolean;
+    create_instance_on_grading boolean;
     mode enum_mode;
     time_limit_min integer := 0;
 BEGIN
@@ -27,7 +27,7 @@ BEGIN
 		INTO
 			group_work,
 			mode,
-			create_on_grading
+			create_instance_on_grading
 		FROM assessments AS a WHERE a.id = assessment_id;
 
 		IF create_instance_on_grading THEN
