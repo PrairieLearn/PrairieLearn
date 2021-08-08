@@ -171,12 +171,15 @@ Attribute | Type | Default | Description
 `max-correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 `partial-credit` | boolean | false | Enable partial credit scores. By default, the choice of grading method is "all-or-nothing".
-`partial-credit-method` | string | 'PC' | Two grading methods for partial credit: 'EDC' (Every Decision Counts) and 'PC' (Percent Correct). See explanation below.
-`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
-`detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
+`partial-credit-method` | string | 'PC' | Three grading methods for partial credit: 'COV' (Coverage), 'EDC' (Every Decision Counts), and 'PC' (Percent Correct). See explanation below.
+`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'COV', 'EDC' or 'PC')
+`detailed-help-text` | boolean | false | Display the minimum and maximum number of options that can be selected in a valid submission. See explanation below.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `hide-score-badge` | boolean | false | Hide badges next to selected answers.
+`min-select` | integer | special | The minimum number of answers that must be selected in any valid submission. Defaults to `min-correct` if that attribute is specified along with `detailed-help-text="true"`; otherwise, defaults to 1.
+`max-select` | integer | special | The maximum number of answers that can be selected in any valid submission. Defaults to `max-correct` if that attribute is specified along with `detailed-help-text="true"`; otherwise, defaults to the number of displayed answers.
+`show-number-correct` | boolean | false | Display the number of correct choices in the help text.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -185,13 +188,37 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-#### Details
+#### Partial credit grading
 
-Two grading methods are available when using `partial-credit="true"`:
+Three grading methods are available when using `partial-credit="true"`:
+
+* `'COV'` (Coverage): in this method, the final score is calculated by multiplying the **base score** (the proportion of correct answers that are chosen) with 
+the **guessing factor** (the proportion of chosen answers that are correct). Specifically, if `t` is the number of correct answers chosen, `c` is the total number
+of correct answers, and `n` is the total number of answers chosen, then the final score is `(t / c) * (t / n)`. This grading scheme rewards submissions that include (i.e. "cover") all true options.
 
 * `'EDC'` (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
 
 * `'PC'` (Percent Correct): in this method, 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
+
+#### Using the `detailed-help-text` attribute
+
+The `detailed-help-text` attribute can be used with `min-correct` and/or `max-correct` to help students select the correct options. If `min-select` is not specified, then setting `detailed-help-text="true"` ensures that the number of selected options in a valid submission is at least the value of `min-correct`. Similarly, if `max-select` is not specified, then setting `detailed-help-text="true"` ensures that the number of selected options in a valid submission is at most the value of `max-correct`. For example, if a checkbox question does not specify `min-select` or `max-select`, and specifies `min-correct="2"`, `max-correct="4"`, and `detailed-help-text="true"`, then all valid submissions must select between 2 and 4 options. Thus, we help students by preventing them from selecting, say, five options. Indeed, if five options are selected, then at least one selected option is incorrect since there are at most four correct options.
+
+Note that explicitly specifying `min-select` overrides the minimum number of options that must be selected, and similarly, explicitly specifying `max-select` overrides the maximum number of options that can be selected.
+
+#### Restricting the number of options that can be selected
+
+The `min-select` and `max-select` attributes determine the minimum and maximum number of options that can be selected in a valid submission. The value of `min-select` is computed using the following steps:
+
+1. If the `min-select` attribute is explicitly set, then we use the specified value of `min-select`.
+2. If `min-select` is not specified, but `min-correct` is specified along with `detailed-help-text="true"`, then we use the specified value of `min-correct`.
+3. If steps 1 and 2 do not apply, then we use a default value of 1.
+
+To compute `max-select`, we use a similar algorithm (note the different default value in step 3):
+
+1. If the `max-select` attribute is explicitly set, then we use the specified value of `max-select`.
+2. If `max-select` is not specified, but `max-correct` is specified along with `detailed-help-text="true"`, then we use the specified value of `min-correct`.
+3. If steps 1 and 2 do not apply, then `max-select` defaults to the number of displayed checkbox options (i.e. students can select all displayed options by default).
 
 #### Example implementations
 
@@ -388,16 +415,18 @@ Attribute | Type | Default | Description
 `min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
 `source-header` | string | "Drag from here" | The text that appears at the start of the source area.
 `solution-header` | string| "Construct your solution here" |  The text that appears at the start of the solution area.
-`solution-placement` | string | "right" | "right" shows the source and solution areas aligned side-by-side. "bottom" shows the solution area below the source area.
-`feedback` | string | "none" | "first-wrong" | The level of feedback the student will recieve upon giving an incorrect answer. Currently only available with the `dag` grading mode. "first-wrong" will tell the student which block in their answer was the first to be incorrect.
-Within the `pl-order-blocks` element, each answer block must be specified with a `pl-answer` that has the following attributes:
+`solution-placement` | "right" or "bottom" | "right" | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.
+`feedback` | "none" or "first-wrong" | "none" | The level of feedback the student will recieve upon giving an incorrect answer. Currently only available with the `dag` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.
+
+
+Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
 `ranking` | positive integer | — | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
 `indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.
-`depends` | string | "" | This attribute is used when `grading-method="dag"` to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends=1,3` for a particular block, it must appear later in the proof than the block with `tag="1"` and the block with `tag="3"`.
+`depends` | string | "" | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends=1,3` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.
 `tag` | string | "" | Optional attribute when `grading-method="dag"`. Used to identify the block when declaring which other blocks depend on it.
 
 #### Details
@@ -420,6 +449,7 @@ Different ordering of the blocks in the source area defined via the attribute `s
 #### Example implementations
 
 - [element/orderBlocks]
+- [demo/proofBlocks]
 - [demo/autograder/python/orderBlocksRandomParams]
 - [demo/autograder/python/orderBlocksAddNumpy]
 
@@ -1810,9 +1840,9 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/randomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
 [demo/randomPlot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomPlot
 [demo/randomSymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomSymbolic
+[demo/proofBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/proofBlocks
 
 <!-- Element option overview questions -->
-[element/orderBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/checkbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/checkbox
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
@@ -1828,6 +1858,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/matrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
 [element/multipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
 [element/numberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
+[element/orderBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/prairieDrawFigure
