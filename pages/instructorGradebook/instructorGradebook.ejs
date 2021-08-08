@@ -16,10 +16,24 @@
                 download: {
                     text: 'Download',
                     icon: 'fa-download',
+                    attributes: { title: 'Download' },
                     event: () => {
                         window.location.href = '<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>';
                     },
-                }
+                },
+                studentsOnly: {
+                    text: 'Students Only',
+                    icon: 'fa-user-graduate',
+                    attributes: { title: 'List only enrolled students' },
+                    event: () => {
+                        const table = $('#gradebook-table');
+                        const filterOn = !table.data('filter-student-only');
+                        table.data('filter-student-only', filterOn);
+
+                        $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
+                        table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    },
+                },
             },
             onPreBody: function() {
                 $('.spinning-wheel').show();
@@ -84,6 +98,11 @@
                 $('.spinning-wheel').hide();
             },
         });
+
+        $('[data-toggle="modal"]').click(function (e) {
+            e.stopPropagation(); // Keep click from changing sort
+            $($(e.currentTarget).data('target')).modal('show');
+        })
     });
     function gradeFormatter(score, row, index, field) {
         var assessment_instance_id = row[field + '_ai_id'];
