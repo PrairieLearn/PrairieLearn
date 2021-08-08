@@ -664,7 +664,7 @@ class PairedVector(BaseElement):
         return ((poss[0][1] and poss[1][0]) or (poss[0][0] and poss[1][1])) and angdiff < 2 * angtol
 
     def get_attributes():
-        return ['x1', 'y1', 'x2', 'y2', 'anchor-is-tail', 'width', 'angle1', 'angle2', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward', 'optional-grading']
+        return ['x1', 'y1', 'x2', 'y2', 'anchor-is-tail', 'width', 'angle1', 'angle2', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward', 'optional-grading', 'weight']
 
 
 class DoubleHeadedVector(BaseElement):
