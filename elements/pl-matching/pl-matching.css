@@ -1,15 +1,15 @@
 
-.matching-answers > div {
+.matching-statements > div {
     display: flex;
     align-items: baseline;
     margin-top: 1ex;
 }
 
-.matching-answers > div > div {
+.matching-statements > div > div {
     margin-right: 1ex;
 }
 
-.matching-answer-select {
+.matching-statement-select {
     min-width: 4em;
 }
 

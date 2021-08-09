@@ -14,10 +14,10 @@
 </style>
 {{#question}}
 <div id="pl-matching-{{uuid}}" style="display: flex;">
-<div class="matching-answers">
-{{#answers}}
+<div class="matching-statements">
+{{#statements}}
     <div>
-        <div class="matching-answer-select">
+        <div class="matching-statement-select">
             <select name="{{name}}" class="form-control">
                 {{#options}}
                     <option {{selected}} value="{{value}}">{{value}}</option>
@@ -38,7 +38,7 @@
         </div>
         {{/display_score_badge}}
     </div>
-{{/answers}}
+{{/statements}}
 </div>
 <div class="matching-options">
 <ol>
@@ -55,8 +55,8 @@
 
 {{#submission}}
 <div id="pl-matching-{{uuid}}" style="display: flex;">
-<div class="matching-answers">
-{{#answers}}
+<div class="matching-statements">
+{{#statements}}
     <div>
         <div class="matching-answer-select">
             <select disabled class="form-control">
@@ -83,15 +83,15 @@
         </div>
         {{/display_score_badge}}
     </div>
-{{/answers}}
+{{/statements}}
 </div>
 </div>
 {{/submission}}
 
 {{#answer}}
 <div id="pl-matching-{{uuid}}" style="display: flex;">
-<div class="matching-answers">
-{{#answers}}
+<div class="matching-statements">
+{{#statements}}
     <div>
         <div class="matching-answer-select">
             <select disabled name="{{name}}" class="form-control">
@@ -104,7 +104,7 @@
             {{{html}}}
         </div>
     </div>
-{{/answers}}
+{{/statements}}
 </div>
 </div>
 {{/answer}}
