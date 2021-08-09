@@ -30,8 +30,9 @@ pages:
   - How-to Guides:
     - 'Adding Staff to Course Instance': 'Instructor/howTos/howtoAddUserRoles.md'
     - Assessments:
-      - 'How do I create a Homework?': 'Instructor/HowTos/Assessments/howtoHomeworkSet.md'
-      - 'How do I create an Exam?': 'Instructor/HowTos/Assessments/howtoExams.md'
+      - 'Creating Homework Sets': 'Instructor/HowTos/Assessments/howtoHomeworkSet.md'
+      - 'Creating Exams': 'Instructor/HowTos/Assessments/howtoExams.md'
+      - 'Copying Assessment Sets from Previous Semesters': 'Instructor/HowTos/Assessments/howtoCopyPreviousAssessments.md'
       - 'Creating Assessment Sets': 'Instructor/HowTos/Assessments/howtoAddAssessmentSet.md'
       - 'Setting points': 'Instructor/HowTos/Assessments/howtoAssessmentPoints.md'
       - 'Randomizing Question Order': 'Instructor/HowTos/Assessments/howtoRandomizeOrder.md'
