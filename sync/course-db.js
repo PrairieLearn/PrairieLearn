@@ -170,6 +170,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {number} credit
  * @property {string} startDate
  * @property {string} endDate
+ * @property {boolean} active
  * @property {number} timeLimitMin
  * @property {string} password
  * @property {SEBConfig} SEBConfig
@@ -253,6 +254,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string[]} gradedFiles
  * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
+ * @property {boolean} enableNetworking
  */
 
  /**
@@ -904,6 +906,11 @@ async function validateAssessment(assessment, questions) {
     // Check assessment access rules
     (assessment.allowAccess || []).forEach(rule => {
         const allowAccessErrors = checkAllowAccessDates(rule);
+
+        if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
+            errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
+        }
+
         errors.push(...allowAccessErrors);
     });
 

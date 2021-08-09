@@ -1,6 +1,7 @@
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
+var _ = require('lodash');
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
@@ -146,13 +147,28 @@ describe('Instructor assessment editing', function() {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        it('should contain the assessment instance', function() {
-            elemList = locals.$('#usersTable tr td:contains("dev@illinois.edu") ~ td a:contains("Details")');
-            assert.lengthOf(elemList, 1);
+        it('should load raw data file successfully', function(callback) {
+            locals.instructorAssessmentInstancesUrl = locals.instructorAssessmentUrl + 'instances/raw_data.json';
+            request(locals.instructorAssessmentInstancesUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
         });
-        it('should have the correct link for the assessment instance', function() {
-            locals.instructorAssessmentInstanceUrl = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(locals.instructorAssessmentInstanceUrl, locals.instructorBaseUrl + '/assessment_instance/1');
+        it('should parse as JSON array of objects', function() {
+            locals.pageData = JSON.parse(page);
+            assert.isArray(locals.pageData);
+            locals.pageData.forEach(obj => assert.isObject(obj));
+        });
+        it('should contain the assessment instance', function() {
+            elemList = _.filter(locals.pageData, row => row.uid == 'dev@illinois.edu');
+            assert.lengthOf(elemList, 1);
+            locals.instructorAssessmentInstanceUrl = locals.instructorBaseUrl + '/assessment_instance/' + elemList[0].assessment_instance_id;
         });
     });
 
@@ -475,31 +491,32 @@ describe('Instructor assessment editing', function() {
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
+        it('should load raw data file successfully', function(callback) {
+            request(locals.instructorGradebookUrl + '/raw_data.json', function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON array of objects', function() {
+            locals.gradebookData = JSON.parse(page);
+            assert.isArray(locals.gradebookData);
+            locals.gradebookData.forEach(obj => assert.isObject(obj));
+        });
         it('should contain a row for the dev user', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu")');
-            assert.lengthOf(elemList, 1);
+            locals.gradebookDataRow = _.filter(locals.gradebookData, row => row.uid == 'dev@illinois.edu');
+            assert.lengthOf(locals.gradebookDataRow, 1);
         });
-        it('should contain the assessment instance column with the correct score', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a:contains("' + assessmentSetScorePerc + '%")');
-            assert.lengthOf(elemList, 1);
+        it('should contain the correct score in the dev user row', function() {
+            assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}`], assessmentSetScorePerc);
         });
-        it('should have the correct link for the assessment instance', function() {
-            locals.instructorAssessmentInstanceUrl = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(locals.instructorAssessmentInstanceUrl, locals.instructorBaseUrl + '/assessment_instance/1');
-        });
-        it('should contain button to edit score', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td button.edit-score');
-            assert.lengthOf(elemList, 1);
-        });
-        it('should contain the assessment instance id in a data tag', function() {
-            assert.nestedProperty(elemList[0], 'attribs.data-ai-id');
-            const assessment_instance_id = elemList[0].attribs['data-ai-id'];
-            assert.equal(assessment_instance_id, 1);
-        });
-        it('should contain the assessment score in a data tag', function() {
-            assert.nestedProperty(elemList[0], 'attribs.data-score');
-            const score = elemList[0].attribs['data-score'];
-            assert.equal(score, '37');
+        it('should contain the correct assessment instance id in the dev user row', function() {
+            assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}_ai_id`], 1);
         });
     });
 
@@ -524,11 +541,11 @@ describe('Instructor assessment editing', function() {
             });
         });
         it('should parse', function() {
-            locals.$ = cheerio.load(page);
+            locals.pageData = JSON.parse(page);
         });
-        it('should contain the assessment instance column with the correctly updated score', function() {
-            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a:contains("' + assessmentSetScorePerc2 + '%")');
-            assert.lengthOf(elemList, 1);
+        it('should contain the correctly updated score', function() {
+            assert.lengthOf(locals.pageData, 1);
+            assert.equal(locals.pageData[0].score_perc, assessmentSetScorePerc2);
         });
     });
 });

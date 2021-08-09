@@ -54,7 +54,7 @@
         };
     }
 
-    //// cross-browser compatiblity functions ////
+    //// cross-browser compatibility functions ////
 
     var _toString = Object.prototype.toString;
 
