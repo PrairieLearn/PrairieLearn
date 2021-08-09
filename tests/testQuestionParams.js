@@ -121,8 +121,8 @@ describe('Parameterized questions', function() {
         });
 
         describe('the database', function() {
-            it('should contain HW12', function(callback) {
-                sqldb.queryOneRow(sql.select_hw12, [], function(err, result) {
+            it('should contain HW9', function(callback) {
+                sqldb.queryOneRow(sql.select_hw9, [], function(err, result) {
                     if (ERR(err, callback)) return;
                     locals.assessment_id = result.rows[0].id;
                     callback(null);
@@ -147,11 +147,11 @@ describe('Parameterized questions', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should contain HW12', function() {
+            it('should contain HW9', function() {
                 elemList = locals.$('td a:contains("Homework to test question parameters")');
                 assert.lengthOf(elemList, 1, page);
             });
-            it('should have the correct link for HW12', function() {
+            it('should have the correct link for HW9', function() {
                 locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
                 assert.equal(locals.assessmentUrl, locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/');
             });
@@ -258,7 +258,7 @@ describe('Parameterized questions', function() {
 
         it('should have a range set by the course instance questionParams', function() {
             elemList = locals.$('span:contains("[0, 50]")');
-            assert.lengthOf(elemList, 1, page);
+            assert.lengthOf(elemList, 1);
         });
     });
 

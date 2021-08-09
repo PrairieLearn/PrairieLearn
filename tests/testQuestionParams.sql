@@ -2,7 +2,7 @@
 SELECT *
 FROM questions;
 
--- BLOCK select_hw12
+-- BLOCK select_hw9
 SELECT
     a.id
 FROM
@@ -11,7 +11,7 @@ FROM
 WHERE
     a.course_instance_id = 1
     AND aset.abbreviation = 'HW'
-    AND a.number = '12';
+    AND a.number = '9';
 
 -- BLOCK select_assessment_instances
 SELECT
