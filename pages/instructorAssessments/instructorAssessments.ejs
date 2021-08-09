@@ -68,12 +68,12 @@
                 <td class="align-middle">
                   <% if (row.sync_errors) { %>
                   <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
-                          data-content="<pre class=&quot;bg-dark text-white rounded p-3&quot;><%= row.sync_errors_ansified %></pre>">
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= row.sync_errors_ansified %></pre>">
                     <i class="fa fa-times text-danger" aria-hidden="true"></i>
                   </button>
                   <% } else if (row.sync_warnings) { %>
                   <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
-                          data-content="<pre class=&quot;bg-dark text-white rounded p-3&quot;><%= row.sync_warnings_ansified %></pre>">
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= row.sync_warnings_ansified %></pre>">
                     <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
                   </button>
                   <% } %>

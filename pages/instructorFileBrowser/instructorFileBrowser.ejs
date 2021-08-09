@@ -124,13 +124,13 @@
                 <% if (f.sync_errors) { %>
                 <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
                         data-html="true" data-container="body" data-trigger="hover"
-                        data-content="<pre class=&quot;bg-dark text-white rounded p-3&quot;><%= f.sync_errors_ansified %></pre>">
+                        data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= f.sync_errors_ansified %></pre>">
                   <i class="fa fa-times text-danger" aria-hidden="true"></i>
                 </button>
                 <% } else if (f.sync_warnings) { %>
                 <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
                         data-html="true" data-container="body" data-trigger="hover"
-                        data-content="<pre class=&quot;bg-dark text-white rounded p-3&quot;><%= f.sync_warnings_ansified %></pre>">
+                        data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= f.sync_warnings_ansified %></pre>">
                   <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
                 </button>
                 <% } %>
