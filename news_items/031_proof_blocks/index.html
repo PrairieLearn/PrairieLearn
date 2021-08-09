@@ -1,0 +1,82 @@
+<style>
+ img {
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+     margin-top: 15px;
+     margin-bottom: 15px;
+ }
+ .code-block {
+     width: 60%;
+     margin-left: auto;
+     margin-right: auto;
+     overflow: hidden;
+     margin-bottom: 1rem;
+     font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+     background: #f0f0f0;
+     padding: 1em;
+     padding-bottom: 0em;
+ }
+ .code-block div {
+     padding: 0.5rem;
+     display: block;
+     margin-bottom: -1em;
+     line-height: 125%;
+ }
+</style>
+
+<p>
+    Due to the work of Seth Poulsen, with design input from myself,
+    <a href="https://github.com/">Mahesh Viswanathan</a>,
+    and <a href="https://github.com/">Geoffrey Herman</a>,
+    the <code class="user-output">pl-order-blocks</code> element can now be used to grade
+    problems where the dependence between the blocks is given by a directed acyclic graph (DAG) structure.
+    When used for its primary use case of allowing students to construct mathematical proofs by dragging
+    and dropping blocks, we call it <a href="https://www.proofblocks.org">Proof Blocks</a>.
+    Special thanks also goes to
+    <a href="https://github.com/">Benjamin Cosman</a>,
+    <a href="https://github.com/">Patrick Lin</a>,
+    and <a href="https://github.com/">Yael Gertner</a>,
+    for being willing to use the development version of Proof Blocks with their students, giving us helpful
+    feedback along the way.
+</p>
+
+<p>
+    Here is an example Proof Blocks question like one might see in an introductory proofs course:
+</p>
+<img class="border rounded" src="./ProofBlocks-demo.gif" style="max-width:100%;" >
+
+<p>
+    The <code class="user-output">question.html</code> that would generate this question would contain:
+</p>
+
+<div class="code-block rounded">
+<pre>
+&lt;pl-order-blocks answers-name="proof1" source-blocks-order="random" grading-method="dag" solution-placement="bottom"&gt;
+    &lt;pl-answer correct="true" tag="1" depends="" &gt; Let $m \in \mathbb{N}$ be even. &lt;/pl-answer&gt;
+    &lt;pl-answer correct="true" tag="2" depends="" &gt; Let $n \in \mathbb{N}$ be even. &lt;/pl-answer&gt;
+    &lt;pl-answer correct="true" tag="3" depends="1"&gt; Then $\exists p \in \mathbb{N}$ such that $m = 2p$&lt;/pl-answer&gt;
+    &lt;pl-answer correct="true" tag="4" depends="2"&gt; Then $\exists q \in \mathbb{N}$ such that $n = 2q$&lt;/pl-answer&gt;
+    &lt;pl-answer correct="true" tag="5" depends="3,4"&gt;$m + n = 2p + 2q = 2(p + q)$&lt;/pl-answer&gt;
+    &lt;pl-answer correct="true" tag="6" depends="5"&gt; Since $m + n$ can be written as $2$ times a natural number, $m + n$ is even&lt;/pl-answer&gt;
+  &lt;/pl-order-blocks&gt; </pre>
+</div>
+
+<p>
+    Our paper about Proof Blocks, <a href="" style="font-style: italic;">Evaluating Proof Blocks Problems as Exam Questions</a>,
+    was awarded an Honorable Mention for best paper award at this years <a href="">International Computing Education Research Conference</a>.
+    In the paper, we show that Proof Blocks problems give a substantial amount of information about student knowledge while being easier
+    than written proof problems. Stay tuned for further research with Proof Blocks!
+</p>
+
+<p> To try Proof Blocks, see the <a href="https://www.prairielearn.org/pl/course/108/question/9063230/preview">
+    Proof Blocks demo question.
+  </a>.</p>
+
+<p> For more information, see the <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-block-element">pl-order-block documentation</a>. </p>
+
+<hr class="mt-5">
+<p class="text-right small">
+    Want to help make PrairieLearn better? It's open source and <a href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
+</p>
+
