@@ -360,7 +360,7 @@ module.exports.beginTransaction = function(callback) {
  *
  * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
  */
-module.exports.begiTransactionAsync = function() {
+module.exports.beginTransactionAsync = function() {
     return new Promise((resolve, reject) => {
         module.exports.beginTransaction((err, client, done) => {
             if (err) {
