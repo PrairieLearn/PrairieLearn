@@ -67,20 +67,6 @@ docker build -t prairielearn/prairielearn .
 ```
 
 
-## Running a specific branch in a pre-built container
-
-By default, the commands above will run PrairieLearn from the branch that is currently checked out in the directory `/path/to/PrairieLearn`. So, to run a different branch, just use commands like `git checkout BRANCH_NAME` or equivalent.
-
-It is also possible to run a branch other than `master` without cloning or checking out the code for that branch, as long as the branch has been pushed to GitHub.  If you would like to run a different branch (to test it, for example), the branch name can be appended to the end of the image name as such:
-
-```sh
-docker pull prairielearn/prairielearn:BRANCH_NAME   # make sure we have the latest version
-docker run -it --rm -p 3000:3000 prairielearn/prairielearn:BRANCH_NAME
-```
-
-Note that any forward slashes (`/`) in the branch name will be need to be converted to underscores (`_`).
-
-
 ## Auto-restarting the node server
 
 The description at the start of this page suggests manually stopping and restarting PrairieLearn after you have edited any JavaScript files. You can alternatively use the `nodemon` package to watch for changes to code and auto-restart PrairieLearn. To do this, run the PrairieLearn container as described at the start of this page and then run:
