@@ -612,7 +612,7 @@ Attribute | Type | Default | Description
 
 ### `pl-matching` element
 
-Given a list of questions, select a matching option for each entry from a drop-down list.
+Given a list of statements, select a matching option for each entry from a drop-down list.
 
 #### Sample element
 
@@ -621,9 +621,9 @@ Given a list of questions, select a matching option for each entry from a drop-d
 **question.html**
 ```html
 <pl-matching answers-name="string_value">
-  <pl-answer match="d.c.">United States</pl-answer>
-  <pl-answer match="Mexico City">Mexico</pl-answer>
-  <pl-answer match="Paris">France</pl-answer>
+  <pl-statement match="d.c.">United States</pl-statement>
+  <pl-statement match="Mexico City">Mexico</pl-statement>
+  <pl-statement match="Paris">France</pl-statement>
 
   <pl-option name="d.c.">Washington, D.C.</pl-option>
   <pl-option>Mexico City</pl-option>
@@ -637,17 +637,19 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`fixed-order` | boolean | False | Whether or not to display the answers in a fixed order; otherwise they are shuffled. Options are always shuffled.
-`number-answers` | integer | special | The number of answers to display. Defaults to all answers.
+`fixed-order` | boolean | False | Whether or not to display the statements in a fixed order; otherwise they are shuffled. Options are always shuffled.
+`number-statements` | integer | special | The number of statements to display. Defaults to all statements.
 `number-options` | integer | special | The number of options to display. Defaults to all options.
-`none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options. Automatically set to true if number-options is less than the total number of options.
+`none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.
 `blank` | boolean | False | Option to add blank dropdown entry as the default selection in each drop-down list..
 `counter-type` | "decimal" or "lower-alpha" or "upper-alpha" | "lower-alpha" | The type of counter to use when enumerating the options.
 `hide-score-badge` | boolean | false | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.
 
-Inside the `pl-matching` element, a series of `pl-answer` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively.
+Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
 
-The content of a `pl-answer` can be any HTML element, including other PrairieLearn elements. A `pl-answer` must be specified with these attributes:
+A total of `number-statements` statements will be randomly selected and displayed to the student. The corresponding matching options will be gathered; if `number_options` requires more entries, then distractors will be selected from the remaining unused options. If the gathered options are more numerous than `number_options`, they will be randomly sampled and `none-of-the-above` will automatically set to true.
+
+The content of a `pl-statement` can be any HTML element, including other PrairieLearn elements. A `pl-statement` must be specified with these attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---

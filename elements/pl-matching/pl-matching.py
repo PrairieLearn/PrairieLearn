@@ -121,13 +121,13 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['fixed-statements-order', 'number-statements', 'number-options', 'none-of-the-above', 'blank', 'counter-type']
+    optional_attribs = ['fixed-order', 'number-statements', 'number-options', 'none-of-the-above', 'blank', 'counter-type']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
     options, statements = categorize_matches(element, data)
 
     # Choose and randomize the options and statements. Each can be in a fixed order.
-    fixed_statements_order = pl.get_boolean_attrib(element, 'fixed-statements-order', FIXED_STATEMENTS_ORDER_DEFAULT)
+    fixed_statements_order = pl.get_boolean_attrib(element, 'fixed-order', FIXED_STATEMENTS_ORDER_DEFAULT)
     number_statements = pl.get_integer_attrib(element, 'number-statements', len(statements))
     number_options = pl.get_integer_attrib(element, 'number-options', len(options))
     nota = pl.get_boolean_attrib(element, 'none-of-the-above', NOTA_DEFAULT)
