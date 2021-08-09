@@ -3,7 +3,7 @@ columns
     id: bigint not null default nextval('alternative_groups_id_seq'::regclass)
     number: integer
     number_choose: integer
-    question_params: jsonb not null default '{}'::jsonb
+    question_params: jsonb default '{}'::jsonb
     zone_id: bigint not null
 
 indexes

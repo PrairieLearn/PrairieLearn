@@ -32,7 +32,7 @@ columns
     number_submissions_variance: double precision
     points_list: double precision[]
     question_id: bigint not null
-    question_params: jsonb not null default '{}'::jsonb
+    question_params: jsonb default '{}'::jsonb
     question_score_variance: double precision
     quintile_question_scores: double precision[]
     some_nonzero_submission_perc: double precision

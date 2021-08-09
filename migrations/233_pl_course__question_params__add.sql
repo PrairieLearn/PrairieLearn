@@ -1,1 +1,1 @@
-ALTER TABLE pl_courses ADD COLUMN question_params jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE pl_courses ADD COLUMN question_params jsonb DEFAULT '{}'::jsonb;

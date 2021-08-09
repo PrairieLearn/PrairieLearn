@@ -5,7 +5,7 @@ columns
     max_points: double precision
     number: integer
     number_choose: integer
-    question_params: jsonb not null default '{}'::jsonb
+    question_params: jsonb default '{}'::jsonb
     title: text
 
 indexes

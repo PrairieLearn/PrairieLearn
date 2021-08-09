@@ -6,7 +6,7 @@ columns
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     long_name: text
     ps_linked: boolean not null default true
-    question_params: jsonb not null default '{}'::jsonb
+    question_params: jsonb default '{}'::jsonb
     short_name: text
     sync_errors: text
     sync_job_sequence_id: bigint

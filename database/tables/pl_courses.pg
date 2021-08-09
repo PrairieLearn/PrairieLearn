@@ -10,7 +10,7 @@ columns
     manual_grading_visible: boolean default false
     options: jsonb not null default '{}'::jsonb
     path: text
-    question_params: jsonb not null default '{}'::jsonb
+    question_params: jsonb default '{}'::jsonb
     repository: text
     short_name: text
     sync_errors: text
