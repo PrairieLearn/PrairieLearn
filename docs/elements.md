@@ -642,7 +642,7 @@ Attribute | Type | Default | Description
 `number-options` | integer | special | The number of options to display. Defaults to all options.
 `none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options. Automatically set to true if number-options is less than the total number of options.
 `blank` | boolean | False | Option to add blank dropdown entry as the default selection in each drop-down list..
-`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" | "decimal" | The type of counter to use when enumerating the options.
+`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" | "lower-alpha" | The type of counter to use when enumerating the options.
 `hide-score-badge` | boolean | false | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.
 
 Inside the `pl-matching` element, a series of `pl-answer` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively.

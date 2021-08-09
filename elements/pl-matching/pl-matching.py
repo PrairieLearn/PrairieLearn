@@ -55,14 +55,14 @@ def get_select_options(options_list, selected_value):
 
 
 def categorize_matches(element, data):
-    """Get provided answers and options from the pl-matching element"""
+    """Get provided statements and options from the pl-matching element"""
     options = {}
-    answers = []
+    statements = []
     index = 0
 
-    # Sort the elements so that pl-answers come first.
+    # Sort the elements so that pl-options come first.
     children = element[:]
-    children.sort(key=lambda child: child.tag, reverse=True)
+    children.sort(key=lambda child: child.tag)
 
     for child in children:
         if child.tag in ['pl-option', 'pl_option']:
@@ -76,21 +76,21 @@ def categorize_matches(element, data):
             options[option_name] = option_tuple
             index += 1
 
-        elif child.tag in ['pl-answer', 'pl_answer']:
+        elif child.tag in ['pl-statement', 'pl_statement']:
             pl.check_attribs(child, required_attribs=['match'], optional_attribs=[])
             child_html = pl.inner_html(child)
             match_name = pl.get_string_attrib(child, 'match')
             if match_name not in options:
-                raise Exception(f'pl-answer "match" attribute of {match_name} does not match any of the pl-option elements.')
+                raise Exception(f'pl-statement "match" attribute of {match_name} does not match any of the pl-option elements.')
 
             _, match_name, _ = options[match_name]
 
-            # An answer tuple has: the name attribute of the correct matching option; and
+            # A statement tuple has: the name attribute of the correct matching option; and
             # the html content.
-            answer_tuple = (match_name, child_html)
-            answers.append(answer_tuple)
+            statement_tuple = (match_name, child_html)
+            statements.append(statement_tuple)
 
-    return list(options.values()), answers
+    return list(options.values()), statements
 
 
 def prepare(element_html, data):
