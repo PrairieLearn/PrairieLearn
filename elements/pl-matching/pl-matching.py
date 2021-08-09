@@ -3,7 +3,7 @@ import lxml.html
 import random
 import math
 import chevron
-import itertools
+
 
 WEIGHT_DEFAULT = 1
 FIXED_STATEMENTS_ORDER_DEFAULT = False
