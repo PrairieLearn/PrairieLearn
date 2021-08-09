@@ -45,6 +45,9 @@ router.get('/raw_data.json', function(req, res, next) {
                 scores[`score_${score.assessment_id}`] = score.score_perc;
                 scores[`score_${score.assessment_id}_ai_id`] = score.assessment_instance_id;
                 scores[`score_${score.assessment_id}_other`] = _.map(score.uid_other_users_group, _.escape);
+                scores[`score_${score.assessment_id}_ci_og`] = score.create_instance_on_grading;
+                scores[`score_${score.assessment_id}_uid`]   = scores.uid;
+                scores[`score_${score.assessment_id}_aid`]   = score.assessment_id;
             });
             return scores;
         });
@@ -85,29 +88,53 @@ router.post('/', function(req, res, next) {
     if (req.body.__action == 'edit_total_score_perc') {
         const course_instance_id = res.locals.course_instance.id;
         const assessment_instance_id = req.body.assessment_instance_id;
-        course.checkBelongs(assessment_instance_id, course_instance_id, (err) => {
-            if (ERR(err, next)) return;
-            
+        const create_instance_on_grading = req.body.create_instance_on_grading;
+        if (create_instance_on_grading) {
             let params = [
                 req.body.assessment_instance_id,
                 req.body.score_perc,
                 res.locals.authn_user.user_id,
-                null,
-                null
+                req.body.assessment_id,
+                req.body.user_id,
             ];
+
             sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
                 if (ERR(err, next)) return;
-                
+
                 params = {
-                    assessment_instance_id: req.body.assessment_instance_id,
+                    assessment_instance_id: _result.assessment_instance_id,
                 };
-                
+
                 sqldb.query(sql.assessment_instance_score, params, function(err, result) {
                     if (ERR(err, next)) return;
                     res.send(JSON.stringify(result.rows));
                 });
             });
-        });
+        } else {
+            course.checkBelongs(assessment_instance_id, course_instance_id, (err) => {
+                if (ERR(err, next)) return;
+
+                let params = [
+                    req.body.assessment_instance_id,
+                    req.body.score_perc,
+                    res.locals.authn_user.user_id,
+                    null,
+                    null,
+                ];
+                sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
+                    if (ERR(err, next)) return;
+
+                    params = {
+                        assessment_instance_id: req.body.assessment_instance_id,
+                    };
+
+                    sqldb.query(sql.assessment_instance_score, params, function(err, result) {
+                        if (ERR(err, next)) return;
+                        res.send(JSON.stringify(result.rows));
+                    });
+                });
+            });
+        }
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }

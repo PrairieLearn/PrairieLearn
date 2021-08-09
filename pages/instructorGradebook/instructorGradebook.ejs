@@ -47,6 +47,9 @@
                     html: true,
                     content: function() {
                         var that = this
+                        var assessmentId = $(this).data('aid')
+                        var userId = $(this).data('uid')
+                        var createInstanceOnGrading = $(this).data('ci-og')
                         var assessmentInstanceId = $(this).data('ai-id')
                         var score = $(this).data('score')
                         var otherUsers = $(this).data('other-users')
@@ -54,6 +57,9 @@
                         form.append('<input type="hidden" name="__action" value="edit_total_score_perc">')
                         form.append('<input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">')
                         form.append('<input type="hidden" name="assessment_instance_id" value="' + assessmentInstanceId + '">')
+                        form.append('<input type="hidden" name="assessment_id" value="' + assessmentId + '">')
+                        form.append('<input type="hidden" name="user_id" value="' + userId + '">')
+                        form.append('<input type="hidden" name="create_instance_on_grading" value="' + createInstanceOnGrading + '">')
                         var formGroup = $('<div class="form-group">')
                         var inputGroup = $('<div class="input-group">')
                         inputGroup.append('<input type="text" class="form-control" name="score_perc" value="' + score + '">')
@@ -81,7 +87,7 @@
                                 data.forEach(score => {
                                     $('#gradebook-table').bootstrapTable('updateCellByUniqueId', {
                                         id: score.user_id,
-                                        field: `score_${score.assessment_id}`,
+                                        field: `score_${assessmentId}`,
                                         value: score.score_perc,
                                     });
                                 })
@@ -106,13 +112,26 @@
     });
     function gradeFormatter(score, row, index, field) {
         var assessment_instance_id = row[field + '_ai_id'];
+        var create_instance_on_grading = row[field + '_ci_og'];
+        var user_id = row[field + '_uid'];
+        var assessment_id = row[field + '_aid'];
         var other_users = _.escape(JSON.stringify(row[field + '_other']));
         if (score == null) {
-            return "—";
+            var text = "-";
+            if (create_instance_on_grading) {
+                text += `<button type="button" class="btn btn-xs btn-secondary edit-score ml-1" tabindex="0"
+                                 data-aid="${assessment_id}" data-uid="${user_id}" data-ci-og="${create_instance_on_grading}"
+                                 data-ai-id="-1" data-score="0"
+                                 data-other-users="${other_users}">
+                           <i class="bi-pencil-square" aria-hidden="true"></i>
+                         </button>`;
+            }
+            return text;
         } else {
             var text = `<a href="<%= urlPrefix %>/assessment_instance/${assessment_instance_id}">${Math.floor(score)}%</a>`;
             if (<%= authz_data.has_instructor_edit %>) {
                 text += `<button type="button" class="btn btn-xs btn-secondary edit-score ml-1" tabindex="0"
+                                 data-aid="${assessment_id}" data-uid="${user_id}" data-ci-og="${create_instance_on_grading}"
                                  data-ai-id="${assessment_instance_id}" data-score="${score}"
                                  data-other-users="${other_users}">
                            <i class="bi-pencil-square" aria-hidden="true"></i>

@@ -12,7 +12,11 @@ ORDER BY (aset.number, a.order_by, a.id);
 -- BLOCK user_scores
 WITH
 course_assessments AS (
-    SELECT a.id,a.order_by AS assessment_order_by,aset.number AS assessment_set_number
+    SELECT
+        a.id,
+        a.order_by AS assessment_order_by,
+        aset.number AS assessment_set_number,
+        a.create_instance_on_grading AS create_instance_on_grading
     FROM assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     WHERE a.deleted_at IS NULL
@@ -57,6 +61,7 @@ scores AS (
     SELECT u.user_id,u.uid,u.uin,u.user_name,u.role,
         a.id AS assessment_id,a.assessment_order_by,a.assessment_set_number,
         s.score_perc, s.assessment_instance_id,
+        a.create_instance_on_grading AS create_instance_on_grading,
         ARRAY(
             SELECT ou.uid
             FROM group_users AS ogu
@@ -75,7 +80,8 @@ SELECT user_id,uid,uin,user_name,role,
             'score_perc', score_perc,
             'assessment_id', assessment_id,
             'assessment_instance_id', assessment_instance_id,
-            'uid_other_users_group', uid_other_users_group
+            'uid_other_users_group', uid_other_users_group,
+            'create_instance_on_grading', create_instance_on_grading
         )
         ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
     ) AS scores

@@ -9,8 +9,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 const helperQuestion = require('./helperQuestion');
 
-const siteUrl = 'http://localhost:' + config.serverPort;
-const baseUrl = siteUrl + '/pl';
 const locals = {};
 const maxPoints = 1;
 
