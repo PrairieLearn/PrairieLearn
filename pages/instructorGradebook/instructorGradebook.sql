@@ -45,6 +45,14 @@ user_ids AS (
     (SELECT DISTINCT user_id FROM course_scores)
     UNION
     (SELECT user_id FROM enrollments WHERE course_instance_id = $course_instance_id)
+    UNION
+    (SELECT user_id FROM course_permissions WHERE course_id = $course_id AND course_role > 'None')
+    UNION
+    (SELECT cp.user_id
+     FROM course_instance_permissions cip
+          JOIN course_permissions cp ON (cp.id = cip.course_permission_id)
+     WHERE cip.course_instance_id = $course_instance_id
+           AND cip.course_instance_role > 'None')
 ),
 course_users AS (
     SELECT u.user_id,u.uid,u.uin,u.name AS user_name,users_get_displayed_role(u.user_id, $course_instance_id) AS role

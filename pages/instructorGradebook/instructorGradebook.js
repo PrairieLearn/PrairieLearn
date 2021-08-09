@@ -31,7 +31,10 @@ router.get('/', function(req, res, next) {
 
 router.get('/raw_data.json', function(req, res, next) {
     if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
-    var params = {course_instance_id: res.locals.course_instance.id};
+    var params = {
+        course_id: res.locals.course.id,
+        course_instance_id: res.locals.course_instance.id,
+    };
     sqldb.query(sql.user_scores, params, function(err, result) {
         if (ERR(err, next)) return;
 
