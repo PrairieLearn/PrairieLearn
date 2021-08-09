@@ -34,6 +34,7 @@ jobs:
           context: images/plbase
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/plbase:latest
 
       ######################################################################################################
@@ -44,6 +45,7 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/prairielearn:latest
 
       ######################################################################################################
@@ -57,6 +59,7 @@ jobs:
           context: graders/c
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/grader-c:latest
 
       ######################################################################################################
@@ -70,6 +73,7 @@ jobs:
           context: graders/java
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/grader-java:latest
 
       ######################################################################################################
@@ -83,6 +87,7 @@ jobs:
           context: graders/python
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/grader-python:latest
 
       ######################################################################################################
@@ -96,6 +101,7 @@ jobs:
           context: graders/r
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/grader-r:latest
 
       ######################################################################################################
@@ -109,6 +115,7 @@ jobs:
           context: workspaces/jupyterlab
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/workspace-jupyterlab:latest
 
       ######################################################################################################
@@ -122,4 +129,5 @@ jobs:
           context: workspaces/xtermjs
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/workspace-xtermjs:latest
