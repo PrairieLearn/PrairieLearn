@@ -96,10 +96,6 @@
             "description": "Options that define how the question will work, specific to the individual question type.",
             "type": "object"
         },
-        "parameters": {
-            "description": "Information on parameters that the question is prepared to accept from questionParams sources.",
-            "type": "object"
-        },
         "externalGradingOptions": {
             "description": "Options for externally graded questions.",
             "type": "object",
