@@ -14,6 +14,7 @@ async function loadNewsItems() {
     const regex = /^([0-9]+)_.+$/;
     const dirs = await fsPromises.readdir(__dirname);
     await async.each(dirs, async (dir) => {
+        console.log(dirs)
         const infoFilename = path.join(__dirname, dir, 'info.json');
         let info;
         try {
