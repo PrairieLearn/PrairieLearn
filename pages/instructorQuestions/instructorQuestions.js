@@ -12,6 +12,9 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const { QuestionAddEditor } = require('../../lib/editors');
 const fs = require('fs-extra');
 const async = require('async');
+const _ = require('lodash');
+const { default: AnsiUp } = require('ansi_up');
+const ansiUp = new AnsiUp();
 
 router.get('/', function(req, res, next) {
     const course_instance_id = res.locals.course_instance ? res.locals.course_instance.id : null;
@@ -37,7 +40,13 @@ router.get('/', function(req, res, next) {
             };
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.questions = result.rows;
+                res.locals.questions = _.map(result.rows, row => {
+                    if (row.sync_errors)
+                        row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
+                    if (row.sync_warnings)
+                        row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+                    return row;
+                });
                 callback(null);
             });
         },
