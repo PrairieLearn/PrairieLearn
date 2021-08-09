@@ -237,17 +237,6 @@ function browseDirectory(file_browser, callback) {
 function browseFile(file_browser, callback) {
     async.waterfall([
         (callback) => {
-            util.callbackify(editorUtil.getErrorsAndWarningsForFilePath)(file_browser.paths.courseId, file_browser.paths.workingPathRelativeToCourse, (err, data) => {
-                if (ERR(err, callback)) return;
-                const ansiUp = new AnsiUp();
-                file_browser.sync_errors = data.errors;
-                file_browser.sync_errors_ansified = ansiUp.ansi_to_html(file_browser.sync_errors);
-                file_browser.sync_warnings = data.warnings;
-                file_browser.sync_warnings_ansified = ansiUp.ansi_to_html(file_browser.sync_warnings);
-                callback(null);
-            });
-        },
-        (callback) => {
             fs.readFile(file_browser.paths.workingPath, (err, contents) => {
                 if (ERR(err, callback)) return;
                 callback(null, contents);
