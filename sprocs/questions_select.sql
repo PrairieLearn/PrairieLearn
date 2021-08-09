@@ -17,7 +17,7 @@ BEGIN
         IF NOT FOUND THEN RAISE EXCEPTION 'no such question_id: %', question_id; END IF;
     ELSE 
         SELECT to_jsonb(q.*) 
-            || jsonb_build_object('question_params', COALESCE(pc.question_params, '{}'::jsonb)
+            || jsonb_build_object('question_params', COALESCE(pc.question_params, '{}'::jsonb))
                 || COALESCE(ci.question_params, '{}'::jsonb)
                 || COALESCE(aset.question_params, '{}'::jsonb)
                 || COALESCE(z.question_params, '{}'::jsonb)
