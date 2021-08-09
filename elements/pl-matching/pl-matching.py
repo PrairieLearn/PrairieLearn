@@ -13,7 +13,6 @@ PARTIAL_CREDIT_DEFAULT = True
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
-HIDE_LETTER_KEYS_DEFAULT = False
 HIDE_SCORE_BADGE_DEFAULT = False
 BLANK_DEFAULT = False
 BLANK_ANSWER = ' '
@@ -224,10 +223,7 @@ def parse(element_html, data):
         elif student_answer is None:
             data['format_errors'][expected_html_name] = 'No answer was submitted.'
         else:
-            try:
-                if not legal_answer(student_answer, counter_type, display_options):
-                    data['format_errors'][expected_html_name] = 'The submitted answer is invalid.'
-            except Exception:
+            if not legal_answer(student_answer, counter_type, display_options):
                 data['format_errors'][expected_html_name] = 'The submitted answer is invalid.'
 
 
@@ -334,7 +330,6 @@ def render(element_html, data):
                 'statements': statement_set,
                 'options': option_set,
                 'display_score_badge': score is not None,
-                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT),
                 'counter_type': counter_type,
             }
 
@@ -379,7 +374,6 @@ def render(element_html, data):
                 'answer': True,
                 'statements': statement_set,
                 'options': option_set,
-                'hide_letter_keys': pl.get_boolean_attrib(element, 'hide-letter-keys', HIDE_LETTER_KEYS_DEFAULT),
                 'counter_type': counter_type,
             }
             with open('pl-matching.mustache', 'r', encoding='utf-8') as f:
@@ -414,8 +408,7 @@ def grade(element_html, data):
         score = 1
     elif partial_credit:
         # EDC grading
-        number_wrong = number_statements - num_correct
-        score = 1 - 1.0 * number_wrong / number_statements
+        score = num_correct / number_statements
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
 
