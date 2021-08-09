@@ -165,6 +165,7 @@ def prepare(element_html, data):
             # Add a sample of the distractors.
             needed_options.extend(random.sample(distractors, more_needed))
         options = needed_options
+        random.shuffle(options)
 
     elif len(needed_options) > number_options:
         # The limit is set below the # of options needed.
