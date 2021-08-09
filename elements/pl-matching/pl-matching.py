@@ -26,7 +26,7 @@ def get_form_name(answers_name, index):
 
 def alpha_counter(i, letter_a):
     """Converts a base-10 integer to base 26, using letter_a as the "0" digit."""
-    result = ""
+    result = ''
     while i > 0:
         i -= 1
         result = chr(ord(letter_a) + i % 26) + result
