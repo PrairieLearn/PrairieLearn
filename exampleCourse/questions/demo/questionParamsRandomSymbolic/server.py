@@ -25,6 +25,8 @@ def generate(data):
     # Modify data and return
     data["params"]["x"] = sympy.latex(x)
     data["params"]["f"] = sympy.latex(f)
+    data["params"]["coeff_lower_bound"] = coeff_lower_bound
+    data["params"]["coeff_upper_bound"] = coeff_upper_bound
     data["correct_answers"]["df"] = str(df)
 
 if __name__ == "__main__":

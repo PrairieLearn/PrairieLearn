@@ -20,12 +20,14 @@
         {
             "title": "Questions parameterized by the assessment",
             "questions": [
-                {"id": "demo/questionParamsRandomSymbolic", "points": 1,
-                 "questionParams": {
-                     "coeff_lower_bound": 3
-                 }}
+                {
+                    "id": "demo/questionParamsRandomSymbolic", 
+                    "points": 1,
+                    "questionParams": {
+                        "coeff_lower_bound": 3
+                    }
+                }
             ]
         }
-    ],
-    "text": "As an instructor, you will view questions parameterized only by the course they are in. If you view as a student, the questions will inherit parameters from the course instance and assessment."
+    ]
 }

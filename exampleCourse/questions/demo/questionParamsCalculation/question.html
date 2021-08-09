@@ -1,7 +1,10 @@
 <pl-question-panel>
-  <p> Consider two numbers in the range $\left[ {{params.lower_bound}}, {{params.upper_bound}} \right]$,
-      $a = {{params.a}}$ and $b = {{params.b}}$.</p>
+  <p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
   <p> What is the sum $c = a + b$?</p>
+  <p>
+    <i>Note to instructor:</i> based on questions parameters, 
+    $a$ and $b$ are in the range $\left[ {{params.lower_bound}}, {{params.upper_bound}} \right]$." 
+  </p>
 </pl-question-panel>
 
 <pl-number-input answers-name="c" comparison="sigfig" digits="3" label="$c=$"></pl-number-input>
