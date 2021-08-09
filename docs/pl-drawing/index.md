@@ -906,6 +906,51 @@ Attribute | Type | Default | Description
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
+### `pl-paired-vector` element
+
+#### Sample element
+
+```html
+<pl-drawing width="200" height="200">
+    <pl-drawing-initial>
+        <pl-point x1="40" y1="40" ></pl-point>
+        <pl-point x1="140" y1="140" ></pl-point>
+        <pl-line x1="20" y1="20" angle="45" width="240" dashed-size="4" stroke-width="1"></pl-line>
+        <pl-paired-vector x1="40" y1="40" x2="140" y2="140" width="60" angle1="45" angle2="225"></pl-paired-vector>
+    </pl-drawing-initial>
+</pl-drawing>
+```
+<img src="pl-paired-vector.png" width=50%>
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`x1` | float | 2 * grid_size | `x` position for the anchor point of the first vector, i.e., the horizontal distance from the left border of the canvas.
+`y1` | float | 1 * grid_size | `y` position for the anchor point of the first vector , i.e., the vertical distance from the top border of the canvas.
+`x1` | float | 3 * grid_size | `x` position for the anchor point of the second vector, i.e., the horizontal distance from the left border of the canvas.
+`y1` | float | 2 * grid_size | `y` position for the anchor point of the second vector , i.e., the vertical distance from the top border of the canvas.
+`width`  | float | 80 | Length of the vectors.
+`angle1` | float | 0 | Angle of rotation around the starting point of the first vector. Angles are measured from the horizontal axis and are positive clockwise.
+`angle2` | float | 0 | Angle of rotation around the starting point of the second vector. Angles are measured from the horizontal axis and are positive clockwise.
+`label` | string | - | Text to label the vectors.
+`offsetx` | float | 2 | Horizontal distance of `label` from the head of the vectors.
+`offsety` | float | 2 | Vertical distance of `label` from the head of the vectors.
+`stroke-width` | float | 3 | Set the width of the stroke.
+`arrow-head-width` | float | 1 | Scale factor for the width of the arrow head.
+`arrow-head-length` | float | 1 | Scale factor for the length of the arrow head.
+`disregard-sense` | boolean| true | When `disregard-sense=true`, the correctness of the vector only considers the position of the anchor point and direction (i.e. the vector in the opposite direction is also considered as correct). When `disregard-sense=false` both the location of the anchor and the angle should match within the tolerance.
+`draw-error-box` | boolean | - | Draw the error bounding box, where the location of the anchor point is accepted as correct.
+`offset-forward` | float | 0 | Length of the bounding box measured from the anchor point in the same orientation of the vector.
+`offset-backward` | float | width | Length of the bounding box measured from the anchor point in the opposite orientation of the vector.
+`optional-grading` | boolean | false | When `true`, the grading algorithm will not assign point values for the object, but it won't penalize either.
+
+#### Example implementations
+
+- [demo/drawing/inclinedPlane-reaction]: FBD that includes a single paired vector
+
+- [demo/drawing/frame-exploded]: Example that entire FBD of a structure and individual FBDs of the components
+
 
 
 ### `pl-arc-vector` element

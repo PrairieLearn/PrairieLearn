@@ -573,7 +573,7 @@ class PairedVector(BaseElement):
             top1 -= w * math.sin(theta2)
             top2 -= w * math.sin(theta2)
 
-        # Error box for grading
+        # Error box for grading; uses disregard-sense True by default (unlike pl-vector)
         disregard_sense = pl.get_boolean_attrib(el, 'disregard-sense', True)
         if disregard_sense:
             offset_forward_default = w
