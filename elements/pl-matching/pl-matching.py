@@ -44,7 +44,7 @@ def legal_answer(answer, counter_type, options):
     elif counter_type == 'decimal':
         return 1 <= answer <= len(options)
     else:
-        raise Exception('Illegal counter_type in pl-matching element.')
+        return False
 
 
 def get_select_options(options_list, selected_value):
