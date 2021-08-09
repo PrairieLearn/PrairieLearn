@@ -1,4 +1,4 @@
-name: "Build and push prairielearn/prairielearn"
+name: Images
 
 on:
   push:
