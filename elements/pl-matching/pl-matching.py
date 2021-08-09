@@ -93,10 +93,10 @@ def categorize_matches(element, data):
             child_html = pl.inner_html(child)
             option_name = pl.get_string_attrib(child, 'name', child_html)
 
-            # An option tuple has: index of appearance in the pl-matching element;
+            # An option object has: index of appearance in the pl-matching element;
             # the name attribute; and the html content.
-            option_tuple = (index, option_name, child_html)
-            options[option_name] = option_tuple
+            option = {'index': index, 'name': option_name, 'html': child_html}
+            options[option_name] = option
             index += 1
 
         elif child.tag in ['pl-statement', 'pl_statement']:
@@ -106,12 +106,10 @@ def categorize_matches(element, data):
             if match_name not in options:
                 raise Exception(f'pl-statement "match" attribute of {match_name} does not match any of the pl-option elements.')
 
-            _, match_name, _ = options[match_name]
-
-            # A statement tuple has: the name attribute of the correct matching option; and
+            # A statement object has: the name attribute of the correct matching option; and
             # the html content.
-            statement_tuple = (match_name, child_html)
-            statements.append(statement_tuple)
+            statement = {'match': match_name, 'html': child_html}
+            statements.append(statement)
 
     return list(options.values()), statements
 
@@ -147,8 +145,8 @@ def prepare(element_html, data):
 
     # Organize the list of options to use.
     # First, select all the options associated with the chosen statements.
-    needed_options_keys = set((s[0] for s in statements))
-    needed_options, distractors = partition(options, lambda opt: opt[1] in needed_options_keys)
+    needed_options_keys = set((s['match'] for s in statements))
+    needed_options, distractors = partition(options, lambda opt: opt['name'] in needed_options_keys)
 
     if len(needed_options) < number_options:
         # The limit is set above the # of options needed to match the chosen statements.
@@ -177,29 +175,29 @@ def prepare(element_html, data):
         random.shuffle(options)
 
     if nota:
-        options.append((len(options), '__nota__', 'None of the above'))
+        options.append({'index': len(options), 'name': '__nota__', 'html': 'None of the above'})
 
     # Build the options to display to the student.
     chosen_option_names = []
     display_options = []
-    for (i, (_, option_name, html)) in enumerate(options):
-        keyed_option = {'key': option_name, 'html': html}
+    for (i, opt) in enumerate(options):
+        keyed_option = {'key': opt['name'], 'html': opt['html']}
         display_options.append(keyed_option)
-        chosen_option_names.append(option_name)
+        chosen_option_names.append(opt['name'])
 
     # Build the statements to display to the student.
     display_statements = []
     correct_matches = []
-    for (i, (match_name, html)) in enumerate(statements):
+    for (i, statement) in enumerate(statements):
         # Check if the matched option was removed from the display_options to make room for
         # none-of-the-above option.
-        if nota and match_name not in chosen_option_names:
+        if nota and statement['match'] not in chosen_option_names:
             match_index = len(options) - 1
         else:
-            match_index = chosen_option_names.index(match_name)
+            match_index = chosen_option_names.index(statement['match'])
 
-        keyed_answer = {'key': str(i), 'html': html, 'match': match_name}
-        display_statements.append(keyed_answer)
+        keyed_statement = {'key': str(i), 'html': statement['html'], 'match': statement['match']}
+        display_statements.append(keyed_statement)
         correct_matches.append(match_index + 1)
 
     data['params'][name] = (display_statements, display_options)
@@ -249,13 +247,13 @@ def render(element_html, data):
         display_score_badge = score is not None and show_answer_feedback
 
         statement_set = []
-        for i, answer in enumerate(display_statements):
-            form_name = get_form_name(name, answer['key'])
+        for i, statement in enumerate(display_statements):
+            form_name = get_form_name(name, statement['key'])
             student_answer = submitted_answers.get(form_name, None)
             correct_answer = get_counter(data['correct_answers'].get(name)[i], counter_type)
 
             statement_html = {
-                'html': answer['html'].strip(),
+                'html': statement['html'].strip(),
                 'options': get_select_options(dropdown_options, submitted_answers.get(form_name, None)),
                 'name': form_name,
                 'display_score_badge': display_score_badge,
@@ -300,15 +298,15 @@ def render(element_html, data):
             partial_score = data['partial_scores'].get(name, {'score': None})
             score = partial_score.get('score', None)
             statement_set = []
-            for i, answer in enumerate(display_statements):
-                form_name = get_form_name(name, answer['key'])
+            for i, statement in enumerate(display_statements):
+                form_name = get_form_name(name, statement['key'])
                 student_answer = submitted_answers.get(form_name, None)
                 correct_answer = get_counter(data['correct_answers'].get(name)[i], counter_type)
 
                 parse_error = data['format_errors'].get(form_name, None)
                 display_score_badge = parse_error is None and score is not None and show_answer_feedback
                 statement_html = {
-                    'html': answer['html'].strip(),
+                    'html': statement['html'].strip(),
                     'disabled': 'disabled',
                     'options': get_select_options(dropdown_options, submitted_answers.get(form_name, None)),
                     'display_score_badge': display_score_badge,
@@ -352,12 +350,12 @@ def render(element_html, data):
             correct_answer_list = data['correct_answers'].get(name, [])
 
             statement_set = []
-            for i, answer in enumerate(display_statements):
-                form_name = get_form_name(name, answer['key'])
+            for i, statement in enumerate(display_statements):
+                form_name = get_form_name(name, statement['key'])
                 correct_answer = correct_answer_list[i]
 
                 statement_html = {
-                    'html': answer['html'].strip(),
+                    'html': statement['html'].strip(),
                     'options': [{'value': get_counter(correct_answer, counter_type)}],
                 }
                 statement_set.append(statement_html)
