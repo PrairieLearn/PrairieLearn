@@ -71,7 +71,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         student_group_create: !!assessment.studentGroupCreate,
         student_group_join: !!assessment.studentGroupJoin,
         student_group_leave: !!assessment.studentGroupLeave,
-        question_params: assessment.questionParams || {},
+        question_params: assessment.questionParams || null,
     };
 
     const allowAccess = assessment.allowAccess || [];
