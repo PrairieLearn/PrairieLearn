@@ -32,26 +32,6 @@
           });
       });
 
-      function qidFormatter(qid, question) {
-          var text = '';
-          if (question.sync_errors) {
-              text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
-                               data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(question.sync_errors_ansified)}</pre>">
-                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                  </button>`;
-          } else if (question.sync_warnings) {
-              text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(question.sync_warnings_ansified)}</pre>">
-                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-                  </button>`;
-          }
-          text += `<a class="formatter-data" href="<%= urlPrefix %>/question/${question.id}/">${_.escape(question.qid)}</a>`;
-          if (question.open_issue_count > 0) {
-              text += `<a class="badge badge-pill badge-danger ml-1" href="<%= urlPrefix %>/course_admin/issues?q=qid%3A${_.escape(question.qid)}">${question.open_issue_count}</a>`;
-          }
-          return text;
-      }
-
       function topicList() {
           var data = $('#questionsTable').bootstrapTable('getData');
           return _.keyBy(_.map(data, row => row.topic.name));
@@ -73,6 +53,26 @@
           return _.keyBy(_.map(assessments, row => row.label));
       }
       
+      function qidFormatter(qid, question) {
+          var text = '';
+          if (question.sync_errors) {
+              text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
+                               data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(question.sync_errors_ansified)}</pre>">
+                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                  </button>`;
+          } else if (question.sync_warnings) {
+              text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(question.sync_warnings_ansified)}</pre>">
+                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                  </button>`;
+          }
+          text += `<a class="formatter-data" href="<%= urlPrefix %>/question/${question.id}/">${_.escape(question.qid)}</a>`;
+          if (question.open_issue_count > 0) {
+              text += `<a class="badge badge-pill badge-danger ml-1" href="<%= urlPrefix %>/course_admin/issues?q=qid%3A${_.escape(question.qid)}">${question.open_issue_count}</a>`;
+          }
+          return text;
+      }
+
       function topicFormatter(topic, question) {
           return `<span class="badge color-${topic.color}">${_.escape(topic.name)}</span>`;
       }
@@ -87,7 +87,7 @@
 
       function assessmentsByCourseInstanceFormatter(ci_id, value, question) {
           var ci_assessments = _.filter(question.assessments ?? [], assessment => assessment.course_instance_id == ci_id);
-          return _.map(ci_assessments, assessment => `<a href="<%= urlPrefix %>/assessment/${assessment.assessment_id}" class="badge color-${assessment.color} color-hover" onclick="event.stopPropagation();"><span>${_.escape(assessment.label)}</span></a>`).join(' ');
+          return _.map(ci_assessments, assessment => `<a href="<%= plainUrlPrefix %>/course_instance/${ci_id}/instructor/assessment/${assessment.assessment_id}" class="badge color-${assessment.color} color-hover" onclick="event.stopPropagation();"><span>${_.escape(assessment.label)}</span></a>`).join(' ');
       }
 
       function genericFilterSearch(search, value, field, data) {
