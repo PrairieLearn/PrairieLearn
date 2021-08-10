@@ -331,8 +331,7 @@ def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    data['params']['test'] = "woah"
-
+    
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
 
