@@ -11,7 +11,11 @@ WITH issue_count AS (
     GROUP BY i.question_id
 )
 SELECT
-    q.*,
+    q.id,
+    q.qid,
+    q.title,
+    q.sync_errors,
+    q.sync_warnings,
     case when q.type = 'Freeform' then 'v3' else 'v2 (' || q.type || ')' end AS display_type,
     coalesce(issue_count.open_issue_count, 0) AS open_issue_count,
     row_to_json(top) AS topic,
