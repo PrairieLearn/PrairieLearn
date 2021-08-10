@@ -17,7 +17,6 @@
       $(function() {
           $('#questionsTable').bootstrapTable({
               //url: '<%= urlPrefix %>/<%= navPage %>/gradebook/raw_data.json',
-              data: <%- JSON.stringify(questions) %>,
               onPreBody: function() {
               },
               onResetView: function () {
@@ -155,6 +154,7 @@
         </div>
 
         <table id="questionsTable"
+               data-data="<%= JSON.stringify(questions) %>"
                data-classes="table table-sm table-hover table-bordered"
                data-thead-classes="thead-light"
                data-filter-control="true"
