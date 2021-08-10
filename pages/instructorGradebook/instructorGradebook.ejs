@@ -141,7 +141,7 @@
         padding: 0 1em 0 1em;
     }
     div.pagination {
-        margin: 0 0 0 1em;
+        margin: 0 1em 0 0;
     }
   </style>
   <body>
@@ -162,6 +162,7 @@
         <table id="gradebook-table"
                data-unique-id="user_id"
                data-classes="table table-sm table-hover table-bordered"
+               data-show-button-text="true"
                data-minimum-count-columns="0"
                data-search="true"
                data-show-columns="true"
@@ -169,6 +170,7 @@
                data-show-refresh="true"
                data-pagination="true"
                data-pagination-v-align="top"
+               data-pagination-detail-h-align="right"
                data-page-list="[50,100,200,500,unlimited]"
                data-page-size="50"
                data-smart-display="false"
