@@ -40,7 +40,7 @@
 
       function tagsList() {
           var data = $('#questionsTable').bootstrapTable('getData');
-          return _.keyBy(_.map(_.flatten(_.filter(_.map(data, row => row.tags), row => row), 1), row => row.name));
+          return _.keyBy(_.map(_.flatten(_.filter(_.map(data, row => row.tags))), row => row.name));
       }
 
       function versionList() {
@@ -50,7 +50,7 @@
 
       function assessmentsByCourseInstanceList(ci_id) {
           var data = $('#questionsTable').bootstrapTable('getData');
-          var assessments = _.filter(_.flatten(_.map(data, row => row.assessments), 1), row => row && row.course_instance_id == ci_id);
+          var assessments = _.filter(_.flatten(_.map(data, row => row.assessments)), row => row && row.course_instance_id == ci_id);
           return _.keyBy(_.map(assessments, row => row.label));
       }
       
