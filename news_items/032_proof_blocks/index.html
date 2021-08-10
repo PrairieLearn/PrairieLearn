@@ -7,7 +7,7 @@
      margin-bottom: 15px;
  }
  .code-block {
-     width: 60%;
+     width: 90%;
      margin-left: auto;
      margin-right: auto;
      overflow: hidden;
@@ -26,17 +26,17 @@
 </style>
 
 <p>
-    Due to the work of Seth Poulsen, with design input from myself,
-    <a href="https://github.com/">Mahesh Viswanathan</a>,
-    and <a href="https://github.com/">Geoffrey Herman</a>,
+    Due to the work of <a href="" >Seth Poulsen</a>, with design input from myself,
+    <a href="https://vmahesh.cs.illinois.edu/">Mahesh Viswanathan</a>,
+    and <a href="https://github.com/glherman">Geoffrey Herman</a>,
     the <code class="user-output">pl-order-blocks</code> element can now be used to grade
     problems where the dependence between the blocks is given by a directed acyclic graph (DAG) structure.
     When used of allowing students to construct mathematical proofs by dragging
     and dropping blocks, we call it <a href="https://www.proofblocks.org">Proof Blocks</a>.
     Special thanks also goes to
-    <a href="https://github.com/">Benjamin Cosman</a>,
-    <a href="https://github.com/">Patrick Lin</a>,
-    and <a href="https://github.com/">Yael Gertner</a>,
+    <a href="https://github.com/BenjaminCosman">Benjamin Cosman</a>,
+    <a href="https://patrickl.in/">Patrick Lin</a>,
+    and <a href="https://github.com/ygertner">Yael Gertner</a>,
     for being willing to use the development version of Proof Blocks with their students, giving us helpful
     feedback along the way.
 </p>
@@ -51,27 +51,31 @@
 </p>
 
 <div class="code-block rounded">
-<pre>
-&lt;pl-order-blocks answers-name="proof1" source-blocks-order="random" grading-method="dag" solution-placement="bottom"&gt;
-    &lt;pl-answer correct="true" tag="1" depends="" &gt; Let $m \in \mathbb{N}$ be even. &lt;/pl-answer&gt;
-    &lt;pl-answer correct="true" tag="2" depends="" &gt; Let $n \in \mathbb{N}$ be even. &lt;/pl-answer&gt;
-    &lt;pl-answer correct="true" tag="3" depends="1"&gt; Then $\exists p \in \mathbb{N}$ such that $m = 2p$&lt;/pl-answer&gt;
-    &lt;pl-answer correct="true" tag="4" depends="2"&gt; Then $\exists q \in \mathbb{N}$ such that $n = 2q$&lt;/pl-answer&gt;
-    &lt;pl-answer correct="true" tag="5" depends="3,4"&gt;$m + n = 2p + 2q = 2(p + q)$&lt;/pl-answer&gt;
-    &lt;pl-answer correct="true" tag="6" depends="5"&gt; Since $m + n$ can be written as $2$ times a natural number, $m + n$ is even&lt;/pl-answer&gt;
-  &lt;/pl-order-blocks&gt; </pre>
+<pre style="padding: 0.5rem; margin-bottom: 0px; line-height: 125%;">
+&lt;<span style="color: #062873; font-weight: bold">pl-order-blocks</span> <span style="color: #4070a0">answers-name</span><span style="color: #666666">=</span><span style="color: #4070a0">"proof1"</span> <span style="color: #4070a0">source-blocks-order</span><span style="color: #666666">=</span><span style="color: #4070a0">"random"</span>
+                <span style="color: #4070a0">grading-method</span><span style="color: #666666">=</span><span style="color: #4070a0">"dag"</span> <span style="color: #4070a0">solution-placement</span><span style="color: #666666">=</span><span style="color: #4070a0">"bottom"</span>&gt;
+  &lt;<span style="color: #062873; font-weight: bold">pl-answer</span> <span style="color: #4070a0">correct</span><span style="color: #666666">=</span><span style="color: #4070a0">"true"</span> <span style="color: #4070a0">tag</span><span style="color: #666666">=</span><span style="color: #4070a0">"1"</span> <span style="color: #4070a0">depends</span><span style="color: #666666">=</span><span style="color: #4070a0">""</span> &gt; Let $m \in \mathbb{N}$ be even. &lt;/<span style="color: #062873; font-weight: bold">pl-answer</span>&gt;
+  &lt;<span style="color: #062873; font-weight: bold">pl-answer</span> <span style="color: #4070a0">correct</span><span style="color: #666666">=</span><span style="color: #4070a0">"true"</span> <span style="color: #4070a0">tag</span><span style="color: #666666">=</span><span style="color: #4070a0">"2"</span> <span style="color: #4070a0">depends</span><span style="color: #666666">=</span><span style="color: #4070a0">""</span> &gt; Let $n \in \mathbb{N}$ be even. &lt;/<span style="color: #062873; font-weight: bold">pl-answer</span>&gt;
+  &lt;<span style="color: #062873; font-weight: bold">pl-answer</span> <span style="color: #4070a0">correct</span><span style="color: #666666">=</span><span style="color: #4070a0">"true"</span> <span style="color: #4070a0">tag</span><span style="color: #666666">=</span><span style="color: #4070a0">"3"</span> <span style="color: #4070a0">depends</span><span style="color: #666666">=</span><span style="color: #4070a0">"1"</span>&gt; Then $\exists p \in \mathbb{N}$ such that $m = 2p$&lt;/<span style="color: #062873; font-weight: bold">pl-answer</span>&gt;
+  &lt;<span style="color: #062873; font-weight: bold">pl-answer</span> <span style="color: #4070a0">correct</span><span style="color: #666666">=</span><span style="color: #4070a0">"true"</span> <span style="color: #4070a0">tag</span><span style="color: #666666">=</span><span style="color: #4070a0">"4"</span> <span style="color: #4070a0">depends</span><span style="color: #666666">=</span><span style="color: #4070a0">"2"</span>&gt; Then $\exists q \in \mathbb{N}$ such that $n = 2q$&lt;/<span style="color: #062873; font-weight: bold">pl-answer</span>&gt;
+  &lt;<span style="color: #062873; font-weight: bold">pl-answer</span> <span style="color: #4070a0">correct</span><span style="color: #666666">=</span><span style="color: #4070a0">"true"</span> <span style="color: #4070a0">tag</span><span style="color: #666666">=</span><span style="color: #4070a0">"5"</span> <span style="color: #4070a0">depends</span><span style="color: #666666">=</span><span style="color: #4070a0">"3,4"</span>&gt;$m + n = 2p + 2q = 2(p + q)$&lt;/<span style="color: #062873; font-weight: bold">pl-answer</span>&gt;
+  &lt;<span style="color: #062873; font-weight: bold">pl-answer</span> <span style="color: #4070a0">correct</span><span style="color: #666666">=</span><span style="color: #4070a0">"true"</span> <span style="color: #4070a0">tag</span><span style="color: #666666">=</span><span style="color: #4070a0">"6"</span> <span style="color: #4070a0">depends</span><span style="color: #666666">=</span><span style="color: #4070a0">"5"</span>&gt; Since $m + n$ can be written as $2$ times a natural number,
+      $m + n$ is even&lt;/<span style="color: #062873; font-weight: bold">pl-answer</span>&gt;
+&lt;/<span style="color: #062873; font-weight: bold">pl-order-blocks</span>&gt;
+</pre>
 </div>
 
 <p>
     Our paper about Proof Blocks,
     <a href="https://sethpoulsen.github.io/papers/poulsen2021evaluating.pdf" style="font-style: italic;">Evaluating Proof Blocks Problems as Exam Questions</a>,
-    was awarded an Honorable Mention for best paper award at this years <a href="">International Computing Education Research Conference</a>.
+    was awarded an Honorable Mention for best paper award at this years
+    <a href="https://icer2021.acm.org/">International Computing Education Research Conference</a>.
     In the paper, we show that Proof Blocks problems give a substantial amount of information about student knowledge while being easier
     than written proof problems. Stay tuned for further research with Proof Blocks!
 </p>
 
 <p> To try Proof Blocks, see the <a href="https://www.prairielearn.org/pl/course/108/question/9063230/preview">
-    Proof Blocks demo question.
+    Proof Blocks demo question
   </a>.</p>
 
 <p> For more information, see the <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-block-element">pl-order-block documentation</a>. </p>
