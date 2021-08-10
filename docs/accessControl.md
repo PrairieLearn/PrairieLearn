@@ -224,13 +224,13 @@ In the example above, from January 1st to February 15th, students can see the as
 ```json
 "allowAccess": [
     {
-        "startDate": "2015-01-19T00:00:01",
-        "endDate": "2015-05-13T23:59:59"
+        "startDate": "2014-08-19T00:00:01",
+        "endDate": "2014-12-22T23:59:59"
     }
 ]
 ```
 
-The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` file. It says that students have access from Jan 19th to May 13th.
+The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` file. It says that students have access from Aug 19th to Dec 22nd.
 
 ## Exam example
 
@@ -268,14 +268,14 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
     {
         "uids": ["student1@illinois.edu", "student2@illinois.edu"],
         "credit": 100,
-        "startDate": "2020-03-31T11:00:00",
-        "endDate": "2020-03-31T11:59:59",
+        "startDate": "2014-09-31T11:00:00",
+        "endDate": "2014-09-31T11:59:59",
         "timeLimitMin": 50
     }
 ],
 ```
 
-The above `allowAccess` directive is appropriate for an `Exam` being taken by on-campus students in the CBTF and by remote students. First, anyone (i.e., on-campus students) can access the assessment in the CBTF (`"mode": "Exam"`) for full credit between Sept 7th to Sept 10th. Second, a defined set of students (remote students) can take the exam for full credit between the same dates. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by the CBTF proctors.
+The above `allowAccess` directive is appropriate for an `Exam` being taken by on-campus students in the CBTF and by remote students. First, anyone (i.e., on-campus students) can access the assessment in the CBTF (`"mode": "Exam"`) for full credit. Second, a defined set of students (remote students) can take the exam for full credit on Sept 10th. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by the CBTF proctors.
 
 The student's access will expire if they exceed the `timeLimitMin` minute duration of the exam or go past the configured `endDate` - whichever comes first. Time limits are visible to the student during the exam; endDate configurations are not. If the student tries to load an assessment page when the access rules no longer apply, they will receive an "Access denied" message.
 
@@ -285,6 +285,11 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
 "allowAccess": [
     {
         "mode": "Public",
+        "active": false,
+        "endDate": "2014-10-11T23:59:59"
+    },
+    {
+        "mode": "Public",
         "credit": 110,
         "startDate": "2014-10-12T00:00:01",
         "endDate": "2014-10-15T23:59:59"
@@ -292,21 +297,20 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
     {
         "mode": "Public",
         "credit": 100,
-        "startDate": "2014-10-12T00:00:01",
+        "startDate": "2014-10-16T00:00:01",
         "endDate": "2014-10-18T23:59:59"
     },
     {
         "mode": "Public",
         "credit": 80,
-        "startDate": "2014-10-12T00:00:01",
+        "startDate": "2014-10-19T00:00:01",
         "endDate": "2014-10-25T23:59:59"
     },
     {
         "mode": "Public",
-        "startDate": "2014-10-12T00:00:01",
-        "endDate": "2014-12-15T23:59:59"
+        "startDate": "2014-10-26T00:00:01"
     }
 ],
 ```
 
-This `allowAccess` directive is suitable for a `Homework` assessment. Students can see the homework starting on Oct 12th, and the homework goes through four different stages: (1) they will earn a bonus 10% if they complete the homework with full points before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework and submit answers for feedback, but not earn more points until the end of semester (Dec 15th).
+This `allowAccess` directive is suitable for a `Homework` assessment. Students can see that the homework exists before Oct 12th, but because it is `"active": false` they won't be able to see the questions or start the homework. They can start the homework anytime from Oct 12th onwards, and the homework goes through four different stages: (1) they will earn a bonus 10% if they complete the homework with full points before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework and submit answers for feedback, but not earn more points, at any time after that. The homework visibility will also be limited by the [course instance access rules](#course-instance-example), so the homework won't be accessible in any way outside of the course instance date range.
