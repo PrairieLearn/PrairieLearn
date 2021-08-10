@@ -14,7 +14,7 @@ BEGIN
         courses
     FROM
         pl_courses AS c
-        JOIN authz_course(user_id, c.id, is_administrator) AS permissions_course ON TRUE
+        JOIN authz_course(user_id, c.id, is_administrator, TRUE) AS permissions_course ON TRUE
     WHERE
         c.deleted_at IS NULL
         AND (

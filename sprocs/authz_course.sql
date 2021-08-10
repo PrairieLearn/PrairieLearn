@@ -3,6 +3,7 @@ CREATE FUNCTION
         user_id bigint,
         course_id bigint,
         is_administrator boolean,
+        allow_example_course_override boolean,
         req_course_role enum_course_role default NULL
     ) returns jsonb
 AS $$
@@ -35,7 +36,7 @@ BEGIN
         course_role := 'None';
     END IF;
 
-    IF is_example_course THEN
+    IF is_example_course AND allow_example_course_override THEN
         course_role := 'Viewer';
     END IF;
 
