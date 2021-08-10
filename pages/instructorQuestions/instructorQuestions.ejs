@@ -3,7 +3,7 @@
   
   <head>
     <%- include('../partials/head'); %>
-    <script src="<%= node_modules_asset_path('underscore/underscore-min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js') %>"></script>
@@ -54,24 +54,23 @@
 
       function topicList() {
           var data = $('#questionsTable').bootstrapTable('getData');
-          return _.object(_.map(data, row => [row.topic.name, row.topic.name]));
+          return _.keyBy(_.map(data, row => row.topic.name));
       }
 
       function tagsList() {
           var data = $('#questionsTable').bootstrapTable('getData');
-          return _.object(_.map(_.flatten(_.filter(_.map(data, row => row.tags), row => row), 1), row => [row.name, row.name]));
+          return _.keyBy(_.map(_.flatten(_.filter(_.map(data, row => row.tags), row => row), 1), row => row.name));
       }
 
       function versionList() {
           var data = $('#questionsTable').bootstrapTable('getData');
-          return _.object(_.map(data, row => [row.display_type, row.display_type]));
+          return _.keyBy(_.map(data, row => row.display_type));
       }
 
       function assessmentsByCourseInstanceList(ci_id) {
-          console.log(ci_id);
           var data = $('#questionsTable').bootstrapTable('getData');
           var assessments = _.filter(_.flatten(_.map(data, row => row.assessments), 1), row => row && row.course_instance_id == ci_id);
-          return _.object(_.map(assessments, row => [row.label, row.label]));
+          return _.keyBy(_.map(assessments, row => row.label));
       }
       
       function topicFormatter(topic, question) {
