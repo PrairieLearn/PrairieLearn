@@ -16,7 +16,21 @@
     <script>
       $(function() {
           $('#questionsTable').bootstrapTable({
-              formatFilterControlSwitchHide: () => 'Hide filters',
+              formatClearSearch: () => ' Show all questions',
+              icons: {
+                  columns: 'fa-th-list',
+              },
+              buttons: {
+                  //<% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
+                  addQuestion: {
+                      html: `<form class="ml-1 btn-group" name="add-question-form" method="POST">
+                               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                               <button name="__action" value="add_question" class="btn btn-secondary"><i class="fa fa-plus" aria-hidden="true"></i>
+                               <span>Add question</span></button>
+                             </form>`,
+                  },
+                      //<% } %>
+              },
               onPreBody: function() {
               },
               onResetView: function () {
@@ -143,15 +157,6 @@
             <div class="col-auto">
               <span class="text-white">Questions</span>
             </div>
-            <div class="col-auto">
-              <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
-              <form class="d-inline" name="add-question-form" method="POST">
-                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                <button name="__action" value="add_question" class="btn btn-sm btn-light"><i class="fa fa-plus" aria-hidden="true"></i>
-                  <span>Add question</span></button>
-              </form>
-              <% } %>
-            </div>
           </div>
         </div>
 
@@ -160,7 +165,6 @@
                data-classes="table table-sm table-hover table-bordered"
                data-thead-classes="thead-light"
                data-filter-control="true"
-               data-show-filter-control-switch="true"
                data-show-search-clear-button="true"
                data-show-columns="true"
                data-show-columns-toggle-all="true"
