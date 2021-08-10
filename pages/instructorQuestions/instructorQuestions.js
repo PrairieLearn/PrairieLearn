@@ -2,7 +2,6 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const error = require('../../prairielib/lib/error');
-const {escapeRegExp} = require('../../prairielib/util');
 const path = require('path');
 const logger = require('../../lib/logger');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -17,10 +16,6 @@ const { default: AnsiUp } = require('ansi_up');
 const ansiUp = new AnsiUp();
 
 router.get('/', function(req, res, next) {
-    const course_instance_id = res.locals.course_instance ? res.locals.course_instance.id : null;
-
-    // Pass filtering function to front-end
-    res.locals.escapeRegExp = escapeRegExp;
 
     async.series([
         (callback) => {
@@ -35,7 +30,6 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             const params = {
-                course_instance_id: course_instance_id,
                 course_id: res.locals.course.id,
             };
             sqldb.query(sql.questions, params, function(err, result) {
