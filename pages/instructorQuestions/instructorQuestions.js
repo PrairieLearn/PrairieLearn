@@ -47,6 +47,8 @@ router.get('/', function(req, res, next) {
                         row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
                     return row;
                 });
+                res.locals.all_topics = _.keyBy(_.map(result.rows, row => row.topic.name), row => row);
+                res.locals.all_versions = _.keyBy(_.map(result.rows, row => row.display_type), row => row);
                 callback(null);
             });
         },
@@ -56,7 +58,8 @@ router.get('/', function(req, res, next) {
             };
             sqldb.query(sql.tags, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.all_tags = result.rows;
+                res.locals.all_tags = _.keyBy(_.map(result.rows, row => row.name), row => row);
+                console.log(res.locals.all_tags);
                 callback(null);
             });
         },
@@ -66,7 +69,7 @@ router.get('/', function(req, res, next) {
             };
             sqldb.query(sql.assessments, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.all_assessments = result.rows;
+                res.locals.all_assessments = _.keyBy(_.map(result.rows, row => row.label), row => row);
                 callback(null);
             });
         },

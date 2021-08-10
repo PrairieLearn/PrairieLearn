@@ -3,6 +3,7 @@
   
   <head>
     <%- include('../partials/head'); %>
+    <script src="<%= node_modules_asset_path('underscore/underscore-min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js') %>"></script>
@@ -16,6 +17,7 @@
       $(function() {
           $('#questionsTable').bootstrapTable({
               //url: '<%= urlPrefix %>/<%= navPage %>/gradebook/raw_data.json',
+              data: <%- JSON.stringify(questions) %>,
               onPreBody: function() {
               },
               onResetView: function () {
@@ -31,9 +33,53 @@
           });
       });
 
+      function titleFormatter(title, question) {
+          var text = '';
+          if (question.sync_errors) {
+              text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
+                               data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(question.sync_errors_ansified)}</pre>">
+                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                  </button>`;
+          } else if (question.sync_warnings) {
+              text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;>${_.escape(question.sync_warnings_ansified)}</pre>">
+                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                  </button>`;
+          }
+          text += `<a class="formatter-data" href="<%= urlPrefix %>/question/${question.id}/">${_.escape(question.title)}</a>`;
+          if (question.open_issue_count > 0) {
+              text += `<a class="badge badge-pill badge-danger ml-1" href="<%= urlPrefix %>/course_admin/issues?q=qid%3A${_.escape(question.qid)}">${question.open_issue_count}</a>`;
+          }
+          return text;
+      }
+
       function topicFormatter(topic, question) {
-          topic = JSON.parse(topic);
-          return `<span class="badge color-${topic.color}">${topic.name}</span>`;
+          return `<span class="badge color-${topic.color}">${_.escape(topic.name)}</span>`;
+      }
+
+      function tagsFormatter(tags, question) {
+          return _.map(tags ?? [], tag => `<span class="badge color-${tag.color}">${tag.name}</span>`).join(' ');
+      }
+
+      function versionFormatter(version, question) {
+          return `<span class="badge color-${version == 'v3' ? 'green1' : 'red1'}">${_.escape(version)}</span>`;
+      }
+
+      function assessmentsFormatter(assessments, question) {
+          return _.map(assessments ?? [], assessment => `<a href="<%= urlPrefix %>/assessment/${assessment.assessment_id}" class="badge color-${assessment.color} color-hover" onclick="event.stopPropagation();"><span>${_.escape(assessment.label)}</span></a>`).join(' ');
+      }
+
+      function genericFilterSearch(search, value, field, data) {
+          console.log($('<div>').html(value).find('.formatter-data').text(), search);
+          return $('<div>').html(value).find('.formatter-data').text().includes(search);
+      }
+
+      function elementListFilterSearch(search, value, field, data) {
+          var values = $('<div>').html(value).find('span')
+              .filter((i, elem) => $(elem).text().toUpperCase() == search.toUpperCase())
+              .length;
+          console.log(value, values, !!values);
+          return !!values;
       }
     </script>
     <style>
@@ -94,7 +140,9 @@
               <th data-field="title"
                   data-sortable="true"
                   data-class="align-middle"
+                  data-formatter="titleFormatter"
                   data-filter-control="input"
+                  data-filter-custom-search="genericFilterSearch"
                   data-switchable="true">Title</th>
               <th data-field="qid"
                   data-sortable="true"
@@ -105,92 +153,40 @@
                   data-sortable="true"
                   data-class="align-middle"
                   data-formatter="topicFormatter"
+                  data-filter-control="select"
+                  data-filter-data="json:<%= JSON.stringify(all_topics) %>"
+                  data-filter-custom-search="elementListFilterSearch"
                   data-switchable="true">Topic</th>
               <th data-field="tags"
                   data-sortable="false"
                   data-class="align-middle"
+                  data-formatter="tagsFormatter"
+                  data-filter-control="select"
+                  data-filter-data="json:<%= JSON.stringify(all_tags) %>"
+                  data-filter-custom-search="elementListFilterSearch"
                   data-switchable="true">Tags</th>
               <th data-field="display_type"
                   data-sortable="true"
                   data-class="align-middle"
+                  data-formatter="versionFormatter"
+                  data-filter-control="select"
+                  data-filter-data="json:<%= JSON.stringify(all_versions) %>"
+                  data-filter-custom-search="elementListFilterSearch"
                   data-switchable="true">Version</th>
               <% if (locals.course_instance) { %>
               <th data-field="assessments"
                   data-sortable="true"
                   data-class="align-middle"
+                  data-formatter="assessmentsFormatter"
+                  data-filter-control="select"
+                  data-filter-data="json:<%= JSON.stringify(all_assessments) %>"
+                  data-filter-custom-search="elementListFilterSearch"
                   data-switchable="true">Assessments</th>
               <% } %>
             </tr>
           </thead>
-            <tbody>
-              <% questions.forEach(function(question) { %>
-              <tr>
-                <td class="align-middle">
-                  <% if (question.sync_errors) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= question.sync_errors_ansified %></pre>">
-                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                  </button>
-                  <% } else if (question.sync_warnings) { %>
-                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
-                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= question.sync_warnings_ansified %></pre>">
-                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-                  </button>
-                  <% } %>
-                  <a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a>
-                  <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
-                </td>
-                <td class="align-middle">
-                  <%= question.qid %>
-                </td>
-                <td class="align-middle">
-                  <%= JSON.stringify(question.topic) %>
-                </td>
-                <td class="align-middle">
-                  <%- include('../partials/tags', {tags: question.tags}); %>
-                </td>
-                <td class="align-middle">
-                  <%- include('../partials/types', {type: question.display_type}); %>
-                </td>
-                <% if (locals.course_instance) { %>
-                <td class="align-middle">
-                  <%- include('../partials/assessments', {assessments: question.assessments}); %>
-                </td>
-                <% } %>
-              </tr>
-              <% }); %>
-            </tbody>
           </table>
         </div>
-        <script>
-                // $(function() {
-                //     $("#questionsTable").tablesorter({
-                //         widgetOptions: {
-                //             zebra: ["even", "odd"],
-                //             filter_reset: "#resetFilter",
-                //             filter_cssFilter: "form-control",
-                //             filter_functions: {
-                //                 3: {
-                //                     <% all_tags.forEach(function(tag) { %>
-                //                     "<%= escapeRegExp(tag.name) %>": function(e, n, f, i, $r, c, data) {
-                //                         return /\b<%= escapeRegExp(tag.name) %>\b/.test(e);
-                //                     },
-                //                     <% }); %>
-                //                 },
-                //                 <% if (locals.course_instance) { %>
-                //                 5: {
-                //                     <% all_assessments.forEach(function(assessment) { %>
-                //                     "<%= escapeRegExp(assessment.label) %>": function(e, n, f, i, $r, c, data) {
-                //                         return /\b<%= escapeRegExp(assessment.label) %>\b/.test(e);
-                //                     },
-                //                     <% }); %>
-                //                 },
-                //                 <% } %>
-                //             },
-                //         },
-                //     });
-                // });
-        </script>
       </div>
     </div>
 </body>
