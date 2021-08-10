@@ -5,7 +5,7 @@ By default, course instances and assessments are only accessible to [course staf
 
 ## Two level of access control for assessments
 
-In PrairieLearn there are two levels of access control to gain access to assessments:
+In PrairieLearn there are two levels of access control for students to gain access to assessments:
 
 1. First, a student must have access to the **course instance**. This access is granted with the `allowAccess` rules in [infoCourseInstance.json](courseInstance.md). Giving a student access to a course instance does not by default grant them access to any assessments in the course instance, however (see the next item).
 
