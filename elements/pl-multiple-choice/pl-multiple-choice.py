@@ -15,6 +15,7 @@ EXTERNAL_JSON_DEFAULT = None
 HIDE_LETTER_KEYS_DEFAULT = False
 EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
 EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
+HINT_DEFAULT = ''
 
 
 def categorize_options(element, data):
@@ -24,10 +25,11 @@ def categorize_options(element, data):
     index = 0
     for child in element:
         if child.tag in ['pl-answer', 'pl_answer']:
-            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct', 'hint'])
             correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child)
-            answer_tuple = (index, correct, child_html)
+            child_hint = pl.get_string_attrib(child, 'hint', HINT_DEFAULT)
+            answer_tuple = (index, correct, child_html, child_hint)
             if correct:
                 correct_answers.append(answer_tuple)
             else:
@@ -185,8 +187,8 @@ def prepare(element_html, data):
     # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
-    for (i, (index, correct, html)) in enumerate(sampled_answers):
-        keyed_answer = {'key': pl.index2key(i), 'html': html}
+    for (i, (index, correct, html, hint)) in enumerate(sampled_answers):
+        keyed_answer = {'key': pl.index2key(i), 'html': html, 'hint' : hint}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer = keyed_answer
@@ -222,7 +224,9 @@ def render(element_html, data):
                 'key': answer['key'],
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
-                'display_score_badge': display_score and submitted_key == answer['key']
+                'display_score_badge': display_score and submitted_key == answer['key'],
+                'display_hint' : submitted_key == answer['key'] and answer['hint'] != '',
+                'hint' : answer['hint']
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (correct_key == answer['key'])
@@ -327,6 +331,7 @@ def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    data['params']['test'] = "woah"
 
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
