@@ -148,12 +148,6 @@ module.exports = {
                     });
                 },
                 function(callback) {
-                    socketServer.init(server, function(err) {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                },
-                function(callback) {
                     externalGradingSocket.init(function(err) {
                         if (ERR(err, callback)) return;
                         callback(null);
