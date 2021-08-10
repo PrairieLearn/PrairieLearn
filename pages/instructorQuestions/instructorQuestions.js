@@ -47,29 +47,6 @@ router.get('/', function(req, res, next) {
                         row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
                     return row;
                 });
-                res.locals.all_topics = _.keyBy(_.map(result.rows, row => row.topic.name), row => row);
-                res.locals.all_versions = _.keyBy(_.map(result.rows, row => row.display_type), row => row);
-                callback(null);
-            });
-        },
-        (callback) => {
-            const params = {
-                course_id: res.locals.course.id,
-            };
-            sqldb.query(sql.tags, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.all_tags = _.keyBy(_.map(result.rows, row => row.name), row => row);
-                console.log(res.locals.all_tags);
-                callback(null);
-            });
-        },
-        (callback) => {
-            const params = {
-                course_instance_id: course_instance_id,
-            };
-            sqldb.query(sql.assessments, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.all_assessments = _.keyBy(_.map(result.rows, row => row.label), row => row);
                 callback(null);
             });
         },
