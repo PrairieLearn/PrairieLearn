@@ -47,6 +47,7 @@ router.get('/', function(req, res, next) {
                         row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
                     return row;
                 });
+                res.locals.has_legacy_questions = _.some(result.rows, row => row.display_type != 'v3');
                 callback(null);
             });
         },
