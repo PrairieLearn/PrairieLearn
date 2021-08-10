@@ -188,7 +188,7 @@ def prepare(element_html, data):
     display_answers = []
     correct_answer = None
     for (i, (index, correct, html, hint)) in enumerate(sampled_answers):
-        keyed_answer = {'key': pl.index2key(i), 'html': html, 'hint' : hint}
+        keyed_answer = {'key': pl.index2key(i), 'html': html, 'hint': hint}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer = keyed_answer
@@ -225,8 +225,8 @@ def render(element_html, data):
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
                 'display_score_badge': display_score and submitted_key == answer['key'],
-                'display_hint' : submitted_key == answer['key'] and answer['hint'] != HINT_DEFAULT,
-                'hint' : answer['hint']
+                'display_hint': submitted_key == answer['key'] and answer['hint'] != HINT_DEFAULT,
+                'hint': answer['hint']
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (correct_key == answer['key'])
