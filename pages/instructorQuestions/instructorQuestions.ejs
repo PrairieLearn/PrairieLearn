@@ -34,7 +34,6 @@
 
       function topicList() {
           var data = $('#questionsTable').bootstrapTable('getData');
-          console.log(data);
           return _.keyBy(_.map(data, row => row.topic.name));
       }
 
