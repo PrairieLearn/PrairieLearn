@@ -225,7 +225,7 @@ def render(element_html, data):
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
                 'display_score_badge': display_score and submitted_key == answer['key'],
-                'display_hint' : submitted_key == answer['key'] and answer['hint'] != '',
+                'display_hint' : submitted_key == answer['key'] and answer['hint'] != HINT_DEFAULT,
                 'hint' : answer['hint']
             }
             if answer_html['display_score_badge']:
@@ -331,7 +331,7 @@ def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    
+
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
 
