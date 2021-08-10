@@ -80,13 +80,6 @@ if [[ ! -z "$CONTAINERS" ]] ; then
   docker rm $CONTAINERS
 fi
 
-# ---
-# Not sure if this is still needed.
-export DONT_START_WORKSPACE_HOST_IN_INIT=true
-[[ $NODEMON == true ]] && HOST_NODE="/PrairieLearn/node_modules/.bin/nodemon -L" || HOST_NODE=node
-export HOST_NODE
-# ---
-
 cd /PrairieLearn
 
 # Check if tmux is an old or new version.
