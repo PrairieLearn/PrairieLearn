@@ -247,26 +247,26 @@ Course content roles control access to all course content, such as questions and
 
 Action                                            | None | Previewer | Viewer | Editor | Owner
 :-------------------------------------------------|:----:|:---------:|:------:|:------:|:-----:
-View questions and assessments                    | ⋅    | ✓         | ✓      | ✓      | ✓
-View issues                                       | ⋅    | ✓         | ✓      | ✓      | ✓
-View aggregate statistics in all course instances | ⋅    | ✓         | ✓      | ✓      | ✓
-View question code and JSON files                 | ⋅    | ⋅         | ✓      | ✓      | ✓
-Close issues                                      | ⋅    | ⋅         | ⋅      | ✓      | ✓
-Edit question code and JSON files                 | ⋅    | ⋅         | ⋅      | ✓      | ✓
-Sync from GitHub                                  | ⋅    | ⋅         | ⋅      | ✓      | ✓
-Edit course staff permissions                     | ⋅    | ⋅         | ⋅      | ⋅      | ✓
+View questions and assessments                    |  ⋅   |     ✓     |   ✓    |   ✓    |   ✓
+View issues                                       |  ⋅   |     ✓     |   ✓    |   ✓    |   ✓
+View aggregate statistics in all course instances |  ⋅   |     ✓     |   ✓    |   ✓    |   ✓
+View question code and JSON files                 |  ⋅   |     ⋅     |   ✓    |   ✓    |   ✓
+Close issues                                      |  ⋅   |     ⋅     |   ⋅    |   ✓    |   ✓
+Edit question code and JSON files                 |  ⋅   |     ⋅     |   ⋅    |   ✓    |   ✓
+Sync from GitHub                                  |  ⋅   |     ⋅     |   ⋅    |   ✓    |   ✓
+Edit course staff permissions                     |  ⋅   |     ⋅     |   ⋅    |   ⋅    |   ✓
 
 ### Student data roles
 
 Student data roles control access to individual student data.
 
-Action                             | None | Viewer | Editor
-:----------------------------------|:----:|:------:|:------:
-View individual student scores     | ⋅    | ✓      | ✓
-Download gradebook data            | ⋅    | ✓      | ✓
-Manually grade student submissions | ⋅    | ⋅      | ✓
-Edit individual student scores     | ⋅    | ⋅      | ✓
-
+Action                                   | None | Viewer | Editor
+:----------------------------------------|:----:|:------:|:------:
+View individual student scores           |  ⋅   |   ✓    |   ✓
+Download gradebook data                  |  ⋅   |   ✓    |   ✓
+Manually grade student submissions       |  ⋅   |   ⋅    |   ✓
+Edit individual student scores           |  ⋅   |   ⋅    |   ✓
+Change time limits and close assessments |  ⋅   |   ⋅    |   ✓
 
 ### Recommended course staff roles
 
