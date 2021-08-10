@@ -110,10 +110,11 @@
 
             var headingAuthnViewTypeMenu = 'View type';
             if (authz_data.authn_user.uid != authz_data.user.uid) {
+              headingAuthnViewTypeMenu = 'View as';
               if (authz_data.authn_user.name) {
-                headingAuthnViewTypeMenu += ` for ${authz_data.authn_user.name} (${authz_data.authn_user.uid})`;
+                headingAuthnViewTypeMenu += ` ${authz_data.authn_user.name} (${authz_data.authn_user.uid})`;
               } else {
-                headingAuthnViewTypeMenu += ` for ${authz_data.authn_user.uid}`;
+                headingAuthnViewTypeMenu += ` ${authz_data.authn_user.uid}`;
               }
             }
 
@@ -138,31 +139,31 @@
             <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-authn-instructor">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'instructor') { %>&check;<% } %></div>
-                <div class="col pl-0">Instructor page</div>
-              </div>
-            </a>
-
-            <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student-no-rules">
-              <div class="d-flex flex-row justify-content-left">
-                <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
-                <div class="col pl-0">Student page without access rules</div>
+                <div class="col pl-0">Instructor view</div>
               </div>
             </a>
 
             <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student') { %>&check;<% } %></div>
-                <div class="col pl-0">Student page with access rules</div>
+                <div class="col pl-0">Student view</div>
+              </div>
+            </a>
+
+            <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student-no-rules">
+              <div class="d-flex flex-row justify-content-left">
+                <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
+                <div class="col pl-0">Student view without access restrictions</div>
               </div>
             </a>
 
             <% if (authz_data.authn_user.uid != authz_data.user.uid) {
 
-              var headingViewTypeMenu = 'View type';
+              var headingViewTypeMenu = 'View as';
               if (authz_data.user.name) {
-                  headingViewTypeMenu += ` for ${authz_data.user.name} (${authz_data.user.uid})`;
+                headingViewTypeMenu += ` ${authz_data.user.name} (${authz_data.user.uid})`;
               } else {
-                headingViewTypeMenu += ` for ${authz_data.user.uid}`;
+                headingViewTypeMenu += ` ${authz_data.user.uid}`;
               }
 
               var viewTypeMenuChecked = '';
@@ -186,22 +187,22 @@
                 <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-instructor">
                   <div class="d-flex flex-row justify-content-left">
                     <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'instructor') { %>&check;<% } %></div>
-                    <div class="col pl-0">Instructor page</div>
+                    <div class="col pl-0">Instructor view</div>
                   </div>
                 </a>
               <% } %>
 
-              <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student-no-rules">
-                <div class="d-flex flex-row justify-content-left">
-                  <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
-                  <div class="col pl-0">Student page without access rules</div>
-                </div>
-              </a>
-
               <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student">
                 <div class="d-flex flex-row justify-content-left">
                   <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student') { %>&check;<% } %></div>
-                  <div class="col pl-0">Student page with access rules</div>
+                  <div class="col pl-0">Student view</div>
+                </div>
+              </a>
+
+              <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student-no-rules">
+                <div class="d-flex flex-row justify-content-left">
+                  <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
+                  <div class="col pl-0">Student view without access restrictions</div>
                 </div>
               </a>
 
