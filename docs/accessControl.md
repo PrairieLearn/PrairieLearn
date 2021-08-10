@@ -309,4 +309,4 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
 ],
 ```
 
-This `allowAccess` directive is suitable for a `Homework` assessment. Students can see the homework starting on Oct 12th, and the homework goes through four different stages: (1) they will earn a bonus 10% if they complete the homework before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework but not earn more points until the end of semester (Dec 15th).
+This `allowAccess` directive is suitable for a `Homework` assessment. Students can see the homework starting on Oct 12th, and the homework goes through four different stages: (1) they will earn a bonus 10% if they complete the homework with full points before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework and submit answers for feedback, but not earn more points until the end of semester (Dec 15th).
