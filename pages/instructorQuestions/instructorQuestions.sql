@@ -25,7 +25,7 @@ WHERE
     q.course_id = $course_id
     AND q.deleted_at IS NULL
 GROUP BY q.id, top.id, issue_count.open_issue_count
-ORDER BY top.number, q.title;
+ORDER BY q.qid;
 
 -- BLOCK select_question_id_from_uuid
 SELECT

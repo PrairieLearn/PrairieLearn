@@ -32,7 +32,7 @@
           });
       });
 
-      function titleFormatter(title, question) {
+      function qidFormatter(qid, question) {
           var text = '';
           if (question.sync_errors) {
               text += `<button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
@@ -45,7 +45,7 @@
                     <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
                   </button>`;
           }
-          text += `<a class="formatter-data" href="<%= urlPrefix %>/question/${question.id}/">${_.escape(question.title)}</a>`;
+          text += `<a class="formatter-data" href="<%= urlPrefix %>/question/${question.id}/">${_.escape(question.qid)}</a>`;
           if (question.open_issue_count > 0) {
               text += `<a class="badge badge-pill badge-danger ml-1" href="<%= urlPrefix %>/course_admin/issues?q=qid%3A${_.escape(question.qid)}">${question.open_issue_count}</a>`;
           }
@@ -170,21 +170,21 @@
                data-sticky-header="true">
           <thead>
             <tr>
+              <th data-field="qid"
+                  data-sortable="true"
+                  data-class="align-middle sticky-column"
+                  data-formatter="qidFormatter"
+                  data-filter-control="input"
+                  data-switchable="true">QID</th>
               <th data-field="title"
                   data-sortable="true"
-                  data-class="align-middle"
-                  data-formatter="titleFormatter"
+                  data-class="align-middle text-nowrap"
                   data-filter-control="input"
                   data-filter-custom-search="genericFilterSearch"
                   data-switchable="true">Title</th>
-              <th data-field="qid"
-                  data-sortable="true"
-                  data-class="align-middle"
-                  data-filter-control="input"
-                  data-switchable="true">QID</th>
               <th data-field="topic"
                   data-sortable="true"
-                  data-class="align-middle"
+                  data-class="align-middle text-nowrap"
                   data-formatter="topicFormatter"
                   data-filter-control="select"
                   data-filter-data="func:topicList"
@@ -192,7 +192,7 @@
                   data-switchable="true">Topic</th>
               <th data-field="tags"
                   data-sortable="false"
-                  data-class="align-middle"
+                  data-class="align-middle text-nowrap"
                   data-formatter="tagsFormatter"
                   data-filter-control="select"
                   data-filter-data="func:tagsList"
@@ -200,7 +200,7 @@
                   data-switchable="true">Tags</th>
               <th data-field="display_type"
                   data-sortable="true"
-                  data-class="align-middle"
+                  data-class="align-middle text-nowrap"
                   data-formatter="versionFormatter"
                   data-filter-control="select"
                   data-filter-data="func:versionList"
@@ -209,7 +209,7 @@
               <% locals.course_instances.forEach(course_instance => { %>
               <th data-field="assessments_<%= course_instance.id %>"
                   data-sortable="true"
-                  data-class="align-middle"
+                  data-class="align-middle text-nowrap"
                   data-formatter="assessments<%= course_instance.id %>Formatter"
                   data-filter-control="select"
                   data-filter-data="func:assessments<%= course_instance.id %>List"
