@@ -230,7 +230,7 @@ In the example above, from January 1st to February 15th, students can see the as
 ]
 ```
 
-The above `allowAccess` rule are appropriate for a `infoCourseInstance.json` file. It says that students have access from Jan 19th to May 13th.
+The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` file. It says that students have access from Jan 19th to May 13th.
 
 ## Exam example
 
