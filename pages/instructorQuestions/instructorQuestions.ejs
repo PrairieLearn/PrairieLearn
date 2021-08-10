@@ -16,7 +16,7 @@
     <script>
       $(function() {
           $('#questionsTable').bootstrapTable({
-              //url: '<%= urlPrefix %>/<%= navPage %>/gradebook/raw_data.json',
+              formatFilterControlSwitchHide: () => 'Hide filters',
               onPreBody: function() {
               },
               onResetView: function () {
@@ -86,16 +86,16 @@
           return `<span class="badge color-${version == 'v3' ? 'green1' : 'red1'}">${_.escape(version)}</span>`;
       }
 
-      function assessmentsByCourseInstanceFormatter(ci_id, value, question) {
+      function assessmentsByCourseInstanceFormatter(ci_id, question) {
           var ci_assessments = _.filter(question.assessments ?? [], assessment => assessment.course_instance_id == ci_id);
           return _.map(ci_assessments, assessment => `<a href="<%= plainUrlPrefix %>/course_instance/${ci_id}/instructor/assessment/${assessment.assessment_id}" class="badge color-${assessment.color} color-hover" onclick="event.stopPropagation();"><span>${_.escape(assessment.label)}</span></a>`).join(' ');
       }
 
-      function genericFilterSearch(search, value, field, data) {
+      function genericFilterSearch(search, value) {
           return $('<div>').html(value).find('.formatter-data').text().includes(search);
       }
 
-      function badgeFilterSearch(search, value, field, data) {
+      function badgeFilterSearch(search, value) {
           var values = $('<div>').html(value).find('.badge')
               .filter((i, elem) => $(elem).text().toUpperCase() == search.toUpperCase())
               .length;
@@ -107,8 +107,8 @@
           return assessmentsByCourseInstanceList(<%= course_instance.id %>);
       }
 
-      function assessments<%= course_instance.id %>Formatter(value, question) {
-          return assessmentsByCourseInstanceFormatter(<%= course_instance.id %>, value, question);
+      function assessments<%= course_instance.id %>Formatter(_, question) {
+          return assessmentsByCourseInstanceFormatter(<%= course_instance.id %>, question);
       }
       //<% }); %>
 
@@ -161,6 +161,7 @@
                data-show-filter-control-switch="true"
                data-show-columns="true"
                data-show-columns-toggle-all="true"
+               data-show-button-text="true"
                data-pagination="true"
                data-pagination-v-align="top"
                data-page-list="[50,100,200,500,unlimited]"
