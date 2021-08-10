@@ -197,6 +197,7 @@
                   data-formatter="topicFormatter"
                   data-sorter="topicSorter"
                   data-filter-control="select"
+                  data-filter-control-placeholder="(All Topics)"
                   data-filter-data="func:topicList"
                   data-filter-custom-search="badgeFilterSearch"
                   data-switchable="true">Topic</th>
@@ -205,6 +206,7 @@
                   data-class="align-middle text-nowrap"
                   data-formatter="tagsFormatter"
                   data-filter-control="select"
+                  data-filter-control-placeholder="(All Tags)"
                   data-filter-data="func:tagsList"
                   data-filter-custom-search="badgeFilterSearch"
                   data-switchable="true">Tags</th>
@@ -213,6 +215,7 @@
                   data-class="align-middle text-nowrap"
                   data-formatter="versionFormatter"
                   data-filter-control="select"
+                  data-filter-control-placeholder="(All Versions)"
                   data-filter-data="func:versionList"
                   data-filter-custom-search="badgeFilterSearch"
                   data-visible="<%= has_legacy_questions %>"
@@ -222,6 +225,7 @@
                   data-class="align-middle text-nowrap"
                   data-formatter="assessments<%= course_instance.id %>Formatter"
                   data-filter-control="select"
+                  data-filter-control-placeholder="(All Assessments)"
                   data-filter-data="func:assessments<%= course_instance.id %>List"
                   data-filter-custom-search="badgeFilterSearch"
                   data-visible="<%= locals.course_instance && locals.course_instance.id == course_instance.id %>"
