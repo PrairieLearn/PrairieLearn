@@ -82,7 +82,7 @@
                         <div class="dropdown-menu" aria-labelledby="courseContentDropdown-<%= course_user.user_id %>" style="width: 35em;">
                           <div class="dropdown-header text-wrap">
                             <p>
-                              Users with course content access can see aggregate student data (e.g., mean scores), but cannot see the names or scores of individual students without having also been granted student data access to a particular course instance.
+                              Users with course content access can see aggregate student data (e.g., mean scores), but cannot see the names or scores of individual students without also having student data access to a particular course instance.
                             </p>
                           </div>
                           <div class="dropdown-divider"></div>
@@ -90,7 +90,7 @@
                             <div class="text-wrap">
                               <h6>None</h6>
                               <p class="small">
-                                Can see no course content.
+                                Cannot see any course content.
                               </p>
                             </div>
                           </button>
@@ -117,7 +117,7 @@
                             <div class="text-wrap">
                               <h6>Editor</h6>
                               <p class="small">
-                                Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the github repository.
+                                Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the GitHub repository.
                               </p>
                             </div>
                           </button>
@@ -126,7 +126,7 @@
                             <div class="text-wrap">
                               <h6>Owner</h6>
                               <p class="small">
-                                Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the github repository. Can add and remove course staff and can change access roles.
+                                Can see all questions, course instances, and assessments. Can see and close issues. Can see, download, and edit all code and configuration files. Can sync course files to and from the GitHub repository. Can add and remove course staff and can change access roles.
                               </p>
                             </div>
                           </button>
@@ -151,7 +151,7 @@
                             <div class="dropdown-menu" aria-labelledby="changeCIPDrop-<%= course_user.user_id %>-<%= cir.id %>"  style="width: 35em;">
                               <div class="dropdown-header text-wrap">
                                 <p>
-                                  Users with student data access can see all assessments in the course instance <code><%= cir.short_name %></code>, can see all questions, and can see but not close issues. They cannot see any code or configuration files, and cannot see any other course instances or assessments, without having also been granted course content access.
+                                  Users with student data access can see all assessments in the course instance <code><%= cir.short_name %></code>, can see all questions, and can see but not close issues. They cannot see any code or configuration files without also having course content access.
                                 </p>
                               </div>
                               <div class="dropdown-divider"></div>
