@@ -26,7 +26,7 @@ BEGIN
         (authn_user_id, course_id, user_id, 'course_permissions', old_row.id,
         'delete', to_jsonb(old_row));
 
-    -- Delete all enrollments of this user to instances of the course, for two
+    -- Delete all enrollments of this user from instances of the course, for two
     -- reasons:
     --
     --  1) So they will still be ignored when computing statistics. Only users who
