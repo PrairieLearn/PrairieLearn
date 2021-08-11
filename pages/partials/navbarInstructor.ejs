@@ -42,9 +42,9 @@
                 <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuInstanceAdminLink" id="navbarDropdownMenuInstanceAdmin">
                     <% authz_data.course_instances.forEach(function(ci) { %>
                         <% if ((navPage == "instance_admin") || (navPage == "course_admin")) { %>
-                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %> <% if (ci.disabled) { %>disabled<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/<%= navPage %><% if (typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
+                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/<%= navPage %><% if (typeof navSubPage !== 'undefined' && navSubPage != "file_edit") { %>/<%= navSubPage %><% } %>"><%= ci.short_name %></a>
                         <% } else { %>
-                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %> <% if (ci.disabled) { %>disabled<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin"><%= ci.short_name %></a>
+                            <a class="dropdown-item <% if (course_instance.id == ci.id) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= ci.id %>/instructor/instance_admin"><%= ci.short_name %></a>
                         <% } %>
                     <% }); %>
                 </div>

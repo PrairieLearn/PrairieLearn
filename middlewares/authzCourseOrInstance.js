@@ -446,15 +446,12 @@ module.exports = function(req, res, next) {
                     res.locals.authz_data.courses.forEach(course => course.permissions_course = _.cloneDeep(result.rows[0].permissions_course));
                     res.locals.authz_data.editable_courses = res.locals.authz_data.courses.filter(course => course.permissions_course.has_course_permission_edit);
 
-                    // Update course_instances, adding a flag to disable any course
-                    // instance that is not also in authn_course_instances (i.e., to
-                    // which the authn user does not also have access)
+                    // Use the course_instances for the effective user, but keeping only
+                    // those ones for which the authn user also has access.
                     res.locals.authz_data.course_instances = result.rows[0].course_instances || [];
-                    res.locals.authz_data.course_instances.forEach((ci) => {
-                        ci.disabled = (! res.locals.authz_data.authn_course_instances.some((authn_ci) => {
-                            return ci.id == authn_ci.id;
-                        }));
-                    });
+                    res.locals.authz_data.course_instances = res.locals.authz_data.course_instances.filter(
+                        ci => res.locals.authz_data.authn_course_instances.some(authn_ci => (authn_ci.id == ci.id))
+                    );
 
                     if (isCourseInstance) {
                         res.locals.authz_data.course_instance_role = result.rows[0].permissions_course_instance.course_instance_role;
