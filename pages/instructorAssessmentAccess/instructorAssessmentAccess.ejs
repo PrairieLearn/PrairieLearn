@@ -45,7 +45,7 @@
                     // (or with access to the course git repository) will be able to
                     // see the list of uids, because these access rules are defined
                     // in course code. This should be changed in future, to protect
-                    // student data.
+                    // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
 
                     if ((access_rule.uids == '—') || authz_data.has_course_instance_permission_view) { %>
                     <%= access_rule.uids %>
