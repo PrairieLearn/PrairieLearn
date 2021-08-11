@@ -82,8 +82,7 @@ describe('Grading methods', function() {
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
-    describe('infoQuestion.json `gradingMethod` single method grading (deprecated)', () => {
-
+    describe('single grading method configured on question `gradingMethod` property (DEPRECATED)', () => {
         it('internal grading submission can be "save and graded"', async () => {
             // so many internal graded submissions elsewhere, that we will assume this passes
         });
@@ -144,6 +143,16 @@ describe('Grading methods', function() {
             // kind of a weird error message, but we did want an error here. May want to look into deeper.
             assert.include(questionsPage, 'grading_method is not External for submission_id');
         });
+    });
+    describe('multiple grading methods configured on `gradingMethods` property (ACTIVE)', () => {
+        describe('"Internal" grading method combinations', () => {
 
+        });
+        describe('"External" grading method combinations', () => {
+
+        });
+        describe('"Manual" grading method combinations', () => {
+
+        });
     });
 });
