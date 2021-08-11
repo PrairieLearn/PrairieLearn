@@ -40,7 +40,7 @@ router.get('/', function(req, res, next) {
                         row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
                     if (row.sync_warnings)
                         row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-                    row.assignments = _.filter(row.assignments, assignment => assignment.course_instance_id in ci_ids);
+                    row.assessments = _.filter(row.assessments, assessment => ci_ids.includes(assessment.course_instance_id));
                     return row;
                 });
                 res.locals.has_legacy_questions = _.some(result.rows, row => row.display_type != 'v3');
