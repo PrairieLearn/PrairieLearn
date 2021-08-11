@@ -84,12 +84,6 @@ describe('Grading methods', function() {
 
     describe('infoQuestion.json `gradingMethod` single method grading (deprecated)', () => {
 
-
-        before('fetch student "HW1: Homework for automatic test suite" URL', async () => {
-            setUser(mockStudents[0]);
-
-        });
-
         it('internal grading submission can be "save and graded"', async () => {
             // so many internal graded submissions elsewhere, that we will assume this passes
         });
