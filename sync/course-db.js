@@ -842,9 +842,9 @@ function checkAllowAccessRoles(rule) {
     const warnings = [];
     if ('role' in rule) {
         if (rule.role == 'Student') {
-            warnings.push(`It is no longer necessary to specify a role (${rule.role}) in an "allowAccess" rule, since these rules are only used to grant student access.`);
+            warnings.push(`It is no longer necessary to specify a role (${rule.role}) in an "allowAccess" rule, since these rules are now only used to grant student access.`);
         } else {
-            warnings.push(`The "allowAccess" rule with role ${rule.role} will be ignored. Course owners should manage staff access on the course admin access page.`);
+            warnings.push(`The "allowAccess" rule with role ${rule.role} will be ignored. Course owners can now manage staff access on the Staff page.`);
         }
     }
     return warnings;
@@ -1036,7 +1036,7 @@ async function validateCourseInstance(courseInstance) {
     });
 
     if (_(courseInstance).has('userRoles')) {
-        warnings.push('The property "userRoles" will be ignored. Course owners should manage staff access on the course admin access page.');
+        warnings.push('The property "userRoles" will be ignored. Course owners can now manage staff access on the Staff page.');
     }
 
     return { warnings, errors };
