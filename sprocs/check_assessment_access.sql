@@ -163,7 +163,9 @@ BEGIN
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
-        AND aar.active
-        AND caar.authorized;
+        AND (
+            (aar.active AND caar.authorized)
+            OR (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') -- Override for instructors
+        );
 END;
 $$ LANGUAGE plpgsql VOLATILE;
