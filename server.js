@@ -376,7 +376,7 @@ module.exports.initExpress = function() {
         require('./middlewares/ansifySyncErrorsAndWarnings.js'),
     ]);
 
-    // Some course instance student pages only require authorization (already checked)
+    // Some course instance student pages only require course instance authorization (already checked)
     app.use('/pl/course_instance/:course_instance_id/news_items', require('./pages/news_items/news_items.js'));
     app.use('/pl/course_instance/:course_instance_id/news_item', require('./pages/news_item/news_item.js'));
 
