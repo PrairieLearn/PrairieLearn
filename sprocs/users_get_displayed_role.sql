@@ -11,14 +11,11 @@ BEGIN
     THEN
         displayed_role := 'Staff';
     ELSE
-        PERFORM
-            *
-        FROM
-            course_instances AS ci
-            JOIN enrollments AS e ON (
-                e.user_id = users_get_displayed_role.user_id
-                AND e.course_instance_id = users_get_displayed_role.course_instance_id
-            );
+        PERFORM *
+        FROM enrollments AS e
+        WHERE
+            e.user_id = users_get_displayed_role.user_id
+            AND e.course_instance_id = users_get_displayed_role.course_instance_id;
 
         IF FOUND THEN displayed_role := 'Student';
         ELSE displayed_role := 'None';
