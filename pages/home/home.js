@@ -11,7 +11,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     res.locals.isAuthenticated = !!res.locals.authn_user;
     if (res.locals.isAuthenticated) {
-        var params = {
+        const params = {
             user_id: res.locals.authn_user.user_id,
             is_administrator: res.locals.is_administrator,
             req_date: res.locals.req_date,
