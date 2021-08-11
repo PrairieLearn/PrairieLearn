@@ -60,7 +60,7 @@ router.post('/', (req, res, next) => {
                 res.locals.authz_data.authn_user.user_id,
             ];
             sqldb.call('course_permissions_insert_by_user_uid', c_params, (err, result) => {
-                if (ERR(err, (e) => logger.info(`Failed to insert course permission for uid: ${uid}`, e))) {
+                if (ERR(err, (e) => logger.verbose(`Failed to insert course permission for uid: ${uid}`, e))) {
                     memo.not_given_cp.push(uid);
                     memo.errors.push(`Failed to give course content access to ${uid}\n(${err.message})`);
                     return callback(null, memo);
@@ -78,7 +78,7 @@ router.post('/', (req, res, next) => {
                     res.locals.authz_data.authn_user.user_id,
                 ];
                 sqldb.call('course_instance_permissions_insert', ci_params, (err, _result) => {
-                    if (ERR(err, (e) => logger.info(`Failed to insert course instance permission for uid: ${uid}`, e))) {
+                    if (ERR(err, (e) => logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, e))) {
                         memo.not_given_cip.push(uid);
                         memo.errors.push(`Failed to give student data access to ${uid}\n(${err.message})`);
                         return callback(null, memo);
