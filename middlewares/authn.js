@@ -50,7 +50,7 @@ module.exports = function(req, res, next) {
                     res.locals.authn_institution = result.rows[0].institution;
                     res.locals.authn_provider_name = 'LoadTest';
                     res.locals.authn_is_administrator = result.rows[0].is_administrator;
-                    verifyAdministratorAccess(req, res);
+                    checkAdministratorAccess(req, res);
                     callback(null);
                 });
             },
@@ -119,7 +119,7 @@ module.exports = function(req, res, next) {
                 res.locals.authn_provider_name = 'Local';
                 res.locals.authn_is_administrator = result.rows[0].is_administrator;
                 res.locals.authn_is_instructor = result.rows[0].is_instructor;
-                verifyAdministratorAccess(req, res);
+                checkAdministratorAccess(req, res);
                 res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
                 next();
             });
@@ -161,7 +161,7 @@ module.exports = function(req, res, next) {
         res.locals.authn_provider_name = authnData.authn_provider_name;
         res.locals.authn_is_administrator = result.rows[0].is_administrator;
         res.locals.authn_is_instructor = result.rows[0].is_instructor;
-        verifyAdministratorAccess(req, res);
+        checkAdministratorAccess(req, res);
         res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
 
         // reset cookie timeout (#2268)
@@ -176,7 +176,7 @@ module.exports = function(req, res, next) {
     });
 };
 
-function verifyAdministratorAccess(req, res) {
+function checkAdministratorAccess(req, res) {
     const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
     const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
     res.locals.access_as_administrator = (accessType == 'active');
