@@ -25,7 +25,7 @@
                       icon: 'fa-times',
                       attributes: { title: 'Clear all set question filters' },
                       event: () => {
-                          $('#questionsTable').bootstrapTable('resetSearch');
+                          $('#questionsTable').bootstrapTable('clearFilterControl');
                       },
                   },
                   //<% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
