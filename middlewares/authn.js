@@ -1,11 +1,10 @@
 var ERR = require('async-stacktrace');
+const async = require('async');
 
 var config = require('../lib/config');
 var csrf = require('../lib/csrf');
 var sqldb = require('../prairielib/lib/sql-db');
 var sqlLoader = require('../prairielib/lib/sql-loader');
-
-const async = require('async');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
