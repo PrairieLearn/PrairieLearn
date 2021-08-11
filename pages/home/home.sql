@@ -3,7 +3,9 @@ WITH
     example_courses AS (
         SELECT
             c.short_name || ': ' || c.title AS label,
-            c.id AS id,
+            c.short_name,
+            c.title,
+            c.id,
             TRUE AS do_link,
             coalesce(jsonb_agg(jsonb_build_object(
                 'label', ci.long_name,
@@ -35,7 +37,9 @@ WITH
     instructor_courses AS (
         SELECT
             c.short_name || ': ' || c.title AS label,
-            c.id AS id,
+            c.short_name,
+            c.title,
+            c.id,
             ($is_administrator OR cp.course_role > 'None') AS do_link,
             coalesce(jsonb_agg(jsonb_build_object(
                 'label', ci.long_name,
@@ -114,6 +118,6 @@ SELECT
     ic.courses AS instructor_courses,
     sc.course_instances AS student_courses
 FROM
-    (SELECT coalesce(jsonb_agg(ec.*), '[]'::jsonb) AS courses FROM example_courses AS ec) AS ec,
-    (SELECT coalesce(jsonb_agg(ic.*), '[]'::jsonb) AS courses FROM instructor_courses AS ic) AS ic,
+    (SELECT coalesce(jsonb_agg(ec.* ORDER BY ec.short_name, ec.title, ec.id), '[]'::jsonb) AS courses FROM example_courses AS ec) AS ec,
+    (SELECT coalesce(jsonb_agg(ic.* ORDER BY ic.short_name, ic.title, ic.id), '[]'::jsonb) AS courses FROM instructor_courses AS ic) AS ic,
     student_courses AS sc;

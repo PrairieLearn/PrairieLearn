@@ -24,7 +24,7 @@ router.get('/', function(req, res, next) {
                 // If the list of instructor courses is non-empty, then prepend
                 // with the list of example courses (otherwise, discard the list
                 // of example courses).
-                res.locals.instructor_courses = result.rows[0].example_courses.concat(res.locals.instructor_courses);
+                res.locals.instructor_courses = res.locals.instructor_courses.concat(result.rows[0].example_courses);
             }
             res.locals.student_courses = result.rows[0].student_courses;
 
