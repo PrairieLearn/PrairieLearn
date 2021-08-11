@@ -34,11 +34,13 @@ router.get('/', function(req, res, next) {
             };
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
+                const ci_ids = _.map(res.locals.course_instances, ci => ci.id);
                 res.locals.questions = _.map(result.rows, row => {
                     if (row.sync_errors)
                         row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
                     if (row.sync_warnings)
                         row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+                    row.assignments = _.filter(row.assignments, assignment => assignment.course_instance_id in ci_ids);
                     return row;
                 });
                 res.locals.has_legacy_questions = _.some(result.rows, row => row.display_type != 'v3');
