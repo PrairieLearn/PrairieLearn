@@ -129,6 +129,7 @@ a `pl-answer` that has attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
+`hint` | string | special | Text to be displayed next to submitted answer after question is graded.
 
 #### Example implementations
 
