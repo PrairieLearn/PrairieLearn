@@ -125,7 +125,7 @@ configure them for your element as follows:
     "controller": "pl-my-element.py",
     "dependencies": {
         "coreScripts": [
-            "d3.min.js"
+            "PrairieUtil.js"
         ],
         "nodeModulesScripts": [
             "three/build/three.min.js"
@@ -149,7 +149,7 @@ The different types of dependency properties currently available are summarized 
 Property | Description
 --- | ---
 `coreStyles` | The styles required by this element, relative to `[PrairieLearn directory]/public/stylesheets`.
-`coreScripts` | The scripts required by this element, relative to `[PrairieLearn directory]/public/javascripts`.
+`coreScripts` | The scripts required by this element, relative to `[PrairieLearn directory]/public/javascripts`. Scripts in this directory are mainly used for compatibility with legacy elements and questions, and should be avoided if an alternative is available.
 `nodeModulesStyles` | The styles required by this element, relative to `[PrairieLearn directory]/node_modules`.
 `nodeModulesScripts` | The scripts required by this element, relative to `[PrairieLearn directory]/node_modules`.
 `elementStyles` | The styles required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
