@@ -90,7 +90,27 @@ describe('Grading methods', function() {
 
     describe('single grading method configured on question `gradingMethod` property (DEPRECATED)', () => {
         it('internal grading submission can be "save and graded"', async () => {
-            // so many internal graded submissions elsewhere, that we will assume this passes
+            const hm1Body = await loadHomeworkPage(mockStudents[0]);
+            const $hm1Body = cheerio.load(hm1Body);
+            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Add two numbers")').attr('href');
+
+            const gradeRes = await saveOrGrade(iqUrl, {c: 9999999}, 'grade');
+            assert.equal(gradeRes.status, 200);
+
+            const questionsPage = await gradeRes.text();
+            assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-secondary">waiting for grading</span>');        
+        });
+
+        it('internal grading submission can be "saved"', async () => {
+            const hm1Body = await loadHomeworkPage(mockStudents[0]);
+            const $hm1Body = cheerio.load(hm1Body);
+            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Add two numbers")').attr('href');
+
+            const gradeRes = await saveOrGrade(iqUrl, {c: 9999999}, 'grade');
+            assert.equal(gradeRes.status, 200);
+
+            const questionsPage = await gradeRes.text();
+            assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-secondary">waiting for grading</span>');        
         });
 
         // External grading occurs async, but we should expect the answer was submitted syncronously
@@ -99,9 +119,9 @@ describe('Grading methods', function() {
         it('external grading submission can be "save and graded"', async () => {
             const hm1Body = await loadHomeworkPage(mockStudents[0]);
             const $hm1Body = cheerio.load(hm1Body);
-            const externalGradingQuestionUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
+            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
 
-            const gradeRes = await saveOrGrade(externalGradingQuestionUrl, {}, 'grade', [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
+            const gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
             assert.equal(gradeRes.status, 200);
 
             const questionsPage = await gradeRes.text();
@@ -111,9 +131,9 @@ describe('Grading methods', function() {
         it('external grading submission can be "saved"', async () => {
             const hm1Body = await loadHomeworkPage(mockStudents[1]);
             const $hm1Body = cheerio.load(hm1Body);
-            const externalGradingQuestionUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
+            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
 
-            const saveRes = await saveOrGrade(externalGradingQuestionUrl, {}, 'save', 
+            const saveRes = await saveOrGrade(iqUrl, {}, 'save', 
                 [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
             );
             assert.equal(saveRes.status, 200);
@@ -125,9 +145,9 @@ describe('Grading methods', function() {
         it('manual grading submission can be "saved"', async () => {
             const hm1Body = await loadHomeworkPage(mockStudents[1]);
             const $hm1Body = cheerio.load(hm1Body);
-            const externalGradingQuestionUrl = siteUrl + $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr('href');
+            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr('href');
 
-            const saveRes = await saveOrGrade(externalGradingQuestionUrl, {}, 'save',
+            const saveRes = await saveOrGrade(iqUrl, {}, 'save',
                 [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
             );
             assert.equal(saveRes.status, 200);
@@ -139,9 +159,9 @@ describe('Grading methods', function() {
         it('manual grading submission CANNOT be "save and graded"', async () => {
             const hm1Body = await loadHomeworkPage(mockStudents[0]);
             const $hm1Body = cheerio.load(hm1Body);
-            const externalGradingQuestionUrl = siteUrl + $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr('href');
+            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr('href');
 
-            const saveOrGradeRes = await saveOrGrade(externalGradingQuestionUrl, {}, 'grade', [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
+            const saveOrGradeRes = await saveOrGrade(iqUrl, {}, 'grade', [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
             assert.equal(saveOrGradeRes.status, 500);
 
             const questionsPage = await saveOrGradeRes.text();
