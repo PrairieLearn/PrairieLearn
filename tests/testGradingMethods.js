@@ -92,7 +92,7 @@ describe('Grading methods', function() {
         it('internal grading submission can be "save and graded"', async () => {
             const hm1Body = await loadHomeworkPage(mockStudents[0]);
             const $hm1Body = cheerio.load(hm1Body);
-            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Add two numbers")').attr('href');
+            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Add two numbers")').attr('href');
 
             const gradeRes = await saveOrGrade(iqUrl, {c: 9999999}, 'grade');
             assert.equal(gradeRes.status, 200);
@@ -104,7 +104,7 @@ describe('Grading methods', function() {
         it('internal grading submission can be "saved"', async () => {
             const hm1Body = await loadHomeworkPage(mockStudents[0]);
             const $hm1Body = cheerio.load(hm1Body);
-            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Add two numbers")').attr('href');
+            const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Add two numbers")').attr('href');
 
             const gradeRes = await saveOrGrade(iqUrl, {c: 9999999}, 'grade');
             assert.equal(gradeRes.status, 200);
