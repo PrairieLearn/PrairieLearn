@@ -13,7 +13,7 @@ const selectAndAuthzInstructorQuestion = promisify(require('./selectAndAuthzInst
 const authzHasCoursePreviewOrInstanceView = promisify(require('./authzHasCoursePreviewOrInstanceView'));
 
 module.exports = asyncHandler(async (req, res, next) => {
-    const result = await sqldb.queryOneRowAsync(sql.select_auth_data_from_workspace, req.params);
+    const result = await sqldb.queryOneRowAsync(sql.select_auth_data_from_workspace, {workspace_id: req.params.workspace_id});
     _.assign(res.locals, result.rows[0]);
     res.locals.workspace_id = req.params.workspace_id;
 
