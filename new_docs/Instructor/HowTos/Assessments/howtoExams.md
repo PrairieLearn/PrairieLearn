@@ -27,7 +27,7 @@ Type        | Randomized | Description
 `Homework`  | No         | A gamified assessment that rewards repeated correct answers to questions.
 `Exam`      | Yes        | An exam where students can grade their answers at any time, and retry questions for reduced points.
 
-For an exam, you will most likely want to define the `type` as `Exam`, but there is nothing preventing you from setting it to `Homework`.
+For an exam, you will most likely want to define the `type` as `Exam`.  For more details about the two assessment types and their behavior see [assessment types](course.md/#assessment_types).
 
 ### Assessment naming
 
@@ -35,7 +35,7 @@ Assessments are organized into `sets` and within each set the assessment has a `
 
 * Assessment `sets` are used to organize assessements into different categories.  Prairielearn has a list of [standardized assessment sets](course.md/#assessments), or you can [create a new set](course.md/#newset).  You will most likely want to use the default `Exam`.
 
-* Each assessment in a given `set` should have its own distinct number, which will appear in the tag in the `Assessments` menu.
+* Each assessment in a given `set` should have its own distinct `number`, which will appear in the tag in the `Assessments` menu.
 
 * The `title` will be visible to anyone who takes the `assessment`.
 

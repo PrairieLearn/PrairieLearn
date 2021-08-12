@@ -27,7 +27,7 @@ Type        | Randomized | Description
 `Homework`  | No         | A gamified assessment that rewards repeated correct answers to questions.
 `Exam`      | Yes        | An exam where students can grade their answers at any time, and retry questions for reduced points.
 
-For a homework assignment, you will most likely want to define the `type` as `Homework`, but there is nothing preventing you from setting it to `Exam`.
+For a homework assignment, you will most likely want to define the `type` as `Homework`.  For more details about the two assessment types and their behavior see [assessment types](course.md/#assessment_types).
 
 ### Assessment naming
 
@@ -35,8 +35,30 @@ Assessments are organized into `sets` and within each set the assessment has a `
 
 * Assessment `sets` are used to organize assessements into different categories.  Prairielearn has a list of [standardized assessment sets](course.md/#assessments), or you can [create a new set](course.md/#newset).  You will most likely want to use the default `Homework`.
 
-* Each assessment in a given `set` should have its own distinct number, which will appear in the tag in the `Assessments` menu.
+* Each assessment in a given `set` should have its own distinct `number`, which will appear in the tag in the `Assessments` menu.
 
 * The `title` will be visible to anyone who takes the `assessment`.
 
 ## Organizing questions into zones
+
+To complete the assessment, the actual questions must be added.  The `zones` property separates and organizes the questions into blocks of similar topic/difficulty.  The questions are referenced by their `QID` which can be seen in the list under the `Questions` menu on the course instance page.  Here is a short example of what the zones might look like:
+```json
+"zones": [
+    {
+        "title": "Easy questions",
+        "questions": [
+            {"id": "anEasyQuestion", "points": 1},
+            {"id": "anotherEasyQuestion", "points":1, "maxPoints":2},
+            {"id": "aSlightlyHarderQ", "points": 2, "maxPoints":4}
+        ]
+    },
+    {
+        "title": "Harder questions",
+        "questions": [
+            {"id": "hardQuestion", "points": 5, "maxPoints": 10},
+            {"id": "harderQuestion", "points": 6, "maxPoints": 12},
+            {"id": "longQuestions", "points": 15}
+        ]
+    }
+], 
+```
