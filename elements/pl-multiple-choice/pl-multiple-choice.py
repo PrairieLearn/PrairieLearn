@@ -225,7 +225,7 @@ def render(element_html, data):
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
                 'display_score_badge': display_score and submitted_key == answer['key'],
-                'display_hint': submitted_key == answer['key'] and answer['hint'] != HINT_DEFAULT,
+                'display_hint': submitted_key == answer['key'] and answer['hint'] is not None,
                 'hint': answer['hint']
             }
             if answer_html['display_score_badge']:
