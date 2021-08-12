@@ -71,6 +71,11 @@ const parseInstanceQuestionId = (url) => {
     });
 };
 
+/**
+ * 
+ * @param {object} student or instructor user to load page by 
+ * @returns string Returns "Homework for Internal, External, Manual grading methods" page text
+ */
 const loadHomeworkPage = async (user) => {
     setUser(user);
     const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
@@ -80,8 +85,7 @@ const loadHomeworkPage = async (user) => {
     hm9InternalExternalManaulUrl = siteUrl + $courseInstancePage('a:contains("Homework for Internal, External, Manual grading methods")').attr('href');
     let res = await fetch(hm9InternalExternalManaulUrl);
     assert.equal(res.ok, true);
-    const hm1Body = await res.text();
-    return hm1Body;
+    return await res.text();
 };
 
 describe('Grading methods', function() {
