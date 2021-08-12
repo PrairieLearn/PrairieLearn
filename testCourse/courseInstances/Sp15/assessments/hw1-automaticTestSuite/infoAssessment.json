@@ -23,8 +23,6 @@
                 {"id": "partialCredit5_v2_partial", "points": 5, "maxPoints": 12},
                 {"id": "partialCredit6_no_partial", "points": 3, "maxPoints": 8},
                 {"id": "brokenGrading",             "points": 2, "maxPoints": 4},
-                {"id": "manualGrade/codeUpload",    "points": 2, "maxPoints": 6},
-                {"id": "externalGrade/codeUpload",  "points": 2, "maxPoints": 6}
             ]
         }
     ]
