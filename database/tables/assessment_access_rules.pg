@@ -8,7 +8,6 @@ columns
     mode: enum_mode
     number: integer
     password: text
-    role: enum_role
     seb_config: jsonb
     show_closed_assessment: boolean not null default true
     show_closed_assessment_score: boolean not null default true
