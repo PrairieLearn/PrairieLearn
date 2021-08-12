@@ -92,7 +92,7 @@ describe('Grading methods', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before());
-    // after('shut down testing server', helperServer.after);
+    after('shut down testing server', helperServer.after);
 
     // want to test against new 'Homework for internal, external, manual grading methods' for internal, external, manual grading methods, as testHomework and testAssessment calculates on
     // basis of internal grading.
