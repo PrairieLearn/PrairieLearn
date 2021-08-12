@@ -15,7 +15,7 @@ EXTERNAL_JSON_DEFAULT = None
 HIDE_LETTER_KEYS_DEFAULT = False
 EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
 EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
-HINT_DEFAULT = ''
+HINT_DEFAULT = None
 
 
 def categorize_options(element, data):
