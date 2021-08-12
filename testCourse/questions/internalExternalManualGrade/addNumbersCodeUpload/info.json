@@ -1,7 +1,8 @@
 {
-    "uuid": "6a4891c6-64d1-4e89-b72c-cd2133f25b2f",
+    "uuid": "6b4891a6-64d1-4e89-b72c-cd2133f25b2f",
     "title": "Internal, External, Manual: Add two numbers & Fibonacci function, file upload",
     "topic": "Algebra",
+    "gradingMethods": ["Internal", "External", "Manual"],
     "tags": ["mwest", "fa17", "tpl101", "v3"],
     "type": "v3"
 }

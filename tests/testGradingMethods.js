@@ -4,9 +4,9 @@ const fetch = require('node-fetch');
 const querystring = require('querystring');
 const config = require('../lib/config');
 const helperServer = require('./helperServer');
-// const sqlLoader = require('../prairielib/lib/sql-loader');
-// const sqlDb = require('../prairielib/lib/sql-db');
-// const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqlDb = require('../prairielib/lib/sql-db');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -28,6 +28,14 @@ const mockStudents = [
 
 const getFileUploadSuffix = ($instanceQuestionPage) => {
     return $instanceQuestionPage('input[name^=_file_upload]').attr('name');
+};
+
+const parseInstanceQuestionId = (url) => {
+    const iqId = parseInt(
+        url.match(/instance_question\/(\d+)/)[1],
+    );
+    assert.isNumber(iqId);
+    return iqId;
 };
 
 /**
@@ -69,7 +77,7 @@ const loadHomeworkPage = async (user) => {
     let hm9InternalExternalManaulUrl = null;
     const courseInstanceBody = await (await fetch(studentCourseInstanceUrl)).text();
     const $courseInstancePage = cheerio.load(courseInstanceBody);
-    hm9InternalExternalManaulUrl = siteUrl + $courseInstancePage('a:contains("Homework for internal, external, manual grading methods")').attr('href');
+    hm9InternalExternalManaulUrl = siteUrl + $courseInstancePage('a:contains("Homework for Internal, External, Manual grading methods")').attr('href');
     let res = await fetch(hm9InternalExternalManaulUrl);
     assert.equal(res.ok, true);
     const hm1Body = await res.text();
@@ -93,8 +101,10 @@ describe('Grading methods', function() {
             const hm1Body = await loadHomeworkPage(mockStudents[0]);
             const $hm1Body = cheerio.load(hm1Body);
             const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Add two numbers")').attr('href');
-
-            const gradeRes = await saveOrGrade(iqUrl, {c: 9999999}, 'grade');
+            const iqId = parseInstanceQuestionId(iqUrl);
+            const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, {iqId})).rows[0];
+    
+            const gradeRes = await saveOrGrade(iqUrl, {c: variant.params.a + variant.params.b}, 'grade');
             assert.equal(gradeRes.status, 200);
 
             const questionsPage = await gradeRes.text();
@@ -102,15 +112,15 @@ describe('Grading methods', function() {
         });
 
         it('internal grading submission can be "saved"', async () => {
-            const hm1Body = await loadHomeworkPage(mockStudents[0]);
+            const hm1Body = await loadHomeworkPage(mockStudents[1]);
             const $hm1Body = cheerio.load(hm1Body);
             const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Add two numbers")').attr('href');
 
-            const gradeRes = await saveOrGrade(iqUrl, {c: 9999999}, 'grade');
+            const gradeRes = await saveOrGrade(iqUrl, {c: 9999999}, 'save');
             assert.equal(gradeRes.status, 200);
 
             const questionsPage = await gradeRes.text();
-            assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-secondary">waiting for grading</span>');        
+            assert.include(questionsPage, 'Submitted answer\n          \n          1\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>');        
         });
 
         // External grading occurs async, but we should expect the answer was submitted syncronously
@@ -161,7 +171,9 @@ describe('Grading methods', function() {
             const $hm1Body = cheerio.load(hm1Body);
             const iqUrl = siteUrl + $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr('href');
 
-            const saveOrGradeRes = await saveOrGrade(iqUrl, {}, 'grade', [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
+            const saveOrGradeRes = await saveOrGrade(iqUrl, {}, 'grade',
+                [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
+            );
             assert.equal(saveOrGradeRes.status, 500);
 
             const questionsPage = await saveOrGradeRes.text();
