@@ -51,7 +51,7 @@ router.post('/', (req, res, next) => {
         if (course_instance && !['Student Data Viewer', 'Student Data Editor'].includes(req.body.course_instance_role)) {
             return next(error.make(400, `Invalid requested course instance role: ${req.body.course_instance_role}`));
         }
-        // Iterate through UIDs in parallel
+        // Iterate through UIDs
         async.reduce(uids, {given_cp: [], not_given_cp: [], not_given_cip: [], errors: []}, (memo, uid, callback) => {
             const c_params = [
                 res.locals.course.id,
