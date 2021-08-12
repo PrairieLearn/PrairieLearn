@@ -8,8 +8,6 @@ CREATE TABLE course_instance_permissions (
     UNIQUE (course_permission_id, course_instance_id)
 );
 
-CREATE INDEX course_instance_permissions_course_instance_id_idx ON course_instance_permissions (course_instance_id);
-
 /*
     Give course_permissions with course_role 'None' to all users with
     enrollments of role TA or Instructor.
