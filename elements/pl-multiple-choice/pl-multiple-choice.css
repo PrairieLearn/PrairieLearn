@@ -10,4 +10,9 @@
 
 .pl-multiple-choice-hint {
     border-left: 4px solid #999;
+    background-color: #F9F9F9;
+    padding: 0.25rem 0.5rem;
+    margin-left: 1rem;
+    margin-right: .5rem;
+    border-radius: 0.2rem;
 }
