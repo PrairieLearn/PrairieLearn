@@ -4,6 +4,7 @@ columns
     id: bigint not null default nextval('course_instance_access_rules_id_seq'::regclass)
     institution: text default 'UIUC'::text
     number: integer
+    role: enum_role
     start_date: timestamp with time zone
     uids: text[]
 

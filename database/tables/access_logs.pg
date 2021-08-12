@@ -1,4 +1,5 @@
 columns
+    auth_role: enum_role
     auth_uid: text
     body: jsonb
     date: timestamp with time zone
@@ -10,6 +11,7 @@ columns
     mongo_id: text
     params: jsonb
     path: text
+    user_role: enum_role
     user_uid: text
 
 indexes
