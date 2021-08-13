@@ -10,8 +10,13 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-
 const anyFileContent = 'any file content \n\n';
+
+let defaultUser = {
+    authUid: config.authUid,
+    authName: config.authName,
+    authUin: config.authUin,
+};
 
 const setUser = (user) => {
     config.authUid = user.authUid;
@@ -93,6 +98,8 @@ describe('Grading methods', function() {
 
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
+
+    after('reset default user', () => setUser(defaultUser));
 
     // want to test against new 'Homework for internal, external, manual grading methods' for internal, external, manual grading methods, as testHomework and testAssessment calculates on
     // basis of internal grading.
