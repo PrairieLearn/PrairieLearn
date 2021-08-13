@@ -130,17 +130,17 @@ describe('Grading methods', function() {
                     gradeRes = await saveOrGrade(iqUrl, {c: variant.params.a + variant.params.b}, 'grade');
                     assert.equal(gradeRes.status, 200);
 
-                    const questionsPage = await gradeRes.text();
+                    questionsPage = await gradeRes.text();
                     $questionsPage = cheerio.load(questionsPage);
                 });
                 it('should result in no grading jobs', async () => {
                     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
                     assert.lengthOf(grading_jobs, 1);
                 });
-                it('should result in one "pastsubmissions-block" component being rendered', () => {
-                    assert.lengthOf($questionsPage('.pastSubmissionsBlock'), 1);
+                it('should result in one "pastsubmission-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
                 });
-                it('should be given submission grade in "pastsubmissions-block"', async () => {
+                it('should be given submission grade in "pastsubmission-block"', async () => {
                     assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
                 });
                 it('should result in one "grading-block" component being rendered', () => {
@@ -239,7 +239,7 @@ describe('Grading methods', function() {
 
             const iqId = parseInstanceQuestionId(iqUrl);
             const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
-            assert.lengthOf(grading_jobs, 1);
+            assert.lengthOf(grading_jobs, 0);
 
             const questionsPage = await saveOrGradeRes.text();
 
