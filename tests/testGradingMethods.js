@@ -145,7 +145,9 @@ describe('Grading methods', function() {
             const $hm1Body = cheerio.load(hm1Body);
             const iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
 
-            const gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
+            const gradeRes = await saveOrGrade(iqUrl, {}, 'grade',
+                [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
+            );
             assert.equal(gradeRes.status, 200);
 
             const questionsPage = await gradeRes.text();
