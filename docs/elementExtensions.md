@@ -13,8 +13,6 @@ The `info.json` file is structurally similar to the element info file and may co
 {
     "controller": "Python script",
     "dependencies": {
-        "coreStyles": ["Core PL styles"],
-        "coreScripts": ["Core PL JavaScripts"],
         "nodeModulesStyles": ["Node modules styles"],
         "nodeModulesScripts": ["Node modules JavaScripts"],
         "clientFilesCourseStyles": ["Client files course styles"],
@@ -88,8 +86,6 @@ Similar to how questions and elements may require client-side assets, extensions
 
 Property | Description
 --- | ---
-`coreStyles` | The styles required by this extension, relative to `[PrairieLearn directory]/public/stylesheets`.
-`coreScripts` | The scripts required by this extension, relative to `[PrairieLearn directory]/public/javascripts`. Scripts in this directory are mainly used for compatibility with legacy elements and questions, and should be avoided if an alternative is available.
 `nodeModulesStyles` | The styles required by this extension, relative to `[PrairieLearn directory]/node_modules`.
 `nodeModulesScripts` | The scripts required by this extension, relative to `[PrairieLearn directory]/node_modules`.
 `elementStyles` | The styles required by this element relative to the extension's directory,`[course directory]/elementExtensions/element-name/extension-name`.

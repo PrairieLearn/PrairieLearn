@@ -76,16 +76,13 @@ For details see the [format specification for question `info.json`](https://gith
 
 ### Question Dependencies
 
-Your question can load client-side assets such as scripts or stylesheets from different sources.  A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be de-duped and loaded onto the page.
+Your question can load client-side assets such as scripts or stylesheets from different sources.  A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be deduplicated and loaded onto the page.
 
 These dependencies are specified in the `info.json` file, and can be configured as follows:
 
 ```json
 {
     "dependencies": {
-        "coreScripts": [
-            "PrairieUtil.js"
-        ],
         "nodeModulesScripts": [
             "three/build/three.min.js"
         ],
@@ -107,8 +104,6 @@ The different types of dependency properties available are summarized in this ta
 
 Property | Description
 --- | ---
-`coreStyles` |  The styles required by this question, relative to `[PrairieLearn directory]/public/stylesheets`.
-`coreScripts` | The scripts required by this question, relative to `[PrairieLearn directory]/public/javascripts`. Scripts in this directory are mainly used for compatibility with legacy elements and questions, and should be avoided if an alternative is available.
 `nodeModulesStyles` | The styles required by this question, relative to `[PrairieLearn directory]/node_modules`.
 `nodeModulesScripts` | The scripts required by this question, relative to `[PrairieLearn directory]/node_modules`.
 `clientFilesQuestionStyles` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
