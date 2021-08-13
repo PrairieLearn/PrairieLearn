@@ -39,4 +39,88 @@ Assessments are organized into `sets` and within each set the assessment has a `
 
 * The `title` will be visible to anyone who takes the `assessment`.
 
+## Assessment access
+You will want to specify the dates for which the assessment is available to students.  If the exame opens on September 1st, 2021 at 10am and closes at 1pm, you would include:
+```json
+"allowAccess": [
+    {
+        "startDate": "2021-09-01T10:00:00",
+        "endDate": "2021-09-01T13:00:00",
+    }
+]
+```
+
 ## Organizing questions into zones
+
+To complete the assessment, the actual questions must be added.  The `zones` property separates and organizes the questions into blocks of similar topic/difficulty.  The questions are referenced by their `QID` which can be seen in the list under the `Questions` menu on the course instance page.  Here is a short example of what the zones might look like:
+```json
+"zones": [
+    {
+        "title": "Easy questions",
+        "questions": [
+            {"id": "anEasyQuestion", "points": 1},
+            {"id": "anotherEasyQuestion", "points": [2, 1]},
+            {"id": "aSlightlyHarderQ", "points": [4,2]}
+        ]
+    },
+    {
+        "title": "Harder questions",
+        "questions": [
+            {"id": "hardQuestion", "points": [10,5,1]}
+            {"id": "harderQuestion", "points": [12, 12, 6, 3]},
+            {"id": "anotherHardQuestion", "points": [15, 15]}
+        ]
+    }
+]
+```
+In this example, the assessment is divided into two zones "Easy Questions" and "Harder Questions".  For each question, point values have been assigned:
+
+* "anEasyQuestion" is worth 1 point.  Students have only one attempt to answer correctly.
+
+* "anotherEasyQuestion" is worth 2 points if answered correctly on the first attempt.  After one incorrect answer, the student has one more attempt to get 1 point for credit.  "aSlightlyHarderQ" is similar, with the point values doubled.
+
+* Students have 3 attempts for "hardQuestion", with awarded points decreasing each time.
+
+* For "harderQuestion", students have two attempts that will provide the full credit of 12 points.  The third and fourth attempts award partial credit.
+
+* "anotherHardQuestion" provides full credit for the first two attempts, but no partial credit afterwards. 
+
+* The total number of points for the assessment is automatically calculated from `points` (in this case, the exam is worth 44 points).
+
+For more on zones, including more grading options, see [assessment zones and grading](#course.md/zones-grading).
+
+## Example infoAssessment.json
+The following is what the complete `infoAssessment.json` would look like for the examples described above:
+```json
+{
+    "uuid": "737a7f3c-e2ac-4d53-912f-e6cf1e1e186f",
+    "type": "Exam",
+    "title": "Limits and Continuity",
+    "set": "Exam",
+    "number": "1",
+    "allowAccess": [
+        {
+            "startDate": "2021-09-01T10:00:00",
+            "endDate": "2021-09-01T13:00:00",
+        }
+    ],
+    "zones": [
+        {
+            "title": "Easy questions",
+            "questions": [
+                {"id": "anEasyQuestion", "points": 1},
+                {"id": "anotherEasyQuestion", "points": [2, 1]},
+                {"id": "aSlightlyHarderQ", "points": [4,2]}
+            ]
+        },
+        {
+            "title": "Harder questions",
+            "questions": [
+                {"id": "hardQuestion", "points": [10,5,1]}
+                {"id": "harderQuestion", "points": [12, 12, 6, 3]},
+                {"id": "anotherHardQuestion", "points": [15, 15]}
+            ]
+        }
+    ]
+}
+``` 
