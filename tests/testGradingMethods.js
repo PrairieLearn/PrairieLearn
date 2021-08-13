@@ -11,8 +11,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const anyFileContent = 'any file content \n\n';
-
-let defaultUser = {
+const defaultUser = {
     authUid: config.authUid,
     authName: config.authName,
     authUin: config.authUin,
@@ -77,7 +76,6 @@ const parseInstanceQuestionId = (url) => {
 };
 
 /**
- * 
  * @param {object} student or instructor user to load page by 
  * @returns string Returns "Homework for Internal, External, Manual grading methods" page text
  */
@@ -90,7 +88,7 @@ const loadHomeworkPage = async (user) => {
     hm9InternalExternalManaulUrl = siteUrl + $courseInstancePage('a:contains("Homework for Internal, External, Manual grading methods")').attr('href');
     let res = await fetch(hm9InternalExternalManaulUrl);
     assert.equal(res.ok, true);
-    return await res.text();
+    return res.text();
 };
 
 describe('Grading methods', function() {
@@ -112,6 +110,11 @@ describe('Grading methods', function() {
             const hm1Body = await loadHomeworkPage(mockStudents[0]);
             const $hm1Body = cheerio.load(hm1Body);
             const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Add two numbers")').attr('href');
+
+            // open page to produce variant
+            await fetch(iqUrl);
+
+            // get variant params
             const iqId = parseInstanceQuestionId(iqUrl);
             const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, {iqId})).rows[0];
     
@@ -119,7 +122,7 @@ describe('Grading methods', function() {
             assert.equal(gradeRes.status, 200);
 
             const questionsPage = await gradeRes.text();
-            assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-secondary">waiting for grading</span>');        
+            assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');        
         });
 
         it('internal grading submission can be "saved"', async () => {
@@ -131,7 +134,7 @@ describe('Grading methods', function() {
             assert.equal(gradeRes.status, 200);
 
             const questionsPage = await gradeRes.text();
-            assert.include(questionsPage, 'Submitted answer\n          \n          1\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>');        
+            assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>');        
         });
 
         // External grading occurs async, but we should expect the answer was submitted syncronously
