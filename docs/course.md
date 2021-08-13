@@ -241,9 +241,9 @@ The possible colors for assessment sets, topic, and tags are:
 
 Access permissions for course staff can be configured on the "Staff" tab. Course staff permissions are separated into *course content roles* and *student data roles*. These can be mixed and matched arbitrarily, so any combination is possible.
 
-### Course content roles
+### Course content access roles
 
-Course content roles control access to all course content, such as questions and assessments, and includes aggregate statistics from student usage.
+Course content access roles grant permission to access all course content, such as questions and assessments, including aggregate statistics from student usage.
 
 Action                                            | None | Previewer | Viewer | Editor | Owner
 :-------------------------------------------------|:----:|:---------:|:------:|:------:|:-----:
@@ -256,9 +256,9 @@ Edit question code and JSON files                 |  ⋅   |     ⋅     |   ⋅
 Sync from GitHub                                  |  ⋅   |     ⋅     |   ⋅    |   ✓    |   ✓
 Edit course staff permissions                     |  ⋅   |     ⋅     |   ⋅    |   ⋅    |   ✓
 
-### Student data roles
+### Student data access roles
 
-Student data roles control access to individual student data.
+Student data access roles grant permission to access to individual student data.
 
 Action                                   | None | Viewer | Editor
 :----------------------------------------|:----:|:------:|:------:
@@ -270,7 +270,7 @@ Change time limits and close assessments |  ⋅   |   ⋅    |   ✓
 
 ### Recommended course staff roles
 
-While every course should use the different permissions in way that best suits the course needs, some recommended guidelines are:
+While every course should use the different roles in a way that best suits the course needs, some recommended guidelines are:
 
 Role                                 | Course content access | Student data access
 :------------------------------------|:---------------------:|:-------------------:
