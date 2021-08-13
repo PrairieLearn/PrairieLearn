@@ -148,21 +148,21 @@
             <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-authn-instructor">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'instructor') { %>&check;<% } %></div>
-                <div class="col pl-0">Instructor view</div>
+                <div class="col pl-0">Instructor view <span class="badge badge-success">staff</span></div>
               </div>
             </a>
 
             <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student') { %>&check;<% } %></div>
-                <div class="col pl-0">Student view</div>
+                <div class="col pl-0">Student view <span class="badge badge-warning">student</span></div>
               </div>
             </a>
 
             <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student-no-rules">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
-                <div class="col pl-0">Student view without access restrictions</div>
+                <div class="col pl-0">Student view without access restrictions <span class="badge badge-warning">student</span></div>
               </div>
             </a>
 
