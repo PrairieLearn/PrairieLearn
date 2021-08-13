@@ -1,7 +1,6 @@
-<div class="text-white mb-3">
-  <a id="<%= button.id %>"
+<div id="<%= button.id %>" class="text-white mb-3">
+  <a
     <% if (question.id && !question.sequence_locked) { %>
-
       class="btn btn-primary"
       href="<%= urlPrefix %>/instance_question/<%= question.id %>/"
     <% } else { %>
