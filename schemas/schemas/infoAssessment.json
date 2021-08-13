@@ -160,6 +160,7 @@
                 },
                 "role": {
                     "description": "DEPRECATED -- do not use.",
+                    "deprecated": true,
                     "enum": [
                         "Student",
                         "TA",
