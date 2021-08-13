@@ -55,7 +55,7 @@ questions
 The question's `info.json` should set the `singleVariant` and `workspaceOptions` properties:
 
 * `"singleVariant": true` will prevent student workspaces from resetting due to new variants being generated
-    * Note that new variants will still be generated in `Instructor view`
+    * Note that new variants will still be generated in `Staff view`
 * `workspaceOptions` contains the following properties:
     * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
     * `port`: port number used by the workspace app inside the Docker image

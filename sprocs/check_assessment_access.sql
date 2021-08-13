@@ -131,11 +131,11 @@ BEGIN
         next_active_time = format_date_full_compact(next_active_start_date, display_timezone);
     END IF;
 
-    -- Override if we are an Instructor
+    -- Override if we are course staff
     IF (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') THEN
         authorized = TRUE;
         credit = 100;
-        credit_date_string = '100% (Instructor override)';
+        credit_date_string = '100% (Staff override)';
         active_access_rule_id = NULL;
         time_limit_min = NULL;
         password = NULL;
