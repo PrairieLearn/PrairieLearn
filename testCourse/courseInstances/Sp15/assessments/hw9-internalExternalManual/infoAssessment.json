@@ -12,10 +12,10 @@
     "zones": [
         {
             "questions": [
-                {"id": "internalGrade/addNumbers",                          "points": 2, "maxPoints": 6},
+                {"id": "internalGrade/addingNumbers",                          "points": 2, "maxPoints": 6},
                 {"id": "manualGrade/codeUpload",                            "points": 2, "maxPoints": 6},
                 {"id": "externalGrade/codeUpload",                          "points": 2, "maxPoints": 6},
-                {"id": "internalExternalManualGrade/addNumbersCodeUpload",  "points": 2, "maxPoints": 6}
+                {"id": "internalExternalManualGrade/addingNumbersCodeUpload",  "points": 2, "maxPoints": 6}
             ]
         }
     ]
