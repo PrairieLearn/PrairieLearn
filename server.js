@@ -360,7 +360,7 @@ module.exports.initExpress = function() {
         ]);
     }
 
-    // Redirect plain course page either to student or instructor assessments page
+    // Redirect plain course instance page either to student or instructor assessments page
     app.use(/^(\/pl\/course_instance\/[0-9]+)\/?$/, (req, res, _next) => {res.redirect(`${req.params[0]}/assessments`);});
     app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor)\/?$/, (req, res, _next) => {res.redirect(`${req.params[0]}/instance_admin/assessments`);});
 
@@ -962,10 +962,10 @@ module.exports.initExpress = function() {
     // Error handling ////////////////////////////////////////////////////
 
     // if no earlier routes matched, this will match and generate a 404 error
-    app.use([
-      require('./middlewares/notFound'),
-      require('./pages/error/error'),
-    ]);
+    app.use(require('./middlewares/notFound'));
+
+    app.use(require('./middlewares/redirectEffectiveAccessDenied'));
+    app.use(require('./pages/error/error'));
 
     return app;
 };
