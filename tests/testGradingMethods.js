@@ -274,7 +274,7 @@ describe('Grading methods', function() {
         // |----------------------------------------------------------------------------------------
 
 
-        const gradingMethods = ['Internal', 'External', 'Manual'];
+        // const gradingMethods = ['Internal', 'External', 'Manual'];
 
         it('"Internal" grading method combinations', () => {
             // want to use the original gradingMethod original.
