@@ -450,7 +450,7 @@ module.exports = function(req, res, next) {
                     // those ones for which the authn user also has access.
                     res.locals.authz_data.course_instances = result.rows[0].course_instances || [];
                     res.locals.authz_data.course_instances = res.locals.authz_data.course_instances.filter(
-                        ci => res.locals.authz_data.authn_course_instances.some(authn_ci => (authn_ci.id == ci.id))
+                        ci => res.locals.authz_data.authn_course_instances.some(authn_ci => (authn_ci.id == ci.id)),
                     );
 
                     if (isCourseInstance) {
