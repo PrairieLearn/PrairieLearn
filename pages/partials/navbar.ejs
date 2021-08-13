@@ -62,8 +62,17 @@
 
 
       <li class="nav-item dropdown mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
-        <a class="nav-link dropdown-toggle <% if (locals.authz_data && authz_data.overrides) { %>text-warning<% } %>" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <%= displayedName %>
+
+
+          <% if (navbarType == 'instructor') { %>
+            <span class="badge badge-success">staff</span>
+          <% } else if (navbarType == 'student' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
+            <span class="badge badge-warning">student</span>
+          <% } else if (locals.authz_data && authz_data.overrides) { %>
+            <span class="badge badge-warning">modified</span>
+          <% } %>
           <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
             <span class="badge badge-pill badge-primary news-item-count"><%= news_item_notification_count %></span>
           <% } %>
@@ -82,7 +91,7 @@
 
           <% if (locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) {
             // Only show "View type" menu(s) if the following two things are true:
-            // - The authn user was given access a course instance (so, both viewType and authz_data also exist).
+            // - The authn user was given access to a course instance (so, both viewType and authz_data also exist).
             // - In particular, the authn user has instructor access to this course instance.
             //
             // Note that the effective user may still have been denied access. In this
