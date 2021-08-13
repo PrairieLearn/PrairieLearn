@@ -56,7 +56,6 @@ BEGIN
                 course_instance_access_rules AS ar
             WHERE
                 ar.course_instance_id = ci.id
-                AND ((ar.role > 'Student') IS NOT TRUE)
         ) AS d,
         LATERAL (
             SELECT

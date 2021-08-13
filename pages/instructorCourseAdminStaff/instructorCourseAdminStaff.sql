@@ -20,7 +20,7 @@ FROM
     JOIN users AS u ON (u.user_id = cp.user_id)
     FULL JOIN course_instances AS ci ON (ci.course_id = $course_id AND ci.deleted_at IS NULL)
     LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id AND ci.id = cip.course_instance_id),
-    LATERAL (SELECT min(ar.start_date) AS start_date, max(ar.end_date) AS end_date FROM course_instance_access_rules AS ar WHERE ar.course_instance_id = ci.id AND ((ar.role > 'Student') IS NOT TRUE)) AS d
+    LATERAL (SELECT min(ar.start_date) AS start_date, max(ar.end_date) AS end_date FROM course_instance_access_rules AS ar WHERE ar.course_instance_id = ci.id) AS d
 WHERE
     cp.course_id = $course_id
 GROUP BY
