@@ -11,7 +11,7 @@ FROM
         JOIN pl_courses AS c ON (c.id = ci.course_id)
     )
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id),
-    LATERAL (SELECT min(ar.start_date) AS start_date, max(ar.end_date) AS end_date FROM course_instance_access_rules AS ar WHERE ar.course_instance_id = ci.id) AS d
+    LATERAL (SELECT min(ar.start_date) AS start_date, max(ar.end_date) AS end_date FROM course_instance_access_rules AS ar WHERE ar.course_instance_id = ci.id AND ((ar.role > 'Student') IS NOT TRUE)) AS d
 WHERE
     u.user_id = $user_id
     AND ci.deleted_at IS NULL

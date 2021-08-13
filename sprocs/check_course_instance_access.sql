@@ -23,4 +23,5 @@ FROM
     selected_course
 WHERE
     ciar.course_instance_id = check_course_instance_access.course_instance_id;
+    AND ((ciar.role > 'Student') IS NOT TRUE)
 $$ LANGUAGE SQL STABLE;
