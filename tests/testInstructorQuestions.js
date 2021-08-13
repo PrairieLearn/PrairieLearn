@@ -25,10 +25,10 @@ locals.questionsUrl = locals.courseInstanceBaseUrl + '/course_admin/questions';
 locals.questionsUrlCourse = locals.courseBaseUrl + '/course_admin/questions';
 locals.isStudentPage = false;
 
-const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
-const addVectors = {qid: 'addVectors', type: 'Calculation'};
-const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
-const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform'};
+const addNumbers = {qid: 'addNumbers', type: 'Freeform', title: 'Add two numbers'};
+const addVectors = {qid: 'addVectors', type: 'Calculation', title: 'Addition of vectors in Cartesian coordinates'};
+const downloadFile = {qid: 'downloadFile', type: 'Freeform', title: 'File download example question'};
+const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform', title: 'Differentiate a polynomial function of one variable'};
 
 
 describe('Instructor questions', function() {
@@ -37,7 +37,7 @@ describe('Instructor questions', function() {
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
 
-    var page, elemList;
+    var page, elemList, questionData;
 
     describe('the database', function() {
         it('should contain questions', function(callback) {
@@ -88,29 +88,34 @@ describe('Instructor questions', function() {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        it('should link to addNumbers question', function() {
-            elemList = locals.$('td a:contains("Add two numbers")');
-            assert.lengthOf(elemList, 1);
-            addNumbers.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(addNumbers.url, locals.courseBaseUrl + '/question/' + addNumbers.id + '/');
+        it('should contain question data', function() {
+            questionData = locals.$('#questionsTable').data('data');
+            assert.isArray(questionData);
+            questionData.forEach(question => assert.isObject(question));
         });
-        it('should link to addVectors question', function() {
-            elemList = locals.$('td a:contains("Addition of vectors in Cartesian coordinates")');
+        it('should include addNumbers question', function() {
+            elemList = questionData.filter(question => question.id == addNumbers.id);
             assert.lengthOf(elemList, 1);
-            addVectors.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(addVectors.url, locals.courseBaseUrl + '/question/' + addVectors.id + '/');
+            assert.equal(addNumbers.qid, elemList[0].qid);
+            assert.equal(addNumbers.title, elemList[0].title);
         });
-        it('should link to downloadFile question', function() {
-            elemList = locals.$('td a:contains("File download example question")');
+        it('should include addVectors question', function() {
+            elemList = questionData.filter(question => question.id == addVectors.id);
             assert.lengthOf(elemList, 1);
-            downloadFile.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(downloadFile.url, locals.courseBaseUrl + '/question/' + downloadFile.id + '/');
+            assert.equal(addVectors.qid, elemList[0].qid);
+            assert.equal(addVectors.title, elemList[0].title);
         });
-        it('should link to differentiatePolynomial question', function() {
-            elemList = locals.$('td a:contains("Differentiate a polynomial function of one variable")');
+        it('should include downloadFile question', function() {
+            elemList = questionData.filter(question => question.id == downloadFile.id);
             assert.lengthOf(elemList, 1);
-            differentiatePolynomial.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(differentiatePolynomial.url, locals.courseBaseUrl + '/question/' + differentiatePolynomial.id + '/');
+            assert.equal(downloadFile.qid, elemList[0].qid);
+            assert.equal(downloadFile.title, elemList[0].title);
+        });
+        it('should include differentiatePolynomial question', function() {
+            elemList = questionData.filter(question => question.id == differentiatePolynomial.id);
+            assert.lengthOf(elemList, 1);
+            assert.equal(differentiatePolynomial.qid, elemList[0].qid);
+            assert.equal(differentiatePolynomial.title, elemList[0].title);
         });
     });
 
@@ -130,29 +135,34 @@ describe('Instructor questions', function() {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        it('should link to addNumbers question', function() {
-            elemList = locals.$('td a:contains("Add two numbers")');
-            assert.lengthOf(elemList, 1);
-            addNumbers.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(addNumbers.url, locals.courseInstanceBaseUrl + '/question/' + addNumbers.id + '/');
+        it('should contain question data', function() {
+            questionData = locals.$('#questionsTable').data('data');
+            assert.isArray(questionData);
+            questionData.forEach(question => assert.isObject(question));
         });
-        it('should link to addVectors question', function() {
-            elemList = locals.$('td a:contains("Addition of vectors in Cartesian coordinates")');
+        it('should include addNumbers question', function() {
+            elemList = questionData.filter(question => question.id == addNumbers.id);
             assert.lengthOf(elemList, 1);
-            addVectors.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(addVectors.url, locals.courseInstanceBaseUrl + '/question/' + addVectors.id + '/');
+            assert.equal(addNumbers.qid, elemList[0].qid);
+            assert.equal(addNumbers.title, elemList[0].title);
         });
-        it('should link to downloadFile question', function() {
-            elemList = locals.$('td a:contains("File download example question")');
+        it('should include addVectors question', function() {
+            elemList = questionData.filter(question => question.id == addVectors.id);
             assert.lengthOf(elemList, 1);
-            downloadFile.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(downloadFile.url, locals.courseInstanceBaseUrl + '/question/' + downloadFile.id + '/');
+            assert.equal(addVectors.qid, elemList[0].qid);
+            assert.equal(addVectors.title, elemList[0].title);
         });
-        it('should link to differentiatePolynomial question', function() {
-            elemList = locals.$('td a:contains("Differentiate a polynomial function of one variable")');
+        it('should include downloadFile question', function() {
+            elemList = questionData.filter(question => question.id == downloadFile.id);
             assert.lengthOf(elemList, 1);
-            differentiatePolynomial.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(differentiatePolynomial.url, locals.courseInstanceBaseUrl + '/question/' + differentiatePolynomial.id + '/');
+            assert.equal(downloadFile.qid, elemList[0].qid);
+            assert.equal(downloadFile.title, elemList[0].title);
+        });
+        it('should include differentiatePolynomial question', function() {
+            elemList = questionData.filter(question => question.id == differentiatePolynomial.id);
+            assert.lengthOf(elemList, 1);
+            assert.equal(differentiatePolynomial.qid, elemList[0].qid);
+            assert.equal(differentiatePolynomial.title, elemList[0].title);
         });
     });
 

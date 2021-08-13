@@ -233,6 +233,11 @@
                     "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
                     "type": "boolean",
                     "default": true
+                },
+                "active": {
+                    "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
+                    "type": "boolean",
+                    "default": true
                 }
             }
         },

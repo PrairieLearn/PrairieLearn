@@ -630,6 +630,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
         workspace_graded_files: result.rows[0].workspace_graded_files,
         workspace_args: result.rows[0].workspace_args || '',
         workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
+        workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
     };
 
     if (config.cacheImageRegistry) {
@@ -967,10 +968,22 @@ function _createContainer(workspace, callback) {
     } else {
         args = args.split(' ');
     }
+
+    let networkMode = 'bridge';
+    if (!workspace.settings.workspace_enable_networking) {
+        if (config.workspaceSupportNoInternet) {
+            networkMode = 'no-internet';
+        } else {
+            logger.verbose('Workspace requested unsupported feature enableNetworking:false');
+        }
+    }
+
     let container;
 
     debug(`Creating docker container for image=${workspace.settings.workspace_image}`);
     debug(`Exposed port: ${workspace.settings.workspace_port}`);
+    debug(`Networking enabled: ${workspace.settings.workspace_enable_networking}`);
+    debug(`Network mode: ${networkMode}`);
     debug(`Env vars: WORKSPACE_BASE_URL=/pl/workspace/${workspace.id}/container/`);
     debug(`User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`);
     debug(`Port binding: ${workspace.settings.workspace_port}:${workspace.launch_port}`);
@@ -1023,6 +1036,7 @@ function _createContainer(workspace, callback) {
                     KernelMemory: 1 << 29, // 512 MiB
                     DiskQuota: 1 << 30, // 1 GiB
                     IpcMode: 'private',
+                    NetworkMode: networkMode,
                     CpuPeriod: 100000, // microseconds
                     CpuQuota: 90000, // portion of the CpuPeriod for this container
                     PidsLimit: 1024,
