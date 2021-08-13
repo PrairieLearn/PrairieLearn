@@ -65,14 +65,14 @@
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           <%= displayedName %>
 
-
-          <% if (navbarType == 'instructor') { %>
-            <span class="badge badge-success">staff</span>
-          <% } else if (navbarType == 'student' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
+          <% if (navbarType == 'student' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
             <span class="badge badge-warning">student</span>
           <% } else if (locals.authz_data && authz_data.overrides) { %>
             <span class="badge badge-warning">modified</span>
+          <% } else if (navbarType == 'instructor') { %>
+            <span class="badge badge-success">staff</span>
           <% } %>
+
           <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
             <span class="badge badge-pill badge-primary news-item-count"><%= news_item_notification_count %></span>
           <% } %>
