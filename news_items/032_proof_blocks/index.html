@@ -26,28 +26,31 @@
 </style>
 
 <p>
-    Due to the work of <a href="https://github.com/SethPoulsen">Seth Poulsen</a>, with design input from myself,
-    <a href="https://vmahesh.cs.illinois.edu/">Mahesh Viswanathan</a>,
-    and <a href="https://github.com/glherman">Geoffrey Herman</a>,
-    the <code class="user-output">pl-order-blocks</code> element can now be used to grade
-    problems where the dependence between the blocks is given by a directed acyclic graph (DAG) structure.
-    When used to allow students to construct mathematical proofs by dragging
-    and dropping blocks, we call it <a href="https://www.proofblocks.org">Proof Blocks</a>.
-    Special thanks also goes to
-    <a href="https://github.com/BenjaminCosman">Benjamin Cosman</a>,
-    <a href="https://patrickl.in/">Patrick Lin</a>,
-    and <a href="https://github.com/ygertner">Yael Gertner</a>,
-    for being willing to use the development version of Proof Blocks with their students, giving us helpful
-    feedback along the way.
+  <a href="https://github.com/SethPoulsen">Seth Poulsen</a> has
+  extended the <code class="user-output">pl-order-blocks</code>
+  element by adding a grading method where the dependence between the
+  blocks is given by a directed acyclic graph (DAG), allowing many
+  different correct orderings. This allows the construction
+  of <a href="https://www.proofblocks.org">Proof Blocks</a> questions,
+  where students construct mathematical proofs by dragging and
+  dropping blocks into a logically consistent order. Thanks go to
+  <a href="https://vmahesh.cs.illinois.edu/">Mahesh Viswanathan</a>
+  and <a href="https://github.com/glherman">Geoffrey Herman</a> for
+  design input, and
+  <a href="https://github.com/BenjaminCosman">Benjamin Cosman</a>,
+  <a href="https://patrickl.in/">Patrick Lin</a>,
+  and <a href="https://github.com/ygertner">Yael Gertner</a> for
+  beta-testing Proof Blocks with their students and providing very
+  helpful feedback.
 </p>
 
 <p>
-    Here is an example Proof Blocks question like one might see in an introductory proofs course:
+    Here is an example Proof Blocks question from an introductory proofs course:
 </p>
 <img class="border rounded" src="./ProofBlocks-demo.gif" style="max-width:100%;" >
 
 <p>
-    The <code class="user-output">question.html</code> that would generate this question would contain:
+    The <code class="user-output">question.html</code> that generates this question has:
 </p>
 
 <div class="code-block rounded">
@@ -66,17 +69,22 @@
 </div>
 
 <p>
-    Our paper about Proof Blocks,
-    <a href="https://sethpoulsen.github.io/papers/poulsen2021evaluating.pdf" style="font-style: italic;">Evaluating Proof Blocks Problems as Exam Questions</a>,
-    was awarded an Honorable Mention for best paper award at this years'
-    <a href="https://icer2021.acm.org/">International Computing Education Research Conference</a>.
-    In the paper, we show that Proof Blocks problems give a substantial amount of information about student knowledge while being easier
-    than written proof problems. Stay tuned for further research with Proof Blocks!
+  Seth's
+  paper <a href="https://sethpoulsen.github.io/papers/poulsen2021evaluating.pdf"
+  style="font-style: italic;">Evaluating Proof Blocks Problems as Exam
+  Questions</a> was awarded an Honorable Mention for the best paper award
+  at this years'
+  <a href="https://icer2021.acm.org/">International Computing
+  Education Research Conference</a>.  In the paper, Seth showed that
+  Proof Blocks problems give a substantial amount of information about
+  student knowledge while being easier than written proof
+  problems. See <a href="https://www.proofblocks.org/research/">more
+  research</a> about Proof Blocks.
 </p>
 
 <p> To try Proof Blocks, see the <a href="https://www.prairielearn.org/pl/course/108/question/9063230/preview">
-    Proof Blocks demo question
-  </a>.</p>
+    Proof Blocks demo question</a>.
+</p>
 
 <p> For more information, see the <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-block-element">pl-order-block documentation</a>. </p>
 
