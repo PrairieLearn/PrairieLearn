@@ -44,9 +44,9 @@
             </thead>
             <tbody>
               <% rows.forEach(function(row, i) { %>
-              <% if (row.start_new_set) { %>
+              <% if (row.start_new_assessment_group) { %>
               <tr>
-                <th colspan="7"><%= row.heading %></th>
+                <th colspan="8"><%= row.assessment_group_heading %></th>
               </tr>
               <% } %>
               <tr>
@@ -66,7 +66,15 @@
                   <% } %></a>
                   <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
                 </td>
-                <td><%= row.assessment_unit_name %></td>
+
+                <td
+                  <% if (row.assessment_unit_name.trim() == 'Default') { %>
+                    class="text-muted"
+                  <% } %>
+                >
+                  <%= row.assessment_unit_name %>
+                </td>
+                
                 <td class="align-middle"><%= row.tid %></td>
 
                 <td class="text-center align-middle"><%= row.number %></td>
