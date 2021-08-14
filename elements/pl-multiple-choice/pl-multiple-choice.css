@@ -9,10 +9,10 @@
 }
 
 .pl-multiple-choice-hint {
-    border-left: .25rem solid #999;
-    background-color: #F9F9F9;
-    padding: .25rem .5rem;
-    margin-left: .5rem;
-    margin-right: .5rem;
-    border-radius: .2rem;
+    border-left: 0.25rem solid rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.03);
+    padding: 0.25rem 0.5rem;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    border-radius: 0.2rem;
 }
