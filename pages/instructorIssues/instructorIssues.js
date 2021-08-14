@@ -155,20 +155,17 @@ router.get('/', function(req, res, next) {
 
                 // There are three situations in which the issue need not be anonymized:
                 //
-                //  1) We are in devMode.
-                //
-                //  2) The issue is not associated with a course instance. The only way
+                //  1) The issue is not associated with a course instance. The only way
                 //     for a user to generate an issue that is not associated with a course
                 //     instance is if they are an instructor, so there are no student data
                 //     to be protected in this case.
                 //
-                //  3) We are accessing this page through a course instance, the issue is
+                //  2) We are accessing this page through a course instance, the issue is
                 //     associated with the same course instance, and the user has student
                 //     data view access.
                 //
                 // Otherwise, all issues must be anonymized.
                 row.show_user = (
-                    res.locals.devMode ||
                     (!row.course_instance_id) ||
                     (
                         res.locals.course_instance &&
