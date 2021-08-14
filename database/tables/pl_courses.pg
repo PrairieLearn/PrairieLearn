@@ -1,5 +1,5 @@
 columns
-    assessments_group_by: enum_assessment_grouping not null default 'set'::enum_assessment_grouping
+    assessments_group_by: enum_assessment_grouping not null default 'Set'::enum_assessment_grouping
     branch: text default 'master'::text
     commit_hash: text
     deleted_at: timestamp with time zone

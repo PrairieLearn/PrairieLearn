@@ -44,13 +44,13 @@ SELECT
     (aset.abbreviation || a.number) as label,
     au.name AS assessment_unit_name,
     (
-        LAG (CASE WHEN $assessments_group_by = 'set' THEN aset.id ELSE au.id END)
+        LAG (CASE WHEN $assessments_group_by = 'Set' THEN aset.id ELSE au.id END)
         OVER (
-            PARTITION BY (CASE WHEN $assessments_group_by = 'set' THEN aset.id ELSE au.id END)
+            PARTITION BY (CASE WHEN $assessments_group_by = 'Set' THEN aset.id ELSE au.id END)
             ORDER BY aset.id, a.order_by, a.id NULLS FIRST
         ) IS NULL
     ) AS start_new_assessment_group,
-    (CASE WHEN $assessments_group_by = 'set' THEN aset.heading ELSE au.heading END) AS assessment_group_heading,
+    (CASE WHEN $assessments_group_by = 'Set' THEN aset.heading ELSE au.heading END) AS assessment_group_heading,
     coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
     assessments AS a
@@ -66,7 +66,7 @@ WHERE
     AND a.deleted_at IS NULL
     AND aa.authorized
 ORDER BY
-    (CASE WHEN $assessments_group_by = 'unit' THEN au.number END), 
+    (CASE WHEN $assessments_group_by = 'Unit' THEN au.number END), 
     aset.number, a.order_by, a.id;
 
 -- BLOCK course_instance_files

@@ -109,10 +109,10 @@
         "groupBy": {
             "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
             "type": "string",
-            "default": "set",
+            "default": "Set",
             "enum": [
-                "set",
-                "unit"
+                "Set",
+                "Unit"
             ]
         },
         "topics": {

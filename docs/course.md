@@ -53,9 +53,14 @@ This file specifies basic information about the course:
     "name": "TAM 212",
     "title": "Introductory Dynamics",
     "comment": "The assessment set order used here will be the one shown within PrairieLearn",
+    "groupBy": "Unit",
     "assessmentSets": [
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
+    ],
+    "assessmentUnits": [
+        {"name": "vectors-coords", "heading": "Vectors and coordinates"},
+        {"name": "moments", "heading": "Moments of inertia"}
     ],
     "topics": [
         {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D"},
@@ -133,7 +138,7 @@ Property | Description
 `name` | One word to identify the unit, lowercase.
 `heading` | Longer title for the unit, displayed to users.
 
-Units are optional and do not affect any behavior by default. Setting the `infoCourse.json` property `"groupBy"` to `"unit"` (over the default `"set"`) will cause assessments to be grouped together by unit on the student assessments overview page. Because units are defined in an array, the order that they are defined in will be the order that they display in, top-down, to students. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
+Units are optional and do not affect any behavior by default. Setting the `infoCourse.json` property `"groupBy"` to `"Unit"` (over the default `"Set"`) will cause assessments to be grouped together by unit on the student assessments overview page. Because units are defined in an array, the order that they are defined in will be the order that they display in, top-down, to students. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
 
 ```json
 "assessmentUnits": [
@@ -142,7 +147,7 @@ Units are optional and do not affect any behavior by default. Setting the `infoC
     {"name": "math", "heading": "Unit 3: Math"},
     {"name": "fun", "heading": "Unit 4: Extras for fun"}
 ],
-"groupBy": "unit",
+"groupBy": "Unit",
 ```
 
 The above configuration can result in the following view for students:

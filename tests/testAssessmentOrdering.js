@@ -24,9 +24,9 @@ describe('Course with assessments grouped by unit vs set', function() {
     });
     after('shut down testing server', helperServer.after);
 
-    step('testCourse should implicitly have assessments_group_by=set after sync', async function() {
+    step('testCourse should implicitly have assessments_group_by=Set after sync', async function() {
         const result = await sqldb.queryOneRowAsync(sqlEquiv.get_test_course, []);
-        assert.equal(result.rows[0].assessments_group_by, 'set');
+        assert.equal(result.rows[0].assessments_group_by, 'Set');
     });
 
     async function fetchAssessmentsPage() {
@@ -52,7 +52,7 @@ describe('Course with assessments grouped by unit vs set', function() {
         return badgeText;
     }
 
-    step('check heading order for assessments_group_by=set', async function() {
+    step('check heading order for assessments_group_by=Set', async function() {
         
         const response = await fetchAssessmentsPage();
         
@@ -66,12 +66,12 @@ describe('Course with assessments grouped by unit vs set', function() {
         context.assessmentBadges = extractAssessmentSetBadgeText(response);
     });
 
-    step('set assessments_group_by=unit in db', async function() {
+    step('set assessments_group_by=Unit in db', async function() {
         const result = await sqldb.queryOneRowAsync(sqlEquiv.test_course_assessments_group_by_unit, []);
         assert(result.rows[0].id, 1);
     });
 
-    step('check heading and assessment order for assessments_group_by=unit', async function() {
+    step('check heading and assessment order for assessments_group_by=Unit', async function() {
         
         const response = await fetchAssessmentsPage();
         
@@ -108,6 +108,6 @@ describe('Course with assessments grouped by unit vs set', function() {
         assert.sameOrderedMembers(badges.slice(0,expectedBadges.length), expectedBadges, 'First three units have assessments in expected order');
 
         // compare this new set of badges with the old one
-        assert.sameMembers(badges, context.assessmentBadges, 'Assessments are consistent between assessments_group_by=set and assessments_group_by=unit');
+        assert.sameMembers(badges, context.assessmentBadges, 'Assessments are consistent between assessments_group_by=Set and assessments_group_by=Unit');
     });
 });

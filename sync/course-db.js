@@ -656,7 +656,7 @@ module.exports.loadCourseInfo = async function(coursePath) {
         assessmentUnits,
         tags,
         topics,
-        groupBy: info.groupBy || 'set',
+        groupBy: info.groupBy || 'Set',
         exampleCourse,
         options: {
             useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
