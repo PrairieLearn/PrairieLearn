@@ -143,12 +143,24 @@
             }
           %>
 
+            <% if (locals.authz_data?.overrides && authnViewTypeMenuChecked == 'instructor') { %>
+              <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-reset-view">
+                Reset to default staff view <span class="badge badge-success">staff</span>
+              </a>
+
+              <div class="dropdown-divider"></div>
+            <% } %>
+
+
             <h6 class="dropdown-header"><%= headingAuthnViewTypeMenu %></h6>
 
             <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-authn-instructor">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'instructor') { %>&check;<% } %></div>
-                <div class="col pl-0">Staff view <span class="badge badge-success">staff</span></div>
+                <div class="col pl-0">
+                  <% if (locals.authz_data?.overrides && authnViewTypeMenuChecked == 'instructor') { %>Modified staff<% } else { %>Staff<% } %>
+                  view <span class="badge badge-success">staff</span>
+                </div>
               </div>
             </a>
 
@@ -316,6 +328,15 @@
 
       $(function() {
         const expires = 30; // in units of days
+
+        $('#navbar-reset-view').click(function() {
+          Cookies.remove('pl_requested_course_role', { path: '/' });
+          Cookies.remove('pl_requested_course_instance_role', { path: '/' });
+
+          <% if (viewType == 'instructor') { %>
+            location.reload();
+          <% } %>
+        });
 
         $('#navbar-user-view-authn-instructor').click(function() {
           Cookies.remove('pl_requested_uid', { path: '/' });
