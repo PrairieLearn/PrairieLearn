@@ -37,7 +37,11 @@ You can select a set from the list of [standardized assessment sets](course.md#s
 
 ## Assessment units
 
-An assessment will belong to the unit named by its `unit` property. By default, an assessment defined without an explicit unit will belong to the "Default" unit. Units are optional fields that are used to control the order that assessments are displayed to students. For more information, see [Course configuration](course.md#assessment-units).
+Instructors may optionally group their assessments by course units, corresponding to course topics or individual parts of the course. This allows students to see all assessments corresponding to a particular unit, which can help them plan their study and practice habits.
+
+By default, every assessment is assigned to the "Default" unit. Instructors may assign an assessment to a specific unit by setting its `unit` property. 
+
+For more information about assessment units, see [Course configuration](course.md#assessment-units).
 
 ## Assessment types
 

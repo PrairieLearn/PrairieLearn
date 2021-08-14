@@ -138,7 +138,7 @@ Property | Description
 `name` | One word to identify the unit, lowercase.
 `heading` | Longer title for the unit, displayed to users.
 
-Units are optional and do not affect any behavior by default. Setting the `infoCourse.json` property `"groupBy"` to `"Unit"` (over the default `"Set"`) will cause assessments to be grouped together by unit on the student assessments overview page. Because units are defined in an array, the order that they are defined in will be the order that they display in, top-down, to students. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
+Units are optional and do not affect any behavior by default. Setting the `infoCourse.json` property `"groupBy"` to `"Unit"` (instead of the default `"Set"`) will cause assessments to be grouped together by unit on the student assessments overview page. The order that they are defined in will be the order that they display in, top-down, to students. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
 
 ```json
 "assessmentUnits": [
