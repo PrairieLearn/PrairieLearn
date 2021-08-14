@@ -81,9 +81,9 @@
 
           <% if (locals.authn_is_administrator) { %>
 
-            <button class="dropdown-item" type="button" name="administrator">
+            <a class="dropdown-item" id="navbar-administrator-toggle">
               <% if (locals.access_as_administrator) { %>Turn off administrator access<% } else { %>Turn on administrator access<% } %>
-            </button>
+            </a>
 
             <div class="dropdown-divider"></div>
 
@@ -300,7 +300,7 @@
 
       $(function() {
         const expires = 30; // in units of days
-        $('button[name="administrator"]').click(function() {
+        $('#navbar-administrator-toggle').click(function() {
           <% if (locals.access_as_administrator) { %>
             Cookies.set('pl_access_as_administrator', 'inactive', { path: '/', expires: expires });
           <% } else { %>
