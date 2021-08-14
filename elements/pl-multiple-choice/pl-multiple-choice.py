@@ -48,10 +48,10 @@ def categorize_options(element, data):
             with open(json_file, mode='r', encoding='utf-8') as f:
                 obj = json.load(f)
                 for text in obj.get(correct_attrib, []):
-                    correct_answers.append((index, True, text))
+                    correct_answers.append((index, True, text, None))
                     index += 1
                 for text in obj.get(incorrect_attrib, []):
-                    incorrect_answers.append((index, False, text))
+                    incorrect_answers.append((index, False, text, None))
                     index += 1
         except FileNotFoundError:
             raise Exception(f'JSON answer file: "{json_file}" could not be found')
