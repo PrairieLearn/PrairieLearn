@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Test Active Access Rule",
     "set": "Exam",
+    "unit": "misc",
     "number": "11",
     "allowAccess": [
         {

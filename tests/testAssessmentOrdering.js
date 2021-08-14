@@ -37,7 +37,7 @@ describe('Course with assessments grouped by unit vs set', function() {
 
     function testHeadingOrder(response, assessmentHeadings) {
         const headings = response.$('table th.pl-assessment-group-heading');
-        assert.lengthOf(headings, assessmentHeadings.length);
+        assert.lengthOf(headings, assessmentHeadings.length, 'If you recently added a new assessment to the testCourse, you need to set "unit":"misc".');
         headings.each((i, heading) => {
             let headingText = response.$(heading).text();
             assert(headingText.includes(assessmentHeadings[i]), `expected ${headingText} to include ${assessmentHeadings[i]}`);

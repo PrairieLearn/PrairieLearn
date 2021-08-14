@@ -3,6 +3,7 @@
     "type": "Homework",
     "title": "Homework to test Active Rule",
     "set": "Homework",
+    "unit": "misc",
     "number": "8",
     "allowAccess": [
         {
