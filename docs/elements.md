@@ -119,6 +119,8 @@ Attribute | Type | Default | Description
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `all-of-the-above` | boolean | false | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`.
 `none-of-the-above` | boolean | false | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.
+`all-of-the-above-hint` | — | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.
+`none-of-the-above-hint` | — | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.
 `external-json` | string | special | Optional path to a JSON file to load external answer choices from.  Answer choices are stored as lists under "correct" and "incorrect" key names.
 `external-json-correct-key` | string | special | Optionally override default json "correct" attribute name when using `external-json` file.
 `external-json-incorrect-key` | string | special | Optionally override default json "incorrect" attribute name when using `external-json` file.
