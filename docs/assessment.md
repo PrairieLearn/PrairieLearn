@@ -13,6 +13,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
     "type": "Exam",
     "title": "Coordinates and Vectors",
     "set": "Quiz",
+    "unit": "Linear algebra review",
     "number": "2",
     "allowAccess": [],
     "zones": [],
