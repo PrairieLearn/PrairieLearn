@@ -32,8 +32,9 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: images/plbase
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/plbase:latest
 
       ######################################################################################################
@@ -42,8 +43,9 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/prairielearn:latest
 
       ######################################################################################################
@@ -55,8 +57,9 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/c
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/grader-c:latest
 
       ######################################################################################################
@@ -68,8 +71,9 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/java
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/grader-java:latest
 
       ######################################################################################################
@@ -81,8 +85,9 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/python
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/grader-python:latest
 
       ######################################################################################################
@@ -94,8 +99,9 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/r
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/grader-r:latest
 
       ######################################################################################################
@@ -107,8 +113,9 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/jupyterlab
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/workspace-jupyterlab:latest
 
       ######################################################################################################
@@ -120,6 +127,149 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/xtermjs
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/workspace-xtermjs:latest
+
+
+      ######################################################################################################
+      ######################################################################################################
+      ######################################################################################################
+      ######################################################################################################
+      #
+      # ARM64
+      #
+      # We should be able to use `platforms: linux/amd64,linux/arm64`
+      # above to build all images on both platforms simultaneously,
+      # but the arm64 builds are currently not reliable on GitHub
+      # Actions. This seems to be because we are using qemu on x86
+      # build hosts to build the arm64 images. A similar issue with
+      # postgis: https://github.com/postgis/docker-postgis/issues/216
+      #
+      # Note that we have also set `continue-on-error: true` for the
+      # arm64 builds. If these become reliable in the future then we
+      # should remove this.
+      #
+      ######################################################################################################
+      ######################################################################################################
+      ######################################################################################################
+      ######################################################################################################
+
+
+#      ######################################################################################################
+#      # plbase
+#      - name: Check whether images/plbase was modified
+#        run: tools/check_path_modified.sh images/plbase images_plbase_modified
+#      - name: Build and push prairielearn/plbase
+#        if: ${{ env.images_plbase_modified }}
+#        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+#        with:
+#          context: images/plbase
+#          platforms: linux/arm64
+#          push: true
+#          no-cache: true
+#          tags: prairielearn/plbase:latest
+#        continue-on-error: true
+#
+#      ######################################################################################################
+#      # prairielearn
+#      - name: Build and push prairielearn/prairielearn
+#        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+#        with:
+#          context: .
+#          platforms: linux/arm64
+#          push: true
+#          no-cache: true
+#          tags: prairielearn/prairielearn:latest
+#        continue-on-error: true
+#
+#      ######################################################################################################
+#      # grader-c
+#      - name: Check whether graders/c was modified
+#        run: tools/check_path_modified.sh graders/c graders_c_modified
+#      - name: Build and push prairielearn/grader-c
+#        if: ${{ env.graders_c_modified }}
+#        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+#        with:
+#          context: graders/c
+#          platforms: linux/arm64
+#          push: true
+#          no-cache: true
+#          tags: prairielearn/grader-c:latest
+#        continue-on-error: true
+#
+#      ######################################################################################################
+#      # grader-java
+#      - name: Check whether graders/java was modified
+#        run: tools/check_path_modified.sh graders/java graders_java_modified
+#      - name: Build and push prairielearn/grader-java
+#        if: ${{ env.graders_java_modified }}
+#        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+#        with:
+#          context: graders/java
+#          platforms: linux/arm64
+#          push: true
+#          no-cache: true
+#          tags: prairielearn/grader-java:latest
+#        continue-on-error: true
+#
+#      ######################################################################################################
+#      # grader-python
+#      - name: Check whether graders/python was modified
+#        run: tools/check_path_modified.sh graders/python graders_python_modified
+#      - name: Build and push prairielearn/grader-python
+#        if: ${{ env.graders_python_modified }}
+#        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+#        with:
+#          context: graders/python
+#          platforms: linux/arm64
+#          push: true
+#          no-cache: true
+#          tags: prairielearn/grader-python:latest
+#        continue-on-error: true
+#
+#      ######################################################################################################
+#      # grader-r
+#      - name: Check whether graders/r was modified
+#        run: tools/check_path_modified.sh graders/r graders_r_modified
+#      - name: Build and push prairielearn/grader-r
+#        if: ${{ env.graders_r_modified }}
+#        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+#        with:
+#          context: graders/r
+#          platforms: linux/arm64
+#          push: true
+#          no-cache: true
+#          tags: prairielearn/grader-r:latest
+#        continue-on-error: true
+#
+#      ######################################################################################################
+#      # workspace-jupyterlab
+#      - name: Check whether workspaces/jupyterlab was modified
+#        run: tools/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
+#      - name: Build and push prairielearn/workspace-jupyterlab
+#        if: ${{ env.workspaces_jupyterlab_modified }}
+#        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+#        with:
+#          context: workspaces/jupyterlab
+#          platforms: linux/arm64
+#          push: true
+#          no-cache: true
+#          tags: prairielearn/workspace-jupyterlab:latest
+#        continue-on-error: true
+#
+#      ######################################################################################################
+#      # workspace-xtermjs
+#      - name: Check whether workspaces/xtermjs was modified
+#        run: tools/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
+#      - name: Build and push prairielearn/workspace-xtermjs
+#        if: ${{ env.workspaces_xtermjs_modified }}
+#        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+#        with:
+#          context: workspaces/xtermjs
+#          platforms: linux/arm64
+#          push: true
+#          no-cache: true
+#          tags: prairielearn/workspace-xtermjs:latest
+#        continue-on-error: true
