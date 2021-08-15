@@ -57,7 +57,7 @@
 
     <ul class="nav navbar-nav" id="username-nav">
       <% if (devMode) { %>
-          <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
+          <li class="mb-2 mb-md-0 mr-2 "><a id="navbar-load-from-disk" class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
       <% } %>
 
 
@@ -308,6 +308,17 @@
 
   <script>
 
+    <% if (devMode) { %>
+      $('#navbar-load-from-disk').click(function() {
+        Cookies.remove('pl_requested_uid', { path: '/' });
+        Cookies.remove('pl_requested_course_role', { path: '/' });
+        Cookies.remove('pl_requested_course_instance_role', { path: '/' });
+        Cookies.remove('pl_requested_mode', { path: '/' });
+        Cookies.remove('pl_requested_date', { path: '/' });
+      });
+    <% } %>
+
+
     <% if (locals.authn_is_administrator) { %>
 
       $(function() {
@@ -330,8 +341,11 @@
         const expires = 30; // in units of days
 
         $('#navbar-reset-view').click(function() {
+          Cookies.remove('pl_requested_uid', { path: '/' });
           Cookies.remove('pl_requested_course_role', { path: '/' });
           Cookies.remove('pl_requested_course_instance_role', { path: '/' });
+          Cookies.remove('pl_requested_mode', { path: '/' });
+          Cookies.remove('pl_requested_date', { path: '/' });
 
           <% if (viewType == 'instructor') { %>
             location.reload();
