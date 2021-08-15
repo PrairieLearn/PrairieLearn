@@ -25,10 +25,6 @@ import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass
 
 public class JUnitAutograder implements TestExecutionListener {
 
-    private static final File baseDirectoryForStudentCode = new File("/grade/student");
-    private static final File baseDirectoryForTests = new File("/grade/tests/junit");
-
-    private final JavaCompiler compiler;
     private final Launcher launcher;
 
     private double points = 0, maxPoints = 0;
@@ -36,12 +32,10 @@ public class JUnitAutograder implements TestExecutionListener {
     private boolean gradable = true;
     private List<AutograderTest> tests = new ArrayList<>();
 
-    private Collection<File> studentFiles = new HashSet<>();
-    private Collection<File> testFiles = new HashSet<>();
-    private Collection<String> testClasses = new HashSet<>();
+    private String resultsFile;
+    private String[] testClasses;
 
     public JUnitAutograder() {
-        this.compiler = ToolProvider.getSystemJavaCompiler();
         launcher = LauncherFactory.create();
         launcher.registerTestExecutionListeners(this);
     }
@@ -49,19 +43,13 @@ public class JUnitAutograder implements TestExecutionListener {
     public static void main(String args[]) {
 
         JUnitAutograder autograder = new JUnitAutograder();
+        autograder.resultsFile = args[0];
+        autograder.testClasses = args[1].split(" ");
+        if (!"".equals(args[2]))
+            autograder.message = "Compilation warnings:\n\n" + args[2];
 
         try {
-            autograder.findStudentFiles(baseDirectoryForStudentCode);
-            autograder.findTestFiles(baseDirectoryForTests, "");
-
-            autograder.compileFiles(autograder.studentFiles, true,
-                    "Compilation errors, please fix and try again.",
-                    "Compilation warnings:");
-            autograder.compileFiles(autograder.testFiles, false,
-                    "Error compiling test files. This typically means your class does not match the specified signature.",
-                    null);
             autograder.runTests();
-
         } catch (UngradableException e) {
             autograder.gradable = false;
         } finally {
@@ -69,68 +57,19 @@ public class JUnitAutograder implements TestExecutionListener {
         }
     }
 
-    private void findStudentFiles(File directory) throws UngradableException {
-
-        StringWriter out = new StringWriter();
-
-        for (File fileEntry : directory.listFiles()) {
-            if (fileEntry.isDirectory())
-                this.findStudentFiles(fileEntry);
-            else if (fileEntry.getName().endsWith(".java")) {
-                System.out.println("Student class found: " + fileEntry.getName());
-                this.studentFiles.add(fileEntry);
-            }
-        }
-    }
-
-    public void findTestFiles(File directory, String classBaseName) throws UngradableException {
-
-        for (File fileEntry : directory.listFiles()) {
-            if (fileEntry.isDirectory())
-                this.findTestFiles(fileEntry, classBaseName + fileEntry.getName() + ".");
-            else if (fileEntry.getName().endsWith(".java")) {
-                System.out.println("Test found: " + fileEntry.getName());
-                testFiles.add(fileEntry);
-                testClasses.add(classBaseName + fileEntry.getName().substring(0, fileEntry.getName().lastIndexOf('.')));
-            }
-        }
-    }
-
-    /* With help from:
-     * https://stackoverflow.com/questions/2946338/how-do-i-programmatically-compile-and-instantiate-a-java-class
-     * https://stackoverflow.com/questions/55496833/getting-list-of-all-tests-junit-tests
-     */
-    private void compileFiles(Iterable<File> files, boolean listError, String messageIfError, String messageIfWarning) throws UngradableException {
-
-        StringWriter out = new StringWriter();
-        StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
-
-        boolean result = this.compiler.getTask(out, null, null,
-                Arrays.asList(new String[]{"-Xlint", "-d", baseDirectoryForStudentCode.getAbsolutePath()}),
-                null,
-                fileManager.getJavaFileObjectsFromFiles(files)).call();
-
-        if (!result) {
-            System.out.println("Compilation error:");
-            System.out.println(out.toString());
-            this.message += messageIfError + (listError ? "\n\n" + out.toString() : "") + "\n";
-            throw new UngradableException();
-        } else if (!"".equals(out.toString())) {
-            System.out.println("Compilation warning:");
-            System.out.println(out.toString());
-            if (listError)
-                this.message += messageIfWarning + "\n\n" + out.toString() + "\n";
-        }
-    }
-
     public void runTests() throws UngradableException {
 
         LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
 
-        for (String className : testClasses) {
+        for (String classSrcName : testClasses) {
+            String className = classSrcName
+                .replaceFirst("^/grade/tests/junit/", "")
+                .replaceFirst("\\.java$", "")
+                .replaceAll("/", ".");
+            System.out.println("Test class: " + className + " (from " + classSrcName + ")");
             try {
                 Class<?> cls = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-                LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request().selectors(selectClass(cls)).build();
+                LauncherDiscoveryRequest request = requestBuilder.selectors(selectClass(cls)).build();
                 this.launcher.execute(request);
             } catch (ClassNotFoundException e) {
                 this.points = 0;
@@ -198,9 +137,7 @@ public class JUnitAutograder implements TestExecutionListener {
         results.put("gradable", this.gradable);
         results.put("tests", resultsTests);
 
-        new File("/grade/results").mkdirs();
-        try (FileWriter writer = new FileWriter("/grade/results/results.json")) {
-            System.out.println(results.toString());
+        try (FileWriter writer = new FileWriter(this.resultsFile)) {
             writer.write(results.toString());
         } catch (IOException e) {
             e.printStackTrace();

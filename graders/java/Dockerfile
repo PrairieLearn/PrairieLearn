@@ -4,8 +4,7 @@ LABEL maintainer="jonatan@cs.ubc.ca"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt update
-RUN apt install -y python3.8 python3-pip make openjdk-11-jdk-headless && apt clean
+RUN apt update && apt install -y python3.8 python3-pip make openjdk-11-jdk-headless jq && apt clean
 
 RUN ln -sf /usr/bin/python3.8 /usr/bin/python3
 
