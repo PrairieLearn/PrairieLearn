@@ -8,6 +8,10 @@
 #' the file can be read so that the expression can be evaluated---but nothing else
 #' should be in reach.
 #'
+#' The \code{source_and_eval_safe_with_hiding} variant can \emph{hide} a given file, for
+#' example containing a reference answer, but assigning it to a unique temporary name so
+#' that it cannot be sourced.
+#'
 #' The \code{eval_safe_as} convenience function fetches the (numeric) user id
 #' before calling \code{unix::eval_safe}; it is equivalent to \code{source_and_eval_safe}
 #' but does not involve a file.
@@ -24,6 +28,8 @@
 #' (presumably lower) privileges as which the code is running; the numeric uid
 #' is obtained via \code{\link[unix]{user_info}} is a character is supplied.
 #' Note that using this argument requires being the \sQuote{root} user.
+#' @param path Optional path to a file that should be hidden before evaluation
+#' happens. It is then unhidden on exit.
 #'
 #' @return A value of the \code{expr} sourced from \code{file} and evaluated by
 #' \code{uid}, or NULL in case of error.
@@ -52,4 +58,27 @@ source_and_eval_safe <- function(file, expr, uid=NULL) {
 eval_safe_as <- function(expr, uid=NULL) {
     if (!is.null(uid) && class(uid) == "character") uid <- user_info(uid)$uid
     res <- eval_safe(expr, uid=uid)
+}
+
+#' @rdname source_and_eval_safe
+source_and_eval_safe_with_hiding <- function(file, expr, uid=NULL, path=NULL) {
+    if (!is.null(uid) && class(uid) == "character") uid <- user_info(uid)$uid
+
+    if (!file.exists(file)) return(invisible(NULL))
+
+    if (!is.null(path) && file.exists(path)) {
+        newpath <- tempfile(tmpdir=dirname(path))
+        oldpath <- path
+        file.rename(oldpath, newpath)
+        on.exit(file.rename(newpath, oldpath), add=TRUE)
+    }
+
+    oldmode <- file.mode(file)
+    Sys.chmod(file, mode="0664")
+    source(file)
+
+    res <- eval_safe(expr, uid=uid)
+    Sys.chmod(file, mode=oldmode)
+
+    res
 }

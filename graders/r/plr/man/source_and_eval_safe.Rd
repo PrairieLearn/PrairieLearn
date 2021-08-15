@@ -3,11 +3,14 @@
 \name{source_and_eval_safe}
 \alias{source_and_eval_safe}
 \alias{eval_safe_as}
+\alias{source_and_eval_safe_with_hiding}
 \title{Wrapper to source a file and safely evaluate an expression}
 \usage{
 source_and_eval_safe(file, expr, uid = NULL)
 
 eval_safe_as(expr, uid = NULL)
+
+source_and_eval_safe_with_hiding(file, expr, uid = NULL, path = NULL)
 }
 \arguments{
 \item{file}{A filename with an R file to be source, typically containing
@@ -21,6 +24,9 @@ plus the argument supplied from the test runner.}
 (presumably lower) privileges as which the code is running; the numeric uid
 is obtained via \code{\link[unix]{user_info}} is a character is supplied.
 Note that using this argument requires being the \sQuote{root} user.}
+
+\item{path}{Optional path to a file that should be hidden before evaluation
+happens. It is then unhidden on exit.}
 }
 \value{
 A value of the \code{expr} sourced from \code{file} and evaluated by
@@ -36,6 +42,10 @@ the file can be read so that the expression can be evaluated---but nothing else
 should be in reach.
 }
 \details{
+The \code{source_and_eval_safe_with_hiding} variant can \emph{hide} a given file, for
+example containing a reference answer, but assigning it to a unique temporary name so
+that it cannot be sourced.
+
 The \code{eval_safe_as} convenience function fetches the (numeric) user id
 before calling \code{unix::eval_safe}; it is equivalent to \code{source_and_eval_safe}
 but does not involve a file.
