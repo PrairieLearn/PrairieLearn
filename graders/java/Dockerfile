@@ -16,15 +16,13 @@ ENV PYTHONIOENCODING=UTF-8
 ENV PYTHONPATH=/javagrader/
 
 RUN groupadd sbuser
-RUN useradd -g sbuser sbuser
+RUN useradd -m -g sbuser sbuser
 
 RUN mkdir /javagrader
 COPY libs /javagrader/libs
 COPY JUnitAutograder.java AutograderInfo.java /javagrader/
 
-ENV CLASSPATH=/javagrader:/javagrader/libs:/javagrader/libs/*:/grade/tests/libs:/grade/tests/libs/*:/grade/serverFilesCourse/java/libs/*:/grade/tests/junit:/grade/student
-
-RUN javac -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java
+RUN javac -cp '/javagrader:/javagrader/libs:/javagrader/libs/*' -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java
 
 COPY autograder.sh /bin
 RUN chmod 700 /bin/autograder.sh
