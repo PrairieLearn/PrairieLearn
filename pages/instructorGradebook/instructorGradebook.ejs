@@ -99,6 +99,14 @@
             },
         });
 
+        $(document).keydown(event => {
+            if ((event.ctrlKey || event.metaKey) &&
+                String.fromCharCode(event.which).toLowerCase() == 'f') {
+                $('.fixed-table-toolbar .search input').focus();
+                event.preventDefault();
+            }
+        });
+
         $('[data-toggle="modal"]').click(function (e) {
             e.stopPropagation(); // Keep click from changing sort
             $($(e.currentTarget).data('target')).modal('show');
