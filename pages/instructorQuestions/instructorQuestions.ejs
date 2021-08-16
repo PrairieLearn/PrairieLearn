@@ -52,6 +52,14 @@
                   });
               },
           });
+
+          $(document).keydown(event => {
+              if ((event.ctrlKey || event.metaKey) &&
+                  String.fromCharCode(event.which).toLowerCase() == 'f') {
+                  $('input.bootstrap-table-filter-control-qid').focus();
+                  event.preventDefault();
+              }
+          });
       });
 
       function topicList() {
