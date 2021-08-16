@@ -164,7 +164,6 @@ describe('Grading methods', function() {
                     questionsPage = await gradeRes.text();
                     $questionsPage = cheerio.load(questionsPage);
                 });
-
                 it('should NOT result in any grading jobs', async () => {
                     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
                     assert.lengthOf(grading_jobs, 0);
@@ -181,22 +180,123 @@ describe('Grading methods', function() {
             });
         });
 
+        describe('"Manual"', () => {
+            describe('"grade" action', () => {
+                before('load page as student and submit "grade" action to "Manual" type question', async () => {
+                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
+                    $hm1Body = cheerio.load(hm1Body);
+                    iqUrl = siteUrl + $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr('href');
+                });
+                it('should NOT be possible to submit a grade action to "Manual" type question', async () => {
+                    gradeRes = await saveOrGrade(iqUrl, {}, 'grade',
+                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
+                    );
+                    assert.equal(gradeRes.status, 500);
+                });
+                it('should NOT result in any grading jobs', async () => {
+                    const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
+                    assert.lengthOf(grading_jobs, 0);
+                });
+                it('should result in 1 "pastsubmission-block" component being rendered', async () => {
+                    questionsPage = await gradeRes.text();
+                    $questionsPage = cheerio.load(questionsPage);
+                    assert.lengthOf($questionsPage('.pastsubmission-block'), 0);
+                });
+                it('should NOT be given submission grade in "pastsubmission-block"', async () => {
+                    assert.notInclude(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
+                });
+                it('should NOT result in "grading-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.grading-block'), 0);
+                });
+            });
+            describe('"save" action', () => {
+                before('load page as student and submit "grade" action to "Manual" type question', async () => {
+                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
+                    $hm1Body = cheerio.load(hm1Body);
+                    iqUrl = siteUrl + $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr('href');
+                });
+                it('should be possible to submit a save action to "Manual" type question', async () => {
+                    gradeRes = await saveOrGrade(iqUrl, {}, 'save',
+                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
+                    );
+                    assert.equal(gradeRes.status, 200);
+                });
+                it('should NOT result in any grading jobs', async () => {
+                    const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
+                    assert.lengthOf(grading_jobs, 0);
+                });
+                it('should result in 1 "pastsubmission-block" component being rendered', async () => {
+                    questionsPage = await gradeRes.text();
+                    $questionsPage = cheerio.load(questionsPage);
+                    assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+                });
+                it('should NOT be given submission grade in "pastsubmission-block"', async () => {
+                    assert.notInclude(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
+                });
+                it('should NOT result in "grading-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.grading-block'), 0);
+                });
+            });
+        });
 
-        // it('internal grading submission can be "saved"', async () => {
-        //     const hm1Body = await loadHomeworkPage(mockStudents[1]);
-        //     const $hm1Body = cheerio.load(hm1Body);
-        //     const iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Adding two numbers")').attr('href');
+        describe('"External"', () => {
+            describe('"grade" action', () => {
+                before('load page as student and submit "grade" action to "External" type question', async () => {
+                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
+                    $hm1Body = cheerio.load(hm1Body);
+                    iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
+            
+                    gradeRes = await saveOrGrade(iqUrl, {}, 'grade',
+                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]
+                    );
+                    assert.equal(gradeRes.status, 200);
 
-        //     const gradeRes = await saveOrGrade(iqUrl, {c: 9999999}, 'save');
-        //     assert.equal(gradeRes.status, 200);
+                    questionsPage = await gradeRes.text();
+                    $questionsPage = cheerio.load(questionsPage);
+                });
+                it('should result in 1 grading jobs', async () => {
+                    const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
+                    assert.lengthOf(grading_jobs, 1);
+                });
+                it('should result in 1 "pastsubmission-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+                });
+                it('should be given submission grade in "pastsubmission-block"', async () => {
+                    assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
+                });
+                it('should result in 1 "grading-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.grading-block'), 1);
+                });
+            });
+            describe('"save" action', () => {
+                before('load page as student and submit "grade" action to "External" type question', async () => {
+                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
+                    $hm1Body = cheerio.load(hm1Body);
+                    iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
+            
+                    gradeRes = await saveOrGrade(iqUrl, {}, 'save',
+                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]
+                    );
+                    assert.equal(gradeRes.status, 200);
 
-        //     const iqId = parseInstanceQuestionId(iqUrl);
-        //     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
-        //     assert.lengthOf(grading_jobs, 0);
-
-        //     const questionsPage = await gradeRes.text();
-        //     assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>');        
-        // });
+                    questionsPage = await gradeRes.text();
+                    $questionsPage = cheerio.load(questionsPage);
+                });
+                it('should NOT result in any grading jobs', async () => {
+                    const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
+                    assert.lengthOf(grading_jobs, 0);
+                });
+                it('should result in 1 "pastsubmission-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+                });
+                it('should NOT be given submission grade in "pastsubmission-block"', async () => {
+                    assert.notInclude(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
+                });
+                it('should NOT result in "grading-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.grading-block'), 0);
+                });
+            });
+        });
 
         // External grading occurs async, but we should expect the answer was submitted syncronously
         // TO DO: test out socket io connection if possible.
