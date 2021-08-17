@@ -52,6 +52,17 @@
                   });
               },
           });
+
+          $(document).keydown(event => {
+              if ((event.ctrlKey || event.metaKey) &&
+                  String.fromCharCode(event.which).toLowerCase() == 'f') {
+                  if ($('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length)
+                      $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').focus();
+                  else
+                      $('input.bootstrap-table-filter-control-qid').focus();
+                  event.preventDefault();
+              }
+          });
       });
 
       function topicList() {
@@ -152,7 +163,8 @@
       .fixed-table-toolbar {
           padding: 0 1em 0 1em;
       }
-      div.pagination, div.pagination-detail {
+      .fixed-table-toolbar div.pagination,
+      .fixed-table-toolbar div.pagination-detail {
           margin: 0 1em 0 0 !important;
       }
     </style>
@@ -181,13 +193,14 @@
                data-show-columns-toggle-all="true"
                data-show-button-text="true"
                data-pagination="true"
-               data-pagination-v-align="top"
+               data-pagination-v-align="both"
+               data-pagination-h-align="left"
                data-pagination-detail-h-align="right"
                data-page-list="[10,20,50,100,200,500,unlimited]"
                data-page-size="50"
                data-smart-display="false"
                data-show-extended-pagination="true"
-               data-toolbar=".fixed-table-pagination"
+               data-toolbar=".fixed-table-pagination:nth(0)"
                data-sticky-header="true">
           <thead>
             <tr>
