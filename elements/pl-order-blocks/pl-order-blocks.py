@@ -332,7 +332,7 @@ def parse(element_html, data):
 
         answer_code = ''
         for index, answer in enumerate(student_answer):
-            indent = int(answer['indent'])
+            indent = int(answer['indent'] or 0)
             answer_code += ('    ' * indent) + html.unescape(answer['inner_html']) + '\n'
 
         if len(answer_code) == 0:
