@@ -17,6 +17,8 @@ cp -r /javagrader/*.class /javagrader/org /javagrader/libs/* /grade/classpath
 cp -r /grade/tests/libs/*                                    /grade/classpath 2> /dev/null
 cp -r /grade/serverFilesCourse/java/libs/*                   /grade/classpath 2> /dev/null
 
+export CLASSPATH="/grade/classpath:$(ls /grade/classpath/*.jar -1 | tr '\n' ':')"
+
 STUDENT_COMPILE_OUT=$(javac $JAVA_COMPILATION_FLAGS $STUDENT_FILES 2>&1)
 if [ "$?" -ne 0 ] ; then
     echo "Compilation error"
@@ -27,6 +29,7 @@ fi
 
 TEST_COMPILE_OUT=$(javac $JAVA_COMPILATION_FLAGS $TEST_FILES 2>&1)
 if [ "$?" -ne 0 ] ; then
+    echo "$TEST_COMPILE_OUT"
     exception "Error compiling test files. This typically means your class does not match the specified signature."
 fi
 
@@ -41,7 +44,7 @@ chmod -R a+rX /grade/classpath
 chmod 777 $RESULTS_TEMP_DIR
 
 su - sbuser <<EOF
-java -cp "/grade/classpath:/grade/classpath/*" JUnitAutograder "$RESULTS_TEMP_FILE" "$TEST_FILES" "$STUDENT_COMPILE_OUT"
+java -cp "$CLASSPATH" JUnitAutograder "$RESULTS_TEMP_FILE" "$TEST_FILES" "$STUDENT_COMPILE_OUT"
 EOF
 
 if [ -f $RESULTS_TEMP_FILE ] ; then

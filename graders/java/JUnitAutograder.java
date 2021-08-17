@@ -44,7 +44,7 @@ public class JUnitAutograder implements TestExecutionListener {
 
         JUnitAutograder autograder = new JUnitAutograder();
         autograder.resultsFile = args[0];
-        autograder.testClasses = args[1].split(" ");
+        autograder.testClasses = args[1].split("\\s");
         if (!"".equals(args[2]))
             autograder.message = "Compilation warnings:\n\n" + args[2];
 
