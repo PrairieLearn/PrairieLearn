@@ -340,7 +340,7 @@ def grade(element_html, data):
 
     score = 0
     if (submitted_key is not None and submitted_key == correct_key):
-        score = 1           
+        score = 1
 
     for option in data['params'][name]:
         if option['key'] == submitted_key:
