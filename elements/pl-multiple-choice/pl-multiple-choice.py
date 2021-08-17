@@ -15,7 +15,7 @@ EXTERNAL_JSON_DEFAULT = None
 HIDE_LETTER_KEYS_DEFAULT = False
 EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
 EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
-HINT_DEFAULT = None
+FEEDBACK_DEFAULT = None
 
 
 def categorize_options(element, data):
@@ -25,11 +25,11 @@ def categorize_options(element, data):
     index = 0
     for child in element:
         if child.tag in ['pl-answer', 'pl_answer']:
-            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct', 'hint'])
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct', 'feedback'])
             correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child)
-            child_hint = pl.get_string_attrib(child, 'hint', HINT_DEFAULT)
-            answer_tuple = (index, correct, child_html, child_hint)
+            child_feedback = pl.get_string_attrib(child, 'feedback', FEEDBACK_DEFAULT)
+            answer_tuple = (index, correct, child_html, child_feedback)
             if correct:
                 correct_answers.append(answer_tuple)
             else:
@@ -62,7 +62,7 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'hide-letter-keys',
-                        'none-of-the-above', 'none-of-the-above-hint', 'all-of-the-above', 'all-of-the-above-hint',
+                        'none-of-the-above', 'none-of-the-above-feedback', 'all-of-the-above', 'all-of-the-above-feedback',
                         'external-json', 'external-json-correct-key', 'external-json-incorrect-key']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -170,18 +170,18 @@ def prepare(element_html, data):
             aota_text = 'All of these'
         else:
             aota_text = 'All of the above'
-        aota_hint = pl.get_string_attrib(element, 'all-of-the-above-hint', HINT_DEFAULT)
         # Add 'All of the above' option after shuffling
-        sampled_answers.append((len_total, aota_correct, aota_text, aota_hint))
+        aota_feedback = pl.get_string_attrib(element, 'all-of-the-above-feedback', FEEDBACK_DEFAULT)
+        sampled_answers.append((len_total, aota_correct, aota_text, aota_feedback))
 
     if enable_nota:
         if inline:
             nota_text = 'None of these'
         else:
             nota_text = 'None of the above'
-        nota_hint = pl.get_string_attrib(element, 'none-of-the-above-hint', HINT_DEFAULT)
         # Add 'None of the above' option after shuffling
-        sampled_answers.append((len_total + 1, nota_correct, nota_text, nota_hint))
+        nota_feedback = pl.get_string_attrib(element, 'none-of-the-above-feedback', FEEDBACK_DEFAULT)
+        sampled_answers.append((len_total + 1, nota_correct, nota_text, nota_feedback))
 
     # 4. Write to data
     # Because 'All of the above' is below all the correct choice(s) when it's
@@ -189,8 +189,8 @@ def prepare(element_html, data):
     # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
-    for (i, (index, correct, html, hint)) in enumerate(sampled_answers):
-        keyed_answer = {'key': pl.index2key(i), 'html': html, 'hint': hint}
+    for (i, (index, correct, html, feedback)) in enumerate(sampled_answers):
+        keyed_answer = {'key': pl.index2key(i), 'html': html, 'feedback': feedback}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer = keyed_answer
@@ -218,6 +218,7 @@ def render(element_html, data):
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
         display_score = (score is not None)
+        feedback = partial_score.get('feedback', None)
 
         # Set up the templating for each answer
         answerset = []
@@ -227,8 +228,8 @@ def render(element_html, data):
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
                 'display_score_badge': display_score and submitted_key == answer['key'],
-                'display_hint': submitted_key == answer['key'] and answer['hint'] is not None,
-                'hint': answer['hint']
+                'display_feedback': submitted_key == answer['key'] and feedback is not None,
+                'feedback': feedback
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (correct_key == answer['key'])
@@ -339,9 +340,13 @@ def grade(element_html, data):
 
     score = 0
     if (submitted_key is not None and submitted_key == correct_key):
-        score = 1
+        score = 1           
 
-    data['partial_scores'][name] = {'score': score, 'weight': weight}
+    for option in data['params'][name]:
+        if option['key'] == submitted_key:
+            feedback = option['feedback']
+
+    data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
 
 
 def test(element_html, data):

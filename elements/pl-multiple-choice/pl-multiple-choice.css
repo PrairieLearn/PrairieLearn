@@ -8,7 +8,7 @@
     overflow-wrap: normal;
 }
 
-.pl-multiple-choice-hint {
+.pl-multiple-choice-feedback {
     border-left: 0.25rem solid rgba(0, 0, 0, 0.4);
     background-color: rgba(0, 0, 0, 0.03);
     padding: 0.25rem 0.5rem;
