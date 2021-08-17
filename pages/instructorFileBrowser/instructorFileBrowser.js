@@ -14,6 +14,8 @@ const FileType = require('file-type');
 const util = require('util');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
 const { encodePath, decodePath } = require('../../lib/uri-util');
+const editorUtil = require('../../lib/editorUtil');
+const { default: AnsiUp } = require('ansi_up');
 
 function contains(parentPath, childPath) {
     const relPath = path.relative(parentPath, childPath);
@@ -33,6 +35,7 @@ function isHidden(item) {
 function getPaths(req, res, callback) {
     let paths = {
         coursePath: res.locals.course.path,
+        courseId: res.locals.course.id,
     };
 
     if (res.locals.navPage == 'course_admin') {
@@ -203,6 +206,22 @@ function browseDirectory(file_browser, callback) {
                             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     }
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            async.eachOfSeries(file_browser.files, (file, index, callback) => {
+                util.callbackify(editorUtil.getErrorsAndWarningsForFilePath)(file_browser.paths.courseId, file.path, (err, data) => {
+                    if (ERR(err, callback)) return;
+                    const ansiUp = new AnsiUp();
+                    file.sync_errors = data.errors;
+                    file.sync_errors_ansified = ansiUp.ansi_to_html(file.sync_errors);
+                    file.sync_warnings = data.warnings;
+                    file.sync_warnings_ansified = ansiUp.ansi_to_html(file.sync_warnings);
                     callback(null);
                 });
             }, (err) => {

@@ -4,6 +4,8 @@ const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const archiver = require('archiver');
 const router = express.Router();
+const { default: AnsiUp } = require('ansi_up');
+const ansiUp = new AnsiUp();
 
 const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
@@ -40,7 +42,13 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
 
-        res.locals.rows = result.rows;
+        res.locals.rows = _.map(result.rows, row => {
+            if (row.sync_errors)
+                row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
+            if (row.sync_warnings)
+                row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+            return row;
+        });
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

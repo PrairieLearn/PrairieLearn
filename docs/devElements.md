@@ -110,23 +110,14 @@ The above function descriptions describe the typical variables that will be read
 
 ### Element dependencies
 
-It's likely that your element will depend on certain client-side assets,
-such as scripts or stylesheets. To keep clean separation of HTML, CSS, and JS,
-you can place those dependencies in other files. If you depend on libraries like
-`lodash` or `d3`, you can also express that need. PrairieLearn will compile a list
-of all dependencies needed by all elements on a page, dedup the dependencies,
-and ensure they are loaded on the page.
+It's likely that your element will depend on certain client-side assets, such as scripts or stylesheets. To keep clean separation of HTML, CSS, and JS, you can place those dependencies in other files. If you depend on libraries like `lodash` or `d3`, you can also link to node modules containing these libraries. PrairieLearn will compile a list of all dependencies needed by all elements on a page, deduplicate the dependencies, and ensure they are loaded on the page.
 
-Dependencies are listed in your element's `info.json`. You can
-configure them for your element as follows:
+Dependencies are listed in your element's `info.json`. You can configure them for your element as follows:
 
 ```json
 {
     "controller": "pl-my-element.py",
     "dependencies": {
-        "coreScripts": [
-            "d3.min.js"
-        ],
         "nodeModulesScripts": [
             "three/build/three.min.js"
         ],
@@ -148,14 +139,15 @@ The different types of dependency properties currently available are summarized 
 
 Property | Description
 --- | ---
-`coreStyles` | The styles required by this element, relative to `[PrairieLearn directory]/public/stylesheets`.
-`coreScripts` | The scripts required by this element, relative to `[PrairieLearn directory]/public/javascripts`.
 `nodeModulesStyles` | The styles required by this element, relative to `[PrairieLearn directory]/node_modules`.
 `nodeModulesScripts` | The scripts required by this element, relative to `[PrairieLearn directory]/node_modules`.
 `elementStyles` | The styles required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
 `elementScripts` | The scripts required by this element relative to the element's directory, which is either `[PrairieLearn directory]/elements/this-element-name` or `[course directory]/elements/this-element-name`.
 `clientFilesCourseStyles` | The styles required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
 `clientFilesCourseScripts` | The scripts required by this element relative to `[course directory]/clientFilesCourse`. *(Note: This property is only available for elements hosted in a specific course's directory, not system-wide PrairieLearn elements.)*
+
+The `coreScripts` and `coreStyles` properties are used in legacy elements and questions, but are deprecated should not be used in new objects. It lists scripts and styles required by this element, relative to `[PrairieLearn directory]/public/javascripts` and `[PrairieLearn directory]/public/stylesheets`, respectively. Scripts in `[PrairieLearn directory]/public/javascripts` are mainly used for compatibility with legacy elements and questions, while styles in `[PrairieLearn directory]/public/stylesheets` are reserved for [styles used by specific pages rather than individual elements](dev-guide.md#html-style).
+
 
 You can also find the types of dependencies defined in these schema files:
 
