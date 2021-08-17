@@ -1,3 +1,9 @@
+2021-08-17  Dirk Eddelbuettel  <edd@debian.org>
+
+	* DESCRIPTION (Date, Version): Roll minor version
+
+	* NAMESPACE: Export new function too
+
 2021-08-15  Dirk Eddelbuettel  <edd@debian.org>
 
 	* R/source_eval.R (source_and_eval_safe_with_hiding): New variant

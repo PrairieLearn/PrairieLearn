@@ -1,7 +1,7 @@
 Package: plr
 Title: Utility Functions for 'PrairieLearn' and R
-Version: 0.0.2.2
-Date: 2019-09-15
+Version: 0.0.2.3
+Date: 2021-08-17
 Author: Dirk Eddelbuettel and Alton Barbehenn
 Maintainer: Dirk Eddelbuettel <edd@debian.org>
 Description: 'PrairieLearn' is an online problem-driven learning
