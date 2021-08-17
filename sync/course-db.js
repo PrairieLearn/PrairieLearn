@@ -9,7 +9,7 @@ const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors');
-const { parseISO, isValid, isAfter } = require('date-fns');
+const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 
 const schemas = require('../schemas');
@@ -842,7 +842,7 @@ function checkAllowAccessRoles(rule) {
     const warnings = [];
     if ('role' in rule) {
         if (rule.role != 'Student') {
-            warnings.push(`The entire "allowAccess" rule with role ${rule.role} should be deleted. Instead, course owners can now manage course staff access on the Staff page.`);
+            warnings.push(`The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`);
         }
     }
     return warnings;
@@ -851,7 +851,7 @@ function checkAllowAccessRoles(rule) {
 /**
  * Checks that dates, if present, are valid and sequenced correctly.
  * @param {{ startDate?: string, endDate?: string }} rule
- * @returns {string[]} A list of errors, if any
+ * @returns {{errors: string[], dateInFuture: boolean} A list of errors, if any, and whether there are any dates in the future
  */
 function checkAllowAccessDates(rule) {
     const errors = [];
@@ -873,7 +873,14 @@ function checkAllowAccessDates(rule) {
     if (startDate && endDate && isAfter(startDate, endDate)) {
         errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
     }
-    return errors;
+    let dateInFuture = false;
+    if (startDate && isFuture(startDate)) {
+        dateInFuture = true;
+    }
+    if (endDate && isFuture(endDate)) {
+        dateInFuture = true;
+    }
+    return { errors, dateInFuture };
 }
 
 /**
@@ -914,20 +921,26 @@ async function validateAssessment(assessment, questions) {
     }
 
     // Check assessment access rules
+    let anyDateInFuture = false;
     (assessment.allowAccess || []).forEach(rule => {
-        const allowAccessErrors = checkAllowAccessDates(rule);
+        const allowAccessResult = checkAllowAccessDates(rule);
+        if (allowAccessResult.dateInFuture) {
+            anyDateInFuture = true;
+        }
 
         if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
             errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
         }
 
-        errors.push(...allowAccessErrors);
+        errors.push(...allowAccessResult.errors);
     });
 
-    (assessment.allowAccess || []).forEach(rule => {
-        const allowAccessWarnings = checkAllowAccessRoles(rule);
-        warnings.push(...allowAccessWarnings);
-    });
+    if (anyDateInFuture) { // only warn about new roles for current or future courses
+        (assessment.allowAccess || []).forEach(rule => {
+            const allowAccessWarnings = checkAllowAccessRoles(rule);
+            warnings.push(...allowAccessWarnings);
+        });
+    }
 
     const foundQids = new Set();
     const duplicateQids = new Set();
@@ -1023,18 +1036,25 @@ async function validateCourseInstance(courseInstance) {
         }
     }
 
+    let anyDateInFuture = false;
     (courseInstance.allowAccess || []).forEach(rule => {
-        const allowAccessErrors = checkAllowAccessDates(rule);
-        errors.push(...allowAccessErrors);
+        const allowAccessResult = checkAllowAccessDates(rule);
+        if (allowAccessResult.dateInFuture) {
+            anyDateInFuture = true;
+        }
+
+        errors.push(...allowAccessResult.errors);
     });
 
-    (courseInstance.allowAccess || []).forEach(rule => {
-        const allowAccessWarnings = checkAllowAccessRoles(rule);
-        warnings.push(...allowAccessWarnings);
-    });
+    if (anyDateInFuture) { // only warn about new roles for current or future courses
+        (courseInstance.allowAccess || []).forEach(rule => {
+            const allowAccessWarnings = checkAllowAccessRoles(rule);
+            warnings.push(...allowAccessWarnings);
+        });
 
-    if (_(courseInstance).has('userRoles')) {
-        warnings.push('The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the Staff page.');
+        if (_(courseInstance).has('userRoles')) {
+            warnings.push('The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.');
+        }
     }
 
     return { warnings, errors };
