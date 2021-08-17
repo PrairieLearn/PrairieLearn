@@ -10,7 +10,7 @@
             </ul>
             <ul id="{{answer_name}}-options" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}" indent={{max_indent}}>
                 {{#options}}
-                    <li class="list-group-item shadow" uuid="{{uuid}}" string="{{inner_html}}">{{inner_html}}</li>
+                    <li class="list-group-item shadow" uuid="{{uuid}}" string="{{inner_html}}">{{{inner_html}}}</li>
                 {{/options}}
             </ul>
         </div>
@@ -24,7 +24,7 @@
                 </ul>
                 <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone {{check_indentation}}" indent={{max_indent}}>
                     {{#submission_dict}}
-                        <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="list-group-item shadow">{{inner_html}}</li>
+                        <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="list-group-item shadow">{{{inner_html}}}</li>
                     {{/submission_dict}}
                 </ul>
             </div>
@@ -51,7 +51,7 @@
         </ul>
         <ul class="list-group submission_table">
             {{#student_submission}}
-            	<li class="list-group-item">{{inner_html}}</li>
+            	<li class="list-group-item">{{{inner_html}}}</li>
             {{/student_submission}}
         </ul>
         {{{feedback}}}
@@ -74,7 +74,7 @@
         </ul>
         <ul class="list-group answer_table">
         {{#question_solution}}
-            <li class="list-group-item">{{inner_html}}</li>
+            <li class="list-group-item">{{{inner_html}}}</li>
         {{/question_solution}}
         </ul>
     </div>
