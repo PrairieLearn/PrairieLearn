@@ -9,8 +9,8 @@ CREATE TABLE course_instance_permissions (
 );
 
 /*
-    Give course_permissions with course_role 'None' to all users with
-    enrollments of role TA or Instructor.
+    Give course_permissions with course_role 'Owner' to all users with
+    enrollments of role Instructor.
 */
 INSERT INTO course_permissions
     (user_id, course_id, course_role)
@@ -23,10 +23,12 @@ FROM
     JOIN course_instances AS ci ON (ci.id = e.course_instance_id) AND (ci.deleted_at IS NULL)
     JOIN pl_courses AS c ON (c.id = ci.course_id) AND (c.deleted_at IS NULL) AND (NOT c.example_course)
 WHERE
-    e.role >= 'TA'
+    e.role >= 'Instructor'
 GROUP BY
     e.user_id, ci.course_id
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO UPDATE
+SET
+    course_role = EXCLUDED.course_role;
 
 /*
     Give course_instance_permissions with course_instance_role 'Student Data Editor'
