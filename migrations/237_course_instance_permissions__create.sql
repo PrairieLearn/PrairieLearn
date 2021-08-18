@@ -17,7 +17,7 @@ INSERT INTO course_permissions
 SELECT
     e.user_id,
     ci.course_id,
-    'None' AS course_role
+    'Owner' AS course_role
 FROM
     enrollments AS e
     JOIN course_instances AS ci ON (ci.id = e.course_instance_id) AND (ci.deleted_at IS NULL)
