@@ -8,10 +8,13 @@
     "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
     "assessmentSets": [],
     "assessmentUnits": [
-        {"name": "intro", "heading": "Unit 1: Introduction to XC 101"},
-        {"name": "physics", "heading": "Unit 2: Physics"},
-        {"name": "math", "heading": "Unit 3: Math"},
-        {"name": "fun", "heading": "Unit 4: Extras for fun"}
+        {"name": "templates", "heading": "Assessment and question templates"},
+        {"name": "grading", "heading": "Grading methods"},
+        {"name": "autograding", "heading": "Code autograders"},
+        {"name": "workshop", "heading": "PL workshop assessments"},
+        {"name": "workspaces", "heading": "Workspaces"},
+        {"name": "groups", "heading": "Group work"},
+        {"name": "access", "heading": "Access rules"}
     ],
     "groupBy": "Unit",
     "topics": [

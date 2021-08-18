@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Active Access Restriction Demo",
     "set": "Exam",
+    "unit": "access",
     "number": "5",
     "allowAccess": [
         {

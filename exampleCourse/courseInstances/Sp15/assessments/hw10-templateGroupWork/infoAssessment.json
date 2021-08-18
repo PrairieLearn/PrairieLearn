@@ -4,7 +4,7 @@
     "title": "Group Activity Template",
     "set": "Homework",
     "number": "10",
-    "unit": "fun",
+    "unit": "groups",
     "groupWork": true,
     "groupMinSize": 2,
     "groupMaxSize": 5,

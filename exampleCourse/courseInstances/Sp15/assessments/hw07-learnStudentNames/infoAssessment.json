@@ -4,7 +4,7 @@
     "title": "Homework to help instructors learn names",
     "set": "Homework",
     "number": "7",
-    "unit": "math",
+    "unit": "workshop",
     "allowAccess": [
         {
             "role": "Instructor",

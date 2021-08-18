@@ -3,6 +3,7 @@
     "type": "Homework",
     "title": "PrairieLearn demo questions for C/C++ autograder",
     "set": "Homework",
+    "unit": "autograding",
     "number": "11",
     "allowAccess": [
         {

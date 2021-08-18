@@ -4,7 +4,7 @@
     "title": "PrairieLearn demo questions for Python autograder",
     "set": "Homework",
     "number": "6",
-    "unit": "math",
+    "unit": "autograding",
     "maxPoints": 40,
     "maxBonusPoints": 3,
     "allowAccess": [

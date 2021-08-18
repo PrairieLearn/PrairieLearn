@@ -4,7 +4,7 @@
     "title": "Real-time grading disabled",
     "set": "Exam",
     "number": "2",
-    "unit": "physics",
+    "unit": "grading",
     "allowRealTimeGrading": false,
     "allowAccess": [
         {
