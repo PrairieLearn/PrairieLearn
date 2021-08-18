@@ -26,7 +26,7 @@ WHERE
     e.role >= 'Instructor'
 GROUP BY
     e.user_id, ci.course_id
-ON CONFLICT DO UPDATE
+ON CONFLICT (user_id, course_id) DO UPDATE
 SET
     course_role = EXCLUDED.course_role;
 
