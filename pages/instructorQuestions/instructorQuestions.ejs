@@ -138,7 +138,8 @@
           return !!values;
       }
       
-      //<% locals.course_instances.forEach(course_instance => { %>
+      //<% if (locals.course_instances) {
+               locals.course_instances.forEach(course_instance => { %>
       function assessments<%= course_instance.id %>List() {
           return assessmentsByCourseInstanceList(<%= course_instance.id %>);
       }
@@ -146,7 +147,8 @@
       function assessments<%= course_instance.id %>Formatter(_, question) {
           return assessmentsByCourseInstanceFormatter(<%= course_instance.id %>, question);
       }
-      //<% }); %>
+      //<%     });
+           } %>
 
     </script>
     <style>
@@ -245,7 +247,8 @@
                   data-filter-custom-search="badgeFilterSearch"
                   data-visible="<%= has_legacy_questions %>"
                   data-switchable="true">Version</th>
-              <% locals.course_instances.forEach(course_instance => { %>
+              <% if (locals.course_instances) {
+                     locals.course_instances.forEach(course_instance => { %>
               <th data-field="assessments_<%= course_instance.id %>"
                   data-class="align-middle text-nowrap"
                   data-formatter="assessments<%= course_instance.id %>Formatter"
@@ -255,7 +258,8 @@
                   data-filter-custom-search="badgeFilterSearch"
                   data-visible="<%= locals.course_instance && locals.course_instance.id == course_instance.id %>"
                   data-switchable="true"><%= course_instance.short_name %> Assessments</th>
-              <% }); %>
+              <%     });
+                 } %>
             </tr>
           </thead>
           </table>
