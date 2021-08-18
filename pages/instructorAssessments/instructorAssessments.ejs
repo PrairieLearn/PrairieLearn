@@ -34,7 +34,6 @@
               <tr>
                 <th style="width: 1%"></th>
                 <th></th>
-                <th>Unit</th>
                 <th>AID</th>
                 <th class="text-center">Students</th>
                 <th class="text-center">Scores</th>
@@ -46,7 +45,7 @@
               <% rows.forEach(function(row, i) { %>
               <% if (row.start_new_assessment_group) { %>
               <tr>
-                <th colspan="8"><%= row.assessment_group_heading %></th>
+                <th colspan="7"><%= row.assessment_group_heading %></th>
               </tr>
               <% } %>
               <tr>
@@ -65,14 +64,6 @@
                     <i class="fas fa-users"></i>
                   <% } %></a>
                   <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
-                </td>
-
-                <td
-                  <% if (row.assessment_unit_name.trim() == 'Default') { %>
-                    class="text-muted"
-                  <% } %>
-                >
-                  <%= row.assessment_unit_name %>
                 </td>
                 
                 <td class="align-middle"><%= row.tid %></td>
