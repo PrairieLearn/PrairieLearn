@@ -251,7 +251,8 @@
 
 <p>
   To fix these warnings you should delete any Instructor or TA access
-  rules:
+  rules in <code>infoAssessment.json</code>
+  or <code>infoCourseInstance.json</code>:
 </p>
 
 <div class="rounded code-block">
@@ -264,6 +265,20 @@
     ],
 </code></pre>
 </div>
+
+<p>
+  The <code>userRoles</code> property should also be deleted
+  in <code>infoCourseInstance.json</code>:
+</p>
+
+<div class="rounded code-block">
+<pre><code>    <span class="text-danger">"userRoles": {                                 # should be deleted</span>
+    <span class="text-danger">    "mfsilva@illinois.edu": "Instructor",      # should be deleted</span>
+    <span class="text-danger">    "mwest@illinois.edu": "TA"                 # should be deleted</span>
+    <span class="text-danger">},                                             # should be deleted</span>
+</code></pre>
+</div>
+
 
 <p>
   See <a href="https://prairielearn.readthedocs.io/en/latest/course/#course-staff">the documentation</a> for more information.
