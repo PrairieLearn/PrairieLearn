@@ -28,7 +28,7 @@ pages:
     - 'Workshops': 'Instructor/getStarted/workshops/index.md'
     - 'Pitfalls': 'Instructor/getStarted/pitfalls/index.md'
   - How-to Guides:
-    - 'Adding Staff to Course Instance': 'Instructor/howTos/howtoAddUserRoles.md'
+    - 'Adding Staff to Course Instance': 'Instructor/HowTos/howtoAddUserRoles.md'
     - Assessments:
       - 'Creating Homework Sets': 'Instructor/HowTos/Assessments/howtoHomeworkSet.md'
       - 'Creating Exams': 'Instructor/HowTos/Assessments/howtoExams.md'
@@ -44,9 +44,31 @@ pages:
       - 'Disable real-time grading': 'Instructor/HowTos/Assessments/howtoDisableRealTime.md'
       - 'Limit the rate for grading': 'Instructor/HowTos/Assessments/howtoLimitGradeRate.md'
       - 'Allow students to report issues': 'Instructor/HowTos/Assessments/howtoAllowIssues.md' 
+      - 'How to use PL to learn student names': 'Instructor/HowTos/howToLearnNames.md'
+      - 'FAQ': 'Instructor/HowTos/faq.md'
+
   - References:
+    - 'Installing and running PL locally': 'Instructor/references/installing.md'
+    - 'Syncing course content': 'Instructor/references/sync.md'
+    - 'Course configuration': 'Instructor/references/course.md'
+    - 'Course instance configuration': 'Instructor/references/courseInstance.md'
+    - 'Assessment configuration': 'Instructor/references/assessment.md'
+    - 'Question configuration': 'Instructor/references/question.md'
     - 'Elements for writing questions': 'Instructor/references/elements.md'
-    - 'Assessments': 'Instructor/references/assessment.md'
+    - 'Access control': 'Instructor/references/accessControl.md'
+    - 'Remote exams': 'Instructor/references/remoteExams.md'
+    - 'clientFiles and serverFiles': 'Instructor/references/clientServerFiles.md'
+    - 'UUIDs in JSON files': 'Instructor/references/uuid.md'
+    - 'Regrading assessments': 'Instructor/references/regrading.md'
+    - 'Element for drawing': 'Instructor/references/pl-drawing.md'
+    - 'External Grading': 'Instructor/references/externalGrading.md'
+    - 'Python Autograder': 'Instructor/references/python-grader.md'
+    - 'C/C++ autograder': 'Instructor/references/c-grader.md'
+    - 'Java autograder': 'Instructor/references/java-grader.md'
+    - 'Workspaces': 'Instructor/references/workspaces.md'
+    - 'Manual grading': 'Instructor/references/manualGrading.md'
+    - 'What to Tell Students': 'Instructor/references/whatToTellStudents.md'
+    - 'API': 'Instructor/references/api.md'
 
 - Student Manual:
   - Get Started:
