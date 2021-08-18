@@ -2,12 +2,13 @@ const {assert} = require('chai');
 const cheerio = require('cheerio');
 const config = require('../lib/config');
 const fetch = require('node-fetch');
-const fs = require('fs');
 const querystring = require('querystring');
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+const fs = require('fs').promises;
+const io = require('socket.io-client');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -34,6 +35,43 @@ const mockStudents = [
 const getFileUploadSuffix = ($instanceQuestionPage) => {
     return $instanceQuestionPage('input[name^=_file_upload]').attr('name');
 };
+
+const waitForExternalGrader = async ($questionsPage, questionsPage) => {
+    return new Promise((resolve, reject) => {
+
+        try {
+            const socket = io.connect('http://localhost:3007' + '/external-grading');
+            socket.on('connect_error', (err) => {
+                throw err(err);
+              });
+
+            const handleStatusChange = (msg) => {
+                msg.submissions.forEach(s => {
+                    if (s.grading_job_status === 'graded') {
+                        return resolve(msg);
+                    }
+                });
+            };
+
+            const variantId = $questionsPage('form > input[name="__variant_id"]').val();
+            const variantTokenLine = questionsPage.match(/.*variantToken.*\n/)[0];
+
+            let variantToken = variantTokenLine.match(/'(.*?)'/g)[0].replace("'", '');
+            // hack, last ' not replaced on string
+            variantToken = variantToken.substring(0, variantToken.length -1);
+
+            socket.emit('init', {variant_id: variantId, variant_token: variantToken}, function(msg) {
+                handleStatusChange(msg);
+            });
+
+            socket.on('change:status', function(msg) {
+                handleStatusChange(msg);
+            });
+        } catch (err) {
+            reject(err);
+        }
+    });
+}
 
 const parseInstanceQuestionId = (url) => {
     const iqId = parseInt(
@@ -93,7 +131,7 @@ const loadHomeworkPage = async (user) => {
 };
 
 describe('Grading methods', function() {
-    this.timeout(20000);
+    this.timeout(999999);
 
     before('set up testing server', helperServer.before());
     after('shut down testing server', helperServer.after);
@@ -242,18 +280,29 @@ describe('Grading methods', function() {
         describe('"External"', () => {
             describe('"grade" action', () => {
                 before('load page as student and submit "grade" action to "External" type question', async () => {
-                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
+                    let hm1Body = await loadHomeworkPage(mockStudents[0]);
                     $hm1Body = cheerio.load(hm1Body);
                     iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
             
+                    const passingContent = await fs.readFile('./testCourse/questions/externalGrade/codeUpload/submitted_code_samples/fib_success_score_perfect/fib.py');
                     gradeRes = await saveOrGrade(iqUrl, {}, 'grade',
-                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]
+                        [{name: 'fib.py', 'contents': Buffer.from(passingContent).toString('base64')}],
                     );
                     assert.equal(gradeRes.status, 200);
 
                     questionsPage = await gradeRes.text();
                     $questionsPage = cheerio.load(questionsPage);
+
+                    // get variant params
+                    iqId = parseInstanceQuestionId(iqUrl);
+
+                    await waitForExternalGrader($questionsPage, questionsPage);
+
+                    // reload QuestionsPage since socket io cannot update without DOM
+                    questionsPage = await (await fetch(iqUrl)).text();
+                    $questionsPage =  cheerio.load(questionsPage);
                 });
+
                 it('should result in 1 grading jobs', async () => {
                     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
                     assert.lengthOf(grading_jobs, 1);
@@ -265,17 +314,17 @@ describe('Grading methods', function() {
                     assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
                 });
                 it('should result in 1 "grading-block" component being rendered', () => {
-                    assert.lengthOf($questionsPage('.grading-block'), 1);
+                    assert.lengthOf($questionsPage('.grading-block'), 0);
                 });
             });
             describe('"save" action', () => {
                 before('load page as student and submit "grade" action to "External" type question', async () => {
-                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
+                    const hm1Body = await loadHomeworkPage(mockStudents[1]);
                     $hm1Body = cheerio.load(hm1Body);
                     iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
             
                     gradeRes = await saveOrGrade(iqUrl, {}, 'save',
-                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]
+                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
                     );
                     assert.equal(gradeRes.status, 200);
 
