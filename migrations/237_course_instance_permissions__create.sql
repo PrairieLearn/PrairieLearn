@@ -32,17 +32,13 @@ SET
 
 /*
     Give course_instance_permissions with course_instance_role 'Student Data Editor'
-    to all users with enrollments of role Instructor, and 'Student Data Viewer' to all
-    users with enrollments of role TA.
+    to all users with enrollments of role Instructor.
 */
 INSERT INTO course_instance_permissions
     (course_instance_id, course_instance_role, course_permission_id)
 SELECT
     e.course_instance_id,
-    CASE
-        WHEN e.role = 'Instructor' THEN 'Student Data Editor'::enum_course_instance_role
-        ELSE 'Student Data Viewer'::enum_course_instance_role
-    END AS course_instance_role,
+    'Student Data Editor'::enum_course_instance_role AS course_instance_role,
     cp.id AS course_permission_id
 FROM
     enrollments AS e
@@ -50,5 +46,5 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id) AND (c.deleted_at IS NULL) AND (NOT c.example_course)
     JOIN course_permissions AS cp ON (cp.user_id = e.user_id) AND (cp.course_id = c.id)
 WHERE
-    e.role >= 'TA'
+    e.role >= 'Instructor'
 ON CONFLICT DO NOTHING;
