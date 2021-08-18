@@ -19,6 +19,8 @@ const defaultUser = {
     authUin: config.authUin,
 };
 
+let socket = null;
+
 const setUser = (user) => {
     config.authUid = user.authUid;
     config.authName = user.authName;
@@ -40,9 +42,9 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
     return new Promise((resolve, reject) => {
 
         try {
-            const socket = io.connect('http://localhost:3007' + '/external-grading');
+            socket = io.connect('http://localhost:3007' + '/external-grading');
             socket.on('connect_error', (err) => {
-                throw err(err);
+                throw Error(err);
               });
 
             const handleStatusChange = (msg) => {
@@ -71,7 +73,7 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
             reject(err);
         }
     });
-}
+};
 
 const parseInstanceQuestionId = (url) => {
     const iqId = parseInt(
@@ -302,6 +304,7 @@ describe('Grading methods', function() {
                     questionsPage = await (await fetch(iqUrl)).text();
                     $questionsPage =  cheerio.load(questionsPage);
                 });
+                after('close external grader socket', () => socket.close());
 
                 it('should result in 1 grading jobs', async () => {
                     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
