@@ -364,11 +364,11 @@ def test(element_html, data):
     result = data['test_type']
     if result == 'correct':
         data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
-        data['partial_scores'][name] = {'score': 1, 'weight': weight}
+        data['partial_scores'][name] = {'score': 1, 'weight': weight, 'feedback': None}
     elif result == 'incorrect':
         if len(incorrect_keys) > 0:
             data['raw_submitted_answers'][name] = random.choice(incorrect_keys)
-            data['partial_scores'][name] = {'score': 0, 'weight': weight}
+            data['partial_scores'][name] = {'score': 0, 'weight': weight, 'feedback': None}
         else:
             # actually an invalid submission
             data['raw_submitted_answers'][name] = '0'
