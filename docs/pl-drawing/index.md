@@ -113,7 +113,7 @@ Attribute | Type | Default | Description
 
 #### Example implementations
 
-- [demo/drawing/inclinedPlan]: Example that uses a system of coordinates
+- [demo/drawing/inclinedPlane]: Example that uses a system of coordinates
 
 - [element/drawingGallery]: Image gallery with drawing objects
 
@@ -1678,6 +1678,7 @@ Button icons should be 38px&times;38px `.svg` files and placed in the `clientFil
 These button icons can then be attached to your elements by setting the `get_button_icon()` function in your element's JavaScript class.  This function returns a string containing the filename of the button icon _relative to `clientFilesElement`_.
 
 <!-- Reference links -->
+[element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [demo/drawing/liftingMechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/liftingMechanism
 [demo/drawing/pulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/pulley
 [demo/drawing/vmDiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/vmDiagrams
@@ -1688,3 +1689,5 @@ These button icons can then be attached to your elements by setting the `get_but
 [demo/drawing/gradeVector]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/gradeVector
 [demo/drawing/buttons](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/buttons)
 [demo/drawing/customizedButtons](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/customizedButtons)
+[demo/drawing/inclinedPlane-reaction](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/inclinedPlane-reaction)
+[demo/drawing/frame-exploded](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/frame-exploded)
