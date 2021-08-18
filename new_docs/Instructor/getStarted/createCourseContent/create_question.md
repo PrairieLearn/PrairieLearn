@@ -84,20 +84,44 @@ Finally, we place the integer `c` into the structure `data`.  We place it in the
 data['correct_answers']['c'] = c
 ```
 
-* Now, return to the Files menu and click on the file `question.html`.  This formats the structure of the question page.
+* Now, return to the Files menu and click on the file `question.html`.  This formats the structure of the question page, and contains the following:
+```html
+<pl-question-panel>
+  <p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
+  <p> What is the sum $c = a + b$?</p>
+</pl-question-panel>
 
-The `pl-question-panel` defines the question as presented to the student.  In the second line, we see:
+<pl-integer-input answers-name="c" label="$c=$"></pl-integer-input>
+```
+
+When a question is displayed to a student, there are three "panels" that will be shown at different stages: the "question" panel, the "submission" panel, and the "answer" panel.  These display the question prompt, the solution provided by the student, and the correct answer.  By default, any text wrapped inside the `pl-question-panel` element is only displayed in the "question" panel, and will not show up in the "submission" or "answer" panel.  If the main text of the question is not wrapped inside `pl-question-panel`, then it will be repeated 2 times upon student submission, in the "answer" and "submission" panel.  This is unwiedly for long question prompts, so it is recommended that the main text always be placed inside `pl-question-panel`.
+
+
+
+The first line of the `pl-question-panel` states:
 ```html
 <p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
 ```
 
 `{{params.a}}` and `{{params.b}}` references the two parameters created randomly in the `server.py` file.  The `$` signs denote "math mode", which formats how they appear in the text.  `<p>` and `</p>` denote the beginning and end of a paragraph.
 
-The `pl-number-input` defines how the answer should be input by the student:
+Outside of the `pl-question-panel`, another element, `pl-number-input`, defines how the answer should be input by the student:
 ```html
 <pl-integer-input answers-name="c" label="$c=$"></pl-integer-input>
 ```
 For assessment of student answers, the question uses a `pl-integer-input` input field element since we are expecting an integer answer.  For a complete list of elements, see [elements](course.md/#elements).  There are only two attributes being used.  `answers-name` refers to the name of the true answer.  It could be given any name we choose, but `"c"` is a good choice because it matches the definition in the `server.py` file.  The attribute `label` determines what the student will see next to the submission box; use the `$` characters to format it in math mode.
+
+Since `pl-number-input` is *outside* `pl-question-panel`, the student will see both the correct answer and their submitted answer once they attempt the question.  If instead, `question.html` were to read:
+
+```html
+<pl-question-panel>
+  <p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
+  <p> What is the sum $c = a + b$?</p>
+
+<pl-integer-input answers-name="c" label="$c=$"></pl-integer-input>
+</pl-question-panel>
+```
+then the student would not be able to see the correct answer upon submission; only whether they got it right or wrong.  It is important to keep this in mind: if you want the student to view the correct answer or see their submission afterwards, you should not place answer elements like `pl-number-input` inside the question panel.  For more info on question panels, see [question configuration](course.md/#questionconfiguration).
 
 ### 2) Adding a geometry question
 
