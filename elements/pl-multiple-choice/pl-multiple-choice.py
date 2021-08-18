@@ -364,9 +364,7 @@ def test(element_html, data):
     result = data['test_type']
     if result == 'correct':
         data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
-        for option in data['params'][name]:
-            if option['key'] == correct_key:
-                feedback = option['feedback']
+        feedback = data['correct_answers'][name].get('feedback', None)
         data['partial_scores'][name] = {'score': 1, 'weight': weight, 'feedback': feedback}
     elif result == 'incorrect':
         if len(incorrect_keys) > 0:
