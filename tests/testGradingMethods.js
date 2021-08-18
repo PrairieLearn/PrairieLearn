@@ -282,7 +282,7 @@ describe('Grading methods', function() {
         describe('"External"', () => {
             describe('"grade" action', () => {
                 before('load page as student and submit "grade" action to "External" type question', async () => {
-                    let hm1Body = await loadHomeworkPage(mockStudents[0]);
+                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
                     $hm1Body = cheerio.load(hm1Body);
                     iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
             
@@ -295,7 +295,6 @@ describe('Grading methods', function() {
                     questionsPage = await gradeRes.text();
                     $questionsPage = cheerio.load(questionsPage);
 
-                    // get variant params
                     iqId = parseInstanceQuestionId(iqUrl);
 
                     await waitForExternalGrader($questionsPage, questionsPage);
@@ -325,6 +324,7 @@ describe('Grading methods', function() {
                     const hm1Body = await loadHomeworkPage(mockStudents[1]);
                     $hm1Body = cheerio.load(hm1Body);
                     iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
+                    
             
                     gradeRes = await saveOrGrade(iqUrl, {}, 'save',
                         [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
@@ -333,6 +333,8 @@ describe('Grading methods', function() {
 
                     questionsPage = await gradeRes.text();
                     $questionsPage = cheerio.load(questionsPage);
+
+                    iqId = parseInstanceQuestionId(iqUrl);
                 });
                 it('should NOT result in any grading jobs', async () => {
                     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
