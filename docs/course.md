@@ -131,7 +131,7 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
 
 ## Units
 
-Each assessment in the course belongs to a *unit* defined in `infoCourse.json`. Units should be thought of as a unit of instruction, typically with a consistent number of assessments per unit, such as 3 homeworks, 2 labs, and 1 exam. 
+Each assessment in the course belongs to a *unit* defined in `infoCourse.json`. Units should be thought of as a unit of instruction, or in PrairieLearn terms, a collection of assessments related to one another, but not necessarily of the same type. This means you can have a unit with two homeworks, one lab, and one exam, for example.
 
 Units are optional and do not affect any behavior by default. Setting the `infoCourse.json` property `"groupBy"` to `"Unit"` (instead of the default `"Set"`) will cause assessments to be grouped together by unit on the student assessments overview page. The order that they are defined in will be the order that they display in, top-down, to students. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
 
