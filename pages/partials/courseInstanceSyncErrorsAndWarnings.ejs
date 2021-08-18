@@ -8,9 +8,9 @@
     </p>
     <pre class="text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>" style="background-color: black;"><code><%- course_instance.sync_errors_ansified %></code></pre>
     <% if (!locals.course.example_course) { %>
-    <a class="btn btn-light" role="button" href="<%= urlPrefix %>/instance_admin/file_edit/courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json">
+    <a class="btn btn-primary" role="button" href="<%= urlPrefix %>/instance_admin/file_edit/courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json">
       <i class="fa fa-edit"></i>
-      <span class="d-none d-sm-inline">Edit infoCourseInstance.json</span>
+      <span class="d-none d-sm-inline">Edit infoCourseInstance.json to fix this error</span>
     </a>
     <% } %>
   </div>
@@ -24,9 +24,9 @@
     </p>
     <pre class="text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>" style="background-color: black;"><code><%- course_instance.sync_warnings_ansified %></code></pre>
     <% if (!locals.course.example_course) { %>
-    <a class="btn btn-light" role="button" href="<%= urlPrefix %>/instance_admin/file_edit/courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json">
+    <a class="btn btn-primary" role="button" href="<%= urlPrefix %>/instance_admin/file_edit/courseInstances/<%= course_instance.short_name %>/infoCourseInstance.json">
       <i class="fa fa-edit"></i>
-      <span class="d-none d-sm-inline">Edit infoCourseInstance.json</span>
+      <span class="d-none d-sm-inline">Edit infoCourseInstance.json to fix this warning</span>
     </a>
     <% } %>
   </div>

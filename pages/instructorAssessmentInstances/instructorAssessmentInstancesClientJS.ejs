@@ -52,7 +52,15 @@ $(function() {
             
         },
     });
-    
+
+    $(document).keydown(event => {
+        if ((event.ctrlKey || event.metaKey) &&
+            String.fromCharCode(event.which).toLowerCase() == 'f') {
+            $('.fixed-table-toolbar .search input').focus();
+            event.preventDefault();
+        }
+    });
+
     $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
         var button = $(event.relatedTarget); // Button that triggered the modal
         var uid = button.data('uid'); // Extract info from data-* attributes
