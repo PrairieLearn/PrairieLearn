@@ -13,17 +13,17 @@ module.exports = function(err, req, res, next) {
     // checking here to make sure we redirect to an accessible page.
 
     // we are only capturing 403 = Access Denied
-    if (err.status != 403) return next();
+    if (err.status != 403) return next(err);
 
     // skip if we don't have user data
-    if (res.locals?.authn_user?.user_id == null) return next();
-    if (res.locals?.user?.user_id == null) return next();
+    if (res.locals?.authn_user?.user_id == null) return next(err);
+    if (res.locals?.user?.user_id == null) return next(err);
 
     // we are only interested in cases where we are emulating a different user
-    if (res.locals.authn_user.user_id == res.locals.user.user_id) return next();
+    if (res.locals.authn_user.user_id == res.locals.user.user_id) return next(err);
 
     // check that we have a plainUrlPrefix
-    if (res.locals.plainUrlPrefix == null) return next();
+    if (res.locals.plainUrlPrefix == null) return next(err);
 
     // try to redirect to the instructor course instance
     if (res.locals?.course_instance?.id
@@ -48,5 +48,5 @@ module.exports = function(err, req, res, next) {
     }
 
     // give up, we couldn't figure out a useful redirect
-    next();
+    next(err);
 };
