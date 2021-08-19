@@ -32,7 +32,7 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 
 * Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
 
-You can select a set from the list of standardized assessment sets, or create your own.  See [here](course.md/#asses) for details.
+You can select a set from the list of standardized assessment sets, or create your own.  See [here](../HowTos/Assessments/howtoAddAssessmentSet.md) for details.
 
 ## Assessment types
 
@@ -43,7 +43,56 @@ Type        | Randomized | Description
 `Homework`  | No         | A gamified assessment that rewards repeated correct answers to questions.
 `Exam`      | Yes        | An exam where students can grade their answers at any time, and retry questions for reduced points.
 
+## Changing question-order randomization
 
+To make `Homework` assessments randomize the question order for each student, set the `"shuffleQuestions": true` option in the `infoAssessment.json` file.  This will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order.  This makes it easy for students to discuss questions with course staff; they can say "I don't know how to do #427" and everyone will be seeing the same question #427.  The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
+
+There is currently no way to disable question order randomization for `Exam` assessments.  However, the order of `zones` is fixed (see below), which can be used to control question order.
+
+
+## Question specification
+
+An assessment is broken down into a list of zones, like this:
+```json
+"zones": [
+    {
+        "title": "Easy questions",
+        "comment": "These are new questions created for this exam",
+        "questions": [
+            {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
+            {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
+        ]
+    },
+    {
+        "title": "Hard questions",
+        "comment": "These are new questions created for this exam",
+        "questions": [
+            {"id": "hardQV1", "points": 10},
+            {"id": "reallyHardQ", "points": [10, 10, 10]},
+            {
+                "numberChoose": 1,
+                "points": 5,
+                "alternatives": [
+                    {"id": "FirstAltQ", "points": 10},
+                    {"id": "SecondAltQ"}
+                ]
+            }
+        ]
+    }
+],
+```
+
+* Each zone appears in the given order in the assessment.  Zone titles are optional and are displayed to the student if present.
+
+* Within each zone the question order is randomized for `Exam` assessments.
+
+* An assessment question can be specified by either a single `id` or by a list of alternaitves, in which case one or more of these alternatives is chosen at random.  Once the question `id` is determined, then a random variant of that question is selected.  Question alternatives inherit the points of their parent group, if specified.
+
+* If a zone has `maxPoints`, then, of the points that are awarded for answering questions in this zone, at most `maxPoints` will count toward the total points.
+
+* If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
+
+* More detail about points for questions is in [Setting Points for the Assessment](../HowTos/Assessments/howtoAssessmentPoints.md)
 
 ## Assessment and question instances and resetting assessments
 
