@@ -6,7 +6,6 @@ import base64
 import os
 import json
 import math
-import html
 from dag_checker import grade_dag
 
 PL_ANSWER_CORRECT_DEFAULT = True
@@ -333,7 +332,7 @@ def parse(element_html, data):
         answer_code = ''
         for index, answer in enumerate(student_answer):
             indent = int(answer['indent'] or 0)
-            answer_code += ('    ' * indent) + html.unescape(answer['inner_html']) + '\n'
+            answer_code += ('    ' * indent) + lxml.html.fromstring(answer['inner_html']).text_content() + '\n'
 
         if len(answer_code) == 0:
             data['format_errors']['_files'] = 'The submitted file was empty.'
