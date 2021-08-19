@@ -29,6 +29,7 @@ pages:
     - 'Pitfalls': 'Instructor/getStarted/pitfalls/index.md'
   - How-to Guides:
     - 'Adding Staff to Course Instance': 'Instructor/HowTos/howtoAddUserRoles.md'
+    - 'Make a copy of a Course Instance for a New Semester': 'Instructor/HowTos/howtoCopyCourseInstance.md'
     - Assessments:
       - 'Creating Homework Sets': 'Instructor/HowTos/Assessments/howtoHomeworkSet.md'
       - 'Creating Exams': 'Instructor/HowTos/Assessments/howtoExams.md'
