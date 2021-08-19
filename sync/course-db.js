@@ -851,7 +851,7 @@ function checkAllowAccessRoles(rule) {
 /**
  * Checks that dates, if present, are valid and sequenced correctly.
  * @param {{ startDate?: string, endDate?: string }} rule
- * @returns {{errors: string[], dateInFuture: boolean} A list of errors, if any, and whether there are any dates in the future
+ * @returns {{errors: string[], dateInFuture: boolean}} A list of errors, if any, and whether there are any dates in the future
  */
 function checkAllowAccessDates(rule) {
     const errors = [];
