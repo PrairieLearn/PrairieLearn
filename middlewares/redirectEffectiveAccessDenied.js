@@ -5,15 +5,12 @@ module.exports = function(err, req, res, next) {
     // on a page to which the effective user doesn't have
     // permission. This results in a 403 (Access Denied) error. Here
     // we try and detect this case and redirect to an accessible page.
-    //
-    // There is a risk of redirect loops from this code. This could
-    // happen if the page we are redirecting to is also inaccessible
-    // by the effective user. We could use a cookie or query parameter
-    // to try and avoid this, but for now we are relying on careful
-    // checking here to make sure we redirect to an accessible page.
 
     // we are only capturing 403 = Access Denied
     if (err.status != 403) return next(err);
+
+    // we only redirect if we tried to change emulation data (see middlewares/effectiveRequestChanged.js)
+    if (!res.locals.pl_requested_data_changed) return next(err);
 
     // skip if we don't have user data
     if (res.locals?.authn_user?.user_id == null) return next(err);
