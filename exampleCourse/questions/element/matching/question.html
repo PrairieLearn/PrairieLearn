@@ -25,12 +25,12 @@
 
 <pl-question-panel>
     <p>
-        Example 2: <code>blank="true"</code> presents blank drop-down lists to begin,
-        and students receive Invalid, Not Gradeable errors if they leave any statement blank.
+        Example 2: <code>blank="false"</code> removes the blank first entry in the dropdown list, 
+        setting the default selection to the first option.
     </p>
 </pl-question-panel>
     
-<pl-matching answers-name="ex2" blank="true">
+<pl-matching answers-name="ex2" blank="false">
     <pl-statement match="Ottawa">Canada</pl-statement>
     <pl-statement match="Washington, D.C.">United States</pl-statement>
     <pl-statement match="Mexico City">Mexico</pl-statement>
