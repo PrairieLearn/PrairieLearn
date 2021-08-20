@@ -1,24 +1,29 @@
+.pl-matching-container {
+    display: flex;
+    margin-bottom: 1em;
+}
 
-.matching-statements > div {
+.pl-matching-statement {
     display: flex;
     align-items: baseline;
     margin-top: 1ex;
 }
 
-.matching-statements > div > div {
+.pl-matching-statement-text, .pl-matching-statement-submission {
     margin-right: 1ex;
 }
 
-.matching-statement-select {
+.pl-matching-statement-select {
+    margin-right: 1ex;
     min-width: 4em;
 }
 
-.matching-options ol {
+.pl-matching-options ol {
     margin-top: 0.5em;
     counter-reset: item;
 }
 
-.matching-options ol > li {
+.pl-matching-options ol > li {
     margin-bottom: 1em;
     padding: 0 0 0 2em;
     text-indent: -1em;
@@ -26,7 +31,7 @@
     counter-increment: item;
 }
   
-.matching-options ol > li:before {
+.pl-matching-options ol > li:before {
     display: inline-block;
     width: 1em;
     padding-right: 0.5em;

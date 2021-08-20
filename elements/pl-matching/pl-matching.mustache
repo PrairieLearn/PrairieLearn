@@ -8,23 +8,23 @@
     });
 </script>
 <style>
-#pl-matching-{{uuid}} .matching-options ol > li:before {
+#pl-matching-{{uuid}} .pl-matching-options ol > li:before {
     content: counter(item, {{counter_type}}) ".";
 }
 </style>
 {{#question}}
-<div id="pl-matching-{{uuid}}" style="display: flex;">
-<div class="matching-statements">
+<div id="pl-matching-{{uuid}}" class="pl-matching-container">
+<div class="pl-matching-statements">
 {{#statements}}
-    <div>
-        <div class="matching-statement-select">
+    <div class="pl-matching-statement">
+        <div class="pl-matching-statement-select">
             <select name="{{name}}" class="form-control">
                 {{#options}}
-                    <option {{selected}} value="{{value}}">{{value}}</option>
+                    <option {{selected}} value="{{index}}">{{value}}</option>
                 {{/options}}
             </select>
         </div>
-        <div>
+        <div class="pl-matching-statement-text">
             {{{html}}}
         </div>
         {{#display_score_badge}}
@@ -40,10 +40,10 @@
     </div>
 {{/statements}}
 </div>
-<div class="matching-options">
+<div class="pl-matching-options">
 <ol>
 {{#options}}
-    <li class="matching-option">{{{html}}}</li>
+    <li class="pl-matching-option">{{{html}}}</li>
 {{/options}}
 </ol>
 </div>
@@ -55,17 +55,13 @@
 
 {{#submission}}
 <div id="pl-matching-{{uuid}}" style="display: flex;">
-<div class="matching-statements">
+<div class="pl-matching-statements">
 {{#statements}}
-    <div>
-        <div class="matching-answer-select">
-            <select disabled class="form-control">
-                {{#options}}
-                    <option {{selected}} value="{{value}}">{{value}}</option>
-                {{/options}}
-            </select>
+    <div class="pl-matching-statement">
+        <div class="pl-matching-statement-submission">
+            <b>{{option}}.</b> 
         </div>
-        <div>
+        <div class="pl-matching-statement-text">
             {{{html}}}
         </div>
         {{#parse_error}}
@@ -90,17 +86,13 @@
 
 {{#answer}}
 <div id="pl-matching-{{uuid}}" style="display: flex;">
-<div class="matching-statements">
+<div class="pl-matching-statements">
 {{#statements}}
-    <div>
-        <div class="matching-answer-select">
-            <select disabled name="{{name}}" class="form-control">
-                {{#options}}
-                    <option {{selected}} value="{{value}}">{{value}}</option>
-                {{/options}}
-            </select>
+    <div class="pl-matching-statement">
+        <div class="pl-matching-statement-submission">
+            <b>{{option}}.</b> 
         </div>
-        <div>
+        <div class="pl-matching-statement-text">
             {{{html}}}
         </div>
     </div>
