@@ -60,10 +60,6 @@ def partition(data, pred):
     return (yes, no)
 
 
-def get_chosen_option(option_key, display_options):
-    return display_options[option_key]
-
-
 def categorize_matches(element, data):
     """Get provided statements and options from the pl-matching element"""
     options = {}
@@ -304,7 +300,7 @@ def render(element_html, data):
                 parse_error = data['format_errors'].get(form_name, None)
                 display_score_badge = parse_error is None and score is not None and show_answer_feedback
                 statement_html = {
-                    'html': get_chosen_option(chosen_key, display_options)['html'],
+                    'html': display_options[chosen_key]['html'],
                     'disabled': 'disabled',
                     'option': get_counter(chosen_key + 1, counter_type),
                     'display_score_badge': display_score_badge,
@@ -354,7 +350,7 @@ def render(element_html, data):
                 chosen_key = int(submitted_answers.get(form_name, None))
 
                 statement_html = {
-                    'html': get_chosen_option(chosen_key, display_options)['html'],
+                    'html': display_options[chosen_key]['html'],
                     'option': get_counter(chosen_key + 1, counter_type)
                 }
                 statement_set.append(statement_html)
