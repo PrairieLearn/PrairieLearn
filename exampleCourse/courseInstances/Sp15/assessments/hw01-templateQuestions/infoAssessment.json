@@ -4,12 +4,7 @@
     "title": "Template homework - copy this to start a new HW",
     "set": "Homework",
     "number": "1",
-    "allowAccess": [
-        {
-            "role": "Instructor",
-            "credit": 100
-        }
-    ],
+    "allowAccess": [],
     "zones": [
         {
             "title": "Multiple-choice questions",

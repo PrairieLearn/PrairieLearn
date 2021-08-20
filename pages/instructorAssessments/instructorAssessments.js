@@ -55,6 +55,9 @@ router.get('/', function(req, res, next) {
 
 router.get('/:filename', function(req, res, next) {
     if (req.params.filename == csvFilename(res.locals)) {
+        // There is no need to check if the user has permission to view student
+        // data, because this file only has aggregate data.
+
         var params = {
             course_instance_id: res.locals.course_instance.id,
             authz_data: res.locals.authz_data,
@@ -100,6 +103,8 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else if (req.params.filename == fileSubmissionsFilename(res.locals)) {
+        if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
+
         const params = {
             course_instance_id: res.locals.course_instance.id,
             limit: 100,

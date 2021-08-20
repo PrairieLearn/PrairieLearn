@@ -201,7 +201,6 @@ BEGIN
                 assessment_id,
                 number,
                 mode,
-                role,
                 credit,
                 uids,
                 time_limit_min,
@@ -218,7 +217,6 @@ BEGIN
                     new_assessment_id,
                     (access_rule->>'number')::integer,
                     (access_rule->>'mode')::enum_mode,
-                    (access_rule->>'role')::enum_role,
                     (access_rule->>'credit')::integer,
                     jsonb_array_to_text_array(access_rule->'uids'),
                     (access_rule->>'time_limit_min')::integer,
@@ -240,7 +238,6 @@ BEGIN
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
                 mode = EXCLUDED.mode,
-                role = EXCLUDED.role,
                 credit = EXCLUDED.credit,
                 time_limit_min = EXCLUDED.time_limit_min,
                 password = EXCLUDED.password,
