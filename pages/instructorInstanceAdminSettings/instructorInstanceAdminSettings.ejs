@@ -55,19 +55,23 @@
                             <% } %>
                         </td>
                     </tr>
-                    <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                     <tr><th>Configuration</th>
                         <td>
-                            <a href="<%= urlPrefix %>/<%= navPage %>/file_view/<%= infoCourseInstancePath %>">
+                            <% if (authz_data.has_course_permission_view) { %>
+                                <a href="<%= urlPrefix %>/<%= navPage %>/file_view/<%= infoCourseInstancePath %>">
+                                    infoCourseInstance.json
+                                </a>
+                                <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
+                                    <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/<%= navPage %>/file_edit/<%= infoCourseInstancePath %>">
+                                        <i class="fa fa-edit"></i>
+                                        <span>Edit</span>
+                                    </a>
+                                <% } %>
+                            <% } else { %>
                                 infoCourseInstance.json
-                            </a>
-                            <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/<%= navPage %>/file_edit/<%= infoCourseInstancePath %>">
-                                <i class="fa fa-edit"></i>
-                                <span>Edit</span>
-                            </a>
+                            <% } %>
                         </td>
                     </tr>
-                    <% } %>
                     <tr>
                       <th class="align-middle">Student Link</th>
                       <td class="form-inline align-middle">

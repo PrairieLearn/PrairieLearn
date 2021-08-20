@@ -1,19 +1,19 @@
 --BLOCK config_info
-SELECT 
+SELECT
     id, course_instance_id, name, minimum, maximum, student_authz_join, student_authz_create, student_authz_leave
-FROM 
+FROM
     group_configs
-WHERE 
+WHERE
     assessment_id = $assessment_id AND deleted_at IS NULL;
 
 -- BLOCK assessment_list
-SELECT 
+SELECT
     id, tid, title
-FROM 
+FROM
     assessments
-WHERE 
-    group_work 
-    AND id != $assessment_id 
+WHERE
+    group_work
+    AND id != $assessment_id
     AND course_instance_id = $course_instance_id
 ORDER BY tid;
 
@@ -46,11 +46,11 @@ FROM
 WHERE
     g.id IS NULL
     AND e.course_instance_id = $course_instance_id
-    AND e.role = 'Student'
+    AND NOT users_is_instructor_in_course(e.user_id, e.course_instance_id)
 ORDER BY u.uid;
 
 --BLOCK config_group
-UPDATE 
+UPDATE
     group_configs
 SET
     minimum = $minsize,

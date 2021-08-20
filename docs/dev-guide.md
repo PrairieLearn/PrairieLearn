@@ -58,25 +58,16 @@ PrairieLearn
 
 ## Unit tests and integration tests
 
-* Tests are stored in the `tests/` directory. They are run with:
+* Tests are stored in the `tests/` directory and listed in `tests/index.js`.
 
-```sh
-# make sure you are in the top-level PrairieLearn/ directory
-npm test
-make lint
-```
+* To run the tests during development, see [Running the test suite](installingLocal/#running-the-test-suite).
 
-* The above tests are run by the CI server on every push to GitHub.
+* The tests are run by the CI server on every push to GitHub.
 
 * The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web browser that answers questions on assessments. If a test fails then it is often easiest to debug by recreating the error by doing questions yourself against a locally-running server.
 
 * If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
 
-* Individual tests can be run with:
-
-```sh
-npx mocha tests/[testName].js
-```
 
 ## Debugging server-side JavaScript
 
@@ -104,7 +95,7 @@ debug('func()', 'param:', param);
 
 * As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
 
-* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `npx mocha --trace-warnings tests/index.js`.
+* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
 
 ## Debugging client-side JavaScript
 
@@ -161,8 +152,8 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../prairielib/sql-db');         // adjust path as needed
+var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
@@ -229,7 +220,7 @@ INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING 
 From JavaScript you can then do:
 
 ```javascript
-var sqlLoader = require('@prairielearn/prairielib/sql-loader'); // adjust path as needed
+var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
 var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
 // run the entire contents of the SQL file

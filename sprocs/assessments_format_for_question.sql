@@ -13,6 +13,7 @@ SELECT
     JSONB_AGG(JSONB_BUILD_OBJECT(
         'label', aset.abbreviation || a.number,
         'assessment_id', a.id,
+        'course_instance_id', a.course_instance_id,
         'color', aset.color
     ) ORDER BY (aset.number, aset.id, a.number, a.id))
 FROM
@@ -29,6 +30,6 @@ WHERE
             AND aq.deleted_at IS NULL
     )
     AND a.deleted_at IS NULL
-    AND a.course_instance_id = assessments_format_for_question.course_instance_id
+    AND CASE WHEN assessments_format_for_question.course_instance_id IS NOT NULL THEN a.course_instance_id = assessments_format_for_question.course_instance_id ELSE TRUE END
     AND CASE WHEN skip_assessment_id IS NOT NULL THEN a.id != skip_assessment_id ELSE TRUE END;
 $$ LANGUAGE SQL VOLATILE;

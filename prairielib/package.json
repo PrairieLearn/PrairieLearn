@@ -11,10 +11,6 @@
     "util.js",
     "config.js"
   ],
-  "scripts": {
-    "test": "NODE_ENV=test jest",
-    "lint": "eslint --ext js \"**/*.js\""
-  },
   "author": "",
   "license": "AGPL-3.0",
   "dependencies": {
@@ -25,11 +21,11 @@
     "js-yaml": "4.1.0",
     "lodash": "4.17.21",
     "logform": "^2.1.2",
-    "pg": "8.6.0",
+    "pg": "8.7.1",
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "eslint": "7.31.0",
+    "eslint": "7.32.0",
     "jest": "27.0.6"
   }
 }
