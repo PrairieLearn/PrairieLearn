@@ -248,7 +248,7 @@ def render(element_html, data):
             form_name = get_form_name(name, statement['key'])
             student_answer = int(submitted_answers.get(form_name, -1))
             correct_answer = data['correct_answers'].get(name)[i]
-            
+
             statement_html = {
                 'html': statement['html'].strip(),
                 'options': get_select_options(dropdown_options, student_answer, blank_start),
