@@ -32,7 +32,7 @@ WITH assessment_instances_by_user_and_date AS (
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     WHERE
         ai.assessment_id = $assessment_id
-        AND e.role = 'Student'
+        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
     GROUP BY
         ai.user_id, date_trunc('day', date AT TIME ZONE ci.display_timezone)
 )
@@ -55,5 +55,10 @@ SELECT
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs
 FROM
     assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
 WHERE
-    ai.assessment_id = $assessment_id;
+    ai.assessment_id = $assessment_id
+    AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id);

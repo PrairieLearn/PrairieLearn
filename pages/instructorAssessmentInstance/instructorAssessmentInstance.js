@@ -89,7 +89,7 @@ router.get('/:filename', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!res.locals.authz_data.has_course_instance_permission_edit) return next(error.make(403, 'Access denied (must be a student data editor)'));
     if (req.body.__action == 'edit_total_points') {
         const params = [
             res.locals.assessment_instance.id,
@@ -128,6 +128,7 @@ router.post('/', (req, res, next) => {
             null, // score_perc
             req.body.points,
             null, // feedback
+            null, // partial_scores
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
@@ -149,6 +150,7 @@ router.post('/', (req, res, next) => {
             req.body.score_perc,
             null, // points
             null, // feedback
+            null, // partial_scores
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {

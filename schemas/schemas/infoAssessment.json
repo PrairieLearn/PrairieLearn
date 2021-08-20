@@ -159,7 +159,8 @@
                     "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                 },
                 "role": {
-                    "description": "The minimum user role required for access.",
+                    "description": "DEPRECATED -- do not use.",
+                    "deprecated": true,
                     "enum": [
                         "Student",
                         "TA",
@@ -228,6 +229,11 @@
                 },
                 "showClosedAssessmentScore": {
                     "description": "Whether the student can view the assessment grade after it has been closed. Only works if showClosedAssessment is also set to false",
+                    "type": "boolean",
+                    "default": true
+                },
+                "active": {
+                    "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
                     "type": "boolean",
                     "default": true
                 }

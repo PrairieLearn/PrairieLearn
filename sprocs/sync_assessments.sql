@@ -201,7 +201,6 @@ BEGIN
                 assessment_id,
                 number,
                 mode,
-                role,
                 credit,
                 uids,
                 time_limit_min,
@@ -211,13 +210,13 @@ BEGIN
                 start_date,
                 end_date,
                 show_closed_assessment,
-                show_closed_assessment_score)
+                show_closed_assessment_score,
+                active)
             (
                 SELECT
                     new_assessment_id,
                     (access_rule->>'number')::integer,
                     (access_rule->>'mode')::enum_mode,
-                    (access_rule->>'role')::enum_role,
                     (access_rule->>'credit')::integer,
                     jsonb_array_to_text_array(access_rule->'uids'),
                     (access_rule->>'time_limit_min')::integer,
@@ -227,7 +226,8 @@ BEGIN
                     input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     (access_rule->>'show_closed_assessment')::boolean,
-                    (access_rule->>'show_closed_assessment_score')::boolean
+                    (access_rule->>'show_closed_assessment_score')::boolean,
+                    (access_rule->>'active')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -238,7 +238,6 @@ BEGIN
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
                 mode = EXCLUDED.mode,
-                role = EXCLUDED.role,
                 credit = EXCLUDED.credit,
                 time_limit_min = EXCLUDED.time_limit_min,
                 password = EXCLUDED.password,
@@ -248,7 +247,8 @@ BEGIN
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date,
                 show_closed_assessment = EXCLUDED.show_closed_assessment,
-                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score;
+                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score,
+                active = EXCLUDED.active;
         END LOOP;
 
         -- Delete excess access rules
