@@ -211,6 +211,10 @@ See the [Access control page](accessControl.md) for details.
 
 By default, an assessment is only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
 
+## Adding text and links to assessments
+
+See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details, and [`exam1` in the example course](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/assessments/exam1/) for an example.  (This link is broken).
+
 
 ## Student-attached files
 
@@ -228,6 +232,56 @@ PrairieLearn is designed to give students immediate feedback on their work. Howe
 
 To disable real-time grading for an assessment, add `"allowRealTimeGrading": false` to the assessment's `infoAssessment.json` file. This will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden. Note that real-time grading can only be disabled for `Exam` assessments, as immediate feedback is a core part of the `Homework` experience.
 
+An assessment without real-time grading will not show any score information during the exam. However, if a [time limit](accessControl.md#time-limits) is used then when it runs out the assessment will auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](accessControl.md#showinghiding-closed-assessments).
+
+Disabling real-time grading changes a lot of fundamental details of how PrairieLearn is used. To account for that, the student assessment overview page displays less information about points and grading than for usual exams.
+
+Here is the assessment page for a normal exam with real-time grading enabled:
+
+![Normal assessment](assessment-grading-normal.png)
+
+Here is the assessment page for an open exam with real-time grading disabled:
+
+![Open assessment with real-time grading disabled](assessment-grading-disabled-open.png)
+
+Compared to the normal assessment, there are a number of differences:
+
+* A warning explaining that real-time grading has been disabled is shown
+* Total points is listed as a number, not as an "X/Y" score
+* The percentage bar is not displayed
+* The "Best submission" column is renamed to "Submission status"
+* The "Available points" column has been removed
+* The "Awarded points" column has been renamed to "Points" and only shows the max points
+
+Here is the assessment page for a closed exam with real-time grading disabled:
+
+![Closed assessment with real-time grading disabled](assessment-grading-disabled-closed.png)
+
+Note that after the exam has closed and been graded, more information about points will be visible.
+
+## Limiting the number of attempts for each question
+
+The number of times each student will be allowed to attempt each question can be set in different ways, depending on the type of question and assessment.
+
+For assessments with type "Exam", each student will only be presented with a single variant of each question. The number of attempts will be determined by the `points` setting: if there is a single `points` value there will be a single attempt at the question; if `points` is set to a list of points, then there will be one attempt for each value in that list. In other words, the number of attempts is determined based on the number of values in the list of points.
+
+For assessments with type "Homework", students will be presented with an unlimited number of attempts for each question. By default, every new attempt corresponds to a different variant of the question, unless:
+
+* the question is set to [`"singleVariant": true` in the question configuration file](question.md#the-singleVariant-option-for-non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
+
+* the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
+
+```json
+"zones": [
+    {
+        "questions": [
+            {"id": "singleAttemptQ", "points": 10},
+            {"id": "tryOncePerVar", "points": 10},
+            {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
+        ]
+    }
+],
+```
 
 ## Honor code
 
