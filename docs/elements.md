@@ -655,13 +655,11 @@ Given a list of statements, select a matching option for each entry from a drop-
 **question.html**
 ```html
 <pl-matching answers-name="string_value">
-  <pl-statement match="d.c.">United States</pl-statement>
+  <pl-statement match="Washington, D.C.">United States</pl-statement>
   <pl-statement match="Mexico City">Mexico</pl-statement>
   <pl-statement match="Paris">France</pl-statement>
 
-  <pl-option name="d.c.">Washington, D.C.</pl-option>
-  <pl-option>Mexico City</pl-option>
-  <pl-option>Paris</pl-option>
+  <pl-option>New York City</pl-option>
 </pl-matching>
 ```
 
@@ -675,7 +673,7 @@ Attribute | Type | Default | Description
 `number-statements` | integer | special | The number of statements to display. Defaults to all statements.
 `number-options` | integer | special | The number of options to display. Defaults to all options.
 `none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.
-`blank` | boolean | False | Option to add blank dropdown entry as the default selection in each drop-down list..
+`blank` | boolean | True | Option to add blank dropdown entry as the default selection in each drop-down list.
 `counter-type` | "decimal" or "lower-alpha" or "upper-alpha" | "lower-alpha" | The type of counter to use when enumerating the options.
 `hide-score-badge` | boolean | false | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.
 
@@ -687,13 +685,15 @@ The content of a `pl-statement` can be any HTML element, including other Prairie
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`match` | string | — | Must be equal to the `name` of one of the `pl-option` elements, and identifies that option as the correct response for this `pl-answer.`
+`match` | string | — | Identifies the option as the correct response for this `pl-statement`. If `match` corresponds to the `name` of any `pl-option` element, the statement will be linked to that `pl-option`, otherwise a new option is implicitly created based on this `match` value.
 
-The content of a `pl-option` can be any HTML element, including other PrairieLearn eleemnts. `A pl-option` must be specified with these attributes:
+The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
+
+`A pl-option` must be specified with these attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`name` | string | special | A key used to match this option as the correct response to a `pl-answer`. If not given, the attribute is set to the inner HTML of the `pl-option`.
+`name` | string | special | A key used to match this option as the correct response to a `pl-statement`. If not given, the attribute is set to the inner HTML of the `pl-option`.
 
 #### Example implementations
 
