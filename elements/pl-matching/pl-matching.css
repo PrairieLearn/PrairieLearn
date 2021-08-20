@@ -5,7 +5,7 @@
 
 .pl-matching-statement {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     margin-top: 1ex;
 }
 
