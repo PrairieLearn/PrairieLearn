@@ -286,6 +286,7 @@ def render(element_html, data):
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(name, None)
+
         if parse_error is None:
             partial_score = data['partial_scores'].get(name, {'score': None})
             score = partial_score.get('score', None)
@@ -294,14 +295,13 @@ def render(element_html, data):
                 form_name = get_form_name(name, statement['key'])
                 student_answer = int(submitted_answers.get(form_name, -1))
                 correct_answer = data['correct_answers'].get(name)[i]
-                chosen_key = int(submitted_answers.get(form_name, None))
 
                 parse_error = data['format_errors'].get(form_name, None)
                 display_score_badge = parse_error is None and score is not None and show_answer_feedback
                 statement_html = {
-                    'html': display_options[chosen_key]['html'],
+                    'html': '' if student_answer == -1 else display_options[student_answer]['html'],
                     'disabled': 'disabled',
-                    'option': get_counter(chosen_key + 1, counter_type),
+                    'option': '[blank]' if student_answer == -1 else get_counter(student_answer + 1, counter_type),
                     'display_score_badge': display_score_badge,
                     'correct': display_score_badge and student_answer == correct_answer,
                     'parse_error': parse_error
@@ -346,11 +346,10 @@ def render(element_html, data):
             for i, statement in enumerate(display_statements):
                 form_name = get_form_name(name, statement['key'])
                 correct_answer = correct_answer_list[i]
-                chosen_key = int(submitted_answers.get(form_name, None))
 
                 statement_html = {
-                    'html': display_options[chosen_key]['html'],
-                    'option': get_counter(chosen_key + 1, counter_type)
+                    'html': display_options[correct_answer]['html'],
+                    'option': get_counter(correct_answer + 1, counter_type)
                 }
                 statement_set.append(statement_html)
 
