@@ -42,7 +42,8 @@
             "default": false
         },
         "userRoles": {
-            "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",
+            "description": "DEPRECATED -- do not use.",
+            "deprecated": true,
             "type": "object",
             "patternProperties": {
                 ".+": {
@@ -67,7 +68,8 @@
                         "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                     },
                     "role": {
-                        "description": "The minimum user role required for access.",
+                        "description": "DEPRECATED -- do not use.",
+                        "deprecated": true,
                         "enum": [
                             "Student",
                             "TA",

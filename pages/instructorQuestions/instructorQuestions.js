@@ -2,7 +2,6 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const error = require('../../prairielib/lib/error');
-const {escapeRegExp} = require('../../prairielib/util');
 const path = require('path');
 const logger = require('../../lib/logger');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -12,12 +11,11 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const { QuestionAddEditor } = require('../../lib/editors');
 const fs = require('fs-extra');
 const async = require('async');
+const _ = require('lodash');
+const { default: AnsiUp } = require('ansi_up');
+const ansiUp = new AnsiUp();
 
 router.get('/', function(req, res, next) {
-    const course_instance_id = res.locals.course_instance ? res.locals.course_instance.id : null;
-
-    // Pass filtering function to front-end
-    res.locals.escapeRegExp = escapeRegExp;
 
     async.series([
         (callback) => {
@@ -32,32 +30,20 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             const params = {
-                course_instance_id: course_instance_id,
                 course_id: res.locals.course.id,
             };
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.questions = result.rows;
-                callback(null);
-            });
-        },
-        (callback) => {
-            const params = {
-                course_id: res.locals.course.id,
-            };
-            sqldb.query(sql.tags, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.all_tags = result.rows;
-                callback(null);
-            });
-        },
-        (callback) => {
-            const params = {
-                course_instance_id: course_instance_id,
-            };
-            sqldb.query(sql.assessments, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.all_assessments = result.rows;
+                const ci_ids = _.map(res.locals.course_instances, ci => ci.id);
+                res.locals.questions = _.map(result.rows, row => {
+                    if (row.sync_errors)
+                        row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
+                    if (row.sync_warnings)
+                        row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+                    row.assessments = _.filter(row.assessments, assessment => ci_ids.includes(assessment.course_instance_id));
+                    return row;
+                });
+                res.locals.has_legacy_questions = _.some(result.rows, row => row.display_type != 'v3');
                 callback(null);
             });
         },

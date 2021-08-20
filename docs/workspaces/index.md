@@ -55,7 +55,7 @@ questions
 The question's `info.json` should set the `singleVariant` and `workspaceOptions` properties:
 
 * `"singleVariant": true` will prevent student workspaces from resetting due to new variants being generated
-    * Note that new variants will still be generated in `Instructor view`
+    * Note that new variants will still be generated in `Staff view`
 * `workspaceOptions` contains the following properties:
     * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
     * `port`: port number used by the workspace app inside the Docker image
@@ -242,8 +242,7 @@ make start-workspace-host
 make start
 ```
 
-For development it is helpful to run the above two commands in separate `tmux` windows.
-
+For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/tools/start_workspace_tmux.sh` that you might find useful.
 
 ## Running locally (natively, not on Docker)
 
