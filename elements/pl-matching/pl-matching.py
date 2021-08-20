@@ -18,6 +18,7 @@ BLANK_DEFAULT = True
 BLANK_ANSWER = ' '
 NOTA_DEFAULT = False
 COUNTER_TYPE_DEFAULT = 'lower-alpha'
+NO_COUNTERS_DEFAULT = False
 
 
 def get_form_name(answers_name, index):
@@ -107,7 +108,7 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['fixed-order', 'number-statements', 'number-options', 'none-of-the-above', 'blank', 'counter-type']
+    optional_attribs = ['fixed-order', 'number-statements', 'number-options', 'none-of-the-above', 'blank', 'counter-type', 'no-counters']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
     options, statements = categorize_matches(element, data)
@@ -226,8 +227,12 @@ def render(element_html, data):
     hide_score_badge = pl.get_boolean_attrib(element, 'hide-score-badge', HIDE_SCORE_BADGE_DEFAULT)
     blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
     show_answer_feedback = not hide_score_badge
+    no_counters = pl.get_boolean_attrib(element, 'no-counters', NO_COUNTERS_DEFAULT)
 
-    dropdown_options = [get_counter(i + 1, counter_type) for i in range(len(display_options))]
+    if not no_counters:
+        dropdown_options = [get_counter(i + 1, counter_type) for i in range(len(display_options))]
+    else:
+        dropdown_options = [display_options[i]['html'] for i in range(len(display_options))]
     if blank_start:
         dropdown_options.insert(0, BLANK_ANSWER)
 
@@ -268,6 +273,7 @@ def render(element_html, data):
             'statements': statement_set,
             'options': option_set,
             'counter_type': counter_type,
+            'no_counters': no_counters
         }
 
         if score is not None:
@@ -322,6 +328,7 @@ def render(element_html, data):
                 'options': option_set,
                 'display_score_badge': score is not None,
                 'counter_type': counter_type,
+                'no_counters': no_counters
             }
 
             if html_params['display_score_badge']:
@@ -366,6 +373,7 @@ def render(element_html, data):
                 'statements': statement_set,
                 'options': option_set,
                 'counter_type': counter_type,
+                'no_counters': no_counters
             }
             with open('pl-matching.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
