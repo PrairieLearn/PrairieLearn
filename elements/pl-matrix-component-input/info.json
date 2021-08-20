@@ -4,9 +4,6 @@
         "nodeModulesScripts": [
             "clipboard/dist/clipboard.min.js"
         ],
-        "coreScripts": [
-            "PrairieUtil.js"
-        ],
         "elementStyles": [
             "pl-matrix-component-input.css"
         ]
