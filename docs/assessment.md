@@ -214,7 +214,7 @@ Course staff see any reported issues show up on the "Issues" tab.
 
 See the [Access control page](accessControl.md) for details.
 
-By default, an assessment is only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
+By default, an assessment is only accessible to course staff. To allow students to access the assessment, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
 
 ## Adding text and links to assessments
 

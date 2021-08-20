@@ -7,10 +7,6 @@
     "unit": "templates",
     "allowAccess": [
         {
-            "role": "TA",
-            "credit": 100
-        },
-        {
             "mode": "Exam",
             "credit": 100,
             "examUuid": "b5094bf7-565d-43c1-b536-54708d3e89ad"

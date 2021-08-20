@@ -16,11 +16,6 @@ The beginning of the `infoAssessment.json` usually looks like this:
 	"set": "Homework",
 	"number": "1",
 	"allowAccess": [
-		{
-    	"role": "TA",
-    	"mode": "Public",
-    	"endDate":  "2020-05-15T23:59:59"
-		}
 	]
 ```
 

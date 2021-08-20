@@ -5,12 +5,7 @@
     "set": "Homework",
     "number": "7",
     "unit": "workshop",
-    "allowAccess": [
-        {
-            "role": "Instructor",
-            "credit": 100
-        }
-    ],
+    "allowAccess": [],
     "zones": [
         {
             "questions": [

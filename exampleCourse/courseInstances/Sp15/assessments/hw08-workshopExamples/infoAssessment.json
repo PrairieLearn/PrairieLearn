@@ -5,12 +5,7 @@
     "set": "Homework",
     "number": "8",
     "unit": "workshop",
-    "allowAccess": [
-        {
-            "role": "Instructor",
-            "credit": 100
-        }
-    ],
+    "allowAccess": [],
     "comment": "This assessment was first created for the workshop offered in Summer 2020",
     "zones": [
         {

@@ -9,7 +9,7 @@ const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors');
-const { parseISO, isValid, isAfter } = require('date-fns');
+const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 
 const schemas = require('../schemas');
@@ -84,7 +84,7 @@ const UUID_REGEX = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-
 // For finding all v4 UUIDs in a string/file
 const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
 
-/** 
+/**
  * @template T
  * @typedef {import('./infofile').InfoFile<T>} InfoFile<T>
  */
@@ -388,8 +388,8 @@ module.exports.loadFullCourseNew = async function(courseDir) {
  * @template T
  * @param {any} courseId
  * @param {string} filePath
- * @param {InfoFile<T>} infoFile 
- * @param {(line?: string) => void} writeLine 
+ * @param {InfoFile<T>} infoFile
+ * @param {(line?: string) => void} writeLine
  */
 function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile, writeLine) {
     if (!infofile.hasErrorsOrWarnings(infoFile)) return;
@@ -470,7 +470,7 @@ module.exports.courseDataHasErrorsOrWarnings = function(courseData) {
  * @param {string} options.filePath
  * @param {object} [options.schema]
  * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
- * @returns {Promise<InfoFile<T>>} 
+ * @returns {Promise<InfoFile<T>>}
  */
 module.exports.loadInfoFile = async function({ coursePath, filePath, schema, tolerateMissing = false }) {
     const absolutePath = path.join(coursePath, filePath);
@@ -784,7 +784,7 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
 
 /**
  * @template T
- * @param {{ [id: string]: InfoFile<T>}} infos 
+ * @param {{ [id: string]: InfoFile<T>}} infos
  * @param {(uuid: string, otherIds: string[]) => string} makeErrorMessage
  */
 function checkDuplicateUUIDs(infos, makeErrorMessage) {
@@ -819,9 +819,24 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
 }
 
 /**
+ * Checks that roles are not present.
+ * @param {{ role?: UserRole }} rule
+ * @returns {string[]} A list of warnings, if any
+ */
+function checkAllowAccessRoles(rule) {
+    const warnings = [];
+    if ('role' in rule) {
+        if (rule.role != 'Student') {
+            warnings.push(`The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`);
+        }
+    }
+    return warnings;
+}
+
+/**
  * Checks that dates, if present, are valid and sequenced correctly.
  * @param {{ startDate?: string, endDate?: string }} rule
- * @returns {string[]} A list of errors, if any
+ * @returns {{errors: string[], dateInFuture: boolean}} A list of errors, if any, and whether there are any dates in the future
  */
 function checkAllowAccessDates(rule) {
     const errors = [];
@@ -843,11 +858,18 @@ function checkAllowAccessDates(rule) {
     if (startDate && endDate && isAfter(startDate, endDate)) {
         errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`);
     }
-    return errors;
+    let dateInFuture = false;
+    if (startDate && isFuture(startDate)) {
+        dateInFuture = true;
+    }
+    if (endDate && isFuture(endDate)) {
+        dateInFuture = true;
+    }
+    return { errors, dateInFuture };
 }
 
 /**
- * @param {Question} question 
+ * @param {Question} question
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
 async function validateQuestion(question) {
@@ -868,7 +890,7 @@ async function validateQuestion(question) {
 }
 
 /**
- * @param {Assessment} assessment 
+ * @param {Assessment} assessment
  * @param {{ [qid: string]: any }} questions
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
@@ -884,15 +906,26 @@ async function validateAssessment(assessment, questions) {
     }
 
     // Check assessment access rules
+    let anyDateInFuture = false;
     (assessment.allowAccess || []).forEach(rule => {
-        const allowAccessErrors = checkAllowAccessDates(rule);
+        const allowAccessResult = checkAllowAccessDates(rule);
+        if (allowAccessResult.dateInFuture) {
+            anyDateInFuture = true;
+        }
 
         if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
             errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
         }
 
-        errors.push(...allowAccessErrors);
+        errors.push(...allowAccessResult.errors);
     });
+
+    if (anyDateInFuture) { // only warn about new roles for current or future courses
+        (assessment.allowAccess || []).forEach(rule => {
+            const allowAccessWarnings = checkAllowAccessRoles(rule);
+            warnings.push(...allowAccessWarnings);
+        });
+    }
 
     const foundQids = new Set();
     const duplicateQids = new Set();
@@ -988,17 +1021,33 @@ async function validateCourseInstance(courseInstance) {
         }
     }
 
+    let anyDateInFuture = false;
     (courseInstance.allowAccess || []).forEach(rule => {
-        const allowAccessErrors = checkAllowAccessDates(rule);
-        errors.push(...allowAccessErrors);
+        const allowAccessResult = checkAllowAccessDates(rule);
+        if (allowAccessResult.dateInFuture) {
+            anyDateInFuture = true;
+        }
+
+        errors.push(...allowAccessResult.errors);
     });
+
+    if (anyDateInFuture) { // only warn about new roles for current or future courses
+        (courseInstance.allowAccess || []).forEach(rule => {
+            const allowAccessWarnings = checkAllowAccessRoles(rule);
+            warnings.push(...allowAccessWarnings);
+        });
+
+        if (_(courseInstance).has('userRoles')) {
+            warnings.push('The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.');
+        }
+    }
 
     return { warnings, errors };
 }
 
 /**
  * Loads all questions in a course directory.
- * 
+ *
  * @param {string} coursePath
  */
 module.exports.loadQuestions = async function(coursePath) {
@@ -1018,7 +1067,7 @@ module.exports.loadQuestions = async function(coursePath) {
 
 /**
  * Loads all course instances in a course directory.
- * 
+ *
  * @param {string} coursePath
  */
 module.exports.loadCourseInstances = async function(coursePath) {
@@ -1038,7 +1087,7 @@ module.exports.loadCourseInstances = async function(coursePath) {
 
 /**
  * Loads all assessments in a course instance.
- * 
+ *
  * @param {string} coursePath
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions

@@ -5,12 +5,7 @@
     "set": "Homework",
     "number": "1",
     "unit": "templates",
-    "allowAccess": [
-        {
-            "role": "Instructor",
-            "credit": 100
-        }
-    ],
+    "allowAccess": [],
     "zones": [
         {
             "title": "Multiple-choice questions",

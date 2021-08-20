@@ -5,12 +5,7 @@
     "set": "Exam",
     "unit": "grading",
     "number": "5",
-    "allowAccess": [{
-            "mode": "Public",
-            "role": "TA",
-            "credit": 100,
-            "timeLimitMin": 50
-        },
+    "allowAccess": [
         {
             "mode": "Exam",
             "credit": 100,

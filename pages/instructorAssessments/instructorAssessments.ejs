@@ -6,6 +6,18 @@
     <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
     <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
   </head>
+  <script>
+    $(() => {
+        $('[data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            html: true,
+            trigger: 'hover',
+        }).on("show.bs.popover", function() {
+            $($(this).data("bs.popover").getTipElement()).css("max-width", "80%");
+        });;
+    });
+  </script>
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
@@ -55,9 +67,15 @@
                 </td>
                 <td class="align-middle">
                   <% if (row.sync_errors) { %>
-                    <i class="fa fa-times text-danger mr-1" aria-hidden="true"></i>
+                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= row.sync_errors_ansified %></pre>">
+                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                  </button>
                   <% } else if (row.sync_warnings) { %>
-                    <i class="fa fa-exclamation-triangle text-warning mr-1" aria-hidden="true"></i>
+                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= row.sync_warnings_ansified %></pre>">
+                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                  </button>
                   <% } %>
                   <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %> 
                   <% if (row.group_work) { %>
@@ -109,10 +127,12 @@
             Download <a href="<%= urlPrefix %>/instance_admin/assessments/<%= csvFilename %>"><%= csvFilename %></a>
             (includes more statistics columns than displayed above)
           </p>
+          <% if (authz_data.has_course_instance_permission_view) { %>
           <p class="mb-0">
             Download <a href="<%= urlPrefix %>/instance_admin/assessments/<%= fileSubmissionsFilename %>"><%= fileSubmissionsFilename %></a>
             (includes all files ever submitted for this course instance)
           </p>
+          <% } %>
         </div>
 
       </div>
