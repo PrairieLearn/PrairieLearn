@@ -24,46 +24,29 @@ def get_form_name(answers_name, index):
     return f'{answers_name}-dropdown-{index}'
 
 
-def alpha_counter(i, letter_a):
-    """Converts a base-10 integer to base 26, using letter_a as the "0" digit."""
-    result = ''
-    while i > 0:
-        i -= 1
-        result = chr(ord(letter_a) + i % 26) + result
-        i //= 26
-
-    return result
-
-
 def get_counter(i, counter_type):
     """Converts an integer counter to the specified CSS counter type"""
     if counter_type == 'lower-alpha':
-        return alpha_counter(i, 'a')
+        return pl.index2key(i - 1)
     elif counter_type == 'upper-alpha':
-        return alpha_counter(i, 'A')
+        return pl.index2key(i - 1).upper()
     elif counter_type == 'decimal':
         return str(i)
     else:
         raise Exception('Illegal counter-type in pl-matching element: "' + counter_type + '" should be "decimal", "lower-alpha" or "upper-alpha".')
 
 
-def legal_answer(answer, counter_type, options):
+def legal_answer(answer, options):
     """Checks that the given answer is within the range of the given counter type."""
-    if counter_type == 'lower-alpha':
-        return 'a' <= answer <= chr(ord('a') + len(options))
-    elif counter_type == 'upper-alpha':
-        return 'A' <= answer <= chr(ord('A') + len(options))
-    elif counter_type == 'decimal':
-        return 1 <= answer <= len(options)
-    else:
-        return False
+    return 0 <= answer < len(options)
 
 
-def get_select_options(options_list, selected_value):
+def get_select_options(options_list, selected_value, blank_used):
     return [{
+        'index': i - int(blank_used),  # subtract 1 if blank is used
         'value': opt,
-        'selected': 'selected' if opt == selected_value else ''
-    } for opt in options_list]
+        'selected': 'selected' if i - int(blank_used) == selected_value else ''
+    } for i, opt in enumerate(options_list)]
 
 
 def partition(data, pred):
@@ -77,6 +60,10 @@ def partition(data, pred):
     return (yes, no)
 
 
+def get_chosen_option(option_key, display_options):
+    return display_options[option_key]
+
+
 def categorize_matches(element, data):
     """Get provided statements and options from the pl-matching element"""
     options = {}
@@ -87,6 +74,12 @@ def categorize_matches(element, data):
     children = element[:]
     children.sort(key=lambda child: child.tag)
 
+    def make_option(name, html):
+        nonlocal index
+        option = {'index': index, 'name': name, 'html': html}
+        index += 1
+        return option
+
     for child in children:
         if child.tag in ['pl-option', 'pl_option']:
             pl.check_attribs(child, required_attribs=[], optional_attribs=['name'])
@@ -95,7 +88,7 @@ def categorize_matches(element, data):
 
             # An option object has: index of appearance in the pl-matching element;
             # the name attribute; and the html content.
-            option = {'index': index, 'name': option_name, 'html': child_html}
+            option = make_option(option_name, child_html)
             options[option_name] = option
             index += 1
 
@@ -104,7 +97,8 @@ def categorize_matches(element, data):
             child_html = pl.inner_html(child)
             match_name = pl.get_string_attrib(child, 'match')
             if match_name not in options:
-                raise Exception(f'pl-statement "match" attribute of {match_name} does not match any of the pl-option elements.')
+                new_option = make_option(match_name, match_name)
+                options[match_name] = new_option
 
             # A statement object has: the name attribute of the correct matching option; and
             # the html content.
@@ -198,7 +192,7 @@ def prepare(element_html, data):
 
         keyed_statement = {'key': str(i), 'html': statement['html'], 'match': statement['match']}
         display_statements.append(keyed_statement)
-        correct_matches.append(match_index + 1)
+        correct_matches.append(match_index)
 
     data['params'][name] = (display_statements, display_options)
     data['correct_answers'][name] = correct_matches
@@ -209,11 +203,14 @@ def parse(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     display_statements, display_options = data['params'].get(name)
     submitted_answers = data['submitted_answers']
-    counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
 
     for i in range(len(display_statements)):
         expected_html_name = get_form_name(name, i)
-        student_answer = submitted_answers.get(expected_html_name, None)
+        try:
+            student_answer = int(submitted_answers.get(expected_html_name, None))
+        except (ValueError, TypeError):
+            data['format_errors'][expected_html_name] = 'The submitted answer is not a legal option.'
+            continue
 
         # A blank is a valid submission from the HTML, but causes a format error.
         if student_answer is BLANK_ANSWER:
@@ -221,7 +218,7 @@ def parse(element_html, data):
         elif student_answer is None:
             data['format_errors'][expected_html_name] = 'No answer was submitted.'
         else:
-            if not legal_answer(student_answer, counter_type, display_options):
+            if not legal_answer(student_answer, display_options):
                 data['format_errors'][expected_html_name] = 'The submitted answer is invalid.'
 
 
@@ -249,12 +246,12 @@ def render(element_html, data):
         statement_set = []
         for i, statement in enumerate(display_statements):
             form_name = get_form_name(name, statement['key'])
-            student_answer = submitted_answers.get(form_name, None)
-            correct_answer = get_counter(data['correct_answers'].get(name)[i], counter_type)
-
+            student_answer = int(submitted_answers.get(form_name, -1))
+            correct_answer = data['correct_answers'].get(name)[i]
+            
             statement_html = {
                 'html': statement['html'].strip(),
-                'options': get_select_options(dropdown_options, submitted_answers.get(form_name, None)),
+                'options': get_select_options(dropdown_options, student_answer, blank_start),
                 'name': form_name,
                 'display_score_badge': display_score_badge,
                 'correct': display_score_badge and student_answer == correct_answer
@@ -300,15 +297,16 @@ def render(element_html, data):
             statement_set = []
             for i, statement in enumerate(display_statements):
                 form_name = get_form_name(name, statement['key'])
-                student_answer = submitted_answers.get(form_name, None)
-                correct_answer = get_counter(data['correct_answers'].get(name)[i], counter_type)
+                student_answer = int(submitted_answers.get(form_name, -1))
+                correct_answer = data['correct_answers'].get(name)[i]
+                chosen_key = int(submitted_answers.get(form_name, None))
 
                 parse_error = data['format_errors'].get(form_name, None)
                 display_score_badge = parse_error is None and score is not None and show_answer_feedback
                 statement_html = {
-                    'html': statement['html'].strip(),
+                    'html': get_chosen_option(chosen_key, display_options)['html'],
                     'disabled': 'disabled',
-                    'options': get_select_options(dropdown_options, submitted_answers.get(form_name, None)),
+                    'option': get_counter(chosen_key + 1, counter_type),
                     'display_score_badge': display_score_badge,
                     'correct': display_score_badge and student_answer == correct_answer,
                     'parse_error': parse_error
@@ -353,10 +351,11 @@ def render(element_html, data):
             for i, statement in enumerate(display_statements):
                 form_name = get_form_name(name, statement['key'])
                 correct_answer = correct_answer_list[i]
+                chosen_key = int(submitted_answers.get(form_name, None))
 
                 statement_html = {
-                    'html': statement['html'].strip(),
-                    'options': [{'value': get_counter(correct_answer, counter_type)}],
+                    'html': get_chosen_option(chosen_key, display_options)['html'],
+                    'option': get_counter(chosen_key + 1, counter_type)
                 }
                 statement_set.append(statement_html)
 
@@ -385,7 +384,6 @@ def grade(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
-    counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
     display_statements, _ = data['params'][name]
     number_statements = len(display_statements)
 
@@ -396,8 +394,8 @@ def grade(element_html, data):
     num_correct = 0
     for i in range(number_statements):
         expected_html_name = get_form_name(name, i)
-        student_answer = submitted_answers.get(expected_html_name, None)
-        correct_answer = get_counter(correct_answers[i], counter_type)
+        student_answer = int(submitted_answers.get(expected_html_name, -1))
+        correct_answer = correct_answers[i]
         if student_answer == correct_answer:
             num_correct += 1
 
@@ -414,7 +412,6 @@ def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
 
     _, display_options = data['params'][name]
     correct_answers = data['correct_answers'].get(name, [])
@@ -423,14 +420,14 @@ def test(element_html, data):
     if result == 'correct':
         for i in range(len(correct_answers)):
             expected_html_name = get_form_name(name, i)
-            correct_answer = int(correct_answers[i])
-            data['raw_submitted_answers'][expected_html_name] = get_counter(correct_answer, counter_type)
+            correct_answer = correct_answers[i]
+            data['raw_submitted_answers'][expected_html_name] = correct_answer
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
         for i in range(len(correct_answers)):
             expected_html_name = get_form_name(name, i)
-            incorrect_answer = int(correct_answers[i] % len(display_options) + 1)
-            data['raw_submitted_answers'][expected_html_name] = get_counter(incorrect_answer, counter_type)
+            incorrect_answer = (correct_answers[i] + 1) % len(display_options)
+            data['raw_submitted_answers'][expected_html_name] = incorrect_answer
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif result == 'invalid':
         for i in range(len(correct_answers)):
