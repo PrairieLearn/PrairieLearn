@@ -674,8 +674,7 @@ Attribute | Type | Default | Description
 `number-options` | integer | special | The number of options to display. Defaults to all options.
 `none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.
 `blank` | boolean | True | Option to add blank dropdown entry as the default selection in each drop-down list.
-`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" | "lower-alpha" | The type of counter to use when enumerating the options.
-`no-counters` | boolean | false | If set to true, the column of options will be hidden. The text of each option will be used in the statements' dropdown lists, instead of counters.
+`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters.
 `hide-score-badge` | boolean | false | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.
 
 Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
