@@ -226,7 +226,7 @@ def render(element_html, data):
     hide_score_badge = pl.get_boolean_attrib(element, 'hide-score-badge', HIDE_SCORE_BADGE_DEFAULT)
     blank_start = pl.get_boolean_attrib(element, 'blank', BLANK_DEFAULT)
     show_answer_feedback = not hide_score_badge
-    no_counters = counter_type == "full-text"
+    no_counters = counter_type == 'full-text'
 
     if not no_counters:
         dropdown_options = [get_counter(i + 1, counter_type) for i in range(len(display_options))]
