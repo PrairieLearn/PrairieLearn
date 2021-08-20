@@ -86,7 +86,6 @@ def categorize_matches(element, data):
             # the name attribute; and the html content.
             option = make_option(option_name, child_html)
             options[option_name] = option
-            index += 1
 
         elif child.tag in ['pl-statement', 'pl_statement']:
             pl.check_attribs(child, required_attribs=['match'], optional_attribs=[])
