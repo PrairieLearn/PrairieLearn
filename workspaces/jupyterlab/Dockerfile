@@ -1,4 +1,4 @@
-FROM jupyter/datascience-notebook:aec555e49be6
+FROM jupyter/datascience-notebook:lab-3.1.4
 COPY jupyter_notebook_config.py /etc/jupyter/
 
 ENV XDG_DATA_HOME=/tmp/local/share
@@ -17,4 +17,4 @@ COPY install.sh /
 RUN /bin/bash /install.sh
 USER jovyan
 
-CMD ["start.sh", "jupyter", "lab"]
+CMD ["start.sh", "jupyter", "lab", "--collaborative", "--port", "8080"]
