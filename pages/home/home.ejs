@@ -167,7 +167,10 @@
 
             <% if (locals.instructor_courses && instructor_courses.length > 0) { %>
               <div class="card-body">
-                No courses found with student access. Courses with instructor access are found in the list above. Use the “Add or remove courses” button to add a course as a student.
+                No courses found with student access. Courses with instructor access are found in the list above.
+                <% if (authn_provider_name !== 'LTI') { %>
+                  Use the “Add or remove courses” button to add a course as a student.
+                <% } %>
               </div>
             <% } else if (devMode) { %>
               <div class="card-body">
@@ -177,7 +180,10 @@
               </div>
             <% } else { %> <!-- devMode -->
               <div class="card-body">
-                No courses found. Use the “Add or remove courses” button to add one.
+                No courses found.
+                <% if (authn_provider_name !== 'LTI') { %>
+                  Use the “Add or remove courses” button to add one.
+                <% } %>
               </div>
             <% } %> <!-- devMode -->
 
