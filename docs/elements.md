@@ -689,7 +689,7 @@ Attribute | Type | Default | Description
 
 The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
 
-`A pl-option` must be specified with these attributes:
+A `pl-option` must be specified with these attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
