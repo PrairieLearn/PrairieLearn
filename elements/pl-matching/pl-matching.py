@@ -32,8 +32,10 @@ def get_counter(i, counter_type):
         return pl.index2key(i - 1).upper()
     elif counter_type == 'decimal':
         return str(i)
+    elif counter_type == 'full-text':
+        return str(i)
     else:
-        raise Exception('Illegal counter-type in pl-matching element: "' + counter_type + '" should be "decimal", "lower-alpha" or "upper-alpha".')
+        raise Exception(f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".')
 
 
 def legal_answer(answer, options):
