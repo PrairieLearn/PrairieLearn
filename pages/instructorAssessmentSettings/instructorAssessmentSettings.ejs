@@ -43,11 +43,24 @@
             </div>
             <table class="table table-sm table-hover two-column-description">
                 <tbody>
-                    <tr><th>Title</th><td><%= assessment.title %></td></tr>
-                    <tr><th>Type</th><td><%= assessment.type %></td></tr>
-                    <tr><th>Set</th><td><%= assessment_set.name %> (<%= assessment_set.abbreviation %>)</td></tr>
-                    <tr><th>Number</th><td><%= assessment.number %></td></tr>
-                    <tr><th>AID</th>
+                    <tr><th scope="row">Title</th><td><%= assessment.title %></td></tr>
+                    <tr><th scope="row">Type</th><td><%= assessment.type %></td></tr>
+                    <tr>
+                        <th scope="row">Set</th>
+                        <td>
+                            <%= assessment_set.name %> 
+                            <span class="text-muted">(<%= assessment_set.abbreviation %>)</span>
+                        </td>
+                    </tr>
+                    <tr><th scope="row">Number</th><td><%= assessment.number %></td></tr>
+                    <tr>
+                        <th scope="row">Set</th>
+                        <td>
+                            <%= assessment_unit.heading %> 
+                            <span class="text-muted">(<%= assessment_unit.name %>)</span>
+                        </td>
+                    </tr>                    
+                    <tr><th scope="row">AID</th>
                         <td>
                             <span class="pr-2"><%= assessment.tid %></span>
                             <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
