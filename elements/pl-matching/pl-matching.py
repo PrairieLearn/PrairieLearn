@@ -107,7 +107,7 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['fixed-order', 'number-statements', 'number-options', 'none-of-the-above', 'blank', 'counter-type', 'no-counters']
+    optional_attribs = ['fixed-order', 'number-statements', 'number-options', 'none-of-the-above', 'blank', 'counter-type']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
     options, statements = categorize_matches(element, data)
