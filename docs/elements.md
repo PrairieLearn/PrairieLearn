@@ -671,7 +671,7 @@ Attribute | Type | Default | Description
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
 `fixed-order` | boolean | False | Whether or not to display the statements in a fixed order; otherwise they are shuffled. Options are always shuffled.
 `number-statements` | integer | special | The number of statements to display. Defaults to all statements.
-`number-options` | integer | special | The number of options to display. Defaults to all options.
+`number-options` | integer | special | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.
 `none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.
 `blank` | boolean | True | Option to add blank dropdown entry as the default selection in each drop-down list.
 `counter-type` | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters.
