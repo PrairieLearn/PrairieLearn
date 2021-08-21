@@ -38,3 +38,11 @@
     font-weight: bold;
     text-align: right;
 }
+
+.pl-matching-answer {
+    border: 1px solid grey !important;
+    border-radius: 5px !important;
+    padding: .4rem .4rem;
+    background-color: rgba(0, 0, 0, 0.03);
+    margin-right: .5rem;
+}

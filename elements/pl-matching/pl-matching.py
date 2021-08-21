@@ -33,7 +33,7 @@ def get_counter(i, counter_type):
     elif counter_type == 'decimal':
         return str(i)
     elif counter_type == 'full-text':
-        return str(i)
+        return ''
     else:
         raise Exception(f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".')
 
@@ -44,11 +44,15 @@ def legal_answer(answer, options):
 
 
 def get_select_options(options_list, selected_value, blank_used):
-    return [{
-        'index': i - int(blank_used),  # subtract 1 if blank is used
-        'value': opt,
-        'selected': 'selected' if i - int(blank_used) == selected_value else ''
-    } for i, opt in enumerate(options_list)]
+    def transform(i, opt):
+        index = i - int(blank_used)
+        return {
+            'index': index,
+            'value': opt,
+            'selected': 'selected' if index == selected_value else ''
+        }
+
+    return [transform(i, opt) for i, opt in enumerate(options_list)]
 
 
 def partition(data, pred):
@@ -305,13 +309,18 @@ def render(element_html, data):
 
                 parse_error = data['format_errors'].get(form_name, None)
                 display_score_badge = parse_error is None and score is not None and show_answer_feedback
+                if student_answer == -1 or counter_type == 'full-text':
+                    counter = ''
+                else:
+                    counter = f'{get_counter(student_answer + 1, counter_type)}. '
                 statement_html = {
-                    'html': '' if student_answer == -1 else display_options[student_answer]['html'],
+                    'option': '[blank]' if student_answer == -1 else display_options[student_answer]['html'],
+                    'counter': counter,
                     'disabled': 'disabled',
-                    'option': '[blank]' if student_answer == -1 else get_counter(student_answer + 1, counter_type),
                     'display_score_badge': display_score_badge,
                     'correct': display_score_badge and student_answer == correct_answer,
-                    'parse_error': parse_error
+                    'parse_error': parse_error,
+                    'statement': statement['html']
                 }
                 statement_set.append(statement_html)
 
@@ -354,10 +363,14 @@ def render(element_html, data):
             for i, statement in enumerate(display_statements):
                 form_name = get_form_name(name, statement['key'])
                 correct_answer = correct_answer_list[i]
-
+                if counter_type == 'full-text':
+                    counter = ''
+                else:
+                    counter = f'{get_counter(i + 1, counter_type)}. '
                 statement_html = {
-                    'html': display_options[correct_answer]['html'],
-                    'option': get_counter(correct_answer + 1, counter_type)
+                    'option': display_options[correct_answer]['html'],
+                    'statement': statement['html'],
+                    'counter': counter,
                 }
                 statement_set.append(statement_html)
 

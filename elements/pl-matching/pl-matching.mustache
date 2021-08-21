@@ -60,13 +60,11 @@
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">
-        {{^no_counters}}
-        <div class="pl-matching-statement-submission">
-            <strong>{{option}}.</strong> 
+        <div class="pl-matching-answer">
+            <strong>{{counter}}</strong> {{{option}}}
         </div>
-        {{/no_counters}}
         <div class="pl-matching-statement-text">
-            {{{html}}}
+            {{{statement}}}
         </div>
         {{#parse_error}}
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
@@ -93,13 +91,11 @@
 <div class="pl-matching-statements">
 {{#statements}}
     <div class="pl-matching-statement">
-        {{^no_counters}}
-        <div class="pl-matching-statement-submission">
-            <strong>{{option}}.</strong>
+        <div class="pl-matching-answer">
+            <strong>{{counter}}</strong> {{{option}}}
         </div>
-        {{/no_counters}}
         <div class="pl-matching-statement-text">
-            {{{html}}}
+            {{{statement}}}
         </div>
     </div>
 {{/statements}}
