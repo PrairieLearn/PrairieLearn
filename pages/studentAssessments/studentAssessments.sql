@@ -153,6 +153,7 @@ FROM
 WHERE
     authorized
 ORDER BY 
-    (CASE WHEN $assessments_group_by = 'Unit' THEN assessment_unit_number END),
+    CASE WHEN $assessments_group_by = 'Unit' THEN assessment_unit_number END, 
+    CASE WHEN $assessments_group_by = 'Unit' THEN assessment_unit_id END,
     assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number 
     NULLS FIRST;

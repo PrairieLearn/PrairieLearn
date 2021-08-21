@@ -67,6 +67,7 @@ WHERE
     AND aa.authorized
 ORDER BY
     (CASE WHEN $assessments_group_by = 'Unit' THEN au.number END), 
+    (CASE WHEN $assessments_group_by = 'Unit' THEN au.id END),
     aset.number, a.order_by, a.id;
 
 -- BLOCK course_instance_files
