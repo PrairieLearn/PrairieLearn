@@ -679,7 +679,7 @@ Attribute | Type | Default | Description
 
 Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
 
-A total of `number-statements` statements will be randomly selected and displayed to the student. The corresponding matching options will be gathered; if `number_options` requires more entries, then distractors will be selected from the remaining unused options. If the gathered options are more numerous than `number_options`, they will be randomly sampled and `none-of-the-above` will automatically set to true.
+A total of `number-statements` statements will be randomly selected and displayed to the student. The corresponding matching options will be gathered; if `number-options` is larger than the number of options used by the selected statements, then random distractors will be selected from the remaining unused options. If the selected statements require more options than `number-options`, then `none-of-the-above` will automatically be set to true.
 
 The content of a `pl-statement` can be any HTML element, including other PrairieLearn elements. A `pl-statement` must be specified with these attributes:
 
