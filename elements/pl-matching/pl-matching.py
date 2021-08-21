@@ -210,7 +210,7 @@ def parse(element_html, data):
             continue
 
         # A blank is a valid submission from the HTML, but causes a format error.
-        if student_answer is BLANK_ANSWER:
+        if student_answer == -1:
             data['format_errors'][expected_html_name] = 'The submitted answer was left blank.'
         elif student_answer is None:
             data['format_errors'][expected_html_name] = 'No answer was submitted.'
