@@ -41,7 +41,7 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
     return new Promise((resolve, reject) => {
 
         try {
-            socket = io.connect('http://localhost:3007' + '/external-grading');
+            socket = io.connect('http://localhost:3007/external-grading');
             socket.on('connect_error', (err) => {
                 throw Error(err);
               });
