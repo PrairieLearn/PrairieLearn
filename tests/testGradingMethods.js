@@ -325,7 +325,6 @@ describe('Grading methods', function() {
                     $hm1Body = cheerio.load(hm1Body);
                     iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
                     
-            
                     gradeRes = await saveOrGrade(iqUrl, {}, 'save',
                         [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
                     );
