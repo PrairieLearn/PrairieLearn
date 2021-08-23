@@ -8,6 +8,7 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const fs = require('fs').promises;
+const path = require('path');
 const io = require('socket.io-client');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -285,8 +286,9 @@ describe('Grading methods', function() {
                     const hm1Body = await loadHomeworkPage(mockStudents[0]);
                     $hm1Body = cheerio.load(hm1Body);
                     iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
-            
-                    const passingContent = await fs.readFile('./testCourse/questions/externalGrade/codeUpload/submitted_code_samples/fib_success_score_perfect/fib.py');
+                    console.log('the joined path', path.join(process.cwd(), './testCourse/questions/externalGrade/codeUpload/submitted_code_samples/fib_success_score_perfect/fib.py'));
+                    console.log('resolved path', './testCourse/questions/externalGrade/codeUpload/submitted_code_samples/fib_success_score_perfect/fib.py');
+                    const passingContent = await fs.readFile(path.join(process.cwd(), './testCourse/questions/externalGrade/codeUpload/submitted_code_samples/fib_success_score_perfect/fib.py'));
                     gradeRes = await saveOrGrade(iqUrl, {}, 'grade',
                         [{name: 'fib.py', 'contents': Buffer.from(passingContent).toString('base64')}],
                     );
@@ -380,8 +382,9 @@ describe('Grading methods', function() {
 
 
         // const gradingMethods = ['Internal', 'External', 'Manual'];
-
+        
         it('"Internal" grading method combinations', () => {
+
             // want to use the original gradingMethod original.
             // we would always expect to see an 'Internal' past submission block with each additional configured possibility
         });
