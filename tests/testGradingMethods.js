@@ -7,8 +7,6 @@ const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-const fs = require('fs').promises;
-const path = require('path');
 const io = require('socket.io-client');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
