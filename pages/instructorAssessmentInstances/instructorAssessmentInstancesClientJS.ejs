@@ -203,6 +203,7 @@ function scorebarFormatter(score, row) {
 
 function listFormatter(list, row) {
 
+    if (!list || !list[0]) list = ['(empty)'];
     return '<small>' + list.join(', ') + '</small>';
 }
 
