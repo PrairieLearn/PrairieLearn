@@ -25,6 +25,7 @@ DECLARE
     assessment_instance_id bigint;
     grading_method enum_grading_method;
     new_correct boolean;
+    source text;
 BEGIN
     -- ######################################################################
     -- get the related objects
@@ -107,8 +108,14 @@ BEGIN
 
             PERFORM variants_update_after_grading(variant_id, grading_job.correct);
             IF assessment_instance_id IS NOT NULL THEN
-            PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id, is_regrade);
-            PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+                IF is_regrade THEN
+                    source = 'Internal regrading';
+                ELSE
+                    source = 'Internal grading';
+                END IF;
+
+                PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id, source, is_regrade);
+                PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit, regrade_in_progress => is_regrade);
             END IF;
         END IF;
     END IF;

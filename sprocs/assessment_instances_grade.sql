@@ -5,6 +5,7 @@ CREATE FUNCTION
         IN credit integer DEFAULT NULL,
         IN only_log_if_score_updated boolean DEFAULT FALSE,
         IN allow_decrease boolean DEFAULT FALSE,
+        IN regrade_in_progress boolean DEFAULT FALSE,
         OUT updated boolean,
         OUT new_points double precision,
         OUT new_score_perc double precision
@@ -159,6 +160,10 @@ BEGIN
         IF only_log_if_score_updated THEN
             log_update := FALSE;
         END IF;
+    END IF;
+
+    IF regrade_in_progress THEN
+        log_update := FALSE;
     END IF;
 
     IF log_update THEN

@@ -4,6 +4,7 @@ CREATE FUNCTION
         submission_score DOUBLE PRECISION,
         grading_job_id bigint,
         authn_user_id bigint,
+        source text,
         is_regrade BOOLEAN DEFAULT FALSE
     ) RETURNS VOID
 AS $$
@@ -52,11 +53,11 @@ BEGIN
         iq.id = instance_question_id;
 
     INSERT INTO question_score_logs
-        (instance_question_id, auth_user_id,  max_points,
-                   points,            score_perc, grading_job_id)
+        (instance_question_id, auth_user_id, max_points,
+        points, score_perc, grading_job_id, source)
     VALUES
         (instance_question_id, authn_user_id, new_values.max_points,
-        new_values.points, new_values.score_perc, grading_job_id);
+        new_values.points, new_values.score_perc, grading_job_id, source);
 
     PERFORM instance_questions_calculate_stats(instance_question_id);
 END;

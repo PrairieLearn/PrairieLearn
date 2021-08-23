@@ -229,7 +229,8 @@ BEGIN
                         'points', qsl.points,
                         'max_points', qsl.max_points,
                         'score_perc', qsl.score_perc,
-                        'correct', s.correct
+                        'correct', s.correct,
+                        'source', qsl.source
                     ) AS data,
                     qsl.id AS tie_breaker
                 FROM

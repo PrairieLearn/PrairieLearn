@@ -18,6 +18,7 @@ DECLARE
     instance_question_id bigint;
     assessment_instance_id bigint;
     new_correct boolean;
+    source text;
 BEGIN
     PERFORM grading_jobs_lock(grading_job_id);
 
@@ -105,8 +106,14 @@ BEGIN
 
         PERFORM variants_update_after_grading(variant_id, grading_job.correct);
         IF assessment_instance_id IS NOT NULL THEN
-           PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id, is_regrade);
-           PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+            IF is_regrade THEN
+                source = 'External regrading';
+            ELSE
+                source = 'External grading';
+            END IF;
+
+            PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id, source, is_regrade);
+            PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit, regrade_in_progress => is_regrade);
         END IF;
     END IF;
 END;

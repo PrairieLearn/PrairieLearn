@@ -215,3 +215,18 @@ SET
     modified_at = now()
 WHERE
     iq.id = $id;
+
+--BLOCK log_regrading_request
+INSERT INTO question_score_logs
+    (auth_user_id, date, instance_question_id, source)
+VALUES 
+    ($auth_user_id, now(), $instance_question_id, 'Regrade request');
+
+--BLOCK log_regrading_rollback
+INSERT INTO question_score_logs
+    (auth_user_id, date, instance_question_id, max_points, points, score_perc, source)
+SELECT $auth_user_id, now(), $instance_question_id, aq.max_points, $points, $score_perc, 'Regrade rollback'
+FROM 
+    instance_questions AS iq
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+WHERE iq.id = $instance_question_id;

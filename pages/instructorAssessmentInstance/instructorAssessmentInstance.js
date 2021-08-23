@@ -133,6 +133,7 @@ router.post('/', (req, res, next) => {
             null, // feedback
             null, // partial_scores
             res.locals.authn_user.user_id,
+            'Manual instructor override', // source
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
             if (ERR(err, next)) return;
@@ -155,6 +156,7 @@ router.post('/', (req, res, next) => {
             null, // feedback
             null, // partial_scores
             res.locals.authn_user.user_id,
+            'Manual instructor override', // source
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
             if (ERR(err, next)) return;

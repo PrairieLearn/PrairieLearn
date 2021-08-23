@@ -16,7 +16,10 @@ CREATE FUNCTION
         IN arg_points double precision,
         IN arg_feedback jsonb,
         IN arg_partial_scores jsonb,
-        IN arg_authn_user_id bigint
+        IN arg_authn_user_id bigint,
+
+        -- source of the score update (e.g. manual instructor override)
+        IN arg_source text
     ) RETURNS void
 AS $$
 DECLARE
@@ -167,10 +170,10 @@ BEGIN
 
         INSERT INTO question_score_logs
             (instance_question_id, auth_user_id,
-            max_points,     points,     score_perc)
+            max_points, points, score_perc, source)
         VALUES
             (instance_question_id, arg_authn_user_id,
-            max_points, new_points, new_score_perc);
+            max_points, new_points, new_score_perc, arg_source);
 
         PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit => 100, allow_decrease => true);
     END IF;
