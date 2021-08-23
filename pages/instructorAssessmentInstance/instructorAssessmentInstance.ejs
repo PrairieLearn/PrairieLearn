@@ -35,7 +35,7 @@
             <% } else { %>
               <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
               <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
-              <tr><th>Role</th><td colspan="2"><%= instance_enrollment.role %></td></tr>
+              <tr><th>Role</th><td colspan="2"><%= instance_role %></td></tr>
             <% } %>
             <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %>
                 (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>">student view</a>)
@@ -46,7 +46,7 @@
                 <% include('../partials/pointsFormatter'); %>
                 <span id="total-points"><%= getStringFromFloat(assessment_instance.points) %></span>
                 <small>/<span id="total-max-points" class="text-muted"><%= getStringFromFloat(assessment_instance.max_points) %></span></small>
-                <% if (authz_data.has_instructor_edit) { %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary"
                    id="editTotalPointsButton" tabindex="0"
                    data-toggle="popover" data-container="body"
@@ -55,7 +55,7 @@
                                  {id: 'editTotalPointsButton'}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-edit" aria-hidden="true"></i>
-              </button>
+                </button>
                 <% } %>
               </td>
             </tr>
@@ -65,7 +65,7 @@
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}); %>
               </td>
               <td class="align-middle" style="width: 100%;">
-                <% if (authz_data.has_instructor_edit) { %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary"
                    id="editTotalScorePercButton" tabindex="0"
                    data-toggle="popover" data-container="body"
@@ -150,7 +150,7 @@
               <% } %>
               <td class="text-center">
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
-                <% if (authz_data.has_instructor_edit) { %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
                    id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
@@ -167,7 +167,7 @@
                 <%- include('../partials/scorebar', {score: instance_question.score_perc}); %>
               </td>
               <td class="align-middle" style="width: 1em;">
-                <% if (authz_data.has_instructor_edit) { %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
                    id="editQuestionScorePerc<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"

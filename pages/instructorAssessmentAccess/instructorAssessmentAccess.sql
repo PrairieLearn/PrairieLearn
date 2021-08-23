@@ -5,10 +5,6 @@ SELECT
         ELSE aar.mode::text
     END AS mode,
     CASE
-        WHEN aar.role IS NULL THEN '—'
-        ELSE aar.role::text
-    END AS role,
-    CASE
         WHEN aar.uids IS NULL THEN '—'
         ELSE array_to_string(aar.uids, ', ')
     END AS uids,
@@ -52,5 +48,6 @@ FROM
     LEFT JOIN courses AS ps_c ON (ps_c.course_id = e.course_id)
 WHERE
     a.id = $assessment_id
+    AND ((aar.role > 'Student') IS NOT TRUE)
 ORDER BY
     aar.number;
