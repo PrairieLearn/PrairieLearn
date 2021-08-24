@@ -3,8 +3,8 @@ selected_users AS (
     SELECT *
     FROM users
     WHERE
-        uid ~ $user
-        OR name ~ $user
+        uid ~ $user_regexp
+        OR name ~ $user_regexp
     LIMIT 10
 ),
 selected_courses AS (

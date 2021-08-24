@@ -2,8 +2,8 @@
     "description": "Finds users and their courses.",
     "params": [
         {
-            "name": "user",
-            "description": "UID or part of name to search for (using SQL LIKE)."
+            "name": "user_regexp",
+            "description": "Regexp to match against UID or user name."
         }
     ]
 }
