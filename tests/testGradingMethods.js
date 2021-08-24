@@ -2,17 +2,14 @@ const {assert} = require('chai');
 const cheerio = require('cheerio');
 const config = require('../lib/config');
 const fetch = require('node-fetch');
+const fs = require('fs').promises;
+const path = require('path');
 const querystring = require('querystring');
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const io = require('socket.io-client');
-
-const fs = require('fs').promises;
-const path = require('path');
-const syncFromDisk = require('../sync/syncFromDisk');
-const logger = require('./dummyLogger');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -408,8 +405,6 @@ describe('Grading methods', function() {
                     assert.lengthOf($questionsPage('.grading-block'), 1);
                 });
             });
-
-
         });
 
         // not a requirement, but should be noted
