@@ -358,6 +358,7 @@ describe('Grading methods', function() {
         // submission logic already covered in 'gradingMethod' 'save' action tests so we only care about grading jobs with 'grade' action here
         const gradingMethods = ['Internal', 'External', 'Manual'];
         const infoFilePath = path.join(__dirname, '../testCourse/questions/internalGrade/addingNumbers/info.json');
+        console.log('info file path', infoFilePath);
         const originalInfoFile = await fs.readFile(infoFilePath);
 
         after('restore original info.json', async () => {
