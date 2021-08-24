@@ -73,7 +73,7 @@ scores AS (
         ) AS uid_other_users_group
     FROM
         course_users AS u
-        CROSS JOIN course_assessments AS a
+        LEFT JOIN course_assessments AS a ON TRUE
         LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.id)
 )
 SELECT user_id,uid,uin,user_name,role,
