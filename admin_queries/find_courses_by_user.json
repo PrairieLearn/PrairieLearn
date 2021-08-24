@@ -1,0 +1,9 @@
+{
+    "description": "Finds users and their courses.",
+    "params": [
+        {
+            "name": "user",
+            "description": "UID or part of name to search for (using SQL LIKE)."
+        }
+    ]
+}
