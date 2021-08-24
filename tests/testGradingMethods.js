@@ -358,63 +358,67 @@ describe('Grading methods', function() {
         // submission logic already covered in 'gradingMethod' 'save' action tests so we only care about grading jobs with 'grade' action here
         const gradingMethods = ['Internal', 'External', 'Manual'];
         const infoFilePath = path.join(__dirname, '../testCourse/questions/internalGrade/addingNumbers/info.json');
-        console.log('info file path', infoFilePath);
         const originalInfoFile = await fs.readFile(infoFilePath);
+        console.log('info file path', infoFilePath);
 
         after('restore original info.json', async () => {
             await fs.writeFile(infoFilePath, originalInfoFile);
         });
 
-        gradingMethods.forEach(async (gradingMethod, i) => {
-            describe(gradingMethod, async () => {
-                before('modify question info.json configuration', async () => {
-                    const infoFile = JSON.parse(await fs.readFile(infoFilePath));
-                    infoFile.gradingMethods ? infoFile.gradingMethods.push(gradingMethod) : infoFile.gradingMethods = [gradingMethod];
-                    await fs.writeFile(infoFilePath, JSON.stringify(infoFile));
-                });
-                before('set up testing server', helperServer.before());
-                before('reset ' + gradingMethod + ' question', async () => {
-
-                    // load page and submit correct answer
-                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
-                    $hm1Body = cheerio.load(hm1Body);
-                    iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Adding two numbers")').attr('href');
+        describe('Internal', () => {
+            gradingMethods.forEach(async (gradingMethod, i) => {
+                console.log(this.currentTest.title);
+                if (gradingMethod != this.currentTest.title) {
+                    describe(gradingMethod, async () => {
+                        before('modify question info.json configuration', async () => {
+                            const infoFile = JSON.parse(await fs.readFile(infoFilePath));
+                            infoFile.gradingMethods ? infoFile.gradingMethods.push(gradingMethod) : infoFile.gradingMethods = [gradingMethod];
+                            await fs.writeFile(infoFilePath, JSON.stringify(infoFile));
+                        });
+                        before('set up testing server', helperServer.before());
+                        before('reset ' + gradingMethod + ' question', async () => {
+                            // load page and submit correct answer
+                            const hm1Body = await loadHomeworkPage(mockStudents[0]);
+                            $hm1Body = cheerio.load(hm1Body);
+                            iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Adding two numbers")').attr('href');
+                
+                            await fetch(iqUrl);
+                            iqId = parseInstanceQuestionId(iqUrl);
+                            const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, {iqId})).rows[0];
+                    
+                            gradeRes = await saveOrGrade(iqUrl, {c: variant.params.a + variant.params.b}, 'grade');
+                            assert.equal(gradeRes.status, 200);
+                
+                            questionsPage = await gradeRes.text();
+                            $questionsPage = cheerio.load(questionsPage);
+                        });
+                        after('shut down testing server', helperServer.after);
         
-                    await fetch(iqUrl);
-                    iqId = parseInstanceQuestionId(iqUrl);
-                    const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, {iqId})).rows[0];
-            
-                    gradeRes = await saveOrGrade(iqUrl, {c: variant.params.a + variant.params.b}, 'grade');
-                    assert.equal(gradeRes.status, 200);
-        
-                    questionsPage = await gradeRes.text();
-                    $questionsPage = cheerio.load(questionsPage);
-                });
-                after('shut down testing server', helperServer.after);
-
-                it('should result in ' + (i + 1) + ' grading job(s)', async () => {
-                    const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
-                    assert.lengthOf(grading_jobs, i + 1);
-                });
-                it('should result in 1 "pastsubmission-block" component being rendered', () => {
-                    assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
-                });
-                it('should be given some submission grade in "pastsubmission-block"', async () => {
-                    assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>');
-                });
-                it('should result in 1 "grading-block" component being rendered', () => {
-                    assert.lengthOf($questionsPage('.grading-block'), 1);
-                });
-            });
+                        it('should result in ' + (i + 1) + ' grading job(s)', async () => {
+                            const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
+                            assert.lengthOf(grading_jobs, i + 1);
+                        });
+                        it('should result in 1 "pastsubmission-block" component being rendered', () => {
+                            assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+                        });
+                        it('should be given some submission grade in "pastsubmission-block"', async () => {
+                            assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>');
+                        });
+                        it('should result in 1 "grading-block" component being rendered', () => {
+                            assert.lengthOf($questionsPage('.grading-block'), 1);
+                        });
+                    });
+                }
         });
 
-        // not a requirement, but should be noted
-        it('question should NOT be able to change grading method boolean optinos after creation', async () => {
-
+        describe('"External"', () => {
 
         });
 
-        it('question should be ', () => {
+        describe('"Manual"', () => {
+
+        });
+
 
         });
 
@@ -424,6 +428,8 @@ describe('Grading methods', function() {
         // ***Future 'gradingMethods' multiple grading methods type***
         //
         // grading-block component
+        // Instead of showing one correct answer, it should show the correct answer available for each grading method
+        // that has available scores on view render.
         // |------------------------------------------------------------------------------------------------|
         // |Correct Answer Internal - Whatever is computed to be answer in internal grading                 |
         // |Correct Answer External (optional) - Should be dispalyed based on nature external question      |
@@ -431,25 +437,12 @@ describe('Grading methods', function() {
         // |-------------------------------------------------------------------------------------------------
 
         // 'pastsubmission-block' component:
+        // Past submission block should show past submission and available correct answers for last 5 submissions.
         // |----------------------------------------------------------------------------------------
         // |Submitted answer internal - ie. addNumbers                                              |
         // |Submitted answer external - ie. codeUpload editor to support internal answer            |
         // |Submitted answer manual - ie. codeUpload editor reused to be manually graded for syntax |
         // |----------------------------------------------------------------------------------------
 
-
-        
-        describe('"Internal" grading method combinations', async () => {
-
-
-            // want to use the original gradingMethod original.
-            // we would always expect to see an 'Internal' past submission block with each additional configured possibility
-        });
-        describe('"External" grading method combinations', () => {
-            // we would always expect to see an 'External' past submission block with each additional configured possibility
-        });
-        describe('"Manual" grading method combinations', () => {
-            // we would always expect to see an 'Manual' past submission block with each additional configured possibility
-        });
     });
 });
