@@ -146,7 +146,7 @@ describe('Grading method(s)', function() {
 
     after('reset default user', () => setUser(defaultUser));
 
-    describe('`gradingMethod` configuration (depreciated, backwards compatible)', () => {
+    describe('`gradingMethod` configuration (deprecated, backwards compatible)', () => {
 
         describe('"Internal"', () => {
             describe('"grade" action', () => {
@@ -392,12 +392,7 @@ describe('Grading method(s)', function() {
                     iqId = parseInstanceQuestionId(iqUrl);
                     const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, {iqId})).rows[0];
             
-                    gradeRes = await saveOrGrade(iqUrl, 
-                        {
-                            c: variant.params.a + variant.params.b,
-                        },
-                        'grade', 
-                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
+                    gradeRes = await saveOrGrade(iqUrl, {c: variant.params.a + variant.params.b}, 'grade', [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
                     assert.equal(gradeRes.status, 200);
     
                     questionsPage = await gradeRes.text();
