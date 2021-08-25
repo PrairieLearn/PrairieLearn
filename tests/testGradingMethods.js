@@ -276,6 +276,7 @@ describe('Grading method(s)', function() {
 
         describe('"External"', () => {
             describe('"grade" action', () => {
+                this.timeout = 60000;
                 before('load page as student and submit "grade" action to "External" type question', async () => {
                     const hm1Body = await loadHomeworkPage(mockStudents[0]);
                     $hm1Body = cheerio.load(hm1Body);
@@ -429,11 +430,6 @@ describe('Grading method(s)', function() {
             // 3. Ensure that internal grading jobs complete before external grading jobs
             //    a. so results can be injected into external grading container.
             //    b. so internal grading results are not necessarily overwritten in submission score value, if we do not implement another spot for this score.
-            //    c. 
-        });
-
-        
-
 
         // Behind the scenes, each gradingMethod enabled for a question will produce a grading job respectively. Ie. If grading_methods = ['internal', 'external', 'manual'], 
         // then 3x grading_jobs are produced for each submission.
@@ -457,5 +453,8 @@ describe('Grading method(s)', function() {
         // |Submitted answer manual - ie. codeUpload editor reused to be manually graded for syntax |
         // |----------------------------------------------------------------------------------------
 
+        });
+
+    
     });
 });
