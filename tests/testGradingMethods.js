@@ -8,7 +8,6 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const io = require('socket.io-client');
-const { grader } = require('../lib/externalGrader');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
