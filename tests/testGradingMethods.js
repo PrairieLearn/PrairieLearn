@@ -396,11 +396,11 @@ describe('Grading method(s)', function() {
                     $questionsPage = cheerio.load(questionsPage);
 
                     // TO DO: enable once question.js views are upgraded to support many grading jobs per submission block.
-                    await waitForExternalGrader($questionsPage, questionsPage);
+                    // await waitForExternalGrader($questionsPage, questionsPage);
 
                     // reload QuestionsPage since socket io cannot update without DOM
-                    questionsPage = await (await fetch(iqUrl)).text();
-                    $questionsPage =  cheerio.load(questionsPage);
+                    // questionsPage = await (await fetch(iqUrl)).text();
+                    // $questionsPage =  cheerio.load(questionsPage);
                 });
                 // TO DO: can't do this test until views are upgraded to allow external grading on Internal + External grading configured questions
                 // it('should result in 3 grading jobs', async () => {
