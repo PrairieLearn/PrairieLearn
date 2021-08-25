@@ -4,10 +4,12 @@
 \alias{get_question_details}
 \title{Extract question name and score from header}
 \usage{
-get_question_details(dir)
+get_question_details(dir, pattern = "^test_.*\\\\.R$")
 }
 \arguments{
 \item{dir}{Directory containing the test files for a question}
+
+\item{pattern}{A regular expression identifying test files in the directory}
 }
 \value{
 A data.frame object with colums name, file, and max_points
