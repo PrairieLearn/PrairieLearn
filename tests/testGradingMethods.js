@@ -148,7 +148,7 @@ describe('Grading method(s)', function() {
 
     after('reset default user', () => setUser(defaultUser));
 
-    describe('A single `gradingMethod` configuration (Deprecated but backwards compatible)', () => {
+    describe('`gradingMethod` configuration (depreciated, backwards compatible)', () => {
 
         describe('"Internal"', () => {
             describe('"grade" action', () => {
@@ -348,11 +348,9 @@ describe('Grading method(s)', function() {
         });
     });
     
-    describe('multiple grading methods configured on `gradingMethods` property (TO BECOME ACTIVE)', () => {
-
+    describe('`gradingMethods` configuration (replacing `gradingMethod`)', () => {
         describe('Internal', async () => {
             // submission logic already covered in 'gradingMethod' 'save' action tests so we only care about grading jobs with 'grade' action here
-            const gradingMethods = ['Internal', 'External', 'Manual'];
             const infoFilePath = path.join(__dirname, '../testCourse/questions/internalGrade/addingNumbers/info.json');
             console.log('info file path', infoFilePath);
             const originalInfoFile = await fs.readFile(infoFilePath);
@@ -361,8 +359,8 @@ describe('Grading method(s)', function() {
                 await fs.writeFile(infoFilePath, originalInfoFile);
             });
 
-            gradingMethods.forEach(async (gradingMethod, i) => {
-                describe(gradingMethod, async () => {
+            ['External', 'Manual'].forEach(async (gradingMethod, i) => {
+                describe('Adding ' + gradingMethod + ' to Internal question', async () => {
                     before('modify question info.json configuration', async () => {
                         const infoFile = JSON.parse(await fs.readFile(infoFilePath));
                         infoFile.gradingMethods ? infoFile.gradingMethods.push(gradingMethod) : infoFile.gradingMethods = [gradingMethod];
