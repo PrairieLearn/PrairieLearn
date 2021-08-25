@@ -5,7 +5,6 @@
     "gradingMethods": ["Internal", "External", "Manual"],
     "tags": ["mwest", "fa17", "tpl101", "v3"],
     "type": "v3",
-    "singleVariant": true,
     "externalGradingOptions": {
         "enabled": true,
         "image": "prairielearn/grader-python",
