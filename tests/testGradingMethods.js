@@ -43,12 +43,10 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
         try {
             socket = io.connect('http://localhost:3007/external-grading');
             socket.on('connect_error', (err) => {
-                console.log('connection ERROR line 46');
                 throw Error(err);
               });
 
             const handleStatusChange = (msg) => {
-                console.log('handle status change DEBUG', msg);
                 msg.submissions.forEach(s => {
                     if (s.grading_job_status === 'graded') {
                         return resolve(msg);
@@ -58,7 +56,6 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
 
             const variantId = $questionsPage('form > input[name="__variant_id"]').val();
             const variantTokenLine = questionsPage.match(/.*variantToken.*\n/)[0];
-            console.log('variant token line ', variantTokenLine);
 
             let variantToken = variantTokenLine.match(/'(.*?)'/g)[0].replace("'", '');
             // hack, last ' not replaced on string
@@ -69,7 +66,6 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
             });
 
             socket.on('change:status', function(msg) {
-                console.log('status changing');
                 handleStatusChange(msg);
             });
         } catch (err) {
@@ -284,20 +280,15 @@ describe('Grading method(s)', function() {
                     const hm1Body = await loadHomeworkPage(mockStudents[0]);
                     $hm1Body = cheerio.load(hm1Body);
                     iqUrl = siteUrl + $hm1Body('a:contains("HW9.3. External Grading: Fibonacci function, file upload")').attr('href');
-                    console.log('found question');
                     gradeRes = await saveOrGrade(iqUrl, {}, 'grade',
                         [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}],
                     );
-                    console.log('successfully save adn graded');
                     assert.equal(gradeRes.status, 200);
-                    console.log('good stauts');
                     questionsPage = await gradeRes.text();
                     $questionsPage = cheerio.load(questionsPage);
 
                     iqId = parseInstanceQuestionId(iqUrl);
-                    console.log('lets wait for external grder');
                     await waitForExternalGrader($questionsPage, questionsPage);
-                    console.log('external grder complete');
                     // reload QuestionsPage since socket io cannot update without DOM
                     questionsPage = await (await fetch(iqUrl)).text();
                     $questionsPage =  cheerio.load(questionsPage);
