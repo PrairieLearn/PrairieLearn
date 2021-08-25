@@ -58,6 +58,7 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
 
             const variantId = $questionsPage('form > input[name="__variant_id"]').val();
             const variantTokenLine = questionsPage.match(/.*variantToken.*\n/)[0];
+            console.log('variant token line ', variantTokenLine);
 
             let variantToken = variantTokenLine.match(/'(.*?)'/g)[0].replace("'", '');
             // hack, last ' not replaced on string
