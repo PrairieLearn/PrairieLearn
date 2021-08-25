@@ -2,8 +2,6 @@ const {assert} = require('chai');
 const cheerio = require('cheerio');
 const config = require('../lib/config');
 const fetch = require('node-fetch');
-const fs = require('fs').promises;
-const path = require('path');
 const querystring = require('querystring');
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
@@ -348,60 +346,98 @@ describe('Grading method(s)', function() {
         });
     });
     
-    describe('`gradingMethods` configuration (replacing `gradingMethod`)', () => {
-        describe('Internal', async () => {
-            // submission logic already covered in 'gradingMethod' 'save' action tests so we only care about grading jobs with 'grade' action here
-            const infoFilePath = path.join(__dirname, '../testCourse/questions/internalGrade/addingNumbers/info.json');
-            console.log('info file path', infoFilePath);
-            const originalInfoFile = await fs.readFile(infoFilePath);
-
-            after('restore original info.json', async () => {
-                await fs.writeFile(infoFilePath, originalInfoFile);
-            });
-
-            ['External', 'Manual'].forEach(async (gradingMethod, i) => {
-                describe('Adding ' + gradingMethod + ' to Internal question', async () => {
-                    before('modify question info.json configuration', async () => {
-                        const infoFile = JSON.parse(await fs.readFile(infoFilePath));
-                        infoFile.gradingMethods ? infoFile.gradingMethods.push(gradingMethod) : infoFile.gradingMethods = [gradingMethod];
-                        await fs.writeFile(infoFilePath, JSON.stringify(infoFile));
-                    });
-                    before('set up testing server', helperServer.before());
-                    before('reset ' + gradingMethod + ' question', async () => {
+    describe('`gradingMethods` configuration (replaces `gradingMethod` implementation)', () => {
+        describe('Internal, External, Manual combination', () => {
+            describe('"save" action', () => {
+                before('load page and post internal + external submission', async () => {
+                    const hm1Body = await loadHomeworkPage(mockStudents[0]);
+                    $hm1Body = cheerio.load(hm1Body);
+                    iqUrl = siteUrl + $hm1Body('a:contains("HW9.4. Internal, External, Manual: Addition internal, code upload external, code upload manual grade")').attr('href');
     
-                        // load page and submit correct answer
-                        const hm1Body = await loadHomeworkPage(mockStudents[0]);
-                        $hm1Body = cheerio.load(hm1Body);
-                        iqUrl = siteUrl + $hm1Body('a:contains("HW9.1. Internal Grading: Adding two numbers")').attr('href');
+                    // open page to produce variant because we want to get the correct answer
+                    await fetch(iqUrl);
+                    // get variant params
+                    iqId = parseInstanceQuestionId(iqUrl);
+                    const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, {iqId})).rows[0];
             
-                        await fetch(iqUrl);
-                        iqId = parseInstanceQuestionId(iqUrl);
-                        const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, {iqId})).rows[0];
-                
-                        gradeRes = await saveOrGrade(iqUrl, {c: variant.params.a + variant.params.b}, 'grade');
-                        assert.equal(gradeRes.status, 200);
-            
-                        questionsPage = await gradeRes.text();
-                        $questionsPage = cheerio.load(questionsPage);
-                    });
-                    after('shut down testing server', helperServer.after);
+                    gradeRes = await saveOrGrade(iqUrl, {c: variant.params.a + variant.params.b}, 'save');
+                    assert.equal(gradeRes.status, 200);
     
-                    it('should result in ' + (i + 1) + ' grading job(s)', async () => {
-                        const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
-                        assert.lengthOf(grading_jobs, i + 1);
-                    });
-                    it('should result in 1 "pastsubmission-block" component being rendered', () => {
-                        assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
-                    });
-                    it('should be given some submission grade in "pastsubmission-block"', async () => {
-                        assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>');
-                    });
-                    it('should result in 1 "grading-block" component being rendered', () => {
-                        assert.lengthOf($questionsPage('.grading-block'), 1);
-                    });
+                    questionsPage = await gradeRes.text();
+                    $questionsPage = cheerio.load(questionsPage);
+                });
+                it('should NOT result in any grading jobs', async () => {
+                    const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
+                    assert.lengthOf(grading_jobs, 0);
+                });
+                it('should result in 1 "pastsubmission-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+                });
+                it('should NOT be given submission grade in "pastsubmission-block"', async () => {
+                    assert.notInclude(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
+                });
+                it('should NOT result in "grading-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.grading-block'), 0);
                 });
             });
+            describe('"grade" action', () => {
+                before('load page and post internal + external submission', async () => {
+                    const hm1Body = await loadHomeworkPage(mockStudents[1]);
+                    $hm1Body = cheerio.load(hm1Body);
+                    iqUrl = siteUrl + $hm1Body('a:contains("HW9.4. Internal, External, Manual: Addition internal, code upload external, code upload manual grade")').attr('href');
+    
+                    // open page to produce variant because we want to get the correct answer
+                    await fetch(iqUrl);
+                    // get variant params
+                    iqId = parseInstanceQuestionId(iqUrl);
+                    const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, {iqId})).rows[0];
+            
+                    gradeRes = await saveOrGrade(iqUrl, 
+                        {
+                            c: variant.params.a + variant.params.b,
+                        },
+                        'grade', 
+                        [{name: 'fib.py', 'contents': Buffer.from(anyFileContent).toString('base64')}]);
+                    assert.equal(gradeRes.status, 200);
+    
+                    questionsPage = await gradeRes.text();
+                    $questionsPage = cheerio.load(questionsPage);
+
+                    // TO DO: enable once views are upgraded
+                    // await waitForExternalGrader($questionsPage, questionsPage);
+
+                    // // reload QuestionsPage since socket io cannot update without DOM
+                    // questionsPage = await (await fetch(iqUrl)).text();
+                    // $questionsPage =  cheerio.load(questionsPage);
+                });
+                // TO DO: can't do this test until views are upgraded to allow external grading on Internal + External grading configured questions
+                // it('should result in 3 grading jobs', async () => {
+                //     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
+                //     assert.lengthOf(grading_jobs, 3);
+                // });
+                it('should result in 1 "pastsubmission-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+                });
+                it('should NOT be given submission grade in "pastsubmission-block"', async () => {
+                    assert.notInclude(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
+                });
+                it('should NOT result in "grading-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.grading-block'), 0);
+                });
+            });
+
+            // TO DO: 
+            // Cases: 
+            // 1. Once Manual grading branch is merged, endpoint will trigger manual grading job. Thus, we should expect prior tests configured with all grading modes to produce 2 grading jobs automatically
+            // and 1 grading job manually.
+            // 2. Gather requirements for what the panels should display.
+            // 3. Ensure that internal grading jobs complete before external grading jobs
+            //    a. so results can be injected into external grading container.
+            //    b. so internal grading results are not necessarily overwritten in submission score value, if we do not implement another spot for this score.
+            //    c. 
         });
+
+        
 
 
         // Behind the scenes, each gradingMethod enabled for a question will produce a grading job respectively. Ie. If grading_methods = ['internal', 'external', 'manual'], 
