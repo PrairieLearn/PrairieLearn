@@ -15,3 +15,8 @@ def generate(data):
 
     # Put the sum into data['correct_answers']
     data['correct_answers']['c'] = c
+
+    data['params']['names_for_user'] = []
+    data['params']['names_from_user'] = [
+        {'name': 'fib', 'description': 'Function to compute the $n^\\text{th}$ fibonacci number', 'type': 'python function'}
+    ]
