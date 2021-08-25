@@ -136,7 +136,7 @@ const loadHomeworkPage = async (user) => {
 };
 
 describe('Grading method(s)', function() {
-    this.timeout(20000);
+    this.timeout(60000);
 
     let $hm1Body = null;
     let iqUrl = null;
