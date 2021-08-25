@@ -418,11 +418,11 @@ describe('Grading method(s)', function() {
                 it('should result in 1 "pastsubmission-block" component being rendered', () => {
                     assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
                 });
-                it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-                    assert.notInclude(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
+                it('should be given submission grade in "pastsubmission-block"', async () => {
+                    assert.include(questionsPage, 'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>');
                 });
-                it('should NOT result in "grading-block" component being rendered', () => {
-                    assert.lengthOf($questionsPage('.grading-block'), 0);
+                it('should result in 1 "grading-block" component being rendered', () => {
+                    assert.lengthOf($questionsPage('.grading-block'), 1);
                 });
             });
 
