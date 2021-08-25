@@ -8,6 +8,7 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const io = require('socket.io-client');
+const { grader } = require('../lib/externalGrader');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -394,7 +395,7 @@ describe('Grading method(s)', function() {
                     questionsPage = await gradeRes.text();
                     $questionsPage = cheerio.load(questionsPage);
 
-                    // TO DO: enable once views are upgraded
+                    // TO DO: enable once question.js views are upgraded to support many grading jobs per submission block.
                     await waitForExternalGrader($questionsPage, questionsPage);
 
                     // reload QuestionsPage since socket io cannot update without DOM
@@ -416,40 +417,6 @@ describe('Grading method(s)', function() {
                     assert.lengthOf($questionsPage('.grading-block'), 1);
                 });
             });
-
-            // TO DO: 
-            // Cases: 
-            // 1. Once Manual grading branch is merged, endpoint will trigger manual grading job. Thus, we should expect prior tests configured with all grading modes to produce 2 grading jobs automatically
-            // and 1 grading job manually.
-            // 2. Gather requirements for what the panels should display.
-            // 3. Ensure that internal grading jobs complete before external grading jobs
-            //    a. so results can be injected into external grading container.
-            //    b. so internal grading results are not necessarily overwritten in submission score value, if we do not implement another spot for this score.
-
-        // Behind the scenes, each gradingMethod enabled for a question will produce a grading job respectively. Ie. If grading_methods = ['internal', 'external', 'manual'], 
-        // then 3x grading_jobs are produced for each submission.
-
-        // ***Future 'gradingMethods' multiple grading methods type***
-        //
-        // grading-block component
-        // Instead of showing one correct answer, it should show the correct answer available for each grading method
-        // that has available scores on view render.
-        // |------------------------------------------------------------------------------------------------|
-        // |Correct Answer Internal - Whatever is computed to be answer in internal grading                 |
-        // |Correct Answer External (optional) - Should be dispalyed based on nature external question      |
-        // |Submitted answer manual (optional or not needed) - Whatever the faculty/TA feedback to the student is         |
-        // |-------------------------------------------------------------------------------------------------
-
-        // 'pastsubmission-block' component:
-        // Past submission block should show past submission and available correct answers for last 5 submissions.
-        // |----------------------------------------------------------------------------------------
-        // |Submitted answer internal - ie. addNumbers                                              |
-        // |Submitted answer external - ie. codeUpload editor to support internal answer            |
-        // |Submitted answer manual - ie. codeUpload editor reused to be manually graded for syntax |
-        // |----------------------------------------------------------------------------------------
-
         });
-
-    
     });
 });
