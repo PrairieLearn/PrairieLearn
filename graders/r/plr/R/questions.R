@@ -8,7 +8,7 @@
 #' @param dir Directory containing the test files for a question
 #' @param pattern A regular expression identifying test files in the directory
 #' @return A data.frame object with colums name, file, and max_points
-get_question_details <- function(dir, pattern = "^test_.*\\.R$") {
+get_question_details <- function(dir, pattern = "^test.*\\.[rR]$") {
     files <- list.files(path = dir,
                         pattern = pattern,
                         full.names = FALSE)

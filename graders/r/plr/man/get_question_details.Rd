@@ -4,7 +4,7 @@
 \alias{get_question_details}
 \title{Extract question name and score from header}
 \usage{
-get_question_details(dir, pattern = "^test_.*\\\\.R$")
+get_question_details(dir, pattern = "^test.*\\\\.[rR]$")
 }
 \arguments{
 \item{dir}{Directory containing the test files for a question}
