@@ -44,7 +44,7 @@ router.get('/', function(req, res, next) {
 
 
 router.post('/', (req, res, next) => {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
     if (req.body.__action == 'edit_question_points') {
         const params = [
             null, // assessment_id

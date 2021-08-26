@@ -11,7 +11,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 /**
  * SYNCING PROCESS:
- * 
+ *
  * 1. Assign order_by number to every assessment
  * 2. Check that no UUIDs are duplicated within this course instance
  * 3. Check that no UUIDS are duplicated in any other course instance
@@ -38,7 +38,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  */
 
  /**
-  * 
+  *
   * @param {import('../infofile').InfoFile<import('../course-db').Assessment>} assessmentInfoFile
   * @param {{ [qid: string]: any }} questionIds
   */
@@ -74,25 +74,30 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         create_instance_on_grading: !!assessment.createInstanceOnGrading,
     };
 
+    // It used to be the case that assessment access rules could be associated with a
+    // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
+    // apply only to students. So, we filter out (and ignore) any access rule with a
+    // non-empty role that is not Student.
     const allowAccess = assessment.allowAccess || [];
-    assessmentParams.allowAccess = allowAccess.map((accessRule, index) => {
-        return {
-            number: index + 1,
-            mode: _(accessRule).has('mode') ? accessRule.mode : null,
-            role: _(accessRule).has('role') ? accessRule.role : null,
-            uids: _(accessRule).has('uids') ? accessRule.uids : null,
-            start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
-            end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-            credit: _(accessRule).has('credit') ? accessRule.credit : null,
-            time_limit_min: _(accessRule).has('timeLimitMin') ? accessRule.timeLimitMin : null,
-            password: _(accessRule).has('password') ? accessRule.password : null,
-            seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
-            exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
-            show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
-            show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
-            active: !!_.get(accessRule, 'active', true),
-        };
-    });
+    assessmentParams.allowAccess = allowAccess
+        .filter(accessRule => ((!_(accessRule).has('role')) || (accessRule.role == 'Student')))
+        .map((accessRule, index) => {
+            return {
+                number: index + 1,
+                mode: _(accessRule).has('mode') ? accessRule.mode : null,
+                uids: _(accessRule).has('uids') ? accessRule.uids : null,
+                start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
+                end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
+                credit: _(accessRule).has('credit') ? accessRule.credit : null,
+                time_limit_min: _(accessRule).has('timeLimitMin') ? accessRule.timeLimitMin : null,
+                password: _(accessRule).has('password') ? accessRule.password : null,
+                seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
+                exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
+                show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
+                show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
+                active: !!_.get(accessRule, 'active', true),
+            };
+        });
 
     const zones = assessment.zones || [];
     assessmentParams.zones = zones.map((zone, index) => {

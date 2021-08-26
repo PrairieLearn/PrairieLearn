@@ -4,6 +4,8 @@ const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const archiver = require('archiver');
 const router = express.Router();
+const { default: AnsiUp } = require('ansi_up');
+const ansiUp = new AnsiUp();
 
 const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
@@ -40,13 +42,22 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
 
-        res.locals.rows = result.rows;
+        res.locals.rows = _.map(result.rows, row => {
+            if (row.sync_errors)
+                row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
+            if (row.sync_warnings)
+                row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+            return row;
+        });
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 
 router.get('/:filename', function(req, res, next) {
     if (req.params.filename == csvFilename(res.locals)) {
+        // There is no need to check if the user has permission to view student
+        // data, because this file only has aggregate data.
+
         var params = {
             course_instance_id: res.locals.course_instance.id,
             authz_data: res.locals.authz_data,
@@ -92,6 +103,8 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else if (req.params.filename == fileSubmissionsFilename(res.locals)) {
+        if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
+
         const params = {
             course_instance_id: res.locals.course_instance.id,
             limit: 100,

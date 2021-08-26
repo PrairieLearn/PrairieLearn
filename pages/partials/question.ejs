@@ -15,10 +15,34 @@
 
     <table class="table table-sm table-hover two-column-description">
       <tbody>
-        <% if (devMode || authz_data.has_instructor_view) {
-              var body = encodeURIComponent("Hello " + issue.user_name + ",\n\nRegarding the issue of:\n\n\"" + (issue.student_message || '-') +"\"\n\nWe've..."); %>
+        <% if (
+                (!issue.course_instance_id) ||
+                (
+                  locals.course_instance &&
+                  (course_instance.id == issue.course_instance_id) &&
+                  authz_data.has_course_instance_permission_view
+                )
+              ) {
+
+          // There are three situations in which the issue need not be anonymized:
+          //
+          //  1) The issue is not associated with a course instance. The only way
+          //     for a user to generate an issue that is not associated with a course
+          //     instance is if they are an instructor, so there are no student data
+          //     to be protected in this case.
+          //
+          //  2) We are accessing this page through a course instance, the issue is
+          //     associated with the same course instance, and the user has student
+          //     data view access.
+          //
+          // Otherwise, all issues must be anonymized.
+
         %>
-        <tr><th>Student:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
+        <% let body = encodeURIComponent("Hello " + issue.user_name + ",\n\nRegarding the issue of:\n\n\"" + (issue.student_message || '-') +"\"\n\nWe've..."); %>
+        <tr><th>User:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
+        <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
+        <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
+        <% } else if (authz_data.has_course_permission_preview) { %>
         <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
         <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
         <% } else { %>
@@ -29,7 +53,7 @@
       </tbody>
     </table>
 
-    <% if (devMode || authz_data.has_instructor_view || authz_data.has_course_permission_view || is_administrator) { %>
+    <% if (devMode || authz_data.has_course_permission_view) { %>
     <div class="card-body border border-bottom-0 border-left-0 border-right-0">
       <% if (issue.system_data.courseErrData) { %>
         <p><strong>Console log:</strong>
@@ -93,7 +117,7 @@
   <div class="card mb-4">
     <div class="card-header bg-primary text-white">
       <% if (question_context == 'student_homework') { %>
-        <%= instance_question_info.question_number %>. <%= question.title %></h3>
+        <%= instance_question_info.question_number %>. <%= question.title %>
       <% } else if (question_context == 'student_exam') { %>
             <!-- FIXME: insert question number properly -->
             Question <%= instance_question_info.question_number %>: <%= question.title %>

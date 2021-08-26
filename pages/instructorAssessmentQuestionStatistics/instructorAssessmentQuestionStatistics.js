@@ -130,7 +130,10 @@ router.get('/:filename', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    // The action "refresh_stats" (from the button "Recalculate statistics") does
+    // not change student data. Statistics *should* be recalculated automatically,
+    // e.g., every time this page is loaded, but until then we will let anyone who
+    // can view the page post this action and trigger a recalculation.
     if (req.body.__action == 'refresh_stats') {
         var params = [
             res.locals.assessment.id,

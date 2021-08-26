@@ -41,6 +41,8 @@ If you're in the root of your course directory already, you can substitute `%cd%
 
 If you plan on running externally graded questions in local development, please see [this section](../externalGrading/#running-locally-on-docker) for a slightly different docker launch command.
 
+**NOTE**: On MacOS with "Apple Silicon" (ARM64) hardware, the use of R is not currently supported.
+
 ## Upgrading your Docker's version of PrairieLearn
 
 To obtain the latest version of PrairieLearn at any time, make sure PrairieLearn is not running (Ctrl-C it if needed) and then run:
