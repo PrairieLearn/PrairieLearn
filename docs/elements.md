@@ -499,25 +499,59 @@ Fill in the blank field that allows for mathematical symbol input.
 
 **question.html**
 ```html
-<pl-symbolic-input answers-name="symbolic_math" variables="x, y" extra-functions="loglog, zeta" label="$z =$"></pl-symbolic-input>
+     # Enable the input: x + y + 1
+     <pl-symbolic-input answers-name="symbolic_math_example1" variables="x, y" label="$z =$" />
+     
+     # Expect the input: log32(x**2) * zeta(5) + y
+     <pl-symbolic-input answers-name="symbolic_math_example2" variables="x, y" 
+          extra-functions="log32, zeta" label="$z =$" />
+     
+     # Expect the input: ln((max(1-t, x) + min(y+2, z) - lg(w**2)) / 2)
+     <pl-symbolic-input answers-name="symbolic_math_example3" variables="x, y, z, w, t" 
+          enable-function-groups="calculus-extended & logarithmic & prog-extended" label="$z =$" />
+
+     # Expect the input: x * abs(cbrt_omega) * tebi / 137 + 1 - t^(3 / 2)
+     <pl-symbolic-input answers-name="symbolic_math_example4" variables="x, t" 
+          enable-function-groups="complex-variables" 
+          enable-constant-groups="named-constants & named-units" label="$z =$" />
 ```
 
 **server.py**
 ```python
 import prairielearn as pl
 import sympy
+from sympy.parsing.sympy_parser import parse_expr
 
 def generate(data):
-
-  # Declare math symbols
-  x, y = sympy.symbols('x y')
-
-  # Describe the equation
-  z = x + y + 1
-
-  # Answer to fill in the blank input stored as JSON.
-  data['correct_answers']['symbolic_math'] = pl.to_json(z)
+    x = sympy.var('x')
+    symMathExample1 = 'x + y + 1'
+    symMathExample2 = 'log32(x^2) * zeta(5) + y'
+    symMathExample3 = 'ln((max(1-t, x) + min(y+2, z) - lg(w^2)) / 2)'
+    symMathExample4 = 'x * mod(cbrt_omega) / 137 + 1 - t^(3 / 2)'
+    prepareSymbolicAnswerFunc = lambda expr: pl.to_json(sympy.sympify(expr))
+    data['correct_answers']['symbolic_math_example1'] = prepareSymbolicAnswerFunc(symMathExample1)
+    data['correct_answers']['symbolic_math_example2'] = prepareSymbolicAnswerFunc(symMathExample2)
+    data['correct_answers']['symbolic_math_example3'] = prepareSymbolicAnswerFunc(symMathExample3)
+    data['correct_answers']['symbolic_math_example4'] = prepareSymbolicAnswerFunc(symMathExample4)
 ```
+**question.html**
+```html
+<pl-symbolic-input answers-name="symbolic_math_example1" variables="x, y" label="$z =$" />
+<pl-symbolic-input answers-name="symbolic_math_example2" variables="x, y" 
+    extra-functions="log32, zeta" label="$z =$" />
+<pl-symbolic-input answers-name="symbolic_math_example3" variables="x, y, z, w, t" 
+    enable-function-groups="calculus-extended, logarithmic, prog-extended" 
+    label="$z =$" />
+<pl-symbolic-input answers-name="symbolic_math_example4" variables="x, t" 
+    allow-complex="true" enable-function-groups="complex-variables" 
+    enable-constant-groups="named-constants" 
+    label="$z =$" />
+```
+Note that eventually the `pl-symbolic-input` element will support custom function names with 
+`python` implementations using `sympy` that can be filled in at runtime by the user via their 
+local `server.py` configuration. For now, custom function names appended to the list of functions 
+recognized by the symbolic input parser are only "dummy" placeholder names without explicit definitions 
+that define how they operate on the inputs. This is a feature request that is in the works. 
 
 #### Customizations
 
@@ -529,8 +563,9 @@ Attribute | Type | Default | Description
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
-`enable-more-function-names` | boolean | false | Whether to include extra sets of reserved function names used in the symbolic expression.
-`extra-functions` | string | - | A comma-delimited list of extra function names that can be used in the symbolic expression. Note that an exception is raised if the list contains one or more names that coincide with extisting reserved functions.
+`extra-functions` | string | - | A comma-delimited list of extra function names that can be used in the symbolic expression. Note that an exception is raised if the list contains one or more names that coincide with existing reserved functions.
+`enable-function-groups` | string | - | A single-ampersand-delimited list of extra function group names that can be enabled at runtime. A list of valid function group names includes the following: `trig-base`, `trig-hyperbolic`, `complex-variables`, `logarithmic`, `prog-extended`, `calculus-extended`, or `all` to enable all of the groups. 
+`enable-constant-groups` | string | - | A single-ampersand-delimited list of extra symbolic constant group names that can be optionally enabled at runtime. A list of valid constant groups includes the following: `named-constants` or `all` to enable all of the groups.
 `allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
 `imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
 `allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).
