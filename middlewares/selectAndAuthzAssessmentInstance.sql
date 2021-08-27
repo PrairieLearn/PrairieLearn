@@ -26,7 +26,8 @@ SELECT
     assessment_instance_label(ai, a, aset) AS assessment_instance_label,
     assessment_label(a, aset) AS assessment_label,
     fl.list AS file_list,
-    to_jsonb(g) AS group
+    to_jsonb(g) AS instance_group,
+    groups_uid_list(g.id) AS instance_group_uid_list
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
