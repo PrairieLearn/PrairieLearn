@@ -70,7 +70,8 @@
         submission_id: submissionId,
         url_prefix: urlPrefix,
         question_context: questionContext,
-        csrf_token: csrfToken
+        csrf_token: csrfToken,
+        authorized_edit: <%= !!(locals.authz_result && authz_result.authorized_edit) %>
       }, function(msg) {
         // We're done with the socket for this incarnation of the page
         socket.close();
