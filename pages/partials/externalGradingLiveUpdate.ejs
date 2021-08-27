@@ -71,6 +71,10 @@
         url_prefix: urlPrefix,
         question_context: questionContext,
         csrf_token: csrfToken,
+        // Indicates whether submissions are allowed, either because
+        // the instance question is part of the current user's
+        // assessment instance (authorized_edit==true) or because the
+        // question is open in preview mode (auth_result==undefined)
         authorized_edit: <%= !locals.authz_result || locals.authz_result.authorized_edit %>
       }, function(msg) {
         // We're done with the socket for this incarnation of the page
