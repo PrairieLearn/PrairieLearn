@@ -1,8 +1,10 @@
 import sympy
 import ast
 import sys
+import python_helper_symbolic_types as phst
+from sympy.utilities.lambdify import lambdify, implemented_function
 
-MAX_FUNCTION_NAME_LENGTH = 6
+MAX_FUNCTION_NAME_LENGTH = phst.PLSymbolicFunctions.MAX_FUNCTION_NAME_LENGTH
 
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
@@ -11,10 +13,11 @@ class _Constants:
     def __init__(self):
         self.helpers = {
             '_Integer': sympy.Integer,
+            '_PLConstantValue' : phst.PLConstantValue,
         }
         self.variables = {
             'pi': sympy.pi,
-            'e': sympy.E,
+            'e':  sympy.E,
         }
         self.hidden_variables = {
             '_Exp1': sympy.E,
@@ -30,57 +33,66 @@ class _Constants:
             # These are shown to the student
             'cos': sympy.cos,
             'sin': sympy.sin,
-            'tan': sympy.tan,
-            'sec': sympy.sec,
-            'csc': sympy.csc,
-            'cot': sympy.cot,
-            'arccos': sympy.acos,
-            'arcsin': sympy.asin,
-            'arctan': sympy.atan,
-            'atan2': sympy.atan2,
             'exp': sympy.exp,
             'log': sympy.log,
-            'ln': lambda x: sympy.log(x, sympy.E),
-            'sqrt': sympy.sqrt,
-            're': sympy.re,
-            'im': sympy.im,
-            'max': sympy.Max,
-            'min': sympy.Min,
         }
 
     def get_supported_function_names(self):
         return list(self.functions.keys())
 
+    def get_supported_constant_names(self):
+        return list(self.variables.keys())
+
     def add_new_operator_names(self, opNamesList):
         for opName in list(opNamesList):
             if opName not in self.functions.keys():
-                sympyDummyFunc = sympy.Function(opName) 
-                self.functions.update({ opName : sympyDummyFunc })
+                self.functions[opName] = sympy.Function(opName)
         return self
 
-    def enable_extended_function_names(self):
-        extended_func_names_dict = {
-            'cosh':  sympy.cosh, 
-            'sinh':  sympy.sinh,
-            'tanh':  sympy.tanh,
-            'sech':  sympy.sech,
-            'csch':  sympy.csch,
-            'coth':  sympy.coth,
-            'acosh': sympy.acosh,
-            'asinh': sympy.asinh,
-            'atanh': sympy.atanh,
-            'asech': sympy.asech,
-            'acsch': sympy.acsch,
-            'acoth': sympy.acoth,
-            'sgn':   sympy.sign,
-            'abs':   sympy.Abs,
-            'arg':   sympy.arg,
-            'ceil':  sympy.ceiling,
-            'floor': sympy.floor,
-            'frac':  sympy.frac,
-        }
+    def enable_extended_func_names(self, extended_func_groups_list=None):
+        if extended_func_groups_list is None:
+            return self.enable_extended_function_names_by_dict( 
+                extended_func_names_dict=phst.GetCustomFunctionsByGroup(funcGrpId=None)
+            )
+        extended_func_groups_list = extended_func_groups_list.replace(' ', '').lower()
+        if isinstance(extended_func_groups_list, str) and extended_func_groups_list == "all":
+            return self.enable_extended_function_names_by_dict( 
+                extended_func_names_dict=phst.GetCustomFunctionsByGroup(funcGrpId=None)
+            )
+        extFuncGrpNames = extended_func_groups_list.split('&') if extended_func_groups_list != "" else []
+        extFuncsDict = dict([])
+        for funcGrpName in extFuncGrpNames:
+            extFuncsDict.update( phst.GetCustomFunctionsByGroup(funcGrpId=funcGrpName) )
+        return self.enable_extended_function_names_by_dict( 
+                extended_func_names_dict=extFuncsDict
+        )
+
+    def enable_extended_function_names_by_dict(self, extended_func_names_dict={}):
         for funcName in extended_func_names_dict.keys():
-            self.functions.update({ funcName : extended_func_names_dict[funcName] })
+            self.functions.update({ funcName : implemented_function(funcName, extended_func_names_dict[funcName]) })
+        return self
+
+    def enable_extended_symbolic_constants(self, extended_constant_groups_list=None):
+        if extended_constant_groups_list is None:
+            return self.enable_extended_symbolic_constants_by_dict( 
+                extended_var_names_dict=dict(phst.GetConstantVariablesByGroup(cvarGrpId=None))
+            )
+        extended_constant_groups_list = extended_constant_groups_list.replace(' ', '').lower()
+        if isinstance(extended_constant_groups_list, str) and extended_constant_groups_list.lower() == "all":
+            return self.enable_extended_function_names_by_dict( 
+                extended_var_names_dict=dict(phst.GetConstantVariablesByGroup(cvarGrpId=None))
+            )
+        extFuncGrpNames = extended_constant_groups_list.split('&') if extended_constant_groups_list != "" else []
+        extFuncsDict = dict([])
+        for funcGrpName in extFuncGrpNames:
+            extFuncsDict.update( dict(phst.GetConstantVariablesByGroup(cvarGrpId=funcGrpName)) )
+        return self.enable_extended_symbolic_constants_by_dict( 
+                extended_var_names_dict=extFuncsDict
+        )
+
+    def enable_extended_symbolic_constants_by_dict(self, extended_var_names_dict={}):
+        for constVarName in extended_var_names_dict.keys():
+            self.variables.update({ constVarName : extended_var_names_dict[constVarName] })
         return self
 
 CONSTANTS_INSTANCE = _Constants()
@@ -130,9 +142,7 @@ CONSTANTS_INSTANCE = _Constants()
 #     https://github.com/newville/asteval
 
 class Error(Exception):
-    def __init__(self, offset, extra_msg = None):
-        if extra_msg != None:
-            self.message += " [EXTRA-MSG: %s]" % extra_msg
+    def __init__(self, offset):
         self.offset = offset
 
 class HasFloatError(Error):
@@ -150,7 +160,7 @@ class HasInvalidExpressionError(Error):
 
 class HasInvalidFunctionError(Error):
     def __init__(self, offset, text, ctx = None):
-        if ctx != None:
+        if ctx is not None:
             super(HasInvalidFunctionError, self).__init__(offset, str(ctx))
         else:
             super(HasInvalidFunctionError, self).__init__(offset)
@@ -185,7 +195,7 @@ class CheckWhiteList(ast.NodeVisitor):
         self.whitelist = whitelist
 
     def visit(self, node):
-        if not isinstance(node, self.whitelist):
+        if True not in list(map(lambda wltype: not isinstance(node, wltype), self.whitelist)):
             node = get_parent_with_location(node)
             raise HasInvalidExpressionError(node.col_offset)
         return super().visit(node)
@@ -242,6 +252,8 @@ def evaluate(expr, locals_for_eval={}):
 
     # Link each node to its parent
     for node in ast.walk(root):
+        import sys
+        sys.stdout.write("NODE: %s - %s" % (node, str(node)))
         for child in ast.iter_child_nodes(node):
             child.parent = node
 
@@ -259,6 +271,16 @@ def evaluate(expr, locals_for_eval={}):
     # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
+    # FOR LATER:
+    # _safe_nodes = [
+    #    'Add', 'And', 'BinOp', 'BitAnd', 'BitOr', 'BitXor', 'BoolOp',
+    #    'Compare', 'Dict', 'Eq', 'Expr', 'Expression', 'For',
+    #    'Gt', 'GtE', 'Is', 'In', 'IsNot', 'LShift', 'List',
+    #    'Load', 'Lt', 'LtE', 'Mod', 'Name', 'Not', 'NotEq', 'NotIn',
+    #    'Num', 'Or', 'RShift', 'Set', 'Slice', 'Str', 'Sub',
+    #    'Tuple', 'UAdd', 'USub', 'UnaryOp', 'boolop', 'cmpop',
+    #    'expr', 'expr_context', 'operator', 'slice', 'unaryop']
+    #
     whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
     CheckWhiteList(whitelist).visit(root)
 
@@ -273,7 +295,9 @@ def evaluate(expr, locals_for_eval={}):
     locals = {}
     for key in locals_for_eval:
         locals = {**locals, **locals_for_eval[key]}
-    return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
+    import sys
+    sys.stderr.write("LOCALS: %s\n" % locals)
+    return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None }, locals)
 
 def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False, allow_complex=False):
     # Create a whitelist of valid functions and variables (and a special flag
@@ -283,24 +307,37 @@ def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False
         'variables': const.variables,
         'helpers': const.helpers,
     }
-    if allow_hidden:
+    if allow_hidden and not allow_complex:
         locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.hidden_variables}
-    if allow_complex:
+    elif allow_hidden and allow_complex:
+            locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.complex_variables, **const.hidden_complex_variables}
+    elif allow_complex:
         locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.complex_variables}
-        if allow_hidden:
-            locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.hidden_complex_variables}
 
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
         for variable in variables:
-            locals_for_eval['variables'][variable] = sympy.Symbol(variable)
+            if isinstance(variable, sympy.Symbol) or isinstance(variable, sympy.NumberSymbol):
+                vname = str(variable)
+                locals_for_eval['variables'][vname] = variable
+            else:
+                vname = str(variable)
+                locals_for_eval['variables'][vname] = sympy.Symbol(vname)
     # And similarly for the function names:
+    funcsWithBodySubsts = dict([])
     if const.functions is not None:
         for func in const.functions.keys():
+            funcObj = const.functions[func]
+            if isinstance(funcObj, sympy.core.function.UndefinedFunction):
+                funcsWithBodySubsts[func] = funcObj
             locals_for_eval['functions'][func] = sympy.Function(func)
-
     # Do the conversion
-    return evaluate(a, locals_for_eval)
+    aSympyEvalObj = evaluate(a, locals_for_eval)
+
+    # Map the local custom and special function names with implementations back to their original definitions: 
+    #for funcName in funcsWithBodySubsts.keys():
+    #    aSympyEvalObj.subs(funcName, funcsWithBodySubsts[funcName])
+    return aSympyEvalObj
 
 def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=False):
     consts = _Constants()
@@ -313,7 +350,7 @@ def point_to_error(s, ind, w = MAX_FUNCTION_NAME_LENGTH):
 
 def sympy_to_json_with_context(a, const, allow_complex=True):
     # Get list of variables in the sympy expression
-    variables = [str(v) for v in a.free_symbols]
+    variables = [v for v in a.free_symbols]
 
     # Check that variables do not conflict with reserved names
     reserved = {**const.helpers, **const.variables, **const.hidden_variables, **const.functions}
@@ -322,7 +359,8 @@ def sympy_to_json_with_context(a, const, allow_complex=True):
     for k in reserved.keys():
         for v in variables:
             if k == v:
-                raise ValueError('sympy expression has a variable with a reserved name: {:s}'.format(k))
+                #raise ValueError('sympy expression has a variable with a reserved name: {:s}'.format(k))
+                pass
 
     # Apply substitutions for hidden variables
     a = a.subs([(const.hidden_variables[key], key) for key in const.hidden_variables.keys()])
