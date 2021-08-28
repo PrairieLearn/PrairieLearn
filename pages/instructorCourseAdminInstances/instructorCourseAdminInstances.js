@@ -35,6 +35,12 @@ router.get('/', function(req, res, next) {
             const params = {
                 course_id: res.locals.course.id,
             };
+            // We use the list authz_data.course_instances rather than
+            // re-fetching the list of course instances, because we
+            // only want course instances which are accessible by both
+            // the authn user and the effective user, which is a bit
+            // complicated to compute. This is already computed in
+            // authz_data.course_instances.
             sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.authz_data.course_instances.forEach(ci => {
