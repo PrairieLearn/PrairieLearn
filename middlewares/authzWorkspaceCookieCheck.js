@@ -13,9 +13,10 @@ module.exports = asyncHandler(async (req, res, next) => {
     if (cookieName in req.cookies) {
         // if we have a workspace authz cookie then we try and unpack it
         const cookieData = csrf.getCheckedData(req.cookies[cookieName], config.secretKey, {maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds});
-        // if the cookie unpacking failed then cookieData will be null
-        if (!cookieData) return next();
-        // if we have a valid cookie with matching workspace_id then skip the rest of authn/authz
+
+        // if we have a valid cookie with matching workspace_id then
+        // short-circuit the current router to skip the rest of
+        // authn/authz
         if (cookieData?.workspace_id == workspace_id) return next('router');
     }
 
