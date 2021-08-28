@@ -1,9 +1,7 @@
-const asyncHandler = require('express-async-handler');
-
 const csrf = require('../lib/csrf');
 const config = require('../lib/config');
 
-module.exports = asyncHandler(async (req, res, next) => {
+module.exports = (req, res, next) => {
     // This middleware looks for a workspace_id-specific cookie and,
     // if found, skips the rest of authn/authz. The special cookie is
     // set by middlewares/authzWorkspaceCookieSet.js
@@ -22,4 +20,4 @@ module.exports = asyncHandler(async (req, res, next) => {
 
     // otherwise we fall through and proceed to the full authn/authz stack
     next();
-});
+};

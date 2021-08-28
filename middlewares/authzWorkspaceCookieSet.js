@@ -1,9 +1,7 @@
-const asyncHandler = require('express-async-handler');
-
 const csrf = require('../lib/csrf');
 const config = require('../lib/config');
 
-module.exports = asyncHandler(async (req, res, next) => {
+module.exports = (req, res, next) => {
     // We should only have arrived here if we passed authn/authz and
     // are authorized to access res.locals.workspace_id. We will set a
     // short-lived cookie specific to this workspace_id that will let
@@ -18,4 +16,4 @@ module.exports = asyncHandler(async (req, res, next) => {
     const cookieData = csrf.generateToken(tokenData, config.secretKey);
     res.cookie(cookieName, cookieData, {maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds});
     next();
-});
+};
