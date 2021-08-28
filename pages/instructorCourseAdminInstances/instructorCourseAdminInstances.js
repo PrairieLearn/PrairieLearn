@@ -15,6 +15,7 @@ const { CourseInstanceAddEditor } = require('../../lib/editors');
 
 const fs = require('fs-extra');
 const async = require('async');
+const _ = require('lodash');
 
 router.get('/', function(req, res, next) {
     async.series([
@@ -25,6 +26,21 @@ router.get('/', function(req, res, next) {
                         res.locals.needToSync = true;
                     } else return ERR(err, callback);
                 }
+                callback(null);
+            });
+        },
+        (callback) => {
+            if (!res.locals.authz_data || !res.locals.authz_data.course_instances)
+                return callback(null);
+            const params = {
+                course_id: res.locals.course.id,
+            };
+            sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                res.locals.authz_data.course_instances.forEach(ci => {
+                    var row = _.find(result.rows, row => row.course_instance_id == ci.id);
+                    ci.number = row?.number || 0;
+                });
                 callback(null);
             });
         },
