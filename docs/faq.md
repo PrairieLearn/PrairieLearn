@@ -360,3 +360,38 @@ Example:
 <!-- This is an HTML comment. It will not be visible to students in the web page, but *will be included* in the rendered page source, so students may be able to see it by reading the HTML source. -->
 {{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
 ```
+
+## How can I make a block that can be re-used in many questions?
+
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can do the following.
+
+1. Put a file called `local_template.py` into `serverFilesCourse` that contains:
+    ```
+    import chevron, os
+    
+    def render(data, template_filename, params):
+        with open(os.path.join(data["options"]["server_files_course_path"], template_filename)) as f:
+            return chevron.render(f, params)
+    ```
+2. Put a template (this example is called `code_instructions.html`) into `serverFilesCourse`:
+    ```
+    <pl-question-panel>
+      <p>
+        You should download the {{tarball}} and write the code. Then upload the file {{uploadfile}}.
+      </p>
+    </pl-question-panel>
+    ```
+3. In the `server.py` for a question, render the template like this:
+    ```
+    import local_template
+    
+    def generate(data):
+        data["params"]["code_instructions"] = local_template.render(data, "code_instructions.html", {
+            "tarball": "starter.tar.gz",
+            "uploadfile": "fibonacci.py",
+        })
+    ```
+4. In the `question.html` for the same question, insert the rendered template like this:
+    ```
+    {{{params.code_instructions}}}
+    ```
