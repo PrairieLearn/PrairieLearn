@@ -37,8 +37,12 @@ pages:
       - 'Give course content access': 'Instructor/HowTos/Staff/courseContentAccess.md'
       - 'Give student data access': 'Instructor/HowTos/Staff/studentDataAccess.md'
     - Assessments:
-      - 'Create new assessment': 'README.md'
-      - 'Make a copy of existing assessment': 'Instructor/HowTos/Assessments/howtoCopyPreviousAssessments.md'
+      - 'Create new assessment': 'Instructor/HowTos/Assessments/createAssessment.md'
+      - 'Setup time access': 'Instructor/HowTos/Assessments/assessmentAccess.md'
+      - 'Setup varying credit': 'Instructor/HowTos/Assessments/assessmentCredit.md'
+
+
+      - 'Make a copy of an existing assessment': 'Instructor/HowTos/Assessments/howtoCopyAssessment.md'
       - 'Define assessment credit': 'Instructor/HowTos/Assessments/howtoAssessmentPoints.md'
       - 'Add questions to an assessment': 'README.md'
       - 'Create question polls': 'README.md'

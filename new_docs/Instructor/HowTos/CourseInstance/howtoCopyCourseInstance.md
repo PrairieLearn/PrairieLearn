@@ -17,3 +17,5 @@ If you are teaching the same course in multiple terms (or multiple sections in t
 * Click `Save and sync`.
 
 * Navigate back to your course space by clicking the course short name from the top bar menu. You should see the new course instance listed in the `Course Instance` page.
+
+Note that this will create a copy of all the assessments that were used in the original course instance. You will have to adjust `allowAccess` to update the assessment configurations, including the start and end dates.
