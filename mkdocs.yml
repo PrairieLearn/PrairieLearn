@@ -13,29 +13,41 @@ extra_javascript:
 pages:
 - Introduction:
   - 'What is PrairieLearn?': 'Introduction/index.md'
+  - 'Request a course space': 'Introduction/requestCourseSpace/index.md'
   - 'License': 'Introduction/license.md'
   - 'News': 'Introduction/news_items.md'
 
 - Instructor Manual:
   - Get Started:
-    - 'Requesting your course space': 'Instructor/getStarted/requestCourseSpace/index.md'
     - Creating course content:
       - 'Overview': 'Instructor/getStarted/createCourseContent/overview.md'
       - 'Creating a course instance': 'Instructor/getStarted/createCourseContent/course_instance.md'
       - 'Creating questions': 'Instructor/getStarted/createCourseContent/create_question.md'
-      - 'Create an assessment': 'Instructor/getStarted/createCourseContent/create_assessment.md' 
+      - 'Create an assessment': 'Instructor/getStarted/createCourseContent/create_assessment.md'
     - 'Question Gallery': 'Instructor/getStarted/questionGallery/index.md'
     - 'Workshops': 'Instructor/getStarted/workshops/index.md'
     - 'Pitfalls': 'Instructor/getStarted/pitfalls/index.md'
+
   - How-to Guides:
-    - 'Adding Staff to Course Instance': 'Instructor/HowTos/howtoAddUserRoles.md'
-    - 'Make a copy of a Course Instance for a New Semester': 'Instructor/HowTos/howtoCopyCourseInstance.md'
+    - Course Instances:
+      - 'Create new course instance': 'Instructor/HowTos/CourseInstance/createCourse.md'
+      - 'Setup course access': 'Instructor/HowTos/CourseInstance/courseAccess.md'
+      - 'Copy course instance from previous term': 'Instructor/HowTos/CourseInstance/howtoCopyCourseInstance.md'
+    - Staff:
+      - 'Give course content access': 'Instructor/HowTos/Staff/courseContentAccess.md'
+      - 'Give student data access': 'Instructor/HowTos/Staff/studentDataAccess.md'
     - Assessments:
+      - 'Create new assessment': 'README.md'
+      - 'Make a copy of existing assessment': 'Instructor/HowTos/Assessments/howtoCopyPreviousAssessments.md'
+      - 'Define assessment credit': 'Instructor/HowTos/Assessments/howtoAssessmentPoints.md'
+      - 'Add questions to an assessment': 'README.md'
+      - 'Create question polls': 'README.md'
+
       - 'Creating Homework Sets': 'Instructor/HowTos/Assessments/howtoHomeworkSet.md'
       - 'Creating Exams': 'Instructor/HowTos/Assessments/howtoExams.md'
       - 'Copying Assessment Sets from Previous Semesters': 'Instructor/HowTos/Assessments/howtoCopyPreviousAssessments.md'
       - 'Creating Assessment Sets': 'Instructor/HowTos/Assessments/howtoAddAssessmentSet.md'
-      - 'Setting points': 'Instructor/HowTos/Assessments/howtoAssessmentPoints.md'
+
       - 'Randomizing Question Order': 'Instructor/HowTos/Assessments/howtoRandomizeOrder.md'
       - 'Randomizing Question Selection': 'Instructor/HowTos/Assessments/howtoRandomizeQuestions.md'
       - 'Organizing Questions': 'Instructor/HowTos/Assessments/howtoZones.md'
@@ -44,14 +56,13 @@ pages:
       - 'Collaborative Assessments': 'Instructor/HowTos/Assessments/howtoCollaborative.md'
       - 'Disable real-time grading': 'Instructor/HowTos/Assessments/howtoDisableRealTime.md'
       - 'Limit the rate for grading': 'Instructor/HowTos/Assessments/howtoLimitGradeRate.md'
-      - 'Allow students to report issues': 'Instructor/HowTos/Assessments/howtoAllowIssues.md' 
+      - 'Allow students to report issues': 'Instructor/HowTos/Assessments/howtoAllowIssues.md'
       - 'How to use PL to learn student names': 'Instructor/HowTos/howToLearnNames.md'
-      - 'FAQ': 'Instructor/HowTos/faq.md'
-
   - References:
     - 'Installing and running PL locally': 'Instructor/references/installing.md'
     - 'Syncing course content': 'Instructor/references/sync.md'
     - 'Course configuration': 'Instructor/references/course.md'
+    - 'Course staff': 'Instructor/references/staff.md'
     - 'Course instance configuration': 'Instructor/references/courseInstance.md'
     - 'Assessment configuration': 'Instructor/references/assessment.md'
     - 'Question configuration': 'Instructor/references/question.md'
@@ -70,6 +81,8 @@ pages:
     - 'Manual grading': 'Instructor/references/manualGrading.md'
     - 'What to Tell Students': 'Instructor/references/whatToTellStudents.md'
     - 'API': 'Instructor/references/api.md'
+
+  - FAQ: 'Instructor/HowTos/faq.md'
 
 - Student Manual:
   - Get Started:
