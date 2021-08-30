@@ -1,13 +1,11 @@
-DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,integer,enum_mode,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,boolean,integer,enum_mode,bigint,bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     submissions_insert(
         IN submitted_answer jsonb,
         IN raw_submitted_answer jsonb,
         IN format_errors jsonb,
         IN gradable boolean,
         IN broken boolean,
+        IN regradable boolean,
         IN credit integer,
         IN mode enum_mode,
         IN variant_id bigint,
@@ -83,10 +81,10 @@ BEGIN
     -- actually insert the submission
 
     INSERT INTO submissions
-            (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, duration,         params,         true_answer, gradable, broken)
+            (variant_id, auth_user_id, raw_submitted_answer, submitted_answer, format_errors,
+            credit, mode, duration, params, true_answer, gradable, broken, regradable)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta,    variant.params, variant.true_answer, gradable, broken)
+            credit, mode, delta, variant.params, variant.true_answer, gradable, broken, regradable)
     RETURNING id
     INTO submission_id;
 

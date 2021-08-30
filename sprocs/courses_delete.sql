@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     courses_delete(
         course_id bigint,
         authn_user_id bigint

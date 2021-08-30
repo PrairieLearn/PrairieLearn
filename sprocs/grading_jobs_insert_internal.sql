@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
-
-DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_insert_internal (
         IN submission_id bigint,
         IN authn_user_id bigint,

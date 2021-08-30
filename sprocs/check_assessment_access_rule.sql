@@ -1,10 +1,7 @@
-DROP FUNCTION IF EXISTS check_assessment_access_rule(assessment_access_rules,enum_mode,enum_role,text,timestamp with time zone,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     check_assessment_access_rule (
         IN assessment_access_rule assessment_access_rules,
         IN mode enum_mode,
-        IN role enum_role,
         IN user_id bigint,
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
@@ -16,19 +13,14 @@ DECLARE
 BEGIN
     authorized := TRUE;
 
-    IF role >= 'Instructor' THEN
+    IF assessment_access_rule.role > 'Student' THEN
+        authorized := FALSE;
         RETURN;
     END IF;
 
     IF (assessment_access_rule.mode IS NOT NULL
         AND assessment_access_rule.mode != 'SEB') THEN
         IF mode IS NULL OR mode != assessment_access_rule.mode THEN
-            authorized := FALSE;
-        END IF;
-    END IF;
-
-    IF assessment_access_rule.role IS NOT NULL THEN
-        IF role IS NULL OR role < assessment_access_rule.role THEN
             authorized := FALSE;
         END IF;
     END IF;
