@@ -12,10 +12,6 @@
     "studentGroupLeave": true,
     "allowAccess": [
         {
-            "role": "TA",
-            "credit": 100
-        },
-        {
             "mode": "Public",
             "credit": 100,
             "startDate": "2019-01-18T00:00:01",

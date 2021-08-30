@@ -74,6 +74,8 @@ docker exec -it pl /bin/bash
 
 ## Docker-Compose
 
+This section describes common applications for [Docker Compose](https://github.com/docker/compose) with PrairieLearn. See the [official Docker Compose documentation](https://docs.docker.com/compose/) for more.
+
 ### Basics
 
 A docker-compose file describes the services an application needs to run. In our case, we use `docker-compose` to configure and run the PrairieLearn docker container locally.
@@ -116,6 +118,8 @@ docker-compose -f docker-compose.yml -f docker-compose.local.yml ...
 ```
 
 compose will use values from `docker-compose.local.yml` to override those from `docker-compose.yml`.
+
+If a file `docker-compose.override.yml` exists, Docker Compose will override all configurations with that file, even if it isn't specified in the invoking command.
 
 ## Docker Hub
 

@@ -321,9 +321,9 @@ class PLDrawingAnswerState {
      * This maintains a "submission" object that is separate from the canvas object.
      * By default, all properties from the canvas object are copied to the submission object.
      *
-     * @options options Options that were passed to the 'generate()' function.
-     * @options object Canvas object that was created and should be saved.
-     * @modifyHandler {optional} Function that is run whenever the canvas object is modified.
+     * @param options Options that were passed to the 'generate()' function.
+     * @param object Canvas object that was created and should be saved.
+     * @param modifyHandler {optional} Function that is run whenever the canvas object is modified.
      * This has the signature of (submitted_object, canvas_object).
      * Any properties that should be saved should be copied from canvas_object into
      * submitted_object.  If this is omitted, all properties from the canvas object
@@ -361,9 +361,7 @@ class PLDrawingAnswerState {
         this.updateObject(submitted_object);
         object.on('modified', () => {
             if (modifyHandler) {
-                console.log(submitted_object);
                 modifyHandler(submitted_object, object);
-                console.log(submitted_object);
             } else {
                 for (const [key, value] of Object.entries(object)) {
                     if (key[0] != '_' && !blocked_keys.has(key)) {

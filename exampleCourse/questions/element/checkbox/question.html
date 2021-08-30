@@ -105,7 +105,7 @@
             <p> Group work provides which of the following benefits: </p>
         </pl-question-panel>
 
-        <pl-checkbox answers-name="group_ans_v3" inline="true" number-answers="3" hide-help-text="true">
+        <pl-checkbox answers-name="group_ans_v4" inline="true" number-answers="3" hide-help-text="true">
           <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
           <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
           <pl-answer>               The ability to work on a project by yourself.</pl-answer>
@@ -134,7 +134,7 @@
             <p> Group work provides which of the following benefits: </p>
         </pl-question-panel>
 
-        <pl-checkbox answers-name="group_ans_v4" partial-credit="true">
+        <pl-checkbox answers-name="group_ans_v5" partial-credit="true">
           <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
           <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
           <pl-answer>               The ability to work on a project by yourself.</pl-answer>
@@ -163,7 +163,7 @@
             <p> Group work provides which of the following benefits: </p>
         </pl-question-panel>
 
-        <pl-checkbox answers-name="group_ans_v5" partial-credit="true" partial-credit-method="EDC">
+        <pl-checkbox answers-name="group_ans_v6" partial-credit="true" partial-credit-method="EDC">
           <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
           <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
           <pl-answer>               The ability to work on a project by yourself.</pl-answer>
@@ -184,13 +184,67 @@
     </div>
 
     <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, partial credit is given with <code>partial-credit="true"</code>, using the "coverage (COV)" grading algorithm with <code>partial-credit-method="COV"</code> (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).
+                We have also set <code>show-number-correct="true"</code> so that the number of correct options is displayed in the help text at the bottom of the question.</p>
+
+            <p> Group work provides which of the following benefits: </p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_v7" partial-credit="true" partial-credit-method="COV" show-number-correct="true">
+          <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+          <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
+          <pl-answer>               The ability to work on a project by yourself.</pl-answer>
+          <pl-answer>               Having only one person make all of the decisions.</pl-answer>
+          <pl-answer correct="true">Constructive dialog and increased internal group motivation.</pl-answer>
+          <pl-answer correct="true">Personal accountability to the team to work on a project.</pl-answer>
+          <pl-answer correct="true">Friendship.</pl-answer>
+          <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
+          <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 8
+    </div>
+
+    <div class="card-body">
         <pl-question-panel>
             <p>Here, letter keys are hidden with <code>hide-letter-keys="true"</code>. This option is especially useful when the answer options themselves are letters.</p>
 
             <p>Group work provides which of the following benefits:</p>
         </pl-question-panel>
 
-        <pl-checkbox answers-name="group_ans_v6" hide-letter-keys="true">
+        <pl-checkbox answers-name="group_ans_v8" hide-letter-keys="true">
+            <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+            <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
+            <pl-answer>               The ability to work on a project by yourself.</pl-answer>
+            <pl-answer>               Having only one person make all of the decisions.</pl-answer>
+            <pl-answer correct="true">Constructive dialog and increased internal group motivation.</pl-answer>
+            <pl-answer correct="true">Personal accountability to the team to work on a project.</pl-answer>
+            <pl-answer correct="true">Friendship.</pl-answer>
+            <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
+            <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 9
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Here, we set <code>min-select="3"</code> and <code>max-select="8"</code> to restrict the number of answers that can be selected.
+                Any submission that selects less than 3 answers or more than 8 answers is marked as invalid.</p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_v9" hide-letter-keys="true" min-select="3" max-select="8">
             <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
             <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
             <pl-answer>               The ability to work on a project by yourself.</pl-answer>
