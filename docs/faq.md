@@ -391,7 +391,7 @@ If you have a block of text that you want to re-use in many questions, possibly 
             "answer_units": "metric",
         })
     ```
-4. In the `question.html` for the same question, insert the rendered template like this:
+4. In the `question.html` for the same question, insert the rendered template like this (note the use of triple curly braces):
     ```
     {{{params.units_instructions}}}
     ```
