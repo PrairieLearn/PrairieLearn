@@ -373,11 +373,11 @@ If you have a block of text that you want to re-use in many questions, possibly 
         with open(os.path.join(data["options"]["server_files_course_path"], template_filename)) as f:
             return chevron.render(f, params)
     ```
-2. Put a template (this example is called `code_instructions.html`) into `serverFilesCourse`:
+2. Put a template (this example is called `units_instructions.html`) into `serverFilesCourse`:
     ```
     <pl-question-panel>
       <p>
-        You should download the {{tarball}} and write the code. Then upload the file {{uploadfile}}.
+        All data for this problem is given in {{given_units}} units. Your answers should be in {{answer_units}}.
       </p>
     </pl-question-panel>
     ```
@@ -386,12 +386,12 @@ If you have a block of text that you want to re-use in many questions, possibly 
     import local_template
     
     def generate(data):
-        data["params"]["code_instructions"] = local_template.render(data, "code_instructions.html", {
-            "tarball": "starter.tar.gz",
-            "uploadfile": "fibonacci.py",
+        data["params"]["units_instructions"] = local_template.render(data, "units_instructions.html", {
+            "given_units": "US customary",
+            "answer_units": "metric",
         })
     ```
 4. In the `question.html` for the same question, insert the rendered template like this:
     ```
-    {{{params.code_instructions}}}
+    {{{params.units_instructions}}}
     ```
