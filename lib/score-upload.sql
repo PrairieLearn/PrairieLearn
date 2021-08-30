@@ -3,7 +3,8 @@ SELECT
     assessment_label(a, aset),
     ci.id AS course_instance_id,
     c.id AS course_id,
-    a.create_instance_on_grading AS create_instance_on_grading
+    a.create_instance_on_grading AS create_instance_on_grading,
+    a.group_work AS group_work
 FROM
     assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
