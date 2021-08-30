@@ -152,8 +152,8 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../prairielib/sql-db');         // adjust path as needed
+var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
@@ -220,7 +220,7 @@ INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING 
 From JavaScript you can then do:
 
 ```javascript
-var sqlLoader = require('@prairielearn/prairielib/sql-loader'); // adjust path as needed
+var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
 var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
 // run the entire contents of the SQL file

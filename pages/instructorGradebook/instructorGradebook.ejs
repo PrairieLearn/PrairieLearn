@@ -119,7 +119,7 @@
             return "—";
         } else {
             var text = `<a href="<%= urlPrefix %>/assessment_instance/${assessment_instance_id}">${Math.floor(score)}%</a>`;
-            if (<%= authz_data.has_instructor_edit %>) {
+            if (<%= authz_data.has_course_instance_permission_edit %>) {
                 text += `<button type="button" class="btn btn-xs btn-secondary edit-score ml-1" tabindex="0"
                                  data-ai-id="${assessment_instance_id}" data-score="${score}"
                                  data-other-users="${other_users}">
@@ -129,16 +129,13 @@
             return text;
         }
     }
-    function roleSorter(roleA, roleB) {
-        const roles = ['Instructor', 'TA', 'Student', 'None'];
-        return roles.indexOf(roleA) - roles.indexOf(roleB);
-    }
   </script>
   <style>
     .sticky-column {
       position: sticky;
       left: 0;
       background: white;
+      background-clip: padding-box;
       box-shadow: inset -1px 0 #dee2e6;
     }
     .table-hover tbody tr:hover td.sticky-column {
@@ -204,7 +201,7 @@
                     data-switchable="false">Name</th>
                 <th data-field="role"
                     data-sortable="true"
-                    data-sorter="roleSorter"
+                    data-sort-order="desc"
                     data-switchable="false">
                   Role
                   <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
@@ -235,8 +232,7 @@
               </div>
               <div class="modal-body">
                 <ul>
-                  <li><strong>Instructor</strong> is a person in charge of the course. They have full permission to see and edit the information of other users.</li>
-                  <li><strong>TA</strong> is a teaching assistant. They can see the data of all users, but can only edit their own information.</li>
+                  <li><strong>Staff</strong> is a member of the course staff. They can see the data of all users, and depending on course settings may have permission to edit the information of other users.</li>
                   <li><strong>Student</strong> is a student participating in the class. They can only see their own information, and can do assessments.</li>
                   <li><strong>None</strong> is a user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.</li>
                 </ul>
