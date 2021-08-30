@@ -35,17 +35,13 @@ WITH
         ORDER BY
             c.short_name, c.title, c.id
     ),
-    instructor_courses AS (
+    instructor_course_instances AS (
         SELECT
-            c.short_name || ': ' || c.title AS label,
-            c.short_name,
-            c.title,
             c.id,
-            ($is_administrator OR cp.course_role > 'None') AS do_link,
-            coalesce(jsonb_agg(jsonb_build_object(
+            jsonb_agg(jsonb_build_object(
                 'label', ci.long_name,
                 'id', ci.id
-            ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC), '[]'::jsonb) AS course_instances
+            ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC) AS course_instances
         FROM
             pl_courses AS c
             JOIN course_instances AS ci ON (
@@ -53,8 +49,8 @@ WITH
                 AND ci.deleted_at IS NULL
             )
             LEFT JOIN course_permissions AS cp ON (
-                    cp.user_id = $user_id
-                    AND cp.course_id = c.id
+                cp.user_id = $user_id
+                AND cp.course_id = c.id
             )
             LEFT JOIN course_instance_permissions AS cip ON (
                 cip.course_permission_id = cp.id
@@ -80,6 +76,30 @@ WITH
             )
         GROUP BY
             c.id, cp.id
+    ),
+    instructor_courses AS (
+        SELECT
+            c.short_name || ': ' || c.title AS label,
+            c.short_name,
+            c.title,
+            c.id,
+            ($is_administrator OR cp.course_role > 'None') AS do_link,
+            coalesce(ici.course_instances, '[]'::jsonb) AS course_instances
+        FROM
+            pl_courses AS c
+            LEFT JOIN course_permissions AS cp ON (
+                cp.user_id = $user_id
+                AND cp.course_id = c.id
+            )
+            LEFT JOIN instructor_course_instances AS ici ON (ici.id = c.id)
+        WHERE
+            c.deleted_at IS NULL
+            AND c.example_course IS FALSE
+            AND (
+                $is_administrator
+                OR cp.course_role > 'None'
+                OR ici.id IS NOT NULL
+            )
         ORDER BY
             c.short_name, c.title, c.id
     ),

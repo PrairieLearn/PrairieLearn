@@ -52,7 +52,7 @@
 
   <% if (assessment.allow_issue_reporting) { %>
   <div class="card-footer">
-    <% if (!authz_result.authorized_edit) { /* assessment_instance is open */ %>
+    <% if (locals.authz_result && !authz_result.authorized_edit) { /* instructor viewing student assessment */ %>
       <div class="alert alert-warning mt-2" role="alert">
         You are viewing the question instance of a different user and so are not authorized to report an error.
       </div>
