@@ -24,7 +24,7 @@ window.PLRTE = function(uuid, options) {
     let quill = new Quill('#rte-' + uuid, options);
 
     let contents = atob(inputElement.val());
-    quill.clipboard.dangerouslyPasteHTML(contents);
+    quill.setContents(quill.clipboard.convert(contents));
     
     quill.on('text-change', function(_delta, _oldDelta, _source) {
         inputElement.val(btoa(unescape(encodeURIComponent(quill.root.innerHTML))));
