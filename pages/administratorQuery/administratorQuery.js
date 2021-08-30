@@ -24,7 +24,7 @@ router.get('/:query', asyncHandler(async (req, res, next) => {
     const schema = await jsonLoad.readJSONAsync(schemaFilename);
     await jsonLoad.validateJSONAsync(res.locals.info, schema);
     res.locals.sql = await fsPromises.readFile(path.join(queriesDir, res.locals.sqlFilename), {encoding: 'utf8'});
-    res.locals.sqlHighlighted = hljs.highlight('sql', res.locals.sql).value;
+    res.locals.sqlHighlighted = hljs.highlight(res.locals.sql, {language: 'sql'}).value;
 
     res.locals.has_query_run = false;
     if (req.query.query_run_id) {

@@ -4,6 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
@@ -18,10 +23,10 @@
             <thead>
               <tr>
                 <th>Mode</th>
-                <th>Role</th>
                 <th>UIDs</th>
                 <th>Start date</th>
                 <th>End date</th>
+                <th>Active</th>
                 <th>Credit</th>
                 <th>Time limit</th>
                 <th>Password</th>
@@ -32,10 +37,25 @@
               <% access_rules.forEach(function(access_rule) { %>
               <tr>
                 <td><%= access_rule.mode %></td>
-                <td><%= access_rule.role %></td>
-                <td><%= access_rule.uids %></td>
+                <td>
+                  <%
+                    // Only users with permission to view student data are allowed
+                    // to see the list of uids associated with an access rule. Note,
+                    // however, that any user with permission to view course code
+                    // (or with access to the course git repository) will be able to
+                    // see the list of uids, because these access rules are defined
+                    // in course code. This should be changed in future, to protect
+                    // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
+
+                    if ((access_rule.uids == '—') || authz_data.has_course_instance_permission_view) { %>
+                    <%= access_rule.uids %>
+                  <% } else { %>
+                    <a role="button" class="btn btn-xs btn-warning" tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body" data-placement="auto" title="Hidden UIDs" data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones.">Hidden</a>
+                  <% } %>
+                </td>
                 <td><%= access_rule.start_date %></td>
                 <td><%= access_rule.end_date %></td>
+                <td><%= access_rule.active %></td>
                 <td><%= access_rule.credit %></td>
                 <td><%= access_rule.time_limit %></td>
                 <td><%= access_rule.password %></td>

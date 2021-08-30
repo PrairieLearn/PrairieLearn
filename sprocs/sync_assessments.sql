@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_assessments(
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
@@ -215,13 +211,14 @@ BEGIN
                 start_date,
                 end_date,
                 show_closed_assessment,
-                show_closed_assessment_score)
+                show_closed_assessment_score,
+                active)
             (
                 SELECT
                     new_assessment_id,
                     (access_rule->>'number')::integer,
                     (access_rule->>'mode')::enum_mode,
-                    (access_rule->>'role')::enum_role,
+                    'Student'::enum_role,
                     (access_rule->>'credit')::integer,
                     jsonb_array_to_text_array(access_rule->'uids'),
                     (access_rule->>'time_limit_min')::integer,
@@ -231,7 +228,8 @@ BEGIN
                     input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     (access_rule->>'show_closed_assessment')::boolean,
-                    (access_rule->>'show_closed_assessment_score')::boolean
+                    (access_rule->>'show_closed_assessment_score')::boolean,
+                    (access_rule->>'active')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -252,7 +250,8 @@ BEGIN
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date,
                 show_closed_assessment = EXCLUDED.show_closed_assessment,
-                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score;
+                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score,
+                active = EXCLUDED.active;
         END LOOP;
 
         -- Delete excess access rules

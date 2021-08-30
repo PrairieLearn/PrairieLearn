@@ -1,5 +1,9 @@
 -- BLOCK select_job
 SELECT
+    CASE
+        WHEN ai.id IS NULL THEN NULL
+        ELSE to_jsonb(authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work))
+    END AS aai,
     to_jsonb(gj.*) AS grading_job,
     format_date_full_compact_ms(gj.grading_requested_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_requested_at,
     format_date_full_compact_ms(gj.grading_submitted_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_submitted_at,

@@ -43,11 +43,10 @@ course_users AS (
         u.user_id,
         u.uid,
         u.name,
-        coalesce(e.role, 'None'::enum_role) AS role
+        users_get_displayed_role(u.user_id, $course_instance_id) AS role
     FROM
         user_ids
         JOIN users AS u ON (u.user_id = user_ids.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = $course_instance_id)
 ),
 scores AS (
     SELECT
