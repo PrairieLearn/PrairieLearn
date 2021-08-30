@@ -1,0 +1,8 @@
+.ql-container {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.pl-rich-text-editor-container {
+    box-shadow: 3px 3px 3px grey;
+}
