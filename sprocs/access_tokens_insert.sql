@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     access_tokens_insert(
         user_id bigint,
         name text,

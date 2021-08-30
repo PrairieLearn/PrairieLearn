@@ -1,10 +1,6 @@
 -- BLOCK course_instance_access_rules
 SELECT
     CASE
-        WHEN ciar.role IS NULL THEN '—'
-        ELSE ciar.role::text
-    END AS role,
-    CASE
         WHEN ciar.uids IS NULL THEN '—'
         ELSE array_to_string(ciar.uids, ', ')
     END AS uids,
@@ -25,5 +21,6 @@ FROM
     JOIN course_instances AS ci ON (ci.id = ciar.course_instance_id)
 WHERE
     ciar.course_instance_id = $course_instance_id
+    AND ((ciar.role > 'Student') IS NOT TRUE)
 ORDER BY
     ciar.number;

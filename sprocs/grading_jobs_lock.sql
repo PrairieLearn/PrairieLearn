@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_lock (
         grading_job_id bigint
     ) RETURNS void
