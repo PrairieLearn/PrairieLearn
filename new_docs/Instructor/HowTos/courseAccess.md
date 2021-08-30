@@ -1,6 +1,6 @@
 # How to setup course access rules
 
-You can define different access rules at the course instance and assessment levels. For more details, go the [Access Control](Instructor/references/accessControl.md) reference page. Here we will show you change the dates in which the course instance is available.
+You can define different access rules at the course instance and assessment levels. For more details, go the [Access Control](../references/accessControl.md) reference page. Here we will show you change the dates in which the course instance is available.
 
 * Select the course instance from the toggle dropdown at the top bar menu.
 

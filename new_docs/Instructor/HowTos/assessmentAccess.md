@@ -1,7 +1,7 @@
 # How to setup time access
 
 
-Use the steps below if you are [creating an assessment](Instructor/HowTos/Assessments/createAssessment.md) for the first time, or if you are updating the access rules from an existing assessment.
+Use the steps below if you are [creating an assessment](createAssessment.md) for the first time, or if you are updating the access rules from an existing assessment.
 
 * From the `Assessments` page, select the assessment you want to modify the access rules.
 

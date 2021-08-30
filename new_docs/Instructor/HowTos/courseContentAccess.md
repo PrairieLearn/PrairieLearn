@@ -10,6 +10,6 @@ As a course owner, you can give access to your entire course space to other staf
 
 The options `Owner` and `Editor` are often given to course instructors. If you have teaching assistants who are assisting with course development, you can add them using the `Editor` permission.
 
-You can read more about all the different permissions from the [Staff](Instructor/references/staff.md) reference page.
+You can read more about all the different permissions from the [Staff](../references/staff.md) reference page.
 
-Note that giving course content access does not provide [access to student data](Instructors/HowTos/Staff/studentDataAccess.md).
+Note that giving course content access does not provide [access to student data](studentDataAccess.md).

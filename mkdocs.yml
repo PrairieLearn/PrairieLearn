@@ -30,42 +30,53 @@ pages:
 
   - How-to Guides:
     - Course Instances:
-      - 'Create new course instance': 'Instructor/HowTos/CourseInstance/createCourse.md'
-      - 'Setup course access': 'Instructor/HowTos/CourseInstance/courseAccess.md'
-      - 'Copy course instance from previous term': 'Instructor/HowTos/CourseInstance/howtoCopyCourseInstance.md'
+      - 'Create new course instance': 'Instructor/HowTos/createCourse.md'
+      - 'Setup course access': 'Instructor/HowTos/courseAccess.md'
+      - 'Copy course instance from previous term': 'Instructor/HowTos/howtoCopyCourseInstance.md'
     - Staff:
-      - 'Give course content access': 'Instructor/HowTos/Staff/courseContentAccess.md'
-      - 'Give student data access': 'Instructor/HowTos/Staff/studentDataAccess.md'
+      - 'Give course content access': 'Instructor/HowTos/courseContentAccess.md'
+      - 'Give student data access': 'Instructor/HowTos/studentDataAccess.md'
     - Assessments:
-      - 'Create new assessment': 'Instructor/HowTos/Assessments/createAssessment.md'
-      - 'Setup time access': 'Instructor/HowTos/Assessments/assessmentAccess.md'
-      - 'Setup varying credit': 'Instructor/HowTos/Assessments/assessmentCredit.md'
-
-
-      - 'Make a copy of an existing assessment': 'Instructor/HowTos/Assessments/howtoCopyAssessment.md'
-      - 'Define assessment credit': 'Instructor/HowTos/Assessments/howtoAssessmentPoints.md'
-      - 'Add questions to an assessment': 'README.md'
-      - 'Create question polls': 'README.md'
+      - 'Create new assessment': 'Instructor/HowTos/createAssessment.md'
+      - 'Setup time access': 'Instructor/HowTos/assessmentAccess.md'
+      - 'Setup varying credit': 'Instructor/HowTos/assessmentCredit.md'
+      - 'Add questions to an assessment': 'Instructor/HowTos/addQuestions.md'
+      - 'Define bonus points': 'Instructor/HowTos/bonusPoints.md'
+      - 'Randomize question ordering': 'Instructor/HowTos/howtoRandomizeOrder.md'
+      - 'Organize questions into zones': 'Instructor/HowTos/howtoZones.md'
+      - 'Create question pools': 'Instructor/HowTos/addQuestionPools.md'
+      - 'Use best score from a zone': 'Instructor/HowTos/bestQuestion.md'
 
       - 'Creating Homework Sets': 'Instructor/HowTos/Assessments/howtoHomeworkSet.md'
-      - 'Creating Exams': 'Instructor/HowTos/Assessments/howtoExams.md'
-      - 'Copying Assessment Sets from Previous Semesters': 'Instructor/HowTos/Assessments/howtoCopyPreviousAssessments.md'
       - 'Creating Assessment Sets': 'Instructor/HowTos/Assessments/howtoAddAssessmentSet.md'
 
-      - 'Randomizing Question Order': 'Instructor/HowTos/Assessments/howtoRandomizeOrder.md'
-      - 'Randomizing Question Selection': 'Instructor/HowTos/Assessments/howtoRandomizeQuestions.md'
-      - 'Organizing Questions': 'Instructor/HowTos/Assessments/howtoZones.md'
+
       - 'Add text and links to assessments': 'Instructor/HowTos/Assessments/howtoAddTextLinks.md'
-      - 'Changing Homework Attempts': 'Instructor/HowTos/Assessments/howtoAttempts.md'
+      - 'Change number of attempts': 'Instructor/HowTos/Assessments/howtoAttempts.md'
       - 'Collaborative Assessments': 'Instructor/HowTos/Assessments/howtoCollaborative.md'
       - 'Disable real-time grading': 'Instructor/HowTos/Assessments/howtoDisableRealTime.md'
       - 'Limit the rate for grading': 'Instructor/HowTos/Assessments/howtoLimitGradeRate.md'
       - 'Allow students to report issues': 'Instructor/HowTos/Assessments/howtoAllowIssues.md'
-      - 'How to use PL to learn student names': 'Instructor/HowTos/howToLearnNames.md'
+      - 'Allow multiple assessment instances': 'README.md'
+      - 'Make a copy of an existing assessment': 'Instructor/HowTos/Assessments/howtoCopyAssessment.md'
+
+    - Assement Examples:
+      - 'Create a homework': 'README.md'
+      - 'Create an Exam': 'Instructor/HowTos/Assessments/howtoExams.md'
+
+    - Questions:
+      - 'Create questions': 'README.md'
+      - 'Randomizing Question Selection': 'Instructor/HowTos/howtoRandomizeQuestions.md'
+
+
+
   - References:
+
     - 'Installing and running PL locally': 'Instructor/references/installing.md'
     - 'Syncing course content': 'Instructor/references/sync.md'
     - 'Course configuration': 'Instructor/references/course.md'
+
+    - 'Scoring system':  'README.md'
     - 'Course staff': 'Instructor/references/staff.md'
     - 'Course instance configuration': 'Instructor/references/courseInstance.md'
     - 'Assessment configuration': 'Instructor/references/assessment.md'

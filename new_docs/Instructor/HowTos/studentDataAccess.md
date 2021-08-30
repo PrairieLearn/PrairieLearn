@@ -12,4 +12,4 @@ For example, you can give a teaching assistant permission to see all the assessm
 
 * Use the dropdown toggle that says `Add` in the column `Student data access` to select the course instance. By default, the user will receive `Viewer` access to student data. You can use the dropdown toggle to change it to `Editor`.
 
-You can read more about these permissions from the [Staff](Instructor/references/staff.md) reference page.
+You can read more about these permissions from the [Staff](../references/staff.md) reference page.

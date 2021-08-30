@@ -14,4 +14,4 @@
 
 * Navigate back to the Assessments page by clicking `Assessments` from the top bar menu. You should see your assessment list, including the newly created assessment.
 
-PrairieLearn has two [assessment types](Instructors/references/assessment/#assessment-types): `Homework` and `Exam`, and the default is set to `Homework`. The main different between these two types is the grading method.
+PrairieLearn has two [assessment types](../references/assessment.md#assessment-types): `Homework` and `Exam`, and the default is set to `Homework`. The main different between these two types is the grading method.

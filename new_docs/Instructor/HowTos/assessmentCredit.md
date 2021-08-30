@@ -35,4 +35,4 @@ You can use multiple access rules with different credit and/or time interval. Fo
 
 * Click `Save and sync`.
 
-In the example above, the assessment will be open at 8pm on October 1st, 2021. Students can complete the assessment for 120% credit until October 5th at 8pm, for 100% credit until October 10th at 8pm or for 50% credit until October 15th at 8pm. Adding an access rule for 0% credit allows students to continue working on homework after the due date for later practice, but not for credit.
+In the example above, the assessment will be open at 8pm on October 1st, 2021. Students can complete the assessment for 120% credit until October 5th at 8pm, for 100% credit until October 10th at 8pm or for 50% credit until October 15th at 8pm. Adding an access rule for 0% credit allows students to continue working on homework after the due date for later practice, but not for credit. See [Access Control](../references/accessControl.md#credit) reference page for more details about credit.
