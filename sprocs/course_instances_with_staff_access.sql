@@ -28,8 +28,7 @@ BEGIN
                 'formatted_end_date', CASE
                     WHEN d.end_date IS NULL THEN '—'
                     ELSE format_date_full_compact(d.end_date, ci.display_timezone)
-                END,
-                'number', e.number
+                END
             ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC
         )
     INTO
@@ -57,16 +56,7 @@ BEGIN
             WHERE
                 ar.course_instance_id = ci.id
                 AND ((ar.role > 'Student') IS NOT TRUE)
-        ) AS d,
-        LATERAL (
-            SELECT
-                count(e.user_id) AS number
-            FROM
-                enrollments AS e
-            WHERE
-                e.course_instance_id = ci.id
-                AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
-        ) AS e
+        ) AS d
     WHERE
         c.id = course_instances_with_staff_access.course_id
         AND c.deleted_at IS NULL
