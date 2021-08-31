@@ -3,7 +3,6 @@
 {{#inline}}
 <span>
 {{/inline}}
-    
 {{#answers}}
     <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1">
         <input class="form-check-input mt-0" type="radio"
@@ -14,7 +13,13 @@
             {{^hide_letter_keys}}<div class="pl-multiple-choice-key-label">({{key}})</div>{{/hide_letter_keys}}
             <div class="ml-1 mr-1">{{{html}}}</div>
         </label>
-            
+
+        {{#display_feedback}}
+        <div class="pl-multiple-choice-feedback">
+            {{{feedback}}}
+        </div>
+        {{/display_feedback}}
+
         {{#display_score_badge}}
             {{#correct}}
                 <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
@@ -63,20 +68,28 @@
 {{/parse_error}}
 {{^parse_error}}
 
-{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{answer.html}}}
+<div class="d-inline-flex align-items-center">
+    {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{answer.html}}}
 
-{{#display_score_badge}}
-    &nbsp;
-    {{#correct}}
-        <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
-    {{/correct}}
-    {{#incorrect}}
-        <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
-    {{/incorrect}}
-    {{#partial}}
-        <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
-    {{/partial}}
-{{/display_score_badge}}
+    {{#display_feedback}}
+        <div class="pl-multiple-choice-feedback">
+            {{{feedback}}}
+        </div>
+    {{/display_feedback}}
+
+    {{#display_score_badge}}
+        &nbsp;
+        {{#correct}}
+            <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+        {{/correct}}
+        {{#incorrect}}
+            <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+        {{/incorrect}}
+        {{#partial}}
+            <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+        {{/partial}}
+    {{/display_score_badge}}
+</div>
     
 {{/parse_error}}
 {{/submission}}
