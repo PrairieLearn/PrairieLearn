@@ -20,19 +20,19 @@
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Summary:
-          <% if (assessment.group_work) { %>
-            <%= group.name %> <i class="fas fa-users"></i>
-          <% } else { %>
+          <% if (instance_group) { %>
+            <%= instance_group.name %> <i class="fas fa-users"></i>
+          <% } else if (instance_user) { %>
             <%= instance_user.name %> (<%= instance_user.uid %>)
           <% } %>
         </div>
 
         <table class="table table-sm table-hover two-column-description">
           <tbody>
-            <% if (assessment.group_work) { %>
-              <tr><th>Name</th><td colspan="2"><%= group.name %></td></tr>
-              <tr><th>Group Members</th><td colspan="2"><%= group.uid_list %></td></tr>
-            <% } else { %>
+            <% if (instance_group) { %>
+              <tr><th>Name</th><td colspan="2"><%= instance_group.name %></td></tr>
+              <tr><th>Group Members</th><td colspan="2"><%= instance_group_uid_list.join(', ') %></td></tr>
+            <% } else if (instance_user) { %>
               <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
               <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
               <tr><th>Role</th><td colspan="2"><%= instance_role %></td></tr>
@@ -88,9 +88,9 @@
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Questions:
-          <% if (assessment.group_work) { %>
-            <%= group.name %> <i class="fas fa-users"></i>
-          <% } else { %>
+          <% if (instance_group) { %>
+            <%= instance_group.name %> <i class="fas fa-users"></i>
+          <% } else if (instance_user) { %>
             <%= instance_user.name %> (<%= instance_user.uid %>)
           <% } %>
         </div>
@@ -175,9 +175,9 @@
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Statistics:
-          <% if (assessment.group_work) { %>
-            <%= group.name %> <i class="fas fa-users"></i>
-          <% } else { %>
+          <% if (instance_group) { %>
+            <%= instance_group.name %> <i class="fas fa-users"></i>
+          <% } else if (instance_user) { %>
             <%= instance_user.name %> (<%= instance_user.uid %>)
           <% } %>
         </div>
@@ -228,9 +228,9 @@
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Log:
-          <% if (assessment.group_work) { %>
-            <%= group.name %> <i class="fas fa-users"></i>
-          <% } else { %>
+          <% if (instance_group) { %>
+            <%= instance_group.name %> <i class="fas fa-users"></i>
+          <% } else if (instance_user) { %>
             <%= instance_user.name %> (<%= instance_user.uid %>)
           <% } %>
         </div>

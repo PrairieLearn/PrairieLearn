@@ -34,7 +34,7 @@ router.get('/', function(req, res, next) {
             };
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                const ci_ids = _.map(res.locals.course_instances, ci => ci.id);
+                const ci_ids = _.map(res.locals.authz_data.course_instances, ci => ci.id);
                 res.locals.questions = _.map(result.rows, row => {
                     if (row.sync_errors)
                         row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);

@@ -198,11 +198,27 @@ module.exports.initExpress = function() {
     const workspaceProxy = createProxyMiddleware((pathname) => {
         return pathname.match('/pl/workspace/([0-9])+/container/');
     }, workspaceProxyOptions);
+    const workspaceAuthRouter = express.Router();
+    workspaceAuthRouter.use([
+        // We use a short-lived cookie to cache a successful
+        // authn/authz for a specific workspace. We run the following
+        // middlewares in this separate sub-router so that we can
+        // short-circuit out of authzWorkspaceCookieCheck if we find
+        // the workspace-authz cookie. Short-circuiting will exit this
+        // sub-router immediately, so we can either exit this
+        // sub-router by finding the cookie, or by running regular
+        // authn/authz.
+
+        require('./middlewares/authzWorkspaceCookieCheck'), // short-circuits if we have the workspace-authz cookie
+        require('./middlewares/date'),
+        require('./middlewares/authn'),                     // jumps to error handler if authn fails
+        require('./middlewares/authzWorkspace'),            // jumps to error handler if authz fails
+        require('./middlewares/authzWorkspaceCookieSet'),   // sets the workspace-authz cookie
+    ]);
     app.use('/pl/workspace/:workspace_id/container', [
         cookieParser(),
-        require('./middlewares/date'),
-        require('./middlewares/authn'),
-        require('./middlewares/authzWorkspace'),
+        (req, res, next) => {res.locals.workspace_id = req.params.workspace_id; next();}, // needed for workspaceAuthRouter
+        workspaceAuthRouter,
         workspaceProxy,
     ]);
 
@@ -346,6 +362,7 @@ module.exports.initExpress = function() {
     ]);
 
     app.use('/pl/workspace/:workspace_id', [
+        (req, res, next) => {res.locals.workspace_id = req.params.workspace_id; next();},
         require('./middlewares/authzWorkspace'),
         require('./pages/workspace/workspace'),
     ]);
