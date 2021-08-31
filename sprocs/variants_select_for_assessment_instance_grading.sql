@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS variants_select_for_assessment_instance(bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_select_for_assessment_instance_grading (
         IN assessment_instance_id bigint,
         OUT variant jsonb,

@@ -15,6 +15,66 @@ const postgresqlDatabaseTemplate = 'pltest_template';
 const postgresqlHost = 'localhost';
 const initConString = 'postgres://postgres@localhost/postgres';
 
+var runMigrationsAndSprocs = function(dbName, mochaThis, runMigrations, callback) {
+    debug(`runMigrationsAndSprocs(${dbName})`);
+    mochaThis.timeout(20000);
+    async.series([
+        function(callback) {
+            debug('runMigrationsAndSprocs(): initializing sqldb');
+            var pgConfig = {
+                user: postgresqlUser,
+                database: dbName,
+                host: postgresqlHost,
+                max: 10,
+                idleTimeoutMillis: 30000,
+            };
+            var idleErrorHandler = function(err) {
+                throw Error('idle client error', err);
+            };
+            sqldb.init(pgConfig, idleErrorHandler, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            if (!runMigrations) {
+                debug('runMigrationsAndSprocs(): skipping migrations');
+                return callback(null);
+            }
+            debug('runMigrationsAndSprocs(): running migrations');
+            migrations.init(path.join(__dirname, '..', 'migrations'), 'prairielearn', function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            debug('runMigrationsAndSprocs(): setting random search schema');
+            sqldb.setRandomSearchSchema('test', (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            debug('runMigrationsAndSprocs(): initializing sprocs');
+            sprocs.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            debug('runMigrationsAndSprocs(): closing sqldb');
+            sqldb.close(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+    ], function(err) {
+        debug('runMigrationsAndSprocs(): complete');
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+};
+
 var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
     debug(`createFullDatabase(${dbName})`);
     // long timeout because DROP DATABASE might take a long time to error
@@ -54,39 +114,8 @@ var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
             callback(null);
         },
         function(callback) {
-            debug('createFullDatabase(): initializing sqldb');
-            var pgConfig = {
-                user: postgresqlUser,
-                database: dbName,
-                host: postgresqlHost,
-                max: 10,
-                idleTimeoutMillis: 30000,
-            };
-            var idleErrorHandler = function(err) {
-                throw Error('idle client error', err);
-            };
-            sqldb.init(pgConfig, idleErrorHandler, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            debug('createFullDatabase(): running migrations');
-            migrations.init(path.join(__dirname, '..', 'migrations'), 'prairielearn', function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            debug('createFullDatabase(): initializing sprocs');
-            sprocs.init(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            debug('createFullDatabase(): closing sqldb');
-            sqldb.close(function(err) {
+            debug('createFullDatabase(): calling runMigrationsAndSprocs()');
+            runMigrationsAndSprocs(dbName, mochaThis, true, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -135,6 +164,13 @@ var createFromTemplate = function(dbName, dbTemplateName, dropFirst, mochaThis, 
             debug('createFromTemplate(): ending client');
             client.end();
             callback(null);
+        },
+        function(callback) {
+            debug('createFromTemplate(): calling runMigrationsAndSprocs()');
+            runMigrationsAndSprocs(dbName, mochaThis, false, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
     ], function(err) {
         debug('createFromTemplate(): complete');

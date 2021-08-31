@@ -15,7 +15,8 @@
             "additionalProperties": false,
             "properties": {
                 "coreStyles": {
-                    "description": "The styles required by this extension from /public/stylesheets.",
+                    "description": "[DEPRECATED, DO NOT USE] The styles required by this extension from /public/stylesheets.",
+                    "deprecated": true,
                     "type": "array",
                     "items": {
                         "description": "A .css file located in /public/stylesheets.",
@@ -23,7 +24,8 @@
                     }
                 },
                 "coreScripts": {
-                    "description": "The scripts required by this extension from /public/javascripts.",
+                    "description": "[DEPRECATED, DO NOT USE] The scripts required by this extension from /public/javascripts.",
+                    "deprecated": true,
                     "type": "array",
                     "items": {
                         "description": "A .js file located in /public/javascripts.",
