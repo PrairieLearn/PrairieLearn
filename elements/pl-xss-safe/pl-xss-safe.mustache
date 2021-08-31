@@ -2,6 +2,9 @@
 (function() {
     let code = {{{quoted_code}}};
     let language = "{{language}}";
+    // Uses the same JS library as the pl-file-editor for markdown
+    // conversion and xss filter for compatibility and to avoid
+    // confusion
     if (language == "markdown") {
         let renderer = new showdown.Converter({
             'literalMidWordUnderscores':true,
