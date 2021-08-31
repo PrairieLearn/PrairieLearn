@@ -32,12 +32,27 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Example 2: <code>blank="false"</code> removes the blank first entry in the dropdown list, 
+                Example 2: Setting <code>counter-type="full-text"</code> will hide the column of options. The dropdown list
+                next to each statement will contain the inner text of each option, rather than a counter.
+            </p>
+        </pl-question-panel>
+            
+        <pl-matching answers-name="ex2" counter-type="full-text">
+            <pl-statement match="Matt"><pl-figure file-name="student_images/001.png" width="140px" directory="clientFilesCourse"></pl-figure></pl-statement>
+            <pl-statement match="Craig"><pl-figure file-name="student_images/002.png" width="140px" directory="clientFilesCourse"></pl-figure></pl-statement>
+        </pl-matching>
+    </div>
+</div>
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Example 3: <code>blank="false"</code> removes the blank first entry in the dropdown list, 
                 setting the default selection to the first option.
             </p>
         </pl-question-panel>
             
-        <pl-matching answers-name="ex2" blank="false">
+        <pl-matching answers-name="ex3" blank="false">
             <pl-statement match="Ottawa">Canada</pl-statement>
             <pl-statement match="Washington, D.C.">United States</pl-statement>
             <pl-statement match="Mexico City">Mexico</pl-statement>
@@ -54,14 +69,14 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Example 3: <code>number-statements</code> and <code>number-options</code>
+                Example 4: <code>number-statements</code> and <code>number-options</code>
                 determine how many statements and options are shown. Statements are sampled at random.
                 The options will always include each correct match for the sampled statements,
                 plus random distractors.
             </p>
         </pl-question-panel>
             
-        <pl-matching answers-name="ex3" number-statements="3" number-options="5">
+        <pl-matching answers-name="ex4" number-statements="3" number-options="5">
             <pl-statement match="Ottawa">Canada</pl-statement>
             <pl-statement match="Washington, D.C.">United States</pl-statement>
             <pl-statement match="Mexico City">Mexico</pl-statement>
@@ -78,12 +93,12 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Example 4: if <code>number-options</code> is smaller than the amount of options
+                Example 5: if <code>number-options</code> is smaller than the amount of options
                 required to match the sampled statements, None of the Above will be added.
             </p>
         </pl-question-panel>
             
-        <pl-matching answers-name="ex4" number-statements="3" number-options="2">
+        <pl-matching answers-name="ex5" number-statements="3" number-options="2">
             <pl-statement match="Ottawa">Canada</pl-statement>
             <pl-statement match="Washington, D.C.">United States</pl-statement>
             <pl-statement match="Mexico City">Mexico</pl-statement>
@@ -100,11 +115,11 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Example 5: the <code>counter-type</code> attribute indicates how options are identified. It can be set to <code>lower-alpha</code> (a, b, c, ...), <code>upper-alpha</code> (A, B, C, ...), or <code>decimal</code> (1, 2, 3).
+                Example 6: the <code>counter-type</code> attribute indicates how options are identified. It can be set to <code>lower-alpha</code> (a, b, c, ...), <code>upper-alpha</code> (A, B, C, ...), or <code>decimal</code> (1, 2, 3).
             </p>
         </pl-question-panel>
             
-        <pl-matching answers-name="ex5" counter-type="decimal" number-statements="3" number-options="3">
+        <pl-matching answers-name="ex6" counter-type="decimal" number-statements="3" number-options="3">
             <pl-statement match="Ottawa">Canada</pl-statement>
             <pl-statement match="Washington, D.C.">United States</pl-statement>
             <pl-statement match="Mexico City">Mexico</pl-statement>
@@ -121,34 +136,17 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Example 6: options can be added manually if they require more than simple text.
+                Example 7: options can be added manually if they require more than simple text.
                 All PrairieLearn and HTML elements are supported in options and statements.
             </p>
         </pl-question-panel>
             
-        <pl-matching answers-name="ex6">
+        <pl-matching answers-name="ex7">
             <pl-statement match="Matt">Matt</pl-statement>
             <pl-statement match="Craig">Craig</pl-statement>
             
             <pl-option name="Matt"><pl-figure file-name="student_images/001.png" width="140px" directory="clientFilesCourse"></pl-figure></pl-option>
             <pl-option name="Craig"><pl-figure file-name="student_images/002.png" width="140px" directory="clientFilesCourse"></pl-figure></pl-option>
-        </pl-matching>
-    </div>
-</div>
-
-
-<div class="card my-2">
-    <div class="card-body">
-        <pl-question-panel>
-            <p>
-                Example 7: Setting <code>counter-type="full-text"</code> will hide the column of options. The dropdown list
-                next to each statement will contain the inner text of each option, rather than a counter.
-            </p>
-        </pl-question-panel>
-            
-        <pl-matching answers-name="ex7" counter-type="full-text">
-            <pl-statement match="Matt"><pl-figure file-name="student_images/001.png" width="140px" directory="clientFilesCourse"></pl-figure></pl-statement>
-            <pl-statement match="Craig"><pl-figure file-name="student_images/002.png" width="140px" directory="clientFilesCourse"></pl-figure></pl-statement>
         </pl-matching>
     </div>
 </div>
