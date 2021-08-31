@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title> NoVNC Container </title>
+    <meta charset="utf-8">
+
+    <style>
+        body {
+            margin: 0;
+            background-color: black;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        html {
+            height: 100%;
+        }
+
+        #screen {
+            flex: 1; /* fill remaining space */
+            overflow: hidden;
+        }
+    </style>
+
+    <script type="module" crossorigin="anonymous" src="index.js"></script>
+    <script>
+
+    </script>
+</head>
+
+<body>
+    <div id="screen">
+        <!-- This is where the remote screen will appear -->
+    </div>
+</body>
+</html>
