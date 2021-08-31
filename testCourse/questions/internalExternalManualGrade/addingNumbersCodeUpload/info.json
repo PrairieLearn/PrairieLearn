@@ -1,0 +1,14 @@
+{
+    "uuid": "6b4891a6-64d1-4e89-b72c-cd2133f25b2f",
+    "title": "Internal, External, Manual: Addition internal, code upload external, code upload manual grade",
+    "topic": "Algebra",
+    "gradingMethods": ["Internal", "External", "Manual"],
+    "tags": ["mwest", "fa17", "tpl101", "v3"],
+    "type": "v3",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 20
+    }
+}

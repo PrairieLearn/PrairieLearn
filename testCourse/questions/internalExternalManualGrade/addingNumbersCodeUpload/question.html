@@ -1,0 +1,54 @@
+
+<h2>Internal, External, and Manual Grading Method Combinations</h2>
+
+<section>
+  <p>This question combines "Add two numbers", an "Internal" grading question, and "Fibonacci function, file upload", an "External" grading question.</p>
+
+  <p>This question has been configured with "Internal", "External", and "Manual" grading methods on the info.json 'gradingMethods' property. The "Internal" and "External" grading methods run configured as usual. 
+  The `server.py` files from the two questions have been merged into one `server.py` to accept both the "Internal" and "External" parameters submitted by the student when a question is answered.</p>
+
+  <p>The "Manual" grading method leverages the pre-existing "Internal" grading submission and results, and the "External" grading submission, displayed on the page. No HTML or Python boilerplate has been added to allow for the additional "Manual" grading method. 
+    
+  NOTE: It is, at the moment, not possible to display the "External" grading results on the student question submission view if the "Internal" grading method is also enabled. Therefore, as the view is re-used for the manual grading instructor view, it would also not be able to view the "External" grading results.</p>
+</section>
+
+<section>
+  <!--Copy and pasted from "testCourse/addNumbers"-->
+  <pl-question-panel>
+    <p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
+    <p> What is the sum $c = a + b$?</p>
+  </pl-question-panel>
+
+  <pl-number-input answers-name="c" comparison="sigfig" digits="3" label="$c=$"></pl-number-input>
+  <p>
+</section>
+
+<section>
+  <!--Copy and pasted from "exampleCourse/demo/autograder/codeUpload"-->
+  <pl-question-panel>
+    <p>
+      This is a demo of using the Python autograder with an file upload interface.  Note that if the student's uploaded filename is different than <code>user_code.py</code> then the correct filename should be set in <code>student_code_file</code> in the <code>PLTestCase</code> class.  Here we set it to <code>fib.py</code> to match the file upload.
+    </p>
+    <p>
+      The Fibonacci numbers are 1, 1, 2, 3, 5, 8, ..., where each
+      number is the sum of the two before it. These are numbered $F_1, F_2, \ldots$, and
+      \[
+      F_n = F_{n-1} + F_{n-2}.
+      \]
+    </p>
+    <p>
+      Write a Python function <tt>fib</tt> that takes a number <tt>n</tt>
+      and returns the n<sup>th</sup> Fibonacci number, $F_n$.
+    </p>
+  
+    <p>Your code snippet should define the following variables:</p>
+    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+  
+    <pl-file-upload file-names="fib.py"></pl-file-upload>
+  </pl-question-panel>
+  
+  <pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+    <pl-file-preview></pl-file-preview>
+  </pl-submission-panel>
+</section>

@@ -1016,7 +1016,7 @@ module.exports.startServerAsync = async () => {
         throw new Error('unknown serverType: ' + config.serverType);
     }
 
-    return app;
+    return server;
 };
 module.exports.startServer = util.callbackify(module.exports.startServerAsync);
 
