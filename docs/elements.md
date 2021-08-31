@@ -1618,7 +1618,7 @@ Attribute | Type | Default | Description
 
 ### `pl-xss-safe` element
 
-Removes potentially dangerous scripts from an HTML code. This is recommended when parsing and displaying student-provided code. The element will remove some elements like scripts and triggers that may have been maliciously inserted by the student. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
+Removes potentially dangerous scripts from HTML. This is recommended when parsing and displaying student-provided content. The element will remove some elements like scripts and triggers that may have been maliciously inserted by the student. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
 
 #### Sample element
 
