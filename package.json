@@ -100,7 +100,7 @@
         "socket.io-redis": "^6.0.1",
         "streamifier": "^0.1.1",
         "tablesorter": "^2.31.3",
-        "tar": "^6.1.2",
+        "tar": "^6.1.9",
         "three": "^0.131.1",
         "tmp-promise": "^3.0.2",
         "unified": "^9.2.1",
