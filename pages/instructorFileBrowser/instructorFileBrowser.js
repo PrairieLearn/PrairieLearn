@@ -1,6 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
+const error = require('../../prairielib/error');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -13,6 +14,8 @@ const FileType = require('file-type');
 const util = require('util');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
 const { encodePath, decodePath } = require('../../lib/uri-util');
+const editorUtil = require('../../lib/editorUtil');
+const { default: AnsiUp } = require('ansi_up');
 
 function contains(parentPath, childPath) {
     const relPath = path.relative(parentPath, childPath);
@@ -32,6 +35,7 @@ function isHidden(item) {
 function getPaths(req, res, callback) {
     let paths = {
         coursePath: res.locals.course.path,
+        courseId: res.locals.course.id,
     };
 
     if (res.locals.navPage == 'course_admin') {
@@ -187,7 +191,7 @@ function browseDirectory(file_browser, callback) {
                             dir: file_browser.paths.workingPath,
                             canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.example_course),
                             canUpload: file_browser.has_course_permission_edit && (! file_browser.example_course),
-                            canDownload: file_browser.has_course_permission_edit,
+                            canDownload: true,  // we already know the user is a course Viewer (checked on GET)
                             canRename: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
                             canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
                             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
@@ -202,6 +206,22 @@ function browseDirectory(file_browser, callback) {
                             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
                         });
                     }
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            async.eachOfSeries(file_browser.files, (file, index, callback) => {
+                util.callbackify(editorUtil.getErrorsAndWarningsForFilePath)(file_browser.paths.courseId, file.path, (err, data) => {
+                    if (ERR(err, callback)) return;
+                    const ansiUp = new AnsiUp();
+                    file.sync_errors = data.errors;
+                    file.sync_errors_ansified = ansiUp.ansi_to_html(file.sync_errors);
+                    file.sync_warnings = data.warnings;
+                    file.sync_warnings_ansified = ansiUp.ansi_to_html(file.sync_warnings);
                     callback(null);
                 });
             }, (err) => {
@@ -229,7 +249,6 @@ function browseFile(file_browser, callback) {
                 file_browser.isBinary = result;
                 if (result) {
                     util.callbackify(async () => {
-                        // FIXME (check for PDF, etc.)
                         const type = await FileType.fromBuffer(contents);
                         if (type) {
                             debug(`file type:\n ext = ${type.ext}\n mime = ${type.mime}`);
@@ -265,7 +284,7 @@ function browseFile(file_browser, callback) {
             dir: path.dirname(file_browser.paths.workingPath),
             canEdit: editable && file_browser.has_course_permission_edit && (! file_browser.example_course),
             canUpload: file_browser.has_course_permission_edit && (! file_browser.example_course),
-            canDownload: file_browser.has_course_permission_edit,
+            canDownload: true,  // we already know the user is a course Viewer (checked on GET)
             canRename: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
             canDelete: movable && file_browser.has_course_permission_edit && (! file_browser.example_course),
             canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
@@ -276,6 +295,7 @@ function browseFile(file_browser, callback) {
 
 router.get('/*', function(req, res, next) {
     debug('GET /');
+    if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be a course Viewer)'));
     let file_browser = {
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         example_course: res.locals.course.example_course,
@@ -328,6 +348,7 @@ router.get('/*', function(req, res, next) {
 
 router.post('/*', function(req, res, next) {
     debug('POST /');
+    if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be a course Editor)'));
     getPaths(req, res, (err, paths) => {
         if (ERR(err, next)) return;
         const container = {

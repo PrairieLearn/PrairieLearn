@@ -16,7 +16,7 @@ When you make new questions, assessments, etc, you will need to add a UUID to th
 
 As your course is constructed, you may run into scenarios that require you to change the UUID listed within a JSON file. Below, we've listed some common instances of when the UUID should or shouldn't be changed.
 
-* **Editing information within a JSON file: no new UUID needed.** For example, if you add another `Instructor` to a `infoCourseInstance.json`, or delete a question in an `infoAssessment.json`, then you **must not change the UUID**. This is because PrairieLearn uses the UUID to know that it's still the same course instance or assessment and you just want to make a change to it. If you do inadvertently change the UUID in this way, changing it back will revert everything to the way it was with no data loss.
+* **Editing information within a JSON file: no new UUID needed.** For example, if you delete a question in an `infoAssessment.json`, then you **must not change the UUID**. This is because PrairieLearn uses the UUID to know that it's still the same assessment and you just want to make a change to it. If you do inadvertently change the UUID in this way, changing it back will revert everything to the way it was with no data loss.
 
 * **Renaming a directory: no new UUID needed.** For example if you rename a question or assessment directory, then you should leave the UUID the same, so that PrairieLearn will know that this is the same object but just with a new name.
 
