@@ -32,6 +32,8 @@ PrairieLearn presently provides the following templated **input field** elements
   a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
   programming language format.
+- [`pl-rich-text-editor`](#pl-rich-text-editor-element): Provide an in-browser formattable text editor
+  for writing and submitting code.
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -780,6 +782,42 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
 - [`pl-number-input` for a single numeric input](#pl-number-input)
 - [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+
+-----
+
+### `pl-rich-text-editor` element
+
+Provides an in-browser rich text editor, aimed mostly at manual grading essay-type questions. This editor is based on the [Quill rich text editor](https://quilljs.com/).
+
+#### Sample element
+
+![](elements/pl-rich-text-editor.png)
+
+```html
+<pl-rich-text-editor
+  file-name="answer.html">
+</pl-rich-text-editor>
+```
+
+#### Customizations
+
+Attribute | Type | Default | description
+--- | --- | --- | ---
+`file-name` | string | - | The name of the output file; will be used to store the student's answer in the `_files` submitted answer
+`quill-theme` | string | `snow` | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.
+`source-file-name` | string | None | Name of the source file with existing HTML content to be displayed in the editor.
+`directory` | string | special | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory.
+`placeholder` | string | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.
+
+#### Example implementations
+
+- [element/richTextEditor]
+
+#### See also
+
+- [`pl-file-editor` to edit unformatted text, such as code](#pl-file-editor-element)
+- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
 -----
 
