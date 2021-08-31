@@ -31,7 +31,16 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
-    if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
+
+    // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
+    // only for an assessment instance, not an assessment).
+    //
+    // The assessment that is created here will be owned by the effective user. The only
+    // reason to worry, therefore, is if the effective user has a different UID than the
+    // authn user. This is only allowed, however, if the authn user has permission to edit
+    // student data in the course instance (which has already been checked), exactly the
+    // permission required to create an assessment for the effective user.
+
     if (req.body.__action == 'new_instance') {
         assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.req_date, (err, assessment_instance_id) => {
             if (ERR(err, next)) return;
