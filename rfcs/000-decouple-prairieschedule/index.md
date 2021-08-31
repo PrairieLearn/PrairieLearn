@@ -473,6 +473,7 @@ variants
 
 ### `assessment_access_rules`
 
+Used in `lib/plps-utilities.sql`.
 
 ### `assessment_questions`
 
