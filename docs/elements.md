@@ -62,6 +62,7 @@ images, files, and code display. The following **decorative** elements are avail
   collection of graphic objects
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
+- [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1614,6 +1615,42 @@ Attribute | Type | Default | Description
 - [demo/autograder/python/pandas]
 - [demo/autograder/python/plots]
 - [demo/autograder/python/random]
+
+### `pl-xss-safe` element
+
+Removes potentially dangerous scripts from HTML. This is recommended when parsing and displaying student-provided content. The element will remove some elements like scripts and triggers that may have been maliciously inserted by the student. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
+
+#### Sample element
+
+```html
+<!-- Content coming from a submitted file (e.g., pl-file-editor, pl-file-upload) -->
+<pl-xss-safe submitted-file-name="answer.html"></pl-xss-safe>
+
+<!-- Content coming from a regular element (e.g., pl-string-input) -->
+<pl-xss-safe contents="{{submitted_answers.answer}}"></pl-xss-safe>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`source-file-name` | string | - | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet).
+`submitted-file-name` | string | - | Name of the file submitted by the user to (typically using a `pl-file-editor` or `pl-file-upload` element) with the code to be used.
+`contents` | string | - | Raw contents to be displayed.
+`language` | string | html | Language of the provided code. The values "html" or "markdown" are currently supported.
+
+Note that only one of the attributes `source-file-name`, `submitted-file-name` or `contents` may be provided in the same element.
+
+#### Example implementations
+
+- [demo/markdownEditorLivePreview]
+- [element/xssSafe]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+-----
 
 ## Conditional Elements
 
