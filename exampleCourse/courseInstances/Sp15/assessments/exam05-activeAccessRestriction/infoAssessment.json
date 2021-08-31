@@ -6,10 +6,6 @@
     "number": "5",
     "allowAccess": [
         {
-            "role": "TA",
-            "credit": 100
-        },
-        {
             "mode": "Public",
             "endDate": "1999-12-31T23:59:59",
             "active": false,

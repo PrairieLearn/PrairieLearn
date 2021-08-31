@@ -19,14 +19,15 @@ SELECT
         ELSE floor(extract(epoch from (ai.date_limit - ai.date)) * 1000)
     END AS assessment_instance_time_limit_ms,
     to_jsonb(u) AS instance_user,
-    coalesce(to_jsonb(e), '{}'::jsonb) AS instance_enrollment,
+    users_get_displayed_role(u.user_id, ci.id) AS instance_role,
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
     to_jsonb(aai) AS authz_result,
     assessment_instance_label(ai, a, aset) AS assessment_instance_label,
     assessment_label(a, aset) AS assessment_label,
     fl.list AS file_list,
-    to_jsonb(g) AS group
+    to_jsonb(g) AS instance_group,
+    groups_uid_list(g.id) AS instance_group_uid_list
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -34,9 +35,7 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
-    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-    LEFT JOIN users AS u ON (u.user_id = gu.user_id OR u.user_id = ai.user_id)
-    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+    LEFT JOIN users AS u ON (u.user_id = ai.user_id) -- Only used for non-group instances
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
     CROSS JOIN file_list AS fl
 WHERE

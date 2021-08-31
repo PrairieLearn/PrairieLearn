@@ -128,7 +128,7 @@
       }
 
       function genericFilterSearch(search, value) {
-          return $('<div>').html(value).find('.formatter-data').text().includes(search);
+          return $('<div>').html(value).find('.formatter-data').text().toUpperCase().includes(search.toUpperCase());
       }
 
       function badgeFilterSearch(search, value) {
@@ -138,7 +138,7 @@
           return !!values;
       }
       
-      //<% locals.course_instances.forEach(course_instance => { %>
+      //<% (authz_data.course_instances || []).forEach(course_instance => { %>
       function assessments<%= course_instance.id %>List() {
           return assessmentsByCourseInstanceList(<%= course_instance.id %>);
       }
@@ -154,6 +154,7 @@
           position: sticky;
           left: 0;
           background: white;
+          background-clip: padding-box;
           box-shadow: inset -1px 0 #dee2e6;
       }
       .table-hover tbody tr:hover td.sticky-column {
@@ -245,7 +246,7 @@
                   data-filter-custom-search="badgeFilterSearch"
                   data-visible="<%= has_legacy_questions %>"
                   data-switchable="true">Version</th>
-              <% locals.course_instances.forEach(course_instance => { %>
+              <% (authz_data.course_instances || []).forEach(course_instance => { %>
               <th data-field="assessments_<%= course_instance.id %>"
                   data-class="align-middle text-nowrap"
                   data-formatter="assessments<%= course_instance.id %>Formatter"

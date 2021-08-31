@@ -1,7 +1,8 @@
 -- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
-    u.user_id, u.uid, u.name, coalesce(e.role, 'None'::enum_role) AS role,
+    u.user_id, u.uid, u.name,
+    users_get_displayed_role(u.user_id, ci.id) AS role,
     gi.id AS group_id, gi.name AS group_name, gi.uid_list,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
@@ -47,11 +48,10 @@ FROM
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     LEFT JOIN group_info($assessment_id) AS gi ON (gi.id = ai.group_id)
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC, u.uid, u.user_id, ai.number, ai.id;
+    u.uid, u.user_id, ai.number, ai.id;
 
 -- BLOCK set_time_limit
 WITH results AS (
