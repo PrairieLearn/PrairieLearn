@@ -84,7 +84,7 @@
               <th>Assessments</th>
               <td><% if (locals.assessments) { %><%- include('../partials/assessments', {assessments: assessments}); %><% } %></td>
             </tr>
-            <% if (question.type == 'Freeform' && !question.grading_method_external) && authz_data.has_course_permission_view) { %>
+            <% if (question.type == 'Freeform' && !question.grading_method_external && authz_data.has_course_permission_view) { %>
             <tr>
               <th class="align-middle">Tests</th>
               <td>
