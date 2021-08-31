@@ -28,6 +28,8 @@ PrairieLearn presently provides the following templated **input field** elements
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
+- [`pl-matching`](#pl-matching-element): Select a matching option for each entry in 
+  a group.
 - [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
   a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
@@ -62,6 +64,7 @@ images, files, and code display. The following **decorative** elements are avail
   collection of graphic objects
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
+- [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -644,6 +647,63 @@ Attribute | Type | Default | Description
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-number-input` for numeric input](#pl-number-input-element)
+
+-----
+
+### `pl-matching` element
+
+Given a list of statements, select a matching option for each entry from a drop-down list.
+
+#### Sample element
+
+![](elements/pl-matching.png)
+
+**question.html**
+```html
+<pl-matching answers-name="string_value">
+  <pl-statement match="Washington, D.C.">United States</pl-statement>
+  <pl-statement match="Mexico City">Mexico</pl-statement>
+  <pl-statement match="Paris">France</pl-statement>
+
+  <pl-option>New York City</pl-option>
+</pl-matching>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`fixed-order` | boolean | False | Whether or not to display the statements in a fixed order; otherwise they are shuffled. Options are always shuffled.
+`number-statements` | integer | special | The number of statements to display. Defaults to all statements.
+`number-options` | integer | special | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.
+`none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.
+`blank` | boolean | True | Option to add blank dropdown entry as the default selection in each drop-down list.
+`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters.
+`hide-score-badge` | boolean | false | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.
+
+Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
+
+A total of `number-statements` statements will be randomly selected and displayed to the student. The corresponding matching options will be gathered; if `number-options` is larger than the number of options used by the selected statements, then random distractors will be selected from the remaining unused options. If the selected statements require more options than `number-options`, then `none-of-the-above` will automatically be set to true.
+
+The content of a `pl-statement` can be any HTML element, including other PrairieLearn elements. A `pl-statement` must be specified with these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`match` | string | — | Identifies the option as the correct response for this `pl-statement`. If `match` corresponds to the `name` of any `pl-option` element, the statement will be linked to that `pl-option`, otherwise a new option is implicitly created based on this `match` value.
+
+The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
+
+A `pl-option` must be specified with these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`name` | string | special | A key used to match this option as the correct response to a `pl-statement`. If not given, the attribute is set to the inner HTML of the `pl-option`.
+
+#### Example implementations
+
+* [element/matching]
 
 -----
 
@@ -1618,6 +1678,42 @@ Attribute | Type | Default | Description
 - [demo/autograder/python/plots]
 - [demo/autograder/python/random]
 
+### `pl-xss-safe` element
+
+Removes potentially dangerous scripts from HTML. This is recommended when parsing and displaying student-provided content. The element will remove some elements like scripts and triggers that may have been maliciously inserted by the student. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
+
+#### Sample element
+
+```html
+<!-- Content coming from a submitted file (e.g., pl-file-editor, pl-file-upload) -->
+<pl-xss-safe submitted-file-name="answer.html"></pl-xss-safe>
+
+<!-- Content coming from a regular element (e.g., pl-string-input) -->
+<pl-xss-safe contents="{{submitted_answers.answer}}"></pl-xss-safe>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`source-file-name` | string | - | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet).
+`submitted-file-name` | string | - | Name of the file submitted by the user to (typically using a `pl-file-editor` or `pl-file-upload` element) with the code to be used.
+`contents` | string | - | Raw contents to be displayed.
+`language` | string | html | Language of the provided code. The values "html" or "markdown" are currently supported.
+
+Note that only one of the attributes `source-file-name`, `submitted-file-name` or `contents` may be provided in the same element.
+
+#### Example implementations
+
+- [demo/markdownEditorLivePreview]
+- [element/xssSafe]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+-----
+
 ## Conditional Elements
 
 ### `pl-question-panel` element
@@ -1895,6 +1991,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
 [element/integerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/integerInput
 [element/markdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/markdown
+[element/matching]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matching
 [element/matrixComponentInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixComponentInput
 [element/matrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
 [element/multipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
