@@ -68,20 +68,28 @@
 {{/parse_error}}
 {{^parse_error}}
 
-{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{answer.html}}}
+<div class="d-inline-flex align-items-center">
+    {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{answer.html}}}
 
-{{#display_score_badge}}
-    &nbsp;
-    {{#correct}}
-        <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
-    {{/correct}}
-    {{#incorrect}}
-        <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
-    {{/incorrect}}
-    {{#partial}}
-        <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
-    {{/partial}}
-{{/display_score_badge}}
+    {{#display_feedback}}
+        <div class="pl-multiple-choice-feedback">
+            {{{feedback}}}
+        </div>
+    {{/display_feedback}}
+
+    {{#display_score_badge}}
+        &nbsp;
+        {{#correct}}
+            <span class="badge badge-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+        {{/correct}}
+        {{#incorrect}}
+            <span class="badge badge-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
+        {{/incorrect}}
+        {{#partial}}
+            <span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
+        {{/partial}}
+    {{/display_score_badge}}
+</div>
     
 {{/parse_error}}
 {{/submission}}

@@ -276,6 +276,7 @@ def render(element_html, data):
             html_params['answer'] = submitted_answer
 
             partial_score = data['partial_scores'].get(name, {'score': None})
+            feedback = partial_score.get('feedback', None)
             score = partial_score.get('score', None)
             if score is not None:
                 html_params['display_score_badge'] = True
@@ -289,6 +290,8 @@ def render(element_html, data):
                         html_params['incorrect'] = True
                 except Exception:
                     raise ValueError('invalid score' + score)
+            html_params['display_feedback'] = feedback is not None
+            html_params['feedback'] = feedback
 
         with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
