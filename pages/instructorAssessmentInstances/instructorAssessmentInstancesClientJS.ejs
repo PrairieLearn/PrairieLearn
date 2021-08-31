@@ -52,7 +52,15 @@ $(function() {
             
         },
     });
-    
+
+    $(document).keydown(event => {
+        if ((event.ctrlKey || event.metaKey) &&
+            String.fromCharCode(event.which).toLowerCase() == 'f') {
+            $('.fixed-table-toolbar .search input').focus();
+            event.preventDefault();
+        }
+    });
+
     $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
         var button = $(event.relatedTarget); // Button that triggered the modal
         var uid = button.data('uid'); // Extract info from data-* attributes
@@ -195,11 +203,12 @@ function scorebarFormatter(score, row) {
 
 function listFormatter(list, row) {
 
+    if (!list || !list[0]) list = ['(empty)'];
     return '<small>' + list.join(', ') + '</small>';
 }
 
 function timeRemainingLimitFormatter(value, row) {
-    //<% if (authz_data.has_instructor_edit) { %>
+    //<% if (authz_data.has_course_instance_permission_edit) { %>
     var container = $('<span>');
     var link = $('<a>')
         .addClass('btn btn-secondary btn-xs ml-1 time-limit-edit-button')
@@ -281,7 +290,7 @@ function actionButtonFormatter(_value, row, index) {
         .addClass('dropdown-menu')
         .attr('onclick', 'window.event.preventDefault()')
         .appendTo(dropdown);
-    //<% if (authz_data.has_instructor_edit) { %>
+    //<% if (authz_data.has_course_instance_permission_edit) { %>
     $('<a>')
         .addClass('dropdown-item')
         .attr('role', 'button')
@@ -324,7 +333,7 @@ function actionButtonFormatter(_value, row, index) {
         .addClass('dropdown-item disabled')
         .attr('role', 'button')
         .attr('tabindex', '0')
-        .append('Must have instructor permission')
+        .append('Must have editor permission')
         .appendTo(menu);
 
     //<% } %>
@@ -389,7 +398,3 @@ function updateTotals(data) {
     $('.time-limit-edit-all-button').data('row', time_limit_totals);
 }
 
-function roleSorter(roleA, roleB) {
-    const roles = ['Instructor', 'TA', 'Student', 'None'];
-    return roles.indexOf(roleA) - roles.indexOf(roleB);
-}

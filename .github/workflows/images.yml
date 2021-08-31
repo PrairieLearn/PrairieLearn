@@ -34,6 +34,7 @@ jobs:
           context: images/plbase
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/plbase:latest
 
       ######################################################################################################
@@ -42,8 +43,9 @@ jobs:
         uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
+          no-cache: true
           tags: prairielearn/prairielearn:latest
 
       ######################################################################################################
@@ -57,6 +59,7 @@ jobs:
           context: graders/c
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/grader-c:latest
 
       ######################################################################################################
@@ -70,6 +73,7 @@ jobs:
           context: graders/java
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/grader-java:latest
 
       ######################################################################################################
@@ -83,6 +87,7 @@ jobs:
           context: graders/python
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/grader-python:latest
 
       ######################################################################################################
@@ -96,6 +101,7 @@ jobs:
           context: graders/r
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/grader-r:latest
 
       ######################################################################################################
@@ -109,6 +115,7 @@ jobs:
           context: workspaces/jupyterlab
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/workspace-jupyterlab:latest
 
       ######################################################################################################
@@ -122,4 +129,43 @@ jobs:
           context: workspaces/xtermjs
           platforms: linux/amd64,linux/arm64
           push: true
+          no-cache: true
           tags: prairielearn/workspace-xtermjs:latest
+
+
+      ######################################################################################################
+      ######################################################################################################
+      ######################################################################################################
+      ######################################################################################################
+      #
+      # ARM64
+      #
+      # We should be able to use `platforms: linux/amd64,linux/arm64`
+      # above to build all images on both platforms simultaneously,
+      # but the arm64 builds with postgres are currently not reliable
+      # on GitHub Actions. This seems to be because we are using qemu
+      # on x86 build hosts to build the arm64 images. A similar issue
+      # with postgis:
+      # https://github.com/postgis/docker-postgis/issues/216
+      #
+      # Note that we have also set `continue-on-error: true` for the
+      # separate arm64 builds. If these become reliable in the future
+      # then we should remove this.
+      #
+      ######################################################################################################
+      ######################################################################################################
+      ######################################################################################################
+      ######################################################################################################
+
+
+      ######################################################################################################
+      # prairielearn
+      - name: Build and push prairielearn/prairielearn
+        uses: docker/build-push-action@v2 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          no-cache: true
+          tags: prairielearn/prairielearn:arm
+        continue-on-error: true
