@@ -1,3 +1,7 @@
+2021-08-31  Dirk Eddelbuettel  <edd@debian.org>
+
+	* NAMESPACE: Also export message_to_test_result
+
 2021-08-17  Dirk Eddelbuettel  <edd@debian.org>
 
 	* DESCRIPTION (Date, Version): Roll minor version

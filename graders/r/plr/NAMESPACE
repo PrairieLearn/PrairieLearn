@@ -5,4 +5,5 @@ export("source_and_eval_safe",
        "eval_safe_as",
        "source_and_eval_safe_with_hiding",
        "get_question_details",
-       "test_question")
+       "test_question",
+       "message_to_test_result")
