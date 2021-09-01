@@ -51,7 +51,7 @@ allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
 
 If multiple access rules are satisfied then the highest `credit` value is taken from them. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
 
-Access rules can also contain the deprecated `role` property. This is now ignored and has no effect. Any access rules containing a `role` of `TA` or `Instructor` should be deleted. Course staff are now managed on the ["Staff" tab](course.md/#course-staff).
+Access rules can also contain the deprecated `role` property. This is now ignored and has no effect. Any access rules containing a `role` of `TA` or `Instructor` should be deleted. Course staff are now managed on the ["Staff" tab](course.md#course-staff).
 
 ## Dates
 
