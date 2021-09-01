@@ -10,7 +10,7 @@
         "ajv": "^7.1.1",
         "ansi_up": "^5.0.1",
         "archiver": "^5.3.0",
-        "async": "^3.2.0",
+        "async": "^3.2.1",
         "async-stacktrace": "0.0.2",
         "aws-sdk": "^2.958.0",
         "backbone": "^1.4.0",
