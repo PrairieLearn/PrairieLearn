@@ -1,7 +1,7 @@
 
 # Access control to course instances and assessments
 
-By default, course instances and assessments are only accessible to [course staff](course.md/#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
+By default, course instances and assessments are only accessible to [course staff](course.md#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
 
 ## Two level of access control for assessments
 
