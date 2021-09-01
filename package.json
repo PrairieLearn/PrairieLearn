@@ -4,7 +4,7 @@
     "version": "3.2.0",
     "private": true,
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^5.15.3",
+        "@fortawesome/fontawesome-free": "^5.15.4",
         "@octokit/rest": "^18.7.2",
         "ace-builds": "^1.4.12",
         "ajv": "^7.1.1",
