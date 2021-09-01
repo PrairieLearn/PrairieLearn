@@ -228,7 +228,7 @@ describe('Grading method(s)', function() {
                     );
                     assert.equal(gradeRes.status, 500);
                     questionsPage = await gradeRes.text();
-                    assert.include(questionsPage, 'Questions configured for ONLY manual grading cannot be automatically graded. Disable grade button.')
+                    assert.include(questionsPage, 'Questions configured for ONLY manual grading cannot be automatically graded. Disable grade button.');
                 });
                 it('should NOT result in any grading jobs', async () => {
                     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
