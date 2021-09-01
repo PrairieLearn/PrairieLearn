@@ -26,6 +26,7 @@ require('./testInstructorAssessmentDownloads');
 require('./testHomework');
 require('./testExam');
 require('./testManualGrading');
+require('./testGradingMethods');
 require('./testRealTimeGradingDisabled');
 require('./testShowClosedAssessment');
 require('./testShowClosedAssessmentScore');

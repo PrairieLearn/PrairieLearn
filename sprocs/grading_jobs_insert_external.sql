@@ -28,9 +28,12 @@ BEGIN
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE s.id = arg_submission_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', arg_submission_id; END IF;
-    IF arg_grading_method != 'External' AND grading_method_external != True THEN
-        RAISE EXCEPTION 'grading_method is not External for submission_id: %', arg_submission_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such submission: %', arg_submission_id; END IF;
+
+    IF arg_grading_method = 'External' AND grading_method_external != True THEN
+        RAISE EXCEPTION 'arg_grading_method is not External for submission: %', arg_submission_id;
+    ELSIF arg_grading_method = 'Manual' AND grading_method_manual != True THEN
+        RAISE EXCEPTION 'arg_grading_method is not Manual for submission: %', arg_submission_id;
     END IF;
 
     -- ######################################################################

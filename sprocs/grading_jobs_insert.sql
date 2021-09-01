@@ -40,6 +40,10 @@ BEGIN
     IF grading_method_internal = False AND grading_method_external = False AND grading_method_manual = False THEN
         RAISE EXCEPTION 'all grading methods set to false: (internal %s, external %s, manual %s)', grading_method_internal, grading_method_external, grading_method_manual;
     END IF;
+
+    IF grading_method_internal = False AND grading_method_external = False AND grading_method_manual = True THEN
+        RAISE EXCEPTION 'Questions configured for ONLY manual grading cannot be automatically graded. Disable grade button.';
+    END IF;
         
     -- delegate internal grading job ()
     IF grading_method_internal = True THEN
@@ -54,7 +58,7 @@ BEGIN
         RETURN NEXT grading_jobs_insert_external(submission_id, authn_user_id, 'External');
     END IF;
 
-    -- delegate should do nothing here; wait for manual grading actor to create manual grading job in instance_questions_manually_grade_submission.sql
+    -- delegate should do nothing here; wait for manual grading action through endpoint
     IF grading_method_manual = True THEN
         RETURN;
     END IF;

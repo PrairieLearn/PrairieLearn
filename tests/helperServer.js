@@ -22,12 +22,20 @@ const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
+const externalGrader = require('../lib/externalGrader');
+const externalGraderResults = require('../lib/externalGraderResults');
+const externalGradingSocket = require('../lib/externalGradingSocket');
+const assessment = require('../lib/assessment');
+
+
 config.startServer = false;
 config.serverPort = 3007;
 const server = require('../server');
 
 const logger = require('./dummyLogger');
 const helperDb = require('./helperDb');
+
+let _server;
 
 const courseDirDefault = path.join(__dirname, '..', 'testCourse');
 
@@ -93,16 +101,13 @@ module.exports = {
                     workers.init();
                     callback(null);
                 },
-                function(callback) {
-                    debug('before(): start server');
-                    server.startServer(function(err) {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
+                async () => {
+                    logger.verbose('Starting server...');
+                    _server = await server.startServerAsync();
                 },
                 function(callback) {
                     debug('before(): initialize socket server');
-                    socketServer.init(server, function(err) {
+                    socketServer.init(_server, function(err) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
@@ -124,6 +129,25 @@ module.exports = {
                 function(callback) {
                     debug('before(): initialize freeform server');
                     freeformServer.init(function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                },
+                function(callback) {
+                    externalGrader.init(assessment, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                },
+                function(callback) {
+                    if (!config.externalGradingEnableResults) return callback(null);
+                    externalGraderResults.init((err) => {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                },
+                function(callback) {
+                    externalGradingSocket.init(function(err) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
