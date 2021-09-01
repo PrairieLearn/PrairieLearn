@@ -56,80 +56,10 @@
             <p class="text-center">
               * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
            </p>
+           <%- include('../shared/groupRoleSelectTable.ejs'); %>
            <% } %>
         <% } %>
         </div>
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th scope="col">Select Role</th>
-              <th scope="col">Manager</th>
-              <th scope="col">Recorder</th>
-              <th scope="col">Reflector</th>
-              <th scope="col">Contributor</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                Mariana
-              </td>
-              <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="manager1">
-                    <label class="custom-control-label" for="manager1">&nbsp;</label>
-                </div>
-              </td>
-              <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="recorder1">
-                    <label class="custom-control-label" for="recorder1">&nbsp;</label>
-                </div>
-              </td>
-              <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="reflector1">
-                    <label class="custom-control-label" for="reflector1">&nbsp;</label>
-                </div>
-              </td>
-              <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="contributor1">
-                    <label class="custom-control-label" for="contributor1">&nbsp;</label>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                Geoffrey
-              </td>
-              <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="manager2">
-                    <label class="custom-control-label" for="manager2">&nbsp;</label>
-                </div>
-              </td>
-              <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="recorder2">
-                    <label class="custom-control-label" for="recorder2">&nbsp;</label>
-                </div>
-              </td>
-              <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="reflector2">
-                    <label class="custom-control-label" for="reflector2">&nbsp;</label>
-                </div>
-              </td>
-              <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input" id="contributor2">
-                    <label class="custom-control-label" for="contributor2">&nbsp;</label>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   </body>
