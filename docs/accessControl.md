@@ -1,7 +1,7 @@
 
 # Access control to course instances and assessments
 
-By default, course instances and assessments are only accessible to [course staff](course/#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
+By default, course instances and assessments are only accessible to [course staff](course.md/#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
 
 ## Two level of access control for assessments
 
@@ -51,7 +51,7 @@ allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
 
 If multiple access rules are satisfied then the highest `credit` value is taken from them. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
 
-Access rules can also contain the deprecated `role` property. This is now ignored and has no effect. Any access rules containing a `role` of `TA` or `Instructor` should be deleted. Course staff are now managed on the ["Staff" tab](course/#course-staff).
+Access rules can also contain the deprecated `role` property. This is now ignored and has no effect. Any access rules containing a `role` of `TA` or `Instructor` should be deleted. Course staff are now managed on the ["Staff" tab](course.md/#course-staff).
 
 ## Dates
 
