@@ -13,10 +13,6 @@ If you are using the CBTF for remote proctoring then the access control should l
 ```json
 "allowAccess": [
     {
-        "role": "TA",
-        "credit": 100
-    },
-    {
         "mode": "Exam",
         "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
         "credit": 100
@@ -35,10 +31,6 @@ Sometimes exams in the CBTF ([see above](#exams-in-the-computer-based-testing-fa
 
 ```json
 "allowAccess": [
-    {
-        "role": "TA",
-        "credit": 100
-    },
     {
         "mode": "Exam",
         "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
@@ -75,10 +67,6 @@ This configuration is good when:
 
 ```json
 "allowAccess": [
-    {
-        "role": "TA",
-        "credit": 100
-    },
     {
         "uids": ["student1@illinois.edu", "student2@illinois.edu"],
         "mode": "Public",
@@ -132,10 +120,6 @@ This configuration is good when:
 ```json
 "allowAccess": [
     {
-        "role": "TA",
-        "credit": 100
-    },
-    {
         "uids": ["student1@illinois.edu", "student2@illinois.edu"],
         "mode": "Public",
         "credit": 100,
@@ -174,10 +158,6 @@ This configuration is good when:
 ```json
 "allowRealTimeGrading": false,
 "allowAccess": [
-    {
-        "role": "TA",
-        "credit": 100
-    },
     {
         "uids": ["student1@illinois.edu", "student2@illinois.edu"],
         "mode": "Public",

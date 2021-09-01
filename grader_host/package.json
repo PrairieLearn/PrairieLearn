@@ -3,11 +3,6 @@
   "version": "0.0.3",
   "description": "PrairieLearn's grading agent",
   "main": "index.js",
-  "scripts": {
-    "test": "NODE_ENV=test jest",
-    "lint": "eslint --ext js \"**/*.js\"",
-    "start": "node index.js"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/PrairieLearn/PrairieGrader.git"
@@ -23,7 +18,7 @@
     "ajv": "8.6.2",
     "async": "3.2.0",
     "async-stacktrace": "0.0.2",
-    "aws-sdk": "2.952.0",
+    "aws-sdk": "2.958.0",
     "byline": "5.0.0",
     "dockerode": "3.3.0",
     "fs-extra": "10.0.0",
@@ -34,7 +29,7 @@
     "winston-aws-cloudwatch": "3.0.0"
   },
   "devDependencies": {
-    "eslint": "7.31.0",
+    "eslint": "7.32.0",
     "jest": "27.0.6"
   }
 }

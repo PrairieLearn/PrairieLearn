@@ -1,14 +1,16 @@
 
 # Installing natively
 
-This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS. This installation method is tested and supported on MacOS and Linux, but not on Windows. It should also work on Windows, but it is not tested.
+*WARNING:* The recommended setup for PrairieLearn development is [within Docker](installingLocal.md). The setup described on this page is not recommended or supported.
+
+This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS.
 
 * Install the pre-requisites:
 
-    * [Node.js](http://nodejs.org/) version  or higher
+    * [Node.js](http://nodejs.org/)
     * [npm](https://npmjs.org/) (included with Node.js on Windows)
-    * [PostgreSQL](https://www.postgresql.org) version 9.6 or higher
-    * [Python 3](https://www.python.org) version 3.6 or higher
+    * [PostgreSQL](https://www.postgresql.org)
+    * [Python 3](https://www.python.org)
     * command-line git or [GitHub Desktop](https://desktop.github.com)
 
 On OS X these can be installed with [MacPorts](http://www.macports.org/) or [Homebrew](http://brew.sh/). On Linux these should all be standard packages from the OS distrbution.
@@ -77,7 +79,7 @@ psql -c "ALTER USER postgres WITH SUPERUSER;"
 
 ```sh
 cd PrairieLearn
-npm test
+make test
 ```
 
 * Run the linters:

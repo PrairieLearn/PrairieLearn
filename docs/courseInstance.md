@@ -44,11 +44,6 @@ This file specifies basic information about the course instance:
     "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
     "shortName": "Sp15",
     "longName": "Spring 2015",
-    "userRoles": {
-        "mwest@illinois.edu": "Instructor",
-        "zilles@illinois.edu": "TA",
-        "mussulma@illinois.edu": "TA"
-    },
     "allowAccess": [
         {
             "startDate": "2015-01-19T00:00:01",
@@ -62,25 +57,11 @@ This file specifies basic information about the course instance:
 
 * [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourseInstance.json)
 
-## User roles
-
-Each user has a single role assigned to them. These are:
-
-Role         | Description
----          | ---
-`None`       | A user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.
-`Student`    | A student participating in the class. They can only see their own information, and can do assessments. Default permission.
-`TA`         | A teaching assistant. They can see the data of all users, but can only edit their own information.
-`Instructor` | A person in charge of the course. They have full permission to see and edit the information of other users.
-
-By default, any user not explicitly mentioned in the `userRoles` list will
-be considered as a `Student`.
-
 ## Course instance `allowAccess`
 
 See [Access control](accessControl.md) for details.
 
-The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Instructors always have access. The simplest case gives everyone access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
+The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
 ```json
     "allowAccess": [
@@ -145,8 +126,6 @@ An LTI credential consists of 3 parts:
 A single LMS course should use the same credential. If multiple courses need to link into the course instance, multiple LTI credentials can be created.
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
-
-Access roles inside the LMS (Instructor, TA, student) will be mapped to roles inside PrairieLearn. (Example: Instructors in the LMS will be given course instance instructor level access in PrairieLearn independent of the `infoCourseInstance.json`  `userRoles` described above.
 
 It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](accessControl.md) for more details.
 
