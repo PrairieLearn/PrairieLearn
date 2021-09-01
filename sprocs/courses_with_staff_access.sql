@@ -9,7 +9,7 @@ BEGIN
     -- returns a list of courses that are either example courses or are courses
     -- in which the user has a non-None course role
     SELECT
-        jsonb_agg((SELECT x FROM (SELECT c.*, permissions_course ORDER BY c.short_name, c.title, c.id) AS x))
+        jsonb_agg(to_jsonb(c) || jsonb_build_object('permissions_course', permissions_course) ORDER BY c.short_name, c.title, c.id)
     INTO
         courses
     FROM
