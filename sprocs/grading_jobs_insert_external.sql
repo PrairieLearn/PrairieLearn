@@ -32,8 +32,6 @@ BEGIN
 
     IF arg_grading_method = 'External' AND grading_method_external != True THEN
         RAISE EXCEPTION 'arg_grading_method is not External for submission: %', arg_submission_id;
-    ELSIF arg_grading_method = 'Manual' AND grading_method_manual != True THEN
-        RAISE EXCEPTION 'arg_grading_method is not Manual for submission: %', arg_submission_id;
     END IF;
 
     -- ######################################################################
