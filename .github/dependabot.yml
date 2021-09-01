@@ -38,42 +38,42 @@ updates:
 - package-ecosystem: npm
   directory: "/grader_host"
   schedule:
-    interval: daily
+    interval: monthly
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
 - package-ecosystem: npm
   directory: "/prairielib"
   schedule:
-    interval: daily
+    interval: monthly
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
 - package-ecosystem: docker
   directory: "/images/plbase"
   schedule:
-    interval: daily
+    interval: monthly
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
 - package-ecosystem: pip
   directory: "/images/plbase"
   schedule:
-    interval: daily
+    interval: monthly
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
 - package-ecosystem: docker
   directory: "/workspaces/jupyterlab"
   schedule:
-    interval: daily
+    interval: monthly
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
 - package-ecosystem: docker
   directory: "/workspaces/xtermjs"
   schedule:
-    interval: daily
+    interval: monthly
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99

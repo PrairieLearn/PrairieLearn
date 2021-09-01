@@ -34,16 +34,6 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 "longName": "Fall 2020, Section M"
 ```
 
-* in `userRoles`, you can add instructors and teaching assistants (or you can check other [user roles](courseInstance.md#user-roles)). For example:
-
-```json
-"userRoles": {
-    "lecturer1@illinois.edu": "Instructor",
-    "ta1@illinois.edu": "TA",
-    "ta2@illinois.edu": "TA"
-}
-```
-
 * in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#course-instance-allowaccess)). For example:
 
 ```json

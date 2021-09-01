@@ -28,10 +28,14 @@ PrairieLearn presently provides the following templated **input field** elements
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
+- [`pl-matching`](#pl-matching-element): Select a matching option for each entry in 
+  a group.
 - [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
   a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
   programming language format.
+- [`pl-rich-text-editor`](#pl-rich-text-editor-element): Provide an in-browser formattable text editor
+  for writing and submitting code.
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -60,6 +64,7 @@ images, files, and code display. The following **decorative** elements are avail
   collection of graphic objects
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
+- [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -119,6 +124,8 @@ Attribute | Type | Default | Description
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `all-of-the-above` | boolean | false | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`.
 `none-of-the-above` | boolean | false | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.
+`all-of-the-above-feedback` | string | — | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.
+`none-of-the-above-feedback` | string | — | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.
 `external-json` | string | special | Optional path to a JSON file to load external answer choices from.  Answer choices are stored as lists under "correct" and "incorrect" key names.
 `external-json-correct-key` | string | special | Optionally override default json "correct" attribute name when using `external-json` file.
 `external-json-incorrect-key` | string | special | Optionally override default json "incorrect" attribute name when using `external-json` file.
@@ -129,6 +136,7 @@ a `pl-answer` that has attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
+`feedback` | string | — | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student.
 
 #### Example implementations
 
@@ -171,12 +179,15 @@ Attribute | Type | Default | Description
 `max-correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 `partial-credit` | boolean | false | Enable partial credit scores. By default, the choice of grading method is "all-or-nothing".
-`partial-credit-method` | string | 'PC' | Two grading methods for partial credit: 'EDC' (Every Decision Counts) and 'PC' (Percent Correct). See explanation below.
-`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
-`detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
+`partial-credit-method` | string | 'PC' | Three grading methods for partial credit: 'COV' (Coverage), 'EDC' (Every Decision Counts), and 'PC' (Percent Correct). See explanation below.
+`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'COV', 'EDC' or 'PC')
+`detailed-help-text` | boolean | false | Display the minimum and maximum number of options that can be selected in a valid submission. See explanation below.
 `hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `hide-score-badge` | boolean | false | Hide badges next to selected answers.
+`min-select` | integer | special | The minimum number of answers that must be selected in any valid submission. Defaults to `min-correct` if that attribute is specified along with `detailed-help-text="true"`; otherwise, defaults to 1.
+`max-select` | integer | special | The maximum number of answers that can be selected in any valid submission. Defaults to `max-correct` if that attribute is specified along with `detailed-help-text="true"`; otherwise, defaults to the number of displayed answers.
+`show-number-correct` | boolean | false | Display the number of correct choices in the help text.
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -185,13 +196,37 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-#### Details
+#### Partial credit grading
 
-Two grading methods are available when using `partial-credit="true"`:
+Three grading methods are available when using `partial-credit="true"`:
+
+* `'COV'` (Coverage): in this method, the final score is calculated by multiplying the **base score** (the proportion of correct answers that are chosen) with 
+the **guessing factor** (the proportion of chosen answers that are correct). Specifically, if `t` is the number of correct answers chosen, `c` is the total number
+of correct answers, and `n` is the total number of answers chosen, then the final score is `(t / c) * (t / n)`. This grading scheme rewards submissions that include (i.e. "cover") all true options.
 
 * `'EDC'` (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
 
 * `'PC'` (Percent Correct): in this method, 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
+
+#### Using the `detailed-help-text` attribute
+
+The `detailed-help-text` attribute can be used with `min-correct` and/or `max-correct` to help students select the correct options. If `min-select` is not specified, then setting `detailed-help-text="true"` ensures that the number of selected options in a valid submission is at least the value of `min-correct`. Similarly, if `max-select` is not specified, then setting `detailed-help-text="true"` ensures that the number of selected options in a valid submission is at most the value of `max-correct`. For example, if a checkbox question does not specify `min-select` or `max-select`, and specifies `min-correct="2"`, `max-correct="4"`, and `detailed-help-text="true"`, then all valid submissions must select between 2 and 4 options. Thus, we help students by preventing them from selecting, say, five options. Indeed, if five options are selected, then at least one selected option is incorrect since there are at most four correct options.
+
+Note that explicitly specifying `min-select` overrides the minimum number of options that must be selected, and similarly, explicitly specifying `max-select` overrides the maximum number of options that can be selected.
+
+#### Restricting the number of options that can be selected
+
+The `min-select` and `max-select` attributes determine the minimum and maximum number of options that can be selected in a valid submission. The value of `min-select` is computed using the following steps:
+
+1. If the `min-select` attribute is explicitly set, then we use the specified value of `min-select`.
+2. If `min-select` is not specified, but `min-correct` is specified along with `detailed-help-text="true"`, then we use the specified value of `min-correct`.
+3. If steps 1 and 2 do not apply, then we use a default value of 1.
+
+To compute `max-select`, we use a similar algorithm (note the different default value in step 3):
+
+1. If the `max-select` attribute is explicitly set, then we use the specified value of `max-select`.
+2. If `max-select` is not specified, but `max-correct` is specified along with `detailed-help-text="true"`, then we use the specified value of `min-correct`.
+3. If steps 1 and 2 do not apply, then `max-select` defaults to the number of displayed checkbox options (i.e. students can select all displayed options by default).
 
 #### Example implementations
 
@@ -388,16 +423,18 @@ Attribute | Type | Default | Description
 `min-incorrect` | integer | special | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.
 `source-header` | string | "Drag from here" | The text that appears at the start of the source area.
 `solution-header` | string| "Construct your solution here" |  The text that appears at the start of the solution area.
-`solution-placement` | string | "right" | "right" shows the source and solution areas aligned side-by-side. "bottom" shows the solution area below the source area.
+`solution-placement` | "right" or "bottom" | "right" | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.
+`feedback` | "none" or "first-wrong" | "none" | The level of feedback the student will recieve upon giving an incorrect answer. Currently only available with the `dag` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.
 
-Within the `pl-order-blocks` element, each answer block must be specified with a `pl-answer` that has the following attributes:
+
+Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | true | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
 `ranking` | positive integer | — | This attribute is used when `grading-method="ranking"` and it specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute.
 `indent` | integer in [-1, 4] | -1 | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.
-`depends` | string | "" | This attribute is used when `grading-method="dag"` to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends=1,3` for a particular block, it must appear later in the proof than the block with `tag="1"` and the block with `tag="3"`.
+`depends` | string | "" | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends=1,3` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.
 `tag` | string | "" | Optional attribute when `grading-method="dag"`. Used to identify the block when declaring which other blocks depend on it.
 
 #### Details
@@ -420,6 +457,7 @@ Different ordering of the blocks in the source area defined via the attribute `s
 #### Example implementations
 
 - [element/orderBlocks]
+- [demo/proofBlocks]
 - [demo/autograder/python/orderBlocksRandomParams]
 - [demo/autograder/python/orderBlocksAddNumpy]
 
@@ -612,6 +650,63 @@ Attribute | Type | Default | Description
 
 -----
 
+### `pl-matching` element
+
+Given a list of statements, select a matching option for each entry from a drop-down list.
+
+#### Sample element
+
+![](elements/pl-matching.png)
+
+**question.html**
+```html
+<pl-matching answers-name="string_value">
+  <pl-statement match="Washington, D.C.">United States</pl-statement>
+  <pl-statement match="Mexico City">Mexico</pl-statement>
+  <pl-statement match="Paris">France</pl-statement>
+
+  <pl-option>New York City</pl-option>
+</pl-matching>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`fixed-order` | boolean | False | Whether or not to display the statements in a fixed order; otherwise they are shuffled. Options are always shuffled.
+`number-statements` | integer | special | The number of statements to display. Defaults to all statements.
+`number-options` | integer | special | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.
+`none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.
+`blank` | boolean | True | Option to add blank dropdown entry as the default selection in each drop-down list.
+`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters.
+`hide-score-badge` | boolean | false | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.
+
+Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
+
+A total of `number-statements` statements will be randomly selected and displayed to the student. The corresponding matching options will be gathered; if `number-options` is larger than the number of options used by the selected statements, then random distractors will be selected from the remaining unused options. If the selected statements require more options than `number-options`, then `none-of-the-above` will automatically be set to true.
+
+The content of a `pl-statement` can be any HTML element, including other PrairieLearn elements. A `pl-statement` must be specified with these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`match` | string | — | Identifies the option as the correct response for this `pl-statement`. If `match` corresponds to the `name` of any `pl-option` element, the statement will be linked to that `pl-option`, otherwise a new option is implicitly created based on this `match` value.
+
+The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
+
+A `pl-option` must be specified with these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`name` | string | special | A key used to match this option as the correct response to a `pl-statement`. If not given, the attribute is set to the inner HTML of the `pl-option`.
+
+#### Example implementations
+
+* [element/matching]
+
+-----
+
 ### `pl-matrix-component-input` element
 
 A `pl-matrix-component-input` element displays a grid of input fields with
@@ -747,6 +842,42 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
 - [`pl-number-input` for a single numeric input](#pl-number-input)
 - [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+
+-----
+
+### `pl-rich-text-editor` element
+
+Provides an in-browser rich text editor, aimed mostly at manual grading essay-type questions. This editor is based on the [Quill rich text editor](https://quilljs.com/).
+
+#### Sample element
+
+![](elements/pl-rich-text-editor.png)
+
+```html
+<pl-rich-text-editor
+  file-name="answer.html">
+</pl-rich-text-editor>
+```
+
+#### Customizations
+
+Attribute | Type | Default | description
+--- | --- | --- | ---
+`file-name` | string | - | The name of the output file; will be used to store the student's answer in the `_files` submitted answer
+`quill-theme` | string | `snow` | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.
+`source-file-name` | string | None | Name of the source file with existing HTML content to be displayed in the editor.
+`directory` | string | special | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory.
+`placeholder` | string | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.
+
+#### Example implementations
+
+- [element/richTextEditor]
+
+#### See also
+
+- [`pl-file-editor` to edit unformatted text, such as code](#pl-file-editor-element)
+- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
 -----
 
@@ -1547,6 +1678,42 @@ Attribute | Type | Default | Description
 - [demo/autograder/python/plots]
 - [demo/autograder/python/random]
 
+### `pl-xss-safe` element
+
+Removes potentially dangerous scripts from HTML. This is recommended when parsing and displaying student-provided content. The element will remove some elements like scripts and triggers that may have been maliciously inserted by the student. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
+
+#### Sample element
+
+```html
+<!-- Content coming from a submitted file (e.g., pl-file-editor, pl-file-upload) -->
+<pl-xss-safe submitted-file-name="answer.html"></pl-xss-safe>
+
+<!-- Content coming from a regular element (e.g., pl-string-input) -->
+<pl-xss-safe contents="{{submitted_answers.answer}}"></pl-xss-safe>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`source-file-name` | string | - | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet).
+`submitted-file-name` | string | - | Name of the file submitted by the user to (typically using a `pl-file-editor` or `pl-file-upload` element) with the code to be used.
+`contents` | string | - | Raw contents to be displayed.
+`language` | string | html | Language of the provided code. The values "html" or "markdown" are currently supported.
+
+Note that only one of the attributes `source-file-name`, `submitted-file-name` or `contents` may be provided in the same element.
+
+#### Example implementations
+
+- [demo/markdownEditorLivePreview]
+- [element/xssSafe]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+-----
+
 ## Conditional Elements
 
 ### `pl-question-panel` element
@@ -1810,9 +1977,9 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/randomMultipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomMultipleChoice
 [demo/randomPlot]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomPlot
 [demo/randomSymbolic]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/randomSymbolic
+[demo/proofBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/proofBlocks
 
 <!-- Element option overview questions -->
-[element/orderBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/checkbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/checkbox
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
@@ -1824,10 +1991,12 @@ The provided `script-name` corresponds to a file located within the director for
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
 [element/integerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/integerInput
 [element/markdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/markdown
+[element/matching]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matching
 [element/matrixComponentInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixComponentInput
 [element/matrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
 [element/multipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
 [element/numberInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
+[element/orderBlocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairieDrawFigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/prairieDrawFigure

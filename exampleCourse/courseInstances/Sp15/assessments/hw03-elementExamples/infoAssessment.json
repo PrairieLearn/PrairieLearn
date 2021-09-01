@@ -45,11 +45,14 @@
                 {"id": "element/matrixLatex",              "points": 2, "maxPoints": 10},
                 {"id": "element/variableOutput",           "points": 2, "maxPoints": 10},
                 {"id": "element/fileEditor",               "points": 2, "maxPoints": 10},
+                {"id": "element/richTextEditor",           "points": 2},
                 {"id": "element/pythonVariable",           "points": 2, "maxPoints": 10},
                 {"id": "element/graph",                    "points": 2, "maxPoints": 10},
                 {"id": "element/overlay",                  "points": 2, "maxPoints": 10},
                 {"id": "element/figure",                   "points": 2, "maxPoints": 10},
-                {"id": "element/orderBlocks",              "points": 2, "maxPoints": 10}
+                {"id": "element/orderBlocks",              "points": 2, "maxPoints": 10},
+                {"id": "element/matching",                 "points": 2, "maxPoints": 10},
+                {"id": "element/xssSafe",                  "points": 2}
             ]
         }
     ]
