@@ -17,9 +17,11 @@ const mockStudents = [
     {authUid: 'student3', authName: 'Student User 3', authUin: '00000003'},
     {authUid: 'student4', authName: 'Student User 4', authUin: '00000004'},
 ];
+
+const defaultUser = {authUid: config.authUid, authName: config.authName, authUin: config.authUin}; // test suite default
 const mockInstructors = [
-    {authUid: config.authUid, authName: config.authName, authUin: config.authUin}, // testing default
-    {authUid: 'mwest@illinois.edu', authName: '', uin: ''},
+    {authUid: 'instructor1@illinois.edu', authName: 'Instructor 1', authUin: '11111111'},
+    {authUid: 'instructor2@illinois.edu', authName: 'Instructor 2', authUin: '22222222'},
 ];
 
 const parseInstanceQuestionId = (url) => {
@@ -164,7 +166,19 @@ const testManualGradingAction = (action) => {
         after('shut down testing server', helperServer.after);
 
         before('set any student as default user role', () => setUser(mockStudents[0]));
-        after('reset to default instructor user', () => setUser(mockInstructors[0]));
+        after('reset to default instructor user', () => setUser(defaultUser));
+
+        before('create instructors and students', async () => {
+            const users = mockInstructors.concat(mockStudents);
+            for (const user of users) {
+                setUser(user);
+                await fetch(baseUrl);
+            }
+            await sqlDb.callOneRowAsync('course_permissions_insert_by_user_uid', [1, mockInstructors[0].authUid, 'Owner', 2]);
+            await sqlDb.callOneRowAsync('course_permissions_insert_by_user_uid', [1, mockInstructors[1].authUid, 'Owner', 3]);
+            await sqlDb.callOneRowAsync('course_instance_permissions_insert', [1, 2, 1, 'Student Data Viewer', 2]);
+            await sqlDb.callOneRowAsync('course_instance_permissions_insert', [1, 3, 1, 'Student Data Viewer', 3]);
+        });
 
         describe('student role: saving student submissions', () => {
             const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
@@ -345,7 +359,7 @@ const testManualGradingAction = (action) => {
                 // instructor 2 opens question for grading
                 setUser(mockInstructors[1]);
                 const iqManualGradingBody = await (await fetch(manualGradingWarningUrl)).text();
-                assert.include(iqManualGradingBody, 'Dev User (dev@illinois.edu) is currently grading this question');
+                assert.include(iqManualGradingBody, 'Instructor 1 (instructor1@illinois.edu) is currently grading this question');
             });
             it('instructor becomes the manual grading user when first within manual grading expiry time range', async () => {
                 setUser(mockInstructors[1]);
@@ -358,7 +372,7 @@ const testManualGradingAction = (action) => {
 
                 setUser(mockInstructors[0]);
                 const iqManualGradingBody = await (await fetch(manualGradingWarningUrl)).text();
-                assert.include(iqManualGradingBody, '(mwest@illinois.edu) is currently grading this question');
+                assert.include(iqManualGradingBody, 'Instructor 2 (instructor2@illinois.edu) is currently grading this question');
             });
             it('instructor should get grading conflict view if another instructor submits grade to same question first (if both viewing question simaltaneously)', async () => {
                 const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
