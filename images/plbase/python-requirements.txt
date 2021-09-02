@@ -17,7 +17,7 @@ ansi2html==1.6.0
 scikit-learn==0.24.2
 nltk==3.6.2
 tzlocal==2.1
-Pygments==2.9.0
+Pygments==2.10.0
 sphinx==4.1.2
 sphinx-markdown-builder==0.5.4
 recommonmark==0.7.1
