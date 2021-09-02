@@ -1,69 +1,43 @@
-<div class="container-fluid mt-3">
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th scope="col">Select Role</th>
-        <th scope="col">Manager</th>
-        <th scope="col">Recorder</th>
-        <th scope="col">Reflector</th>
-        <th scope="col">Contributor</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- TODO: Change these names to the names of actual group members -->
-      <% group_info.forEach(function (row, index) { %>
-      <tr>
-        <td><%= row.uid %></td>
-        <td>
-          <div class="custom-control custom-checkbox">
-            <input
-              type="checkbox"
-              class="custom-control-input"
-              id="manager-<%= index %>"
-            />
-            <label class="custom-control-label" for="manager-<%= index %>"
-              >&nbsp;</label
-            >
-          </div>
-        </td>
-        <td>
-          <div class="custom-control custom-checkbox">
-            <input
-              type="checkbox"
-              class="custom-control-input"
-              id="recorder-<%= index %>"
-            />
-            <label class="custom-control-label" for="recorder-<%= index %>"
-              >&nbsp;</label
-            >
-          </div>
-        </td>
-        <td>
-          <div class="custom-control custom-checkbox">
-            <input
-              type="checkbox"
-              class="custom-control-input"
-              id="reflector-<%= index %>"
-            />
-            <label class="custom-control-label" for="reflector-<%= index %>"
-              >&nbsp;</label
-            >
-          </div>
-        </td>
-        <td>
-          <div class="custom-control custom-checkbox">
-            <input
-              type="checkbox"
-              class="custom-control-input"
-              id="contributor-<%= index %>"
-            />
-            <label class="custom-control-label" for="contributor-<%= index %>"
-              >&nbsp;</label
-            >
-          </div>
-        </td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-</div>
+<!-- TODO: add way to submit table -->
+<table class="table table-bordered table-striped mt-3">
+  <thead>
+    <tr>
+      <th scope="col">Select Role</th>
+      <th scope="col">Manager</th>
+      <th scope="col">Recorder</th>
+      <th scope="col">Reflector</th>
+      <th scope="col">Contributor</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% group_info.forEach(function (row) { %>
+    <tr>
+      <td><%= row.uid %></td>
+      <td>
+        <div>
+          <input type="checkbox" id="manager-<%= row.uid %>" />
+          <label for="manager-<%= row.uid %>">&nbsp;</label>
+        </div>
+      </td>
+      <td>
+        <div>
+          <input type="checkbox" id="recorder-<%= row.uid %>" />
+          <label for="recorder-<%= row.uid %>">&nbsp;</label>
+        </div>
+      </td>
+      <td>
+        <div>
+          <input type="checkbox" id="reflector-<%= row.uid %>" />
+          <label for="reflector-<%= row.uid %>">&nbsp;</label>
+        </div>
+      </td>
+      <td>
+        <div>
+          <input type="checkbox" id="contributor-<%= row.uid %>" />
+          <label for="contributor-<%= row.uid %>">&nbsp;</label>
+        </div>
+      </td>
+    </tr>
+    <% }) %>
+  </tbody>
+</table>
