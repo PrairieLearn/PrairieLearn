@@ -111,7 +111,7 @@
         "winston": "^3.3.3",
         "xml2js": "^0.4.23",
         "xss": "^1.0.9",
-        "yargs": "^17.0.1",
+        "yargs": "^17.1.1",
         "yargs-parser": "^20.2.9"
     },
     "devDependencies": {
