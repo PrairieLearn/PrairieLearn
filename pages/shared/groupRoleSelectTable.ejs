@@ -11,13 +11,19 @@
     </thead>
     <tbody>
       <!-- TODO: Change these names to the names of actual group members -->
-      <% ['Renzo', 'Cale', 'Liia'].forEach(function (name, index) { %>
+      <% group_info.forEach(function (row, index) { %>
       <tr>
-        <td><%= name %></td>
+        <td><%= row.uid %></td>
         <td>
           <div class="custom-control custom-checkbox">
-            <input type="checkbox" class="custom-control-input" id="manager-<%= index %>" />
-            <label class="custom-control-label" for="manager-<%= index %>">&nbsp;</label>
+            <input
+              type="checkbox"
+              class="custom-control-input"
+              id="manager-<%= index %>"
+            />
+            <label class="custom-control-label" for="manager-<%= index %>"
+              >&nbsp;</label
+            >
           </div>
         </td>
         <td>
@@ -27,7 +33,9 @@
               class="custom-control-input"
               id="recorder-<%= index %>"
             />
-            <label class="custom-control-label" for="recorder-<%= index %>">&nbsp;</label>
+            <label class="custom-control-label" for="recorder-<%= index %>"
+              >&nbsp;</label
+            >
           </div>
         </td>
         <td>
@@ -37,7 +45,9 @@
               class="custom-control-input"
               id="reflector-<%= index %>"
             />
-            <label class="custom-control-label" for="reflector-<%= index %>">&nbsp;</label>
+            <label class="custom-control-label" for="reflector-<%= index %>"
+              >&nbsp;</label
+            >
           </div>
         </td>
         <td>

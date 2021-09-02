@@ -56,7 +56,7 @@
             <p class="text-center">
               * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
            </p>
-           <%- include('../shared/groupRoleSelectTable.ejs'); %>
+           <%- include('../shared/groupRoleSelectTable.ejs', {group_info: group_info}); %>
            <% } %>
         <% } %>
         </div>
