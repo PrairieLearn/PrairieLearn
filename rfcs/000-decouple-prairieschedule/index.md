@@ -499,13 +499,11 @@ PrairieLearn references this table in two places:
 
 - `pages/instructorAssessmentAccess/instructorAssessmentAccess.sql`
 - `sprocs/check_assessment_access_rule.sql`
-- `tests/testAccess.sql`
 
 ### `exams`
 
 Used in everything. This is another special one that PrairieLearn "creates", but is really owned by PrairieSchedule.
 
-- `tests/testAccess.sql`
 - `sync/fromDisk/assessments.sql`
 - `sprocs/check_assessment_access_rule.sql`
 - `pages/instructorAssessmentAccess/instructorAssessmentAccess.sql`
@@ -542,3 +540,53 @@ This is a mess. Each service shares the entire table.
 ### `variants`
 
 Used only in PLPeek.
+
+## Proposal
+
+This is all just a gross one-semester hack to allow UIUC to continue running exams using PrairieSchedule. Once its replacement exists, we should rip out all this code.
+
+### Changes to PrairieSchedule
+
+#### `/reservations` API
+
+We'll add a `/reservations` API to PrairieSchedule. This will accept the request date and a user UIN and return all active reservations for that user at that point in time. If no reservations were found, it will respond with a 404. If any reservations were found, it will respond with a 200 and a body with JSON like the following:
+
+```json
+[
+  {
+    "start_date": "DATE",
+    "end_date": "DATE",
+    "exam_uuid": "UUID"
+  },
+  {
+    "start_date": "DATE",
+    "end_date": "DATE",
+    "exam_uuid": "UUID"
+  }
+]
+```
+
+The response will be cached in Redis with a configurable TTL that defaults to 15 seconds. When we read a result from the cache, we'll filter out any reservations where `req_date > reservation_end_date`.
+
+> Thinking out loud here, this will pose a problem for students if they try to open their exam 1 second before it can start - they'll end up having to wait for the cache expire before they can gain access. Perhaps the `/reservations` API should return all reservations that are or **will be** valid for the next XXX seconds/minutes? We can really easily filter out any reservations that aren't active at the instance we're processing a request.
+
+#### `/exams` API
+
+We'll add an `/exams` API that accepts a GET request like `/exams/9da3dce8-4145-4f42-a861-174911ef87d4`. If a corresponding exam is not found, it responds with a 404. If a corresponding exam is found, it responds with a 200 and a body with JSON like the following:
+
+```json
+{
+  "link": "https://cbtf.engr.illinois.edu/sched/course/640/exam/3931/info",
+  "rubric": "CS 225",
+  "exam_string": "Week 6"
+}
+```
+
+### Changes to PrairieLearn
+
+* We'll update `middlewares/authzCourseOrInstance.js` to use the `/reservations` API to get a list of reservations for the current user/time combo. It'll compute if any of them are active and, if so, provide this to `select_authz_data` in `middlewares/authzCourseOrInstance.sql`, which can in turn use it when computing the mode.
+  * In `select_authz_data`, we'll have something roughly like `coalesce($req_mode, $ps_mode, ip_to_mode($ip, $req_date)) AS mode`, where `$ps_mode` is either `Exam` or `NULL`.
+
+### Remove legacy code
+
+Per Matt West, the entire `ELSE` branch under `schedule_acces` in `sprocs/check_assessment_access_rule.sql` is obsolete, so this can be ignored and deleted entirely. The `pl_courses.ps_linked` column can also be removed entirely.
