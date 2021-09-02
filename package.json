@@ -40,7 +40,7 @@
         "delay": "^5.0.0",
         "detect-mocha": "^0.1.0",
         "diff": "^5.0.0",
-        "dockerode": "^3.2.1",
+        "dockerode": "^3.3.0",
         "dropzone": "^5.9.2",
         "ejs": "^3.1.6",
         "express": "^4.17.1",
