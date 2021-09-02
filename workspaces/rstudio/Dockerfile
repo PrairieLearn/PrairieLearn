@@ -22,9 +22,12 @@ RUN apt-get update && \
     # Proxy workaround for PrairieLearn:
     nginx \
     gettext \
+    gosu \
     fonts-dejavu \
     # Things for our sanity in the instructor terminal:
     less htop vim nano silversearcher-ag zip unzip git cmake curl wget && \
+    # Test:
+    gosu nobody true && \
     # Cleanup:
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
@@ -84,10 +87,9 @@ RUN echo "session-default-working-dir=$EDITOR_FOCUS_DIR" >> /etc/rstudio/rsessio
 
 # Prepare the entrypoint script
 USER 0
-COPY ["pl-start.sh", "/pl-bin/"]
+COPY ["pl-start.sh", "pl-gosu-helper.sh", "/pl-bin/"]
 RUN mkdir -p /pl-bin && \
-    chmod a+rx /pl-bin && \
-    chmod a+rx /pl-bin/pl-start.sh
+    chmod a+rx /pl-bin /pl-bin/pl-start.sh /pl-bin/pl-gosu-helper.sh
 
 # Warning: Do NOT try to set RStudio Server's USERID environment variable
 # here, as this will cause the home directory to be deleted and recreated (or
@@ -96,7 +98,7 @@ RUN mkdir -p /pl-bin && \
 
 # We need to run as user rstudio (1001:1001). Do not run as root.
 USER rstudio
-# Set some variables to ensure non-root mode works.
+# Set some variables for RStudio Server to ensure non-root mode works.
 ENV USER rstudio
 ENV DISABLE_AUTH true
 ENV S6_READ_ONLY_ROOT 1
@@ -106,7 +108,10 @@ ENV S6_READ_ONLY_ROOT 1
 # On the production server, this will be overwritten dynamically when PL
 # creates the workspace at a different URL.
 ENV WORKSPACE_BASE_URL rstudio
-ENTRYPOINT /pl-bin/pl-start.sh
+# PL_USER should be user 1001's intended name. The gosu helper uses this to
+# make sure local testing works even if the PL Docker tries to run as root.
+ENV PL_USER rstudio
+ENTRYPOINT /pl-bin/pl-gosu-helper.sh /pl-bin/pl-start.sh
 
 # Set up your question with these options in info.json, editing the "image"
 # parameter if you are using a custom image build:
