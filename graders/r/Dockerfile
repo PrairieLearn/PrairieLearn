@@ -52,13 +52,8 @@ RUN apt-get update && apt-get install -y \
 # Install additional R packages from CRAN (on top of the ones pre-built as r-cran-*)
 RUN install.r bench flexdashboard microbenchmark lintr ttdo unix
 
-# Install plr (from local copy)
-COPY plr_0.0.2.3.tar.gz /tmp
-RUN install.r /tmp/plr_0.0.2.3.tar.gz \
-        && rm /tmp/plr_0.0.2.3.tar.gz
-
-# Also install visualTest from GitHub repo MangoTheCat/visualTest
-RUN installGithub.r MangoTheCat/visualTest
+# Install plr (from sibbling PL repo), and visualTest from Mango
+RUN installGithub.r PrairieLearn/pl-r-helpers MangoTheCat/visualTest
 
 RUN useradd ag \ 
 	&& mkdir /home/ag \
