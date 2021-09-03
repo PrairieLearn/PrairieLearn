@@ -3,4 +3,7 @@ chown -R root:root /opt/server
 
 cd /opt/server && npm ci
 
+chmod +x /pl-gosu-helper.sh
+chmod +x /start-vnc.sh
+
 rm /post-install.sh

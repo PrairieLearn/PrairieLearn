@@ -4,6 +4,7 @@ COPY pre-install.sh /pre-install.sh
 RUN /bin/sh /pre-install.sh
 COPY code.desktop /usr/share/applications/code.desktop
 
+COPY pl-gosu-helper.sh /pl-gosu-helper.sh
 COPY start-vnc.sh /start-vnc.sh
 COPY config /opt/defaults/config
 COPY local /opt/defaults/local
@@ -13,4 +14,6 @@ COPY post-install.sh /post-install.sh
 RUN /bin/sh /post-install.sh
 
 USER 1001
-CMD /bin/sh /start-vnc.sh
+ENV PL_USER prairielearner
+
+CMD /pl-gosu-helper.sh /start-vnc.sh
