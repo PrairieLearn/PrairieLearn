@@ -14,7 +14,8 @@ wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" 
 apt install /vscode.deb -y
 rm /vscode.deb
 
-echo "root:test" | chpasswd
+# make default folder to put config files
+mkdir /opt/default/
 
 # delete ourselves
 rm /pre-install.sh

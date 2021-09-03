@@ -5,8 +5,8 @@ RUN /bin/sh /pre-install.sh
 COPY code.desktop /usr/share/applications/code.desktop
 
 COPY start-vnc.sh /start-vnc.sh
-COPY config /home/prairielearner/.config
-COPY local /home/prairielearner/.local
+COPY config /opt/defaults/config
+COPY local /opt/defaults/local
 COPY server /opt/server
 
 COPY post-install.sh /post-install.sh
