@@ -56,7 +56,7 @@ def render(element_html, data):
     mathematica_data = ''
     python_data = 'import numpy as np\n\n'
     r_data = ''
-    sympy_data = ''
+    sympy_data = 'from sympy import *\n\n'
     for child in element:
         if child.tag == 'variable':
             # Raise exception if variable does not have a name
