@@ -16,5 +16,5 @@ X-Desktop-File-Install-Version=0.24
 
 [Desktop Action new-empty-window]
 Name=New Empty Window
-Exec=/usr/share/code/code --new-window %F
+Exec=/usr/share/code/code --no-sandbox --new-window %F
 Icon=com.visualstudio.code
