@@ -1,0 +1,22 @@
+<pl-question-panel>
+    <p>
+        When a potential difference of 1V is applied across a capacitor, after a long time the charge on one of the plates is measured to be 1C. What is the capacitance of this capacitor?
+    </p>
+</pl-question-panel>
+<pl-units-input answers-name="capacitance"></pl-units-input>
+
+<pl-question-panel>
+    <p>&nbsp;</p>
+    <p>
+        What is the length of a metre stick?
+    </p>
+</pl-question-panel>
+
+<!-- Exact comparison (3.28 ft doesn't work) -->
+<pl-units-input answers-name="length1" comparison="exact"></pl-units-input>
+
+<!-- 3 Significant figures (3.28 ft works) -->
+<pl-units-input answers-name="length2" comparison="sigfig" digits=3></pl-units-input>
+
+<!-- RTol/ATol (3.28 ft should also work) -->
+<pl-units-input answers-name="length3" comparison="relabs"></pl-units-input>
