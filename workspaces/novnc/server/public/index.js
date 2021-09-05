@@ -28,8 +28,6 @@ async function set_resolution() {
         req.addEventListener('error', rej);
         req.addEventListener('timeout', rej);
         req.addEventListener('load', () => {
-            console.log(req.status);
-            console.log(req.responseText);
             res();
         });
         console.log('calling', url);
