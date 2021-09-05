@@ -14,16 +14,17 @@ DISPLAY_DEFAULT = 'inline'
 ALLOW_BLANK_DEFAULT = False
 ALLOW_UNITLESS_DEFAULT = False
 ALLOW_NUMBERLESS_DEFAULT = False
-BLANK_VALUE_DEFAULT = ""
-UNITLESS_VALUE_DEFAULT = "rad"
+BLANK_VALUE_DEFAULT = ''
+UNITLESS_VALUE_DEFAULT = 'rad'
 NUMBERLESS_VALUE_DEFAULT = 0
-COMPARISON_DEFAULT = "sigfig"
+COMPARISON_DEFAULT = 'sigfig'
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -45,6 +46,7 @@ def prepare(element_html, data):
             raise Exception('duplicate correct_answers variable name: %s' % name)
         data['correct_answers'][name] = correct_answer
 
+
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -64,19 +66,19 @@ def render(element_html, data):
             template = f.read()
             info = chevron.render(template, info_params).strip()
             info_params.pop('format', None)
-        
+
         if comparison == 'exact':
-            placeholder_text = "Number (exact) + Unit"
+            placeholder_text = 'Number (exact) + Unit'
         elif comparison == 'sigfig':
             digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
-            placeholder_text = f"Number ({digits} significant figures) + Unit"
+            placeholder_text = f'Number ({digits} significant figures) + Unit'
         elif comparison == 'relabs':
             rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
-            placeholder_text = f"Number (rtol={rtol}, atol={atol}) + Unit"
+            placeholder_text = f'Number (rtol={rtol}, atol={atol}) + Unit'
         else:
-            placeholder_text = "Number + Unit"
-        
+            placeholder_text = 'Number + Unit'
+
         html_params = {
             'question': True,
             'name': name,
@@ -104,7 +106,7 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
-        
+
         html_params['display_append_span'] = html_params['show_info'] or suffix
 
         if display == 'inline':
@@ -136,16 +138,16 @@ def render(element_html, data):
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = a_sub
-        
+
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
             html_params['parse_error'] = None
-        
+
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
-        
+
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
         if score is not None:
@@ -159,11 +161,11 @@ def render(element_html, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
-        
-        html_params['error'] = html_params['parse_error'] or  html_params.get('missing_input', False)
+
+        html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
-        
+
     elif data['panel'] == 'answer':
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is not None:
@@ -178,11 +180,12 @@ def render(element_html, data):
                 html = chevron.render(f, html_params).strip()
         else:
             html = ''
-    
+
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
-    
+
     return html
+
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -200,7 +203,7 @@ def parse(element_html, data):
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
         return
-    
+
     # checks for blank answer
     if not a_sub and not allow_blank:
         data['format_errors'][name] = 'Invalid format. The submitted answer was left blank.'
@@ -215,7 +218,7 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
     elif unitless and allow_unitless:
         data['submitted_answers'][name] = a_sub + unitless_value
-    
+
     # checks for no number in submitted answer
     numberless = units.DimensionfulQuantity.check_numberless(a_sub)
     if numberless and not allow_numberless:
@@ -223,16 +226,17 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
     elif numberless and allow_numberless:
         data['submitted_answers'][name] = numberless_value + a_sub
-    
+
     # checks for invalids by parsing as a dimensionful quantity
     try:
         units.DimensionfulQuantity.from_string(a_sub)
-    except units.units.InvalidUnit: # incorrect units
+    except units.units.InvalidUnit:  # incorrect units
         data['format_errors'][name] = 'Invalid unit.'
-    except units.units.DisallowedExpression: # incorrect usage of prefixes + imperial
+    except units.units.DisallowedExpression:  # incorrect usage of prefixes + imperial
         data['format_errors'][name] = 'Invalid unit.'
-    except ValueError: # can't convert to float
+    except ValueError:  # can't convert to float
         data['format_errors'][name] = 'Invalid number.'
+
 
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -243,18 +247,18 @@ def grade(element_html, data):
     a_tru = data['correct_answers'].get(name, None)
     if a_tru is None:
         return
-    a_tru = units.DimensionfulQuantity.from_string(a_tru) # implicit assumption that true answer is formatted correctly
-    
+    a_tru = units.DimensionfulQuantity.from_string(a_tru)  # implicit assumption that true answer is formatted correctly
+
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
         return
-    a_sub = units.DimensionfulQuantity.from_string(a_sub) # will return no error, assuming parse() catches all of them
+    a_sub = units.DimensionfulQuantity.from_string(a_sub)  # will return no error, assuming parse() catches all of them
 
     if comparison == 'exact':
         if a_tru == a_sub:
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru.unit == a_sub.unit: # if units are in the same dimension, allow half marks
+        elif a_tru.unit == a_sub.unit:  # if units are in the same dimension, allow half marks
             data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
         else:
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
@@ -262,7 +266,7 @@ def grade(element_html, data):
         digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
         if a_tru.sigfig_equals(a_sub, digits):
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru.unit == a_sub.unit: # if units are in the same dimension, allow half marks
+        elif a_tru.unit == a_sub.unit:  # if units are in the same dimension, allow half marks
             data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
         else:
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
@@ -271,12 +275,13 @@ def grade(element_html, data):
         atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
         if a_tru.relabs_equals(a_sub, rtol, atol):
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru.unit == a_sub.unit: # if units are in the same dimension, allow half marks
+        elif a_tru.unit == a_sub.unit:  # if units are in the same dimension, allow half marks
             data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
         else:
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
     else:
         raise ValueError('method of comparison "%s" us not valid' % comparison)
+
 
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -292,7 +297,7 @@ def test(element_html, data):
     elif result == 'incorrect':
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
         i = units.DimensionfulQuantity.get_index(a_tru)
-        u = "s" if a_tru[i:].strip() == "m" else "m"
+        u = 's' if a_tru[i:].strip() == 'm' else 'm'
         answer = a_tru[:i] + u
         data['raw_submitted_answers'][name] = str(answer)
     elif result == 'invalid':
