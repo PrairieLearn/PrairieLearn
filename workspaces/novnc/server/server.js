@@ -76,12 +76,9 @@ const spawn_gui = async (width, height) => {
     });
     attach_listeners(x11vnc_proc);
 
-    /* Now finally, create the window manager */
-    if (wm_proc) {
-        /* This doesn't need to die.  I don't know why. */
-        // await kill_and_wait(wm_proc);
-        // await sleep(500);
-    }
+    /* Now finally, create the window manager
+       We don't need to kill this.  For some reason it gets mad if we _do_ try to kill it.  So,
+       I'm not touching it. */
     wm_proc = child_process.spawn(options.de, [], {
         env: {
             'DISPLAY': ':1',

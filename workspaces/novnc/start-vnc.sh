@@ -3,6 +3,8 @@
 # Copy over config files
 cp -r /opt/defaults/config /home/prairielearner/.config
 cp -r /opt/defaults/local /home/prairielearner/.local
+cp /opt/defaults/.profile /home/prairielearner/.profile
+cp /opt/defaults/.bashrc /home/prairielearner/.bashrc
 
 chown -R 1001:1001 /home/prairielearner/.config
 chown -R 1001:1001 /home/prairielearner/.local
