@@ -1,8 +1,10 @@
-import lxml.html
-from html import escape
-import chevron
 import math
+from html import escape
+
+import chevron
+import lxml.html
 import prairielearn as pl
+
 import units
 
 
