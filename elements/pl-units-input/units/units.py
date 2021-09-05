@@ -32,25 +32,25 @@ class DimensionfulQuantity:
     Methods
     -------
     __eq__(rhs)
-        Determines whether this and another DimensionfulQuantity are equal.
+        Determine whether this and another DimensionfulQuantity are equal.
 
     sigfig_equals(rhs, digits)
-        Determines whether this and another DimensionfulQuantity are equal, comparing only siginificant digits.
+        Determine whether this and another DimensionfulQuantity are equal, comparing only siginificant digits.
 
     relabs_equals(rhs, rtol, atol)
-        Determines whether this and another DimensionfulQuantuty are within the relative and absolute tolerances.
+        Determine whether this and another DimensionfulQuantuty are within the relative and absolute tolerances.
 
     get_index(answer)
-        Determines the index where the unit starts.
+        Determine the index where the unit starts.
 
     from_string(answer)
-        Constructs a DimensionfulQuantity from a string.
+        Construct a DimensionfulQuantity from a string.
 
     check_unitless(answer)
-        Checks whether the string has no unit portion.
+        Check whether the string has no unit portion.
 
     check_numberless(answer)
-        Checks whether the string has no number portion.
+        Check whether the string has no number portion.
     """
 
     def __init__(self, quantity: Any, unit: Unit) -> None:
@@ -68,7 +68,7 @@ class DimensionfulQuantity:
         self.unit = unit
 
     def __eq__(self, rhs: DimensionfulQuantity) -> bool:
-        """Determines whether this and another DimensionfulQuantity are exactly equal.
+        """Determine whether this and another DimensionfulQuantity are exactly equal.
 
         Equality is determined by two things:
             - number * multiplier/prefix of unit has to be equal
@@ -83,7 +83,7 @@ class DimensionfulQuantity:
         return self.quantity * self.unit.multiplier == rhs.quantity * rhs.unit.multiplier and self.unit == rhs.unit
 
     def sigfig_equals(self, rhs: DimensionfulQuantity, digits: int) -> bool:
-        """Determines whether this and another DimensionfulQuantity are equal, comparing only siginificant digits.
+        """Determine whether this and another DimensionfulQuantity are equal, comparing only siginificant digits.
 
         Equality is determined by two things:
             - number * multiplier/prefix of unit has to be equal, comparing significant digits.
@@ -103,7 +103,7 @@ class DimensionfulQuantity:
         return pl.is_correct_scalar_sf(r_val, l_val, digits) and self.unit == rhs.unit
 
     def relabs_equals(self, rhs: DimensionfulQuantity, rtol: float, atol: float) -> bool:
-        """Determines whether this and another DimensionfulQuantuty are within the relative and absolute tolerances.
+        """Determine whether this and another DimensionfulQuantuty are within the relative and absolute tolerances.
 
         Equality is determined by two things:
             - number * multiplier/prefix of unit has to be within rhs' rtol and atol
@@ -127,7 +127,7 @@ class DimensionfulQuantity:
 
     @staticmethod
     def get_index(answer: str) -> int:
-        """Determines the index where the unit starts.
+        """Determine the index where the unit starts.
 
         Determines the index of first character that matches a prefix/unit in the string.
         Returns -1 if not found.
@@ -145,7 +145,7 @@ class DimensionfulQuantity:
 
     @classmethod
     def from_string(cls, answer: str) -> DimensionfulQuantity:
-        """Constructs a DimensionfulQuantity from a string.
+        """Construct a DimensionfulQuantity from a string.
 
         Splits a string into the number and the unit part, and parses
         them as a float and a Unit respectively.
@@ -163,7 +163,7 @@ class DimensionfulQuantity:
 
     @classmethod
     def check_unitless(cls, answer: str) -> bool:
-        """Checks whether the string has no unit portion.
+        """Check whether the string has no unit portion.
 
         Checks whether the string matches a unit/prefix at all.
 
@@ -178,7 +178,7 @@ class DimensionfulQuantity:
 
     @classmethod
     def check_numberless(cls, answer: str) -> bool:
-        """Checks whether the string has no number portion.
+        """Check whether the string has no number portion.
 
         Checks whether the string preceding the unit/prefix character is empty.
 
@@ -194,11 +194,78 @@ class DimensionfulQuantity:
 
 
 class Unit:
+    """A unit with multiplier and dimensions. Represents a unit in terms of SI base units.
+
+    ...
+
+    Attributes
+    ----------
+    multiplier : float
+        Represent the size of unit in terms of base units.
+
+    dimensions : Tuple[int, int, int, int, int, int, int]
+        Represent the degrees of the 7 base units,
+        in this order: s, m, g, A, K, mol, Cd.
+        Tells us what we are measuring.
+
+    Methods
+    -------
+    __mul__(rhs)
+        Determine the product of this and another unit/number.
+
+    __rmul__(lhs)
+        Determine the product of this and another unit/number.
+
+    __truediv__(rhs)
+        Determine the quotient of this and another unit.
+
+    __rtruediv__(lhs)
+        Determine the quotient of another unit and this.
+
+    __pow__(exp)
+        Raise the current unit to an interger power.
+
+    __eq__(rhs)
+        Check whether two units describe the same type of quantities.
+
+    _from_prefixed_unit(prefix, unit)
+        Create a unit from a prefix and a Unit.
+
+    _single_from_string(str)
+        Parse a string corresponding to a single unit to a Unit.
+
+    from_string(str)
+        Parse a string corresponding to a unit or arithmetic combination of units.
+    """
+
     def __init__(self, multiplier: float, dimensions: Tuple[int, int, int, int, int, int, int]) -> None:
+        """
+        Parameters
+        ----------
+        multiplier : float
+            Represent the size of unit in terms of base units.
+
+        dimensions : Tuple[int, int, int, int, int, int, int]
+            Represent the degrees of the 7 base units,
+            in this order: s, m, g, A, K, mol, Cd.
+            Tells us what we are measuring.
+        """
+
         self.multiplier = multiplier
         self.dimensions = dimensions
 
     def __mul__(self, rhs: float | Unit) -> Unit:
+        """Determine the product of this and another unit/number.
+
+        If argument is float, multiplies the multiplier by the float.
+        If argument is Unit, multiplies their multipliers together, and adds the dimensions element-wise.
+
+        Parameters
+        ----------
+        rhs : float | Unit
+            The multiplier.
+        """
+
         if isinstance(rhs, Unit):
             new_multiplier = self.multiplier * rhs.multiplier
             new_dimensions = tuple(ldim + rdim for ldim, rdim in zip(self.dimensions, rhs.dimensions))
@@ -208,6 +275,17 @@ class Unit:
             return Unit(new_multiplier, self.dimensions)
 
     def __rmul__(self, lhs: float | Unit) -> Unit:
+        """Determine the product of this and another unit/number.
+
+        If argument is float, multiplies the multiplier by the float.
+        If argument is Unit, multiplies their multipliers together, and adds the dimensions element-wise.
+
+        Parameters
+        ----------
+        lhs : float | Unit
+            The multiplier.
+        """
+
         if isinstance(lhs, Unit):
             new_multiplier = lhs.multiplier * self.multiplier
             new_dimensions = tuple([ldim + rdim for ldim, rdim in zip(lhs.dimensions, self.dimensions)])
@@ -217,26 +295,69 @@ class Unit:
             return Unit(new_multiplier, self.dimensions)
 
     def __truediv__(self, rhs: Unit) -> Unit:
+        """Determine the quotient of this and another unit.
+
+        Divides this multiplier by the argument's multiplier,
+        then element-wise subtract the argument's dimensions from this dimensions.
+
+        Parameters
+        ----------
+        rhs : Unit
+            The divisor.
+        """
+
         new_multiplier = self.multiplier / rhs.multiplier
         new_dimensions = tuple([ldim - rdim for ldim, rdim in zip(self.dimensions, rhs.dimensions)])
         return Unit(new_multiplier, new_dimensions)
 
     def __rtruediv__(self, lhs: Unit) -> Unit:
+        """Determine the quotient of another unit and this.
+
+        Divides the argument's multiplier by this multiplier,
+        then element-wise subtract this dimensions from the argument's dimensions.
+
+        Parameters
+        ----------
+        lhs : Unit
+            The dividend.
+        """
+
         new_multiplier = lhs.multiplier / self.multiplier
         new_dimensions = tuple([ldim - rdim for ldim, rdim in zip(lhs.dimensions, self.dimensions)])
         return Unit(new_multiplier, new_dimensions)
 
     def __pow__(self, exp: int) -> Unit:
+        """Raise the current unit to an interger power.
+
+        Raises the multiplier to given power,
+        and then element-wise multiplies the dimensions with said power.
+
+        Parameters
+        ----------
+        exp : int
+            The exponent, the power.
+        """
+
         new_multiplier = self.multiplier ** exp
         new_dimensions = tuple(map(lambda x: x * exp, self.dimensions))
         return Unit(new_multiplier, new_dimensions)
 
     def __eq__(self, rhs: Unit) -> bool:
+        """Check whether two units describe the same type of quantities.
+
+        Checks only whether the dimensions are identical.
+        Does NOT check multiplier equality.
+
+        Parameters
+        ----------
+        rhs : Unit
+            The other unit we are comparing to.
+        """
         return self.dimensions == rhs.dimensions
 
     @classmethod
     def _from_prefixed_unit(cls, prefix: SIPrefix, unit: Unit) -> Unit:
-        """Create a unit from a prefix and a Unit
+        """Create a unit from a prefix and a Unit.
 
         This is really just a convenience method so that SI prefixes can be defined using the power of 10 by which they differ from the base unit.
 
@@ -246,7 +367,7 @@ class Unit:
             Prefix to apply to the unit.
 
         unit : Unit
-            Unit to apply the prefix to
+            Unit to apply the prefix to.
         """
 
         new_multiplier = unit.multiplier * 10 ** prefix.value
@@ -256,12 +377,13 @@ class Unit:
     def _single_from_string(cls, str: str) -> Unit:
         """Parse a string corresponding to a single unit to a Unit.
 
-        This is simply a helper function for Unit.from_string, and deals with taking string such as "pF" and "ns" and converting them into Units.
+        This is simply a helper function for Unit.from_string,
+        and deals with taking string such as "pF" and "ns" and converting them into Units.
 
         Parameters
         ----------
         str : str
-            String to parse
+            String to parse.
         """
 
         regex = f"(?:({'|'.join(MetricPrefixes.__members__.keys())})?({'|'.join(MetricUnits.__members__.keys())}))|({'|'.join(ImperialUnits.__members__.keys())})"
@@ -284,12 +406,13 @@ class Unit:
     def from_string(cls, str: str) -> Unit:
         """Parse a string corresponding to a unit or arithmetic combination of units.
 
-        Given a unit, or some group of units combined using multiplication, division, and exponention, and parse into a Unit. This parsing is safe, and uses a whitelist to ensure that arbitrary code execution is not possible.
+        Given a unit, or some group of units combined using multiplication, division, and exponention, and parse into a Unit.
+        This parsing is safe, and uses a whitelist to ensure that arbitrary code execution is not possible.
 
         Parameters
         ----------
         str : str
-            String to parse
+            String to parse.
         """
 
         tree = ast.parse(str, mode='eval')
@@ -301,9 +424,27 @@ class Unit:
 
 
 class SIBaseUnit(Unit, Enum):
+    """An SI Base Unit represented as a unit object.
+
+    Base units have exactly a single 1 and six 0's as their dimensions,
+    and a multiplier of 1 by definition.
+
+    Attributes
+    ----------
+    dimension : Tuple[int, int, int, int, int, int, int]
+        The dimensions of said base unit.
+    """
+
     def __init__(self, dimension: Tuple[int, int, int, int, int, int, int]) -> None:
-        # all base units have a multiplier of 1, and their Gödel fraction is just their assigned Gödel number
+        """
+        Parameters
+        ----------
+        dimension : Tuple[int, int, int, int, int, int, int]
+            The dimensions of said base unit.
+        """
+
         super().__init__(1, dimension)
+
     Second = ([1, 0, 0, 0, 0, 0, 0])
     Metre = ([0, 1, 0, 0, 0, 0, 0])
     Gram = ([0, 0, 1, 0, 0, 0, 0])
