@@ -1,9 +1,10 @@
 from __future__ import annotations
+
+import ast
+import re
+from enum import Enum
 from typing import Any, Tuple
 
-from enum import Enum
-import re
-import ast
 import prairielearn as pl
 
 
@@ -247,6 +248,7 @@ class Unit:
         unit : Unit
             Unit to apply the prefix to
         """
+
         new_multiplier = unit.multiplier * 10 ** prefix.value
         return cls(new_multiplier, unit.dimensions)
 
@@ -261,7 +263,7 @@ class Unit:
         str : str
             String to parse
         """
-        # here be dragons
+
         regex = f"(?:({'|'.join(MetricPrefixes.__members__.keys())})?({'|'.join(MetricUnits.__members__.keys())}))|({'|'.join(ImperialUnits.__members__.keys())})"
         regex = re.compile(regex)
 
@@ -289,6 +291,7 @@ class Unit:
         str : str
             String to parse
         """
+
         tree = ast.parse(str, mode='eval')
         whitelist = (ast.Expression, ast.Name, ast.Load, ast.BinOp, ast.Mult, ast.Div, ast.Pow, ast.Constant)
         CheckWhitelist(whitelist).visit(tree)

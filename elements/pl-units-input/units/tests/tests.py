@@ -1,4 +1,5 @@
 import unittest
+
 import units
 
 
@@ -7,7 +8,6 @@ class TestBaseUnit(unittest.TestCase):
         self.assertEqual(units.MetricUnits.m.value, units.ImperialUnits.ft.value)
         self.assertEqual(units.MetricUnits.s.value, units.MetricUnits.min.value)
         self.assertEqual(units.MetricUnits.g.value, units.ImperialUnits.oz.value)
-
 
     def test_compound_unit_equality(self):
         self.assertEqual(units.MetricUnits.s.value * units.MetricUnits.A.value, units.MetricUnits.C.value)
