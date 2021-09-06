@@ -56,10 +56,18 @@
             <th></th>
           </thead>
           <tbody>
+            <% let hasUnknownUsers = false; %>
             <% course_users.forEach(function(course_user, i) { %>
               <tr>
                 <td class="align-middle"><%= course_user.uid %></td>
-                <td class="align-middle"><%= (course_user.name || '—') %></td>
+                <td class="align-middle">
+                  <% if (course_user.name) { %>
+                  <%= course_user.name %>
+                  <% } else { %>
+                  <% hasUnknownUsers = true; %>
+                  <span class="text-danger">Unknown user</span>
+                  <% } %>
+                </td>
                 <td class="align-middle">
                   <% if (((course_user.user_id == authn_user.user_id) || (course_user.user_id == user.user_id)) &&
                          (!is_administrator)) {
@@ -218,6 +226,11 @@
           </tbody>
         </table>
         <small class="card-footer">
+          <% if (hasUnknownUsers) { %>
+          <p>
+            Users with name "<span class="text-danger">Unknown user</span>" either have never logged in or have an incorrect UID.
+          </p>
+          <% } %>
           <details>
             <summary>Recommended access levels</summary>
             <table class="table table-striped table-sm border" style="max-width: 45em">
