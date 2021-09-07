@@ -2,13 +2,12 @@ const {assert} = require('chai');
 const cheerio = require('cheerio');
 const config = require('../lib/config');
 const fetch = require('node-fetch');
-const querystring = require('querystring');
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const io = require('socket.io-client');
-const {setUser, parseInstanceQuestionId} = require('./helperClient');
+const {setUser, parseInstanceQuestionId, saveOrGrade} = require('./helperClient');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -27,10 +26,6 @@ const mockStudents = [
     {authUid: 'student3', authName: 'Student User 3', authUin: '00000003'},
     {authUid: 'student4', authName: 'Student User 4', authUin: '00000004'},
 ];
-
-const getFileUploadSuffix = ($instanceQuestionPage) => {
-    return $instanceQuestionPage('input[name^=_file_upload]').attr('name');
-};
 
 const waitForExternalGrader = async ($questionsPage, questionsPage) => {
     return new Promise((resolve, reject) => {
@@ -66,39 +61,6 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
         } catch (err) {
             reject(err);
         }
-    });
-};
-
-/**
- * Acts as 'save' or 'save and grade' button click on student instance question page.
- * @param {string} instanceQuestionUrl the instance question url the student is answering the question on.
- * @param {object} payload json data structure type formed on the basis of the question
- * @param {string} 'save' or 'grade' enums
- */
- const saveOrGrade = async (instanceQuestionUrl, payload, action, fileData) => {
-    const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
-    const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
-    const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
-
-    // handles case where __variant_id should exist inside postData on only some instance questions submissions
-    if (payload && payload.postData) {
-        payload.postData = JSON.parse(payload.postData);
-        payload.postData.variant.id = variantId;
-        payload.postData = JSON.stringify(payload.postData);
-    }
-
-    const uploadSuffix = getFileUploadSuffix($instanceQuestionPage);
-
-    return fetch(instanceQuestionUrl, {
-        method: 'POST',
-        headers: {'Content-type': 'application/x-www-form-urlencoded'},
-        body: [
-            '__variant_id=' + variantId,
-            '__action=' + action,
-            '__csrf_token=' + token,
-            fileData ? uploadSuffix + '=' + encodeURIComponent(JSON.stringify(fileData)) : '',
-            querystring.encode(payload),
-        ].join('&'),
     });
 };
 

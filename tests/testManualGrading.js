@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
 const config = require('../lib/config');
-const {setUser, parseInstanceQuestionId} = require('./helperClient');
+const {setUser, parseInstanceQuestionId, saveOrGrade} = require('./helperClient');
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
@@ -26,7 +26,7 @@ const mockInstructors = [
 ];
 
 /**
- * Scrapes instructorQuestionManualGrading.ejs to make payload for POST 'add_manual_grade' action.
+ * Scrapes Grading Panel (instructorQuestionManualGrading.ejs) to make payload for POST 'add_manual_grade' action.
  * @param {object} $page Cheerio wrapped instance question manual grading page
  * @param {string} submissionNote Grading message instructor wants student to see.
  * @param {number} submissionScore Percentage below 100 divisible by 5.
@@ -66,37 +66,6 @@ const getConflictPayload = ($page, type) => {
         gradingJobId: $page(`div:contains("${wildcard}") > form > div > input[name="gradingJobId"]`).val(),
         conflictDataSource: $page(`div:contains("${wildcard}") > form > div > input[name="conflictDataSource"]`).val(),
     };
-};
-
-/**
- * Acts as 'save' or 'save and grade' button click on student instance question page.
- * @param {string} instanceQuestionUrl the instance question url the student is answering the question on.
- * @param {object} payload json data structure type formed on the basis of the question
- * @param {string} 'save' or 'grade' enums
- */
- let saveOrGrade = async (instanceQuestionUrl, payload, action) => {
-    const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
-    const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
-    const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
-
-    // handles case where __variant_id should exist inside postData on only some instance questions submissions
-    if (payload && payload.postData) {
-        payload.postData = JSON.parse(payload.postData);
-        payload.postData.variant.id = variantId;
-        payload.postData = JSON.stringify(payload.postData);
-    }
-
-    const res = await fetch(instanceQuestionUrl, {
-        method: 'POST',
-        headers: {'Content-type': 'application/x-www-form-urlencoded'},
-        body: [
-            '__variant_id=' + variantId,
-            '__action=' + action,
-            '__csrf_token=' + token,
-            querystring.encode(payload),
-        ].join('&'),
-    });
-    assert.equal(res.status, 200);
 };
 
 const gradeSubmission = async (iqManualGradeUrl, submissionNote, submissionScore) => {
