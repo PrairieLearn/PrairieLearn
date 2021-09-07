@@ -3,6 +3,7 @@ const cheerio = require('cheerio');
 const fetch = require('node-fetch');
 const querystring = require('querystring');
 const config = require('../lib/config');
+const {setUser, parseInstanceQuestionId} = require('./helperClient');
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
@@ -23,20 +24,6 @@ const mockInstructors = [
     {authUid: 'instructor1@illinois.edu', authName: 'Instructor 1', authUin: '11111111'},
     {authUid: 'instructor2@illinois.edu', authName: 'Instructor 2', authUin: '22222222'},
 ];
-
-const parseInstanceQuestionId = (url) => {
-    const iqId = parseInt(
-        url.match(/instance_question\/(\d+)/)[1],
-    );
-    assert.isNumber(iqId);
-    return iqId;
-};
-
-const setUser = (user) => {
-    config.authUid = user.authUid;
-    config.authName = user.authName;
-    config.authUin = user.authUin;
-};
 
 /**
  * Scrapes instructorQuestionManualGrading.ejs to make payload for POST 'add_manual_grade' action.

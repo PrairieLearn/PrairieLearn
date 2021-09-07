@@ -8,6 +8,7 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const io = require('socket.io-client');
+const {setUser, parseInstanceQuestionId} = require('./helperClient');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -19,12 +20,6 @@ const defaultUser = {
 };
 
 let socket = null;
-
-const setUser = (user) => {
-    config.authUid = user.authUid;
-    config.authName = user.authName;
-    config.authUin = user.authUin;
-};
 
 const mockStudents = [
     {authUid: 'student1', authName: 'Student User 1', authUin: '00000001'},
@@ -72,14 +67,6 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
             reject(err);
         }
     });
-};
-
-const parseInstanceQuestionId = (url) => {
-    const iqId = parseInt(
-        url.match(/instance_question\/(\d+)/)[1],
-    );
-    assert.isNumber(iqId);
-    return iqId;
 };
 
 /**

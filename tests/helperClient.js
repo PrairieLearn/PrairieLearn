@@ -1,6 +1,7 @@
 const fetch = require('node-fetch');
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
+const config = require('../lib/config');
 
 module.exports = {};
 
@@ -73,4 +74,27 @@ module.exports.extractAndSaveVariantId = (context, $, parentSelector = '') => {
     assert.isString(variantId);
     context.__variant_id = variantId;
     return variantId;
+};
+
+/**
+ * Set the active user within Prairie Learn's test environment.
+ * @param {object} user
+ */
+module.exports.setUser = (user) => {
+    config.authUid = user.authUid;
+    config.authName = user.authName;
+    config.authUin = user.authUin;
+};
+
+/**
+ * Get instance question id from URL params.
+ * @param {string} url
+ * @returns string
+ */
+module.exports.parseInstanceQuestionId = (url) => {
+    const iqId = parseInt(
+        url.match(/instance_question\/(\d+)/)[1],
+    );
+    assert.isNumber(iqId);
+    return iqId;
 };
