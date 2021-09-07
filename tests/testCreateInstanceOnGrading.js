@@ -38,8 +38,8 @@ describe('Create instance on grading', function () {
         describe('prepare the CSV upload data', function() {
             it('should succeed', function() {
                 locals.csvData
-                    = 'uid,instance,score_perc\n'
-                    + 'dev@illinois.edu,1,63.5\n';
+                    = 'group_name,uid,instance,score_perc\n'
+                    + 'test,dev@illinois.edu,1,63.5\n';
             });
         });
         helperQuestion.uploadAssessmentInstanceScores(locals);
@@ -61,8 +61,8 @@ describe('Create instance on grading', function () {
         describe('prepare the CSV upload data', function() {
             it('should succeed', function() {
                 locals.csvData
-                    = 'uid,instance,points\n'
-                    + 'dev@illinois.edu,2,42.7\n';
+                    = 'group_name,uid,instance,points\n'
+                    + 'test,dev@illinois.edu,2,42.7\n';
             });
         });
         helperQuestion.uploadAssessmentInstanceScores(locals);
