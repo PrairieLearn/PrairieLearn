@@ -2037,12 +2037,7 @@ mechanicsObjects.byType['pl-arc-dimensions'] = class extends PLDrawingBaseElemen
 
           if (obj.label) {
               let dt = obj.endAngle-obj.startAngle;
-              let t;
-              if (dt >= 0) {
-                  t = obj.startAngle + dt/2;
-              } else {
-                  t = obj.startAngle + (360+dt)/2;
-              }
+              let t = obj.startAngle + dt/2;
               let dx = obj.radius*Math.cos(t*Math.PI/180);
               let dy = obj.radius*Math.sin(t*Math.PI/180);
 
