@@ -1,9 +1,12 @@
 # Manual Grading
 
-PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is not currently an online web interface for manual grading.
+Prairie Learn supports a manual grading interactive UI and a legacy manual grading CSV upload feature.
 
+A question configured for manual grading will allow a student to submit an answer to a question without the element automatically grading the answer. The student will only see the "Save" option on a question. The consequence of a student pressing the "Save" button instead of the "Save & Grade" button is that the `def grade()` function within the element file is not called. Instead, only the `def parse()` function is called.
 
-## Configuring a question for manual grading
+For example, if an instructor includes a `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` will ensure that (1.) an answer was submitted and that (2.) the submission was a valid string in accordance to the `def parse()` method found in the [pl-string-input.py file](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198).
+
+Manually-graded questions allow students to "Save" answers, but they  do not have a "Save & Grade" button if configured with the "Manual" grading method option in the `gradingMethod` property. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored. It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments.
 
 The [`info.json` file](question.md#question-infojson) in the question should set `"gradingMethod": "Manual"`, like this:
 ```json
@@ -14,8 +17,37 @@ The [`info.json` file](question.md#question-infojson) in the question should set
     ...
 }
 ```
+## Manual Grading (UI Interactive)
 
-Manually-graded questions allow students to "Save" answers, but they don't have a "Save & Grade" button. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored. It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments.
+The manual grading view re-uses the student question view and adds a grading panel to submit a manual grade `score` and `feedback`. The score and feedback is added to the latest submission displayed on the manual grading view. The feedback must be a valid string and the score must be a number divisible by 5 and out of 100 percent.
+
+![](manual-grading/grading-panel.png)
+
+To list questions and begin grading, one must navigate to the course and have editor access. Click on the assessment to display a list of questions. The heading will reveal a "Manual Grading" option.
+
+The "Manual Grading" link will navigate to a page that lists all questions with a "Manual" type grading method. Each ungraded student submission will count as one ungraded question. Students can save multiple submissions on a question, but only the last ungraded submission is counted. Hence, if a student saves another submission after an item has been manually graded, the "Ungraded" category incrememnts by plus one.
+
+![](manual-grading/list-manual-questions.png)
+
+It is, therefore, recommended that an instructor or TA only submits manual grades after an assessment has closed. If an assessment is left open and a student makes another submission, it would be queued to be manually graded. Ultimately, the choice to leave an assessment open and allow the student to make multiple submissions, is up to the discretition of the instructor. The score will be overwritten on any further manual grading action.
+
+A manual grade is calculated by the instructor and is incompatible with an array of `points` and/or `maxPoints` feature on the question configuration.
+## Manual Grading Legacy (CSV Upload)
+
+PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is not currently an online web interface for manual grading.
+
+## Configuring a Question for Manual Grading
+
+Both, the interactive UI and legacy CSV upload, manual grading features can be configured by adding the "Manual" grading method to a question configuration:
+
+```json
+{
+    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+    "gradingMethod": "Manual",
+    "singleVariant": true,
+    ...
+}
+```
 
 Any [elements](elements/) can be used in the [`question.html`](question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, etc.
 
