@@ -451,3 +451,84 @@ For most [elements] there are four different ways of grading the student answer.
 4. Write an [external grader](externalGrading.md), though this is typically applied to more complex questions like coding.
 
 If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements/#pl-answer-panel-element) that any correct answer would be accepted and this displayed answer is only an example.
+
+## Initializing parameters from outside the question
+
+The `data["params"]` dictionary normally used to pass parameters to `question.html` can be &quot;seeded&quot; from outside the question&apos;s files, allowing some portion of its randomization to be set by an assessment, course instance, or course configuration file. Such "`questionParams`" can change the behavior of a question without needing to alter its source code, so a question can be reused on different assessments but with a different configuration of parameters to alter its actual variants as needed.
+
+A `questionParams` is a JSON object that can be placed in three different PrairieLearn file types. When a question&apos;s `generate()` function is called, the `data["params"]` dictionary will be pre-filled with the key-value pairs defined by `questionParams` in these locations:
+
+1. `infoCourse.json`: parameters defined here will be passed to all questions in the course, including when they are previewed by an instructor without being attached to an assessment.
+2. `infoCourseInstance.json`: these parameters will be passed to questions when they are used in one of this course instance's assessments.
+3. `infoAssessment.json`: parameters can be added to the assessment itself, to one of its zones, to one of its lists of alternatives, or to an individual question object. In each case, the parameters will be passed to all questions nested under that element. For example, parameters specified at the top-level assessment apply to every question; paramters for a zone only apply to the questions in that zone; and parameters on an individual question only apply to that question.
+
+Parameters with matching names are overridden by the locations that are farther down the preceding list. (A parameter configured by `infoCourse.json` will be supplanted by one configured in `infoCourseInstance.json`, parameters on an individual question in an assessment will override all others.)
+
+Example of a question's `server.py` that can be customized with `questionParams`:
+
+```python
+import random
+def generate(data):
+  param_names = data['params'].get('names', [{'name': 'Matt', 'photo': '001'}, {'name': 'Craig', 'photo': '002'}])
+  # Choose a random person to display.
+  chosen = random.choice(param_names)
+  data['params']['photo'] = chosen['photo']
+  data['correct_answers']['name'] = chosen['name']
+```
+
+Any `questionParams` that applies to this question and has a `names` key will provide the list to use as the parameter `names`; otherwise, the default list `[{'name': 'Matt', 'photo': '001'}, {'name': 'Craig', 'photo': '002'}]` will be used.
+
+The chosen name could be used to generate some HTML in `question.html`:
+
+```html
+What is this person&apos;s first name?
+
+<pl-figure file-name="student_images/{{params.photo}}.png" width="140px" directory="clientFilesCourse"></pl-figure>
+
+<pl-string-input answers-name="name"></pl-string-input>
+```
+
+When a new semester begins and a course instance is created, the `courseInstance.json` can be updated with the names of the course instructor and TAs.
+
+```json
+{
+  "uuid": ...,
+  ...,
+  "questionParams": {
+    "names": [{"name": "Neal", "photo": "003"}, {"name": "Jonatan", "photo": "004"}]
+  }
+}
+```
+
+When the question is used in an assessment for this course instance, Neal and Jonatan will be shown in the HTML instead of Matt and Craig.
+
+The question can be used in a second assessment with a different set of names by setting `questionParams` in the `infoAssessment.json` file:
+
+```json
+{
+  "uuid": ...,
+  ...,
+  "zones": [
+    {
+      "questions": [
+        {
+          "id": "myPhotoMatchingQuestion",
+          "points": 5,
+          "questionParams": {
+            "names": [{"name": "Luke", "photo": "005"}, {"name": "Leia", "photo": "006"}]
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+Doing this does not change the question in the original assessment, which would not be the case if the `server.py` was updated with the new list of names.
+
+Question params can reduce the need to duplicate questions in order to change the data source of its variation. This makes maintenance of the questions easier. Examples:
+
+* A &quot;match each nation with its capital city&quot; question can use a different set of nations depending on what region has been studied most recently. (Instead of different questions for each region.)
+* A question on programming language syntax errors can involve more examples of errors as new features with different syntax rules are learned. (Instead of different questions for later in the course.)
+* A question that generates an indefinite integrals can use simple trig functions on an early calculus exam, and later use inverse trig functions. (Instead of two different questions that only vary in the chosen function.)
+* A question can read scenario information from a file parameter set by the course instance, so a new course instance can reuse the question with a new set of scenarios without changing the question's code. (Instead of making a new question just for the course instance.)
