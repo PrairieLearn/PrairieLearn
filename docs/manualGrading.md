@@ -2,11 +2,11 @@
 
 Prairie Learn supports a manual grading interactive UI and a legacy manual grading CSV upload feature.
 
-A question configured for manual grading will allow a student to submit an answer to a question without the element automatically grading the answer. The student will only see the "Save" option on a question. The consequence of a student pressing the "Save" button instead of the "Save & Grade" button is that the `def grade()` function within the element file is not called. Instead, only the `def parse()` function is called.
+A question configured for manual grading will allow a student to submit an answer to a question without it being autograded by a question element. This allows an instructor or TA to manually grade the submission at a later time.
 
-For example, if an instructor includes a `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` will ensure that (1.) an answer was submitted and that (2.) the submission was a valid string in accordance to the `def parse()` method found in the [pl-string-input.py file](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198).
+The student will only see the "Save" button on a question when a question is configured for manual grading. The consequence of a student pressing the "Save" button, instead of the "Save & Grade" button, is that the `def parse()` function is called within the element python file instead of the  `def grade()`. For example, if an instructor includes a `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` will ensure that (1.) an answer was submitted and that (2.) the submission was a valid string in accordance to the `def parse()` method found in the [pl-string-input.py file](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198).
 
-Manually-graded questions allow students to "Save" answers, but they do not have a "Save & Grade" button if configured with the "Manual" grading method option in the `gradingMethod` property. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored. It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments.
+It is recommended to also mark manually-graded questions as `"singleVariant": true`, even on Homework assessments, so that students are only given a single random variant.
 
 ## Configuring a Question for Manual Grading
 
@@ -20,6 +20,10 @@ Both, the interactive UI and legacy CSV upload, manual grading features can be c
     ...
 }
 ```
+
+## Configuration Permissions for Manual Grading Users
+
+Manual grading users must have "Student data access" viewer permissions to be able to manually grade a submission. A course "Editor" or "Owner" will have to add the manual grading users, with the appropriate permissions, in the 'Staff' area of the course configuration page.
 
 ## Manual Grading (UI Interactive)
 
@@ -45,7 +49,13 @@ The "Grade Next" button appears on questions that have ungraded items. Clicking 
 
 ### Manual Grading Conflicts
 
-A manual grading conflict occurs when multiple manual grading users click "Grade Next" and land on the same instance question. The first user who lands on the instance question will be oblivious to this scenario. Subsequent users who land on the page will see a warning displayed that reveals the instance question is being graded by the first user. If the first user submits a manual grade and any subsequent user submits a grade, then the subsequent user will be navigated to a new view that displays both manual grading submissions and asks the user to resolve the manual grading conflict.
+A manual grading conflict occurs when multiple manual grading users click "Grade Next" and land on the same instance question. The first user who lands on the instance question will be oblivious to this scenario. Subsequent users who land on the page will see a warning displayed that reveals the instance question is being graded by the first user.
+
+![](manual-grading/grading-warning.png)
+
+If the first user submits a manual grade and any subsequent user submits a grade, then the subsequent user will be navigated to a new view that displays both manual grading submissions and asks the user to resolve the manual grading conflict.
+
+![](manual-grading/grading-warning.png)
 
 In the scenario that any subsequent user does not resolve the conflict, the instance question will still count as an ungraded instance question in the "Manual Grading Queue". Therefore, the "Grade Next" button will eventually lead a manual grading user to the view to resolve the manual grading conflict.
 
