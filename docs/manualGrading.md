@@ -1,10 +1,12 @@
 # Manual Grading
 
-Prairie Learn supports a manual grading interactive UI and a legacy manual grading CSV upload feature.
+Prairie Learn supports two manual grading features: an interactive UI and a CSV upload feature.
 
-A question configured for manual grading will allow a student to submit an answer to a question without it being autograded by a question element. This allows an instructor or TA to manually grade the submission at a later time.
+A question configured for manual grading allows a student to submit an answer to a question that is marked by a manual grading user, such as an instructor or TA, at a later time.
 
-The student will only see the "Save" button on a question when a question is configured for manual grading. The consequence of a student pressing the "Save" button, instead of the "Save & Grade" button, is that the `def parse()` function is called within the element python file instead of the  `def grade()`. For example, if an instructor includes a `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` will ensure that (1.) an answer was submitted and that (2.) the submission was a valid string in accordance to the `def parse()` method found in the [pl-string-input.py file](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198).
+The student will only see the "Save" button on a question when a question is configured for manual grading. 
+
+The consequence of a student pressing the "Save" button, instead of the "Save & Grade" button, is that the `def parse()` function is called within the element python file instead of the  `def grade()`. For example, if an instructor includes a `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` will ensure that (1.) an answer was submitted and that (2.) the submission was a valid string in accordance to the `def parse()` method found in the [pl-string-input.py file](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198).
 
 It is recommended to also mark manually-graded questions as `"singleVariant": true`, even on Homework assessments, so that students are only given a single random variant.
 
@@ -31,7 +33,7 @@ The manual grading view re-uses the student question view, which displays submis
 
 ![](manual-grading/grading-panel.png)
 
-To list questions and begin grading, one must have editor privileges and navigate to the course. Click on the assessment to display a list of questions. The navigation bar header will include a "Manual Grading" button.
+To list questions and begin grading, one must have student data viewer privileges in a course. Navigate to the course. and click on the assessment to display a list of questions. The navigation bar header will include a "Manual Grading" button.
 
 Clicking on the "Manual Grading" button will navigate to a page that lists all questions with a "Manual" type grading method. This is the "Manual Grading Queue". Each ungraded student submission will count as one ungraded question. Students can save multiple submissions on a question, but only the last ungraded submission is counted. Hence, if a student saves another submission after an item has been manually graded, the "Ungraded" category increments by plus one.
 
