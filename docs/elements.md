@@ -1194,6 +1194,7 @@ Attribute | Type | Default | Description
 `directory` | text | "clientFilesQuestion" | The directory that contains the file, either 'clientFilesQuestion' or 'clientFilesCourse' (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type='dynamic'`.
 `width` | number | `None` | Width of image (e.g., '250px').
 `inline` | boolean | false | Display figure inline with text (true) or on a separate line (false).
+`alt-text` | text | "PrairieLearn Figure" | Provide alt (alternative) text to improve accessibility of figures by describing the image or the purpose of the image.
 
 #### Dynamically generated figures
 
