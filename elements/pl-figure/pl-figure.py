@@ -8,11 +8,12 @@ WIDTH_DEFAULT = None
 TYPE_DEFAULT = 'static'
 DIRECTORY_DEFAULT = 'clientFilesQuestion'
 INLINE_DEFAULT = False
+ALT_TEXT_DEFAULT = 'PrairieLearn Figure'
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory', 'inline'])
+    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory', 'inline', 'alt-text'])
 
 
 def render(element_html, data):
@@ -29,6 +30,9 @@ def render(element_html, data):
 
     # Get inline (default is false)
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
+
+    # Get alternate-text text (default is PrairieLearn Image)
+    alt_text = pl.get_string_attrib(element, 'alt-text', ALT_TEXT_DEFAULT)
 
     # Get base url, which depends on the type and directory
     if file_type == 'static':
@@ -53,7 +57,7 @@ def render(element_html, data):
     width = pl.get_string_attrib(element, 'width', WIDTH_DEFAULT)
 
     # Create and return html
-    html_params = {'src': file_url, 'width': width, 'inline': inline}
+    html_params = {'src': file_url, 'width': width, 'inline': inline, 'alt': alt_text}
     with open('pl-figure.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
 
