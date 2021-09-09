@@ -29,13 +29,25 @@ The manual grading view re-uses the student question view, which displays submis
 
 To list questions and begin grading, one must have editor privileges and navigate to the course. Click on the assessment to display a list of questions. The navigation bar header will include a "Manual Grading" button.
 
-Clicking on the "Manual Grading" button will navigate to a page that lists all questions with a "Manual" type grading method. Each ungraded student submission will count as one ungraded question. Students can save multiple submissions on a question, but only the last ungraded submission is counted. Hence, if a student saves another submission after an item has been manually graded, the "Ungraded" category increments by plus one.
+Clicking on the "Manual Grading" button will navigate to a page that lists all questions with a "Manual" type grading method. This is the "Manual Grading Queue". Each ungraded student submission will count as one ungraded question. Students can save multiple submissions on a question, but only the last ungraded submission is counted. Hence, if a student saves another submission after an item has been manually graded, the "Ungraded" category increments by plus one.
 
 ![](manual-grading/list-manual-questions.png)
 
 It is, therefore, recommended that an instructor or TA only submits manual grades after an assessment has closed. If an assessment is left open and a student makes another submission, it would be queued to be manually graded. The choice to leave an assessment open and allow the student to make new submissions after manual grading, ultimately, is up to the discretition of the instructor. The old manual grading score will be overwritten by any further manual grading action on new submissions.
 
 A manual grade is calculated by the instructor and is incompatible with an array of `points` and/or `maxPoints` feature on the question configuration.
+
+### Grade Next
+
+The "Manual Grading Queue" view lists all questions on an assessment that are configured with the "Manual" grading method type. The number of "Ungraded" and "Graded" instance questions are listed beside the question. Each instance question maps to a unique student with the particular student submissions.
+
+The "Grade Next" button appears on questions that have ungraded items. Clicking on the "Grade Next" button will load an ungraded instance question in random order.
+
+### Manual Grading Conflicts
+
+A manual grading conflict occurs when multiple manual grading users click "Grade Next" and land on the same instance question. The first user who lands on the instance question will be oblivious to this scenario. Subsequent users who land on the page will see a warning displayed that reveals the instance question is being graded by the first user. If the first user submits a manual grade and any subsequent user submits a grade, then the subsequent user will be navigated to a new view that displays both manual grading submissions and asks the user to resolve the manual grading conflict.
+
+In the scenario that any subsequent user does not resolve the conflict, the instance question will still count as an ungraded instance question in the "Manual Grading Queue". Therefore, the "Grade Next" button will eventually lead a manual grading user to the view to resolve the manual grading conflict.
 
 ## Manual Grading Legacy (CSV Upload)
 
