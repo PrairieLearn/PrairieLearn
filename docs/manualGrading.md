@@ -6,35 +6,7 @@ A question configured for manual grading will allow a student to submit an answe
 
 For example, if an instructor includes a `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` will ensure that (1.) an answer was submitted and that (2.) the submission was a valid string in accordance to the `def parse()` method found in the [pl-string-input.py file](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198).
 
-Manually-graded questions allow students to "Save" answers, but they  do not have a "Save & Grade" button if configured with the "Manual" grading method option in the `gradingMethod` property. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored. It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments.
-
-The [`info.json` file](question.md#question-infojson) in the question should set `"gradingMethod": "Manual"`, like this:
-```json
-{
-    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
-    "gradingMethod": "Manual",
-    "singleVariant": true,
-    ...
-}
-```
-## Manual Grading (UI Interactive)
-
-The manual grading view re-uses the student question view and adds a grading panel to submit a manual grade `score` and `feedback`. The score and feedback is added to the latest submission displayed on the manual grading view. The feedback must be a valid string and the score must be a number divisible by 5 and out of 100 percent.
-
-![](manual-grading/grading-panel.png)
-
-To list questions and begin grading, one must navigate to the course and have editor access. Click on the assessment to display a list of questions. The heading will reveal a "Manual Grading" option.
-
-The "Manual Grading" link will navigate to a page that lists all questions with a "Manual" type grading method. Each ungraded student submission will count as one ungraded question. Students can save multiple submissions on a question, but only the last ungraded submission is counted. Hence, if a student saves another submission after an item has been manually graded, the "Ungraded" category incrememnts by plus one.
-
-![](manual-grading/list-manual-questions.png)
-
-It is, therefore, recommended that an instructor or TA only submits manual grades after an assessment has closed. If an assessment is left open and a student makes another submission, it would be queued to be manually graded. Ultimately, the choice to leave an assessment open and allow the student to make multiple submissions, is up to the discretition of the instructor. The score will be overwritten on any further manual grading action.
-
-A manual grade is calculated by the instructor and is incompatible with an array of `points` and/or `maxPoints` feature on the question configuration.
-## Manual Grading Legacy (CSV Upload)
-
-PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is not currently an online web interface for manual grading.
+Manually-graded questions allow students to "Save" answers, but they do not have a "Save & Grade" button if configured with the "Manual" grading method option in the `gradingMethod` property. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored. It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments.
 
 ## Configuring a Question for Manual Grading
 
@@ -49,22 +21,29 @@ Both, the interactive UI and legacy CSV upload, manual grading features can be c
 }
 ```
 
+## Manual Grading (UI Interactive)
+
+The manual grading view re-uses the student question view, which displays submissions and grading results, and adds a grading panel to submit a manual grade `score` and `feedback`. The score and feedback is added to the latest submission displayed on the manual grading view. The feedback must be a valid string and the score must be a number divisible by 5 and out of 100 percent.
+
+![](manual-grading/grading-panel.png)
+
+To list questions and begin grading, one must have editor privileges and navigate to the course. Click on the assessment to display a list of questions. The navigation bar header will include a "Manual Grading" button.
+
+Clicking on the "Manual Grading" button will navigate to a page that lists all questions with a "Manual" type grading method. Each ungraded student submission will count as one ungraded question. Students can save multiple submissions on a question, but only the last ungraded submission is counted. Hence, if a student saves another submission after an item has been manually graded, the "Ungraded" category increments by plus one.
+
+![](manual-grading/list-manual-questions.png)
+
+It is, therefore, recommended that an instructor or TA only submits manual grades after an assessment has closed. If an assessment is left open and a student makes another submission, it would be queued to be manually graded. The choice to leave an assessment open and allow the student to make new submissions after manual grading, ultimately, is up to the discretition of the instructor. The old manual grading score will be overwritten by any further manual grading action on new submissions.
+
+A manual grade is calculated by the instructor and is incompatible with an array of `points` and/or `maxPoints` feature on the question configuration.
+
+## Manual Grading Legacy (CSV Upload)
+
+Prairie Learn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is now an online web interface for streamlining manual grading.
+
 Any [elements](elements/) can be used in the [`question.html`](question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, etc.
 
-To show manual feedback the `question.html` file should contain an element to display the feedback next to student submissions. A basic template for this is:
-```html
-<pl-submission-panel>
-  {{#feedback.manual}}
-  <p>Feedback from course staff:</p>
-  <markdown>{{{feedback.manual}}}</markdown>
-  {{/feedback.manual}}
-</pl-submission-panel>
-```
-
-This example template formats the feedback as Markdown.
-
-
-## Downloading the students' submitted answers
+### Downloading Student Answers
 
 After students have completed the assessment, download the submitted answers by going to the assessment page, then the "Downloads" tab, and selecting the `<assessment>_submissions_for_manual_grading.csv` file. This looks like:
 ```csv
@@ -78,21 +57,7 @@ This CSV file has three blank columns at the end, ready for the percentage score
 
 If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the "Downloads" tab. The scores and feedback should still be entered into the CSV file.
 
-### Workspaces
-
-To include files copied out of the workspace into the `<assessment>_files_for_manual_grading.zip`, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`
-```json
-"workspaceOptions": {
-        "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c"
-        ],
-        ...
-}
-...
-```
-
-## Uploading the scores and feedback
+### Uploading Scores and Feedback
 
 After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Uploads" tab, and selecting "Upload new question scores". If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
 
@@ -109,3 +74,32 @@ You also have the option to set partial scores. These can be based on individual
 If the `partial_scores` column contains a valid value, and there is no value in `score_perc` or `points`, the score will be computed based on the weighted average of the partial scores. For example, the score above will be computed as 80% (the weighted average between 70% with weight 2, and 100% with weight 1).
 
 *WARNING*: note that some elements such as drawings or matrix elements may rely on elaborate partial score values with specific structures and objects. When updating partial scores, make sure you follow the same structure as the original partial scores to avoid any problems. Changing these values could lead to errors on rendering the question pages for these elements.
+
+## Displaying Manual Grading Feedback
+
+To show manual feedback the `question.html` file should contain an element to display the feedback next to student submissions. A basic template for this is:
+```html
+<pl-submission-panel>
+  {{#feedback.manual}}
+  <p>Feedback from course staff:</p>
+  <markdown>{{{feedback.manual}}}</markdown>
+  {{/feedback.manual}}
+</pl-submission-panel>
+```
+
+This example template formats the feedback as Markdown.
+
+### Workspaces
+
+To include files copied out of the workspace into the `<assessment>_files_for_manual_grading.zip`, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`
+
+```json
+"workspaceOptions": {
+        "gradedFiles": [
+            "starter_code.h",
+            "starter_code.c"
+        ],
+        ...
+}
+...
+```
