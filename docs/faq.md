@@ -408,4 +408,4 @@ For example:
 </pl-hide-in-panel>
 ```
 
-For more information, see [the documentation for `pl-hide-in-panel`](elements.md#pl-hide-in-panel-element)
+For more information, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
