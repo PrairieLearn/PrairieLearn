@@ -16,12 +16,20 @@
   </div>
 
   <% if (locals.authz_result && (!authz_result.authorized_edit)) { %>
-  <hr>
-  <h5 class="card-title">Student:</h5>
-  <div class="d-flex flex-wrap pb-2">
-    <div class="pr-1"><%= instance_user.name %></div>
-    <div class="pr-1"><%= instance_user.uid %></div>
-  </div>
+    <hr>
+    <% if (instance_group) { %>
+    <h5 class="card-title">Group:</h5>
+    <div class="d-flex flex-wrap pb-2">
+      <div class="pr-1"><%= instance_group.name %></div>
+      <div class="pr-1">(<%= instance_group_uid_list.join(', ') %>)</div>
+    </div>
+    <% } else if (instance_user) { %>
+    <h5 class="card-title">Student:</h5>
+    <div class="d-flex flex-wrap pb-2">
+      <div class="pr-1"><%= instance_user.name %></div>
+      <div class="pr-1"><%= instance_user.uid %></div>
+    </div>
+    <% } %>
   <% } %>
 
   <% if (typeof question !== "undefined") { %>
