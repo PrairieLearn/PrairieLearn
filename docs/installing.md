@@ -41,22 +41,6 @@ If you're in the root of your course directory already, you can substitute `%cd%
 
 If you plan on running externally graded questions in local development, please see [this section](../externalGrading/#running-locally-on-docker) for a slightly different docker launch command.
 
-### Alternate solution to long development build times
-
-To replace the core `python` files one modifies in development there is another work around. Most likely, the developer is posting commits onto a fork of the `PrairieLearn` repository on GitHub and expects to eventually submit a pull request for the active branch they use locally. Suppose that your local changes to the development code are located in the directory `~/PrairieLearn`.
-
-To build a `docker` image from the fork with the source for a particular branch, run the following commands first (this initial step will take a while to complete): 
-```bash
-$ docker build --no-cache https://github.com/TheGHUserName/PrairieLearn.git#exact-branch-name
-$ export PLDIR_MAPS="-v $(greadlink -f ~/PrairieLearn/docs):/PrairieLearn/docs \
-      -v $(greadlink -f ~/PrairieLearn/elements):/PrairieLearn/elements \
-      -v $(greadlink -f ~/PrairieLearn/exampleCourse):/PrairieLearn/exampleCourse \
-      -v $(greadlink -f ~/PrairieLearn/lib):/PrairieLearn/lib" 
-$ docker images
-$ docker run -it --rm -p 3000:3000 $PLDIR_MAPS MOST-RECENT-IMAGE-NAME-FROM-ABOVE
-```
-Then you can connect to the running instance of `PrairieLearn` through the web browser method listed above. Note that `greadlink` is available on MacOS by running `brew install coreutils`. On Linux and other Unix machines, a standard `readlink -f path` will work in the `export` commands provided in the last terminal listings. 
-
 ## Upgrading your Docker's version of PrairieLearn
 
 To obtain the latest version of PrairieLearn at any time, make sure PrairieLearn is not running (Ctrl-C it if needed) and then run:
