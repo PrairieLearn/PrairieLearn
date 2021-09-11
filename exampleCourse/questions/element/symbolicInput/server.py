@@ -1,6 +1,5 @@
 import prairielearn as pl
 import sympy
-from sympy.parsing.sympy_parser import parse_expr
 
 def generate(data):
     # Original test cases:
