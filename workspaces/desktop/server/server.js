@@ -103,7 +103,12 @@ app.get('/resize', (req, res) => {
         res.sendStatus(400);
     }
 
-    spawn_gui(width, height);
+    if (!x11vnc_proc) {
+        /* Let's only resize the window on launch.  We don't want the user to refresh
+           and have all their running apps disappear because the x server was restarted. */
+
+        spawn_gui(width, height);
+    }
     res.sendStatus(200);
 });
 
