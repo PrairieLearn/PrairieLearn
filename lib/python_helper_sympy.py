@@ -1,4 +1,5 @@
 import sympy
+import sympy.abc as sympyabc
 import ast
 import sys
 import python_helper_symbolic_types as phst
@@ -13,7 +14,6 @@ class _Constants:
     def __init__(self):
         self.helpers = {
             '_Integer': sympy.Integer,
-            '_PLConstantValue' : phst.PLConstantValue,
         }
         self.variables = {
             'pi': sympy.pi,
@@ -31,10 +31,26 @@ class _Constants:
         }
         self.functions = {
             # These are shown to the student
-            'cos': sympy.cos,
-            'sin': sympy.sin,
-            'exp': sympy.exp,
-            'log': sympy.log,
+            'cos'    : sympy.cos,
+            'sin'    : sympy.sin,
+            'exp'    : sympy.exp,
+            'log'    : sympy.log,
+            'cos'    : sympy.cos,
+            'sin'    : sympy.sin,
+            'tan'    : sympy.tan,
+            'sec'    : sympy.sec,
+            'csc'    : sympy.csc,
+            'cot'    : sympy.cot,
+            'arccos' : sympy.acos,
+            'arcsin' : sympy.asin,
+            'arctan' : sympy.atan,
+            'atan2'  : sympy.atan2,
+            # We need to add in recognition for sympy functions that are involved in constant expressions 
+            # that are optionally enabled in the `pl-symbolic-input` element. Otherwise, parsing of these expressions 
+            # will fail if they are not listed as known functions at runtime. This is a short list to include by default:
+            'sqrt'   : sympy.sqrt,
+            'log'    : sympy.log,
+            'zeta'   : sympy.zeta,
         }
 
     def get_supported_function_names(self):
@@ -50,16 +66,14 @@ class _Constants:
         return self
 
     def enable_extended_func_names(self, extended_func_groups_list=None):
-        if extended_func_groups_list is None:
+        if extended_func_groups_list is None or \
+             (isinstance(extended_func_groups_list, str) and extended_func_groups_list.lower() == ""):
+            return self
+        elif isinstance(extended_func_groups_list, str) and extended_func_groups_list == "all":
             return self.enable_extended_function_names_by_dict( 
                 extended_func_names_dict=phst.GetCustomFunctionsByGroup(funcGrpId=None)
             )
-        extended_func_groups_list = extended_func_groups_list.replace(' ', '').lower()
-        if isinstance(extended_func_groups_list, str) and extended_func_groups_list == "all":
-            return self.enable_extended_function_names_by_dict( 
-                extended_func_names_dict=phst.GetCustomFunctionsByGroup(funcGrpId=None)
-            )
-        extFuncGrpNames = extended_func_groups_list.split('&') if extended_func_groups_list != "" else []
+        extFuncGrpNames = [ funcGrp.strip().lower() for funcGrp in extended_func_groups_list.split(',') ]
         extFuncsDict = dict([])
         for funcGrpName in extFuncGrpNames:
             extFuncsDict.update( phst.GetCustomFunctionsByGroup(funcGrpId=funcGrpName) )
@@ -72,30 +86,29 @@ class _Constants:
             self.functions.update({ funcName : implemented_function(funcName, extended_func_names_dict[funcName]) })
         return self
 
-    def enable_extended_symbolic_constants(self, extended_constant_groups_list=None):
-        if extended_constant_groups_list is None:
-            return self.enable_extended_symbolic_constants_by_dict( 
-                extended_var_names_dict=dict(phst.GetConstantVariablesByGroup(cvarGrpId=None))
-            )
-        extended_constant_groups_list = extended_constant_groups_list.replace(' ', '').lower()
-        if isinstance(extended_constant_groups_list, str) and extended_constant_groups_list.lower() == "all":
+    def enable_extended_symbolic_constants(self, problem_name, extended_constant_groups_list=None):
+        if extended_constant_groups_list is None or \
+            (isinstance(extended_constant_groups_list, str) and extended_constant_groups_list.lower() == ""):
+            return self
+        elif isinstance(extended_constant_groups_list, str) and extended_constant_groups_list.lower() == "all":
             return self.enable_extended_function_names_by_dict( 
-                extended_var_names_dict=dict(phst.GetConstantVariablesByGroup(cvarGrpId=None))
+                extended_var_names_dict=phst.GetConstantVariablesByGroup(cvarGrpId=None)
             )
-        extFuncGrpNames = extended_constant_groups_list.split('&') if extended_constant_groups_list != "" else []
+        extFuncGrpNames = [ constGrp.strip().lower() for constGrp in extended_constant_groups_list.split(',') ]
         extFuncsDict = dict([])
         for funcGrpName in extFuncGrpNames:
-            extFuncsDict.update( dict(phst.GetConstantVariablesByGroup(cvarGrpId=funcGrpName)) )
+            extFuncsDict.update( phst.GetConstantVariablesByGroup(cvarGrpId=funcGrpName) )
         return self.enable_extended_symbolic_constants_by_dict( 
-                extended_var_names_dict=extFuncsDict
+                problem_name, extended_var_names_dict=extFuncsDict
         )
 
-    def enable_extended_symbolic_constants_by_dict(self, extended_var_names_dict={}):
+    def enable_extended_symbolic_constants_by_dict(self, problem_name, extended_var_names_dict={}):
         for constVarName in extended_var_names_dict.keys():
             self.variables.update({ constVarName : extended_var_names_dict[constVarName] })
         return self
 
-CONSTANTS_INSTANCE = _Constants()
+CONSTANTS_INSTANCE_DEFAULT = _Constants()
+CONSTANTS_INSTANCE_LOOKUP = dict([])
 
 # Safe evaluation of user input to convert from string to sympy expression.
 #
@@ -211,12 +224,13 @@ class CheckFunctions(ast.NodeVisitor):
         self.generic_visit(node)
 
 class CheckVariables(ast.NodeVisitor):
-    def __init__(self, variables):
+    def __init__(self, variables, var_number_symbols):
         self.variables = variables
+        self.var_number_symbols = var_number_symbols 
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Load):
             if not is_name_of_function(node):
-                if node.id not in self.variables:
+                if node.id not in self.variables and node.id not in self.var_number_symbols:
                     node = get_parent_with_location(node)
                     raise HasInvalidVariableError(node.col_offset, node.id)
         self.generic_visit(node)
@@ -234,7 +248,7 @@ def get_parent_with_location(node):
     else:
         return get_parent_with_location(node.parent)
 
-def evaluate(expr, locals_for_eval={}):
+def evaluate(expr, locals_for_eval={}, var_number_symbols={}):
 
     # Disallow escape character
     if '\\' in expr:
@@ -252,8 +266,6 @@ def evaluate(expr, locals_for_eval={}):
 
     # Link each node to its parent
     for node in ast.walk(root):
-        import sys
-        sys.stdout.write("NODE: %s - %s" % (node, str(node)))
         for child in ast.iter_child_nodes(node):
             child.parent = node
 
@@ -261,7 +273,7 @@ def evaluate(expr, locals_for_eval={}):
     CheckFunctions(locals_for_eval['functions']).visit(root)
 
     # Disallow variables that are not in locals_for_eval
-    CheckVariables(locals_for_eval['variables']).visit(root)
+    CheckVariables(locals_for_eval['variables'], var_number_symbols).visit(root)
 
     # Disallow AST nodes that are not in whitelist
     #
@@ -279,9 +291,11 @@ def evaluate(expr, locals_for_eval={}):
     #    'Load', 'Lt', 'LtE', 'Mod', 'Name', 'Not', 'NotEq', 'NotIn',
     #    'Num', 'Or', 'RShift', 'Set', 'Slice', 'Str', 'Sub',
     #    'Tuple', 'UAdd', 'USub', 'UnaryOp', 'boolop', 'cmpop',
-    #    'expr', 'expr_context', 'operator', 'slice', 'unaryop']
-    #
-    whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
+    #    'expr', 'expr_context', 'operator', 'slice', 'unaryop' 
+    # ]
+    whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, \
+                 ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, \
+                 ast.Div, ast.Mod, ast.Pow)
     CheckWhiteList(whitelist).visit(root)
 
     # Disallow float and complex, and replace int with sympy equivalent
@@ -295,17 +309,19 @@ def evaluate(expr, locals_for_eval={}):
     locals = {}
     for key in locals_for_eval:
         locals = {**locals, **locals_for_eval[key]}
-    import sys
-    sys.stderr.write("LOCALS: %s\n" % locals)
-    return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None }, locals)
+    locals = {**locals, **var_number_symbols}
+    globals = {
+        '__builtins__' : {}
+    }
+    return eval(compile(root, '<ast>', 'eval'), globals, locals)
 
 def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False, allow_complex=False):
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
     locals_for_eval = {
-        'functions': const.functions,
-        'variables': const.variables,
-        'helpers': const.helpers,
+        'functions' : const.functions,
+        'variables' : const.variables,
+        'helpers'   : const.helpers,
     }
     if allow_hidden and not allow_complex:
         locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.hidden_variables}
@@ -313,31 +329,38 @@ def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False
             locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.complex_variables, **const.hidden_complex_variables}
     elif allow_complex:
         locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.complex_variables}
+    else:
+        locals_for_eval['variables'] = {**locals_for_eval['variables']}
 
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
         for variable in variables:
-            if isinstance(variable, sympy.Symbol) or isinstance(variable, sympy.NumberSymbol):
-                vname = str(variable)
-                locals_for_eval['variables'][vname] = variable
+            vname = str(variable)
+            if isinstance(variable, str):
+                vfunc = sympy.Function(variable)
+                locals_for_eval['variables'][vname] = sympy.Symbol(variable)
             else:
-                vname = str(variable)
-                locals_for_eval['variables'][vname] = sympy.Symbol(vname)
+                locals_for_eval['variables'][vname] = variable 
+    for vname in const.variables.keys():
+        variable = const.variables[vname]
+        if isinstance(variable, str):
+            vfunc = sympy.Function(variable)
+            locals_for_eval['variables'][vname] = sympy.Symbol(variable)
+        else:
+            locals_for_eval['variables'][vname] = variable 
+
     # And similarly for the function names:
     funcsWithBodySubsts = dict([])
     if const.functions is not None:
-        for func in const.functions.keys():
+        for func in const.functions:
             funcObj = const.functions[func]
             if isinstance(funcObj, sympy.core.function.UndefinedFunction):
                 funcsWithBodySubsts[func] = funcObj
-            locals_for_eval['functions'][func] = sympy.Function(func)
+            funcName = str(func)
+            locals_for_eval['functions'][func] = const.functions[func]
+    
     # Do the conversion
-    aSympyEvalObj = evaluate(a, locals_for_eval)
-
-    # Map the local custom and special function names with implementations back to their original definitions: 
-    #for funcName in funcsWithBodySubsts.keys():
-    #    aSympyEvalObj.subs(funcName, funcsWithBodySubsts[funcName])
-    return aSympyEvalObj
+    return evaluate(a, locals_for_eval, const.variables)
 
 def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=False):
     consts = _Constants()
@@ -382,7 +405,6 @@ def json_to_sympy_with_context(a, const, allow_complex=True):
         raise ValueError('json must have key _value for conversion to sympy')
     if not '_variables' in a:
         a['_variables'] = None
-
     return convert_string_to_sympy_with_context(a['_value'], a['_variables'], const, allow_hidden=True, allow_complex=allow_complex)
 
 def json_to_sympy(a, allow_complex=True):
