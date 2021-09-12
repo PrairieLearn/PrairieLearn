@@ -395,3 +395,17 @@ If you have a block of text that you want to re-use in many questions, possibly 
     ```
     {{{params.units_instructions}}}
     ```
+
+## How can I hide the correct answer when students see their grading results?
+
+Some elements in PL have functionality to hide the correct answer (`pl-checkbox`, etc.) but others do not (`pl-multiple-choice`). A more general way of hiding the correct answer for any element is to surround your question's graded pl-element with `pl-hide-in-panel` in the `question.html` file. This solution will work across all elements.
+
+For example:
+
+```xml
+<pl-hide-in-panel answer="true">
+  <pl-multiple-choice ...></pl-multiple-choice>
+</pl-hide-in-panel>
+```
+
+For more information, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
