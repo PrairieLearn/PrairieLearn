@@ -8,7 +8,7 @@ WIDTH_DEFAULT = None
 TYPE_DEFAULT = 'static'
 DIRECTORY_DEFAULT = 'clientFilesQuestion'
 INLINE_DEFAULT = False
-ALT_TEXT_DEFAULT = 'PrairieLearn Figure'
+ALT_TEXT_DEFAULT = ''
 
 
 def prepare(element_html, data):
