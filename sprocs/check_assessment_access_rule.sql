@@ -82,11 +82,29 @@ BEGIN
             ORDER BY r.access_end DESC -- choose the longest-lasting if >1
             LIMIT 1;
 
-            IF NOT FOUND THEN
-                -- no reservation so block access
-                authorized := FALSE;
+            IF FOUND THEN
+                -- we have a valid reservation, don't keep going to "authorized := FALSE"
                 EXIT schedule_access;
             END IF;
+
+            -- is there a checked-in pt_reservation?
+            PERFORM 1
+            FROM
+                pt_reservations AS r
+                JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
+                JOIN pt_exams AS x ON (x.id = r.exam_id)
+            WHERE
+                (date BETWEEN r.access_start AND r.access_end)
+                AND e.user_id = check_assessment_access_rule.user_id
+                AND x.uuid = assessment_access_rule.exam_uuid;
+
+            IF FOUND THEN
+                -- we have a valid reservation, don't keep going to "authorized := FALSE"
+                EXIT schedule_access;
+            END IF;
+
+            -- we only get here if we don't have a reservation, so block access
+            authorized := FALSE;
 
         ELSE -- no rule.exam_uuid defined, so search the long way
 

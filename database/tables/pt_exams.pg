@@ -1,0 +1,9 @@
+columns
+    id: bigint not null default nextval('pt_exams_id_seq'::regclass)
+    uuid: uuid
+
+indexes
+    pt_exams_pkey: PRIMARY KEY (id) USING btree (id)
+
+referenced by
+    pt_reservations: FOREIGN KEY (exam_id) REFERENCES pt_exams(id)
