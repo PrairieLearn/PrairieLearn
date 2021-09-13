@@ -182,7 +182,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
                     $preview.find('code').text('Binary file not previewed.');
                 }
             } catch (e) {
-                $preview.find('code').text('Unable to decode file.');
+                $preview.find('code').text('Content preview is not available for this type of file.');
             }
             $file.append($preview);
             $fileStatusContainer.append('<div class="file-status-container-right">' + download + '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>');
