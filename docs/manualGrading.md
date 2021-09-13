@@ -1,12 +1,10 @@
 # Manual Grading
 
-Prairie Learn supports two manual grading features: an interactive UI and a CSV upload feature.
+Prairie Learn supports two manual grading features: an interactive UI and a CSV grade upload feature.
 
-A question configured for manual grading allows a student to submit an answer to a question that is marked by a manual grading user, such as an instructor or TA, at a later time.
+The manual grading feature allows an instructor or TA to submit a grade after a student has made a submission on a question. This question must be configured for manual grading. Once a question is configured for manual grading, students will only be able to make a submission with the "Save" button on the question view. Answers are saved, but no automatic grading occurs.
 
-The student will only see the "Save" button on a question when a question is configured for manual grading. 
-
-The consequence of a student pressing the "Save" button, instead of the "Save & Grade" button, is that the `def parse()` function is called within the element python file instead of the  `def grade()`. For example, if an instructor includes a `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` will ensure that (1.) an answer was submitted and that (2.) the submission was a valid string in accordance to the `def parse()` method found in the [pl-string-input.py file](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198).
+To view the validation rules for the "Save" button, view the `def parse()` function within the element python file. For example, if a question uses the `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` `def parse()` [here](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198). Therefore, the "Save" button ensures that (1.) an answer is submitted and that (2.) the submission is a valid string. All "Save" button logic validation logic differs on the basis of the element python file.
 
 It is recommended to also mark manually-graded questions as `"singleVariant": true`, even on Homework assessments, so that students are only given a single random variant.
 
@@ -29,33 +27,33 @@ Manual grading users must have "Student data access" viewer permissions to be ab
 
 ## Manual Grading (UI Interactive)
 
-The manual grading view re-uses the student question view, which displays submissions and grading results, and adds a grading panel to submit a manual grade `score` and `feedback`. The score and feedback is added to the latest submission displayed on the manual grading view. The feedback must be a valid string and the score must be a number divisible by 5 and out of 100 percent.
+The manual grading view re-uses the student question view that displays student submissions with their grading results. The manaul grading view also adds a grading panel to make submitting the grade `score` and `feedback` easy. The score and feedback is added to the latest submission displayed on the manual grading view. The feedback must be a valid string and the score must be a number divisible by 5 and out of 100 percent.
 
 ![](manual-grading/grading-panel.png)
 
-To list questions and begin grading, one must have student data viewer privileges in a course. Navigate to the course. and click on the assessment to display a list of questions. The navigation bar header will include a "Manual Grading" button.
+To list questions and begin grading, one must have student data viewer privileges in a course. Navigate to the course and click on the assessment to display a list of questions. The navigation bar header will include a "Manual Grading" button.
 
-Clicking on the "Manual Grading" button will navigate to a page that lists all questions with a "Manual" type grading method. This is the "Manual Grading Queue". Each ungraded student submission will count as one ungraded question. Students can save multiple submissions on a question, but only the last ungraded submission is counted. Hence, if a student saves another submission after an item has been manually graded, the "Ungraded" category increments by plus one.
+Clicking on the "Manual Grading" button will navigate to a page that lists all questions with a "Manual" type grading method. This is the "Manual Grading Queue". Each ungraded student submission will count as one ungraded question. Students can save multiple submissions on a question, but only the last ungraded submission is queried to determine if a question has been manually graded. Hence, if a student saves another submission after an item has been manually graded, the "Ungraded" category increments by plus one. An instructor has the option of manually grading this question again, in which case the score is overwritten.
 
 ![](manual-grading/list-manual-questions.png)
 
-It is, therefore, recommended that an instructor or TA only submits manual grades after an assessment has closed. If an assessment is left open and a student makes another submission, it would be queued to be manually graded. The choice to leave an assessment open and allow the student to make new submissions after manual grading, ultimately, is up to the discretition of the instructor. The old manual grading score will be overwritten by any further manual grading action on new submissions.
+It is, therefore, recommended that an instructor or TA only submits manual grades after an assessment has closed. The choice to leave an assessment open and allow the student to make new submissions after manual grading, ultimately, is up to the discretition of the instructor.
 
-A manual grade is calculated by the instructor and is incompatible with an array of `points` and/or `maxPoints` feature on the question configuration.
+A manual grade should be calculated by the instructor and is incompatible with an array of `points` and/or `maxPoints` feature on the question configuration, as it would require manual grading the same question many times and submitting the percentage for the current score increase. It is currently possible to configure both, but this ability will be removed in the near future. This is a breaking change.
 
-### Grade Next
+### Grade Next Button
 
 The "Manual Grading Queue" view lists all questions on an assessment that are configured with the "Manual" grading method type. The number of "Ungraded" and "Graded" instance questions are listed beside the question. Each instance question maps to a unique student with the particular student submissions.
 
-The "Grade Next" button appears on questions that have ungraded items. Clicking on the "Grade Next" button will load an ungraded instance question in random order.
+The "Grade Next" button appears on questions in the queue that have ungraded items. Clicking on the "Grade Next" button will load the next ungraded instance question in random order.
 
 ### Manual Grading Conflicts
 
-A manual grading conflict occurs when multiple manual grading users click "Grade Next" and land on the same instance question. The first user who lands on the instance question will be oblivious to this scenario. Subsequent users who land on the page will see a warning displayed that reveals the instance question is being graded by the first user.
+A manual grading conflict occurs when multiple manual grading users click "Grade Next" and land on the same instance question. The first user selects the next student question for grading. Subsequent users who land on the same student question page will see a warning displayed that reveals that the question is being graded by the first user.
 
 ![](manual-grading/grading-warning.png)
 
-If the first user submits a manual grade and any subsequent user submits a grade, then the subsequent user will be navigated to a new view that displays both manual grading submissions and asks the user to resolve the manual grading conflict. The "Current Grade" is the submission by the second user who did not adhere to the warning displayed on the page. The "Incoming Grade" is the current user's grade who encounters and should resolve the grading conflict.
+If the first user submits a manual grade and any subsequent user submits a grade, then the subsequent user will be navigated to a new view that displays both manual grading submissions and asks the user to resolve the manual grading conflict. The first user lands on a conflict page is the users both submit in the opposite order. The "Current Grade" is the grade of latter manual grade submission and the "Incoming Grade" is the former.
 
 ![](manual-grading/grading-warning.png)
 
@@ -113,7 +111,7 @@ To show manual feedback the `question.html` file should contain an element to di
 
 This example template formats the feedback as Markdown.
 
-### Workspaces
+## Workspaces
 
 To include files copied out of the workspace into the `<assessment>_files_for_manual_grading.zip`, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`
 
