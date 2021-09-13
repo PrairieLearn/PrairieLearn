@@ -13,7 +13,7 @@ ALT_TEXT_DEFAULT = ''
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory', 'inline', 'alt-text'])
+    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory', 'inline', 'alt'])
 
 
 def render(element_html, data):
@@ -32,7 +32,7 @@ def render(element_html, data):
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
     # Get alternate-text text (default is PrairieLearn Image)
-    alt_text = pl.get_string_attrib(element, 'alt-text', ALT_TEXT_DEFAULT)
+    alt_text = pl.get_string_attrib(element, 'alt', ALT_TEXT_DEFAULT)
 
     # Get base url, which depends on the type and directory
     if file_type == 'static':
