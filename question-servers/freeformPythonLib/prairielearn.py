@@ -401,6 +401,12 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
 
         c(., ., .)
 
+    If language is 'sympy' and A is a 2D ndarray, the string looks like this:
+        Matrix([[ ..., ... ], [ ..., ... ]])
+
+    If A is a 1D ndarray, the string looks like this:
+        Matrix([ ..., ..., ... ])
+
     In either case, if A is not a 1D or 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
@@ -472,8 +478,23 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
             ncol = A.shape[1]
             result = f'matrix({result}, nrow = {nrow}, ncol = {ncol}, byrow = TRUE)'
         return result
+    elif language == 'sympy':
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+        result = np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
+        # Cast to a vector: Matrix([1, 2, 3, 4, 5, 6])
+        result = f'Matrix({result})'
+        return result
     else:
-        raise Exception('language "{:s}" must be either "python", "matlab", "mathematica", or "r"'.format(language))
+        raise Exception('language "{:s}" must be either "python", "matlab", "mathematica", "r", or "sympy"'.format(language))
 
 
 # Deprecated version, keeping for backwards compatibility
