@@ -4,6 +4,8 @@ Prairie Learn supports two manual grading features: an interactive UI and a CSV 
 
 The manual grading feature allows an instructor or TA to submit a grade after a student has made a submission on a question. This question must be configured for manual grading. Once a question is configured for manual grading, students will only be able to make a submission with the "Save" button on the question view. Answers are saved, but no automatic grading occurs.
 
+## Save Button
+
 To view the validation rules for the "Save" button, view the `def parse()` function within the element python file. For example, if a question uses the `pl-string-input` element in a question for manual grading, when a student presses "Save", the `pl-string-input` `def parse()` [here](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-string-input/pl-string-input.py#L176-L198). Therefore, the "Save" button ensures that (1.) an answer is submitted and that (2.) the submission is a valid string. All "Save" button logic validation logic differs on the basis of the element python file.
 
 It is recommended to also mark manually-graded questions as `"singleVariant": true`, even on Homework assessments, so that students are only given a single random variant.
@@ -55,7 +57,7 @@ A manual grading conflict occurs when multiple manual grading users click "Grade
 
 If the first user submits a manual grade and any subsequent user submits a grade, then the subsequent user will be navigated to a new view that displays both manual grading submissions and asks the user to resolve the manual grading conflict. The first user lands on a conflict page is the users both submit in the opposite order. The "Current Grade" is the grade of latter manual grade submission and the "Incoming Grade" is the former.
 
-![](manual-grading/grading-warning.png)
+![](manual-grading/conflict-resolution.png)
 
 In the scenario that any subsequent user does not resolve the conflict, the instance question will still count as an ungraded instance question in the "Manual Grading Queue". Therefore, the "Grade Next" button will eventually lead a manual grading user to the view to resolve the manual grading conflict.
 
