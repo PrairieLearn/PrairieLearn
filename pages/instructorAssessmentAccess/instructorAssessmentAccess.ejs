@@ -31,6 +31,7 @@
                 <th>Time limit</th>
                 <th>Password</th>
                 <th>CBTF exam</th>
+                <th>PrairieTest</th>
               </tr>
             </thead>
             <tbody>
@@ -60,6 +61,16 @@
                 <td><%= access_rule.time_limit %></td>
                 <td><%= access_rule.password %></td>
                 <td><%- access_rule.exam %></td>
+                <td>
+                  <% if (access_rule.pt_exam_name) { %>
+                  <a href="<%= config.ptHost %>/pt/course/<%= access_rule.pt_course_id %>/staff/exam/<%= access_rule.pt_exam_id %>"><%= access_rule.pt_course_name %>: <%= access_rule.pt_exam_name %></a>
+                  <% } else if (access_rule.exam_uuid && !access_rule.ps_exam_id) { %>
+                  Exam not found: <%= access_rule.exam_uuid %>
+                  <% } else { %>
+                  &mdash;
+                  <% } %>
+                  <%- access_rule.pt_exam %>
+                </td>
               </tr>
               <% }); %>
             </tbody>
