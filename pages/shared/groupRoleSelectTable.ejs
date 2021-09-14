@@ -1,43 +1,50 @@
 <!-- TODO: add way to submit table -->
-<table class="table table-bordered table-striped mt-3">
-  <thead>
-    <tr>
-      <th scope="col">Select Role</th>
-      <th scope="col">Manager</th>
-      <th scope="col">Recorder</th>
-      <th scope="col">Reflector</th>
-      <th scope="col">Contributor</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% group_info.forEach(function (row) { %>
-    <tr>
-      <td><%= row.uid %></td>
-      <td>
-        <div>
-          <input type="checkbox" id="manager-<%= row.uid %>" />
-          <label for="manager-<%= row.uid %>">&nbsp;</label>
-        </div>
-      </td>
-      <td>
-        <div>
-          <input type="checkbox" id="recorder-<%= row.uid %>" />
-          <label for="recorder-<%= row.uid %>">&nbsp;</label>
-        </div>
-      </td>
-      <td>
-        <div>
-          <input type="checkbox" id="reflector-<%= row.uid %>" />
-          <label for="reflector-<%= row.uid %>">&nbsp;</label>
-        </div>
-      </td>
-      <td>
-        <div>
-          <input type="checkbox" id="contributor-<%= row.uid %>" />
-          <label for="contributor-<%= row.uid %>">&nbsp;</label>
-        </div>
-      </td>
-    </tr>
-    <% }) %>
-  </tbody>
-</table>
+<form id="role-select-form" name="role-select-form" method="POST">
+  <table class="table table-bordered table-striped mt-3">
+    <thead>
+      <tr>
+        <th scope="col">Select Role</th>
+        <th scope="col">Manager</th>
+        <th scope="col">Recorder</th>
+        <th scope="col">Reflector</th>
+        <th scope="col">Contributor</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% group_info.forEach(function (row) { %>
+      <tr>
+        <td><%= row.uid %></td>
+        <td>
+          <div>
+            <input type="checkbox" id="manager-<%= row.uid %>" name="manager-<%= row.uid %>" value="checked"/>
+            <label for="manager-<%= row.uid %>">&nbsp;</label>
+          </div>
+        </td>
+        <td>
+          <div>
+            <input type="checkbox" id="recorder-<%= row.uid %>" name="recorder-<%= row.uid %>" value="checked" />
+            <label for="recorder-<%= row.uid %>">&nbsp;</label>
+          </div>
+        </td>
+        <td>
+          <div>
+            <input type="checkbox" id="reflector-<%= row.uid %>" name="reflector-<%= row.uid %>" value="checked"/>
+            <label for="reflector-<%= row.uid %>">&nbsp;</label>
+          </div>
+        </td>
+        <td>
+          <div>
+            <input type="checkbox" id="contributor-<%= row.uid %>" name="contributor-<%= row.uid %>" value="checked"/>
+            <label for="contributor-<%= row.uid %>">&nbsp;</label>
+          </div>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <div class="form-group mb-0">
+    <input type="hidden" name="__action" value="claim_role">
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+    <button type="submit" class="btn btn-primary">Claim role</button>
+  </div>
+</form>

@@ -79,6 +79,30 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
+
+    // New stuff!
+    if (req.body.__action == 'claim_role') {
+        // dev@illinois.edu: [Manager, Recorder]
+
+        // Get all keys from req.body
+        const roleKeys = Object.keys(req.body);
+        
+        // Create dictionary of <uid, list[role]>
+        const roles = {};
+        for (const roleKey of roleKeys) {
+            if (roleKey.startsWith("__")) {
+                continue;
+            }
+            const [role, uid] = roleKey.split('-');
+            if (roles[uid] === undefined) {
+                roles[uid] = [];
+            }
+            roles[uid].push(role);
+        }
+
+        console.log(roles);
+    }
+
     if (req.body.__action == 'new_instance') {
         var params = {
             assessment_id: res.locals.assessment.id,
