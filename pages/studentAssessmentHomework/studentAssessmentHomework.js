@@ -82,7 +82,6 @@ router.post('/', function(req, res, next) {
 
     // New stuff!
     if (req.body.__action == 'claim_role') {
-        // dev@illinois.edu: [Manager, Recorder]
 
         // Get all keys from req.body
         const roleKeys = Object.keys(req.body);
@@ -101,9 +100,63 @@ router.post('/', function(req, res, next) {
         }
 
         console.log(roles);
-    }
 
-    if (req.body.__action == 'new_instance') {
+        // every group must have exactly one Manager, one Recorder, and one Reflector
+        // every person is assigned to at least one role
+        // no one is assigned to Contributor unless the group size is bigger than 3
+
+        var params = {
+            assessment_id: res.locals.assessment.id,
+            user_id: res.locals.user.user_id,
+        };
+
+        sqldb.query(sql.get_config_info, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.locals.permissions = result.rows[0];
+            res.locals.minsize = result.rows[0].minimum || 0;
+            res.locals.maxsize = result.rows[0].maximum || 999;
+            // res.locals.invalidRoleName = invalidRoleName;
+
+            sqldb.query(sql.get_group_info, params, function(err, result) {
+                if (ERR(err, next)) return;
+    
+                res.locals.groupsize = result.rowCount;
+                res.locals.group_info = result.rows;
+                res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+                if (res.locals.groupsize > 0) {
+                    res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+                    res.locals.start = false;
+                    if (res.locals.needsize <= 0) {
+                        res.locals.start = true;
+                    }
+                }
+    
+                const groupSize = result.rowCount;
+                res.locals.unassigned_member = groupSize > Object.keys(roles).length;
+                
+                // Count the frequency of each role
+                const roleCounts = {};
+                for (const [uid, rolesList] of Object.entries(roles)) {
+                    for (const role of rolesList) {
+                        if (roleCounts[role] === undefined) {
+                            roleCounts[role] = 0;
+                        }
+                        roleCounts[role]++;
+                    }
+                }
+                
+                res.locals.has_manager = roleCounts['manager'] === 1;
+                res.locals.has_recorder = roleCounts['recorder'] === 1;
+                res.locals.has_reflector = roleCounts['reflector'] === 1;
+                res.locals.has_invalid_contributor = roleCounts['contributor'] > 0 && groupSize < 3;
+    
+                console.log("Refreshing page");
+                console.log(res.locals);
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            })
+
+        })
+    } else if (req.body.__action == 'new_instance') {
         var params = {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.user_id,
