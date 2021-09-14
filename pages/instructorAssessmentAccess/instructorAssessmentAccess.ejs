@@ -65,7 +65,11 @@
                   <% if (access_rule.pt_exam_name) { %>
                   <a href="<%= config.ptHost %>/pt/course/<%= access_rule.pt_course_id %>/staff/exam/<%= access_rule.pt_exam_id %>"><%= access_rule.pt_course_name %>: <%= access_rule.pt_exam_name %></a>
                   <% } else if (access_rule.exam_uuid && !access_rule.ps_exam_id) { %>
-                  Exam not found: <%= access_rule.exam_uuid %>
+                  <% if (devMode) { %>
+                  <%= access_rule.exam_uuid %>
+                  <% } else { %> <%# devMode %>
+                  <span class="text-danger">Exam not found: <%= access_rule.exam_uuid %></span>
+                  <% } %> <%# devMode %>
                   <% } else { %>
                   &mdash;
                   <% } %>
