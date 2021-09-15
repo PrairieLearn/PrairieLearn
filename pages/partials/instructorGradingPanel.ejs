@@ -20,7 +20,7 @@
             <div class="form-group">
               <label for="submission-score">Score:</label>
               <div class="input-group">
-                <input type="number" min="0" max="100" step="5" class="form-control" id="submission-score" class="submission-score" name="submissionScore" value="<%= submission.score % 5 > 0 ? submission.score * 100 : submission.score %>" aria-describedby="score-help-block"
+                <input type="number" min="0" max="100" step="5" class="form-control" id="submission-score" class="submission-score" name="submissionScore" value="<%= submission.score % 5 > 0 ? Math.floor(submission.score * 100) : submission.score %>" aria-describedby="score-help-block"
                   <% if (submission.type != 'undefined' && submission.type == 'submission') { %>
                     readonly
                   <% } %>
