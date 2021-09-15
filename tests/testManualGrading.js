@@ -330,6 +330,15 @@ const testManualGradingAction = (action) => {
                 const iqManualGradingBody = await (await fetch(manualGradingWarningUrl)).text();
                 assert.include(iqManualGradingBody, 'Instructor 2 (instructor2@illinois.edu) is currently grading this question');
             });
+            it('instructor loses manual grading user status when outside of time range', async () => {
+                const prevTime = config.manualGradingExpirySec;
+                after('reset time', () => {config.manualGradingExpirySec = prevTime;});
+                config.manualGradingExpirySec = 0;
+                setUser(mockInstructors[0]);
+                const iqManualGradingBody = await (await fetch(manualGradingWarningUrl)).text();
+                assert.notInclude(iqManualGradingBody, 'Instructor 2 (instructor2@illinois.edu) is currently grading this question');
+                config.manualGradingExpirySec = 3600;
+            });
             it('instructor should get grading conflict view if another instructor submits grade to same question first (if both viewing question simaltaneously)', async () => {
                 const gradeNextAddNumbersURL = siteUrl + $addNumbersRow('.grade-next-value').attr('href');
                 const iqManualGradingUrl = (await fetch(gradeNextAddNumbersURL)).url;
