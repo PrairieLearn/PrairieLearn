@@ -210,12 +210,9 @@ module.exports.sync = async function(courseId, courseInstanceId, assessments, qu
         // UUID-based exam access rules are validated here instead of course-db.js
         // because we need to hit the DB to check for them; we can't validate based
         // solely on the data we're reading off disk.
-        // Instead of checking for `infofile.hasErrors`, we check if data is null
-        // so that we can still add errors for invalid access UUIDs even if something
-        // else produced an error
         // To be efficient, we'll collect all UUIDs from all assessments and check for
         // their existence in a single sproc call. We'll store a reverse mapping from UUID
-        // to exams to be able to efficiently add error information for missing UUIDs.
+        // to exams to be able to efficiently add warning information for missing UUIDs.
         /** @type {Set<string>} */
         const examUuids = new Set();
         /** @type {Map<string, string[]>} */
@@ -241,7 +238,7 @@ module.exports.sync = async function(courseId, courseInstanceId, assessments, qu
         uuidsRes.rows.forEach(({ uuid, uuid_exists }) => {
             if (!uuid_exists) {
                 uuidAssessmentMap.get(uuid).forEach(tid => {
-                    infofile.addError(assessments[tid], `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`);
+                    infofile.addWarning(assessments[tid], `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`);
                 });
             }
         });
