@@ -55,30 +55,42 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    SELECT to_jsonb(iq.*), to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), to_jsonb(u.*)
-    INTO instance_question, question, variant, submission, grading_user
+    SELECT to_jsonb(iq.*), to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*)
+    INTO instance_question, question, variant, submission
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-        JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
-        JOIN users AS u ON (u.user_id = umg.user_id)
-        LEFT JOIN grading_jobs AS gj ON (s.id = gj.submission_id)
     WHERE
         iq.id = arg_instance_question_id
-        AND
-        -- We want to display auth user for when grade was submitted, as manual grading user is flushed due to manual grading expiry time
-        (
-            (gj.manual_grading_conflict IS TRUE
-            AND umg.user_id = gj.auth_user_id)
-            OR
-            (umg.date_started >= (NOW() - arg_manual_grading_expiry::interval))
-        )
-    ORDER BY s.date DESC, s.id DESC, umg.date_started ASC
+    ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
+    -- We need to move the grading_user into a separate query if and only if the submission is 
+    IF submission IS NOT NULL THEN
+        SELECT to_json(u.*)
+        INTO grading_user
+        FROM
+            instance_questions AS iq
+            JOIN variants AS v ON (v.instance_question_id = iq.id)
+            JOIN submissions AS s ON (s.variant_id = v.id)
+            JOIN users_manual_grading AS umg ON (iq.id = umg.instance_question_id)
+            JOIN users AS u ON (u.user_id = umg.user_id)
+            LEFT JOIN grading_jobs AS gj ON (s.id = gj.submission_id)
+        WHERE 
+            iq.id = arg_instance_question_id
+            AND
+            -- We want to display auth user for when grade was submitted, as manual grading user is flushed due to manual grading expiry time
+            ( -- we want instance questions with conflicts
+                gj.manual_grading_conflict IS TRUE
+                OR
+                (umg.date_started >= (NOW() - '3600 seconds'::interval))
+            )
+            ORDER BY umg.date_started ASC
+            LIMIT 1;
+    END IF;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
