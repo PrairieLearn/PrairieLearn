@@ -675,7 +675,8 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`fixed-order` | boolean | False | Whether or not to display the statements in a fixed order; otherwise they are shuffled. Options are always shuffled.
+`fixed-order` | boolean | False | Whether or not to display the statements in a fixed order; otherwise they are shuffled.
+`fixed-options-order` | boolean | False | Whether or not to display the options in a fixed order; otherwise they are shuffled.
 `number-statements` | integer | special | The number of statements to display. Defaults to all statements.
 `number-options` | integer | special | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.
 `none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.

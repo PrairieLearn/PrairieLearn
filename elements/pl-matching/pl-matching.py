@@ -113,13 +113,14 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['fixed-order', 'number-statements', 'number-options', 'none-of-the-above', 'blank', 'counter-type']
+    optional_attribs = ['fixed-order', 'number-statements', 'number-options', 'none-of-the-above', 'blank', 'counter-type', 'fixed-options-order']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
     options, statements = categorize_matches(element, data)
 
     # Choose and randomize the options and statements. Each can be in a fixed order.
     fixed_statements_order = pl.get_boolean_attrib(element, 'fixed-order', FIXED_STATEMENTS_ORDER_DEFAULT)
+    fixed_options_order = pl.get_boolean_attrib(element, 'fixed-options-order', FIXED_OPTIONS_ORDER_DEFAULT)
     number_statements = pl.get_integer_attrib(element, 'number-statements', len(statements))
     number_options = pl.get_integer_attrib(element, 'number-options', len(options))
     nota = pl.get_boolean_attrib(element, 'none-of-the-above', NOTA_DEFAULT)
@@ -157,17 +158,25 @@ def prepare(element_html, data):
             # Add a sample of the distractors.
             needed_options.extend(random.sample(distractors, more_needed))
         options = needed_options
-        random.shuffle(options)
+        if not fixed_options_order:
+            random.shuffle(options)
 
     elif len(needed_options) > number_options:
         # The limit is set below the # of options needed.
         # Add None of the Above to compensate.
-        options = random.sample(needed_options, number_options)
+
+        if fixed_options_order:
+            # Take a random sampling, but maintain the original order of the options.
+            indices = random.sample(range(len(needed_options)), number_options)
+            options = [needed_options[i] for i in sorted(indices)]
+        else:
+            options = random.sample(needed_options, number_options)
         nota = True
     else:
         # The number of needed options matches the total options.
         options = needed_options
-        random.shuffle(options)
+        if not fixed_options_order:
+            random.shuffle(options)
 
     if nota:
         options.append({'index': len(options), 'name': '__nota__', 'html': 'None of the above'})
