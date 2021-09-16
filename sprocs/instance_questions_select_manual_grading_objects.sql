@@ -86,7 +86,7 @@ BEGIN
             ( -- we want instance questions with conflicts
                 gj.manual_grading_conflict IS TRUE
                 OR
-                (umg.date_started >= (NOW() - '3600 seconds'::interval))
+                (umg.date_started >= (NOW() - arg_manual_grading_expiry::interval))
             )
             ORDER BY umg.date_started ASC
             LIMIT 1;
