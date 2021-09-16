@@ -55,7 +55,7 @@ A manual grading conflict occurs when multiple manual grading users click "Grade
 
 ![](manual-grading/grading-warning.png)
 
-If the first user submits a manual grade and any subsequent user submits a grade, then the subsequent user will be navigated to a new view that displays both manual grading submissions and asks the user to resolve the manual grading conflict. The first user lands on a conflict page is the users both submit in the opposite order. The "Current Grade" is the grade of latter manual grade submission and the "Incoming Grade" is the former.
+If the first user submits a manual grade and any subsequent user submits a grade, then the subsequent user will be navigated to a new view that displays both manual grading submissions and asks the user to resolve the manual grading conflict. On the other hand, if both users submit in the opposite order, the user who submits afterwards will encounter the conflict. The "Current Grade" is the grade of latter manual grade submission and the "Incoming Grade" is the former.
 
 ![](manual-grading/conflict-resolution.png)
 
