@@ -1,11 +1,15 @@
 {
     "uuid": "92344697-f0ba-4dc2-af2b-e112a48d04f0",
-    "title": "Workspace demo: RStudio",
+    "title": "Workspace demo with Create An R Object question",
     "topic": "Workspace",
     "tags": [
         "sp23",
         "echuber2",
-        "balamut2"
+        "balamut2",
+        "v3",
+        "demo",
+        "r-autograder",
+        "rstudio"
     ],
     "type": "v3",
     "singleVariant": true,
@@ -15,5 +19,13 @@
         "args": "",
         "rewriteUrl": false,
         "home": "/home/rstudio/workspace"
+    },
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-r",
+        "serverFilesCourse": ["r_autograder/"],
+        "entrypoint": "/grade/serverFilesCourse/r_autograder/run.sh",
+        "timeout": 20
     }
 }
