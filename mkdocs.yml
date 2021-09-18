@@ -24,6 +24,7 @@ pages:
       - 'Creating a course instance': 'Instructor/getStarted/createCourseContent/course_instance.md'
       - 'Creating questions': 'Instructor/getStarted/createCourseContent/create_question.md'
       - 'Create an assessment': 'Instructor/getStarted/createCourseContent/create_assessment.md'
+      - 'What to tell students': 'Instructor/getStarted/createCourseContent/whatToTellStudents.md'
     - 'Question Gallery': 'Instructor/getStarted/questionGallery/index.md'
     - 'Workshops': 'Instructor/getStarted/workshops/index.md'
     - 'Pitfalls': 'Instructor/getStarted/pitfalls/index.md'
@@ -39,6 +40,8 @@ pages:
     - Assessments:
       - 'Create new assessment': 'Instructor/HowTos/createAssessment.md'
       - 'Setup time access': 'Instructor/HowTos/assessmentAccess.md'
+      - 'Select the assessment set': 'Instructor/HowTos/howtoSelectAssessmentSet.md'
+      - 'Create new assessment sets': 'Instructor/HowTos/howtoAddAssessmentSet.md'
       - 'Setup varying credit': 'Instructor/HowTos/assessmentCredit.md'
       - 'Add questions to an assessment': 'Instructor/HowTos/addQuestions.md'
       - 'Define bonus points': 'Instructor/HowTos/bonusPoints.md'
@@ -46,67 +49,63 @@ pages:
       - 'Organize questions into zones': 'Instructor/HowTos/howtoZones.md'
       - 'Create question pools': 'Instructor/HowTos/addQuestionPools.md'
       - 'Use best score from a zone': 'Instructor/HowTos/bestQuestion.md'
-
-      - 'Creating Homework Sets': 'Instructor/HowTos/Assessments/howtoHomeworkSet.md'
-      - 'Creating Assessment Sets': 'Instructor/HowTos/Assessments/howtoAddAssessmentSet.md'
-
-
-      - 'Add text and links to assessments': 'Instructor/HowTos/Assessments/howtoAddTextLinks.md'
-      - 'Change number of attempts': 'Instructor/HowTos/Assessments/howtoAttempts.md'
-      - 'Collaborative Assessments': 'Instructor/HowTos/Assessments/howtoCollaborative.md'
-      - 'Disable real-time grading': 'Instructor/HowTos/Assessments/howtoDisableRealTime.md'
-      - 'Limit the rate for grading': 'Instructor/HowTos/Assessments/howtoLimitGradeRate.md'
-      - 'Allow students to report issues': 'Instructor/HowTos/Assessments/howtoAllowIssues.md'
-      - 'Allow multiple assessment instances': 'README.md'
-      - 'Make a copy of an existing assessment': 'Instructor/HowTos/Assessments/howtoCopyAssessment.md'
+      - 'Add text to assessment overview page': 'Instructor/HowTos/howtoAddTextLinks.md'
+      - 'Upload files to your course': 'Instructor/HowTos/howtoUploadFiles.md'
+      - 'Allow students to report issues': 'Instructor/HowTos/howtoAllowIssues.md'
+      - 'Make a copy of an existing assessment': 'Instructor/HowTos/howtoCopyAssessment.md'
+    - Questions:
+      - 'Create questions': 'Instructor/HowTos/createQuestions.md'
 
     - Assement Examples:
       - 'Create a homework': 'README.md'
-      - 'Create an Exam': 'Instructor/HowTos/Assessments/howtoExams.md'
-
-    - Questions:
-      - 'Create questions': 'README.md'
-      - 'Randomizing Question Selection': 'Instructor/HowTos/howtoRandomizeQuestions.md'
-
+      - 'Create an Exam': 'Instructor/HowTos/howtoExams.md'
+      - 'Create a group assessment': 'Instructor/HowTos/howtoCollaborative.md'
+      - 'Create an assessment using workspace': 'README.md'
+      - 'Change the number of attempts': 'Instructor/HowTos/howtoAttempts.md'
+      - 'Disable real-time grading': 'Instructor/HowTos/howtoDisableRealTime.md'
+      - 'Limit the auto-grading rate': 'Instructor/HowTos/howtoLimitGradeRate.md'
+      - 'Allow multiple assessment instances': 'README.md'
+      - 'Learn student names': 'Instructor/HowTos/howtoLearn'
 
 
   - References:
-
-    - 'Installing and running PL locally': 'Instructor/references/installing.md'
-    - 'Syncing course content': 'Instructor/references/sync.md'
+    - 'Creating course content from local PL':
+      - 'Installing and running PL locally': 'Instructor/references/installing.md'
+      - 'Syncing course content': 'Instructor/references/sync.md'
     - 'Course configuration': 'Instructor/references/course.md'
-
-    - 'Scoring system':  'README.md'
     - 'Course staff': 'Instructor/references/staff.md'
     - 'Course instance configuration': 'Instructor/references/courseInstance.md'
     - 'Assessment configuration': 'Instructor/references/assessment.md'
+    - 'Question format': 'Instructor/references/newQuestion.md'
     - 'Question configuration': 'Instructor/references/question.md'
-    - 'Elements for writing questions': 'Instructor/references/elements.md'
+    - 'Scoring system':  'README.md'
     - 'Access control': 'Instructor/references/accessControl.md'
     - 'Remote exams': 'Instructor/references/remoteExams.md'
     - 'clientFiles and serverFiles': 'Instructor/references/clientServerFiles.md'
     - 'UUIDs in JSON files': 'Instructor/references/uuid.md'
     - 'Regrading assessments': 'Instructor/references/regrading.md'
+    - 'Elements for writing questions': 'Instructor/references/elements.md'
     - 'Element for drawing': 'Instructor/references/pl-drawing/index.md'
     - 'External Grading': 'Instructor/references/externalGrading.md'
-    - 'Python Autograder': 'Instructor/references/python-grader/index.md'
-    - 'C/C++ autograder': 'Instructor/references/c-grader/index.md'
-    - 'Java autograder': 'Instructor/references/java-grader/index.md'
+    - 'Built-in external autograders':
+      - 'Python Autograder': 'Instructor/references/python-grader/index.md'
+      - 'C/C++ autograder': 'Instructor/references/c-grader/index.md'
+      - 'Java autograder': 'Instructor/references/java-grader/index.md'
     - 'Workspaces': 'Instructor/references/workspaces.md'
     - 'Manual grading': 'Instructor/references/manualGrading.md'
-    - 'What to Tell Students': 'Instructor/references/whatToTellStudents.md'
     - 'API': 'Instructor/references/api.md'
+    - Deprecated Features:
+      - 'Old v1/v2 question format': 'Instructor/references/oldQuestion.md'
+      - 'Old PrairieDraw graphics': 'Instructor/references/PrairieDraw.md'
 
-  - FAQ: 'Instructor/HowTos/faq.md'
-
-- Student Manual:
-  - Get Started:
-    - 'Adding a course': 'Student/getStarted/addCourse/index.md'
 
 - Developers Manual:
-  - Get Started:
-    - 'Installing with local source': 'Developer/getStarted/installingLocalSource/index.md'
-
-- Administrative Manual:
-  - Get Started:
-    - 'Creating a course': 'Admin/getStarted/makeCourse/index.md'
+  - References:
+    - 'Developer guide': 'Developer/references/dev-guide.md'
+    - 'Installing with local source': 'Developer/references/installingLocal.md'
+    - 'Installing natively': 'Developer/references/installingNative.md'
+    - 'Server configuration': 'Developer/references/configJson.md'
+    - 'Docker packaging': 'Developer/references/docker.md'
+    - 'Contributing to PL development': 'Developer/references/contributing.md'
+    - 'Question element writing': 'Developer/references/devElements.md'
+    - 'Element extensions': 'Developer/references/elementExtensions.md'

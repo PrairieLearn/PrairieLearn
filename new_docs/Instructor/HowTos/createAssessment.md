@@ -1,4 +1,4 @@
-# Create a new assessment
+# How to create a new assessment
 
 * From the toggle dropdown at the top bar menu, select the desired course instance. By default, this will take you to the `Assessments` page of that course instance.
 

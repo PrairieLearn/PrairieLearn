@@ -13,30 +13,24 @@ The two steps are:
 
 ## Course admin permissions
 
-PrairieLearn controls administrative access to a course and course instance in two distinct places. These are controlled independently to provide flexible access to questions and student data.
+PrairieLearn controls administrative access to a course and course instance from the "Staff" tab. Course staff permissions are separated into *course content roles* and *student data roles*.
 
-### Course-level access
+### Course content access
 
-Course level permissions control the ability to view, edit, and sync course content from GitHub to the production server. These settings are made via the Course / Access page on the production server.
-
-The Course / Access page lists who has which course access role, and gives Owners the ability to add a new user/role setting.
+[Course content permissions](staff.md#course-content-access-roles) control the ability to view, edit, and sync course content from GitHub to the production server. These settings are made via the Staff tab on the production server. Course `Owners` have the ability to add a new user/role setting.
 
 Level | Permissions
 --- | ---
 Owner | Can sync content, edit in the browser, and add/remove course permissions for other people.
 Editor | Can sync content, edit in the browser, but cannot change other people's permissions.
-Viewer | Can view course level content (questions and issues), but can't edit or sync content.
+Viewer | Can view course level content (question code and issues), but can't edit or sync content.
+Previewer | Can view course level content (questions and issues), but can't view question code, edit or sync content.
 
-People must have been logged in to PrairieLearn before they can be given course permissions.
+
+Users must have been logged in to PrairieLearn before they can be given course permissions. To get sync permissions, a user must have `Ownwer` or `Editor` roles.
 
 Course level access only enables access to Questions and their related issues. Access to course instance data is
-controlled separately.
-
-For completeness, users with roles assigned in courseInstances should probably also be given at least Viewer course level access, but this is not required. A user could have View access with no courseInstance access to see the questions but none of the semester data.
-
-### Course instance-level access
-
-Course instances, with assessments and student results, have their access controlled separately from course-level editing and viewing. To control access to specific course instances you need to add people to the `userRoles` in [`infoCourseInstance.json`](courseInstance.md), and sync with the server.
+controlled by [student data roles](staff.md#student-data-access-roles).
 
 ## Version control with git
 
