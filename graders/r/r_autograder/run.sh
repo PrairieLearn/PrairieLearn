@@ -9,11 +9,13 @@ DEBUG="off"
 export DEBUG
 if [ ${DEBUG} == "on" ]; then VFLAG="-v" else VFLAG=""; fi
 
+## the directory for the autograder
+AG_DIR="/r_autograder"
+
 ## the directory where the file pertaining to the job are mounted
 JOB_DIR="/grade"
-## the other directories inside it
+## and the other directories inside it
 STUDENT_DIR="${JOB_DIR}/student"
-AG_DIR="${JOB_DIR}/serverFilesCourse/r_autograder"
 TEST_DIR="${JOB_DIR}/tests"
 OUT_DIR="${JOB_DIR}/results"
 
