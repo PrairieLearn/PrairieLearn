@@ -24,8 +24,7 @@
     "externalGradingOptions": {
         "enabled": true,
         "image": "prairielearn/grader-r",
-        "serverFilesCourse": ["r_autograder/"],
-        "entrypoint": "/grade/serverFilesCourse/r_autograder/run.sh",
+        "entrypoint": "/r_autograder/run.sh",
         "timeout": 20
     }
 }
