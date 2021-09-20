@@ -676,7 +676,7 @@ Attribute | Type | Default | Description
 `answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
 `fixed-order` | boolean | False | Whether or not to display the statements in a fixed order; otherwise they are shuffled.
-`fixed-options-order` | boolean | False | Whether or not to display the options in a fixed order; otherwise they are shuffled.
+`fixed-options-order` | boolean | False | Whether or not to display the options in a fixed order; otherwise they are shuffled. See the details of `pl-option` below for more information on option ordering.
 `number-statements` | integer | special | The number of statements to display. Defaults to all statements.
 `number-options` | integer | special | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.
 `none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.
@@ -695,6 +695,13 @@ Attribute | Type | Default | Description
 `match` | string | — | Identifies the option as the correct response for this `pl-statement`. If `match` corresponds to the `name` of any `pl-option` element, the statement will be linked to that `pl-option`, otherwise a new option is implicitly created based on this `match` value.
 
 The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
+
+When the `fixed-options-order` feature is used, options are shown in the following order:
+
+1. Any explicitly-defined `pl-option` elements are shown first, in the order they are declared.
+2. Any implicitly-defined options defined by a `pl-statement` `match` attribute are shown next, in the order they are declared.
+
+It is recommended to explicitly define `pl-option` elements when using `fixed-options-order` to have complete certainty on the order they will be shown.
 
 A `pl-option` must be specified with these attributes:
 
