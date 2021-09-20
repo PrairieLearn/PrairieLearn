@@ -375,7 +375,7 @@ def render(element_html, data):
                 if counter_type == 'full-text':
                     counter = ''
                 else:
-                    counter = f'{get_counter(i + 1, counter_type)}. '
+                    counter = f'{get_counter(correct_answer + 1, counter_type)}. '
                 statement_html = {
                     'option': display_options[correct_answer]['html'],
                     'statement': statement['html'],
