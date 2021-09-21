@@ -23,7 +23,7 @@ window.PLRTE = function(uuid, options) {
     let inputElement = $('#rte-input-' + uuid);
     let quill = new Quill('#rte-' + uuid, options);
 
-    let contents = atob(inputElement.val());
+    let contents = decodeURIComponent(escape(atob(inputElement.val())));
     quill.setContents(quill.clipboard.convert(contents));
     
     quill.on('text-change', function(_delta, _oldDelta, _source) {
