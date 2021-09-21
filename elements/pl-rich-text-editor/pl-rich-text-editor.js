@@ -23,10 +23,13 @@ window.PLRTE = function(uuid, options) {
     let inputElement = $('#rte-input-' + uuid);
     let quill = new Quill('#rte-' + uuid, options);
 
-    let contents = decodeURIComponent(escape(atob(inputElement.val())));
+    let contents = atob(inputElement.val());
     quill.setContents(quill.clipboard.convert(contents));
     
     quill.on('text-change', function(_delta, _oldDelta, _source) {
-        inputElement.val(btoa(unescape(encodeURIComponent(quill.root.innerHTML))));
+        inputElement.val(btoa(he.encode(quill.root.innerHTML, {
+            allowUnsafeSymbols: true, // HTML tags should be kept
+            useNamedReferences: true,
+        })));
     });
 };
