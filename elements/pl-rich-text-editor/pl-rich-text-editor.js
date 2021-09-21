@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill */
+/* global Quill,he */
 
 window.PLRTE = function(uuid, options) {
  
