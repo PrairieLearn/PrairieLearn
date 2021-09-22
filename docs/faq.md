@@ -366,32 +366,45 @@ Example:
 If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can do the following.
 
 1. Put a file called `local_template.py` into `serverFilesCourse` that contains:
-    ```
-    import chevron, os
-    
-    def render(data, template_filename, params):
-        with open(os.path.join(data["options"]["server_files_course_path"], template_filename)) as f:
-            return chevron.render(f, params)
-    ```
+
+        import chevron, os
+        
+        def render(data, template_filename, params):
+            with open(os.path.join(data["options"]["server_files_course_path"], template_filename)) as f:
+                return chevron.render(f, params)
+
 2. Put a template (this example is called `units_instructions.html`) into `serverFilesCourse`:
-    ```
-    <pl-question-panel>
-      <p>
-        All data for this problem is given in {{given_units}} units. Your answers should be in {{answer_units}}.
-      </p>
-    </pl-question-panel>
-    ```
+
+        <pl-question-panel>
+          <p>
+            All data for this problem is given in {{given_units}} units. Your answers should be in {{answer_units}}.
+          </p>
+        </pl-question-panel>
+
 3. In the `server.py` for a question, render the template like this:
-    ```
-    import local_template
-    
-    def generate(data):
-        data["params"]["units_instructions"] = local_template.render(data, "units_instructions.html", {
-            "given_units": "US customary",
-            "answer_units": "metric",
-        })
-    ```
+
+        import local_template
+        
+        def generate(data):
+            data["params"]["units_instructions"] = local_template.render(data, "units_instructions.html", {
+                "given_units": "US customary",
+                "answer_units": "metric",
+            })
+
 4. In the `question.html` for the same question, insert the rendered template like this (note the use of triple curly braces):
-    ```
-    {{{params.units_instructions}}}
-    ```
+
+        {{{params.units_instructions}}}
+
+## How can I hide the correct answer when students see their grading results?
+
+Some elements in PL have functionality to hide the correct answer (`pl-checkbox`, etc.) but others do not (`pl-multiple-choice`). A more general way of hiding the correct answer for any element is to surround your question's graded pl-element with `pl-hide-in-panel` in the `question.html` file. This solution will work across all elements.
+
+For example:
+
+```xml
+<pl-hide-in-panel answer="true">
+  <pl-multiple-choice ...></pl-multiple-choice>
+</pl-hide-in-panel>
+```
+
+For more information, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).

@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill */
+/* global Quill,he */
 
 window.PLRTE = function(uuid, options) {
  
@@ -27,6 +27,9 @@ window.PLRTE = function(uuid, options) {
     quill.setContents(quill.clipboard.convert(contents));
     
     quill.on('text-change', function(_delta, _oldDelta, _source) {
-        inputElement.val(btoa(unescape(encodeURIComponent(quill.root.innerHTML))));
+        inputElement.val(btoa(he.encode(quill.root.innerHTML, {
+            allowUnsafeSymbols: true, // HTML tags should be kept
+            useNamedReferences: true,
+        })));
     });
 };
