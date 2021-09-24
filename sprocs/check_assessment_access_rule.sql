@@ -6,7 +6,8 @@ CREATE FUNCTION
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
-        OUT authorized boolean
+        OUT authorized boolean,
+        OUT exam_access_end TIMESTAMP WITH TIME ZONE
     ) AS $$
 DECLARE
     ps_linked boolean;
@@ -49,7 +50,6 @@ BEGIN
     << schedule_access >>
     DECLARE
         ps_course_id bigint;
-        reservation reservations;
     BEGIN
         -- is an exam_id hardcoded into the access rule? Check that first
         IF assessment_access_rule.exam_uuid IS NOT NULL THEN
@@ -61,8 +61,8 @@ BEGIN
             END IF;
 
             -- is there a checked-in reservation?
-            SELECT r.*
-            INTO reservation
+            SELECT r.access_end
+            INTO exam_access_end
             FROM
                 reservations AS r
                 JOIN exams AS e USING(exam_id)
@@ -80,7 +80,8 @@ BEGIN
             END IF;
 
             -- is there a checked-in pt_reservation?
-            PERFORM 1
+            SELECT r.access_end
+            INTO exam_access_end
             FROM
                 pt_reservations AS r
                 JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
@@ -118,8 +119,8 @@ BEGIN
             EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
 
             -- is there a current checked-in reservation?
-            SELECT r.*
-            INTO reservation
+            SELECT r.access_end
+            INTO exam_access_end
             FROM
                 assessments AS a
                 JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
