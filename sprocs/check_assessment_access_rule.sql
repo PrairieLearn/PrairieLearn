@@ -50,6 +50,7 @@ BEGIN
     << schedule_access >>
     DECLARE
         ps_course_id bigint;
+        reservation reservations;
     BEGIN
         -- is an exam_id hardcoded into the access rule? Check that first
         IF assessment_access_rule.exam_uuid IS NOT NULL THEN
@@ -62,6 +63,7 @@ BEGIN
 
             -- is there a checked-in reservation?
             SELECT r.*
+            INTO reservation
             FROM
                 reservations AS r
                 JOIN exams AS e USING(exam_id)
@@ -119,6 +121,7 @@ BEGIN
 
             -- is there a current checked-in reservation?
             SELECT r.*
+            INTO reservation
             FROM
                 assessments AS a
                 JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
