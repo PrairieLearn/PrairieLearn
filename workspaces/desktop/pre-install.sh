@@ -22,9 +22,9 @@ rm /vscode.deb
 # (This should already have been done by the Dockerfile COPY directives.)
 mkdir -p /opt/defaults
 
-# delete ourselves
-rm /pre-install.sh
-
 # clean up apt cache
 apt-get clean
 rm -rf /var/lib/apt/lists/*
+
+# delete ourselves
+rm /pre-install.sh
