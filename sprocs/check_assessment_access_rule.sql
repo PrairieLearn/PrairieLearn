@@ -61,8 +61,7 @@ BEGIN
             END IF;
 
             -- is there a checked-in reservation?
-            SELECT r.access_end
-            INTO exam_access_end
+            SELECT r.*
             FROM
                 reservations AS r
                 JOIN exams AS e USING(exam_id)
@@ -119,8 +118,7 @@ BEGIN
             EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
 
             -- is there a current checked-in reservation?
-            SELECT r.access_end
-            INTO exam_access_end
+            SELECT r.*
             FROM
                 assessments AS a
                 JOIN course_instances AS ci ON (ci.id = a.course_instance_id)

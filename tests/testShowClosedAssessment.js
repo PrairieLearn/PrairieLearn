@@ -22,6 +22,10 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
         cookie: 'pl_test_user=test_student', // need student mode to get a timed exam (instructor override bypasses this)
     };
 
+    const headersTimeLimit = {
+        cookie: 'pl_test_user=test_student; pl_requested_date=2700-01-19T00:00:01',
+    };
+
     before('set up testing server', async function() {
         await util.promisify(helperServer.before().bind(this))();
         const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
@@ -74,7 +78,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
             __action: 'timeLimitFinish',
             __csrf_token: context.__csrf_token,
         };
-        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers});
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers: headersTimeLimit});
         assert.equal(response.status, 403);
 
         // We should have been redirected back to the same assessment instance
