@@ -69,7 +69,7 @@ const spawn_gui = async (width, height) => {
     if (x11vnc_proc) {
         await kill_and_wait(x11vnc_proc);
     }
-    x11vnc_proc = child_process.spawn('/usr/bin/x11vnc', ['-display', ':1', '-xkb', '-forever', '-shared', '-repeat', '-capslock'], {
+    x11vnc_proc = child_process.spawn('/usr/bin/x11vnc', ['-display', ':1', '-xkb', '-forever', '-shared', '-repeat', '-capslock', '-nowireframe', '-nowirecopyrect', '-noscrollcopyrect', '-noxdamage'], {
         env: {
             'X11VNC_FINDDISPLAY_ALWAYS_FAILS': '1',
         },
