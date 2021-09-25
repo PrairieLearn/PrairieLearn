@@ -499,18 +499,18 @@ Fill in the blank field that allows for mathematical symbol input.
 
 **question.html**
 ```html
-     # Enable the input: x + y + 1
+     <!-- Enable the input: x + y + 1 -->
      <pl-symbolic-input answers-name="symbolic_math_example1" variables="x, y" label="$z =$" />
      
-     # Expect the input: log32(x**2) * zeta(5) + y
+     <!-- Expect the input: log32(x**2) * zeta(5) + y -->
      <pl-symbolic-input answers-name="symbolic_math_example2" variables="x, y" 
           extra-functions="log32, zeta" label="$z =$" />
      
-     # Expect the input: ln((max(1-t, x) + min(y+2, z) - lg(w**2)) / 2)
+     <!-- Expect the input: ln((max(1-t, x) + min(y+2, z) - lg(w**2)) / 2) -->
      <pl-symbolic-input answers-name="symbolic_math_example3" variables="x, y, z, w, t" 
           enable-function-groups="calculus-extended, logarithmic, prog-extended" label="$z =$" />
 
-     # Expect the input: x * abs(cbrt_omega) * tebi / 137 + 1 - t^(3 / 2)
+     <!-- Expect the input: x * abs(cbrt_omega) * tebi / 137 + 1 - t^(3 / 2) -->
      <pl-symbolic-input answers-name="symbolic_math_example4" variables="x, t" 
           enable-function-groups="complex-variables" 
           enable-constant-groups="named-constants" label="$z =$" />
@@ -524,7 +524,6 @@ import sympy
 def generate(data):
 
   # Declare math symbols (corresponding global variable names defined in the HTML source): 
-  x, y, z, w, t = sympy.symbols('x y z w t')
   x, y, z, w, t = sympy.var('x'), sympy.var('y'), sympy.var('z'), sympy.var('w'), sympy.var('t')
 
   # Describe the equation using a sympy expression directly: 
@@ -568,8 +567,7 @@ Attribute | Type | Default | Description
 
 ##### Descriptions of ``enable-function-groups`` selections
 
-The next listings document what named function definitions are included
-by enabling these individual groups:
+The `enable-function-groups` option allows the definition of additional pre-determined functions to be allowed in the student answer. Here are the groups that can be listed:
 
 * ``trig-base``: Support for definitions of basic (non-hyperbolic) trigonometric functions
                       including $cos$, $sin$, $tan$, $sec$, $cot$, $csc$,

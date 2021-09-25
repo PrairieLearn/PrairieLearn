@@ -107,9 +107,6 @@ class _Constants:
             self.variables.update({ constVarName : extended_var_names_dict[constVarName] })
         return self
 
-CONSTANTS_INSTANCE_DEFAULT = _Constants()
-CONSTANTS_INSTANCE_LOOKUP = dict([])
-
 # Safe evaluation of user input to convert from string to sympy expression.
 #
 # Adapted from:
