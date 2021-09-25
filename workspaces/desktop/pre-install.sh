@@ -11,7 +11,7 @@ groupadd -g 1001 prairielearner
 useradd -u 1001 -g 1001 -m -d /home/prairielearner -s /bin/bash prairielearner
 
 # install needed apps
-apt-get install xfce4-terminal firefox build-essential geany emacs-gtk vim-gtk gedit less -y
+apt-get install xfce4-terminal firefox build-essential geany emacs-gtk vim-gtk nano gedit less -y
 
 # install vscode
 wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -O /vscode.deb
