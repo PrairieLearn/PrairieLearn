@@ -279,17 +279,6 @@ def evaluate(expr, locals_for_eval={}, var_number_symbols={}):
     # reflection-based attacks described by
     # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
-    #
-    # FOR LATER:
-    # _safe_nodes = [
-    #    'Add', 'And', 'BinOp', 'BitAnd', 'BitOr', 'BitXor', 'BoolOp',
-    #    'Compare', 'Dict', 'Eq', 'Expr', 'Expression', 'For',
-    #    'Gt', 'GtE', 'Is', 'In', 'IsNot', 'LShift', 'List',
-    #    'Load', 'Lt', 'LtE', 'Mod', 'Name', 'Not', 'NotEq', 'NotIn',
-    #    'Num', 'Or', 'RShift', 'Set', 'Slice', 'Str', 'Sub',
-    #    'Tuple', 'UAdd', 'USub', 'UnaryOp', 'boolop', 'cmpop',
-    #    'expr', 'expr_context', 'operator', 'slice', 'unaryop' 
-    # ]
     whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, \
                  ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, \
                  ast.Div, ast.Mod, ast.Pow)
