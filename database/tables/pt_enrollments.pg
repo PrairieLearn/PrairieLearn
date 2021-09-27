@@ -1,5 +1,5 @@
 columns
-    course_id: bigint not null
+    course_id: bigint
     id: bigint not null default nextval('pt_enrollments_id_seq'::regclass)
     user_id: bigint not null
 
