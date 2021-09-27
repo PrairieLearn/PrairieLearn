@@ -15,7 +15,7 @@ BEGIN
             LEFT JOIN groups AS g ON (g.id = ai.group_id)
             LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
             JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
-            JOIN pt_enrollments AS e ON (e.user_id = u.user_id)
+            JOIN pt_enrollments AS e ON (e.user_id = u.user_id AND e.course_id = x.course_id)
             JOIN pt_reservations AS r ON (r.enrollment_id = e.id AND r.exam_id = x.id)
         WHERE
             ai.id = arg_assessment_instance_id
