@@ -7,3 +7,4 @@ indexes
 
 referenced by
     pt_exams: FOREIGN KEY (course_id) REFERENCES pt_courses(id)
+    pt_enrollments: FOREIGN KEY (course_id) REFERENCES pt_courses(id)
