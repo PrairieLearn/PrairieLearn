@@ -28,10 +28,14 @@ PrairieLearn presently provides the following templated **input field** elements
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
+- [`pl-matching`](#pl-matching-element): Select a matching option for each entry in 
+  a group.
 - [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
   a **matrix** using grid that has an input area for each element.
 - [`pl-matrix-input`](#pl-matrix-input-element): Supply a matrix in a supported
   programming language format.
+- [`pl-rich-text-editor`](#pl-rich-text-editor-element): Provide an in-browser formattable text editor
+  for writing and submitting code.
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -60,6 +64,7 @@ images, files, and code display. The following **decorative** elements are avail
   collection of graphic objects
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
+- [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -119,6 +124,8 @@ Attribute | Type | Default | Description
 `hide-letter-keys` | boolean | false | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.
 `all-of-the-above` | boolean | false | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`.
 `none-of-the-above` | boolean | false | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.
+`all-of-the-above-feedback` | string | — | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.
+`none-of-the-above-feedback` | string | — | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.
 `external-json` | string | special | Optional path to a JSON file to load external answer choices from.  Answer choices are stored as lists under "correct" and "incorrect" key names.
 `external-json-correct-key` | string | special | Optionally override default json "correct" attribute name when using `external-json` file.
 `external-json-incorrect-key` | string | special | Optionally override default json "incorrect" attribute name when using `external-json` file.
@@ -129,6 +136,7 @@ a `pl-answer` that has attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
+`feedback` | string | — | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student.
 
 #### Example implementations
 
@@ -642,6 +650,63 @@ Attribute | Type | Default | Description
 
 -----
 
+### `pl-matching` element
+
+Given a list of statements, select a matching option for each entry from a drop-down list.
+
+#### Sample element
+
+![](elements/pl-matching.png)
+
+**question.html**
+```html
+<pl-matching answers-name="string_value">
+  <pl-statement match="Washington, D.C.">United States</pl-statement>
+  <pl-statement match="Mexico City">Mexico</pl-statement>
+  <pl-statement match="Paris">France</pl-statement>
+
+  <pl-option>New York City</pl-option>
+</pl-matching>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`fixed-order` | boolean | False | Whether or not to display the statements in a fixed order; otherwise they are shuffled. Options are always shuffled.
+`number-statements` | integer | special | The number of statements to display. Defaults to all statements.
+`number-options` | integer | special | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.
+`none-of-the-above` | boolean  | false | Whether or not to add a "None of the above" to the end of the options.
+`blank` | boolean | True | Option to add blank dropdown entry as the default selection in each drop-down list.
+`counter-type` | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters.
+`hide-score-badge` | boolean | false | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.
+
+Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
+
+A total of `number-statements` statements will be randomly selected and displayed to the student. The corresponding matching options will be gathered; if `number-options` is larger than the number of options used by the selected statements, then random distractors will be selected from the remaining unused options. If the selected statements require more options than `number-options`, then `none-of-the-above` will automatically be set to true.
+
+The content of a `pl-statement` can be any HTML element, including other PrairieLearn elements. A `pl-statement` must be specified with these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`match` | string | — | Identifies the option as the correct response for this `pl-statement`. If `match` corresponds to the `name` of any `pl-option` element, the statement will be linked to that `pl-option`, otherwise a new option is implicitly created based on this `match` value.
+
+The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
+
+A `pl-option` must be specified with these attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`name` | string | special | A key used to match this option as the correct response to a `pl-statement`. If not given, the attribute is set to the inner HTML of the `pl-option`.
+
+#### Example implementations
+
+* [element/matching]
+
+-----
+
 ### `pl-matrix-component-input` element
 
 A `pl-matrix-component-input` element displays a grid of input fields with
@@ -777,6 +842,42 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 - [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
 - [`pl-number-input` for a single numeric input](#pl-number-input)
 - [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+
+-----
+
+### `pl-rich-text-editor` element
+
+Provides an in-browser rich text editor, aimed mostly at manual grading essay-type questions. This editor is based on the [Quill rich text editor](https://quilljs.com/).
+
+#### Sample element
+
+![](elements/pl-rich-text-editor.png)
+
+```html
+<pl-rich-text-editor
+  file-name="answer.html">
+</pl-rich-text-editor>
+```
+
+#### Customizations
+
+Attribute | Type | Default | description
+--- | --- | --- | ---
+`file-name` | string | - | The name of the output file; will be used to store the student's answer in the `_files` submitted answer
+`quill-theme` | string | `snow` | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.
+`source-file-name` | string | None | Name of the source file with existing HTML content to be displayed in the editor.
+`directory` | string | special | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory.
+`placeholder` | string | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.
+
+#### Example implementations
+
+- [element/richTextEditor]
+
+#### See also
+
+- [`pl-file-editor` to edit unformatted text, such as code](#pl-file-editor-element)
+- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
 -----
 
@@ -1093,6 +1194,7 @@ Attribute | Type | Default | Description
 `directory` | text | "clientFilesQuestion" | The directory that contains the file, either 'clientFilesQuestion' or 'clientFilesCourse' (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type='dynamic'`.
 `width` | number | `None` | Width of image (e.g., '250px').
 `inline` | boolean | false | Display figure inline with text (true) or on a separate line (false).
+`alt` | text | "" | Provide alt (alternative) text to improve accessibility of figures by describing the image or the purpose of the image. Default is an empty string.
 
 #### Dynamically generated figures
 
@@ -1577,6 +1679,42 @@ Attribute | Type | Default | Description
 - [demo/autograder/python/plots]
 - [demo/autograder/python/random]
 
+### `pl-xss-safe` element
+
+Removes potentially dangerous scripts from HTML. This is recommended when parsing and displaying student-provided content. The element will remove some elements like scripts and triggers that may have been maliciously inserted by the student. Note that any code parsed by this element must be supported directly by the browser, i.e., it cannot include PrairieLearn elements or special tags.
+
+#### Sample element
+
+```html
+<!-- Content coming from a submitted file (e.g., pl-file-editor, pl-file-upload) -->
+<pl-xss-safe submitted-file-name="answer.html"></pl-xss-safe>
+
+<!-- Content coming from a regular element (e.g., pl-string-input) -->
+<pl-xss-safe contents="{{submitted_answers.answer}}"></pl-xss-safe>
+```
+
+#### Customizations
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`source-file-name` | string | - | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet).
+`submitted-file-name` | string | - | Name of the file submitted by the user to (typically using a `pl-file-editor` or `pl-file-upload` element) with the code to be used.
+`contents` | string | - | Raw contents to be displayed.
+`language` | string | html | Language of the provided code. The values "html" or "markdown" are currently supported.
+
+Note that only one of the attributes `source-file-name`, `submitted-file-name` or `contents` may be provided in the same element.
+
+#### Example implementations
+
+- [demo/markdownEditorLivePreview]
+- [element/xssSafe]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+-----
+
 ## Conditional Elements
 
 ### `pl-question-panel` element
@@ -1854,6 +1992,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/graph]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/graph
 [element/integerInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/integerInput
 [element/markdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/markdown
+[element/matching]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matching
 [element/matrixComponentInput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixComponentInput
 [element/matrixLatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
 [element/multipleChoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
