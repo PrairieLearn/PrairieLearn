@@ -112,7 +112,7 @@ public class JUnitAutograder implements TestExecutionListener {
 
         if (!result.getStatus().equals(TestExecutionResult.Status.SUCCESSFUL)) {
             autograderTest.points = 0;
-            result.getThrowable().ifPresent(t -> autograderTest.message = t.getMessage());
+            result.getThrowable().ifPresent(t -> autograderTest.message = t.toString());
             if (autograderTest.message == null)
                 autograderTest.message = "";
         }
