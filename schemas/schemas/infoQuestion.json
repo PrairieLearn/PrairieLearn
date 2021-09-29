@@ -136,6 +136,10 @@
                 "enableNetworking": {
                     "description": "Whether the grading containers should have network access. Access is disabled by default.",
                     "type": "boolean"
+                },
+                "environment": {
+                    "description": "Environment variables to set inside the grading container.",
+                    "type": "array"
                 }
             }
         },
@@ -271,7 +275,7 @@
                     "type": "boolean"
                 },
                 "environment": {
-                    "description": "Environment variables to pass into the workspace container.",
+                    "description": "Environment variables to set inside the workspace container.",
                     "type": "array"
                 }
             }
