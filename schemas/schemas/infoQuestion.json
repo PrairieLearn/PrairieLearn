@@ -269,6 +269,10 @@
                 "enableNetworking": {
                     "description": "Whether the workspace should have network access. Access is disabled by default.",
                     "type": "boolean"
+                },
+                "environment": {
+                    "description": "Environment variables to pass into the workspace container.",
+                    "type": "array"
                 }
             }
         }

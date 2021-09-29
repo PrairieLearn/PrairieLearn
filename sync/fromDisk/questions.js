@@ -45,6 +45,7 @@ function getParamsForQuestion(q) {
         workspace_sync_ignore: (q.workspaceOptions && q.workspaceOptions.syncIgnore),
         workspace_url_rewrite: (q.workspaceOptions && q.workspaceOptions.rewriteUrl),
         workspace_enable_networking: (q.workspaceOptions && q.workspaceOptions.enableNetworking),
+        workspace_environment: (q.workspaceOptions && q.workspaceOptions.environment),
     };
 }
 

@@ -159,6 +159,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean=} enableNetworking
+ * @property {string[]} environment
  */
 
  /**

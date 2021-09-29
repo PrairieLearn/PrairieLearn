@@ -255,6 +255,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean} enableNetworking
+ * @property {string[]} environment
  */
 
  /**

@@ -631,7 +631,10 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
         workspace_args: result.rows[0].workspace_args || '',
         workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
         workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
+        workspace_environment: result.rows[0].workspace_environment || [],
     };
+    const env_workspace_base_url = `WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`;
+    settings.workspace_environment.push(env_workspace_base_url);
 
     if (config.cacheImageRegistry) {
         const repository = new dockerUtil.DockerName(settings.workspace_image);
@@ -984,7 +987,7 @@ function _createContainer(workspace, callback) {
     debug(`Exposed port: ${workspace.settings.workspace_port}`);
     debug(`Networking enabled: ${workspace.settings.workspace_enable_networking}`);
     debug(`Network mode: ${networkMode}`);
-    debug(`Env vars: WORKSPACE_BASE_URL=/pl/workspace/${workspace.id}/container/`);
+    debug(`Env vars: ${workspace.settings.workspace_environment}`);
     debug(`User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`);
     debug(`Port binding: ${workspace.settings.workspace_port}:${workspace.launch_port}`);
     debug(`Volume mount: ${workspacePath}:${containerPath}`);
@@ -1021,9 +1024,7 @@ function _createContainer(workspace, callback) {
                 ExposedPorts: {
                     [`${workspace.settings.workspace_port}/tcp`]: {},
                 },
-                Env: [
-                    `WORKSPACE_BASE_URL=/pl/workspace/${workspace.id}/container/`,
-                ],
+                Env: workspace.settings.workspace_environment,
                 User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
                 HostConfig: {
                     PortBindings: {
