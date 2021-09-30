@@ -53,6 +53,9 @@ This file specifies basic information about the course:
     "name": "TAM 212",
     "title": "Introductory Dynamics",
     "comment": "The assessment set order used here will be the one shown within PrairieLearn",
+    "options": {
+        "useNewQuestionRenderer": true
+    },
     "assessmentSets": [
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
@@ -71,6 +74,14 @@ This file specifies basic information about the course:
 * Example [infoCourse.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/infoCourse.json)
 
 * [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourse.json)
+
+## Course-wide options
+
+These options, which apply to all instances of your course, can be set in the `infoCourse.json` file. The properties should be set within an object named `options` as shown in the example above.
+
+Property | Default | Description
+--- | --- | ---
+`useNewQuestionRenderer` | `false` | This controls whether to use the legacy renderer or the "new" renderer, as described in the [question configuration documentation](question.md#the-new-renderer). Although the default is `false` currently to avoid issues with longstanding courses on the platform, most courses will want to set this to `true`, especially if they are newly created.
 
 ## Assessment sets
 
