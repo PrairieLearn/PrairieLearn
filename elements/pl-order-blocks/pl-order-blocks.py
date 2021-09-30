@@ -409,7 +409,7 @@ def grade(element_html, data):
                 else:
                     feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(str(first_wrong + 1))
 
-    if check_indentation:
+    if check_indentation and final_score > 0:
         student_answer_indent = filter_multiple_from_array(data['submitted_answers'][answer_name], ['indent'])
         student_answer_indent = list(map(lambda x: x['indent'], student_answer_indent))
         true_answer_indent = filter_multiple_from_array(data['correct_answers'][answer_name], ['indent'])
