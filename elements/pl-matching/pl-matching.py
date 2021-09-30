@@ -226,7 +226,7 @@ def parse(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    display_statements, display_options = data['params'].get(name)
+    display_statements, display_options = data['params'].get(name, ([], []))
     submitted_answers = data['submitted_answers']
     counter_type = pl.get_string_attrib(element, 'counter-type', COUNTER_TYPE_DEFAULT)
     hide_score_badge = pl.get_boolean_attrib(element, 'hide-score-badge', HIDE_SCORE_BADGE_DEFAULT)
