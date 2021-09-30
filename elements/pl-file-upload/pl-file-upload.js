@@ -56,6 +56,10 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
                 var dataUrl = e.target.result;
 
                 var commaSplitIdx = dataUrl.indexOf(',');
+                if (commaSplitIdx == -1) {
+                    that.addWarningMessage('<strong>' + acceptedName + '</strong>' + ' is empty, ignoring file.');
+                    return;
+                }
 
                 // Store the file as base-64 encoded data
                 var base64FileData = dataUrl.substring(commaSplitIdx + 1);
