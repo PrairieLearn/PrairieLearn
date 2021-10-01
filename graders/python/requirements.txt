@@ -13,7 +13,7 @@ scikit-image==0.18.3
 requests==2.26.0
 colormath==3.0.0
 nltk==3.6.2
-beautifulsoup4==4.9.3
+beautifulsoup4==4.10.0
 bokeh==2.3.3
 folium==0.12.1
 Pygments==2.10.0
