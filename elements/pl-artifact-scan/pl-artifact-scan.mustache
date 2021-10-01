@@ -15,7 +15,7 @@
     </div>
 {{/question}}
 
-{{#submission}}
+{{^question}}
     <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
 
         {{^parse-error}}
@@ -25,15 +25,9 @@
         {{/parse-error}}
 
         {{#parse-error}}
-            <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
+            <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
+            <input type="text" disabled value="{{barcode}}">
             <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
         {{/parse-error}}
     </div>
-{{/submission}}
-
-
-{{#answer}}
-    <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
-        <code class="user-output">{{{correct-answer}}}</code>
-    </div>
-{{/answer}}
+{{/question}}
