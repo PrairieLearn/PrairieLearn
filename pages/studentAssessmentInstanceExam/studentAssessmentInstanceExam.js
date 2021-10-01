@@ -42,6 +42,10 @@ router.post('/', function(req, res, next) {
         } else if (req.body.__action == 'finish') {
             closeExam = true;
         } else if (req.body.__action == 'timeLimitFinish') {
+            // Only close if the timer expired due to time limit, not for access end
+            if (!res.locals.assessment_instance_time_limit_expired) {
+                return res.redirect(req.originalUrl);
+            }
             closeExam = true;
         } else {
             next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

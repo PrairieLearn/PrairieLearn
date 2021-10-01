@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION
         IN group_work boolean,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
+        OUT exam_access_end timestamptz, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- Time limit (if any) for this assessment.
@@ -38,6 +39,7 @@ BEGIN
     FROM authz_assessment(assessment_instance.assessment_id, authz_data, req_date, display_timezone);
 
     -- take most data directly from the assessment_result
+    exam_access_end := assessment_result.exam_access_end;
     credit := assessment_result.credit;
     credit_date_string := assessment_result.credit_date_string;
     time_limit_min := assessment_result.time_limit_min;
