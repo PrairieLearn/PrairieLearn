@@ -15,7 +15,7 @@ rpy2==3.4.5
 pygraphviz==1.6
 ansi2html==1.6.0
 scikit-learn==0.24.2
-nltk==3.6.2
+nltk==3.6.4
 tzlocal==2.1
 Pygments==2.10.0
 sphinx==4.1.2
