@@ -75,6 +75,10 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'timeLimitFinish') {
         const closeExam = true;
         const overrideGradeRate = false;
+        // Only close if the timer expired due to time limit, not for access end
+        if (!res.locals.assessment_instance_time_limit_expired) {
+            return res.redirect(req.originalUrl);
+        }
         assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, overrideGradeRate, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');

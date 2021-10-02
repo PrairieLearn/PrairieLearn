@@ -73,7 +73,10 @@ $(function() {
   
   var updateServerRemainingMS = function() {
       <% if (typeof serverUpdateURL !== 'undefined' && serverUpdateURL) { %>
-      $.get("<%= serverUpdateURL %>", handleServerResponseRemainingMS, 'json');
+      $.get("<%= serverUpdateURL %>", handleServerResponseRemainingMS, 'json')
+      <% if (typeof serverUpdateFailFunction !== 'undefined' && serverUpdateFailFunction) { %>
+         .fail(<%= serverUpdateFailFunction %>);
+      <% } %>
       <% } %>
   };
   
