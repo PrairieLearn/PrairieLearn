@@ -12,19 +12,19 @@ jobs:
       with:
         fetch-depth: 0
     - name: Build the plbase docker image if needed
-      run: sh ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase
+      run: sh ./tools/critical/build-image/build-image-if-needed.sh images/plbase prairielearn/plbase
     - name: Build the grader-c docker image if needed
-      run: sh ./tools/build-image-if-needed.sh graders/c prairielearn/grader-c
+      run: sh ./tools/critical/build-image/build-image-if-needed.sh graders/c prairielearn/grader-c
     - name: Build the grader-java docker image if needed
-      run: sh ./tools/build-image-if-needed.sh graders/java prairielearn/grader-java
+      run: sh ./tools/critical/build-image/build-image-if-needed.sh graders/java prairielearn/grader-java
     - name: Build the grader-python docker image if needed
-      run: sh ./tools/build-image-if-needed.sh graders/python prairielearn/grader-python
+      run: sh ./tools/critical/build-image/build-image-if-needed.sh graders/python prairielearn/grader-python
     - name: Build the grader-r docker image if needed
-      run: sh ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r
+      run: sh ./tools/critical/build-image/build-image-if-needed.sh graders/r prairielearn/grader-r
     - name: Build the workspace-jupyterlab docker image if needed
-      run: sh ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab
+      run: sh ./tools/critical/build-image/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab
     - name: Build the workspace-xtermjs docker image if needed
-      run: sh ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs
+      run: sh ./tools/critical/build-image/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs
     - name: Build the testing docker image
       run: docker build -t pltest .
     - name: Start the container
