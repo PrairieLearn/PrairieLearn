@@ -2,11 +2,19 @@ import prairielearn as pl
 import lxml.html
 import chevron
 from enum import Enum
+import hashlib
 
 BARCODE = 'barcode'
 BLANK_ANSWER = ''
 REQUIRED = 'required'
 REQUIRED_DEFAULT = True
+
+# Each pl-artifact-scan element is uniquely identified by the SHA1 hash of its
+# file_names attribute
+def get_submission(barcode):
+    barcode = str(barcode)
+    return '_{0}_{1}'.format(BARCODE, barcode)
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -48,5 +56,7 @@ def parse(element_html, data):
 
     if submitted_barcode != '' and submitted_barcode.isnumeric() is False:
         data['format_errors'][BARCODE] = 'Barcode "' + submitted_barcode + '" is not a valid number.'
-    if submitted_barcode is BLANK_ANSWER and required is True:
-        data['format_errors'][BARCODE] = 'The barcode is required for this submission.'
+    elif len(submitted_barcode) != 12:
+        data['format_errors'][BARCODE] = 'Barcode must be 12 digits.'
+    elif submitted_barcode is BLANK_ANSWER and required is True:
+        data['format_errors'][BARCODE] = 'Submitting your work is required for this question. Submit the barcode attached to your written work.'
