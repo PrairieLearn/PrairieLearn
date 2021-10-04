@@ -34,7 +34,6 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
         hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
         display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
         access_rules: accessRules,
-        pass_student_identity_to_questions: courseInstance.passStudentIdentityToQuestions || false
     };
 }
 
