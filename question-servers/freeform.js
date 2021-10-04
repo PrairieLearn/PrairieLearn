@@ -492,6 +492,7 @@ module.exports = {
         err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                                        if (err) return err;
         err = checkProp('filename',              'string',  ['file'],                             []);                                        if (err) return err;
         err = checkProp('test_type',             'string',  ['test'],                             []);                                        if (err) return err;
+        err = checkProp('student_identity',      'object',  ['generate', 'grade'],                []);                                        if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
@@ -852,7 +853,7 @@ module.exports = {
         return options;
     },
 
-    generate: function(question, course, variant_seed, callback) {
+    generate: function(question, course, variant_seed, student_identity, callback) {
         debug('generate()');
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
@@ -863,6 +864,7 @@ module.exports = {
                 correct_answers: {},
                 variant_seed: parseInt(variant_seed, 36),
                 options: _.defaults({}, course.options, question.options),
+                student_identity: (question.requires_student_identity && student_identity) || {},
             };
             _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {
@@ -1332,7 +1334,7 @@ module.exports = {
         });
     },
 
-    grade: function(submission, variant, question, course, callback) {
+    grade: function(submission, variant, question, course, student_identity, callback) {
         debug(`grade()`);
         if (variant.broken) return callback(new Error('attemped to grade broken variant'));
         if (submission.broken) return callback(new Error('attemped to grade broken submission'));
@@ -1353,6 +1355,7 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
                 raw_submitted_answers: submission.raw_submitted_answer,
                 gradable: submission.gradable,
+                student_identity: (question.requires_student_identity && student_identity) || {},
             };
             _.extend(data.options, module.exports.getContextOptions(context));
             workers.getPythonCaller((err, pc) => {

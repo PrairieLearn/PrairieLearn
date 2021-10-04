@@ -11,6 +11,7 @@ const perf = require('../performance')('question');
  * @param {string} courseTimezone
  */
 function getParamsForCourseInstance(courseInstance, courseTimezone) {
+    console.log('get params for course instance called');
     if (!courseInstance) return null;
 
     // It used to be the case that instance access rules could be associated with a
@@ -33,6 +34,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
         hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
         display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
         access_rules: accessRules,
+        pass_student_identity_to_questions: courseInstance.passStudentIdentityToQuestions || false
     };
 }
 

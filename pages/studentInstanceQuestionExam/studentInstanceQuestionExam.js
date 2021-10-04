@@ -42,7 +42,7 @@ function processSubmission(req, res, callback) {
         const variant = result.rows[0];
         if (req.body.__action == 'grade') {
             const overrideRateLimits = false;
-            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, (err) => {
+            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, res.locals.user, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });

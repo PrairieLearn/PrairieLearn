@@ -20,6 +20,10 @@ function getParamsForQuestion(q) {
             partialCredit = false;
         }
     }
+    console.log('get params for question called');
+    if (q.title === 'Add two numbers') {
+        console.log("REQUIRES STUDENT I", q.requiresStudentIdentity);
+    }
     return {
         type: (q.type == 'v3') ? 'Freeform' : q.type,
         title: q.title,
@@ -37,6 +41,7 @@ function getParamsForQuestion(q) {
         external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
         external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
         dependencies: q.dependencies || {},
+        requires_student_identity: q.requiresStudentIdentity || false,
         workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
         workspace_port: (q.workspaceOptions && q.workspaceOptions.port),
         workspace_args: (q.workspaceOptions && q.workspaceOptions.args),
@@ -68,6 +73,8 @@ module.exports.sync = async function(courseId, courseData) {
         questionParams,
         courseId,
     ];
+
+    console.log("questionParams are ", JSON.stringify(questionParams));
 
     perf.start('sproc:sync_questions');
     const result = await sqldb.callOneRowAsync('sync_questions', params);

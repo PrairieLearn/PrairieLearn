@@ -129,6 +129,7 @@ BEGIN
         external_grading_timeout = (src.data->>'external_grading_timeout')::integer,
         external_grading_enable_networking = (src.data->>'external_grading_enable_networking')::boolean,
         dependencies = (src.data->>'dependencies')::jsonb,
+        requires_student_identity = (src.data->>'requires_student_identity')::boolean,
         workspace_image = src.data->>'workspace_image',
         workspace_port = (src.data->>'workspace_port')::integer,
         workspace_args = src.data->>'workspace_args',

@@ -93,6 +93,10 @@
                     }
                 }
             }
+        },
+        "passStudentIdentityToQuestions": {
+            "description": "TODO",
+            "type": "boolean"
         }
     }
 }

@@ -11,6 +11,7 @@ columns
     sync_job_sequence_id: bigint
     sync_warnings: text
     uuid: uuid
+    pass_student_identity_to_questions: boolean default false
 
 indexes
     course_instances_pkey: PRIMARY KEY (id) USING btree (id)

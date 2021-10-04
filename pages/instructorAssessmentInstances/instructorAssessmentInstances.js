@@ -49,7 +49,7 @@ router.post('/', function(req, res, next) {
 
             const close = true;
             const overrideGradeRate = true;
-            assessment.gradeAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err) {
+            assessment.gradeAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id, close, overrideGradeRate, res.locals.user, function(err) {
                 if (ERR(err, next)) return;
                 res.send(JSON.stringify({}));
             });

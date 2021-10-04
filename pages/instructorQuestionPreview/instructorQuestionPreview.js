@@ -11,6 +11,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
 
 function processSubmission(req, res, callback) {
+    console.log("instructor question preview? res.locals is", JSON.stringify(res.locals));
     let variant_id, submitted_answer;
     if (res.locals.question.type == 'Freeform') {
         variant_id = req.body.__variant_id;
@@ -36,7 +37,7 @@ function processSubmission(req, res, callback) {
         const variant = result.rows[0];
         if (req.body.__action == 'grade') {
             const overrideRateLimits = true;
-            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, (err) => {
+            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, res.locals.user, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });

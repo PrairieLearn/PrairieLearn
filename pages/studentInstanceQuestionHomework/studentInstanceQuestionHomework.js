@@ -34,12 +34,13 @@ function processSubmission(req, res, callback) {
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
+    console.log('res.locals in submission thing is ', JSON.stringify(res.locals));
     sqldb.callOneRow('variants_ensure_instance_question', [submission.variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
         if (req.body.__action == 'grade') {
             const overrideRateLimits = false;
-            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, (err) => {
+            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, res.locals.user, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
