@@ -20,10 +20,6 @@ function getParamsForQuestion(q) {
             partialCredit = false;
         }
     }
-    console.log('get params for question called');
-    if (q.title === 'Add two numbers') {
-        console.log("REQUIRES STUDENT I", q.requiresStudentIdentity);
-    }
     return {
         type: (q.type == 'v3') ? 'Freeform' : q.type,
         title: q.title,
@@ -73,8 +69,6 @@ module.exports.sync = async function(courseId, courseData) {
         questionParams,
         courseId,
     ];
-
-    console.log("questionParams are ", JSON.stringify(questionParams));
 
     perf.start('sproc:sync_questions');
     const result = await sqldb.callOneRowAsync('sync_questions', params);

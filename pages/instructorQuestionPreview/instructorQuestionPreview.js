@@ -11,7 +11,6 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
 
 function processSubmission(req, res, callback) {
-    console.log("instructor question preview? res.locals is", JSON.stringify(res.locals));
     let variant_id, submitted_answer;
     if (res.locals.question.type == 'Freeform') {
         variant_id = req.body.__variant_id;

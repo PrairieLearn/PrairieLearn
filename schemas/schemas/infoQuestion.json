@@ -273,7 +273,7 @@
             }
         },
         "requiresStudentIdentity": {
-            "description": "todo",
+            "description": "Enabling this flag will send student_identity to `generate` and `grade`, stored in data['student_identity'].",
             "type": "boolean"
         }
     }

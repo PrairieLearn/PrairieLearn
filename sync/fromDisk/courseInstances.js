@@ -11,7 +11,6 @@ const perf = require('../performance')('question');
  * @param {string} courseTimezone
  */
 function getParamsForCourseInstance(courseInstance, courseTimezone) {
-    console.log('get params for course instance called');
     if (!courseInstance) return null;
 
     // It used to be the case that instance access rules could be associated with a

@@ -152,7 +152,6 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
- * @property {boolean} passStudentIdentityToQuestions
  */
 
 /**
@@ -890,7 +889,6 @@ function checkAllowAccessDates(rule) {
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
 async function validateQuestion(question) {
-    console.log("validating question", JSON.stringify(question));
     const warnings = [];
     const errors = [];
 
@@ -1079,7 +1077,6 @@ module.exports.loadQuestions = async function(coursePath) {
         validate: validateQuestion,
         recursive: true,
     });
-    console.log('schema is ', schemas.infoQuestion);
     checkDuplicateUUIDs(questions, (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`);
     return questions;
 };

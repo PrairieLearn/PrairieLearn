@@ -34,7 +34,6 @@ function processSubmission(req, res, callback) {
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
-    console.log('res.locals in submission thing is ', JSON.stringify(res.locals));
     sqldb.callOneRow('variants_ensure_instance_question', [submission.variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
