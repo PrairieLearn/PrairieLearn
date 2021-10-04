@@ -1,6 +1,95 @@
 <!-- TODO: add way to submit table -->
+<div class="accordion mt-3" id="roleDescriptions">
+  <div class="card">
+    <div class="card-header" id="headingOne">
+      <h2 class="mb-0">
+        <button
+          class="btn btn-link btn-block text-left"
+          type="button"
+          data-toggle="collapse"
+          data-target="#collapseOne"
+          aria-controls="collapseOne"
+        >
+          Role Descriptions
+        </button>
+      </h2>
+    </div>
+
+    <div
+      id="collapseOne"
+      class="collapse show"
+      aria-labelledby="headingOne"
+      data-parent="#roleDescriptions"
+    >
+      <dl class="row p-4">
+        <dt class="col-sm-2">Manager</dt>
+        <dd class="col-sm-10">
+          Required: 1 Manager
+          <ul>
+            <li>
+              Makes sure group starts quickly and remains focused during the
+              activity.
+            </li>
+            <li>Takes care of time management.</li>
+            <li>Makes sure all voices in the group are heard.</li>
+          </ul>
+        </dd>
+
+        <dt class="col-sm-2">Recorder</dt>
+        <dd class="col-sm-10">
+          Required: 1 Recorder
+          <ul>
+            <li>
+              Records important aspects of group discussions, observations, and
+              insights.
+            </li>
+            <li>Records names and roles of group members if necessary.</li>
+            <li>
+              Transcribes and submits the group's answers after discussing the
+              problems.
+            </li>
+          </ul>
+        </dd>
+
+        <dt class="col-sm-2">Reflector</dt>
+        <dd class="col-sm-10">
+          Required: 1 Reflector
+          <ul>
+            <li>
+              Guides consensus-building process; group must agree on responses
+              to questions.
+            </li>
+            <li>
+              Reports to the group periodically during the activity on how the
+              group performs.
+            </li>
+            <li>
+              Submits any reflection-related surveys at the end of the activity.
+            </li>
+          </ul>
+        </dd>
+
+        <dt class="col-sm-2">Contributor</dt>
+        <dd class="col-sm-10">
+          Required: 0 Contributors
+          <ul>
+            <li>Fills in the gaps not covered by other group members.</li>
+            <li>
+              Supports the group through looking up documentation, researching
+              answers, etc.
+            </li>
+            <li>
+              Communicates questions, clarifications, and insights to the group.
+            </li>
+          </ul>
+        </dd>
+      </dl>
+    </div>
+  </div>
+</div>
+
 <form id="role-select-form" name="role-select-form" method="POST">
-  <table class="table table-bordered table-striped mt-3">
+  <table class="table table-bordered table-striped mt-3 pl-3 pr-3">
     <thead>
       <tr>
         <th scope="col">Select Role</th>
@@ -16,25 +105,45 @@
         <td><%= row.uid %></td>
         <td>
           <div>
-            <input type="checkbox" id="manager-<%= row.uid %>" name="manager-<%= row.uid %>" value="checked"/>
+            <input
+              type="checkbox"
+              id="manager-<%= row.uid %>"
+              name="manager-<%= row.uid %>"
+              value="checked"
+            />
             <label for="manager-<%= row.uid %>">&nbsp;</label>
           </div>
         </td>
         <td>
           <div>
-            <input type="checkbox" id="recorder-<%= row.uid %>" name="recorder-<%= row.uid %>" value="checked" />
+            <input
+              type="checkbox"
+              id="recorder-<%= row.uid %>"
+              name="recorder-<%= row.uid %>"
+              value="checked"
+            />
             <label for="recorder-<%= row.uid %>">&nbsp;</label>
           </div>
         </td>
         <td>
           <div>
-            <input type="checkbox" id="reflector-<%= row.uid %>" name="reflector-<%= row.uid %>" value="checked"/>
+            <input
+              type="checkbox"
+              id="reflector-<%= row.uid %>"
+              name="reflector-<%= row.uid %>"
+              value="checked"
+            />
             <label for="reflector-<%= row.uid %>">&nbsp;</label>
           </div>
         </td>
         <td>
           <div>
-            <input type="checkbox" id="contributor-<%= row.uid %>" name="contributor-<%= row.uid %>" value="checked"/>
+            <input
+              type="checkbox"
+              id="contributor-<%= row.uid %>"
+              name="contributor-<%= row.uid %>"
+              value="checked"
+            />
             <label for="contributor-<%= row.uid %>">&nbsp;</label>
           </div>
         </td>
@@ -42,9 +151,9 @@
       <% }) %>
     </tbody>
   </table>
-  <div class="form-group mb-0">
-    <input type="hidden" name="__action" value="claim_role">
-    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <div class="mt-4 d-flex justify-content-center">
+    <input type="hidden" name="__action" value="claim_role" />
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
     <button type="submit" class="btn btn-primary">Claim role</button>
   </div>
 </form>

@@ -43,6 +43,7 @@
           <% } %>
           <% } else {%>
             <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
+            <%- include('../shared/groupRoleSelectTable.ejs', {group_info: group_info}); %>
             <% if (start) { %>
             <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
               <input type="hidden" name="__action" value="new_instance">
@@ -57,7 +58,6 @@
               * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
             </p>
             <% } %>
-            <%- include('../shared/groupRoleSelectTable.ejs', {group_info: group_info}); %>
         <% } %>
         </div>
       </div>
