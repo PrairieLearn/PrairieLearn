@@ -7,8 +7,8 @@ columns
     external_grading_enable_networking: boolean
     external_grading_enabled: boolean default false
     external_grading_entrypoint: text
-    external_grading_environment: text[] default ARRAY[]::text[]
-    external_grading_files: jsonb not null default '{}'::jsonb
+    external_grading_environment: jsonb not null default '{}'::jsonb
+    external_grading_files: text[] default ARRAY[]::text[]
     external_grading_image: text
     external_grading_timeout: integer
     grading_method: enum_grading_method not null default 'Internal'::enum_grading_method
