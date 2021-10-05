@@ -765,7 +765,7 @@ async function loadInfoForDirectory({ coursePath, directory, infoFilename, defau
             } else if (recursive) {
                 try {
                     const subInfoFiles = await walk(path.join(relativeDir, dir));
-                    if (_.size(subInfoFiles) == 0) {
+                    if (_.isEmpty(subInfoFiles)) {
                         infoFiles[path.join(relativeDir, dir)] = infofile.makeError(`Missing JSON file: ${infoFilePath}`);
                     }
                     _.assign(infoFiles, subInfoFiles);

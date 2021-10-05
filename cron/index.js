@@ -127,7 +127,7 @@ module.exports = {
                 debug(`stop(): clearing timeout for ${interval}`);
                 clearTimeout(timeout);
                 delete jobTimeouts[interval];
-            } else if (timeout == 0) {
+            } else if (timeout === 0) {
                 // job is currently running, request that it stop
                 debug(`stop(): requesting stop for ${interval}`);
                 jobTimeouts[interval] = -1;
@@ -135,7 +135,7 @@ module.exports = {
         });
 
         function check() {
-            if (_.size(jobTimeouts) == 0) {
+            if (_.isEmpty(jobTimeouts)) {
                 debug(`stop(): all jobs stopped`);
                 callback(null);
             } else {
