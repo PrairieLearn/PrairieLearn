@@ -55,7 +55,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -115,7 +115,7 @@ describe('API', function() {
                     return callback(error);
                 }
                 locals.postEndTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
                 page = body;
@@ -144,7 +144,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 401) {
+                if (response.statusCode !== 401) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 callback(null);
@@ -161,7 +161,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 401) {
+                if (response.statusCode !== 401) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 callback(null);
@@ -178,7 +178,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -209,7 +209,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -240,7 +240,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -276,7 +276,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -314,7 +314,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -346,7 +346,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -383,7 +383,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -422,7 +422,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -450,7 +450,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -478,7 +478,7 @@ describe('API', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;

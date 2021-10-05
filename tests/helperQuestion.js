@@ -57,7 +57,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     page = body;
@@ -213,7 +213,7 @@ module.exports = {
                         return callback(error);
                     }
                     locals.postEndTime = Date.now();
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     page = body;
@@ -290,7 +290,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 400 && response.statusCode != 500) {
+                    if (response.statusCode !== 400 && response.statusCode !== 500) {
                         return callback(new Error('bad status (expected 400 or 500): ' + response.statusCode));
                     }
                     page = body;
@@ -412,7 +412,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     page = body;
@@ -440,7 +440,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     callback(null);
@@ -458,7 +458,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         console.log(response);
                         console.log(body);
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
@@ -495,7 +495,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         console.log(response);
                         console.log(body);
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
@@ -515,7 +515,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         console.log(response);
                         console.log(body);
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
@@ -552,7 +552,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         console.log(response);
                         console.log(body);
                         return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
@@ -606,7 +606,7 @@ module.exports = {
                         if (error) {
                             return callback(error);
                         }
-                        if (response.statusCode != 200) {
+                        if (response.statusCode !== 200) {
                             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                         }
                         page = body;
@@ -635,7 +635,7 @@ module.exports = {
                         if (error) {
                             return callback(error);
                         }
-                        if (response.statusCode != 200) {
+                        if (response.statusCode !== 200) {
                             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                         }
                         callback(null);

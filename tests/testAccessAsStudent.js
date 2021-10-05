@@ -42,7 +42,7 @@ describe('Test student auto-enrollment', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 callback(null);
@@ -53,7 +53,7 @@ describe('Test student auto-enrollment', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 var $ = cheerio.load(body);
@@ -76,7 +76,7 @@ describe('Test student auto-enrollment', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 403) {
+                if (response.statusCode !== 403) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 callback(null);

@@ -110,7 +110,7 @@ describe('Instructor assessment editing', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -137,7 +137,7 @@ describe('Instructor assessment editing', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -153,7 +153,7 @@ describe('Instructor assessment editing', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -178,7 +178,7 @@ describe('Instructor assessment editing', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -241,7 +241,7 @@ describe('Instructor assessment editing', function() {
                     return callback(error);
                 }
                 locals.postEndTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
                 page = body;
@@ -310,7 +310,7 @@ describe('Instructor assessment editing', function() {
                     return callback(error);
                 }
                 locals.postEndTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
                 page = body;
@@ -380,7 +380,7 @@ describe('Instructor assessment editing', function() {
                     return callback(error);
                 }
                 locals.postEndTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
                 page = body;
@@ -450,7 +450,7 @@ describe('Instructor assessment editing', function() {
                     return callback(error);
                 }
                 locals.postEndTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
                 page = body;
@@ -474,7 +474,7 @@ describe('Instructor assessment editing', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -496,7 +496,7 @@ describe('Instructor assessment editing', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -533,7 +533,7 @@ describe('Instructor assessment editing', function() {
                     return callback(error);
                 }
                 locals.postEndTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
                 page = body;

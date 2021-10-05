@@ -104,7 +104,7 @@ describe('Zone grading homework assessment', function() {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
@@ -133,7 +133,7 @@ describe('Zone grading homework assessment', function() {
                         return callback(error);
                     }
                     locals.postStartTime = Date.now();
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
@@ -182,7 +182,7 @@ describe('Zone grading homework assessment', function() {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;

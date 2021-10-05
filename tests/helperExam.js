@@ -81,7 +81,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
@@ -108,7 +108,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
@@ -148,7 +148,7 @@ module.exports = {
                         return callback(error);
                     }
                     locals.postStartTime = Date.now();
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
@@ -200,7 +200,7 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;

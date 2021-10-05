@@ -306,7 +306,7 @@ function badGet(url) {
                     return callback(error);
                 }
                 locals.postStartTime = Date.now();
-                if (response.statusCode != 400) {
+                if (response.statusCode !== 400) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 callback(null);
@@ -334,7 +334,7 @@ function badPost(action, fileEditContents, url) {
                     return callback(error);
                 }
                 locals.postEndTime = Date.now();
-                if (response.statusCode != 400) {
+                if (response.statusCode !== 400) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
                 callback(null);
@@ -468,7 +468,7 @@ function editPost(action, fileEditContents, url, expectedToFindResults, expected
                     return callback(error);
                 }
                 locals.postEndTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                 }
                 page = body;
@@ -497,7 +497,7 @@ function findEditUrl(name, selector, url, expectedEditUrl) {
                     return callback(error);
                 }
                 locals.postStartTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -631,7 +631,7 @@ function editGet(url, expectedToFindResults, expectedToFindChoice, expectedDraft
                     return callback(error);
                 }
                 locals.postStartTime = Date.now();
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
