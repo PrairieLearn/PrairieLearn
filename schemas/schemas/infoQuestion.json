@@ -139,7 +139,7 @@
                 },
                 "environment": {
                     "description": "Environment variables to set inside the grading container.",
-                    "type": "array"
+                    "type": "object"
                 }
             }
         },
@@ -276,7 +276,7 @@
                 },
                 "environment": {
                     "description": "Environment variables to set inside the workspace container.",
-                    "type": "array"
+                    "type": "object"
                 }
             }
         }

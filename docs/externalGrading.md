@@ -70,7 +70,7 @@ External grading configuration is done on a per-question basis. All configuratio
 
 * `enableNetworking`: Allows the container to access the public internet. This is disabled by default to make secure, isolated execution the default behavior.
 
-* `environment`: List of environment variables to set inside the grading container in the form accepted by the [Docker Engine API](https://docs.docker.com/engine/api/v1.41/#operation/ContainerCreate): `["VAR=value", ...]`. A variable without `=` is removed from the environment, rather than to have an empty value.
+* `environment`: Environment variables to set inside the grading container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
 
 Here's an example of a complete `externalGradingOptions` portion of a question's `info.json`:
 

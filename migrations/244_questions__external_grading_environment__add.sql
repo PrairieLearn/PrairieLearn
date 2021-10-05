@@ -1,1 +1,1 @@
-ALTER TABLE questions ADD COLUMN external_grading_environment text[] DEFAULT ARRAY[]::text[];
+ALTER TABLE questions ADD COLUMN external_grading_environment jsonb not null default '{}'::jsonb;

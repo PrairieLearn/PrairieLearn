@@ -623,6 +623,11 @@ const _checkServerAsync = util.promisify(_checkServer);
  */
 async function _getWorkspaceSettingsAsync(workspace_id) {
     const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, { workspace_id });
+    const workspace_environment = result.rows[0].workspace_environment || {};
+
+    // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
+    workspace_environment['WORKSPACE_BASE_URL'] = `/pl/workspace/${workspace_id}/container/`;
+
     const settings = {
         workspace_image: result.rows[0].workspace_image,
         workspace_port: result.rows[0].workspace_port,
@@ -631,10 +636,9 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
         workspace_args: result.rows[0].workspace_args || '',
         workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
         workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
-        workspace_environment: result.rows[0].workspace_environment || [],
+        // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
+        workspace_environment: Object.entries(workspace_environment).map(([k, v]) => v === null ? k : `${k}=${v}`),
     };
-    const env_workspace_base_url = `WORKSPACE_BASE_URL=/pl/workspace/${workspace_id}/container/`;
-    settings.workspace_environment.push(env_workspace_base_url);
 
     if (config.cacheImageRegistry) {
         const repository = new dockerUtil.DockerName(settings.workspace_image);

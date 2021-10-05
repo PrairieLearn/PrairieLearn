@@ -1,1 +1,1 @@
-ALTER TABLE questions ADD COLUMN workspace_environment text[] DEFAULT ARRAY[]::text[];
+ALTER TABLE questions ADD COLUMN workspace_environment jsonb not null default '{}'::jsonb;

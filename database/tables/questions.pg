@@ -8,7 +8,7 @@ columns
     external_grading_enabled: boolean default false
     external_grading_entrypoint: text
     external_grading_environment: text[] default ARRAY[]::text[]
-    external_grading_files: text[] default ARRAY[]::text[]
+    external_grading_files: jsonb not null default '{}'::jsonb
     external_grading_image: text
     external_grading_timeout: integer
     grading_method: enum_grading_method not null default 'Internal'::enum_grading_method
@@ -28,7 +28,7 @@ columns
     uuid: uuid
     workspace_args: text
     workspace_enable_networking: boolean
-    workspace_environment: text[] default ARRAY[]::text[]
+    workspace_environment: jsonb not null default '{}'::jsonb
     workspace_graded_files: text[] default ARRAY[]::text[]
     workspace_home: text
     workspace_image: text

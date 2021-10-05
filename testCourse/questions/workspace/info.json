@@ -16,9 +16,9 @@
             "starter_code.h",
             "starter_code.c"
         ],
-        "environment": [
-            "FOO=bar baz",
-            "ILL=ini"
-        ]
+        "environment": {
+            "FOO": "bar baz",
+            "ILL": "ini"
+        }
     }
 }

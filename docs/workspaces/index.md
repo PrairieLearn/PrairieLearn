@@ -65,7 +65,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
     * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
     * `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
     * `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
-    * `environment` (optional, default none): list of environment variables to set inside the workspace container in the form accepted by the [Docker Engine API](https://docs.docker.com/engine/api/v1.41/#operation/ContainerCreate): `["VAR=value", ...]`. A variable without `=` is removed from the environment, rather than to have an empty value.
+    * `environment` (optional, default {}): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
 
 #### `info.json` for ungraded workspace
 
