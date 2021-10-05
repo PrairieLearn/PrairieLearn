@@ -1,9 +1,10 @@
 var ERR = require('async-stacktrace');
+const async = require('async');
 
 var config = require('../lib/config');
 var csrf = require('../lib/csrf');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -35,29 +36,48 @@ module.exports = function(req, res, next) {
             return next(new Error('invalid load_test_token'));
         }
 
-        let params = [
-            'loadtest@prairielearn.org',
-            'Load Test',
-            '999999999',
-            'dev',
-        ];
-        sqldb.call('users_select_or_insert', params, (err, result) => {
+        async.series([
+            (callback) => {
+                const params = [
+                    'loadtest@prairielearn.org',
+                    'Load Test',
+                    '999999999',
+                    'dev',
+                ];
+                sqldb.call('users_select_or_insert', params, (err, result) => {
+                    if (ERR(err, callback)) return;
+                    res.locals.authn_user = result.rows[0].user;
+                    res.locals.authn_institution = result.rows[0].institution;
+                    res.locals.authn_provider_name = 'LoadTest';
+                    res.locals.authn_is_administrator = result.rows[0].is_administrator;
+                    checkAdministratorAccess(req, res);
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const params = {
+                    uid: 'loadtest@prairielearn.org',
+                    course_short_name: 'XC 101',
+                };
+                sqldb.query(sql.enroll_user, params, (err, _result) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                const params = {
+                    uid: 'loadtest@prairielearn.org',
+                    course_short_name: 'XC 101',
+                };
+                sqldb.query(sql.insert_course_permissions_for_user, params, (err, _result) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+        ], (err) => {
             if (ERR(err, next)) return;
-            res.locals.authn_user = result.rows[0].user;
-            res.locals.authn_institution = result.rows[0].institution;
-            res.locals.authn_provider_name = 'LoadTest';
-            res.locals.is_administrator = result.rows[0].is_administrator;
-
-            let params = {
-                uid: 'loadtest@prairielearn.org',
-                course_short_name: 'XC 101',
-            };
-            sqldb.query(sql.enroll_user_as_instructor, params, (err, _result) => {
-                if (ERR(err, next)) return;
-                next();
-            });
+            return next();
         });
-        return;
     }
 
     // bypass auth for local /pl/ serving
@@ -65,11 +85,20 @@ module.exports = function(req, res, next) {
         var authUid = config.authUid;
         var authName = config.authName;
         var authUin = config.authUin;
+
+        // We allow unit tests to override the user. Unit tests may also override the req_date
+        // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
+
         if (req.cookies.pl_test_user == 'test_student') {
             authUid = 'student@illinois.edu';
             authName = 'Student User';
             authUin = '000000001';
+        } else if (req.cookies.pl_test_user == 'test_instructor') {
+            authUid = 'instructor@illinois.edu';
+            authName = 'Instructor User';
+            authUin = '100000000';
         }
+
         let params = [
             authUid,
             authName,
@@ -88,7 +117,9 @@ module.exports = function(req, res, next) {
                 res.locals.authn_user = result.rows[0].user;
                 res.locals.authn_institution = result.rows[0].institution;
                 res.locals.authn_provider_name = 'Local';
-                res.locals.is_administrator = result.rows[0].is_administrator;
+                res.locals.authn_is_administrator = result.rows[0].is_administrator;
+                res.locals.authn_is_instructor = result.rows[0].is_instructor;
+                checkAdministratorAccess(req, res);
                 res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
                 next();
             });
@@ -128,7 +159,9 @@ module.exports = function(req, res, next) {
         res.locals.authn_user = result.rows[0].user;
         res.locals.authn_institution = result.rows[0].institution;
         res.locals.authn_provider_name = authnData.authn_provider_name;
-        res.locals.is_administrator = result.rows[0].is_administrator;
+        res.locals.authn_is_administrator = result.rows[0].is_administrator;
+        res.locals.authn_is_instructor = result.rows[0].is_instructor;
+        checkAdministratorAccess(req, res);
         res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
 
         // reset cookie timeout (#2268)
@@ -142,3 +175,10 @@ module.exports = function(req, res, next) {
         next();
     });
 };
+
+function checkAdministratorAccess(req, res) {
+    const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
+    const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
+    res.locals.access_as_administrator = (accessType == 'active');
+    res.locals.is_administrator = res.locals.authn_is_administrator && res.locals.access_as_administrator;
+}

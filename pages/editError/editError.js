@@ -1,11 +1,13 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const serverJobs = require('../../lib/server-jobs');
 const syncHelpers = require('../shared/syncHelpers');
 
 router.get('/:job_sequence_id', function(req, res, next) {
+    if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be course editor)'));
+
     const job_sequence_id = req.params.job_sequence_id;
     const course_id = res.locals.course ? res.locals.course.id : null;
     serverJobs.getJobSequenceWithFormattedOutput(job_sequence_id, course_id, (err, job_sequence) => {
@@ -53,7 +55,7 @@ router.get('/:job_sequence_id', function(req, res, next) {
 });
 
 router.post('/:job_sequence_id', (req, res, next) => {
-    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
+    if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be course editor)'));
 
     if (req.body.__action == 'pull') {
         syncHelpers.pullAndUpdate(res.locals, function(err, job_sequence_id) {

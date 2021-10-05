@@ -1,8 +1,8 @@
 var ERR = require('async-stacktrace');
 var assert = require('chai').assert;
 
-var sqldb = require('@prairielearn/prairielib').sqldb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var helperDb = require('./helperDb');
 
@@ -22,7 +22,8 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
         var params = [
             assessment_id,
             'Exam',
-            'Student',
+            'None',
+            'None',
             1002,
             'instructor@school.edu',
             '2010-07-07 06:06:06-00',
@@ -50,7 +51,8 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
             var params = [
                 assessment_id,
                 'Exam',
-                'Student',
+                'None',
+                'None',
                 1000,
                 'student@school.edu',
                 '2010-07-07 06:06:06-00',
@@ -68,7 +70,8 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
             var params = [
                 assessment_id,
                 'Exam',
-                'Student',
+                'None',
+                'None',
                 1000,
                 'student@school.edu',
                 '2010-08-07 06:06:06-00',
@@ -95,7 +98,8 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
             var params = [
                 second_assessment_id,
                 'Exam',
-                'Student',
+                'None',
+                'None',
                 1000,
                 'student@school.edu',
                 '2010-07-07 06:06:06-00',
@@ -112,182 +116,6 @@ var caa_reservation_tests = function(assessment_id, exam_id, second_assessment_i
 };
 
 describe('sproc check_assessment_access* tests', function() {
-
-    describe('check_assessment_access_rule generic tests', () => {
-
-        before('set up testing server', helperDb.before);
-        after('tear down testing database', helperDb.after);
-
-        before('setup sample environment', function(callback) {
-            sqldb.query(sql.setup_caa_generic_tests, {}, (err, _result) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        });
-
-        it('pass for role Instructor', function(callback) {
-            var params = {
-                mode: null,
-                role: 'Instructor',
-                user_id: null,
-                uid: null,
-                date: null,
-                use_date_check: false,
-                aar_id: 1,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, result)) return;
-                assert.strictEqual(result.rows[0].authorized, true);
-                callback(null);
-            });
-        });
-
-        it('pass if all parameters match', function(callback) {
-            var params = {
-                mode: 'Exam',
-                role: 'TA',
-                user_id: 1020,
-                uid: 'person1@host.com',
-                date: '2010-07-07 06:06:06-00',
-                use_date_check: true,
-                aar_id: 1,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, true);
-                callback(null);
-            });
-        });
-
-        it('pass if all parameters match, with no uids', function(callback) {
-            var params = {
-                mode: 'Exam',
-                role: 'TA',
-                user_id: 1020,
-                uid: 'unknown@host.com',
-                date: '2010-07-07 06:06:06-00',
-                use_date_check: true,
-                aar_id: 2,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, true);
-                callback(null);
-            });
-        });
-
-        it('fail if uids = []', function(callback) {
-            var params = {
-                mode: 'Exam',
-                role: 'TA',
-                user_id: 1020,
-                uid: 'person1@host.com',
-                date: '2010-07-07 06:06:06-00',
-                use_date_check: true,
-                aar_id: 3,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, false);
-                callback(null);
-            });
-        });
-
-        it('fail if mode does not match', function(callback) {
-            var params = {
-                mode: 'Public',
-                role: 'TA',
-                user_id: 1020,
-                uid: 'person1@host.com',
-                date: '2010-07-07 06:06:06-00',
-                use_date_check: false,
-                aar_id: 1,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, false);
-                callback(null);
-            });
-        });
-
-        it('fail if role is too low', function(callback) {
-            var params = {
-                mode: 'Exam',
-                role: null,
-                user_id: 1020,
-                uid: 'person1@host.com',
-                date: '2010-07-07 06:06:06-00',
-                use_date_check: false,
-                aar_id: 1,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, false);
-                callback(null);
-            });
-        });
-
-        it('fail if uid not in list', function(callback) {
-            var params = {
-                mode: 'Exam',
-                role: 'TA',
-                user_id: 1020,
-                uid: 'unknown@host.com',
-                date: '2010-07-07 06:06:06-00',
-                use_date_check: false,
-                aar_id: 1,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, false);
-                callback(null);
-            });
-        });
-
-        it('fail if date is before start_date', function(callback) {
-            var params = {
-                mode: 'Exam',
-                role: 'TA',
-                user_id: 1020,
-                uid: 'person1@host.com',
-                date: '2007-07-07 06:06:06-00',
-                use_date_check: true,
-                aar_id: 1,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, false);
-                callback(null);
-            });
-        });
-
-        it('fail if date is after end_date', function(callback) {
-            var params = {
-                mode: 'Exam',
-                role: 'TA',
-                user_id: 1020,
-                uid: 'person1@host.com',
-                date: '2017-07-07 06:06:06-00',
-                use_date_check: true,
-                aar_id: 1,
-            };
-
-            sqldb.query(sql.caar_test, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                assert.strictEqual(result.rows[0].authorized, false);
-                callback(null);
-            });
-        });
-
-    });
 
     describe('check_assessment_access scheduler tests', function() {
 

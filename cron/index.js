@@ -8,8 +8,8 @@ const logger = require('../lib/logger');
 const config = require('../lib/config');
 
 const namedLocks = require('../lib/named-locks');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -112,9 +112,9 @@ module.exports = {
         _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
             if (intervalSec == 'daily') {
                 this.queueDailyJobs(jobsList);
-            } else {
+            } else if (intervalSec > 0) {
                 this.queueJobs(jobsList, intervalSec);
-            }
+            } // zero or negative intervalSec jobs are not run
         });
         callback(null);
     },

@@ -5,10 +5,10 @@ const _ = require('lodash');
 const oauthSignature = require('oauth-signature');
 const debug = require('debug')('prairielearn:authCallbackLti');
 
-const sqldb = require('@prairielearn/prairielib').sqlDb;
-const sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-const error = require('@prairielearn/prairielib').error;
+const error = require('../../prairielib/lib/error');
 const csrf = require('../../lib/csrf');
 const config = require('../../lib/config');
 const cache = require('../../lib/cache');
@@ -39,6 +39,9 @@ router.post('/', function(req, res, next) {
     if (!parameters.resource_link_id) {
         return next(error.make(500, 'Badly formed resource_link_id'));
     }
+
+    // FIXME: could warn or throw an error if parameters.roles exists (no longer used)
+    // FIXME: could add a parameter that allows setting course role or course instance role
 
     sqldb.queryZeroOrOneRow(sql.lookup_credential, {consumer_key: parameters.oauth_consumer_key}, function(err, result) {
         if (ERR(err, next)) return;
@@ -95,16 +98,19 @@ router.post('/', function(req, res, next) {
         }
         var authName = parameters.lis_person_name_full || fallbackName;
 
-        var params = [
+        const params = [
             authUid,
             authName,
             ltiresult.course_instance_id,
             parameters.user_id,
             parameters.context_id,
+            res.locals.req_date,
         ];
 
-        sqldb.call('users_select_or_insert_lti', params, (err, result) => {
+        sqldb.call('users_select_or_insert_and_enroll_lti', params, (err, result) => {
             if (ERR(err, next)) return;
+            if (!result.rows[0].has_access) return next(error.make(403, 'Access denied'));
+
             var tokenData = {
                 user_id: result.rows[0].user_id,
                 authn_provider_name: 'LTI',
@@ -112,66 +118,56 @@ router.post('/', function(req, res, next) {
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: config.authnCookieMaxAgeMilliseconds});
 
-            var role = 'Student'; // default
-            if (parameters.roles.includes('TeachingAssistant')) { role = 'TA'; }
-            if (parameters.roles.includes('Instructor')) { role = 'Instructor'; }
-
-            var params = {
+            const params = {
                 course_instance_id: ltiresult.course_instance_id,
-                user_id: tokenData.user_id,
-                req_date: res.locals.req_date,
-                role,
+                context_id: parameters.context_id,
+                resource_link_id: parameters.resource_link_id,
+                resource_link_title: parameters.resource_link_title || '',
+                resource_link_description: parameters.resource_link_description || '',
             };
-
-            debug('lti enroll params ', params);
-
-            sqldb.queryZeroOrOneRow(sql.enroll, params, function(err, result) {
+            debug('lti link upsert params', params);
+            sqldb.queryOneRow(sql.upsert_current_link, params, function(err, result) {
                 if (ERR(err, next)) return;
-                if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
-                var params = {
-                    course_instance_id: ltiresult.course_instance_id,
-                    context_id: parameters.context_id,
-                    resource_link_id: parameters.resource_link_id,
-                    resource_link_title: parameters.resource_link_title || '',
-                    resource_link_description: parameters.resource_link_description || '',
-                };
-                debug('lti link upsert params', params);
-                sqldb.queryOneRow(sql.upsert_current_link, params, function(err, result) {
-                    if (ERR(err, next)) return;
+                // Do we have an assessment linked to this resource_link_id?
+                if (result.rows[0].assessment_id) {
 
-                    // Do we have an assessment linked to this resource_link_id?
-                    if (result.rows[0].assessment_id) {
+                    if ('lis_result_sourcedid' in parameters) {
+                        // Save outcomes here
+                        const params = {
+                            user_id: tokenData.user_id,
+                            assessment_id: result.rows[0].assessment_id,
+                            lis_result_sourcedid: parameters.lis_result_sourcedid,
+                            lis_outcome_service_url: parameters.lis_outcome_service_url,
+                            lti_credential_id: ltiresult.id,
+                        };
 
-                        if ('lis_result_sourcedid' in parameters) {
-                            // Save outcomes here
-                            var params = {
-                                user_id: tokenData.user_id,
-                                assessment_id: result.rows[0].assessment_id,
-                                lis_result_sourcedid: parameters.lis_result_sourcedid,
-                                lis_outcome_service_url: parameters.lis_outcome_service_url,
-                                lti_credential_id: ltiresult.id,
-                            };
-
-                            sqldb.query(sql.upsert_outcome, params, function(err, _outcome_result) {
-                                if (ERR(err, next)) return;
-                            });
-                        }
-
-                        redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
-                        res.redirect(redirUrl);
-                    } else {
-                        // No linked assessment
-
-                        if (role != 'Student') {
-                            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
-                        } else {
-                            // Show an error that the assignment is unavailable
-                            return next(error.make(400, 'Assignment not available yet'));
-                        }
-                        res.redirect(redirUrl);
+                        sqldb.query(sql.upsert_outcome, params, function(err, _outcome_result) {
+                            if (ERR(err, next)) return;
+                        });
                     }
-                });
+
+                    redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
+                    res.redirect(redirUrl);
+                } else {
+                    // No linked assessment
+
+                    const params = [
+                        tokenData.user_id,
+                        ltiresult.course_instance_id,
+                    ];
+                    sqldb.call('users_is_instructor_in_course_instance', params, function(err, result) {
+                        if (ERR(err, next)) return;
+                        if (result.rowCount == 0) return next(error.make(403, 'Access denied (could not determine if user is instructor)'));
+                        if (result.rows[0].is_instructor) {
+                            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
+                            res.redirect(redirUrl);
+                        }
+                        // Show an error that the assignment is unavailable
+                        return next(error.make(400, 'Assignment not available yet'));
+                    });
+
+                }
             });
         });
     });

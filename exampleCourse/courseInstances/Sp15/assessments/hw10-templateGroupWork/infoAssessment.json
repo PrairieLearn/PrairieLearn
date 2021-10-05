@@ -5,16 +5,12 @@
     "set": "Homework",
     "number": "10",
     "groupWork": true,
-    "groupMaxSize": 2,
-    "groupMinSize": 5,
+    "groupMinSize": 2,
+    "groupMaxSize": 5,
     "studentGroupCreate": true,
     "studentGroupJoin": true,
     "studentGroupLeave": true,
     "allowAccess": [
-        {
-            "role": "TA",
-            "credit": 100
-        },
         {
             "mode": "Public",
             "credit": 100,

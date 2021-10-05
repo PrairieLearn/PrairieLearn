@@ -460,8 +460,36 @@ describe('API', function() {
         it('should parse as JSON', function() {
             locals.json = JSON.parse(page);
         });
-        it('should have two access rules', function() {
-            assert.lengthOf(locals.json, 2);
+        it('should have one access rule', function() {
+            assert.lengthOf(locals.json, 1);
+        });
+    });
+
+    describe('14. GET to API for course instance access rules', function() {
+        it('should load successfully', function(callback) {
+            locals.apiCourseInstanceAccessRulesUrl = locals.apiCourseInstanceUrl + `/course_instance_access_rules`;
+            const options = {
+                url: locals.apiCourseInstanceAccessRulesUrl,
+                headers: {
+                    'Private-Token': locals.api_token,
+                },
+            };
+            request(options, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse as JSON', function() {
+            locals.json = JSON.parse(page);
+        });
+        it('should have one access rule', function() {
+            assert.lengthOf(locals.json, 1);
         });
     });
 });

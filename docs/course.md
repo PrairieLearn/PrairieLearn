@@ -53,6 +53,9 @@ This file specifies basic information about the course:
     "name": "TAM 212",
     "title": "Introductory Dynamics",
     "comment": "The assessment set order used here will be the one shown within PrairieLearn",
+    "options": {
+        "useNewQuestionRenderer": true
+    },
     "assessmentSets": [
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
@@ -71,6 +74,14 @@ This file specifies basic information about the course:
 * Example [infoCourse.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/infoCourse.json)
 
 * [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourse.json)
+
+## Course-wide options
+
+These options, which apply to all instances of your course, can be set in the `infoCourse.json` file. The properties should be set within an object named `options` as shown in the example above.
+
+Property | Default | Description
+--- | --- | ---
+`useNewQuestionRenderer` | `false` | This controls whether to use the legacy renderer or the "new" renderer, as described in the [question configuration documentation](question.md#the-new-renderer). Although the default is `false` currently to avoid issues with longstanding courses on the platform, most courses will want to set this to `true`, especially if they are newly created.
 
 ## Assessment sets
 
@@ -236,3 +247,47 @@ Comments can be strings, arrays, or JSON objects, but for most uses strings are 
 The possible colors for assessment sets, topic, and tags are:
 
 ![Colors](colors.png)
+
+## Course staff
+
+Access permissions for course staff can be configured on the "Staff" tab. Course staff permissions are separated into *course content roles* and *student data roles*. These can be mixed and matched arbitrarily, so any combination is possible.
+
+### Course content access roles
+
+Course content access roles grant permission to access all course content, such as questions and assessments, including aggregate statistics from student usage.
+
+Action                                            | None | Previewer | Viewer | Editor | Owner
+:-------------------------------------------------|:----:|:---------:|:------:|:------:|:-----:
+View questions and assessments                    |  ⋅   |     ✓     |   ✓    |   ✓    |   ✓
+View issues                                       |  ⋅   |     ✓     |   ✓    |   ✓    |   ✓
+View aggregate statistics in all course instances |  ⋅   |     ✓     |   ✓    |   ✓    |   ✓
+View question code and JSON files                 |  ⋅   |     ⋅     |   ✓    |   ✓    |   ✓
+Close issues                                      |  ⋅   |     ⋅     |   ⋅    |   ✓    |   ✓
+Edit question code and JSON files                 |  ⋅   |     ⋅     |   ⋅    |   ✓    |   ✓
+Sync from GitHub                                  |  ⋅   |     ⋅     |   ⋅    |   ✓    |   ✓
+Edit course staff permissions                     |  ⋅   |     ⋅     |   ⋅    |   ⋅    |   ✓
+
+### Student data access roles
+
+Student data access roles grant permission to access to individual student data.
+
+Action                                   | None | Viewer | Editor
+:----------------------------------------|:----:|:------:|:------:
+View individual student scores           |  ⋅   |   ✓    |   ✓
+Download gradebook data                  |  ⋅   |   ✓    |   ✓
+Manually grade student submissions       |  ⋅   |   ⋅    |   ✓
+Edit individual student scores           |  ⋅   |   ⋅    |   ✓
+Change time limits and close assessments |  ⋅   |   ⋅    |   ✓
+
+### Recommended course staff roles
+
+While every course should use the different roles in a way that best suits the course needs, some recommended guidelines are:
+
+Role                                 | Course content access | Student data access
+:------------------------------------|:---------------------:|:-------------------:
+Instructor                           | Course content owner  | Student data editor
+TAs developing course content        | Course content editor | Student data editor
+Student content developers (not TAs) | Course content editor | None
+TAs involved in grading              | None                  | Student data editor
+Other TAs                            | None                  | Student data viewer
+Instructors from other classes       | Course content viewer | None

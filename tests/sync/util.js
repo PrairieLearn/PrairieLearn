@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 const stringify = require('json-stable-stringify');
 const { assert } = require('chai');
 
@@ -34,7 +34,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} color
  */
 
-/** 
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -47,11 +47,8 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {AssessmentSet[]} assessmentSets
  */
 
-/** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
-
 /**
  * @typedef {Object} CourseInstanceAllowAccess
- * @property {UserRule=} role
  * @property {string[]=} uids
  * @property {string=} startDate
  * @property {string=} endDate
@@ -64,7 +61,6 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} longName
  * @property {number} [number]
  * @property {string} [timezone]
- * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} [userRoles]
  * @property {CourseInstanceAllowAccess[]} [allowAccess]
  */
 
@@ -79,7 +75,6 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @typedef {Object} AssessmentAllowAccess
  * @property {"Public" | "Exam" | "SEB"} mode
  * @property {string} examUuid
- * @property {"Student" | "TA" | "Instructor"} role
  * @property {string[]} uids
  * @property {number} credit
  * @property {string} startDate
@@ -163,6 +158,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string[]} gradedFiles
  * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
+ * @property {boolean=} enableNetworking
  */
 
  /**
@@ -189,7 +185,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 /**
  * Accepts a CourseData object and creates a PrairieLearn course directory
  * structure from it. Returns the path to the newly-created directory.
- * 
+ *
  * @param {CourseData} courseData - The course data to write to disk
  * @returns {Promise<string>} - The path to the directory containing the course data
  */
@@ -203,7 +199,7 @@ module.exports.writeCourseToTempDirectory = async function(courseData) {
  * Accepts a CourseData object and writes it as a PrairieLearn course
  * into the given directory. Removes any existing content from the
  * directory.
- * 
+ *
  * @param {CourseData} courseData - The course data to write to disk
  * @param {string} coursePath - The path to the directory to write to
  */
@@ -358,7 +354,6 @@ const courseInstances = {
         number: '100',
         allowAccess: [{
           mode: 'Exam',
-          role: 'Student',
         }],
         zones: [{
           title: 'zone 1',
@@ -376,10 +371,6 @@ const courseInstances = {
         startDate: '2019-01-14T00:00:00',
         endDate: '2019-05-15T00:00:00',
       }],
-      userRoles: {
-        'user1@illinois.edu': 'Instructor',
-        'user2@illinois.edu': 'TA',
-      },
     },
   },
 };
@@ -438,7 +429,7 @@ module.exports.createAndSyncCourseData = async function() {
 /**
  * Writes the given course data to a new temporary directory and returns the
  * path to the directory.
- * 
+ *
  * @param {CourseData} courseData - The course data to write and sync
  * @returns {Promise<string>} the path to the new temp directory
  */
@@ -449,8 +440,8 @@ module.exports.writeAndSyncCourseData = async function(courseData) {
 };
 
 /**
- * Overwrites the course data in the given directory and 
- * 
+ * Overwrites the course data in the given directory and
+ *
  * @param {CourseData} courseData - The course data write and sync
  * @param {string} courseDir - The path to write the course data to
  */
@@ -491,10 +482,10 @@ module.exports.captureDatabaseSnapshot = async function() {
 
 /**
  * Computes setA U setB.
- * 
+ *
  * @template T
- * @param {Set.<T>} setA 
- * @param {Set.<T>}setB 
+ * @param {Set.<T>} setA
+ * @param {Set.<T>}setB
  * @returns {Set.<T>} The union of setA and setB
  */
 function setUnion(setA, setB) {
@@ -503,9 +494,9 @@ function setUnion(setA, setB) {
 
 /**
  * Checks if two sets contain the same elements.
- * 
+ *
  * @param {Set.<any>} setA
- * @param {Set.<any>} setB 
+ * @param {Set.<any>} setB
  * @returns {boolean} whether or not the sets contain the same elements.
  */
 function checkSetsSame(setA, setB) {
@@ -518,7 +509,7 @@ function checkSetsSame(setA, setB) {
  * matching if they both contain the same keys and if for each key, the array
  * of values contains the same elements. Elements may be in different orders.
  * Optionally, a subset of the keys in the snapshot can be ignored.
- * 
+ *
  * @param {{ [key: string]: any[] }} snapshotA - The first snapshot
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore

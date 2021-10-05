@@ -56,6 +56,10 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
                 var dataUrl = e.target.result;
 
                 var commaSplitIdx = dataUrl.indexOf(',');
+                if (commaSplitIdx == -1) {
+                    that.addWarningMessage('<strong>' + acceptedName + '</strong>' + ' is empty, ignoring file.');
+                    return;
+                }
 
                 // Store the file as base-64 encoded data
                 var base64FileData = dataUrl.substring(commaSplitIdx + 1);
@@ -182,7 +186,10 @@ window.PLFileUpload.prototype.renderFileList = function() {
                     $preview.find('code').text('Binary file not previewed.');
                 }
             } catch (e) {
-                $preview.find('code').text('Unable to decode file.');
+                var img = $('<img style="max-width: 100%"/>')
+                    .on('load', () => $preview.find('code').html(img))
+                    .on('error', () => $preview.find('code').text('Content preview is not available for this type of file.'))
+                    .attr('src', 'data:application/octet-stream; base64, ' + fileData);
             }
             $file.append($preview);
             $fileStatusContainer.append('<div class="file-status-container-right">' + download + '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>');

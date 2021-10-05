@@ -6,7 +6,9 @@
  * @return {Object}     The sanitized object.
  */
 module.exports.sanitizeObject = function sanitizeObject(value) {
-    if (Array.isArray(value)) {
+    if (value === null) {
+        return null;
+    } else if (Array.isArray(value)) {
         return value.map(sanitizeObject);
     } else if (typeof value === 'string') {
         return value.replace('\u0000', '\\u0000');

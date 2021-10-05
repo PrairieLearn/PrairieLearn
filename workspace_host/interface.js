@@ -10,11 +10,6 @@ const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
-const dockerUtil = require('../lib/dockerUtil');
-const awsHelper = require('../lib/aws');
-const socketServer = require('../lib/socket-server'); // must load socket server before workspace
-const workspaceHelper = require('../lib/workspace');
-const logger = require('../lib/logger');
 const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
@@ -24,11 +19,18 @@ const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
 const stream = require('stream');
-const LocalLock = require('../lib/local-lock');
 const asyncHandler = require('express-async-handler');
 
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const dockerUtil = require('../lib/dockerUtil');
+const awsHelper = require('../lib/aws');
+const socketServer = require('../lib/socket-server'); // must load socket server before workspace
+const workspaceHelper = require('../lib/workspace');
+const logger = require('../lib/logger');
+const sprocs = require('../sprocs');
+const LocalLock = require('../lib/local-lock');
+
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();
@@ -122,50 +124,24 @@ let watcher;
 async.series([
     async () => {
         if (config.runningInEc2) {
-            /* If we're in EC2, find the host's instance_id and hostname */
-            const MetadataService = new AWS.MetadataService();
-            /* Every other AWS call supports promise() except MetadataService, annoyingly enough */
-            const request_promise = util.promisify((path, callback) => MetadataService.request(path, callback));
-            const document = await request_promise('/latest/dynamic/instance-identity/document');
-            const data = JSON.parse(document);
-            debug('instance-identity', data);
-            AWS.config.update({'region': data.region});
-            workspace_server_settings.instance_id = data.instanceId;
-
-            const hostname = await request_promise('/latest/meta-data/local-hostname');
-            workspace_server_settings.hostname = hostname;
-            workspace_server_settings.server_to_container_hostname = hostname;
+            await awsHelper.loadConfigSecrets(); // sets config.* variables
+            // copy discovered variables into workspace_server_settings
+            workspace_server_settings.instance_id = config.instanceId;
+            workspace_server_settings.hostname = config.hostname;
+            workspace_server_settings.server_to_container_hostname = config.hostname;
         } else {
-            /* Otherwise, just use the defaults in the config file */
+            /* Otherwise, use the defaults in the config file */
+            config.instanceId = config.workspaceDevHostInstanceId;
             workspace_server_settings.instance_id = config.workspaceDevHostInstanceId;
             workspace_server_settings.hostname = config.workspaceDevHostHostname;
             workspace_server_settings.server_to_container_hostname = config.workspaceDevContainerHostname;
         }
     },
-    async () => {
-        if (!config.runningInEc2) return;
-        /* If we're inside EC2, look up a special tag and use its value to
-           find a secret containing the configuration data.  This is JSON
-           with a single object in the same format as the "config" object. */
-        const ec2 = new AWS.EC2();
-        const tags = (await ec2.describeTags({ Filters: [{ Name: 'resource-id', Values: [ workspace_server_settings.instance_id ] }] }).promise()).Tags;
-        logger.info('Instance tags', tags);
-
-        const secret_tag = _.find(tags, { Key: 'ConfSecret' });
-        if (!secret_tag) return;
-
-        const secret_id = secret_tag.Value;
-        logger.info(`Secret ID: ${secret_id}`);
-
-        const secretsManager = new AWS.SecretsManager();
-        const secret_value = await secretsManager.getSecretValue({ SecretId: secret_id }).promise();
-
-        if (!secret_value.SecretString) return;
-        logger.info(`Secret value: ${secret_value.SecretString}`);
-        const secret_config = JSON.parse(secret_value.SecretString);
-        logger.info('Parsed secret config', secret_config);
-
-        _.assign(config, secret_config);
+    (callback) => {
+        util.callbackify(awsHelper.init)(err => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     },
     async () => {
         /* Always grab the port from the config */
@@ -194,7 +170,13 @@ async.series([
         });
     },
     (callback) => {
-        util.callbackify(awsHelper.init)(err => {
+        sqldb.setRandomSearchSchema(config.instanceId, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        sprocs.init(function(err) {
             if (ERR(err, callback)) return;
             callback(null);
         });
@@ -648,6 +630,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
         workspace_graded_files: result.rows[0].workspace_graded_files,
         workspace_args: result.rows[0].workspace_args || '',
         workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
+        workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
     };
 
     if (config.cacheImageRegistry) {
@@ -985,10 +968,22 @@ function _createContainer(workspace, callback) {
     } else {
         args = args.split(' ');
     }
+
+    let networkMode = 'bridge';
+    if (!workspace.settings.workspace_enable_networking) {
+        if (config.workspaceSupportNoInternet) {
+            networkMode = 'no-internet';
+        } else {
+            logger.verbose('Workspace requested unsupported feature enableNetworking:false');
+        }
+    }
+
     let container;
 
     debug(`Creating docker container for image=${workspace.settings.workspace_image}`);
     debug(`Exposed port: ${workspace.settings.workspace_port}`);
+    debug(`Networking enabled: ${workspace.settings.workspace_enable_networking}`);
+    debug(`Network mode: ${networkMode}`);
     debug(`Env vars: WORKSPACE_BASE_URL=/pl/workspace/${workspace.id}/container/`);
     debug(`User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`);
     debug(`Port binding: ${workspace.settings.workspace_port}:${workspace.launch_port}`);
@@ -1041,6 +1036,7 @@ function _createContainer(workspace, callback) {
                     KernelMemory: 1 << 29, // 512 MiB
                     DiskQuota: 1 << 30, // 1 GiB
                     IpcMode: 'private',
+                    NetworkMode: networkMode,
                     CpuPeriod: 100000, // microseconds
                     CpuQuota: 90000, // portion of the CpuPeriod for this container
                     PidsLimit: 1024,

@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
@@ -9,8 +8,9 @@ const archiver = require('archiver');
 const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const error = require('../../prairielib/error');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -44,24 +44,23 @@ const setFilenames = function(locals) {
     }
 };
 
-router.get('/', function(req, res, _next) {
+router.get('/', function(req, res, next) {
     debug('GET /');
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     setFilenames(res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
 var sendInstancesCsv = function(res, req, columns, options, callback) {
-    var params = {assessment_id: res.locals.assessment.id};
+    var params = {
+        assessment_id: res.locals.assessment.id,
+        highest_score: options.only_highest,
+        group_work: options.group_work,
+    };
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, callback)) return;
 
         var rows = result.rows;
-        if (options.only_highest) {
-            rows = _.filter(rows, 'highest_score');
-        }
-        if (options.group_work) {
-            rows = _.filter(rows, 'unique_group');
-        }
         csvMaker.rowsToCsv(rows, columns, function(err, csv) {
             if (ERR(err, callback)) return;
             res.attachment(req.params.filename);
@@ -71,6 +70,13 @@ var sendInstancesCsv = function(res, req, columns, options, callback) {
 };
 
 router.get('/:filename', function(req, res, next) {
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    //
+    // NOTE: you could argue that some downloads should be restricted further to users with
+    // permission to view code (Course role: Viewer). For example, '*_all_submissions.csv'
+    // contains seed, params, true_answer, and so forth. We will ignore this for now.
+    //
+
     setFilenames(res.locals);
 
     var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
@@ -117,7 +123,7 @@ router.get('/:filename', function(req, res, next) {
         identityColumn = groupNameColumn;
     }
     let instancesColumns = identityColumn.concat(instanceColumn);
-    
+
     if (req.params.filename == res.locals.scoresCsvFilename) {
         sendInstancesCsv(res, req, scoresColumns, {only_highest: true}, (err) => {
             if (ERR(err, next)) return;
@@ -178,7 +184,7 @@ router.get('/:filename', function(req, res, next) {
                 ['Last submission score', 'last_submission_score'],
                 ['Number attempts', 'number_attempts'],
                 ['Duration seconds', 'duration_seconds'],
-            ]); 
+            ]);
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
@@ -202,7 +208,8 @@ router.get('/:filename', function(req, res, next) {
                 ['params', 'params'],
                 ['true_answer', 'true_answer'],
                 ['submitted_answer', 'submitted_answer'],
-                ['partial_scores', 'partial_scores'],
+                ['old_partial_scores', 'partial_scores'],
+                ['partial_scores', null],
                 ['score_perc', null],
                 ['feedback', null],
             ]);

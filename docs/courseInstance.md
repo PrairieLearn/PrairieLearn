@@ -44,11 +44,6 @@ This file specifies basic information about the course instance:
     "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
     "shortName": "Sp15",
     "longName": "Spring 2015",
-    "userRoles": {
-        "mwest@illinois.edu": "Instructor",
-        "zilles@illinois.edu": "TA",
-        "mussulma@illinois.edu": "TA"
-    },
     "allowAccess": [
         {
             "startDate": "2015-01-19T00:00:01",
@@ -62,25 +57,11 @@ This file specifies basic information about the course instance:
 
 * [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourseInstance.json)
 
-## User roles
-
-Each user has a single role assigned to them. These are:
-
-Role         | Description
----          | ---
-`None`       | A user who at one point added the course and later removed themselves. They can no longer access the course but their work done within the course has been retained.
-`Student`    | A student participating in the class. They can only see their own information, and can do assessments. Default permission.
-`TA`         | A teaching assistant. They can see the data of all users, but can only edit their own information.
-`Instructor` | A person in charge of the course. They have full permission to see and edit the information of other users.
-
-By default, any user not explicitly mentioned in the `userRoles` list will
-be considered as a `Student`.
-
 ## Course instance `allowAccess`
 
 See [Access control](accessControl.md) for details.
 
-The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Instructors always have access. The simplest case gives everyone access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
+The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
 ```json
     "allowAccess": [
@@ -104,6 +85,23 @@ The default timezone for course instances is the timezone of the course. This ca
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
 
+## Enrollment controls
+
+Students can enroll in a course instance through one of two ways:
+
+1. They can use a URL specific to the course instance or [to one of its assessments](assessment.md#linking-to-assessments). The appropriate link to provide to students can be found by opening the "Settings" tab of the Course Instance. This page includes, among other useful information, a Student Link that can be provided to students. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
+
+2. They can use the "Enroll" button in PrairieLearn's main page. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to Add new courses.
+
+Some instructors may wish to hide their course from the list of available course instances in the Enroll page. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances in the Enroll page, even if the instance is available for enrollment.
+
+```json
+{
+    "hideInEnrollPage": true
+}
+```
+
+Note that *this is not a security setting*. Students may still enroll in the course instance if they get access to the URL, either through friends or by [Forced Browsing Attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by UIDs, Institution, or through LTI support.
 
 ## LTI support
 
@@ -128,8 +126,6 @@ An LTI credential consists of 3 parts:
 A single LMS course should use the same credential. If multiple courses need to link into the course instance, multiple LTI credentials can be created.
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
-
-Access roles inside the LMS (Instructor, TA, student) will be mapped to roles inside PrairieLearn. (Example: Instructors in the LMS will be given course instance instructor level access in PrairieLearn independent of the `infoCourseInstance.json`  `userRoles` described above.
 
 It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](accessControl.md) for more details.
 

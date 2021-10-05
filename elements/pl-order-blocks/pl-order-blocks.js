@@ -1,10 +1,12 @@
 /* eslint-env jquery, browser */
 
-const TABWIDTH = 50;      // defines how many px the answer block is indented by, when the student
-                          // drags and indents a block
-const INDENT_OFFSET = 10;  // For aesthetic, all answer blocks are offseted to the right by
-                          // 5px, so the answer tiles are not directly touching the dropzone margins
-const MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
+const TABWIDTH = 50;    // defines how many px the answer block is indented by, when the student
+                        // drags and indents a block
+var MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
+
+function set_max_indent(event) {
+    MAX_INDENT = event.target.getAttribute('indent');
+}
 
 function check_block(event, ui) {
     var block_parent_name = $(ui.item.parent()[0]).attr('name');
@@ -20,16 +22,19 @@ function set_answer(event) {
     // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds 
     var textfield_name = event.target.getAttribute('name');
     var dom_objs = $('#' + textfield_name + '-dropzone').children();
-    var student_answers = [];
-    var indents = [];
-    var answer_json = {'answers': [], 'answer_indent': []};
+    var student_answers_array = [];
     for (var i = 0; i < dom_objs.length; i++) {
-        if (!$(dom_objs[i]).hasClass('info')){
+        if (!$(dom_objs[i]).hasClass('info-fixed')){
             var answer_text = dom_objs[i].getAttribute('string');
-            var answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
-            answer_indent = Math.round((answer_indent - INDENT_OFFSET) / TABWIDTH); // get how many times the answer is indented
-            student_answers.push(answer_text);
-            indents.push(answer_indent.toString());
+            var uuid = dom_objs[i].getAttribute('uuid');
+            var answer_indent = null;
+            if (dom_objs[i].parentElement.classList.contains('enableIndentation')) {
+                answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
+                answer_indent = Math.round(answer_indent / TABWIDTH); // get how many times the answer is indented
+            }
+            
+            var answer_json = {'inner_html': answer_text, 'indent': answer_indent, 'uuid': uuid};
+            student_answers_array.push(answer_json);
         }
     }
 
@@ -38,16 +43,18 @@ function set_answer(event) {
         return;
     }
     textfield_name = '#' + textfield_name + '-input';
-    answer_json.answers = student_answers;
-    answer_json.answer_indent = indents;
-    $(textfield_name).val(JSON.stringify(answer_json));
+    $(textfield_name).val(JSON.stringify(student_answers_array));
 }
 
 
 function update_indent(leftDiff, id, ui) {
-    if (!ui.item.parent()[0].classList.contains('dropzone') || !ui.item.parent()[0].classList.contains('enableIndentation')){
+    if (ui.item.parent()[0].classList.contains('inline')) {
+        return;
+    }
+    if (!ui.item.parent()[0].classList.contains('dropzone') || 
+        !ui.item.parent()[0].classList.contains('enableIndentation')){
         // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
-        ui.item[0].style.marginLeft = INDENT_OFFSET + 'px';
+        ui.item[0].style.marginLeft = '0px';
         return;
     }
     leftDiff = ui.position.left - ui.item.parent().position().left;
@@ -64,14 +71,14 @@ function update_indent(leftDiff, id, ui) {
     if (currentIndent != ''){
         leftDiff += parseInt(currentIndent); 
     }
-    // limit leftDiff to be in [INDENT_OFFSET, (TABWIDTH * MAX_INDENT) + INDENT_OFFSET], within the bounds of the drag and drop box
+    // limit leftDiff to be in [, (TABWIDTH * MAX_INDENT) + ], within the bounds of the drag and drop box
     // that is, at least indented 0 times, or at most indented by MAX_INDENT times  
-    leftDiff = Math.min(Math.max(leftDiff, INDENT_OFFSET), (TABWIDTH * MAX_INDENT) + INDENT_OFFSET);
+    leftDiff = Math.min(leftDiff, (TABWIDTH * MAX_INDENT));
 
     // when the user drag a tile into the answer box for the first time
     // the snap to grid dragging doesnt apply
     // so we have to manually enforce "snapping the leftDiff number to the nearest grid number" here
-    var remainder = (leftDiff - INDENT_OFFSET) % TABWIDTH;
+    var remainder = leftDiff % TABWIDTH;
     if (remainder != 0) {
         // Manually snap to grid here, by rounding to the nearest multiple of TABWIDTH
         if (remainder > (TABWIDTH / 2)){
@@ -81,7 +88,7 @@ function update_indent(leftDiff, id, ui) {
         }
     }
 
-    ui.item[0].style.marginLeft = Math.max(leftDiff, INDENT_OFFSET) + 'px';
+    ui.item[0].style.marginLeft = leftDiff + 'px';
 }
 
 
@@ -97,6 +104,7 @@ $( document ).ready(function() {
             // when the sortable is created, we need to put the two functions here
             // to restore progress when the user refresh/submits an answer
             set_answer(event);
+            set_max_indent(event);
         },
         beforeStop: function(event, ui){
             if (!check_block(event, ui)) {
@@ -108,12 +116,8 @@ $( document ).ready(function() {
             update_indent(ui.position.left - ui.item.parent().position().left, ui.item[0].id, ui);
             set_answer(event);
         },
-    }).disableSelection();
-    $('.dropzone').each(function () {
-        if ($(this).hasClass('enableIndentation')) {
-            // only enable grid snapping for dropzones that chooses to enable indentation
-            $(this).sortable({grid: [TABWIDTH, 1]});
-        }
     });
+
+    $('.enableIndentation').sortable('option', 'grid', [TABWIDTH, 1]);
     $('[data-toggle="popover"]').popover();
 });

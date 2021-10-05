@@ -3,7 +3,9 @@ const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
-const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
+const error = require('../../prairielib/lib/error');
+const sqlDb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
@@ -12,7 +14,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
     return sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course)
-        + sanitizeName.sanitizeString(locals.assessment.group_work ? locals.group.name : locals.instance_user.uid)
+        + sanitizeName.sanitizeString(locals.instance_group?.name ?? locals.instance_user?.uid ?? 'unknown')
         + '_'
         + locals.assessment_instance.number
         + '_'
@@ -40,16 +42,7 @@ router.get('/', (req, res, next) => {
                 sqlDb.call('assessment_instances_select_log', params, (err, result) => {
                     if (ERR(err, next)) return;
                     res.locals.log = result.rows;
-                    if (res.locals.assessment.group_work) {
-                        const params = {assessment_instance_id: res.locals.assessment_instance.id};
-                        sqlDb.query(sql.select_group_info, params, (err, result) => {
-                            if (ERR(err, next)) return;
-                            res.locals.group = result.rows[0];
-                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                        });
-                    } else {
-                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                    }
+                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                 });
             });
         });
@@ -87,7 +80,7 @@ router.get('/:filename', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!res.locals.authz_data.has_course_instance_permission_edit) return next(error.make(403, 'Access denied (must be a student data editor)'));
     if (req.body.__action == 'edit_total_points') {
         const params = [
             res.locals.assessment_instance.id,
@@ -126,6 +119,7 @@ router.post('/', (req, res, next) => {
             null, // score_perc
             req.body.points,
             null, // feedback
+            null, // partial_scores
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
@@ -147,6 +141,7 @@ router.post('/', (req, res, next) => {
             req.body.score_perc,
             null, // points
             null, // feedback
+            null, // partial_scores
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {

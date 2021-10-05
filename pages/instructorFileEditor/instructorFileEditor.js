@@ -2,9 +2,9 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const error = require('@prairielearn/prairielib/error');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const error = require('../../prairielib/lib/error');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -29,7 +29,7 @@ const chunks = require('../../lib/chunks');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
-    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
+    if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be course editor)'));
 
     let workingPath;
     if (req.params[0]) {
@@ -205,7 +205,7 @@ router.get('/*', (req, res, next) => {
 
 router.post('/*', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
-    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Insufficient permissions'));
+    if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be course editor)'));
 
     let workingPath;
     if (req.params[0]) {

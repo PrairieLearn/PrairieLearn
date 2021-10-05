@@ -4,90 +4,54 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const regrading = require('../../lib/regrading');
 const assessment = require('../../lib/assessment');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/', function(req, res, next) {
-    debug('GET /');
+router.get('/raw_data.json', function(req, res, next) {
+    debug('GET /raw_data.json');
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     const params = {
-        assessment_id: res.locals.assessment.id, 
+        assessment_id: res.locals.assessment.id,
         group_work: res.locals.assessment.group_work,
     };
     sqldb.query(sql.select_assessment_instances, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.user_scores = result.rows;
-        
-        let time_limit_list = new Object();
-        let remaining_time_min = null;
-        let remaining_time_max = null;
-        let has_open_instance = false;
-        let has_closed_instance = false;
-        result.rows.forEach(function(row) {
-            if (!row.open) {
-                has_closed_instance = true;
-            } else if (row.time_remaining_sec === null) {
-                has_open_instance = true;
-            } else {
-                if (!(row.total_time_sec in time_limit_list)) {
-                    time_limit_list[row.total_time_sec] = row.total_time;
-                }
-                if (remaining_time_min === null ||
-                    remaining_time_min > row.time_remaining_sec) {
-                    remaining_time_min = row.time_remaining_sec;
-                }
-                if (remaining_time_max === null ||
-                    remaining_time_max < row.time_remaining_sec) {
-                    remaining_time_max = row.time_remaining_sec;
-                }
-            }
-        });
-        time_limit_list = Object.values(time_limit_list);
-        if (time_limit_list.length > 5) {
-            time_limit_list.splice(3, time_limit_list.length - 4, '...');
-        }
-
-        res.locals.time_limit_totals = {
-            total_time: time_limit_list.length > 0 ? time_limit_list.join(', ') : 'No time limits',
-            time_remaining_sec: remaining_time_max,
-            has_open_instance: has_open_instance,
-            has_closed_instance: has_closed_instance,
-            action: 'set_time_limit_all',
-        };
-        if (remaining_time_min === null) {
-            res.locals.time_limit_totals.time_remaining = 'No time limits';
-        } else if (remaining_time_max < 60) {
-            res.locals.time_limit_totals.time_remaining = 'Less than a minute';
-        } else if (remaining_time_min < 60) {
-            res.locals.time_limit_totals.time_remaining = 'up to ' + Math.floor(remaining_time_max / 60) + ' min';
-        } else if (Math.floor(remaining_time_min / 60) == Math.floor(remaining_time_max / 60)) {
-            res.locals.time_limit_totals.time_remaining = Math.floor(remaining_time_min / 60) + ' min';
-        } else {
-            res.locals.time_limit_totals.time_remaining = 'between ' + Math.floor(remaining_time_min / 60) + ' and ' + Math.floor(remaining_time_max / 60) + ' min';
-        }
-        
-        debug('render page');
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.send(result.rows);
+        return;
     });
 });
 
+router.get('/client.js', function(req, res, next) {
+    debug('GET /client.js');
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
+});
+
+router.get('/', function(req, res, next) {
+    debug('GET /');
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    debug('render page');
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+});
+
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!res.locals.authz_data.has_course_instance_permission_edit) return next(error.make(403, 'Access denied (must be a student data editor)'));
     if (req.body.__action == 'close') {
         const assessment_id = res.locals.assessment.id;
         const assessment_instance_id = req.body.assessment_instance_id;
         assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
             if (ERR(err, next)) return;
-            
+
             const close = true;
             const overrideGradeRate = true;
             assessment.gradeAssessmentInstance(assessment_instance_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err) {
                 if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
+                res.send(JSON.stringify({}));
             });
         });
     } else if (req.body.__action == 'delete') {
@@ -95,15 +59,23 @@ router.post('/', function(req, res, next) {
         const assessment_instance_id = req.body.assessment_instance_id;
         assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
             if (ERR(err, next)) return;
-            
+
             const params = [
                 assessment_instance_id,
                 res.locals.authn_user.user_id,
             ];
             sqldb.call('assessment_instances_delete', params, function(err) {
                 if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
+                res.send(JSON.stringify({}));
             });
+        });
+    } else if (req.body.__action == 'grade_all' || req.body.__action == 'close_all') {
+        const assessment_id = res.locals.assessment.id;
+        const close = req.body.__action == 'close_all';
+        const overrideGradeRate = true;
+        assessment.gradeAllAssessmentInstances(assessment_id, res.locals.user.user_id, res.locals.authn_user.user_id, close, overrideGradeRate, function(err, job_sequence_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'delete_all') {
         const params = [
@@ -112,14 +84,14 @@ router.post('/', function(req, res, next) {
         ];
         sqldb.call('assessment_instances_delete_all', params, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            res.send(JSON.stringify({}));
         });
     } else if (req.body.__action == 'regrade') {
         const assessment_id = res.locals.assessment.id;
         const assessment_instance_id = req.body.assessment_instance_id;
         assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
             if (ERR(err, next)) return;
-            
+
             regrading.regradeAssessmentInstance(assessment_instance_id, res.locals.user.user_id, res.locals.authn_user.id, function(err, job_sequence_id) {
                 if (ERR(err, next)) return;
                 res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
@@ -149,7 +121,7 @@ router.post('/', function(req, res, next) {
         }
         sqldb.query(sql.set_time_limit, params, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            res.send(JSON.stringify({}));
         });
     } else if (req.body.__action == 'set_time_limit_all') {
         const params = {
@@ -175,7 +147,7 @@ router.post('/', function(req, res, next) {
         }
         sqldb.query(sql.set_time_limit_all, params, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            res.send(JSON.stringify({}));
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

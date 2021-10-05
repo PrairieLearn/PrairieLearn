@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,boolean);
-DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_select_submission_for_grading (
         IN variant_id bigint,
         IN check_submission_id bigint DEFAULT NULL
@@ -23,6 +20,11 @@ BEGIN
     IF check_submission_id IS NOT NULL and check_submission_id != submission.id THEN
         RAISE EXCEPTION 'check_submission_id mismatch: % vs %', check_submission_id, submission.id;
     END IF;
+
+    -- mark submission as regradable
+    UPDATE submissions AS s
+    SET regradable = TRUE
+    WHERE s.id = submission.id;
 
     -- does the most recent submission actually need grading?
     IF submission.score IS NOT NULL THEN RETURN; END IF; -- already graded

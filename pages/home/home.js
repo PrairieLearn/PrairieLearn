@@ -2,8 +2,9 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var config = require('../../lib/config');
+var sqldb = require('../../prairielib/lib/sql-db');
+var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -12,21 +13,22 @@ router.get('/', function(req, res, next) {
     if (res.locals.isAuthenticated) {
         const params = {
             user_id: res.locals.authn_user.user_id,
+            is_administrator: res.locals.is_administrator,
+            req_date: res.locals.req_date,
         };
-        sqldb.query(sql.insert_xc101_viewer_if_has_course, params, function(err, _result) {
+        sqldb.queryOneRow(sql.select_home, params, function(err, result) {
             if (ERR(err, next)) return;
-            const params = {
-                user_id: res.locals.authn_user.user_id,
-                is_administrator: res.locals.is_administrator,
-                req_date: res.locals.req_date,
-            };
-            sqldb.queryOneRow(sql.select_home, params, function(err, result) {
-                if (ERR(err, next)) return;
-                res.locals.courses = result.rows[0].courses;
-                res.locals.course_instances = result.rows[0].course_instances;
 
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            });
+            res.locals.instructor_courses = result.rows[0].instructor_courses;
+            if (res.locals.instructor_courses.length > 0 || config.devMode) {
+                // If the list of instructor courses is non-empty, then prepend
+                // with the list of example courses (otherwise, discard the list
+                // of example courses).
+                res.locals.instructor_courses = res.locals.instructor_courses.concat(result.rows[0].example_courses);
+            }
+            res.locals.student_courses = result.rows[0].student_courses;
+
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     } else {
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);

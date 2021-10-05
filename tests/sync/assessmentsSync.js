@@ -3,8 +3,8 @@ const chai = require('chai');
 chai.use(chaiAsPromised);
 const fs = require('fs-extra');
 const path = require('path');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const util = require('./util');
 const helperDb = require('../helperDb');
@@ -14,7 +14,7 @@ const { assert } = chai;
 
 /**
  * Makes an empty assessment.
- * 
+ *
  * @param {import('./util').CourseData} courseData
  * @param {"Homework" | "Exam"} type
  * @returns {import('./util').Assessment}
@@ -34,7 +34,7 @@ function makeAssessment(courseData, type = 'Exam') {
 
 /**
  * Makes a new assessment.
- * 
+ *
  * @returns {import('./util').AssessmentSet}
  */
 function makeAssessmentSet() {
@@ -234,10 +234,8 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData);
     assessment.allowAccess.push({
       mode: 'Exam',
-      role: 'Student',
     }, {
       mode: 'Public',
-      role: 'TA',
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     const courseDir = await util.writeAndSyncCourseData(courseData);
@@ -249,7 +247,6 @@ describe('Assessment syncing', () => {
     const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
     const rulesForAssessment = syncedAssessmentAccessRules.filter(aar => aar.assessment_id === originalSyncedAssessment.id);
     assert.lengthOf(rulesForAssessment, 1);
-    assert.equal(rulesForAssessment[0].role, 'TA');
     assert.equal(rulesForAssessment[0].mode, 'Public');
   });
 
@@ -334,6 +331,19 @@ describe('Assessment syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(syncedAssessment.sync_errors, /Invalid allowAccess rule: endDate \(not a valid date\) is not valid/);
+  });
+
+  it('records an error if an access rule sets active to false and has nonzero credit', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess.push({
+      credit: 100,
+      active: false,
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment.sync_errors, /Invalid allowAccess rule: credit must be 0 if active is false/);
   });
 
   it('records an error if a question specifies neither an ID nor an alternative', async () => {

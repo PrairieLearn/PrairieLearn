@@ -2,19 +2,20 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../../prairielib/lib/sql-db');
+var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const logger = require('../../lib/logger');
 const { CourseInstanceAddEditor } = require('../../lib/editors');
 
 const fs = require('fs-extra');
 const async = require('async');
+const _ = require('lodash');
 
 router.get('/', function(req, res, next) {
     async.series([
@@ -29,15 +30,23 @@ router.get('/', function(req, res, next) {
             });
         },
         (callback) => {
-            var params = {
-                user_id: res.locals.user.user_id,
-                is_administrator: res.locals.is_administrator,
-                req_date: res.locals.req_date,
+            if (!res.locals.authz_data || !res.locals.authz_data.course_instances)
+                return callback(null);
+            const params = {
                 course_id: res.locals.course.id,
             };
-            sqldb.query(sql.select_course_instances, params, function(err, result) {
+            // We use the list authz_data.course_instances rather than
+            // re-fetching the list of course instances, because we
+            // only want course instances which are accessible by both
+            // the authn user and the effective user, which is a bit
+            // complicated to compute. This is already computed in
+            // authz_data.course_instances.
+            sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
                 if (ERR(err, callback)) return;
-                res.locals.rows = result.rows;
+                res.locals.authz_data.course_instances.forEach(ci => {
+                    var row = _.find(result.rows, row => row.course_instance_id == ci.id);
+                    ci.number = row?.number || 0;
+                });
                 callback(null);
             });
         },

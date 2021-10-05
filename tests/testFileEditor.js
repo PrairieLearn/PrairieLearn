@@ -1,15 +1,14 @@
 const ERR = require('async-stacktrace');
 const request = require('request');
 const assert = require('chai').assert;
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
-const rimraf = require('rimraf');
 const async = require('async');
 const ncp = require('ncp');
 const config = require('../lib/config');
 const cheerio = require('cheerio');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 const {
@@ -347,6 +346,12 @@ function badPost(action, fileEditContents, url) {
 function createCourseFiles(callback) {
     async.series([
         (callback) => {
+            deleteCourseFiles((err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
             const execOptions = {
                 cwd: '.',
                 env: process.env,
@@ -421,19 +426,19 @@ function createCourseFiles(callback) {
 function deleteCourseFiles(callback) {
     async.series([
         (callback) => {
-            rimraf(courseOriginDir, (err) => {
+            fs.remove(courseOriginDir, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         (callback) => {
-            rimraf(courseLiveDir, (err) => {
+            fs.remove(courseLiveDir, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         (callback) => {
-            rimraf(courseDevDir, (err) => {
+            fs.remove(courseDevDir, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

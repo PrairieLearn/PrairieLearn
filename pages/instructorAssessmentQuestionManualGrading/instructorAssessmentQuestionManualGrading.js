@@ -3,7 +3,9 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');
+const error = require('../../prairielib/lib/error');
+const sqlDb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const ltiOutcomes = require('../../lib/ltiOutcomes');
 
@@ -42,7 +44,7 @@ router.get('/', function(req, res, next) {
 
 
 router.post('/', (req, res, next) => {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
     if (req.body.__action == 'edit_question_points') {
         const params = [
             null, // assessment_id
@@ -55,6 +57,7 @@ router.post('/', (req, res, next) => {
             null, // score_perc
             req.body.points,
             null, // feedback
+            null, // partial_scores
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
@@ -76,6 +79,7 @@ router.post('/', (req, res, next) => {
             req.body.score_perc,
             null, // points
             null, // feedback
+            null, // partial_scores
             res.locals.authn_user.user_id,
         ];
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
