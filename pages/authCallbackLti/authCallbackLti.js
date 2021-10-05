@@ -24,11 +24,11 @@ router.post('/', function(req, res, next) {
     var signature = req.body.oauth_signature;
     delete parameters.oauth_signature;
 
-    if (parameters.lti_message_type != 'basic-lti-launch-request') {
+    if (parameters.lti_message_type !== 'basic-lti-launch-request') {
         return next(error.make(500, 'Unsupported lti_message_type'));
     }
 
-    if (parameters.lti_version != 'LTI-1p0') {
+    if (parameters.lti_version !== 'LTI-1p0') {
         return next(error.make(500, 'Unsupported lti_version'));
     }
 

@@ -44,7 +44,7 @@ router.all('/', function(req, res, next) {
         }
 
         // If any of our auth checks didn't pass, fail (send to download)
-        if (res.locals.authz_data.mode != 'SEB') {
+        if (res.locals.authz_data.mode !== 'SEB') {
             return badSEB(req, res);
         }
     }

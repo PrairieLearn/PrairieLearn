@@ -38,7 +38,7 @@ module.exports = {
                 setTimeout(checkComplete, 10);
             });
             it('should be successful', async () => {
-                if (locals.job_sequence.status != 'Success') {
+                if (locals.job_sequence.status !== 'Success') {
                     console.log(locals.job_sequence);
                     const params = {job_sequence_id: locals.job_sequence_id};
                     const result = await sqldb.queryAsync(sql.select_jobs, params);
@@ -68,27 +68,27 @@ module.exports = {
                 locals.$ = cheerio.load(page);
             });
             it('should contain question-data if Calculation', function() {
-                if (locals.question.type != 'Calculation') return;
+                if (locals.question.type !== 'Calculation') return;
                 elemList = locals.$('.question-data');
                 assert.lengthOf(elemList, 1);
             });
             it('question-data should contain base64 data of Calculation', function() {
-                if (locals.question.type != 'Calculation') return;
+                if (locals.question.type !== 'Calculation') return;
                 assert.nestedProperty(elemList[0], 'children.0.data');
                 assert.lengthOf(elemList[0].children, 1);
                 assert.property(elemList[0].children[0], 'data');
             });
             it('base64 data should parse to JSON if Calculation', function() {
-                if (locals.question.type != 'Calculation') return;
+                if (locals.question.type !== 'Calculation') return;
                 locals.questionData = JSON.parse(decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()));
             });
             it('should have a variant_id in the questionData if Calculation', function() {
-                if (locals.question.type != 'Calculation') return;
+                if (locals.question.type !== 'Calculation') return;
                 assert.nestedProperty(locals.questionData, 'variant.id');
                 locals.variant_id = locals.questionData.variant.id;
             });
             it('should have a variant_id input if Freeform with grade or save buttons', function() {
-                if (locals.question.type != 'Freeform') return;
+                if (locals.question.type !== 'Freeform') return;
                 if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
                 elemList = locals.$('.question-form input[name="__variant_id"]');
                 assert.lengthOf(elemList, 1);
@@ -118,7 +118,7 @@ module.exports = {
                 assert.equal(locals.variant.question_id, locals.question.id);
             });
             it('should not be a broken variant if Freeform with grade or save button', function() {
-                if (locals.question.type != 'Freeform') return;
+                if (locals.question.type !== 'Freeform') return;
                 if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
                 assert.equal(locals.variant.broken, false);
             });
@@ -238,7 +238,7 @@ module.exports = {
                 assert.equal(locals.submission.variant_id, locals.variant.id);
             });
             it('should not be broken if Freeform', function() {
-                if (locals.question.type != 'Freeform') return;
+                if (locals.question.type !== 'Freeform') return;
                 assert.equal(locals.submission.broken, false);
             });
             it('should select the assessment_instance duration from the DB if student page', function(callback) {

@@ -49,7 +49,7 @@ router.post('/', function(req, res, next) {
 
     } else if (req.body.__action === 'lti_link_target') {
         var newAssessment = null;
-        if (req.body.newAssessment != '') {
+        if (req.body.newAssessment !== '') {
             newAssessment = req.body.newAssessment;
         }
 

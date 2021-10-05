@@ -349,7 +349,7 @@ async.series([
  * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
  */
 async function pushContainerContentsToS3(workspace) {
-    if (workspace.homedir_location != 'S3') {
+    if (workspace.homedir_location !== 'S3') {
         /* Nothing to do if we're not on S3 */
         return;
     }

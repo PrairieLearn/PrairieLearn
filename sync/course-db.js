@@ -841,7 +841,7 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
 function checkAllowAccessRoles(rule) {
     const warnings = [];
     if ('role' in rule) {
-        if (rule.role != 'Student') {
+        if (rule.role !== 'Student') {
             warnings.push(`The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`);
         }
     }

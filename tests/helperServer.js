@@ -222,7 +222,7 @@ module.exports.waitForJobSequenceAsync = async (job_sequence_id) => {
     while (true) { // eslint-disable-line no-constant-condition
         const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, { job_sequence_id });
         job_sequence = result.rows[0];
-        if (job_sequence.status != 'Running') break;
+        if (job_sequence.status !== 'Running') break;
         await delay(10);
     }
     return job_sequence;

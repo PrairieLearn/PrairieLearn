@@ -43,7 +43,7 @@ router.get('/', function(req, res, next) {
                     row.assessments = _.filter(row.assessments, assessment => ci_ids.includes(assessment.course_instance_id));
                     return row;
                 });
-                res.locals.has_legacy_questions = _.some(result.rows, row => row.display_type != 'v3');
+                res.locals.has_legacy_questions = _.some(result.rows, row => row.display_type !== 'v3');
                 callback(null);
             });
         },

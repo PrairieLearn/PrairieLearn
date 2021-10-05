@@ -51,7 +51,7 @@ module.exports.processDeleteFile = async (req, res) => {
     if (validFiles.length === 0) throw new Error(`No such file_id: ${req.body.file_id}`);
     const file = validFiles[0];
 
-    if (file.type != 'student_upload') throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
+    if (file.type !== 'student_upload') throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
 
     await fileStore.delete(file.id, res.locals.authn_user.user_id);
 

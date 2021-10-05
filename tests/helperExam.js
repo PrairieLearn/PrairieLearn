@@ -56,7 +56,7 @@ module.exports = {
             it('should have cleared data', function() {
                 questionsArray.forEach(function(question) {
                     for (var prop in question) {
-                        if (prop != 'qid' && prop != 'type' && prop != 'maxPoints') {
+                        if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
                             delete question[prop];
                         }
                     }

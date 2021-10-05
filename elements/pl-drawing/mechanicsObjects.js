@@ -968,7 +968,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         this.image = null;
         this.label = text;
 
-        if (text != '') {
+        if (text !== '') {
             this.gen_text(this.label, options);
         }
 

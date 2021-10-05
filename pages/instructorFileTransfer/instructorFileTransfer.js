@@ -19,7 +19,7 @@ function getFileTransfer(file_transfer_id, user_id, callback) {
             sqldb.queryOneRow(sql.select_file_transfer, {id: file_transfer_id}, (err, result) => {
                 if (ERR(err, callback)) return;
                 file_transfer = result.rows[0];
-                if (file_transfer.transfer_type != 'CopyQuestion') {
+                if (file_transfer.transfer_type !== 'CopyQuestion') {
                     return callback(new Error(`bad transfer_type: ${file_transfer.transfer_type}`));
                 }
                 if (file_transfer.user_id != user_id) {

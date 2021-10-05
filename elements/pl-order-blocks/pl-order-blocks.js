@@ -68,7 +68,7 @@ function update_indent(leftDiff, id, ui) {
 
     // leftDiff is the direction to move the MCQ answer tile, in px
     // we limit leftDiff to be increments of TABWIDTH, whether positive or negative
-    if (currentIndent != ''){
+    if (currentIndent !== ''){
         leftDiff += parseInt(currentIndent); 
     }
     // limit leftDiff to be in [, (TABWIDTH * MAX_INDENT) + ], within the bounds of the drag and drop box

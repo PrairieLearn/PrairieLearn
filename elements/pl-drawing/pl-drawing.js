@@ -364,7 +364,7 @@ class PLDrawingAnswerState {
                 modifyHandler(submitted_object, object);
             } else {
                 for (const [key, value] of Object.entries(object)) {
-                    if (key[0] != '_' && !blocked_keys.has(key)) {
+                    if (key[0] !== '_' && !blocked_keys.has(key)) {
                         submitted_object[key] = value;
                     }
                 }
