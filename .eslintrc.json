@@ -10,6 +10,7 @@
         "no-tabs": "error",
         "no-unused-vars": ["error", {"args": "after-used", "argsIgnorePattern": "^_"}],
         "quotes": ["error", "single", {"avoidEscape": true, "allowTemplateLiterals": true}],
-        "semi": ["error", "always"]
+        "semi": ["error", "always"],
+        "eqeqeq": ["error", "smart"]
     }
 }
