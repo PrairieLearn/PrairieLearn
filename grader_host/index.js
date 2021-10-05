@@ -29,7 +29,7 @@ process.on('SIGTERM', () => {
     globalLogger.info('caught SIGTERM, draining jobs to exit...');
     processTerminating = true;
     (function tryToExit() {
-        if (load.getCurrentJobs() == 0) process.exit(0);
+        if (load.getCurrentJobs() === 0) process.exit(0);
         setTimeout(tryToExit, 1000);
     })();
 });

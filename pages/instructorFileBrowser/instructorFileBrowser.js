@@ -95,7 +95,7 @@ function getPaths(req, res, callback) {
     }
     paths.workingPathRelativeToCourse = path.relative(res.locals.course.path, paths.workingPath);
 
-    if (paths.workingPath == paths.rootPath) {
+    if (paths.workingPath === paths.rootPath) {
         paths.specialDirs = [];
         if (paths.clientDir) {
             paths.specialDirs.push({
@@ -254,7 +254,7 @@ function browseFile(file_browser, callback) {
                             debug(`file type:\n ext = ${type.ext}\n mime = ${type.mime}`);
                             if (type.mime.startsWith('image')) {
                                 file_browser.isImage = true;
-                            } else if (type.mime == ('application/pdf')) {
+                            } else if (type.mime === 'application/pdf') {
                                 file_browser.isPDF = true;
                             }
                         } else debug(`could not get file type`);

@@ -50,7 +50,7 @@ router.post('/', function(req, res, next) {
         } catch(err) {
             return next(new Error(`Invalid QID (could not be normalized): ${req.body.id}`));
         }
-        if (res.locals.question.qid == qid_new) {
+        if (res.locals.question.qid === qid_new) {
             debug('The new qid is the same as the old qid - do nothing');
             res.redirect(req.originalUrl);
         } else {
@@ -71,7 +71,8 @@ router.post('/', function(req, res, next) {
         }
     } else if (req.body.__action === 'copy_question') {
         debug('Copy question');
-        if (req.body.to_course_id == res.locals.course.id) {
+        console.log(req.body, res.locals);
+        if (req.body.to_course_id === res.locals.course.id) {
             // In this case, we are making a duplicate of this question in the same course
             const editor = new QuestionCopyEditor({
                 locals: res.locals,

@@ -179,7 +179,7 @@ module.exports = {
             it(`should create ${questionsArray.length} instance_questions`, function(callback) {
                 sqldb.query(sql.select_instance_questions, [], function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount != questionsArray.length) {
+                    if (result.rowCount !== questionsArray.length) {
                         return callback(new Error(`expected ${questionsArray.length} instance_questions, got: ` + result.rowCount));
                     }
                     locals.instance_questions = result.rows;

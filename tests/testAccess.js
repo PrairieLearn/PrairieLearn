@@ -217,7 +217,7 @@ describe('Access control', function() {
             if (error) {
                 return callback(error);
             }
-            if (response.statusCode != expectedStatusCode) {
+            if (response.statusCode !== expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
             page = body;
@@ -262,7 +262,7 @@ describe('Access control', function() {
             if (error) {
                 return callback(error);
             }
-            if (response.statusCode != expectedStatusCode) {
+            if (response.statusCode !== expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
             page = body;
@@ -297,7 +297,7 @@ describe('Access control', function() {
             if (error) {
                 return callback(error);
             }
-            if (response.statusCode != expectedStatusCode) {
+            if (response.statusCode !== expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
             page = body;
@@ -348,7 +348,7 @@ describe('Access control', function() {
             if (error) {
                 return callback(error);
             }
-            if (response.statusCode != expectedStatusCode) {
+            if (response.statusCode !== expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
             page = body;
@@ -413,7 +413,7 @@ describe('Access control', function() {
             if (error) {
                 return callback(error);
             }
-            if (response.statusCode != expectedStatusCode) {
+            if (response.statusCode !== expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
             callback(null);

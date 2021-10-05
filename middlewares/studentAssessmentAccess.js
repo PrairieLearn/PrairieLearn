@@ -39,7 +39,7 @@ router.all('/', function(req, res, next) {
         res.locals.authz_result.mode === 'SEB') {
 
         // If the assessment is complete, use this middleware to show the logout page
-        if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {
+        if ('assessment_instance' in res.locals && res.locals.assessment_instance.open === false) {
             return badSEB(req, res);
         }
 
@@ -53,7 +53,7 @@ router.all('/', function(req, res, next) {
     if ('authz_result' in res.locals &&
         'password' in res.locals.authz_result &&
         res.locals.authz_result.password &&
-        !('assessment_instance' in res.locals && res.locals.assessment_instance.open == false)) {
+        !('assessment_instance' in res.locals && res.locals.assessment_instance.open === false)) {
 
         // No password yet case
         if (req.cookies.pl_assessmentpw == null) {

@@ -177,10 +177,10 @@ router.get('/*', (req, res, next) => {
         if ('editID' in fileEdit) {
             // There is a recently saved draft ...
             fileEdit.alertResults = true;
-            if ((!fileEdit.didSave) && (fileEdit.editHash != fileEdit.diskHash)) {
+            if ((!fileEdit.didSave) && (fileEdit.editHash !== fileEdit.diskHash)) {
                 // ...that was not written to disk and that differs from what is on disk.
                 fileEdit.alertChoice = true;
-                fileEdit.hasSameHash = (fileEdit.origHash == fileEdit.diskHash);
+                fileEdit.hasSameHash = (fileEdit.origHash === fileEdit.diskHash);
             }
         }
 

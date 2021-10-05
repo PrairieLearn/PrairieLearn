@@ -44,7 +44,7 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.authz_data.course_instances.forEach(ci => {
-                    var row = _.find(result.rows, row => row.course_instance_id == ci.id);
+                    var row = _.find(result.rows, row => row.course_instance_id === ci.id);
                     ci.number = row?.number || 0;
                 });
                 callback(null);

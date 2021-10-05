@@ -50,7 +50,7 @@ router.get('/', (req, res, next) => {
 });
 
 router.get('/:filename', (req, res, next) => {
-    if (req.params.filename == logCsvFilename(res.locals)) {
+    if (req.params.filename === logCsvFilename(res.locals)) {
         const params = [res.locals.assessment_instance.id, false];
         sqlDb.call('assessment_instances_select_log', params, (err, result) => {
             if (ERR(err, next)) return;

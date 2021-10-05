@@ -50,7 +50,7 @@ router.post('/', function(req, res, next) {
         var ltiresult = result.rows[0];
 
         var genSignature = oauthSignature.generate('POST', config.ltiRedirectUrl, parameters, ltiresult.secret, null, {encodeSignature: false});
-        if (genSignature != signature) {
+        if (genSignature !== signature) {
             return next(error.make(500, 'Invalid signature'));
         }
 

@@ -22,8 +22,9 @@ function getFileTransfer(file_transfer_id, user_id, callback) {
                 if (file_transfer.transfer_type !== 'CopyQuestion') {
                     return callback(new Error(`bad transfer_type: ${file_transfer.transfer_type}`));
                 }
-                if (file_transfer.user_id != user_id) {
-                    return callback(new Error(`must have same user_id: ${file_transfer.user_id} and ${user_id}`));
+                if (file_transfer.user_id !== user_id) {
+                    console.log('file_transfer', file_transfer);
+                    return callback(new Error(`must have same user_id: ${file_transfer.user_id} and ${user_id} (types: ${typeof file_transfer.user_id}, ${typeof user_id})`));
                 }
                 callback(null);
             });
@@ -44,6 +45,7 @@ function getFileTransfer(file_transfer_id, user_id, callback) {
 
 router.get('/:file_transfer_id', function(req, res, next) {
     if (config.filesRoot == null) return next(new Error('config.filesRoot is null'));
+    console.log('res.locals.user', res.locals.user);
     getFileTransfer(req.params.file_transfer_id, res.locals.user.user_id, (err, file_transfer) => {
         if (ERR(err, next)) return;
         /* Split the full path and grab everything after questions/ to get the QID */

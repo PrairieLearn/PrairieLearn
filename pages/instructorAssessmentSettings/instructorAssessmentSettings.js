@@ -83,7 +83,7 @@ router.post('/', function(req, res, next) {
         } catch(err) {
             return next(new Error(`Invalid TID (could not be normalized): ${req.body.id}`));
         }
-        if (res.locals.assessment.tid == tid_new) {
+        if (res.locals.assessment.tid === tid_new) {
             debug('The new tid is the same as the old tid - do nothing');
             res.redirect(req.originalUrl);
         } else {

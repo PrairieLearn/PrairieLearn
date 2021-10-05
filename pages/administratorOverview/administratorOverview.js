@@ -82,7 +82,7 @@ router.post('/', (req, res, next) => {
             if (result.rowCount !== 1) return next(new Error('course not found'));
 
             var short_name = result.rows[0].short_name;
-            if (req.body.confirm_short_name != short_name) {
+            if (req.body.confirm_short_name !== short_name) {
                 return next(new Error('deletion aborted: confirmation string "'
                                       + req.body.confirm_short_name
                                       + '" did not match expected value of "' + short_name + '"'));

@@ -79,7 +79,7 @@ function update_indent(leftDiff, id, ui) {
     // the snap to grid dragging doesnt apply
     // so we have to manually enforce "snapping the leftDiff number to the nearest grid number" here
     var remainder = leftDiff % TABWIDTH;
-    if (remainder != 0) {
+    if (remainder !== 0) {
         // Manually snap to grid here, by rounding to the nearest multiple of TABWIDTH
         if (remainder > (TABWIDTH / 2)){
             leftDiff += remainder; // round towards +∞, to the next bigger multiple of TABWIDTH

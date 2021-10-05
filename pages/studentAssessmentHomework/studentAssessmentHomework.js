@@ -102,7 +102,7 @@ router.post('/', function(req, res, next) {
         try{
             const group_name = req.body.join_code.split('-')[0];
             const join_code = req.body.join_code.split('-')[1].toUpperCase();
-            if (join_code.length != 4) {
+            if (join_code.length !== 4) {
                 throw 'invalid length of join code';
             }
             let params = [
