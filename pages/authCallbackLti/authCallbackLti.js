@@ -45,7 +45,7 @@ router.post('/', function(req, res, next) {
 
     sqldb.queryZeroOrOneRow(sql.lookup_credential, {consumer_key: parameters.oauth_consumer_key}, function(err, result) {
         if (ERR(err, next)) return;
-        if (result.rowCount == 0) return next(error.make(500, 'Unknown consumer_key'));
+        if (result.rowCount === 0) return next(error.make(500, 'Unknown consumer_key'));
 
         var ltiresult = result.rows[0];
 
@@ -158,7 +158,7 @@ router.post('/', function(req, res, next) {
                     ];
                     sqldb.call('users_is_instructor_in_course_instance', params, function(err, result) {
                         if (ERR(err, next)) return;
-                        if (result.rowCount == 0) return next(error.make(403, 'Access denied (could not determine if user is instructor)'));
+                        if (result.rowCount === 0) return next(error.make(403, 'Access denied (could not determine if user is instructor)'));
                         if (result.rows[0].is_instructor) {
                             redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
                             res.redirect(redirUrl);

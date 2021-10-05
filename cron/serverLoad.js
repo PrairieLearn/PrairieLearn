@@ -15,7 +15,7 @@ module.exports.run = function(callback) {
     ];
     sqldb.call('server_loads_current', params, (err, result) => {
         if (ERR(err, callback)) return;
-        if (result.rowCount == 0) return callback(null); // nothing to report
+        if (result.rowCount === 0) return callback(null); // nothing to report
         const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
         async.each(result.rows, (row, callback) => {
             const params = {

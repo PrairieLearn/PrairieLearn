@@ -990,15 +990,15 @@ async function validateAssessment(assessment, questions) {
 
             alternatives.forEach(alternative => {
                 if (assessment.type === 'Exam') {
-                    if (alternative.maxPoints != undefined) {
+                    if (alternative.maxPoints !== undefined) {
                         errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
                     }
-                    if (alternative.points == undefined) {
+                    if (alternative.points === undefined) {
                         errors.push('Must specify "points" for a question in an "Exam" assessment');
                     }
                 }
                 if (assessment.type === 'Homework') {
-                    if (alternative.points == undefined) {
+                    if (alternative.points === undefined) {
                         errors.push('Must specify "points" for a question in a "Homework" assessment');
                     }
                     if (Array.isArray(alternative.points)) {

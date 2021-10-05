@@ -125,7 +125,7 @@ module.exports._getLock = function(name, options, callback) {
                         sqldb.queryWithClient(client, lock_sql, {name}, (err, result) => {
                             if (ERR(err, callback)) return;
                             // could not get the lock, return success with a null lock
-                            if (result.rowCount == 0) return callback(null, null);
+                            if (result.rowCount === 0) return callback(null, null);
                             // got the lock, make a lock object and return it
                             const lock = {client, done};
                             callback(null, lock);

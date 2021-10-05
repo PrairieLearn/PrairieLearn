@@ -43,7 +43,7 @@ describe('Instructor questions', function() {
         it('should contain questions', function(callback) {
             sqldb.query(sql.select_questions, [], function(err, result) {
                 if (ERR(err, callback)) return;
-                if (result.rowCount == 0) {
+                if (result.rowCount === 0) {
                     return callback(new Error('no questions in DB'));
                 }
                 locals.questions = result.rows;

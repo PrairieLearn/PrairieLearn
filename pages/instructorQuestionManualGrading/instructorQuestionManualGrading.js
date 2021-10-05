@@ -18,7 +18,7 @@ router.get('/', (req, res, next) => {
                 if (ERR(err, next)) return;
 
                 // Instance question doesn't exist (redirect to config page)
-                if (result.rowCount == 0) {
+                if (result.rowCount === 0) {
                     return callback(error.make(404, 'Instance question not found.', {locals: res.locals, body: req.body}));
                 }
 

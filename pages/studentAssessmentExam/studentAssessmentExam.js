@@ -20,7 +20,7 @@ router.get('/', function(req, res, next) {
         };
         sqldb.query(sql.select_single_assessment_instance, params, function(err, result) {
             if (ERR(err, next)) return;
-            if (result.rowCount == 0) {
+            if (result.rowCount === 0) {
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             } else {
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);

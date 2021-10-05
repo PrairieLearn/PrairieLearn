@@ -570,7 +570,7 @@ module.exports = {
                 it('should find the question in the database', function(callback) {
                     sqldb.queryZeroOrOneRow(sql.select_question_by_qid, {qid}, function(err, result) {
                         if (ERR(err, callback)) return;
-                        if (result.rowCount == 0) {
+                        if (result.rowCount === 0) {
                             return callback(new Error(`QID "${qid}" not found in the database`));
                         }
                         locals.question = result.rows[0];

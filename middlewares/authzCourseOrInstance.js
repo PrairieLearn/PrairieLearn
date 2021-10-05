@@ -42,7 +42,7 @@ module.exports = function(req, res, next) {
 
             sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                if (result.rowCount == 0) return callback(error.make(403, 'Access denied'));
+                if (result.rowCount === 0) return callback(error.make(403, 'Access denied'));
 
                 // Now that we know the user has access, parse the authz data
                 res.locals.course = result.rows[0].course;
@@ -189,7 +189,7 @@ module.exports = function(req, res, next) {
                     if (ERR(err, callback)) return;
 
                     // No user was found - remove all override cookies and return with error
-                    if (result.rowCount == 0) {
+                    if (result.rowCount === 0) {
                         overrides.forEach((override) => {
                             debug(`clearing cookie: ${override.cookie}`);
                             res.clearCookie(override.cookie);
@@ -266,7 +266,7 @@ module.exports = function(req, res, next) {
                     // we simply return (without error). This allows the authn user to keep access
                     // to pages (e.g., the effective user page) for which only authn permissions
                     // are required.
-                    if (result.rowCount == 0)  {
+                    if (result.rowCount === 0)  {
                         debug(`effective user was denied access`);
 
                         res.locals.authz_data.user = user;

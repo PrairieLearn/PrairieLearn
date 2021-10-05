@@ -370,7 +370,7 @@ describe('Exam assessment', function() {
                 };
                 sqldb.query(sql.select_variants_for_qid, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount == 0) {
+                    if (result.rowCount === 0) {
                         callback(null);
                     } else {
                         callback(new Error(`Found ${result.rowCount} variants`));

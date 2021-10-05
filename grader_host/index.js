@@ -472,7 +472,7 @@ function runJob(info, callback) {
                 } else {
                     logger.info(`Container exited with exit code ${data.State.ExitCode}`);
                 }
-                results.succeeded = (!results.timedOut && data.State.ExitCode == 0);
+                results.succeeded = (!results.timedOut && data.State.ExitCode === 0);
                 callback(null, container);
             });
         },

@@ -113,7 +113,7 @@ module.exports = function(req, res, next) {
             };
             sqldb.query(sql.select_user, params, (err, result) => {
                 if (ERR(err, next)) return;
-                if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
+                if (result.rowCount === 0) return next(new Error('user not found with user_id ' + authnData.user_id));
                 res.locals.authn_user = result.rows[0].user;
                 res.locals.authn_institution = result.rows[0].institution;
                 res.locals.authn_provider_name = 'Local';
@@ -155,7 +155,7 @@ module.exports = function(req, res, next) {
     };
     sqldb.query(sql.select_user, params, (err, result) => {
         if (ERR(err, next)) return;
-        if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
+        if (result.rowCount === 0) return next(new Error('user not found with user_id ' + authnData.user_id));
         res.locals.authn_user = result.rows[0].user;
         res.locals.authn_institution = result.rows[0].institution;
         res.locals.authn_provider_name = authnData.authn_provider_name;

@@ -28,7 +28,7 @@ router.get('/', function(req, res, next) {
 
     sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
         if (ERR(err, next)) return;
-        if (result.rowCount == 0) {
+        if (result.rowCount === 0) {
             debug('no assessment instance');
             
             // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
@@ -86,7 +86,7 @@ router.post('/', function(req, res, next) {
         };
         sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
             if (ERR(err, next)) return;
-            if (result.rowCount == 0) {
+            if (result.rowCount === 0) {
                 const time_limit_min = null;
                 assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.assessment.group_work, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, (err, assessment_instance_id) => {
                     if (ERR(err, next)) return;

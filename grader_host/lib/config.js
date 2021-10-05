@@ -120,7 +120,7 @@ config.loadConfig = function(callback) {
             var params = {InstanceIds: [exportedConfig.instanceId]};
             autoscaling.describeAutoScalingInstances(params, function(err, data) {
                 if (ERR(err, callback)) return;
-                if (data.AutoScalingInstances.length == 1) {
+                if (data.AutoScalingInstances.length === 1) {
                     exportedConfig.autoScalingGroupName = data.AutoScalingInstances[0].AutoScalingGroupName;
                     logger.info(`Running inside AutoScalingGroup: ${exportedConfig.autoScalingGroupName}`);
                 } else {

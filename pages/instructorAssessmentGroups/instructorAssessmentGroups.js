@@ -26,7 +26,7 @@ function obtainInfo(req, res, next){
     sqldb.query(sql.config_info, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.isGroup = true;
-        if (result.rowCount == 0) {
+        if (result.rowCount === 0) {
             res.locals.isGroup = false;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             return;
