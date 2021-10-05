@@ -5,6 +5,7 @@ CREATE FUNCTION
         IN req_date timestamptz,
         IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
+        OUT exam_access_end timestamptz, -- If in exam mode, when will access end?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- The time limit (if any) for this assessment.
@@ -83,6 +84,7 @@ BEGIN
     authorized := user_result.authorized;
 
     -- all other variables are from the effective user authorization
+    exam_access_end := user_result.exam_access_end;
     credit := user_result.credit;
     credit_date_string := user_result.credit_date_string;
     time_limit_min := user_result.time_limit_min;

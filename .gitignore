@@ -77,3 +77,6 @@ __pycache__/
 .RData
 .Ruserdata
 
+## macOS files
+.DS_Store
+

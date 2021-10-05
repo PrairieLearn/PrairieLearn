@@ -19,7 +19,12 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
     context.courseInstanceBaseUrl= `${context.baseUrl}/course_instance/1`;
 
     const headers = {
-        cookie: 'pl_test_user=test_student', // need student mode to get a timed exam (instructor override bypasses this)
+        cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T00:00:01',
+        // need student mode to get a timed exam (instructor override bypasses this)
+    };
+
+    const headersTimeLimit = {
+        cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
     };
 
     before('set up testing server', async function() {
@@ -54,7 +59,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
             __action: 'new_instance',
             __csrf_token: context.__csrf_token,
         };
-        const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form , headers});
+        const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form , headers });
         assert.isTrue(response.ok);
 
         // We should have been redirected to the assessment instance
@@ -74,7 +79,7 @@ describe('Exam assessment with showCloseAssessment access rule', function() {
             __action: 'timeLimitFinish',
             __csrf_token: context.__csrf_token,
         };
-        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers});
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers: headersTimeLimit});
         assert.equal(response.status, 403);
 
         // We should have been redirected back to the same assessment instance
