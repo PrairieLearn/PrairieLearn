@@ -227,7 +227,7 @@ module.exports = {
                 var params = {variant_id: locals.variant.id};
                 sqldb.query(sql.select_last_submission, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount != 1) {
+                    if (result.rowCount !== 1) {
                         return callback(new Error('expected one submission, got: ' + result.rowCount));
                     }
                     locals.submission = result.rows[0];
@@ -245,7 +245,7 @@ module.exports = {
                 if (!locals.isStudentPage) return callback(null);
                 sqldb.query(sql.select_assessment_instance_durations, [], function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount != 1) {
+                    if (result.rowCount !== 1) {
                         return callback(new Error('expected one row, got: ' + result.rowCount));
                     }
                     locals.assessment_instance_duration = result.rows[0].duration;

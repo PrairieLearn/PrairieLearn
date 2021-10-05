@@ -187,7 +187,7 @@ describe('Zone grading exam assessment', function() {
             it('should create one assessment_instance', function(callback) {
                 sqldb.query(sql.select_assessment_instances, [], function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount != 1) {
+                    if (result.rowCount !== 1) {
                         return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
                     }
                     locals.assessment_instance = result.rows[0];

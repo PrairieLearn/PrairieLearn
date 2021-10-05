@@ -72,7 +72,7 @@ function doTest(questionUrl, issuesUrl, label) {
         it('should have one open issue', (callback) => {
             sqldb.query(sql.select_open_issues, [], (err, result) => {
                 if (ERR(err, callback)) return;
-                if (result.rowCount != 1) {
+                if (result.rowCount !== 1) {
                     callback(new Error(`found ${result.rowCount} issues (expected one issue):\n`
                                        + JSON.stringify(result.rows, null, '    ')));
                     return;

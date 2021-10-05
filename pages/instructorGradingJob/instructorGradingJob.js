@@ -49,7 +49,7 @@ const allowedFiles = [
 
 router.get('/:job_id/file/:file', (req, res, next) => {
     const file = req.params.file;
-    if (allowedFiles.indexOf(file) == -1) {
+    if (allowedFiles.indexOf(file) === -1) {
         return next(new Error(`Unknown file ${file}`));
     }
 

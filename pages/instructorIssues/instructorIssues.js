@@ -105,7 +105,7 @@ router.get('/', function(req, res, next) {
 
     sqldb.query(sql.issues_count, params, function(err, result) {
         if (ERR(err, next)) return;
-        if (result.rowCount != 2) return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
+        if (result.rowCount !== 2) return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
         res.locals.closedCount = result.rows[0].count;
         res.locals.openCount = result.rows[1].count;
 

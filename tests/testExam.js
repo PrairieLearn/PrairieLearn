@@ -390,7 +390,7 @@ describe('Exam assessment', function() {
                 };
                 sqldb.query(sql.select_variants_for_qid, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount == 1) {
+                    if (result.rowCount === 1) {
                         callback(null);
                     } else {
                         callback(new Error(`Found ${result.rowCount} variants`));
@@ -410,7 +410,7 @@ describe('Exam assessment', function() {
                 };
                 sqldb.query(sql.select_variants_for_qid, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount == 2) {
+                    if (result.rowCount === 2) {
                         callback(null);
                     } else {
                         callback(new Error(`Found ${result.rowCount} variants`));

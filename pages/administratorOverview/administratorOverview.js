@@ -79,7 +79,7 @@ router.post('/', (req, res, next) => {
         };
         sqlDb.queryZeroOrOneRow(sql.select_course, params, (err, result) => {
             if (ERR(err, next)) return;
-            if (result.rowCount != 1) return next(new Error('course not found'));
+            if (result.rowCount !== 1) return next(new Error('course not found'));
 
             var short_name = result.rows[0].short_name;
             if (req.body.confirm_short_name != short_name) {
