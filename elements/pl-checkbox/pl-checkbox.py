@@ -411,7 +411,7 @@ def grade(element_html, data):
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
-    submitted_keys_to_feedback = {option['key'] : option['feedback'] for option in data['params'][name] if option['key'] in submitted_keys}
+    submitted_keys_to_feedback = {option['key']: option['feedback'] for option in data['params'][name] if option['key'] in submitted_keys}
 
     submittedSet = set(submitted_keys)
     correctSet = set(correct_keys)
@@ -465,7 +465,7 @@ def test(element_html, data):
             data['raw_submitted_answers'][name] = correct_keys
         else:
             pass  # no raw_submitted_answer if no correct keys
-        submitted_keys_to_feedback = {option['key'] : option['feedback'] for option in data['params'][name] if option['key'] in correct_keys}
+        submitted_keys_to_feedback = {option['key']: option['feedback'] for option in data['params'][name] if option['key'] in correct_keys}
         data['partial_scores'][name] = {'score': 1, 'weight': weight, 'submitted_keys_to_feedback': submitted_keys_to_feedback}
     elif result == 'incorrect':
         while True:
@@ -494,7 +494,7 @@ def test(element_html, data):
                 raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
         else:
             score = 0
-        submitted_keys_to_feedback = {option['key'] : option['feedback'] for option in data['params'][name] if option['key'] in ans}
+        submitted_keys_to_feedback = {option['key']: option['feedback'] for option in data['params'][name] if option['key'] in ans}
         data['raw_submitted_answers'][name] = ans
         data['partial_scores'][name] = {'score': score, 'weight': weight, 'submitted_keys_to_feedback': submitted_keys_to_feedback}
     elif result == 'invalid':
