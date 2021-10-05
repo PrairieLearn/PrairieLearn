@@ -7,6 +7,7 @@ const logger = require('../../lib/logger');
 const error = require('../../prairielib/lib/error');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const { idsEqual } = require('../../lib/id');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -161,11 +162,11 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action === 'course_permissions_update_role') {
-        if ((req.body.user_id === res.locals.user.user_id) && (!res.locals.authz_data.is_administrator)) {
+        if (idsEqual(req.body.user_id, res.locals.user.user_id) && (!res.locals.authz_data.is_administrator)) {
             return next(error.make(403, 'Owners cannot change their own course content access'));
         }
 
-        if (req.body.user_id === res.locals.authn_user.user_id && (!res.locals.authz_data.is_administrator)) {
+        if (idsEqual(req.body.user_id, res.locals.authn_user.user_id) && (!res.locals.authz_data.is_administrator)) {
             return next(error.make(403, 'Owners cannot change their own course content access even if they are emulating another user'));
         }
 
@@ -191,11 +192,11 @@ router.post('/', (req, res, next) => {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action === 'course_permissions_delete') {
-        if ((req.body.user_id === res.locals.user.user_id) && (!res.locals.authz_data.is_administrator)) {
+        if (idsEqual(req.body.user_id, res.locals.user.user_id) && (!res.locals.authz_data.is_administrator)) {
             return next(error.make(403, 'Owners cannot remove themselves from the course staff'));
         }
 
-        if (req.body.user_id === res.locals.authn_user.user_id && (!res.locals.authz_data.is_administrator)) {
+        if (idsEqual(req.body.user_id, res.locals.authn_user.user_id) && (!res.locals.authz_data.is_administrator)) {
             return next(error.make(403, 'Owners cannot remove themselves from the course staff even if they are emulating another user'));
         }
 

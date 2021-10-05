@@ -1,3 +1,4 @@
+const { idsEqual } = require('../lib/id');
 
 module.exports = function(err, req, res, next) {
     // This middleware tries to handle the case where an instructor
@@ -19,7 +20,7 @@ module.exports = function(err, req, res, next) {
     console.log(res.locals);
 
     // we are only interested in cases where we are emulating a different user
-    if (res.locals.authn_user.user_id === res.locals.user.user_id) return next(err);
+    if (idsEqual(res.locals.authn_user.user_id, res.locals.user.user_id)) return next(err);
 
     // check that we have a plainUrlPrefix
     if (res.locals.plainUrlPrefix == null) return next(err);

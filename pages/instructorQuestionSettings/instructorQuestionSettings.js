@@ -15,6 +15,7 @@ const { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } = requi
 const config = require('../../lib/config');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
+const { idsEqual } = require('../../lib/id');
 
 
 router.post('/', function(req, res, next) {
@@ -71,8 +72,7 @@ router.post('/', function(req, res, next) {
         }
     } else if (req.body.__action === 'copy_question') {
         debug('Copy question');
-        console.log(req.body, res.locals);
-        if (req.body.to_course_id === res.locals.course.id) {
+        if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
             // In this case, we are making a duplicate of this question in the same course
             const editor = new QuestionCopyEditor({
                 locals: res.locals,

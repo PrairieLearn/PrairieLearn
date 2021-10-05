@@ -6,6 +6,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const util = require('./util');
 const helperDb = require('../helperDb');
+const { idsEqual } = require('../../lib/id');
 
 const { assert } = chai;
 
@@ -89,7 +90,7 @@ describe('Course instance syncing', () => {
     const syncedCourseInstances = await util.dumpTable('course_instances');
     const syncedCourseInstance = syncedCourseInstances.find(ci => ci.short_name === util.COURSE_INSTANCE_ID);
     const syncedAccessRules = (await util.dumpTable('course_instance_access_rules')).filter(
-      ar => ar.course_instance_id === syncedCourseInstance.id,
+      ar => idsEqual(ar.course_instance_id, syncedCourseInstance.id),
     );
     assert.lengthOf(syncedAccessRules, 1);
     const [syncedAccessRule] = syncedAccessRules;

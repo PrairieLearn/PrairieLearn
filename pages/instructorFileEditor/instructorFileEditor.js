@@ -25,6 +25,7 @@ const fileStore = require('../../lib/file-store');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
+const { idsEqual } = require('../../lib/id');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -366,7 +367,7 @@ function readEdit(fileEdit, callback) {
                 debug(`Deleted ${result.rowCount} previously saved drafts`);
                 if (result.rowCount > 0) {
                     result.rows.forEach((row) => {
-                        if (row.file_id == fileEdit.fileID) {
+                        if (idsEqual(row.file_id, fileEdit.fileID)) {
                             debug(`Defer removal of file_id=${row.file_id} from file store until after reading contents`);
                         } else {
                             debug(`Remove file_id=${row.file_id} from file store`);

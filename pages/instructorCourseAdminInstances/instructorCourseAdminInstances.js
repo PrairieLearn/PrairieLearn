@@ -12,6 +12,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const error = require('../../prairielib/lib/error');
 const logger = require('../../lib/logger');
 const { CourseInstanceAddEditor } = require('../../lib/editors');
+const { idsEqual } = require('../../lib/id');
 
 const fs = require('fs-extra');
 const async = require('async');
@@ -44,7 +45,7 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.authz_data.course_instances.forEach(ci => {
-                    var row = _.find(result.rows, row => row.course_instance_id === ci.id);
+                    var row = _.find(result.rows, row => idsEqual(row.course_instance_id, ci.id));
                     ci.number = row?.number || 0;
                 });
                 callback(null);

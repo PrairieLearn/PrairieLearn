@@ -5,6 +5,7 @@ const _ = require('lodash');
 var logger = require('../lib/logger');
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
+const { idsEqual } = require('../lib/id');
 
 var timeout = 24; // hours
 
@@ -114,8 +115,8 @@ function checkUserAgent(res, userAgent) {
     var fromSEB = csrf.getCheckedData(key, config.secretKey, {maxAge: timeout * 60 * 60 * 1000});
 
     if ('assessment' in res.locals) {
-        if (fromSEB.assessment_id === res.locals.assessment.id &&
-            fromSEB.user_id === res.locals.authz_data.user.user_id) {
+        if (idsEqual(fromSEB.assessment_id, res.locals.assessment.id) &&
+            idsEqual(fromSEB.user_id, res.locals.authz_data.user.user_id)) {
 
             res.locals.authz_data.mode = 'SEB';
         }
