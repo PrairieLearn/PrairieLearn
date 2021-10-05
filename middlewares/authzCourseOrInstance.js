@@ -118,7 +118,7 @@ module.exports = function(req, res, next) {
         if (req.cookies.pl_requested_date) {
             overrides.push({'name': 'Date', 'value': req.cookies.pl_requested_date, 'cookie': 'pl_requested_date'});
         }
-        if (overrides.length == 0) {
+        if (overrides.length === 0) {
             debug('no requested overrides');
             return next();
         }

@@ -963,7 +963,7 @@ function _createContainer(workspace, callback) {
 
     const containerPath = workspace.settings.workspace_home;
     let args = workspace.settings.workspace_args.trim();
-    if (args.length == 0) {
+    if (args.length === 0) {
         args = null;
     } else {
         args = args.split(' ');

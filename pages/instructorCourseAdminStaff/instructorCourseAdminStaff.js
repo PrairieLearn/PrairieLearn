@@ -31,7 +31,7 @@ router.post('/', (req, res, next) => {
         let uids = new Set(req.body.uid.split(/[\s,;]+/).map((uid) => uid.trim()).filter(uid => uid));
 
         // Verify there is at least one UID
-        if (uids.length == 0) return next(error.make(400, 'Empty list of UIDs'));
+        if (uids.length === 0) return next(error.make(400, 'Empty list of UIDs'));
 
         // Verify the requested course role is valid - we choose to disallow Owner
         // because we want to discourage the assignment of this role to many users

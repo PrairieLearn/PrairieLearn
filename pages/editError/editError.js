@@ -26,7 +26,7 @@ router.get('/:job_sequence_id', function(req, res, next) {
 
         // Loop through jobs in sequential order (we rely on this).
         job_sequence.jobs.forEach((item) => {
-            if ((item.type === 'unlock') && (didWrite) && (job_errors.length == 0)) {
+            if ((item.type === 'unlock') && (didWrite) && (job_errors.length === 0)) {
                 // We know that one of the jobs resulted in an error. If we reach
                 // 'unlock' without having found the error yet, then we know that
                 // the edit was written and was not rolled back, and that all we
@@ -46,7 +46,7 @@ router.get('/:job_sequence_id', function(req, res, next) {
             }
         });
 
-        if (job_errors.length == 0) return next(new Error('Could not find a job that caused the edit failure'));
+        if (job_errors.length === 0) return next(new Error('Could not find a job that caused the edit failure'));
 
         res.locals.job_sequence = job_sequence;
         res.locals.job_errors = job_errors;

@@ -145,7 +145,7 @@ async.series([
                     return accumulator;
                 }, []);
 
-                if (needResults.length == 0) {
+                if (needResults.length === 0) {
                     return callback(null);
                 } else {
                     setTimeout(pollForResults, 5000);

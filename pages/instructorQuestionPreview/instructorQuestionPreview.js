@@ -53,7 +53,7 @@ function processSubmission(req, res, callback) {
 
 function processIssue(req, res, callback) {
     const description = req.body.description;
-    if (!_.isString(description) || description.length == 0) {
+    if (!_.isString(description) || description.length === 0) {
         return callback(new Error('A description of the issue must be provided'));
     }
 

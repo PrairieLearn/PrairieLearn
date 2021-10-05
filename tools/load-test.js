@@ -87,7 +87,7 @@ function sum(values) {
  * and returns {mean: 2, stddev: 0.816}
  */
 function stats(values) {
-    if (values.length == 0) return {mean: NaN, stddev: NaN};
+    if (values.length === 0) return {mean: NaN, stddev: NaN};
     const mean = sum(values) / values.length;
     const stddev = Math.sqrt(sum(values.map(x => (x-mean)**2)) / values.length);
     return {mean, stddev};
@@ -142,7 +142,7 @@ async function getCourseInstanceUrl() {
     const body = await request({uri: baseUrl, jar: cookies});
     const $ = cheerio.load(body);
     const elemList = $(`td a:contains("${exampleCourseName}")`);
-    assert(elemList.length == 1);
+    assert(elemList.length === 1);
     return serverUrl + elemList[0].attribs.href;
 }
 
@@ -151,7 +151,7 @@ async function getQuestionUrl(courseInstanceUrl) {
     const body = await request({uri: questionsUrl, jar: cookies});
     const $ = cheerio.load(body);
     const elemList = $(`td a:contains("${questionTitle}")`);
-    assert(elemList.length == 1);
+    assert(elemList.length === 1);
     return serverUrl + elemList[0].attribs.href;
 }
 
@@ -160,23 +160,23 @@ async function getQuestionSubmitInfo(questionUrl) {
     const $ = cheerio.load(body);
 
     const elemList = $('.question-form input[name="__csrf_token"]');
-    assert(elemList.length == 1);
+    assert(elemList.length === 1);
     const csrf_token = elemList[0].attribs.value;
 
     const questionSubmitInfo = {questionUrl, csrf_token};
     
     if (argv.type === 'v2') {
         const elemList = $('.question-data');
-        assert(elemList.length == 1);
+        assert(elemList.length === 1);
         assert(elemList[0].children != null);
-        assert(elemList[0].children.length == 1);
+        assert(elemList[0].children.length === 1);
         assert(elemList[0].children[0].data != null);
         const questionData = JSON.parse(decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()));
         assert(questionData.variant != null);
         questionSubmitInfo.variant = questionData.variant;
     } else if (argv.type === 'v3') {
         const elemList = $('.question-form input[name="__variant_id"]');
-        assert(elemList.length == 1);
+        assert(elemList.length === 1);
         questionSubmitInfo.variant_id = Number.parseInt(elemList[0].attribs.value);
     } else {
         throw new Error(`unknown type: ${argv.type}`);
@@ -212,7 +212,7 @@ async function postQuestionAnswer(questionSubmitInfo) {
     const body = await request.post({uri: questionSubmitInfo.questionUrl, jar: cookies, form, followAllRedirects: true});
     const $ = cheerio.load(body);
     const elemListVariantId = $('.question-form input[name="__csrf_token"]');
-    assert(elemListVariantId.length == 1);
+    assert(elemListVariantId.length === 1);
 }
 
 async function singleRequest() {
