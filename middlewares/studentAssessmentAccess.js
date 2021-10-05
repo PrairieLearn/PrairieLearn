@@ -36,7 +36,7 @@ router.all('/', function(req, res, next) {
     
     // SafeExamBrowser protect the assesment
     if ('authz_result' in res.locals &&
-        res.locals.authz_result.mode == 'SEB') {
+        res.locals.authz_result.mode === 'SEB') {
 
         // If the assessment is complete, use this middleware to show the logout page
         if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {

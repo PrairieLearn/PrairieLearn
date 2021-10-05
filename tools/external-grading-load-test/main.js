@@ -127,7 +127,7 @@ async.series([
                     ResponseContentType: 'application/json',
                 };
                 new AWS.S3().getObject(params, (err, data) => {
-                    if (err && err.code == 'NoSuchKey') {
+                    if (err && err.code === 'NoSuchKey') {
                         return done(null);
                     }
                     if (ERR(err, done)) return;

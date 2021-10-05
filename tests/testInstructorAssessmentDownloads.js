@@ -211,8 +211,8 @@ describe('Instructor Assessment Downloads', function() {
         });
         it('should contain correct data', function() {
             let data = csvParse(page, {columns: true, cast: true});
-            assert(_.every(data, (entry) => entry['UID'] == 'dev@illinois.edu'));
-            assert(_.every(data, (entry) => entry['Assessment'] == 'Exam 1'));
+            assert(_.every(data, (entry) => entry['UID'] === 'dev@illinois.edu'));
+            assert(_.every(data, (entry) => entry['Assessment'] === 'Exam 1'));
             let questions = _.map(data, (entry) => entry['Question']).sort();
             let expectedQuestions = _.map(helperExam.questionsArray, (q) => q.qid);
             assert.deepEqual(questions, expectedQuestions);

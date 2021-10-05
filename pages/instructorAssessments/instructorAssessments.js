@@ -130,7 +130,7 @@ router.get('/:filename', function(req, res, next) {
 
 router.post('/', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
-    if (req.body.__action == 'add_assessment') {
+    if (req.body.__action === 'add_assessment') {
         debug(`Responding to action add_assessment`);
         const editor = new AssessmentAddEditor({
             locals: res.locals,

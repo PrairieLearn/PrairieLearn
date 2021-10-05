@@ -91,7 +91,7 @@ router.get('/:filename', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_course_instance_permission_edit) return next(error.make(403, 'Access denied (must be a student data editor)'));
-    if (req.body.__action == 'edit_total_score_perc') {
+    if (req.body.__action === 'edit_total_score_perc') {
         
         const course_instance_id = res.locals.course_instance.id;
         const assessment_instance_id = req.body.assessment_instance_id;

@@ -191,7 +191,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be a course editor)'));
-    if (req.body.__action == 'open') {
+    if (req.body.__action === 'open') {
         let params = [
             req.body.issue_id,
             true, // open status
@@ -202,7 +202,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'close') {
+    } else if (req.body.__action === 'close') {
         let params = [
             req.body.issue_id,
             false, // open status
@@ -213,7 +213,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'close_all') {
+    } else if (req.body.__action === 'close_all') {
         let params = [
             false, // open status
             res.locals.course.id,

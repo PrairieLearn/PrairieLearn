@@ -28,7 +28,7 @@ module.exports = {
                     sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
                         if (ERR(err, callback)) return;
                         locals.job_sequence = result.rows[0];
-                        if (locals.job_sequence.status == 'Running') {
+                        if (locals.job_sequence.status === 'Running') {
                             setTimeout(checkComplete, 10);
                         } else {
                             callback(null);
@@ -131,7 +131,7 @@ module.exports = {
                 assert.isString(locals.__csrf_token);
             });
             it('should have or not have grade button', function() {
-                if (locals.question.type == 'Freeform') {
+                if (locals.question.type === 'Freeform') {
                     elemList = locals.$('button[name="__action"][value="grade"]');
                     if (locals.shouldHaveButtons.includes('grade')) {
                         assert.lengthOf(elemList, 1);
@@ -148,7 +148,7 @@ module.exports = {
                 }
             });
             it('should have or not have save button', function() {
-                if (locals.question.type == 'Freeform') {
+                if (locals.question.type === 'Freeform') {
                     elemList = locals.$('button[name="__action"][value="save"]');
                     if (locals.shouldHaveButtons.includes('save')) {
                         assert.lengthOf(elemList, 1);
@@ -190,13 +190,13 @@ module.exports = {
             });
             it('should load successfully', function(callback) {
                 let form;
-                if (locals.question.type == 'Calculation') {
+                if (locals.question.type === 'Calculation') {
                     form = {
                         __action: locals.postAction,
                         __csrf_token: locals.__csrf_token,
                         postData: JSON.stringify({variant: locals.variant, submittedAnswer: locals.submittedAnswer}),
                     };
-                } else if (locals.question.type == 'Freeform') {
+                } else if (locals.question.type === 'Freeform') {
                     form = {
                         __action: locals.postAction,
                         __csrf_token: locals.__csrf_token,
@@ -269,13 +269,13 @@ module.exports = {
             });
             it('should error', function(callback) {
                 let form;
-                if (locals.question.type == 'Calculation') {
+                if (locals.question.type === 'Calculation') {
                     form = {
                         __action: locals.postAction,
                         __csrf_token: locals.__csrf_token,
                         postData: JSON.stringify({variant: locals.variant, submittedAnswer: locals.submittedAnswer}),
                     };
-                } else if (locals.question.type == 'Freeform') {
+                } else if (locals.question.type === 'Freeform') {
                     form = {
                         __action: locals.postAction,
                         __csrf_token: locals.__csrf_token,
@@ -654,7 +654,7 @@ module.exports = {
                         sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
                             if (ERR(err, callback)) return;
                             locals.job_sequence_status = result.rows[0].status;
-                            if (locals.job_sequence_status == 'Running') {
+                            if (locals.job_sequence_status === 'Running') {
                                 setTimeout(checkComplete, 10);
                             } else {
                                 callback(null);

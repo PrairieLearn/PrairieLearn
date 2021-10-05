@@ -48,7 +48,7 @@ router.get('/:file_transfer_id', function(req, res, next) {
         if (ERR(err, next)) return;
         /* Split the full path and grab everything after questions/ to get the QID */
         const question_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
-        const questions_dir_idx = question_exploded.findIndex(x => x == 'questions');
+        const questions_dir_idx = question_exploded.findIndex(x => x === 'questions');
         const qid = question_exploded.slice(questions_dir_idx + 1).join(path.sep);
         const editor = new QuestionTransferEditor({
             locals: res.locals,

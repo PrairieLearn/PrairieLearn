@@ -79,7 +79,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     // non-empty role that is not Student.
     const allowAccess = assessment.allowAccess || [];
     assessmentParams.allowAccess = allowAccess
-        .filter(accessRule => ((!_(accessRule).has('role')) || (accessRule.role == 'Student')))
+        .filter(accessRule => ((!_(accessRule).has('role')) || (accessRule.role === 'Student')))
         .map((accessRule, index) => {
             return {
                 number: index + 1,

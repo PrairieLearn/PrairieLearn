@@ -12,7 +12,7 @@ const logPageView = require('../../middlewares/logPageView')(path.basename(__fil
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
-    if (res.locals.question.type == 'Freeform') {
+    if (res.locals.question.type === 'Freeform') {
         variant_id = req.body.__variant_id;
         submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
     } else {
@@ -34,13 +34,13 @@ function processSubmission(req, res, callback) {
     sqldb.callOneRow('variants_ensure_question', [submission.variant_id, res.locals.question.id], (err, result) => {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
-        if (req.body.__action == 'grade') {
+        if (req.body.__action === 'grade') {
             const overrideRateLimits = true;
             question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, overrideRateLimits, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
-        } else if (req.body.__action == 'save') {
+        } else if (req.body.__action === 'save') {
             question.saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
@@ -80,13 +80,13 @@ function processIssue(req, res, callback) {
 }
 
 router.post('/', function(req, res, next) {
-    if (req.body.__action == 'grade' || req.body.__action == 'save') {
+    if (req.body.__action === 'grade' || req.body.__action === 'save') {
         processSubmission(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
                          + '/preview/?variant_id=' + variant_id);
         });
-    } else if (req.body.__action == 'report_issue') {
+    } else if (req.body.__action === 'report_issue') {
         processIssue(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id

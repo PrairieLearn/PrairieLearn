@@ -31,7 +31,7 @@ module.exports = function(req, res, next) {
                 allow_example_course_override: true,
                 ip: req.ip,
                 req_date: res.locals.req_date,
-                req_mode: (config.authType == 'none' && req.cookies.pl_test_mode) ? req.cookies.pl_test_mode : null,
+                req_mode: (config.authType === 'none' && req.cookies.pl_test_mode) ? req.cookies.pl_test_mode : null,
                 req_course_role: null,
                 req_course_instance_role: null,
             };
@@ -128,7 +128,7 @@ module.exports = function(req, res, next) {
             debug('requested overrides, but authn user does not have instructor permissions');
 
             // If on a student page route, silently exit and ignore effective user requests
-            if ((res.locals.viewType || 'none') == 'student') {
+            if ((res.locals.viewType || 'none') === 'student') {
                 debug('on student page, so silently exit and ignore requested overrides');
                 return next();
             }

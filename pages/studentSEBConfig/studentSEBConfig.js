@@ -71,7 +71,7 @@ var add_allowed_program = function(SEBconfig, program) {
         arguments: [],
     };
 
-    if (program == 'excel') {
+    if (program === 'excel') {
         var progObj = _.clone(template_program);
         progObj['title'] = 'EXCEL';
         progObj['executable'] = 'excel.exe';

@@ -16,7 +16,7 @@ router.get('/:job_sequence_id', function(req, res, next) {
         // All edits wait for the corresponding job sequence to finish before
         // proceeding, so something bad must have happened to get to this page
         // with a sequence that is still running
-        if (job_sequence.status == 'Running') return next(new Error('Edit is still in progress (job sequence is still running)'));
+        if (job_sequence.status === 'Running') return next(new Error('Edit is still in progress (job sequence is still running)'));
 
         res.locals.failedPush = false;
         res.locals.failedSync = false;
@@ -26,7 +26,7 @@ router.get('/:job_sequence_id', function(req, res, next) {
 
         // Loop through jobs in sequential order (we rely on this).
         job_sequence.jobs.forEach((item) => {
-            if ((item.type == 'unlock') && (didWrite) && (job_errors.length == 0)) {
+            if ((item.type === 'unlock') && (didWrite) && (job_errors.length == 0)) {
                 // We know that one of the jobs resulted in an error. If we reach
                 // 'unlock' without having found the error yet, then we know that
                 // the edit was written and was not rolled back, and that all we
@@ -34,14 +34,14 @@ router.get('/:job_sequence_id', function(req, res, next) {
                 res.locals.failedSync = true;
             }
 
-            if (item.status == 'Error') {
+            if (item.status === 'Error') {
                 job_errors.push({
                     'description': item.description,
                     'error_message': item.error_message,
                 });
 
-                if (item.type == 'git_push') res.locals.failedPush = true;
-            } else if (item.type == 'write') {
+                if (item.type === 'git_push') res.locals.failedPush = true;
+            } else if (item.type === 'write') {
                 didWrite = true;
             }
         });
@@ -57,7 +57,7 @@ router.get('/:job_sequence_id', function(req, res, next) {
 router.post('/:job_sequence_id', (req, res, next) => {
     if (!res.locals.authz_data.has_course_permission_edit) return next(error.make(403, 'Access denied (must be course editor)'));
 
-    if (req.body.__action == 'pull') {
+    if (req.body.__action === 'pull') {
         syncHelpers.pullAndUpdate(res.locals, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);

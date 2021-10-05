@@ -110,7 +110,7 @@ module.exports = {
 
         const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
         _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
-            if (intervalSec == 'daily') {
+            if (intervalSec === 'daily') {
                 this.queueDailyJobs(jobsList);
             } else if (intervalSec > 0) {
                 this.queueJobs(jobsList, intervalSec);
@@ -259,7 +259,7 @@ module.exports = {
         var interval_secs;
         if (Number.isInteger(job.intervalSec)) {
             interval_secs = job.intervalSec;
-        } else if (job.intervalSec == 'daily') {
+        } else if (job.intervalSec === 'daily') {
             interval_secs = 12 * 60 * 60;
         } else {
             return callback(new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`));

@@ -478,7 +478,7 @@ function editPost(action, fileEditContents, url, expectedToFindResults, expected
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        if ((action == 'save_and_sync') || (action == 'pull_and_save_and_sync')) {
+        if ((action === 'save_and_sync') || (action === 'pull_and_save_and_sync')) {
             verifyEdit(expectedToFindResults, expectedToFindChoice, fileEditContents, expectedDiskContents);
         }
     });
@@ -835,7 +835,7 @@ function pullAndVerifyFileNotInDev(fileName) {
         it('should not exist', function(callback) {
             fs.access(path.join(courseDevDir, fileName), (err) => {
                 if (err) {
-                    if (err.code == 'ENOENT') callback(null);
+                    if (err.code === 'ENOENT') callback(null);
                     else callback(new Error(`got wrong error: ${err}`));
                 } else {
                     callback(new Error(`${fileName} should not exist, but does`));
@@ -916,7 +916,7 @@ function waitForJobSequence(locals, expectedResult) {
                 sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
                     if (ERR(err, callback)) return;
                     locals.job_sequence_status = result.rows[0].status;
-                    if (locals.job_sequence_status == 'Running') {
+                    if (locals.job_sequence_status === 'Running') {
                         setTimeout(checkComplete, 10);
                     } else {
                         callback(null);

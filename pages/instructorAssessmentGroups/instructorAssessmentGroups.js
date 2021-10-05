@@ -64,17 +64,17 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data editor)'));
-    if (req.body.__action == 'upload_assessment_groups') {
+    if (req.body.__action === 'upload_assessment_groups') {
         groupUpdate.uploadInstanceGroups(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
-    } else if (req.body.__action == 'auto_assessment_groups') {
+    } else if (req.body.__action === 'auto_assessment_groups') {
         groupUpdate.autoGroups(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, req.body.max_group_size, req.body.min_group_size, req.body.optradio, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
-    } else if (req.body.__action == 'copy_assessment_groups') {
+    } else if (req.body.__action === 'copy_assessment_groups') {
         const params = [
             res.locals.assessment.id,
             req.body.copy_assessment_id,
@@ -84,7 +84,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'delete_all') {
+    } else if (req.body.__action === 'delete_all') {
         const params = [
             res.locals.assessment.id,
             res.locals.authn_user.user_id,
@@ -93,7 +93,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.__action == 'add_group') {
+    } else if (req.body.__action === 'add_group') {
         const assessment_id = res.locals.assessment.id;
         const group_name = req.body.group_name;
         if (!group_name || String(group_name).length < 1) {
@@ -128,7 +128,7 @@ router.post('/', function(req, res, next) {
             }
             obtainInfo(req, res, next);
         });
-    } else if (req.body.__action == 'add_member') {
+    } else if (req.body.__action === 'add_member') {
         const assessment_id = res.locals.assessment.id;
         const group_id = req.body.group_id;
         const uids = req.body.add_member_uids;
@@ -155,7 +155,7 @@ router.post('/', function(req, res, next) {
             }
             obtainInfo(req, res, next);
         })();
-    } else if (req.body.__action == 'delete_member') {
+    } else if (req.body.__action === 'delete_member') {
         const assessment_id = res.locals.assessment.id;
         const group_id = req.body.group_id;
         const uids = req.body.delete_member_uids;
@@ -182,7 +182,7 @@ router.post('/', function(req, res, next) {
             }
             obtainInfo(req, res, next);
         })();
-    } else if (req.body.__action == 'delete_group') {
+    } else if (req.body.__action === 'delete_group') {
         const params = [
             res.locals.assessment.id,
             req.body.group_id,

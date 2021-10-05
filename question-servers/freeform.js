@@ -287,7 +287,7 @@ module.exports = {
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const paths = [path.join(__dirname, 'freeformPythonLib')];
-            if (resolvedElement.type == 'course') {
+            if (resolvedElement.type === 'course') {
                 paths.push(path.join(context.course_dir, 'serverFilesCourse'));
             }
             const opts = {
@@ -323,7 +323,7 @@ module.exports = {
             const pythonArgs = [elementHtml, dataCopy];
             const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const paths = [path.join(__dirname, 'freeformPythonLib')];
-            if (resolvedElement.type == 'course') {
+            if (resolvedElement.type === 'course') {
                 paths.push(path.join(context.course_dir, 'serverFilesCourse'));
             }
             const opts = {
@@ -352,9 +352,9 @@ module.exports = {
     },
 
     defaultElementFunctionRet: function(phase, data) {
-        if (phase == 'render') {
+        if (phase === 'render') {
             return '';
-        } else if (phase == 'file') {
+        } else if (phase === 'file') {
             return '';
         } else {
             return data;
@@ -362,9 +362,9 @@ module.exports = {
     },
 
     defaultServerRet: function(phase, data, html, _context) {
-        if (phase == 'render') {
+        if (phase === 'render') {
             return html;
-        } else if (phase == 'file') {
+        } else if (phase === 'file') {
             return '';
         } else {
             return data;
@@ -375,7 +375,7 @@ module.exports = {
         const pythonFile = 'server';
         const pythonFunction = phase;
         const pythonArgs = [data];
-        if (phase == 'render') pythonArgs.push(html);
+        if (phase === 'render') pythonArgs.push(html);
         const opts = {
             cwd: context.question_dir,
             paths: [path.join(__dirname, 'freeformPythonLib'), path.join(context.course_dir, 'serverFilesCourse')],
@@ -436,23 +436,23 @@ module.exports = {
         const checkProp = (prop, type, presentPhases, editPhases) => {
             if (!presentPhases.includes(phase)) return null;
             if (!_.has(data, prop)) return '"' + prop + '" is missing from "data"';
-            if (type == 'integer') {
+            if (type === 'integer') {
                 if (!_.isInteger(data[prop])) {
                     return 'data.' + prop + ' is not an integer: ' + String(data[prop]);
                 }
-            } else if (type == 'number') {
+            } else if (type === 'number') {
                 if (!_.isFinite(data[prop])) {
                     return 'data.' + prop + ' is not a number: ' + String(data[prop]);
                 }
-            } else if (type == 'string') {
+            } else if (type === 'string') {
                 if (!_.isString(data[prop])) {
                     return 'data.' + prop + ' is not a string: ' + String(data[prop]);
                 }
-            } else if (type == 'boolean') {
+            } else if (type === 'boolean') {
                 if (!_.isBoolean(data[prop])) {
                     return 'data.' + prop + ' is not a boolean: ' + String(data[prop]);
                 }
-            } else if (type == 'object') {
+            } else if (type === 'object') {
                 if (!_.isObject(data[prop])) {
                     return 'data.' + prop + ' is not an object: ' + String(data[prop]);
                 }
@@ -541,7 +541,7 @@ module.exports = {
                     courseIssue.fatal = false;
                     courseIssues.push(courseIssue);
                 }
-                if (phase == 'render') {
+                if (phase === 'render') {
                     if (!_.isString(ret_val)) {
                         const courseIssue = new Error(`${elementFile}: Error calling ${phase}(): return value is not a string`);
                         courseIssue.data = { ret_val };
@@ -549,7 +549,7 @@ module.exports = {
                         throw courseIssue;
                     }
                     node = parse5.parseFragment(ret_val);
-                } else if (phase == 'file') {
+                } else if (phase === 'file') {
                     // Convert ret_val from base64 back to buffer (this always works,
                     // whether or not ret_val is valid base64)
                     const buf = Buffer.from(ret_val, 'base64');
@@ -638,7 +638,7 @@ module.exports = {
                         courseIssues.push(courseIssue);
                     }
 
-                    if (phase == 'render') {
+                    if (phase === 'render') {
                         if (!_.isString(ret_val)) {
                             const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): return value is not a string');
                             courseIssue.data = { ret_val };
@@ -647,7 +647,7 @@ module.exports = {
                             return callback(courseIssue);
                         }
                         $(element).replaceWith(ret_val);
-                    } else if (phase == 'file') {
+                    } else if (phase === 'file') {
                         // Convert ret_val from base64 back to buffer (this always works,
                         // whether or not ret_val is valid base64)
                         var buf = Buffer.from(ret_val, 'base64');
@@ -723,7 +723,7 @@ module.exports = {
             }
 
             processFunction(...args, (courseIssues, data, questionHtml, fileData, renderedElementNames) => {
-                if (phase == 'grade' || phase == 'test') {
+                if (phase === 'grade' || phase === 'test') {
                     if (context.question.partial_credit) {
                         let total_weight = 0, total_weight_score = 0;
                         _.each(data.partial_scores, value => {
@@ -778,9 +778,9 @@ module.exports = {
                 courseIssues.push(courseIssue);
             }
 
-            if (phase == 'render') {
+            if (phase === 'render') {
                 html = ret_val;
-            } else if (phase == 'file') {
+            } else if (phase === 'file') {
                 // Convert ret_val from base64 back to buffer (this always works,
                 // whether or not ret_val is valid base64)
                 var buf = Buffer.from(ret_val, 'base64');
@@ -816,7 +816,7 @@ module.exports = {
     },
 
     processQuestion: function(phase, pc, data, context, callback) {
-        if (phase == 'generate') {
+        if (phase === 'generate') {
             module.exports.processQuestionServer(phase, pc, data, '', Buffer.from(''), context, (err, courseIssues, data, html, fileData) => {
                 if (ERR(err, callback)) return;
                 callback(null, courseIssues, data, html, fileData);
@@ -927,7 +927,7 @@ module.exports = {
         // proceed with other panels, treating the submission as
         // missing
         if (submission && submission.broken) {
-            if (panel == 'submission') {
+            if (panel === 'submission') {
                 return callback(null, [], 'Broken submission due to error in question code');
             } else {
                 submission = null;

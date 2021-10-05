@@ -18,8 +18,8 @@ const MetadataService = new AWS.MetadataService();
 config.loadConfig = function(callback) {
     // Determine what environment we're running in
     const env = exportedConfig.env = process.env.NODE_ENV || 'development';
-    exportedConfig.isProduction = exportedConfig.env == 'production';
-    exportedConfig.isDevelopment = exportedConfig.env == 'development';
+    exportedConfig.isProduction = exportedConfig.env === 'production';
+    exportedConfig.isDevelopment = exportedConfig.env === 'development';
 
     async.series([
         (callback) => {

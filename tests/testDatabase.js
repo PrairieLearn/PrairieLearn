@@ -58,7 +58,7 @@ describe('database', function() {
                     const match = constraint.def.match(/^FOREIGN KEY \((.*)\) REFERENCES (.*)\(.*\) ON UPDATE .* ON DELETE (.*)$/);
                     if (!match) return done(new Error(`Failed to match foreign key for ${table}: ${constraint.def}`));
                     const [, keyName, otherTable, deleteAction] = match;
-                    if (deleteAction == 'CASCADE' && _.includes(hardDeleteTables, otherTable)) {
+                    if (deleteAction === 'CASCADE' && _.includes(hardDeleteTables, otherTable)) {
                         return done(new Error(`Soft-delete table "${table}" has ON DELETE CASCADE foreign key "${keyName}" to hard-delete table "${otherTable}"`));
                     }
                 }

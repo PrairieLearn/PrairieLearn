@@ -53,7 +53,7 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', function(req, res, next) {
-    if (req.body.__action == 'add_manual_grade') {
+    if (req.body.__action === 'add_manual_grade') {
         const note = req.body.submission_note;
         const score = req.body.submission_score;
         const params = [res.locals.instance_question.id];
@@ -95,7 +95,7 @@ router.post('/', function(req, res, next) {
             });
 
         });
-    } else if (req.body.__action == 'update_manual_grade') {
+    } else if (req.body.__action === 'update_manual_grade') {
         // TODO: Update grade in DB?
 
     } else {

@@ -18,7 +18,7 @@ const { encodePath } = require('../../lib/uri-util');
 
 
 router.post('/', function(req, res, next) {
-    if (req.body.__action == 'test_once') {
+    if (req.body.__action === 'test_once') {
         if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be a course Viewer)'));
         const count = 1;
         const showDetails = true;
@@ -27,7 +27,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
-    } else if (req.body.__action == 'test_100') {
+    } else if (req.body.__action === 'test_100') {
         if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be a course Viewer)'));
         if (res.locals.question.grading_method !== 'External') {
             const count = 100;
@@ -40,7 +40,7 @@ router.post('/', function(req, res, next) {
         } else {
             next(new Error('Not supported for externally-graded questions'));
         }
-    } else if (req.body.__action == 'change_id') {
+    } else if (req.body.__action === 'change_id') {
         debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
         if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
         if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) return next(new Error(`Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`));
@@ -69,7 +69,7 @@ router.post('/', function(req, res, next) {
                 });
             });
         }
-    } else if (req.body.__action == 'copy_question') {
+    } else if (req.body.__action === 'copy_question') {
         debug('Copy question');
         if (req.body.to_course_id == res.locals.course.id) {
             // In this case, we are making a duplicate of this question in the same course
@@ -123,7 +123,7 @@ router.post('/', function(req, res, next) {
                 res.redirect(`${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${results.id}`);
             });
         }
-    } else if (req.body.__action == 'delete_question') {
+    } else if (req.body.__action === 'delete_question') {
         debug('Delete question');
         const editor = new QuestionDeleteEditor({
             locals: res.locals,

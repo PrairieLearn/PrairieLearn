@@ -46,7 +46,7 @@ window.PLFileEditor = function(uuid, options) {
 
     this.plOptionFocus = options.plOptionFocus;
 
-    if (options.preview == 'markdown') {
+    if (options.preview === 'markdown') {
         let renderer = new showdown.Converter({
             'literalMidWordUnderscores':true,
             'literalMidWordAsterisks':true,
@@ -56,7 +56,7 @@ window.PLFileEditor = function(uuid, options) {
             this.updatePreview(renderer.makeHtml(this.editor.getValue()));
         });
         this.updatePreview(renderer.makeHtml(this.editor.getValue()));
-    } else if (options.preview == 'html') {
+    } else if (options.preview === 'html') {
         this.editor.session.on('change', () => {
             this.updatePreview(this.editor.getValue());
         });

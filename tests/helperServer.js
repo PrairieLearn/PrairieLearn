@@ -33,7 +33,7 @@ const courseDirDefault = path.join(__dirname, '..', 'testCourse');
 
 module.exports = {
     before: (courseDir) => {
-        if (typeof courseDir == 'undefined') {
+        if (typeof courseDir === 'undefined') {
             courseDir = courseDirDefault;
         }
         return function(callback) {

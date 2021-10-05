@@ -60,9 +60,9 @@ config.loadConfig(argv.config);
 
 const exampleCourseName = 'XC 101: Example Course, Spring 2015';
 let questionTitle;
-if (argv.type == 'v2') {
+if (argv.type === 'v2') {
     questionTitle = 'Addition of vectors in Cartesian coordinates';
-} else if (argv.type == 'v3') {
+} else if (argv.type === 'v3') {
     questionTitle = 'Add two numbers';
 } else {
     throw new Error(`unknown type: ${argv.type}`);
@@ -165,7 +165,7 @@ async function getQuestionSubmitInfo(questionUrl) {
 
     const questionSubmitInfo = {questionUrl, csrf_token};
     
-    if (argv.type == 'v2') {
+    if (argv.type === 'v2') {
         const elemList = $('.question-data');
         assert(elemList.length == 1);
         assert(elemList[0].children != null);
@@ -174,7 +174,7 @@ async function getQuestionSubmitInfo(questionUrl) {
         const questionData = JSON.parse(decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()));
         assert(questionData.variant != null);
         questionSubmitInfo.variant = questionData.variant;
-    } else if (argv.type == 'v3') {
+    } else if (argv.type === 'v3') {
         const elemList = $('.question-form input[name="__variant_id"]');
         assert(elemList.length == 1);
         questionSubmitInfo.variant_id = Number.parseInt(elemList[0].attribs.value);
@@ -188,7 +188,7 @@ async function getQuestionSubmitInfo(questionUrl) {
 async function postQuestionAnswer(questionSubmitInfo) {
     let form;
 
-    if (argv.type == 'v2') {
+    if (argv.type === 'v2') {
         const submittedAnswer = {
             wx: Math.floor(Math.random() * 10),
             wy: Math.floor(Math.random() * 10),
@@ -198,7 +198,7 @@ async function postQuestionAnswer(questionSubmitInfo) {
             __csrf_token: questionSubmitInfo.csrf_token,
             postData: JSON.stringify({variant: questionSubmitInfo.variant, submittedAnswer}),
         };
-    } else if (argv.type == 'v3') {
+    } else if (argv.type === 'v3') {
         form = {
             __action: 'grade',
             __csrf_token: questionSubmitInfo.csrf_token,

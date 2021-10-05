@@ -271,7 +271,7 @@ describe('Zone grading exam assessment', function() {
                 describe(`${questionTest.action} answer number #${iQuestionTest+1} for question ${questionTest.qid} with score ${questionTest.score}`, function() {
                     describe('setting up the submission data', function() {
                         it('should succeed', function() {
-                            if (questionTest.action == 'check-closed') {
+                            if (questionTest.action === 'check-closed') {
                                 locals.shouldHaveButtons = [];
                             } else {
                                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -282,8 +282,8 @@ describe('Zone grading exam assessment', function() {
                             locals.totalPoints += questionTest.sub_total_points;
                             const submission_score = (questionTest.submission_score == null) ? questionTest.score : questionTest.submission_score;
                             locals.expectedResult = {
-                                submission_score: (questionTest.action == 'save') ? null : (submission_score / 100),
-                                submission_correct: (questionTest.action == 'save') ? null : (submission_score == 100),
+                                submission_score: (questionTest.action === 'save') ? null : (submission_score / 100),
+                                submission_correct: (questionTest.action === 'save') ? null : (submission_score == 100),
                                 instance_question_points: locals.question.points,
                                 instance_question_score_perc: locals.question.points/locals.question.maxPoints * 100,
                                 assessment_instance_points: locals.totalPoints,
@@ -296,7 +296,7 @@ describe('Zone grading exam assessment', function() {
                             };
                         });
                     });
-                    if (questionTest.action == 'store') {
+                    if (questionTest.action === 'store') {
                         helperQuestion.getInstanceQuestion(locals);
                         describe('saving submission data', function() {
                             it('should succeed', function() {
@@ -304,7 +304,7 @@ describe('Zone grading exam assessment', function() {
                                 locals.question.questionSavedCsrfToken = locals.__csrf_token;
                             });
                         });
-                    } else if (questionTest.action == 'save-stored-fail') {
+                    } else if (questionTest.action === 'save-stored-fail') {
                         describe('restoring submission data', function() {
                             it('should succeed', function() {
                                 locals.postAction = 'save';
@@ -313,7 +313,7 @@ describe('Zone grading exam assessment', function() {
                             });
                         });
                         helperQuestion.postInstanceQuestionAndFail(locals);
-                    } else if (questionTest.action == 'grade-stored-fail') {
+                    } else if (questionTest.action === 'grade-stored-fail') {
                         describe('restoring submission data', function() {
                             it('should succeed', function() {
                                 locals.postAction = 'grade';
@@ -322,9 +322,9 @@ describe('Zone grading exam assessment', function() {
                             });
                         });
                         helperQuestion.postInstanceQuestionAndFail(locals);
-                    } else if (questionTest.action == 'check-closed') {
+                    } else if (questionTest.action === 'check-closed') {
                         helperQuestion.getInstanceQuestion(locals);
-                    } else if (questionTest.action == 'save' || questionTest.action == 'grade') {
+                    } else if (questionTest.action === 'save' || questionTest.action === 'grade') {
                         helperQuestion.getInstanceQuestion(locals);
                         helperQuestion.postInstanceQuestion(locals);
                         helperQuestion.checkQuestionScore(locals);

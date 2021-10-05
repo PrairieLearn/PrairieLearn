@@ -21,7 +21,7 @@ router.get('/', function(req, res, next) {
         (callback) => {
             fs.access(res.locals.course.path, (err) => {
                 if (err) {
-                    if (err.code == 'ENOENT') {
+                    if (err.code === 'ENOENT') {
                         res.locals.needToSync = true;
                     } else return ERR(err, callback);
                 }
@@ -55,7 +55,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', (req, res, next) => {
     debug(`Responding to post with action ${req.body.__action}`);
-    if (req.body.__action == 'add_question') {
+    if (req.body.__action === 'add_question') {
         debug(`Responding to action add_question`);
         const editor = new QuestionAddEditor({
             locals: res.locals,
