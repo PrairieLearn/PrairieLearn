@@ -56,7 +56,7 @@ router.get('/', function(req, res, next) {
                         var repoName = repository.getCombined(true);
                         image.digest_full = _.get(res.locals.ecrInfo[repoName], 'imageDigest', '');
                         image.digest = image.digest_full.substring(0,24);
-                        if (image.digest != image.digest_full) {
+                        if (image.digest !== image.digest_full) {
                             image.digest += '...';
                         }
                         image.size = _.get(res.locals.ecrInfo[repoName], 'imageSizeInBytes', 0) / (1000 * 1000);
@@ -77,7 +77,7 @@ router.get('/', function(req, res, next) {
                     };
                     sqldb.query(sql.format_pushed_at, params, (err, result) => {
                         if (ERR(err, next)) return;
-                        if (result.rowCount != res.locals.images.length) {
+                        if (result.rowCount !== res.locals.images.length) {
                             return next(new Error('pushed_at length mismatch'));
                         }
 

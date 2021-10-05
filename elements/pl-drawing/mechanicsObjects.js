@@ -63,7 +63,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
             nzig = 3;
             dx = len/(nzig+4);
         }
-        if ( nzig % 2 == 0) {
+        if ( nzig % 2 === 0) {
             nzig += 1;
             dx = len/(nzig+4);
         }
@@ -877,7 +877,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         let spl = str.split('$');
 
         for (let i = 0; i < spl.length; i++) {
-            if (i % 2 == 0) {
+            if (i % 2 === 0) {
                 /* Text */
                 if (spl[i].length > 0) {
                     /* Ignore empty strings */
@@ -3038,7 +3038,7 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
         let anchor = opts['anchor_is_tail'];
 
         let file_name;
-        if (w1 == w2) {
+        if (w1 === w2) {
             file_name = 'DUD';
         } else if ((w1 < w2) && (anchor === 'true')) {
             file_name = 'DTDA';

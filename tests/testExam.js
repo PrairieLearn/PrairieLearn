@@ -1039,7 +1039,7 @@ describe('Exam assessment', function() {
                             locals.totalPoints += questionTest.sub_points;
                             locals.expectedResult = {
                                 submission_score: (questionTest.action === 'save') ? null : (questionTest.score / 100),
-                                submission_correct: (questionTest.action === 'save') ? null : (questionTest.score == 100),
+                                submission_correct: (questionTest.action === 'save') ? null : (questionTest.score === 100),
                                 instance_question_points: locals.question.points,
                                 instance_question_score_perc: locals.question.points/locals.question.maxPoints * 100,
                                 assessment_instance_points: locals.totalPoints,

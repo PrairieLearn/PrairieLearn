@@ -154,7 +154,7 @@ module.exports = {
             jobTimeouts[intervalSec] = 0;
             that.runJobs(jobsList, () => {
                 debug(`queueJobs(): ${intervalSec}: completed run`);
-                if (jobTimeouts[intervalSec] == -1) {
+                if (jobTimeouts[intervalSec] === -1) {
                     // someone requested a stop
                     debug(`queueJobs(): ${intervalSec}: stop requested`);
                     delete jobTimeouts[intervalSec];
@@ -188,7 +188,7 @@ module.exports = {
             jobTimeouts['daily'] = 0;
             that.runJobs(jobsList, () => {
                 debug(`queueDailyJobs(): completed run`);
-                if (jobTimeouts['daily'] == -1) {
+                if (jobTimeouts['daily'] === -1) {
                     // someone requested a stop
                     debug(`queueDailyJobs(): stop requested`);
                     delete jobTimeouts['daily'];

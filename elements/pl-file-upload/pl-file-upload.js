@@ -56,7 +56,7 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
                 var dataUrl = e.target.result;
 
                 var commaSplitIdx = dataUrl.indexOf(',');
-                if (commaSplitIdx == -1) {
+                if (commaSplitIdx === -1) {
                     that.addWarningMessage('<strong>' + acceptedName + '</strong>' + ' is empty, ignoring file.');
                     return;
                 }

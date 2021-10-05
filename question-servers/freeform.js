@@ -732,7 +732,7 @@ module.exports = {
                             total_weight += weight;
                             total_weight_score += weight * score;
                         });
-                        data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
+                        data.score = total_weight_score / (total_weight === 0 ? 1 : total_weight);
                         data.feedback = {};
                     } else {
                         let score = 0;

@@ -17,7 +17,7 @@ const CLIENT_FOLDER = 'clientFilesElement';
 router.get('/*', function(req, res, next) {
     const filename = req.params[0];
     const pathSpl = path.normalize(filename).split('/');
-    const valid = pathSpl[1] == CLIENT_FOLDER ||
+    const valid = pathSpl[1] === CLIENT_FOLDER ||
           _.some(EXTENSION_WHITELIST, (extension) => filename.endsWith(extension));
     if (!valid) {
         res.status(404);
