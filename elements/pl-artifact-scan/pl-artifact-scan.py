@@ -4,16 +4,15 @@ import chevron
 from enum import Enum
 import hashlib
 
-BARCODE = 'barcode'
+BARCODE = '_pl_artifact_barcode'
 BLANK_ANSWER = ''
 REQUIRED = 'required'
 REQUIRED_DEFAULT = True
 
 # Each pl-artifact-scan element is uniquely identified by the SHA1 hash of its
 # file_names attribute
-def get_submission(barcode):
-    barcode = str(barcode)
-    return '_{0}_{1}'.format(BARCODE, barcode)
+def get_prefix(barcode):
+    return '_artifact_barcode_{0}'.format(barcode)
 
 
 def prepare(element_html, data):
@@ -41,7 +40,7 @@ def render(element_html, data):
             'uuid': uuid,
             'question': False,
             'parse-error': data['format_errors'].get(BARCODE, None),
-            'barcode': data['submitted_answers'].get(BARCODE, '').strip()
+            'barcode': data['submitted_answers'].get(BARCODE)
         }
 
     with open('pl-artifact-scan.mustache', 'r', encoding='utf-8') as f:
@@ -53,6 +52,13 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     submitted_barcode = data['submitted_answers'].get(BARCODE, '').strip()
     required = pl.get_boolean_attrib(element, REQUIRED, REQUIRED_DEFAULT)
+
+    # TO DO: Figure out logic for if we need more barcodes per instance question submission.
+    # ie. Student submits two pieces of paper to be scanned.
+    # See line 12 of pl-artifact-scan.mustache
+    del data['submitted_answers'][BARCODE]
+
+    data['submitted_answers'][BARCODE] = submitted_barcode
 
     if submitted_barcode != '' and submitted_barcode.isnumeric() is False:
         data['format_errors'][BARCODE] = 'Barcode "' + submitted_barcode + '" is not a valid number.'

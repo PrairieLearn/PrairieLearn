@@ -9,9 +9,10 @@
 </script>
 
 {{#question}}
+    <!-- Will likely want to add button to add more barcodes that increment up-->
     <div id="pl-artifact-scan-{{uuid}}" class="d-inline-block form-group form-inline">
-        <label for="barcode">Barcode</label>
-        <input type="text" id="barcode" name="barcode">
+        <label for="_pl_artifact_barcode">Barcode</label>
+        <input type="text" id="pl-artifact-barcode" name="_pl_artifact_barcode">
     </div>
 {{/question}}
 
@@ -20,8 +21,8 @@
 
         {{^parse-error}}
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
-            <label for="barcode">Barcode</label>
-            <input type="text" id="barcode" name="barcode" value="{{barcode}}">
+            <label for="_pl_artifact_barcode">Barcode</label>
+            <input type="text" id="barcode" name="_pl_artifact_barcode" value="{{barcode}}">
         {{/parse-error}}
 
         {{#parse-error}}
