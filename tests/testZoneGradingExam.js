@@ -200,7 +200,7 @@ describe('Zone grading exam assessment', function() {
             it(`should create ${questionsArray.length} instance_questions`, function(callback) {
                 sqldb.query(sql.select_instance_questions, [], function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount != questionsArray.length) {
+                    if (result.rowCount !== questionsArray.length) {
                         return callback(new Error(`expected ${questionsArray.length} instance_questions, got: ` + result.rowCount));
                     }
                     locals.instance_questions = result.rows;
@@ -283,7 +283,7 @@ describe('Zone grading exam assessment', function() {
                             const submission_score = (questionTest.submission_score == null) ? questionTest.score : questionTest.submission_score;
                             locals.expectedResult = {
                                 submission_score: (questionTest.action === 'save') ? null : (submission_score / 100),
-                                submission_correct: (questionTest.action === 'save') ? null : (submission_score == 100),
+                                submission_correct: (questionTest.action === 'save') ? null : (submission_score === 100),
                                 instance_question_points: locals.question.points,
                                 instance_question_score_perc: locals.question.points/locals.question.maxPoints * 100,
                                 assessment_instance_points: locals.totalPoints,

@@ -100,7 +100,7 @@ module.exports = function(req, res, next) {
         let overrides = [];
         if (req.cookies.pl_requested_uid) {
             // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
-            if (req.cookies.pl_requested_uid == res.locals.authn_user.uid) {
+            if (req.cookies.pl_requested_uid === res.locals.authn_user.uid) {
                 res.clearCookie('pl_requested_uid');
             } else {
                 overrides.push({'name': 'UID', 'value': req.cookies.pl_requested_uid, 'cookie': 'pl_requested_uid'});

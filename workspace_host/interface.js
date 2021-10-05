@@ -422,7 +422,7 @@ async function pruneRunawayContainers() {
     }
 
     await async.each(running_workspaces, async (container_info) => {
-        if (container_info.Names.length != 1) return;
+        if (container_info.Names.length !== 1) return;
         const name = container_info.Names[0].substring(1); /* Remove the preceding forward slash */
         if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
         await dockerAttemptKillAndRemove(container_info.Id);
