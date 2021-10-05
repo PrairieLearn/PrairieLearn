@@ -9,6 +9,7 @@ const sqlLoader = require('../../prairielib/lib/sql-loader');
 const logger = require('../../lib/logger');
 const { QuestionTransferEditor } = require('../../lib/editors');
 const config = require('../../lib/config');
+const { idsEqual } = require('../../lib/id');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -22,7 +23,7 @@ function getFileTransfer(file_transfer_id, user_id, callback) {
                 if (file_transfer.transfer_type !== 'CopyQuestion') {
                     return callback(new Error(`bad transfer_type: ${file_transfer.transfer_type}`));
                 }
-                if (file_transfer.user_id !== user_id) {
+                if (!idsEqual(file_transfer.user_id, user_id)) {
                     console.log('file_transfer', file_transfer);
                     return callback(new Error(`must have same user_id: ${file_transfer.user_id} and ${user_id} (types: ${typeof file_transfer.user_id}, ${typeof user_id})`));
                 }

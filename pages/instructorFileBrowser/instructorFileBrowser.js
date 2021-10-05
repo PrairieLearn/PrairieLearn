@@ -399,7 +399,7 @@ router.post('/*', function(req, res, next) {
             } catch(err) {
                 return next(new Error(`Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`));
             }
-            if (oldPath == newPath) {
+            if (oldPath === newPath) {
                 debug('The new file name is the same as old file name - do nothing');
                 res.redirect(req.originalUrl);
             } else {

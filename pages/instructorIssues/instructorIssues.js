@@ -9,6 +9,7 @@ const error = require('../../prairielib/lib/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const { idsEqual } = require('../../lib/id');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -148,7 +149,7 @@ router.get('/', function(req, res, next) {
                     // If necessary, construct the URL prefix to the appropriate course instance
                     // (either if we are accessing the issue through the course page route, or if
                     // we are accessing the issue through a different course instance page route).
-                    if ((!res.locals.course_instance) || (res.locals.course_instance.id != row.course_instance_id)) {
+                    if (!res.locals.course_instance || !idsEqual(res.locals.course_instance.id, row.course_instance_id)) {
                         row.assessment.urlPrefix = `${res.locals.plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`;
                     }
                 }
@@ -169,7 +170,7 @@ router.get('/', function(req, res, next) {
                     (!row.course_instance_id) ||
                     (
                         res.locals.course_instance &&
-                        (res.locals.course_instance.id == row.course_instance_id) &&
+                        idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
                         res.locals.authz_data.has_course_instance_permission_view
                     )
                 );

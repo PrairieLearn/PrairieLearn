@@ -59,7 +59,7 @@ router.get('/raw_data.json', function(req, res, next) {
 
 router.get('/:filename', function(req, res, next) {
     if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
-    if (req.params.filename == csvFilename(res.locals)) {
+    if (req.params.filename === csvFilename(res.locals)) {
         var params = {
             course_id: res.locals.course.id,
             course_instance_id: res.locals.course_instance.id,

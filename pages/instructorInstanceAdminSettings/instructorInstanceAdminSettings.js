@@ -83,7 +83,7 @@ router.post('/', function(req, res, next) {
         } catch(err) {
             return next(new Error(`Invalid CIID (could not be normalized): ${req.body.id}`));
         }
-        if (res.locals.course_instance.short_name == ciid_new) {
+        if (res.locals.course_instance.short_name === ciid_new) {
             debug('The new ciid is the same as the old ciid - do nothing');
             res.redirect(req.originalUrl);
         } else {

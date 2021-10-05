@@ -257,7 +257,7 @@ router.post('/*', (req, res, next) => {
         // to the file, so - in principle - it should never be the case that editHash
         // and origHash are the same. We will treat this is a catastrophic error.
         fileEdit.editHash = getHash(fileEdit.editContents);
-        if (fileEdit.editHash == fileEdit.origHash) {
+        if (fileEdit.editHash === fileEdit.origHash) {
             return next(error.make(400, `attempting to save a file without having made any changes: ${workingPath}`, {
                 locals: res.locals,
                 body: req.body,
@@ -724,7 +724,7 @@ function saveAndSync(fileEdit, locals, callback) {
                         job.fail(err);
                     } else {
                         fileEdit.diskHash = getHash(b64Util.b64EncodeUnicode(contents));
-                        if (fileEdit.origHash != fileEdit.diskHash) {
+                        if (fileEdit.origHash !== fileEdit.diskHash) {
                             job.fail(new Error(`Another user made changes to the file you were editing.`));
                         } else {
                             job.verbose('No changes were made to the file since you started editing.');

@@ -10,6 +10,7 @@ const config = require('../lib/config');
 const error = require('../prairielib/error');
 const sqldb = require('../prairielib/sql-db');
 const sqlLoader = require('../prairielib/sql-loader');
+const { idsEqual } = require('../lib/id');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -460,7 +461,7 @@ module.exports = function(req, res, next) {
                         res.locals.authz_data.has_student_access = result.rows[0].permissions_course_instance.has_student_access;
                         res.locals.authz_data.has_student_access_with_enrollment = result.rows[0].permissions_course_instance.has_student_access_with_enrollment;
 
-                        if (user.user_id !== res.locals.authn_user.user_id) {
+                        if (!idsEqual(user.user_id, res.locals.authn_user.user_id)) {
                             res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance = user_with_requested_uid_has_instructor_access_to_course_instance;
                         }
                     }
