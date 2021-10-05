@@ -18,6 +18,7 @@ HIDE_SCORE_BADGE_DEFAULT = False
 SHOW_NUMBER_CORRECT_DEFAULT = False
 MIN_CORRECT_DEFAULT = 1
 MIN_SELECT_DEFAULT = 1
+FEEDBACK_DEFAULT = None
 
 
 def prepare(element_html, data):
@@ -39,10 +40,11 @@ def prepare(element_html, data):
     index = 0
     for child in element:
         if child.tag in ['pl-answer', 'pl_answer']:
-            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct', 'feedback'])
             correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child)
-            answer_tuple = (index, correct, child_html)
+            child_feedback = pl.get_string_attrib(child, 'feedback', FEEDBACK_DEFAULT)
+            answer_tuple = (index, correct, child_html, child_feedback)
             if correct:
                 correct_answers.append(answer_tuple)
             else:
@@ -109,8 +111,8 @@ def prepare(element_html, data):
 
     display_answers = []
     correct_answer_list = []
-    for (i, (index, correct, html)) in enumerate(sampled_answers):
-        keyed_answer = {'key': pl.index2key(i), 'html': html}
+    for (i, (index, correct, html, feedback)) in enumerate(sampled_answers):
+        keyed_answer = {'key': pl.index2key(i), 'html': html, 'feedback': feedback}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer_list.append(keyed_answer)
@@ -152,14 +154,18 @@ def render(element_html, data):
     if data['panel'] == 'question':
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
+        submitted_keys_to_feedback = partial_score.get('submitted_keys_to_feedback', None)
 
         answerset = []
         for answer in display_answers:
+            feedback = submitted_keys_to_feedback.get(answer['key'], None) if submitted_keys_to_feedback is not None else None
             answer_html = {
                 'key': answer['key'],
                 'checked': (answer['key'] in submitted_keys),
                 'html': answer['html'].strip(),
-                'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys
+                'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys,
+                'display_feedback': answer['key'] in submitted_keys and feedback is not None,
+                'feedback': feedback
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (answer['key'] in correct_keys)
@@ -282,6 +288,7 @@ def render(element_html, data):
         parse_error = data['format_errors'].get(name, None)
         if parse_error is None:
             partial_score = data['partial_scores'].get(name, {'score': None})
+            submitted_keys_to_feedback = partial_score.get('submitted_keys_to_feedback', None)
             score = partial_score.get('score', None)
 
             answers = []
@@ -296,6 +303,10 @@ def render(element_html, data):
                     answer_item['correct'] = (submitted_key in correct_keys)
                     answer_item['incorrect'] = (submitted_key not in correct_keys)
                 answers.append(answer_item)
+                if submitted_keys_to_feedback is not None:
+                    feedback = submitted_keys_to_feedback.get(submitted_key, None)
+                    answer_item['display_feedback'] = feedback is not None
+                    answer_item['feedback'] = feedback
 
             html_params = {
                 'submission': True,
@@ -400,6 +411,7 @@ def grade(element_html, data):
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
+    submitted_keys_to_feedback = {option['key'] : option['feedback'] for option in data['params'][name] if option['key'] in submitted_keys}
 
     submittedSet = set(submitted_keys)
     correctSet = set(correct_keys)
@@ -426,7 +438,7 @@ def grade(element_html, data):
         else:
             raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
 
-    data['partial_scores'][name] = {'score': score, 'weight': weight}
+    data['partial_scores'][name] = {'score': score, 'weight': weight, 'submitted_keys_to_feedback': submitted_keys_to_feedback}
 
 
 def test(element_html, data):
@@ -453,7 +465,8 @@ def test(element_html, data):
             data['raw_submitted_answers'][name] = correct_keys
         else:
             pass  # no raw_submitted_answer if no correct keys
-        data['partial_scores'][name] = {'score': 1, 'weight': weight}
+        submitted_keys_to_feedback = {option['key'] : option['feedback'] for option in data['params'][name] if option['key'] in correct_keys}
+        data['partial_scores'][name] = {'score': 1, 'weight': weight, 'submitted_keys_to_feedback': submitted_keys_to_feedback}
     elif result == 'incorrect':
         while True:
             # select answer keys at random
@@ -481,8 +494,9 @@ def test(element_html, data):
                 raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
         else:
             score = 0
+        submitted_keys_to_feedback = {option['key'] : option['feedback'] for option in data['params'][name] if option['key'] in ans}
         data['raw_submitted_answers'][name] = ans
-        data['partial_scores'][name] = {'score': score, 'weight': weight}
+        data['partial_scores'][name] = {'score': score, 'weight': weight, 'submitted_keys_to_feedback': submitted_keys_to_feedback}
     elif result == 'invalid':
         # FIXME: add more invalid examples
         data['raw_submitted_answers'][name] = None
