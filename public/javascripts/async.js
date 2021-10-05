@@ -1139,7 +1139,7 @@
             var that = this;
 
             var callback = args[args.length - 1];
-            if (typeof callback === 'function') {
+            if (typeof callback == 'function') {
                 args.pop();
             } else {
                 callback = noop;

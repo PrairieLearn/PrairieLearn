@@ -18,7 +18,7 @@ window.Sha1 = Sha1;
  * @returns {String}                  Hash of msg as hex character string
  */
 Sha1.hash = function(msg, utf8encode) {
-  utf8encode =  (typeof utf8encode === 'undefined') ? true : utf8encode;
+  utf8encode =  (typeof utf8encode == 'undefined') ? true : utf8encode;
   
   // convert string to UTF-8, as SHA only deals with byte-streams
   if (utf8encode) msg = Utf8.encode(msg);

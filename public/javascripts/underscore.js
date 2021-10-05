@@ -136,7 +136,7 @@
   var getLength = property('length');
   var isArrayLike = function(collection) {
     var length = getLength(collection);
-    return typeof length === 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
+    return typeof length == 'number' && length >= 0 && length <= MAX_ARRAY_INDEX;
   };
 
   // Collection Functions
@@ -644,7 +644,7 @@
   function createIndexFinder(dir, predicateFind, sortedIndex) {
     return function(array, item, idx) {
       var i = 0, length = getLength(array);
-      if (typeof idx === 'number') {
+      if (typeof idx == 'number') {
         if (dir > 0) {
             i = idx >= 0 ? idx : Math.max(idx + length, i);
         } else {
@@ -1233,7 +1233,7 @@
   // IE 11 (#1621), and in Safari 8 (#1929).
   if (typeof /./ != 'function' && typeof Int8Array != 'object') {
     _.isFunction = function(obj) {
-      return typeof obj === 'function' || false;
+      return typeof obj == 'function' || false;
     };
   }
 
