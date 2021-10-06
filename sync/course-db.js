@@ -243,6 +243,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string[]} serverFilesCourse
  * @property {number} timeout
  * @property {boolean} enableNetworking
+ * @property {Record<string, string | null>} environment
  */
 
 /**
@@ -255,6 +256,7 @@ const FILE_UUID_REGEX = /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4
  * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean} enableNetworking
+ * @property {Record<string, string | null>} environment
  */
 
  /**

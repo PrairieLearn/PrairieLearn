@@ -361,6 +361,7 @@ function runJob(info, callback) {
                 entrypoint,
                 timeout,
                 enableNetworking,
+                environment,
             },
         },
         initFiles: {
@@ -372,6 +373,7 @@ function runJob(info, callback) {
     let jobTimeout = timeout || 30;
     let globalJobTimeout = jobTimeout * 2;
     let jobEnableNetworking = enableNetworking || false;
+    let jobEnvironment = environment || {};
 
     let jobFailed = false;
     let globalJobTimeoutCleared = false;
@@ -394,6 +396,8 @@ function runJob(info, callback) {
         (callback) => {
             docker.createContainer({
                 Image: runImage,
+                // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
+                Env: Object.entries(jobEnvironment).map(([k, v]) => v === null ? k : `${k}=${v}`),
                 AttachStdout: true,
                 AttachStderr: true,
                 Tty: true,
