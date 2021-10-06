@@ -443,7 +443,7 @@ module.exports = function(req, res, next) {
                     // remains in the list (the current course) with what it should be.
                     //
                     // We then update editable_courses as usual.
-                    res.locals.authz_data.courses = (result.rows[0].courses || []).filter(course => course.id === result.rows[0].course.id);
+                    res.locals.authz_data.courses = (result.rows[0].courses || []).filter(course => idsEqual(course.id, result.rows[0].course.id));
                     res.locals.authz_data.courses.forEach(course => course.permissions_course = _.cloneDeep(result.rows[0].permissions_course));
                     res.locals.authz_data.editable_courses = res.locals.authz_data.courses.filter(course => course.permissions_course.has_course_permission_edit);
 
@@ -451,7 +451,7 @@ module.exports = function(req, res, next) {
                     // those ones for which the authn user also has access.
                     res.locals.authz_data.course_instances = result.rows[0].course_instances || [];
                     res.locals.authz_data.course_instances = res.locals.authz_data.course_instances.filter(
-                        ci => res.locals.authz_data.authn_course_instances.some(authn_ci => (authn_ci.id === ci.id)),
+                        ci => res.locals.authz_data.authn_course_instances.some(authn_ci => idsEqual(authn_ci.id, ci.id)),
                     );
 
                     if (isCourseInstance) {

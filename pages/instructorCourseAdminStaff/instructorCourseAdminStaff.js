@@ -44,7 +44,7 @@ router.post('/', (req, res, next) => {
         // role is valid (should such a role have been requested)
         let course_instance = null;
         if (req.body.course_instance_id) {
-            course_instance = res.locals.authz_data.course_instances.find((ci) => ci.id === req.body.course_instance_id);
+            course_instance = res.locals.authz_data.course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id));
             if (!course_instance) return next(error.make(400, `Invalid requested course instance role`));
         }
 
@@ -216,7 +216,7 @@ router.post('/', (req, res, next) => {
         // reason as above (see handler for course_permissions_update_role).
 
         if (req.body.course_instance_id) {
-            if (!res.locals.authz_data.course_instances.find((ci) => ci.id === req.body.course_instance_id)) {
+            if (!res.locals.authz_data.course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
                 return next(error.make(400, `Invalid requested course instance role`));
             }
         } else {
@@ -255,7 +255,7 @@ router.post('/', (req, res, next) => {
         // reason as above (see handler for course_permissions_update_role).
 
         if (req.body.course_instance_id) {
-            if (!res.locals.authz_data.course_instances.find((ci) => ci.id === req.body.course_instance_id)) {
+            if (!res.locals.authz_data.course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
                 return next(error.make(400, `Invalid requested course instance role`));
             }
         } else {

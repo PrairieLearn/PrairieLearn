@@ -1,6 +1,7 @@
 const _ = require('lodash');
 
 const fileStore = require('../../lib/file-store');
+const { idsEqual } = require('../../lib/id');
 
 module.exports.processFileUpload = async (req, res) => {
     if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
@@ -19,7 +20,7 @@ module.exports.processDeleteFile = async (req, res) => {
     if (!res.locals.authz_result.active) throw new Error(`This assessment is not accepting submissions at this time.`);
 
     // Check the requested file belongs to the current assessment instance
-    const validFiles = _.filter(res.locals.file_list, file => (file.id === req.body.file_id));
+    const validFiles = _.filter(res.locals.file_list, file => idsEqual(file.id, req.body.file_id));
     if (validFiles.length === 0) throw new Error(`No such file_id: ${req.body.file_id}`);
     const file = validFiles[0];
 

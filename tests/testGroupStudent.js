@@ -6,13 +6,12 @@ var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
-
-
 var sqldb = require('../prairielib/lib/sql-db');
 var sqlLoader = require('../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
+const { idsEqual } = require('../lib/id');
 
 // cd /PrairieLearn
 // docker/start_postgres.sh
@@ -55,7 +54,7 @@ describe('Group based homework assess control on student side', function() {
                 locals.assessment_id = result.rows[0].id;
                 locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
                 locals.instructorAssessmentsUrlGroupTab = locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
-                locals.assessment_id_2 = result.rows[1].id === locals.assessment_id ? result.rows[0].id : result.rows[1].id;
+                locals.assessment_id_2 = idsEqual(result.rows[1].id, locals.assessment_id) ? result.rows[0].id : result.rows[1].id;
                 locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
                 locals.instructorAssessmentsUrlGroupTab_2 = locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id_2 + '/groups';
                 callback(null);
