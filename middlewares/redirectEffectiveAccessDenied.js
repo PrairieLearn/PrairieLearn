@@ -17,8 +17,6 @@ module.exports = function(err, req, res, next) {
     if (res.locals?.authn_user?.user_id == null) return next(err);
     if (res.locals?.user?.user_id == null) return next(err);
 
-    console.log(res.locals);
-
     // we are only interested in cases where we are emulating a different user
     if (idsEqual(res.locals.authn_user.user_id, res.locals.user.user_id)) return next(err);
 

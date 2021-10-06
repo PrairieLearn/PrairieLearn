@@ -46,7 +46,6 @@ function getFileTransfer(file_transfer_id, user_id, callback) {
 
 router.get('/:file_transfer_id', function(req, res, next) {
     if (config.filesRoot == null) return next(new Error('config.filesRoot is null'));
-    console.log('res.locals.user', res.locals.user);
     getFileTransfer(req.params.file_transfer_id, res.locals.user.user_id, (err, file_transfer) => {
         if (ERR(err, next)) return;
         /* Split the full path and grab everything after questions/ to get the QID */
