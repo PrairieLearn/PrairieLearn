@@ -1,22 +1,16 @@
 import prairielearn as pl
 import lxml.html
 import chevron
-from enum import Enum
-import hashlib
 
 BARCODE = '_pl_artifact_barcode'
 BLANK_ANSWER = ''
 REQUIRED = 'required'
 REQUIRED_DEFAULT = True
 
-# Each pl-artifact-scan element is uniquely identified by the SHA1 hash of its
-# file_names attribute
-def get_prefix(barcode):
-    return '_artifact_barcode_{0}'.format(barcode)
-
 
 def prepare(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
+    lxml.html.fragment_fromstring(element_html)
+    # element = lxml.html.fragment_fromstring(element_html)
     # pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=['blank', 'weight', 'sort'])
     # answers_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -26,8 +20,9 @@ def prepare(element_html, data):
     # if data['correct_answers'][answers_name] is None:
     #     raise Exception('Correct answer not defined for answers-name: %s' % answers_name)
 
+
 def render(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
+    # element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
 
     if data['panel'] == 'question':
