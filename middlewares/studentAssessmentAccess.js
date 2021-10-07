@@ -54,7 +54,7 @@ router.all('/', function(req, res, next) {
     if ('authz_result' in res.locals &&
         'password' in res.locals.authz_result &&
         res.locals.authz_result.password &&
-        !('assessment_instance' in res.locals && res.locals.assessment_instance.open === false)) {
+        res.locals?.assessment_instance?.open) {
 
         // No password yet case
         if (req.cookies.pl_assessmentpw == null) {
