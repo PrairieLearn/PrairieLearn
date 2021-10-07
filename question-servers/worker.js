@@ -1,3 +1,4 @@
+// @ts-check
 // This is meant to be invoked from `./question-servers/calculation.js`. It
 // serves to isolate code from the main process that's handling requests.
 
@@ -8,6 +9,12 @@ const error = require('../prairielib/lib/error');
 const filePaths = require('../lib/file-paths');
 const requireFrontend = require('../lib/require-frontend');
 
+/**
+ * 
+ * @param {string} coursePath 
+ * @param {any} question 
+ * @returns {Promise<any>}
+ */
 async function loadServer(coursePath, question) {
   const { fullPath: questionServerPath } =
     await filePaths.questionFilePathAsync(
@@ -26,29 +33,29 @@ async function loadServer(coursePath, question) {
     },
   });
 
-  configRequire(
-    [questionServerPath],
-    function (server) {
-      if (server === undefined) {
-        throw new Error(`Could not load "server.js" for QID "${question.qid}"`);
-      }
-      // Apparently we need to use `setTimeout` to "get out of requireJS error handling".
-      // TODO: is this actually necessary?
-      return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    configRequire(
+      [questionServerPath],
+      function (server) {
+        if (server === undefined) {
+          reject(new Error(`Could not load "server.js" for QID "${question.qid}"`));
+        }
+        // Apparently we need to use `setTimeout` to "get out of requireJS error handling".
+        // TODO: is this actually necessary?
         setTimeout(() => resolve(server), 0);
-      });
-    },
-    (err) => {
-      const e = error.makeWithData(
-        `Error loading server.js for QID ${question.qid}`,
-        err,
-      );
-      if (err.originalError != null) {
-        e.stack = err.originalError.stack + '\n\n' + err.stack;
-      }
-      throw e;
-    },
-  );
+      },
+      (err) => {
+        const e = error.makeWithData(
+          `Error loading server.js for QID ${question.qid}`,
+          err,
+        );
+        if (err.originalError != null) {
+          e.stack = err.originalError.stack + '\n\n' + err.stack;
+        }
+        reject(e);
+      },
+    );
+  });
 }
 
 function generate(server, coursePath, question, variant_seed) {
@@ -141,6 +148,9 @@ if (require.main === module) {
       // TODO: handle me.
     }
 
+    // Close the reader to empty the event loop
+    rl.close();
+
     const input = JSON.parse(line);
 
     const {
@@ -173,7 +183,11 @@ if (require.main === module) {
     // Write data back to invoking process.
     fs.writeFileSync(3, JSON.stringify({ val }), { encoding: 'utf-8' });
     fs.writeFileSync(3, '\n');
-  }).catch((err) => {
+    fs.fdatasyncSync(3);
+
+    // If we get here, everything went well - exit cleanly.
+    process.exit(1);
+  })().catch((err) => {
     console.error(err);
     process.exit(1);
   });

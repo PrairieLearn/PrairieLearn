@@ -46,8 +46,12 @@ module.exports = {
     };
 
     const workerPath = path.resolve(__dirname, 'worker.js');
-    const child = cp.spawn('node', workerPath, {
-      cwd: __dirname,
+    const child = cp.spawn('node', [workerPath], {
+      // Unline with Python questions, calculation questions are executed
+      // in the context of the PrairieLearn root directory. This is
+      // necessary for the `config.questionDefaultsDir` value to work
+      // correctly in the subprocess.
+      cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe', 'pipe'], // stdin, stdout, stderr, and an extra one for data
       timeout: config.questionTimeoutMilliseconds,
     });
@@ -56,21 +60,29 @@ module.exports = {
     child.stderr.setEncoding('utf-8');
     child.stdio[3].setEncoding('utf-8');
 
-    child.stdio.write(JSON.stringify(data));
-    child.stdio.write('\n');
+    // For debugging only.
+    // TODO: remove before merging this.
+    child.stdout.pipe(process.stdout);
+    child.stderr.pipe(process.stderr);
+
+    child.stdin.write(JSON.stringify(data));
+    child.stdin.write('\n');
 
     // Capture response data, but don't do anything with it until the
     // process exits.
     let outputData = '';
     child.stdio[3].on('data', (data) => {
+      console.log('got data');
       outputData += data;
     });
 
     // Wait for the process to either exit or error.
+    console.log('waiting for process to finish...');
     await new Promise((resolve, reject) => {
       let didFinish = false;
 
       child.on('exit', (code) => {
+        console.log('exit');
         if (didFinish) return;
         didFinish = true;
         if (code === 0) {
@@ -81,6 +93,7 @@ module.exports = {
       });
 
       child.on('error', (err) => {
+        console.log('error');
         if (didFinish) return;
         didFinish = true;
         reject(err);
@@ -121,7 +134,7 @@ module.exports = {
   generate: function (question, course, variant_seed, callback) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     module.exports.prepareChunksIfNeeded(question, course).then(() => {
-      module.exports.executeInSubprocess('getFile', coursePath, question, {
+      module.exports.executeInSubprocess('generate', coursePath, question, {
         variant_seed,
       }).then((data) => callback(null, [], data)).catch((err) => callback(err));
     }).catch((err) => callback(err));
