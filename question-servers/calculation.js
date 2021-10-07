@@ -156,7 +156,12 @@ module.exports = {
       module.exports.executeInSubprocess('getFile', coursePath, question, {
         filename,
         variant,
-      }).then((data) => callback(null, [], data)).catch((err) => callback(err));
+      }).then((data) => {
+        // We need to "unwrap" buffers if needed
+        const isBuffer = data.type === 'buffer';
+        const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
+        callback(null, [], unwrappedData);
+      }).catch((err) => callback(err));
     }).catch((err) => callback(err));
   },
 

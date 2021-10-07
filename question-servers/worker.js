@@ -10,6 +10,8 @@ const filePaths = require('../lib/file-paths');
 const requireFrontend = require('../lib/require-frontend');
 
 /**
+ * Attempts to load the server module that should be used for a particular
+ * question.
  * 
  * @param {string} coursePath 
  * @param {any} question 
@@ -76,7 +78,7 @@ function getFile(server, coursePath, filename, variant, question) {
   const trueAnswer = variant.true_answer;
   const options = variant.options;
   const questionDir = path.join(coursePath, 'questions', question.directory);
-  return server.getFile(
+  const fileData = server.getFile(
     filename,
     vid,
     params,
@@ -84,6 +86,15 @@ function getFile(server, coursePath, filename, variant, question) {
     options,
     questionDir,
   );
+
+  // If `getFile` returns a Buffer, we need to handle that specially, since
+  // Buffers can't be losslessly round-tripped through `JSON.stringify` and
+  // `JSON.parse`.
+  const isBuffer = Buffer.isBuffer(fileData);
+  return {
+    type: isBuffer ? 'buffer' : 'unknown',
+    data: isBuffer ? fileData.toString('base64') : fileData,
+  };
 }
 
 async function grade(server, coursePath, submission, variant, question) {
