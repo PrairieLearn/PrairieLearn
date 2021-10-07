@@ -159,7 +159,7 @@ if (require.main === module) {
       // TODO: handle me.
     }
 
-    // Close the reader to empty the event loop
+    // Close the reader to empty the event loop.
     rl.close();
 
     const input = JSON.parse(line);
@@ -194,10 +194,9 @@ if (require.main === module) {
     // Write data back to invoking process.
     fs.writeFileSync(3, JSON.stringify({ val }), { encoding: 'utf-8' });
     fs.writeFileSync(3, '\n');
-    fs.fdatasyncSync(3);
 
     // If we get here, everything went well - exit cleanly.
-    process.exit(1);
+    process.exit(0);
   })().catch((err) => {
     console.error(err);
     process.exit(1);
