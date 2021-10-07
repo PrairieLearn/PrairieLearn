@@ -108,6 +108,11 @@
         <%- questionHtml %>
       </div>
       <%- include('questionFooter'); %>
+      <% if (typeof submission != 'undefined' && typeof submission.artifact != 'undefined') { %>
+        <div class="question-block-artifact-container">
+          <iframe id="question-block-artifact-pdf" width="100%" type="text/html" src="data:application/pdf;base64,<%= submission.artifact  %>"></iframe>
+        </div>
+      <% } %>
     </div>
   </form>
   <% } %>

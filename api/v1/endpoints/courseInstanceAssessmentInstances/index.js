@@ -79,9 +79,8 @@ router.put('/:assessment_instance_id/submission/:submission_id/file', upload.sin
     }
 
     fileStore.upload(req.file.originalname, req.file.buffer, 'artifact_upload', assessment_instance_id, course_instance_id, submission_id, res.locals.user.user_id, res.locals.authn_user.user_id)
-        .then((something) => {
-            console.log('whatever is uploaded', something);
-            res.status(200).send('anything');
+        .then(() => {
+            res.status(200).send('Artifact uploaded');
         })
         .catch(err => {
             if (ERR(err, next)) return;
