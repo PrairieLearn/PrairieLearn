@@ -74,8 +74,8 @@ router.put('/:assessment_instance_id/submission/:submission_id/file', upload.sin
     if (!req.file) {
         ERR(Error('Missing artifact file data'), next); return;
     }
-    if (!/([a-zA-Z0-9\s_\\.\-:])+(.png|.jpg|.gif|.pdf|.jpeg)$/.test(req.file.originalname)) {
-        ERR(Error('Valid png, jpg, jpeg, gif, or pdf required.')); return;
+    if (!/([a-zA-Z0-9\s_\\.\-:])+(.pdf)$/.test(req.file.originalname)) {
+        ERR(Error('Valid pdf required.')); return;
     }
 
     fileStore.upload(req.file.originalname, req.file.buffer, 'artifact_upload', assessment_instance_id, course_instance_id, submission_id, res.locals.user.user_id, res.locals.authn_user.user_id)
