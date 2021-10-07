@@ -45,7 +45,7 @@ module.exports = {
       ...inputData,
     };
 
-    const workerPath = path.resolve(__dirname, 'worker.js');
+    const workerPath = require.resolve('./calculation-worker');
     const child = cp.spawn('node', [workerPath], {
       // Unline with Python questions, calculation questions are executed
       // in the context of the PrairieLearn root directory. This is
@@ -72,17 +72,14 @@ module.exports = {
     // process exits.
     let outputData = '';
     child.stdio[3].on('data', (data) => {
-      console.log('got data');
       outputData += data;
     });
 
     // Wait for the process to either exit or error.
-    console.log('waiting for process to finish...');
     await new Promise((resolve, reject) => {
       let didFinish = false;
 
       child.on('exit', (code) => {
-        console.log('exit');
         if (didFinish) return;
         didFinish = true;
         if (code === 0) {
@@ -93,7 +90,6 @@ module.exports = {
       });
 
       child.on('error', (err) => {
-        console.log('error');
         if (didFinish) return;
         didFinish = true;
         reject(err);
