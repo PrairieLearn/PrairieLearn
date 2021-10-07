@@ -1,15 +1,12 @@
-var ERR = require('async-stacktrace');
-var path = require('path');
-var _ = require('lodash');
+const path = require('path');
+const _ = require('lodash');
+const cp = require('child_process');
 
-var error = require('../prairielib/lib/error');
-var chunks = require('../lib/chunks');
-var filePaths = require('../lib/file-paths');
-var requireFrontend = require('../lib/require-frontend');
+const chunks = require('../lib/chunks');
+const config = require('../lib/config');
 
 module.exports = {
   prepareChunksIfNeeded: async function (question, course) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     const questionIds = await chunks.getTemplateQuestionIdsAsync(question);
 
     const templateQuestionChunks = questionIds.map((id) => ({
@@ -33,72 +30,71 @@ module.exports = {
     await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
   },
 
-  loadServer: function (question, course, callback) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+  /**
+   * 
+   * @param {'generate' | 'getFile' | 'grade'} func 
+   * @param {string} coursePath 
+   * @param {any} question 
+   * @param {Record<string, any>} inputData 
+   */
+  executeInSubprocess: async function (func, coursePath, question, inputData) {
+    const data = {
+      func,
+      coursePath,
+      question,
+      ...inputData,
+    };
 
-    chunks.getTemplateQuestionIds(question, (err, questionIds) => {
-      if (ERR(err, callback)) return;
+    const workerPath = path.resolve(__dirname, 'worker.js');
+    const child = cp.spawn('node', workerPath, {
+      cwd: __dirname,
+      stdio: ['pipe', 'pipe', 'pipe', 'pipe'], // stdin, stdout, stderr, and an extra one for data
+      timeout: config.questionTimeoutMilliseconds,
+    });
 
-      const templateQuestionChunks = questionIds.map((id) => ({
-        type: 'question',
-        questionId: id,
-      }));
-      const chunksToLoad = [
-        {
-          type: 'question',
-          questionId: question.id,
-        },
-        {
-          type: 'clientFilesCourse',
-        },
-        {
-          type: 'serverFilesCourse',
-        },
-      ].concat(templateQuestionChunks);
-      chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
-        if (ERR(err, callback)) return;
-        filePaths.questionFilePath(
-          'server.js',
-          question.directory,
-          coursePath,
-          question,
-          function (err, questionServerPath) {
-            if (ERR(err, callback)) return;
-            var configRequire = requireFrontend.config({
-              paths: {
-                clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
-                serverFilesCourse: path.join(coursePath, 'serverFilesCourse'),
-                clientCode: path.join(coursePath, 'clientFilesCourse'),
-                serverCode: path.join(coursePath, 'serverFilesCourse'),
-              },
-            });
-            configRequire(
-              [questionServerPath],
-              function (server) {
-                if (server === undefined)
-                  return callback(
-                    'Unable to load "server.js" for qid: ' + question.qid
-                  );
-                setTimeout(function () {
-                  // use a setTimeout() to get out of requireJS error handling
-                  return callback(null, server);
-                }, 0);
-              },
-              (err) => {
-                const e = error.makeWithData(
-                  `Error loading server.js for QID ${question.qid}`,
-                  err
-                );
-                if (err.originalError != null) {
-                  e.stack = err.originalError.stack + '\n\n' + err.stack;
-                }
-                return callback(e);
-              }
-            );
-          }
-        );
+    child.stdout.setEncoding('utf-8');
+    child.stderr.setEncoding('utf-8');
+    child.stdio[3].setEncoding('utf-8');
+
+    child.stdio.write(JSON.stringify(data));
+    child.stdio.write('\n');
+
+    // Capture response data, but don't do anything with it until the
+    // process exits.
+    let outputData = '';
+    child.stdio[3].on('data', (data) => {
+      outputData += data;
+    });
+
+    // Wait for the process to either exit or error.
+    await new Promise((resolve, reject) => {
+      let didFinish = false;
+
+      child.on('exit', (code) => {
+        if (didFinish) return;
+        didFinish = true;
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Subprocess exited with code ${code}`));
+        }
+      });
+
+      child.on('error', (err) => {
+        if (didFinish) return;
+        didFinish = true;
+        reject(err);
       });
     });
+
+    // Hopefully we have valid JSON by this point!
+    const parsedData = JSON.parse(outputData);
+    const { val } = parsedData;
+    if (!val) {
+      throw new Error('Calculation question data missing "val" property');
+    }
+
+    return val;
   },
 
   render: function (
@@ -124,29 +120,11 @@ module.exports = {
 
   generate: function (question, course, variant_seed, callback) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    var questionDir = path.join(coursePath, 'questions', question.directory);
-    module.exports.loadServer(question, course, function (err, server) {
-      if (ERR(err, callback)) return;
-      var options = question.options || {};
-      try {
-        var vid = variant_seed;
-        var questionData = server.getData(vid, options, questionDir);
-      } catch (err) {
-        let data = {
-          variant_seed: variant_seed,
-          question: question,
-          course: course,
-        };
-        err.status = 500;
-        return ERR(error.addData(err, data), callback);
-      }
-      let data = {
-        params: questionData.params,
-        true_answer: questionData.trueAnswer,
-        options: questionData.options || question.options || {},
-      };
-      callback(null, [], data);
-    });
+    module.exports.prepareChunksIfNeeded(question, course).then(() => {
+      module.exports.executeInSubprocess('getFile', coursePath, question, {
+        variant_seed,
+      }).then((data) => callback(null, [], data)).catch((err) => callback(err));
+    }).catch((err) => callback(err));
   },
 
   prepare: function (question, course, variant, callback) {
@@ -161,38 +139,12 @@ module.exports = {
 
   getFile: function (filename, variant, question, course, callback) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    module.exports.loadServer(question, course, function (err, server) {
-      if (ERR(err, callback)) return;
-      var fileData;
-      try {
-        var vid = variant.variant_seed;
-        var params = variant.params;
-        var trueAnswer = variant.true_answer;
-        var options = variant.options;
-        var questionDir = path.join(
-          coursePath,
-          'questions',
-          question.directory
-        );
-        fileData = server.getFile(
-          filename,
-          vid,
-          params,
-          trueAnswer,
-          options,
-          questionDir
-        );
-      } catch (err) {
-        var data = {
-          variant: variant,
-          question: question,
-          course: course,
-        };
-        err.status = 500;
-        return ERR(error.addData(err, data), callback);
-      }
-      callback(null, fileData);
-    });
+    module.exports.prepareChunksIfNeeded(question, course).then(() => {
+      module.exports.executeInSubprocess('getFile', coursePath, question, {
+        filename,
+        variant,
+      }).then((data) => callback(null, [], data)).catch((err) => callback(err));
+    }).catch((err) => callback(err));
   },
 
   parse: function (submission, variant, question, course, callback) {
@@ -210,56 +162,11 @@ module.exports = {
 
   grade: function (submission, variant, question, course, callback) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    module.exports.loadServer(question, course, function (err, server) {
-      if (ERR(err, callback)) return;
-      var grading;
-      try {
-        var vid = variant.variant_seed;
-        var params = variant.params;
-        var trueAnswer = variant.true_answer;
-        var submittedAnswer = submission.submitted_answer;
-        var options = variant.options;
-        var questionDir = path.join(
-          coursePath,
-          'questions',
-          question.directory
-        );
-        grading = server.gradeAnswer(
-          vid,
-          params,
-          trueAnswer,
-          submittedAnswer,
-          options,
-          questionDir
-        );
-      } catch (err) {
-        const data = {
-          submission: submission,
-          variant: variant,
-          question: question,
-          course: course,
-        };
-        err.status = 500;
-        return ERR(error.addData(err, data), callback);
-      }
-
-      let score = grading.score;
-      if (!question.partial_credit) {
-        // legacy Calculation questions round the score to 0 or 1 (with 0.5 rounding up)
-        score = grading.score >= 0.5 ? 1 : 0;
-      }
-      const data = {
-        score: score,
-        v2_score: grading.score,
-        feedback: grading.feedback,
-        partial_scores: {},
-        submitted_answer: submission.submitted_answer,
-        format_errors: {},
-        gradable: true,
-        params: variant.params,
-        true_answer: variant.true_answer,
-      };
-      callback(null, [], data);
-    });
+    module.exports.prepareChunksIfNeeded(question, course).then(() => {
+      module.exports.executeInSubprocess('grade', coursePath, question, {
+        submission,
+        variant,
+      }).then((data) => callback(null, [], data)).catch((err) => callback(err));
+    }).catch((err) => callback(err));
   },
 };

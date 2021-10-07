@@ -115,10 +115,8 @@ async function grade(server, coursePath, submission, variant, question) {
   };
 }
 
-// When this process boots up,
 if (require.main === module) {
   (async () => {
-
     const readline = require('readline');
     const rl = readline.createInterface({
       input: process.stdin,
@@ -126,8 +124,17 @@ if (require.main === module) {
     });
 
     const line = await new Promise((resolve) => {
-      rl.on('line', (line) => resolve(line));
-      rl.on('close', () => resolve(null));
+      let didResolve = false;
+      rl.on('line', (line) => {
+        if (didResolve) return;
+        didResolve = true;
+        resolve(line);
+      });
+      rl.on('close', () => {
+        if (didResolve) return;
+        didResolve = true;
+        resolve(null);
+      });
     });
 
     if (!line) {
