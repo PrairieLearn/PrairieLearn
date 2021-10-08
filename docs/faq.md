@@ -8,27 +8,28 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessement is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using the CBTF and have a new reservation, otherwise they will need a custom [access rule](allowAccess) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessement is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using the CBTF and have a new reservation, otherwise they will need a custom [access rule](accessControl.md) with their UID.
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using the CBTF they need to sign up for a new reservation, or outside the CBTF they will need a custom [access rule](allowAccess) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using the CBTF they need to sign up for a new reservation, or outside the CBTF they will need a custom [access rule](accessControl.md) with their UID.
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl) like this:
+To allow students to see their entire exam after the semester is over you can add an [access rule](accessControl.md) like this:
 
 ```json
 "allowAccess": [
     ...
     {
         "startDate": "2015-01-19T00:00:01",
-        "mode": "Public"
+        "mode": "Public",
+        "active": false
     }
 ]
 ```
 
-This will give all students public access to their exams after the `startDate` until the end of the course instance. The will not be able to answer questions for further credit (there is no `"credit": 100` line), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing (limited access post-exam under controlled conditions)[#should-students-be-able-to-review-their-exams-after-they-are-over] (although this requires in-person access by students and doesn't work online).
+Students who took the exam will then have public access to their exams after the `startDate` until the end of the course instance, while students who did not take the exam will not be able to view it. Students will not be able to answer questions for further credit (due to `"active": false`), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing [limited access post-exam under controlled conditions](faq.md#should-students-be-able-to-review-their-exams-after-they-are-over) (although this requires in-person access by students and doesn't work online).
 
 ## How can question pool development be managed over semesters?
 
@@ -348,3 +349,62 @@ The HTML specification disallows inserting special characters onto the page (i.e
 ## Why can't I connect to PrairieLearn with Docker Toolbox?
 
 Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
+
+## How can I add comments in my `question.html` source that won't be visible to students?
+
+Course staff members may want to write small maintenance comments in the `question.html` source, but HTML or JavaScript comments will remain visible in the rendered page's source (as can be seen in the browser dev tools). To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. To be safe, never put sensitive information such as solutions in a comment.
+
+Example:
+
+``` html
+<!-- This is an HTML comment. It will not be visible to students in the web page, but *will be included* in the rendered page source, so students may be able to see it by reading the HTML source. -->
+{{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
+```
+
+## How can I make a block that can be re-used in many questions?
+
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can do the following.
+
+1. Put a file called `local_template.py` into `serverFilesCourse` that contains:
+
+        import chevron, os
+        
+        def render(data, template_filename, params):
+            with open(os.path.join(data["options"]["server_files_course_path"], template_filename)) as f:
+                return chevron.render(f, params)
+
+2. Put a template (this example is called `units_instructions.html`) into `serverFilesCourse`:
+
+        <pl-question-panel>
+          <p>
+            All data for this problem is given in {{given_units}} units. Your answers should be in {{answer_units}}.
+          </p>
+        </pl-question-panel>
+
+3. In the `server.py` for a question, render the template like this:
+
+        import local_template
+        
+        def generate(data):
+            data["params"]["units_instructions"] = local_template.render(data, "units_instructions.html", {
+                "given_units": "US customary",
+                "answer_units": "metric",
+            })
+
+4. In the `question.html` for the same question, insert the rendered template like this (note the use of triple curly braces):
+
+        {{{params.units_instructions}}}
+
+## How can I hide the correct answer when students see their grading results?
+
+Some elements in PL have functionality to hide the correct answer (`pl-checkbox`, etc.) but others do not (`pl-multiple-choice`). A more general way of hiding the correct answer for any element is to surround your question's graded pl-element with `pl-hide-in-panel` in the `question.html` file. This solution will work across all elements.
+
+For example:
+
+```xml
+<pl-hide-in-panel answer="true">
+  <pl-multiple-choice ...></pl-multiple-choice>
+</pl-hide-in-panel>
+```
+
+For more information, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).

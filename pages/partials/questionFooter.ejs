@@ -2,6 +2,10 @@
 <% if (question.type == 'Freeform') { %>
     <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
     This question is complete and cannot be answered again.
+    <% } else if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+      <div class="alert alert-warning mt-2" role="alert">
+        You are viewing the question instance of a different user and so are not authorized to save answers, to submit answers for grading, or to try a new variant of this same question.
+      </div>
     <% } else { %>
     <div class="row">
       <div class="col d-flex justify-content-between">
@@ -68,6 +72,10 @@
     <form class="question-form" name="question-form" method="POST">
       <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
       This question is complete and cannot be answered again.
+      <% } else if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+        <div class="alert alert-warning mt-2" role="alert">
+          You are viewing the question instance of a different user and so are not authorized to save answers, to submit answers for grading, or to try a new variant of this same question.
+        </div>
       <% } else { %>
       <div class="row">
         <div class="col d-flex justify-content-between">

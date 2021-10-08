@@ -4,8 +4,8 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 var config = require('../lib/config');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../prairielib/lib/sql-db');
+var sqlLoader = require('../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
@@ -51,43 +51,43 @@ describe('Access control', function() {
 
     var cookiesStudentExam = function() {
         var cookies = cookiesStudent();
-        cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
+        cookies.setCookie(request.cookie('pl_test_mode=Exam'), siteUrl);
         return cookies;
     };
 
     var cookiesStudentExamBeforeCourseInstance = function() {
         var cookies = cookiesStudentExam();
-        cookies.setCookie(request.cookie('pl_requested_date=1750-06-13T13:12:00Z'), siteUrl);
+        cookies.setCookie(request.cookie('pl_test_date=1750-06-13T13:12:00Z'), siteUrl);
         return cookies;
     };
 
     var cookiesStudentExamBeforeAssessment = function() {
         var cookies = cookiesStudentExam();
-        cookies.setCookie(request.cookie('pl_requested_date=1850-06-13T13:12:00Z'), siteUrl);
+        cookies.setCookie(request.cookie('pl_test_date=1850-06-13T13:12:00Z'), siteUrl);
         return cookies;
     };
 
     var cookiesStudentExamBeforeReservation = function() {
         var cookies = cookiesStudentExam();
-        cookies.setCookie(request.cookie('pl_requested_date=1950-06-13T13:12:00Z'), siteUrl);
+        cookies.setCookie(request.cookie('pl_test_date=1950-06-13T13:12:00Z'), siteUrl);
         return cookies;
     };
 
     var cookiesStudentExamAfterReservation = function() {
         var cookies = cookiesStudentExam();
-        cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
+        cookies.setCookie(request.cookie('pl_test_date=2250-06-13T13:12:00Z'), siteUrl);
         return cookies;
     };
 
     var cookiesStudentExamAfterAssessment = function() {
         var cookies = cookiesStudentExam();
-        cookies.setCookie(request.cookie('pl_requested_date=2350-06-13T13:12:00Z'), siteUrl);
+        cookies.setCookie(request.cookie('pl_test_date=2350-06-13T13:12:00Z'), siteUrl);
         return cookies;
     };
 
     var cookiesStudentExamAfterCourseInstance = function() {
         var cookies = cookiesStudentExam();
-        cookies.setCookie(request.cookie('pl_requested_date=2450-06-13T13:12:00Z'), siteUrl);
+        cookies.setCookie(request.cookie('pl_test_date=2450-06-13T13:12:00Z'), siteUrl);
         return cookies;
     };
 
@@ -137,7 +137,7 @@ describe('Access control', function() {
     describe('3. Enroll student user into testCourse', function() {
         it('should succeed', function(callback) {
             var params = {user_id: user.user_id};
-            sqldb.query(sql.insert_student_enrollment, params, function(err, _result) {
+            sqldb.query(sql.insert_enrollment, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     access_tokens_delete(
         id bigint,
         user_id bigint

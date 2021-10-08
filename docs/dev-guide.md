@@ -58,25 +58,16 @@ PrairieLearn
 
 ## Unit tests and integration tests
 
-* Tests are stored in the `tests/` directory. They are run with:
+* Tests are stored in the `tests/` directory and listed in `tests/index.js`.
 
-```sh
-# make sure you are in the top-level PrairieLearn/ directory
-npm test
-make lint
-```
+* To run the tests during development, see [Running the test suite](../installingLocal/#running-the-test-suite).
 
-* The above tests are run by the CI server on every push to GitHub.
+* The tests are run by the CI server on every push to GitHub.
 
 * The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `testCourse`, and then emulate a client web browser that answers questions on assessments. If a test fails then it is often easiest to debug by recreating the error by doing questions yourself against a locally-running server.
 
 * If the `PL_KEEP_TEST_DB` environment is set, the test database (normally `pltest`) won't be DROP'd when testing ends. This allows you inspect the state of the database whenever your testing ends. The database will get overwritten when you start a new test.
 
-* Individual tests can be run with:
-
-```sh
-npx mocha tests/[testName].js
-```
 
 ## Debugging server-side JavaScript
 
@@ -104,7 +95,7 @@ debug('func()', 'param:', param);
 
 * As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
 
-* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `npx mocha --trace-warnings tests/index.js`.
+* `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
 
 ## Debugging client-side JavaScript
 
@@ -161,8 +152,8 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../prairielib/sql-db');         // adjust path as needed
+var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
@@ -229,7 +220,7 @@ INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING 
 From JavaScript you can then do:
 
 ```javascript
-var sqlLoader = require('@prairielearn/prairielib/sql-loader'); // adjust path as needed
+var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
 var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
 // run the entire contents of the SQL file
@@ -273,6 +264,33 @@ FROM
     first_preliminary_table AS fpt,
     second_preliminary_table AS spt;
 ```
+
+
+## DB stored procedures (sprocs)
+
+* Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
+
+```
+const workspace_id = 1342;
+const message = 'Startup successful';
+sqldb.call('workspaces_message_update', [workspace_id, message], (err, result) => {
+    if (ERR(err, callback)) return;
+    // we could use the result here if we want the return value of the stored procedure
+    callback(null);
+});
+```
+
+* The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/12/ddl-schemas.html) with a name like `server_2021-07-07T20:25:04.779Z_T75V6Y`. To see a list of the schemas use the `\dn` command in `psql`.
+
+* To be able to use the stored procedures from the `psql` command line it is necessary to get the most recent schema name using `\dn` and set the `search_path` to use this _quoted_ schema name and the `public` schema:
+
+```
+set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y",public;
+```
+
+* During startup we initially have no non-public schema in use. We first run the migrations to update all tables in the `public` schema, then we call `sqldb.setRandomSearchSchema()` to activate a random per-execution schema, and we run the sproc creation code to generate all the stored procedures in this schema. This means that every invocation of PrairieLearn will have its own locally-scoped copy of the stored procedures which are the correct versions for its code. This lets us upgrade PrairieLearn servers one at a time, while old servers are still running with their own copies of their sprocs. When PrairieLearn first starts up it has `search_path = public`, but later it will have `search_path = "server_2021-07-07T20:25:04.779Z_T75V6Y",public` so that it will first search the random schema and then fall back to `public`. The naming convention for the random schema uses the local instance name, the date, and a random string. Note that schema names need to be quoted using double-quotations in `psql` because they contain characters such as hyphens.
+
+* For more details see `sprocs/array_and_number.sql` and comments in `server.js` near the call to `sqldb.setRandomSearchSchema()`.
 
 
 ## DB schema (simplified overview)

@@ -7,9 +7,9 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
-const error = require('@prairielearn/prairielib/error');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const error = require('../../prairielib/lib/error');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -93,6 +93,7 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'leave_group') {
+        if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
         const params = {
             assessment_instance_id: res.locals.assessment_instance.id,
             user_id: res.locals.user.user_id,

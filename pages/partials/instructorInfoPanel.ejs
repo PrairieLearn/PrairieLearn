@@ -1,12 +1,36 @@
-<% if (authz_data.has_instructor_view || authz_data.has_course_permission_view) { %>
+<% if (authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) {
+
+  // Here, we are only checking if the effective user is an instructor. We are not
+  // attempting to check if this user has permission to view student data. That check
+  // would have already been made (when necessary) before granting access to the page
+  // on which this partial is included (an assessment instance or question instance).
+
+%>
 <div class="card mb-4 border-warning">
-  <div class="card-header bg-warning">Instructor information</div>
+  <div class="card-header bg-warning">Staff information</div>
   <div class="card-body">
-  <h5 class="card-title">User:</h5>
+  <h5 class="card-title">Staff user:</h5>
   <div class="d-flex flex-wrap pb-2">
     <div class="pr-1"><%= user.name %></div>
     <div class="pr-1"><%= user.uid %></div>
   </div>
+
+  <% if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+    <hr>
+    <% if (instance_group) { %>
+    <h5 class="card-title">Group:</h5>
+    <div class="d-flex flex-wrap pb-2">
+      <div class="pr-1"><%= instance_group.name %></div>
+      <div class="pr-1">(<%= instance_group_uid_list.join(', ') %>)</div>
+    </div>
+    <% } else if (instance_user) { %>
+    <h5 class="card-title">Student:</h5>
+    <div class="d-flex flex-wrap pb-2">
+      <div class="pr-1"><%= instance_user.name %></div>
+      <div class="pr-1"><%= instance_user.uid %></div>
+    </div>
+    <% } %>
+  <% } %>
 
   <% if (typeof question !== "undefined") { %>
   <hr>

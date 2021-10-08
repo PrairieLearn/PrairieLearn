@@ -4,10 +4,10 @@ var router = express.Router();
 var path = require('path');
 var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var error = require('@prairielearn/prairielib/error');
+var error = require('../../prairielib/lib/error');
 var assessment = require('../../lib/assessment');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var sqldb = require('../../prairielib/lib/sql-db');
+var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -30,6 +30,16 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
             debug('no assessment instance');
+            
+            // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
+            // only for an assessment instance, not an assessment).
+            //
+            // The assessment that is created here will be owned by the effective user. The only
+            // reason to worry, therefore, is if the effective user has a different UID than the
+            // authn user. This is only allowed, however, if the authn user has permission to edit
+            // student data in the course instance (which has already been checked), exactly the
+            // permission required to create an assessment for the effective user.
+
             //if it is a group_work with no instance, jump to a confirm page.
             if (res.locals.assessment.group_work) {
                 sqldb.query(sql.get_config_info, params, function(err, result) {
@@ -109,7 +119,7 @@ router.post('/', function(req, res, next) {
                     };        
                     sqldb.query(sql.get_config_info, params, function(err, result) {
                         if (ERR(err, next)) return;
-                        res.locals.permissions = result.rows[0];            
+                        res.locals.permissions = result.rows[0];
                         res.locals.groupsize = 0;
                         //display the error on frontend
                         res.locals.used_join_code = req.body.join_code;
@@ -127,7 +137,7 @@ router.post('/', function(req, res, next) {
             };
             sqldb.query(sql.get_config_info, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.permissions = result.rows[0];            
+                res.locals.permissions = result.rows[0];
                 res.locals.groupsize = 0;
                 //display the error on frontend
                 res.locals.used_join_code = req.body.join_code;

@@ -1,5 +1,5 @@
 // @ts-check
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 
 const infofile = require('../infofile');
 const perf = require('../performance')('question');
@@ -36,6 +36,7 @@ function getParamsForQuestion(q) {
         external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
         external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
         external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
+        external_grading_environment: q.externalGradingOptions?.environment ?? {},
         dependencies: q.dependencies || {},
         workspace_image: (q.workspaceOptions && q.workspaceOptions.image),
         workspace_port: (q.workspaceOptions && q.workspaceOptions.port),
@@ -44,6 +45,8 @@ function getParamsForQuestion(q) {
         workspace_graded_files: (q.workspaceOptions && q.workspaceOptions.gradedFiles),
         workspace_sync_ignore: (q.workspaceOptions && q.workspaceOptions.syncIgnore),
         workspace_url_rewrite: (q.workspaceOptions && q.workspaceOptions.rewriteUrl),
+        workspace_enable_networking: (q.workspaceOptions && q.workspaceOptions.enableNetworking),
+        workspace_environment: q.workspaceOptions?.environment ?? {},
     };
 }
 

@@ -19,7 +19,7 @@ docker run -it --rm -p 3000:3000 prairielearn/prairielearn
 
 * Step 3: Open a web browser and connect to [http://localhost:3000/pl](http://localhost:3000/pl)
 
-* Step 4: When you are finished with PrairieLearn, type Control-C on the commandline where your ran the server to stop it.
+* Step 4: When you are finished with PrairieLearn, type Control-C on the commandline where you ran the server to stop it.
 
 * Step 5: To use your own course, use the `-v` flag to bind the Docker `/course` directory with your own course directory (replace the precise path with your own) on Windows:
 
@@ -40,6 +40,8 @@ To use multiple courses, add additional `-v` flags (e.g., `-v /path/to/course:/c
 If you're in the root of your course directory already, you can substitute `%cd%` (on Windows) or `$PWD` (Linux and MacOS) for `/path/to/course`.
 
 If you plan on running externally graded questions in local development, please see [this section](../externalGrading/#running-locally-on-docker) for a slightly different docker launch command.
+
+**NOTE**: On MacOS with "Apple Silicon" (ARM64) hardware, the use of R is not currently supported.
 
 ## Upgrading your Docker's version of PrairieLearn
 

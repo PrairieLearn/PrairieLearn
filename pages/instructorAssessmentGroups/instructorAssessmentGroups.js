@@ -5,10 +5,10 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sanitizeName = require('../../lib/sanitize-name');
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const groupUpdate = require('../../lib/group-update');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -20,7 +20,7 @@ function obtainInfo(req, res, next){
     //downloads
     const prefix = sanitizeName.assessmentFilenamePrefix(res.locals.assessment, res.locals.assessment_set, res.locals.course_instance, res.locals.course);
     res.locals.groupsCsvFilename = prefix + 'groups.csv';
-    
+
     //config and group info
     const params = {assessment_id: res.locals.assessment.id};
     sqldb.query(sql.config_info, params, function(err, result) {
@@ -58,11 +58,12 @@ function obtainInfo(req, res, next){
 }
 router.get('/', function(req, res, next) {
     debug('GET /');
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data viewer)'));
     obtainInfo(req, res, next);
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!res.locals.authz_data.has_course_instance_permission_view) return next(error.make(403, 'Access denied (must be a student data editor)'));
     if (req.body.__action == 'upload_assessment_groups') {
         groupUpdate.uploadInstanceGroups(res.locals.assessment.id, req.file, res.locals.user.user_id, res.locals.authn_user.user_id, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
@@ -196,4 +197,4 @@ router.post('/', function(req, res, next) {
     }
 });
 
-module.exports = router;    
+module.exports = router;

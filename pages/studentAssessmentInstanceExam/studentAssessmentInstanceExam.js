@@ -3,11 +3,11 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -42,6 +42,10 @@ router.post('/', function(req, res, next) {
         } else if (req.body.__action == 'finish') {
             closeExam = true;
         } else if (req.body.__action == 'timeLimitFinish') {
+            // Only close if the timer expired due to time limit, not for access end
+            if (!res.locals.assessment_instance_time_limit_expired) {
+                return res.redirect(req.originalUrl);
+            }
             closeExam = true;
         } else {
             next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

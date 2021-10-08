@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS format_date_iso8601(timestamptz,text);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     format_date_iso8601 (
         d timestamp with time zone,
         display_timezone text

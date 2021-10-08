@@ -4,7 +4,7 @@ const util = require('util');
 
 const namedLocks = require('../lib/named-locks');
 const courseDB = require('./course-db');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('../prairielib/lib/sql-db');
 
 const config = require('../lib/config');
 
@@ -64,7 +64,9 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
     const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
     if (courseDataHasErrors) {
-        logger.info(chalk.yellow('⚠ Some JSON files contained errors and were unable to be synced'));
+        logger.info(chalk.red('✖ Some JSON files contained errors and were unable to be synced'));
+    } else if (courseDataHasErrorsOrWarnings) {
+        logger.info(chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced'));
     } else {
         logger.info(chalk.green('✓ Course sync successful'));
     }

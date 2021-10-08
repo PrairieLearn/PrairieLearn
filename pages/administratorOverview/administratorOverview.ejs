@@ -35,11 +35,7 @@
     <%- include('../partials/navbar', {navPage: 'admin'}); %>
     <div id="content" class="container-fluid">
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Config ---------------------------------------------------------------------->
-
+      <%# Config %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Server configuration</div>
         <div class="table-responsive">
@@ -67,11 +63,7 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Administrators -------------------------------------------------------------->
-
+      <%# Administrators %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Administrators
@@ -86,7 +78,6 @@
             <span class="d-none d-sm-inline">Add administrator</span>
         </button>
         </div>
-
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped">
             <thead>
@@ -117,22 +108,16 @@
             </tbody>
           </table>
         </div>
-
         <div class="card-footer">
           <small>
             Administrators have full access to every course and course
-            instance. They are automatically Owners of every course
-            and Instructors of every course instance. They can add and
-            remove other administrators.
+            instance. They are automatically Owners of every
+            course. They can add and remove other administrators.
           </small>
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Exam mode networks ---------------------------------------------------------->
-
+      <%# Exam mode networks %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Exam-mode networks</div>
         <div class="table-responsive">
@@ -158,7 +143,6 @@
             </tbody>
           </table>
         </div>
-
         <div class="card-footer">
           <small>
             To add new networks for exam-mode access, insert directly
@@ -167,11 +151,7 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Institutions ---------------------------------------------------------------->
-
+      <%# Institutions %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Institutions
@@ -197,7 +177,6 @@
             </tbody>
           </table>
         </div>
-
         <div class="card-footer">
           <small>
             To change institutions, edit the <strong><tt>institutions</tt></strong> table.
@@ -206,11 +185,7 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Chunk Generation ------------------------------------------------------------>
-
+      <%# Chunk generation %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Chunk generation
@@ -228,17 +203,10 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Course Requests ------------------------------------------------------------->
+      <%# Course requests %> 
       <%- include('../administratorCourseRequests/courseRequestsTable', {'show_all': false}) %>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Courses --------------------------------------------------------------------->
-
+      <%# Courses %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Courses
@@ -291,7 +259,6 @@
             </tbody>
           </table>
         </div>
-
         <div class="card-footer">
           <small>
             When a course is synced, if the <strong>path</strong> does
@@ -306,11 +273,7 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Question render cache ------------------------------------------------------->
-
+      <%# Question render cache %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Question render cache
@@ -399,11 +362,6 @@
           </script>
         </div>
       </div>
-
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
 
     </div>
   </body>

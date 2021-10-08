@@ -2037,12 +2037,7 @@ mechanicsObjects.byType['pl-arc-dimensions'] = class extends PLDrawingBaseElemen
 
           if (obj.label) {
               let dt = obj.endAngle-obj.startAngle;
-              let t;
-              if (dt >= 0) {
-                  t = obj.startAngle + dt/2;
-              } else {
-                  t = obj.startAngle + (360+dt)/2;
-              }
+              let t = obj.startAngle + dt/2;
               let dx = obj.radius*Math.cos(t*Math.PI/180);
               let dy = obj.radius*Math.sin(t*Math.PI/180);
 
@@ -2785,6 +2780,154 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
 
     static get_button_tooltip() {
         return 'Add vector';
+    }
+};
+
+mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement {
+    static generate(canvas, options, submittedAnswer) {
+        
+        // pick matching colors for both arrows; these rotate throughout the page
+        if (typeof this.myIndex == 'undefined') {
+            this.myIndex = 0;
+        }
+        else {
+            this.myIndex += 1;
+        }
+
+        const myColors = ['lightblue', 'orange', 'lightgreen', 'pink', 'darksalmon'];
+
+        options.stroke = myColors[this.myIndex % myColors.length];
+
+        // attributes common to both canvas vectors
+        const includedAttributes = ['width', 'label', 'offsetx',
+            'offsety', 'stroke', 'strokeWidth', 'arrowheadWidthRatio', 'arrowheadOffsetRatio',
+            'drawStartArrow', 'drawEndArrow', 'originY', 'trueHandles',
+            'disregard_sense', 'optional_grading', 'objectDrawErrorBox',
+            'offset_forward', 'offset_backward', 'selectable', 'evented'];
+        var options1 = {};
+        var options2 = {};
+        for (var i = 0; i < includedAttributes.length; i++) {
+            if (typeof (options[includedAttributes[i]]) != typeof (options['abcnonsense'])) {
+                options1[includedAttributes[i]] = options2[includedAttributes[i]] = options[includedAttributes[i]];
+            }
+        }
+
+        // options that need to be duplicated for each canvas vector
+        options1.x1 = options.x1;
+        options1.y1 = options.y1;
+        options2.x1 = options.x2;
+        options2.y1 = options.y2;
+        const varyingAttributes = ['left', 'top', 'angle', 'XcenterErrorBox', 'YcenterErrorBox', 'widthErrorBox', 'heightErrorBox'];
+        for (i = 0; i < varyingAttributes.length; i++) {
+            if (typeof (options[varyingAttributes[i].concat('1')]) != typeof (options['abcnonsense'])) {
+                options1[varyingAttributes[i]] = options[varyingAttributes[i].concat('1')];
+                options2[varyingAttributes[i]] = options[varyingAttributes[i].concat('2')];
+            }
+        }
+
+        // add first arrow
+        var obj1 = new mechanicsObjects.Arrow(options1);
+        if (!('id' in obj1)) {
+            obj1.id = window.PLDrawingApi.generateID();
+        }
+        canvas.add(obj1);
+
+        // add second arrow
+        var obj2 = new mechanicsObjects.Arrow(options2);
+        if (!('id' in obj2)) {
+            obj2.id = window.PLDrawingApi.generateID();
+        }
+        canvas.add(obj2);
+
+        if (options.drawErrorBox) {
+            var error_box1 = new fabric.Rect(
+                {
+                    left: options.XcenterErrorBox1,
+                    top: options.YcenterErrorBox1,
+                    originX: 'center',
+                    originY: 'center',
+                    width: options.widthErrorBox1,
+                    height: options.heightErrorBox1,
+                    angle: options.angle1,
+                    fill: '',
+                    stroke: myColors[this.myIndex % myColors.length],
+                },
+            );
+            var error_box2 = new fabric.Rect(
+                {
+                    left: options.XcenterErrorBox2,
+                    top: options.YcenterErrorBox2,
+                    originX: 'center',
+                    originY: 'center',
+                    width: options.widthErrorBox2,
+                    height: options.heightErrorBox2,
+                    angle: options.angle2,
+                    fill: '',
+                    stroke: myColors[this.myIndex % myColors.length],
+                },
+            );
+            canvas.add(error_box1);
+            canvas.add(error_box2);
+        }
+
+        var angle_rad1 = Math.PI * obj1.angle / 180;
+        var dx1 = obj1.width * Math.cos(angle_rad1);
+        var dy1 = obj1.width * Math.sin(angle_rad1);
+        let textObj1 = null;
+        if (obj1.label) {
+            textObj1 = new mechanicsObjects.LatexText(obj1.label, {
+                left: obj1.left + dx1 + obj1.offsetx,
+                top: obj1.top + dy1 + obj1.offsety,
+                fontSize: 20,
+                textAlign: 'left',
+                selectable: false,
+            });
+            canvas.add(textObj1);
+        }
+
+        var angle_rad2 = Math.PI * obj2.angle / 180;
+        var dx2 = obj2.width * Math.cos(angle_rad2);
+        var dy2 = obj2.width * Math.sin(angle_rad2);
+        let textObj2 = null;
+        if (obj2.label) {
+            textObj2 = new mechanicsObjects.LatexText(obj2.label, {
+                left: obj2.left + dx2 + obj2.offsetx,
+                top: obj2.top + dy2 + obj2.offsety,
+                fontSize: 20,
+                textAlign: 'left',
+                selectable: false,
+            });
+            canvas.add(textObj2);
+        }
+
+        var subObj= mechanicsObjects.cloneMechanicsObject('pl-paired-vector', options);
+        mechanicsObjects.attachHandlersNoClone(subObj, obj1, submittedAnswer, 
+            function(){
+            for (const key of ['left', 'top', 'angle']) {
+                subObj[key.concat('1')] = obj1[key];
+            }
+            },
+            function(){
+                canvas.remove(obj1);
+                canvas.remove(obj2);
+            });
+
+        mechanicsObjects.attachHandlersNoClone(subObj, obj2, submittedAnswer, 
+            function(){
+            for (const key of ['left', 'top', 'angle']) {
+                subObj[key.concat('2')] = obj2[key];
+            }
+        },
+        function(){
+            canvas.remove(obj1);
+            canvas.remove(obj2);
+        });
+
+        return [obj1, obj2];
+    }
+
+    static get_button_tooltip() {
+        return 'Add paired vectors';
     }
 };
 

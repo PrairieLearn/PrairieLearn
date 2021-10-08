@@ -2,10 +2,10 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const error = require('@prairielearn/prairielib/error');
+const error = require('../../prairielib/lib/error');
 const question = require('../../lib/question');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
@@ -19,6 +19,7 @@ const { encodePath } = require('../../lib/uri-util');
 
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'test_once') {
+        if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be a course Viewer)'));
         const count = 1;
         const showDetails = true;
         const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
@@ -27,6 +28,7 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'test_100') {
+        if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be a course Viewer)'));
         if (res.locals.question.grading_method !== 'External') {
             const count = 100;
             const showDetails = false;
@@ -91,6 +93,7 @@ router.post('/', function(req, res, next) {
         } else {
             // In this case, we are sending a copy of this question to a different course
             debug(`send copy of question: to_course_id = ${req.body.to_course_id}`);
+            if (!res.locals.authz_data.has_course_permission_view) return next(error.make(403, 'Access denied (must be a course Viewer)'));
             let params = {
                 from_course_id: res.locals.course.id,
                 to_course_id: req.body.to_course_id,

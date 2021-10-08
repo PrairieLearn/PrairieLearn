@@ -3,9 +3,12 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const _ = require('lodash');
+const { default: AnsiUp } = require('ansi_up');
+const ansiUp = new AnsiUp();
 
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -17,7 +20,13 @@ router.get('/', function(req, res, next) {
     };
     sqldb.query(sql.questions, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.questions = result.rows;
+        res.locals.questions = _.map(result.rows, row => {
+            if (row.sync_errors)
+                row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
+            if (row.sync_warnings)
+                row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+            return row;
+        });
         debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

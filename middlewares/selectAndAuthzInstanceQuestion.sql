@@ -27,15 +27,16 @@ SELECT
     jsonb_set(to_jsonb(ai), '{formatted_date}',
         to_jsonb(format_date_full_compact(ai.date, COALESCE(ci.display_timezone, c.display_timezone)))) AS assessment_instance,
     CASE
-        WHEN ai.date_limit IS NULL THEN NULL
-        ELSE floor(extract(epoch from (date_limit - $req_date::timestamptz)) * 1000)
+        WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(extract(epoch from (LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz)) * 1000)
     END AS assessment_instance_remaining_ms,
     CASE
-        WHEN ai.date_limit IS NULL THEN NULL
-        ELSE floor(extract(epoch from (ai.date_limit - ai.date)) * 1000)
+        WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(extract(epoch from (LEAST(aai.exam_access_end, ai.date_limit) - ai.date)) * 1000)
     END AS assessment_instance_time_limit_ms,
+    (ai.date_limit IS NOT NULL AND ai.date_limit <= $req_date::timestamptz) AS assessment_instance_time_limit_expired,
     to_jsonb(u) AS instance_user,
-    coalesce(to_jsonb(e), '{}'::jsonb) AS instance_enrollment,
+    users_get_displayed_role(u.user_id, ci.id) AS instance_role,
+    to_jsonb(g) AS instance_group,
+    groups_uid_list(g.id) AS instance_group_uid_list,
     to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
@@ -66,9 +67,7 @@ FROM
     JOIN pl_courses AS c ON (c.id = ci.course_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
-    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-    JOIN users AS u ON (u.user_id = gu.user_id OR u.user_id = ai.user_id)
-    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+    LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
     JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
     CROSS JOIN file_list AS fl

@@ -39,5 +39,5 @@ LEFT JOIN users AS u ON u.user_id = cp.user_id;
 SELECT co.institution_id, co.display_timezone
 FROM course_permissions AS cp
 JOIN pl_courses AS co ON co.id = cp.course_id
-WHERE (cp.user_id = $user_id AND cp.course_role = 'Owner')
+WHERE (cp.user_id = $user_id AND (cp.course_role = 'Owner' OR cp.course_role = 'Editor'))
 LIMIT 1;
