@@ -6,5 +6,4 @@ indexes
     pt_courses_pkey: PRIMARY KEY (id) USING btree (id)
 
 referenced by
-    pt_enrollments: FOREIGN KEY (course_id) REFERENCES pt_courses(id)
     pt_exams: FOREIGN KEY (course_id) REFERENCES pt_courses(id)

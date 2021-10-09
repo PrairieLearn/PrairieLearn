@@ -188,7 +188,6 @@ module.exports = {
             'workspace_hosts_find_terminable.sql',
             'chunks_insert.sql',
             'group_users_insert.sql',
-            'assessment_instances_revoke_reservation_access.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

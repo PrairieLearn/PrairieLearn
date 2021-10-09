@@ -1,1 +1,0 @@
-ALTER TABLE IF EXISTS pt_enrollments ADD COLUMN IF NOT EXISTS course_id BIGINT REFERENCES pt_courses;
