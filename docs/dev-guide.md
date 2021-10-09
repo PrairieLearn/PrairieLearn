@@ -60,7 +60,7 @@ PrairieLearn
 
 * Tests are stored in the `tests/` directory and listed in `tests/index.js`.
 
-* To run the tests during development, see [Running the test suite](installingLocal/#running-the-test-suite).
+* To run the tests during development, see [Running the test suite](../installingLocal/#running-the-test-suite).
 
 * The tests are run by the CI server on every push to GitHub.
 

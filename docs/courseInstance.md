@@ -101,7 +101,7 @@ Some instructors may wish to hide their course from the list of available course
 }
 ```
 
-Note that *this is not a security setting*. Students may still enroll in the course instance if they get access to the URL, either through friends or by [Forced Browing Attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by UIDs, Institution, or through LTI support.
+Note that *this is not a security setting*. Students may still enroll in the course instance if they get access to the URL, either through friends or by [Forced Browsing Attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by UIDs, Institution, or through LTI support.
 
 ## LTI support
 

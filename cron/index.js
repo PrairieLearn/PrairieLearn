@@ -112,9 +112,9 @@ module.exports = {
         _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
             if (intervalSec == 'daily') {
                 this.queueDailyJobs(jobsList);
-            } else {
+            } else if (intervalSec > 0) {
                 this.queueJobs(jobsList, intervalSec);
-            }
+            } // zero or negative intervalSec jobs are not run
         });
         callback(null);
     },

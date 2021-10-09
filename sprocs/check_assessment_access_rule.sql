@@ -6,7 +6,8 @@ CREATE FUNCTION
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
-        OUT authorized boolean
+        OUT authorized boolean,
+        OUT exam_access_end TIMESTAMP WITH TIME ZONE
     ) AS $$
 DECLARE
     ps_linked boolean;
@@ -80,7 +81,8 @@ BEGIN
             END IF;
 
             -- is there a checked-in pt_reservation?
-            PERFORM 1
+            SELECT r.access_end
+            INTO exam_access_end
             FROM
                 pt_reservations AS r
                 JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
