@@ -246,7 +246,7 @@ def render(element_html, data):
             'feedback': feedback
         }
 
-        if score is not None: 
+        if score is not None:
             try:
                 score = float(score * 100)
                 if score >= 100:
