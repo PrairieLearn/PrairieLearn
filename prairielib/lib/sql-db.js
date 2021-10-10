@@ -118,10 +118,6 @@ module.exports.init = function(pgConfig, idleErrorHandler, callback) {
     const tryConnect = () => {
         pool.connect((err, client, done) => {
             if (err) {
-                if (client) {
-                    done(client);
-                }
-
                 if (retryCount >= retryTimeouts.length) {
                     err.message = `Couldn't connect to Postgres after ${retryTimeouts.length} retries: ${err.message}`;
                     callback(err);
@@ -169,9 +165,11 @@ module.exports.closeAsync = promisify(module.exports.close);
 /**
  * Gets a new client from the connection pool. If `err` is not null
  * then `client` and `done` are undefined. If `err` is null then
- * `client` is valid and can be used. The caller MUST call
- * `done(client)` to release the client, whether or not errors occured
- * while using `client`.
+ * `client` is valid and can be used. The caller MUST call `done()` to
+ * release the client, whether or not errors occurred while using
+ * `client`. The client can call `done(truthy_value)` to force
+ * destruction of the client, but this should not be used except in
+ * unusual circumstances.
  *
  * @param {(error: Error | null, client: import("pg").PoolClient, done: (release?: any) => void) => void} callback
  */
@@ -180,17 +178,12 @@ module.exports.getClient = function(callback) {
         return callback(new Error('Connection pool is not open'));
     }
     pool.connect(function(err, client, done) {
-        if (err) {
-            if (client) {
-                done(client);
-            }
-            return ERR(err, callback); // unconditionally return
-        }
+        if (ERR(err, callback)) return;
         if (searchSchema != null) {
             const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
             module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
                 if (err) {
-                    done(client);
+                    done();
                     return ERR(err, callback); // unconditionally return
                 }
                 callback(null, client, done);
@@ -423,7 +416,7 @@ module.exports.query = function(sql, params, callback) {
     module.exports.getClient((err, client, done) => {
         if (ERR(err, callback)) return;
         module.exports.queryWithClient(client, sql, params, (err, result) => {
-            done(client);
+            done();
             if (ERR(err, callback)) return;
             callback(null, result);
         });
