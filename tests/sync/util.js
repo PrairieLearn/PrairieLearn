@@ -147,6 +147,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string[]=} serverFilesCourse
  * @property {number=} timeout
  * @property {boolean=} enableNetworking
+ * @property {Record<string, string | null>=} environment
  */
 
 /**
@@ -159,6 +160,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean=} enableNetworking
+ * @property {Record<string, string | null>=} environment
  */
 
  /**
