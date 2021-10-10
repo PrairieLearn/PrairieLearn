@@ -118,14 +118,6 @@ module.exports.init = function(pgConfig, idleErrorHandler, callback) {
     const tryConnect = () => {
         pool.connect((err, client, done) => {
             if (err) {
-                if (client) {
-                    // we should not have a client here, but just in
-                    // case we do we will call done(true) with a
-                    // truthy argument to force destruction of the
-                    // client and removal from the pool
-                    done(true);
-                }
-
                 if (retryCount >= retryTimeouts.length) {
                     err.message = `Couldn't connect to Postgres after ${retryTimeouts.length} retries: ${err.message}`;
                     callback(err);
@@ -186,16 +178,7 @@ module.exports.getClient = function(callback) {
         return callback(new Error('Connection pool is not open'));
     }
     pool.connect(function(err, client, done) {
-        if (err) {
-            if (client) {
-                // we should not have a client here, but just in case
-                // we do we will call done(true) with a truthy
-                // argument to force destruction of the client and
-                // removal from the pool
-                done(true);
-            }
-            return ERR(err, callback); // unconditionally return
-        }
+        if (ERR(err, callback)) return;
         if (searchSchema != null) {
             const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
             module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
