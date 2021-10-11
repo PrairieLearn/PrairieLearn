@@ -8,7 +8,7 @@
     overflow-wrap: normal;
 }
 
-.pl-checkbox-answer-feedback {
+.pl-checkbox-feedback {
     border-left: 0.25rem solid rgba(0, 0, 0, 0.4);
     background-color: rgba(0, 0, 0, 0.03);
     padding: 0.25rem 0.5rem;
@@ -17,13 +17,7 @@
     border-radius: 0.2rem;
 }
 
-.pl-checkbox-submission-feedback {
-    border-left: 0.25rem solid rgba(0, 0, 0, 0.4);
-    background-color: rgba(0, 0, 0, 0.03);
-    padding: 0.25rem 0.5rem;
-    margin-left: 0.75rem;
-    margin-right: 0.5rem;
+.feedback-submission {
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
-    border-radius: 0.2rem;
 }

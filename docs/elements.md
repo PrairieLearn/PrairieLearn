@@ -195,6 +195,7 @@ a `pl-answer` that has attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
+`feedback` | string | — | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student.
 
 #### Partial credit grading
 
