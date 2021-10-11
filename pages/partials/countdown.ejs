@@ -67,8 +67,8 @@ $(function() {
       clientStart = Date.now();
       if (serverRemainingMS <= 0) {
           <%= timerOutCode %>;
-      } else
-          displayCountdown();
+      }
+      displayCountdown();
   };
   
   var updateServerRemainingMS = function() {
