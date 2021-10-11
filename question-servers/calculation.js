@@ -1,5 +1,6 @@
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
+const { trace, context, SpanKind, SpanStatusCode } = require('@opentelemetry/api');
 
 const calculationInprocess = require('./calculation-inprocess');
 const calculationSubprocess = require('./calculation-subprocess');
@@ -34,53 +35,100 @@ function promisifyQuestionFunction(func, invokeCallback) {
 }
 
 /**
- * Publishes the results of an experiment to the appropriate place.
+ * Turns the error or result of an experiment observation into a JSON string
+ * suitable for using as an OpenTelemetry attribute value.
  * 
- * @param {import('tzientist').Results} results
+ * @param {Error} error 
+ * @param {any} result 
+ * @returns {string}
  */
-function publishExperimentResults({
-  experimentName,
-  controlResult,
-  controlError,
-  controlTimeMs,
-  candidateResult,
-  candidateError,
-  candidateTimeMs,
-}) {
-  if (controlError && candidateError) {
-    // Both errored, this is expected.
-  } else if (controlError && !candidateError) {
-    // Only the control errored.
-  } else if (!controlError && candidateError) {
-    // Only the candidate errored.
-  } else {
-    // Neither one errored; let's check for equality.
-    // Lodash is clever enough to understand Buffers, so we don't event need to
-    // special-case `getFile`, which can sometimes return a Buffer.
-    if (!_.isEqual(controlResult, candidateResult)) {
-      // TODO: report to Honeycomb instead.
-      console.error(`${experimentName} MISMATCH`);
-    }
-    console.log(`${experimentName} control time: ${controlTimeMs}ms`);
-    console.log(`${experimentName} candidate time: ${candidateTimeMs}ms`);
+function observationPayload(error, result) {
+  if (error) {
+    return JSON.stringify({
+      message: error.message,
+      stack: error.stack,
+    });
   }
+
+  return JSON.stringify(result);
 }
 
 function questionFunctionExperiment(name, control, candidate) {
+  const tracer = trace.getTracer('experiments');
+
+  /**
+   * Wraps the given function invocation with a span.
+   * 
+   * @param {string} name
+   * @param {*} func 
+   */
+  function withSpan(name, func) {
+    return (...args) => {
+      return tracer.startActiveSpan(name, async (span) => {
+        try {
+          await func(...args);
+        } finally {
+          span.end();
+        }
+      });
+    };
+  }
+
   const experiment = experimentAsync({
     name,
-    control: promisifyQuestionFunction(control, true),
-    candidate: promisifyQuestionFunction(candidate, false),
+    control: withSpan('control', promisifyQuestionFunction(control, true)),
+    candidate: withSpan('candidate', promisifyQuestionFunction(candidate, false)),
     options: {
-      publish: publishExperimentResults,
+      publish: ({
+        controlResult,
+        controlError,
+        candidateResult,
+        candidateError,
+      }) => {
+        // Grab the current span from context - this is the span created with
+        // `startActiveSpan` below.
+        const span = trace.getSpan(context.active());
+
+        // We don't want to assert that the errors themselves are equal, just
+        // that either both errored or both did not error.
+        const errorsMismatched = (!!controlError) != (!!candidateError);
+
+        // Lodash is clever enough to understand Buffers, so we don't event need to
+        // special-case `getFile`, which can sometimes return a Buffer.
+        const resultsMismatched = _.isEqual(controlResult, candidateResult);
+
+        if (errorsMismatched || resultsMismatched) {
+          span.setAttributes({
+            'experiment.result': 'mismatched',
+            'experiment.control': observationPayload(controlError, controlResult),
+            'experiment.candidate': observationPayload(candidateError, candidateResult),
+          });
+          span.setStatus({
+            code: SpanStatusCode.ERROR,
+            message: 'Experiment results did not match',
+          });
+        } else {
+          span.setAttribute('experiment.result', 'matched');
+          span.setStatus({
+            code: SpanStatusCode.OK,
+          });
+        }
+      },
     },
   });
 
   return (...args) => {
-    experiment(...args).catch((err) => {
-      console.trace(err);
-      // We'll just swallow the error here; it would have already been propagated
-      // via the callback from `promisifyQuestionFunction`.
+    tracer.startActiveSpan('experiment', async (span) => {
+      span.setAttribute('experiment.name', name);
+      try {
+        await experiment(...args);
+      } catch (e) {
+        // We'll just swallow the error here; it would have already been propagated
+        // via the callback from `promisifyQuestionFunction`.
+        span.recordException(e);
+      } finally {
+        span.end();
+      }
     });
   };
 }
