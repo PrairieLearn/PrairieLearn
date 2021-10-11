@@ -1,6 +1,6 @@
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
-const { trace, context, SpanKind, SpanStatusCode } = require('@opentelemetry/api');
+const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
 
 const calculationInprocess = require('./calculation-inprocess');
 const calculationSubprocess = require('./calculation-subprocess');
@@ -13,23 +13,48 @@ const calculationSubprocess = require('./calculation-subprocess');
  * 
  * TODO: refactor to standard two-argument callback or async/await.
  * 
+ * @param {string} spanName
  * @param {Function} func 
+ * @param {boolean} invokeCallback
  */
-function promisifyQuestionFunction(func, invokeCallback) {
-  return (...args) => {
+function promisifyQuestionFunction(spanName, func, invokeCallback) {
+  return async (...args) => {
     const callback = args.pop();
-    return new Promise((resolve, reject) => {
-      func(...args, (err, courseIssues, val) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve([courseIssues, val]);
-        }
 
-        if (invokeCallback) {
-          callback(err, courseIssues, val);
-        }
+    // IMPORTANT: note that if the callback needs to be invoked, we need to
+    // do it outside of `startActiveSpan` so that everything that happens
+    // after this in the request isn't erroneously grouped underneath this
+    // span.
+    const tracer = trace.getTracer('experiments');
+    return tracer.startActiveSpan(spanName, async (span) => {
+      return new Promise((resolve, reject) => {
+        func(...args, (err, courseIssues, val) => {
+          if (err) {
+            span.setStatus({
+              code: SpanStatusCode.ERROR,
+              message: err.message,
+            });
+            span.end();
+            reject(err);
+          } else {
+            span.setStatus({
+              code: SpanStatusCode.OK,
+            });
+            span.end();
+            resolve([courseIssues, val]);
+          }
+        });
       });
+    }).then(([courseIssues, val]) => {
+      if (invokeCallback) {
+        callback(null, courseIssues, val);
+      }
+      return [courseIssues, val];
+    }).catch((err) => {
+      if (invokeCallback) {
+        callback(err);
+      }
+      throw err;
     });
   };
 }
@@ -54,30 +79,10 @@ function observationPayload(error, result) {
 }
 
 function questionFunctionExperiment(name, control, candidate) {
-  const tracer = trace.getTracer('experiments');
-
-  /**
-   * Wraps the given function invocation with a span.
-   * 
-   * @param {string} name
-   * @param {*} func 
-   */
-  function withSpan(name, func) {
-    return (...args) => {
-      return tracer.startActiveSpan(name, async (span) => {
-        try {
-          await func(...args);
-        } finally {
-          span.end();
-        }
-      });
-    };
-  }
-
   const experiment = experimentAsync({
     name,
-    control: withSpan('control', promisifyQuestionFunction(control, true)),
-    candidate: withSpan('candidate', promisifyQuestionFunction(candidate, false)),
+    control: promisifyQuestionFunction('control', control, true),
+    candidate: promisifyQuestionFunction('candidate', candidate, false),
     options: {
       publish: ({
         controlResult,
@@ -98,6 +103,11 @@ function questionFunctionExperiment(name, control, candidate) {
         const resultsMismatched = _.isEqual(controlResult, candidateResult);
 
         if (errorsMismatched || resultsMismatched) {
+          console.log('errorsMismatched?', errorsMismatched);
+          console.log('resultsMismatched?', resultsMismatched);
+          console.log(controlError, controlResult, candidateError, candidateResult);
+          console.log(observationPayload(controlError, controlResult));
+          console.log(observationPayload(candidateError, candidateResult));
           span.setAttributes({
             'experiment.result': 'mismatched',
             'experiment.control': observationPayload(controlError, controlResult),
@@ -118,6 +128,7 @@ function questionFunctionExperiment(name, control, candidate) {
   });
 
   return (...args) => {
+    const tracer = trace.getTracer('experiments');
     tracer.startActiveSpan('experiment', async (span) => {
       span.setAttribute('experiment.name', name);
       try {
