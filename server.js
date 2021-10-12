@@ -1065,6 +1065,10 @@ if (config.startServer) {
                 configFilename = argv['config'];
             }
 
+            // Before we start executing any real code, ensure that tracing has
+            // been configured correctly.
+            await tracing.waitForStart();
+
             // Load config values from AWS as early as possible so we can use them
             // to set values for e.g. the database connection
             await config.loadConfigAsync(configFilename);
