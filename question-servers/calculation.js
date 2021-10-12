@@ -9,11 +9,11 @@ const calculationSubprocess = require('./calculation-subprocess');
  * Similar to `util.promisify`, but with support for the non-standard
  * three-argument callback function that all of our question functions use.
  * Note that the returned promise resolves with an array of values.
- * 
+ *
  * TODO: refactor to standard two-argument callback or async/await.
- * 
+ *
  * @param {string} spanName
- * @param {Function} func 
+ * @param {Function} func
  */
 function promisifyQuestionFunction(spanName, func) {
   return async (...args) => {
@@ -44,9 +44,9 @@ function promisifyQuestionFunction(spanName, func) {
 /**
  * Turns the error or result of an experiment observation into a JSON string
  * suitable for using as an OpenTelemetry attribute value.
- * 
- * @param {Error} error 
- * @param {any} result 
+ *
+ * @param {Error} error
+ * @param {any} result
  * @returns {string}
  */
 function observationPayload(error, result) {
@@ -60,6 +60,16 @@ function observationPayload(error, result) {
   return JSON.stringify(result);
 }
 
+/**
+ * Runs both the `control` and `candidate` functions at the same time and
+ * compares their output. No matter what the candidate does, the results of
+ * the `control` function will always be what's returned to the client.
+ *
+ * @param {string} name
+ * @param {Function} control
+ * @param {Function} candidate
+ * @returns {Function}
+ */
 function questionFunctionExperiment(name, control, candidate) {
   const experiment = experimentAsync({
     name,
@@ -82,21 +92,44 @@ function questionFunctionExperiment(name, control, candidate) {
         // The candidate implementation does propagate some errors as course
         // issues, so we need to take those into account when checking if the
         // implementation resulted in an error.
-        const candidateHasError = !!candidateError || !_.isEmpty(controlResult?.[0]);
+        const candidateHasError =
+          !!candidateError || !_.isEmpty(candidateResult?.[0]);
 
         // We don't want to assert that the errors themselves are equal, just
         // that either both errored or both did not error.
         const errorsMismatched = controlHasError !== candidateHasError;
 
+        // The "results" can actually contain error information for the candidate,
+        // but not for the control. To avoid false positives, we'll only compare
+        // the "data" portion of the results. The "course issues" portion of the
+        // results was already handled above.
+        const controlData = controlResult?.[1];
+        const candidateData = candidateResult?.[1];
+        const controlHasData = !_.isEmpty(controlData);
+        const candidateHasData = !_.isEmpty(candidateData);
+
         // Lodash is clever enough to understand Buffers, so we don't event need to
         // special-case `getFile`, which can sometimes return a Buffer.
-        const resultsMismatched = !_.isEqual(controlResult?.[1], candidateResult?.[1]);
+        //
+        // We only assert that `controlData` and `candidateData` are equal if
+        // they're both not "empty" (empty object, null, undefined, etc.) since
+        // for our purposes, all empty data is equal.
+        const dataMismatched =
+          controlHasData &&
+          candidateHasData &&
+          !_.isEqual(controlData, candidateData);
 
-        if (errorsMismatched || resultsMismatched) {
+        if (errorsMismatched || dataMismatched) {
           span.setAttributes({
             'experiment.result': 'mismatched',
-            'experiment.control': observationPayload(controlError, controlResult),
-            'experiment.candidate': observationPayload(candidateError, candidateResult),
+            'experiment.control': observationPayload(
+              controlError,
+              controlResult,
+            ),
+            'experiment.candidate': observationPayload(
+              candidateError,
+              candidateResult,
+            ),
           });
           span.setStatus({
             code: SpanStatusCode.ERROR,
@@ -115,23 +148,26 @@ function questionFunctionExperiment(name, control, candidate) {
   return (...args) => {
     const tracer = trace.getTracer('experiments');
     const callback = args.pop();
-    tracer.startActiveSpan('experiment', async (span) => {
-      span.setAttribute('experiment.name', name);
-      try {
-        // Important: must await promise here so that span timing information
-        // is derived correctly.
-        return await experiment(...args);
-      } catch (err) {
-        span.recordException(err);
-        throw err;
-      } finally {
-        span.end();
-      }
-    }).then(([courseIssues, data]) => {
-      callback(null, courseIssues, data);
-    }).catch(err => {
-      callback(err);
-    });
+    tracer
+      .startActiveSpan(`experiment:${name}`, async (span) => {
+        span.setAttribute('experiment.name', name);
+        try {
+          // Important: must await promise here so that span timing information
+          // is derived correctly.
+          return await experiment(...args);
+        } catch (err) {
+          span.recordException(err);
+          throw err;
+        } finally {
+          span.end();
+        }
+      })
+      .then(([courseIssues, data]) => {
+        callback(null, courseIssues, data);
+      })
+      .catch((err) => {
+        callback(err);
+      });
   };
 }
 
