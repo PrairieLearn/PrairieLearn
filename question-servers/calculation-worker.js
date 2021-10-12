@@ -7,26 +7,17 @@ const fs = require('fs');
 const readline = require('readline');
 
 const error = require('../prairielib/lib/error');
-const filePaths = require('../lib/file-paths');
 const requireFrontend = require('../lib/require-frontend');
 
 /**
  * Attempts to load the server module that should be used for a particular
  * question.
  * 
- * @param {string} coursePath 
- * @param {any} question 
+ * @param {string} questionServerPath The path to the JavaScript question server
+ * @param {string} coursePath The path to the course root directory
  * @returns {Promise<any>}
  */
-async function loadServer(coursePath, question) {
-  const { fullPath: questionServerPath } =
-    await filePaths.questionFilePathAsync(
-      'server.js',
-      question.directory,
-      coursePath,
-      question,
-    );
-
+async function loadServer(questionServerPath, coursePath) {
   const configRequire = requireFrontend.config({
     paths: {
       clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
@@ -41,7 +32,7 @@ async function loadServer(coursePath, question) {
       [questionServerPath],
       function (server) {
         if (server === undefined) {
-          reject(new Error(`Could not load "server.js" for QID "${question.qid}"`));
+          reject(new Error(`Could not load ${path.basename(questionServerPath)}`));
         }
         // Apparently we need to use `setTimeout` to "get out of requireJS error handling".
         // TODO: is this actually necessary?
@@ -49,7 +40,7 @@ async function loadServer(coursePath, question) {
       },
       (err) => {
         const e = error.makeWithData(
-          `Error loading server.js for QID ${question.qid}`,
+          `Error loading ${path.basename(questionServerPath)}`,
           err,
         );
         if (err.originalError != null) {
@@ -174,7 +165,8 @@ if (require.main === module) {
     const input = JSON.parse(line);
 
     const {
-      // These first three are required.
+      // These first four are required.
+      questionServerPath,
       func,
       coursePath,
       question,
@@ -187,7 +179,7 @@ if (require.main === module) {
       submission,
     } = input;
 
-    const server = await loadServer(coursePath, question);
+    const server = await loadServer(questionServerPath, coursePath);
 
     let data;
     if (func === 'generate') {

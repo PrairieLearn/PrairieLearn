@@ -4,6 +4,7 @@ const cp = require('child_process');
 
 const chunks = require('../lib/chunks');
 const config = require('../lib/config');
+const filePaths = require('../lib/file-paths');
 
 /** @typedef {import('../lib/chunks').Chunk} Chunk */
 
@@ -47,7 +48,15 @@ module.exports = {
    * @returns {Promise<{ data?: any, courseIssues?: Error[] }>}
    */
   executeInSubprocess: async function (func, coursePath, question, inputData) {
+    const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
+      'server.js',
+      question.directory,
+      coursePath,
+      question,
+    );
+
     const callData = {
+      questionServerPath,
       func,
       coursePath,
       question,
