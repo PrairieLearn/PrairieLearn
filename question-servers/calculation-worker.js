@@ -4,6 +4,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const readline = require('readline');
 
 const error = require('../prairielib/lib/error');
 const filePaths = require('../lib/file-paths');
@@ -133,30 +134,38 @@ async function grade(server, coursePath, submission, variant, question) {
   };
 }
 
+/**
+ * 
+ * @param {import('readline').Interface} rl 
+ * @returns {Promise<string | null>}
+ */
+function getLineOnce(rl) {
+  return new Promise((resolve) => {
+    let didResolve = false;
+    rl.on('line', (line) => {
+      if (didResolve) return;
+      didResolve = true;
+      resolve(line);
+    });
+    rl.on('close', () => {
+      if (didResolve) return;
+      didResolve = true;
+      resolve(null);
+    });
+  });
+}
+
 if (require.main === module) {
   (async () => {
-    const readline = require('readline');
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
     });
 
-    const line = await new Promise((resolve) => {
-      let didResolve = false;
-      rl.on('line', (line) => {
-        if (didResolve) return;
-        didResolve = true;
-        resolve(line);
-      });
-      rl.on('close', () => {
-        if (didResolve) return;
-        didResolve = true;
-        resolve(null);
-      });
-    });
+    const line = await getLineOnce(rl);
 
     if (!line) {
-      // TODO: handle me.
+      throw new Error('Did not get data from parent process');
     }
 
     // Close the reader to empty the event loop.
