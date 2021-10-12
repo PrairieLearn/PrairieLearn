@@ -85,11 +85,6 @@ function questionFunctionExperiment(name, control, candidate) {
         const resultsMismatched = !_.isEqual(controlResult, candidateResult);
 
         if (errorsMismatched || resultsMismatched) {
-          console.log('errorsMismatched?', errorsMismatched);
-          console.log('resultsMismatched?', resultsMismatched);
-          console.log(controlError, controlResult, candidateError, candidateResult);
-          console.log(observationPayload(controlError, controlResult));
-          console.log(observationPayload(candidateError, candidateResult));
           span.setAttributes({
             'experiment.result': 'mismatched',
             'experiment.control': observationPayload(controlError, controlResult),

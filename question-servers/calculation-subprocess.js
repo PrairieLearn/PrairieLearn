@@ -37,7 +37,6 @@ module.exports = {
    * @param {Record<string, any>} inputData 
    */
   executeInSubprocess: async function (func, coursePath, question, inputData) {
-    console.log('execute in subprocess called...');
     const data = {
       func,
       coursePath,
@@ -102,7 +101,6 @@ module.exports = {
     if (!val) {
       throw new Error('Calculation question data missing "val" property');
     }
-    console.log('got data!');
 
     return val;
   },
