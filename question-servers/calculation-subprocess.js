@@ -70,11 +70,6 @@ module.exports = {
     // @ts-expect-error
     child.stdio[3].setEncoding('utf-8');
 
-    // For debugging only.
-    // TODO: remove before merging this.
-    child.stdout.pipe(process.stdout);
-    child.stderr.pipe(process.stderr);
-
     child.stdin.write(JSON.stringify(callData));
     child.stdin.write('\n');
 
