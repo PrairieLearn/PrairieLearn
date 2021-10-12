@@ -11,7 +11,6 @@
         "@opentelemetry/auto-instrumentations-node": "^0.25.0",
         "@opentelemetry/exporter-collector-grpc": "^0.25.0",
         "@opentelemetry/sdk-node": "^0.26.0",
-        "@opentelemetry/semantic-conventions": "^1.0.0",
         "ace-builds": "^1.4.12",
         "ajv": "^7.1.1",
         "ansi_up": "^5.0.1",
