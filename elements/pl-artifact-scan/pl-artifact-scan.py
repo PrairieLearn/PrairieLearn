@@ -57,7 +57,7 @@ def parse(element_html, data):
 
     if submitted_barcode != '' and submitted_barcode.isnumeric() is False:
         data['format_errors'][BARCODE] = 'Barcode "' + submitted_barcode + '" is not a valid number.'
-    elif len(submitted_barcode) != 12:
-        data['format_errors'][BARCODE] = 'Barcode must be 12 digits.'
+    elif len(submitted_barcode) != 13:
+        data['format_errors'][BARCODE] = 'Barcode must be 13 digits.'
     elif submitted_barcode is BLANK_ANSWER and required is True:
         data['format_errors'][BARCODE] = 'Submitting your work is required for this question. Submit the barcode attached to your written work.'
