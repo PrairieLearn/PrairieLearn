@@ -76,13 +76,21 @@ function questionFunctionExperiment(name, control, candidate) {
         // `startActiveSpan` below.
         const span = trace.getSpan(context.active());
 
+        // The control implementation does not utilize course issues.
+        const controlHasError = !!controlError;
+
+        // The candidate implementation does propagate some errors as course
+        // issues, so we need to take those into account when checking if the
+        // implementation resulted in an error.
+        const candidateHasError = !!candidateError || !_.isEmpty(controlResult?.[0]);
+
         // We don't want to assert that the errors themselves are equal, just
         // that either both errored or both did not error.
-        const errorsMismatched = (!!controlError) != (!!candidateError);
+        const errorsMismatched = controlHasError !== candidateHasError;
 
         // Lodash is clever enough to understand Buffers, so we don't event need to
         // special-case `getFile`, which can sometimes return a Buffer.
-        const resultsMismatched = !_.isEqual(controlResult, candidateResult);
+        const resultsMismatched = !_.isEqual(controlResult?.[1], candidateResult?.[1]);
 
         if (errorsMismatched || resultsMismatched) {
           span.setAttributes({
@@ -119,8 +127,8 @@ function questionFunctionExperiment(name, control, candidate) {
       } finally {
         span.end();
       }
-    }).then(([courseIssues, val]) => {
-      callback(null, courseIssues, val);
+    }).then(([courseIssues, data]) => {
+      callback(null, courseIssues, data);
     }).catch(err => {
       callback(err);
     });
