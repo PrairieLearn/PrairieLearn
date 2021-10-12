@@ -114,6 +114,13 @@ module.exports.init = function(pgConfig, idleErrorHandler, callback) {
             idleErrorHandler(err, client);
         });
     });
+    pool.on('remove', (client) => {
+        // This shouldn't be necessary, as `pg` currently allows clients to be
+        // garbage collected after they're removed. However, if `pg` someday
+        // starts reusing client objects across difference connections, this
+        // will ensure that we re-set the search path when the client reconnects.
+        delete client[SEARCH_SCHEMA];
+    });
 
     let retryCount = 0;
     const retryTimeouts = [500, 1000, 2000, 5000, 10000];
