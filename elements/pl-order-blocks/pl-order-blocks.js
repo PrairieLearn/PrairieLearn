@@ -58,7 +58,7 @@ function update_indent(ui) {
     if ($parent.hasClass('inline')) {
         return;
     }
-    if (!$parent.is('.dropzone,.enableIndentation')){
+    if (!$parent.is('.dropzone.enableIndentation')) {
         // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
         $item.css('margin-left', 0);
         return;
