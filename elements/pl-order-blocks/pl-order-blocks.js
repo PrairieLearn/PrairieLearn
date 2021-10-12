@@ -7,7 +7,8 @@ let MAX_INDENT = 4;     // defines the maximum number of times an answer block c
 function set_max_indent(event) {
     // We read the indent from the attribute. This will be a string, so we need to parse it.
     const potentialNewIndent = parseInt(event.target.getAttribute('indent'));
-    if ($.isNumeric(potentialNewIndent)) {
+    // It should only be used if it is a positive intege
+    if (Number.isInteger(potentialNewIndent) && potentialNewIndent >= 0) {
         MAX_INDENT = potentialNewIndent;
     }
 }
