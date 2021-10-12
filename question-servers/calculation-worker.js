@@ -189,19 +189,19 @@ if (require.main === module) {
 
     const server = await loadServer(coursePath, question);
 
-    let val;
+    let data;
     if (func === 'generate') {
-      val = generate(server, coursePath, question, variant_seed);
+      data = generate(server, coursePath, question, variant_seed);
     } else if (func === 'getFile') {
-      val = getFile(server, coursePath, filename, variant, question);
+      data = getFile(server, coursePath, filename, variant, question);
     } else if (func === 'grade') {
-      val = grade(server, coursePath, submission, variant, question);
+      data = grade(server, coursePath, submission, variant, question);
     } else {
       throw new Error(`Unknown function: ${func}`);
     }
 
     // Write data back to invoking process.
-    fs.writeFileSync(3, JSON.stringify({ val }), { encoding: 'utf-8' });
+    fs.writeFileSync(3, JSON.stringify({ data }), { encoding: 'utf-8' });
     fs.writeFileSync(3, '\n');
 
     // If we get here, everything went well - exit cleanly.

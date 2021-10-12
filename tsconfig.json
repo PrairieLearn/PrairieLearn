@@ -11,6 +11,7 @@
   "include": [
     "tests/sync/**/*",
     "sync/**/*",
-    "lib/**/*"
+    "lib/**/*",
+    "question-servers/**/*"
   ]
 }

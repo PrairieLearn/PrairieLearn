@@ -1,17 +1,23 @@
+// @ts-check
 const _ = require('lodash');
 const cp = require('child_process');
 
 const chunks = require('../lib/chunks');
 const config = require('../lib/config');
 
+/** @typedef {import('../lib/chunks').Chunk} Chunk */
+
 module.exports = {
   prepareChunksIfNeeded: async function (question, course) {
     const questionIds = await chunks.getTemplateQuestionIdsAsync(question);
 
+    /** @type {Chunk[]} */
     const templateQuestionChunks = questionIds.map((id) => ({
       type: 'question',
       questionId: id,
     }));
+
+    /** @type {Chunk[]} */
     const chunksToLoad = [
       {
         type: 'question',
@@ -30,14 +36,18 @@ module.exports = {
   },
 
   /**
+   * Launches a subprocess, executes the appropriate question function, and
+   * parses the output.
    * 
    * @param {'generate' | 'getFile' | 'grade'} func 
    * @param {string} coursePath 
    * @param {any} question 
    * @param {Record<string, any>} inputData 
+   *
+   * @returns {Promise<{ data?: any, courseIssues?: Error[] }>}
    */
   executeInSubprocess: async function (func, coursePath, question, inputData) {
-    const data = {
+    const callData = {
       func,
       coursePath,
       question,
@@ -57,6 +67,7 @@ module.exports = {
 
     child.stdout.setEncoding('utf-8');
     child.stderr.setEncoding('utf-8');
+    // @ts-expect-error
     child.stdio[3].setEncoding('utf-8');
 
     // For debugging only.
@@ -64,7 +75,7 @@ module.exports = {
     child.stdout.pipe(process.stdout);
     child.stderr.pipe(process.stderr);
 
-    child.stdin.write(JSON.stringify(data));
+    child.stdin.write(JSON.stringify(callData));
     child.stdin.write('\n');
 
     // Capture response data, but don't do anything with it until the
@@ -74,35 +85,59 @@ module.exports = {
       outputData += data;
     });
 
-    // Wait for the process to either exit or error.
-    await new Promise((resolve, reject) => {
-      let didFinish = false;
-
-      child.on('exit', (code) => {
-        if (didFinish) return;
-        didFinish = true;
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`Subprocess exited with code ${code}`));
-        }
-      });
-
-      child.on('error', (err) => {
-        if (didFinish) return;
-        didFinish = true;
-        reject(err);
-      });
+    // Capture stdout/stderr; we'll show this to the user if anything in the
+    // subprocess failed. Note that unlike v3 questions, we don't consider the
+    // IPC call to have failed if the process outputs data. This is because we
+    // didn't historically enforce that, so we don't want to break existing
+    // questions that were in fact logging things.
+    let combinedOutput = '';
+    child.stdout.on('data', (data) => {
+      combinedOutput += data;
+    });
+    child.stderr.on('data', (data) => {
+      combinedOutput += data;
     });
 
-    // Hopefully we have valid JSON by this point!
-    const parsedData = JSON.parse(outputData);
-    const { val } = parsedData;
-    if (!val) {
-      throw new Error('Calculation question data missing "val" property');
-    }
+    // Wait for the process to either exit or error.
+    try {
+      await new Promise((resolve, reject) => {
+        let didFinish = false;
 
-    return val;
+        child.on('exit', (code) => {
+          if (didFinish) return;
+          didFinish = true;
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`Subprocess exited with code ${code}`));
+          }
+        });
+
+        child.on('error', (err) => {
+          if (didFinish) return;
+          didFinish = true;
+          reject(err);
+        });
+      });
+
+      // Hopefully we have valid JSON by this point!
+      const parsedData = JSON.parse(outputData);
+      const { data } = parsedData;
+      if (!data) {
+        throw new Error('Calculation question data missing "data" property');
+      }
+
+      return { data };
+    } catch (e) {
+      // TODO: subclass `Error` so that we can attach extra data to it in a
+      // type-safe way.
+      const courseIssue = new Error('Failed to execute question code');
+      // @ts-expect-error
+      courseIssue.data = { outputBoth: combinedOutput };
+      // @ts-expect-error
+      courseIssue.fatal = true;
+      return { data: {}, courseIssues: [courseIssue] };
+    }
   },
 
   render: function (
@@ -131,7 +166,7 @@ module.exports = {
     module.exports.prepareChunksIfNeeded(question, course).then(() => {
       module.exports.executeInSubprocess('generate', coursePath, question, {
         variant_seed,
-      }).then((data) => callback(null, [], data)).catch((err) => callback(err));
+      }).then(({ data, courseIssues }) => callback(null, courseIssues, data)).catch((err) => callback(err));
     }).catch((err) => callback(err));
   },
 
@@ -151,11 +186,11 @@ module.exports = {
       module.exports.executeInSubprocess('getFile', coursePath, question, {
         filename,
         variant,
-      }).then((data) => {
+      }).then(({ data, courseIssues }) => {
         // We need to "unwrap" buffers if needed
         const isBuffer = data.type === 'buffer';
         const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
-        callback(null, [], unwrappedData);
+        callback(null, courseIssues, unwrappedData);
       }).catch((err) => callback(err));
     }).catch((err) => callback(err));
   },
@@ -179,7 +214,7 @@ module.exports = {
       module.exports.executeInSubprocess('grade', coursePath, question, {
         submission,
         variant,
-      }).then((data) => callback(null, [], data)).catch((err) => callback(err));
+      }).then(({ data, courseIssues }) => callback(null, courseIssues, data)).catch((err) => callback(err));
     }).catch((err) => callback(err));
   },
 };
