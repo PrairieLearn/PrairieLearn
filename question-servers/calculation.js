@@ -8,23 +8,15 @@ const calculationSubprocess = require('./calculation-subprocess');
 /**
  * Similar to `util.promisify`, but with support for the non-standard
  * three-argument callback function that all of our question functions use.
- * Note that the returned promise resolves with an array of values. The
- * callback function must still be provided and will be invoked as normal.
+ * Note that the returned promise resolves with an array of values.
  * 
  * TODO: refactor to standard two-argument callback or async/await.
  * 
  * @param {string} spanName
  * @param {Function} func 
- * @param {boolean} invokeCallback
  */
-function promisifyQuestionFunction(spanName, func, invokeCallback) {
+function promisifyQuestionFunction(spanName, func) {
   return async (...args) => {
-    const callback = args.pop();
-
-    // IMPORTANT: note that if the callback needs to be invoked, we need to
-    // do it outside of `startActiveSpan` so that everything that happens
-    // after this in the request isn't erroneously grouped underneath this
-    // span.
     const tracer = trace.getTracer('experiments');
     return tracer.startActiveSpan(spanName, async (span) => {
       return new Promise((resolve, reject) => {
@@ -45,16 +37,6 @@ function promisifyQuestionFunction(spanName, func, invokeCallback) {
           }
         });
       });
-    }).then(([courseIssues, val]) => {
-      if (invokeCallback) {
-        callback(null, courseIssues, val);
-      }
-      return [courseIssues, val];
-    }).catch((err) => {
-      if (invokeCallback) {
-        callback(err);
-      }
-      throw err;
     });
   };
 }
@@ -81,8 +63,8 @@ function observationPayload(error, result) {
 function questionFunctionExperiment(name, control, candidate) {
   const experiment = experimentAsync({
     name,
-    control: promisifyQuestionFunction('control', control, true),
-    candidate: promisifyQuestionFunction('candidate', candidate, false),
+    control: promisifyQuestionFunction('control', control),
+    candidate: promisifyQuestionFunction('candidate', candidate),
     options: {
       publish: ({
         controlResult,
@@ -100,7 +82,7 @@ function questionFunctionExperiment(name, control, candidate) {
 
         // Lodash is clever enough to understand Buffers, so we don't event need to
         // special-case `getFile`, which can sometimes return a Buffer.
-        const resultsMismatched = _.isEqual(controlResult, candidateResult);
+        const resultsMismatched = !_.isEqual(controlResult, candidateResult);
 
         if (errorsMismatched || resultsMismatched) {
           console.log('errorsMismatched?', errorsMismatched);
@@ -129,17 +111,23 @@ function questionFunctionExperiment(name, control, candidate) {
 
   return (...args) => {
     const tracer = trace.getTracer('experiments');
+    const callback = args.pop();
     tracer.startActiveSpan('experiment', async (span) => {
       span.setAttribute('experiment.name', name);
       try {
-        await experiment(...args);
-      } catch (e) {
-        // We'll just swallow the error here; it would have already been propagated
-        // via the callback from `promisifyQuestionFunction`.
-        span.recordException(e);
+        // Important: must await promise here so that span timing information
+        // is derived correctly.
+        return await experiment(...args);
+      } catch (err) {
+        span.recordException(err);
+        throw err;
       } finally {
         span.end();
       }
+    }).then(([courseIssues, val]) => {
+      callback(null, courseIssues, val);
+    }).catch(err => {
+      callback(err);
     });
   };
 }
