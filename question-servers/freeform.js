@@ -1527,6 +1527,10 @@ module.exports = {
                 // that may still be incorrectly caching errors, we'll ignore
                 // any result from the cache that has course issues and
                 // unconditionally recompute it.
+                //
+                // TODO: once this has been deployed in production for a while,
+                // we can safely remove this check, as we can guarantee that the
+                // cache will no longer contain any entries with `courseIssues`.
                 const hasCachedCourseIssues= cachedData?.courseIssues?.length > 0;
                 if (hasCachedData && !hasCachedCourseIssues) {
                     const cacheHit = true;
