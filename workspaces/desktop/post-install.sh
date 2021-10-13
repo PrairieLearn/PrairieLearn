@@ -6,7 +6,7 @@ echo "export PATH=$PATH:/usr/lib/gcc/x86_64-linux-gnu/9/" >> /opt/defaults/.bash
 chown -R 1001:1001 /opt/defaults
 chown -R root:root /opt/server
 
-cd /opt/server && npm ci
+cd /opt/server && yarn install --frozen-lockfile
 
 chmod +x /pl-gosu-helper.sh
 chmod +x /start-vnc.sh
