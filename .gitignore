@@ -30,14 +30,11 @@ docker-compose.override.yml
 # PrairieLearn
 
 ## Config
-/v1/backend/config.json
-/v1/backend/config.json.*
 /config.json
 /aws-config.json
 
 ## Dependencies
 node_modules
-/v1/frontend-build/
 
 ## Generated HTML
 
@@ -50,7 +47,6 @@ node_modules
 ## Runtime artifacts
 
 ### Logs
-/v1/backend/server.log
 /server.log
 
 ### Code coverage
