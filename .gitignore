@@ -36,9 +36,8 @@ docker-compose.override.yml
 /aws-config.json
 
 ## Dependencies
-/v1/backend/node_modules/
+node_modules
 /v1/frontend-build/
-/node_modules/
 
 ## Generated HTML
 
