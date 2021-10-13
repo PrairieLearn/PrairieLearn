@@ -50,3 +50,12 @@ WHERE
     a.id = $assessment_id
     AND ai.open;
 
+
+-- BLOCK select_exam_uuid
+SELECT DISTINCT
+    aar.exam_uuid
+FROM
+    assessment_access_rules AS aar
+WHERE
+    aar.id = $assessment_instance_id
+    AND exam_uuid IS NOT NULL;
