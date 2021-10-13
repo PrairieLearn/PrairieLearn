@@ -1488,10 +1488,25 @@ module.exports = {
         const doCompute = (cacheKey) => {
             computeFcn((err, cachedData) => {
                 if (ERR(err, errorFcn)) return;
-                if (cacheKey) {
+
+                // Course issues during question/file rendering aren't actually
+                // treated as errors - that is, the `err` value in this callback
+                // will be undefined, even if there are course issues. However,
+                // we still want to avoid caching anything that produced a course
+                // issue, as that might be a transitive error that would go away
+                // if the user refreshed, even if they didn't create a new variant.
+                // Also, the `Error` objects that we use for course issues can't be
+                // easily round-tripped through a cache, which means that pulling
+                // an error out of the cache means the instructor would see an
+                // error message of `[object Object]` which is useless.
+                //
+                // tl;dr: don't cache any results that would create course issues.
+                const hasCourseIssues = cachedData?.courseIssues?.length > 0;
+                if (cacheKey && !hasCourseIssues) {
                     cache.set(cacheKey, cachedData);
                 }
-                const cacheHit = false; // Cache miss
+
+                const cacheHit = false;
                 processFcn(cachedData, cacheHit);
             });
         };
@@ -1504,7 +1519,16 @@ module.exports = {
                 // We don't actually want to fail if the cache has an error; we'll
                 // just compute the cachedData as normal
                 ERR(err, (e) => logger.error('Error in cache.get()', e));
-                if (!err && cachedData !== null) {
+
+                const hasCachedData = !err && cachedData;
+                // Previously, there was a bug where we would cache operations
+                // that failed with a course issue. We've since fixed that bug,
+                // but so that we can gracefully deploy the fix alongside code
+                // that may still be incorrectly caching errors, we'll ignore
+                // any result from the cache that has course issues and
+                // unconditionally recompute it.
+                const hasCachedCourseIssues= cachedData?.courseIssues?.length > 0;
+                if (hasCachedData && !hasCachedCourseIssues) {
                     const cacheHit = true;
                     processFcn(cachedData, cacheHit);
                 } else {
