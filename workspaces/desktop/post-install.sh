@@ -1,3 +1,5 @@
+set -ex
+
 cp /root/.profile /opt/defaults/.profile
 cp /root/.bashrc /opt/defaults/.bashrc
 echo "export HOME=/home/prairielearner" >> /opt/defaults/.bashrc
