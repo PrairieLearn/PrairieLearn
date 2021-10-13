@@ -56,6 +56,7 @@ SELECT DISTINCT
     aar.exam_uuid
 FROM
     assessment_access_rules AS aar
+    JOIN pt_exams AS x ON (x.uuid = aar.exam_uuid)
 WHERE
     aar.id = $assessment_instance_id
     AND exam_uuid IS NOT NULL;
