@@ -2,15 +2,10 @@
 
 const TABWIDTH = 50;    // defines how many px the answer block is indented by, when the student
                         // drags and indents a block
-let MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
+var MAX_INDENT = 4;     // defines the maximum number of times an answer block can be indented
 
 function set_max_indent(event) {
-    // We read the indent from the attribute. This will be a string, so we need to parse it.
-    const potentialNewIndent = parseInt(event.target.getAttribute('indent'));
-    // It should only be used if it is a positive intege
-    if (Number.isInteger(potentialNewIndent) && potentialNewIndent >= 0) {
-        MAX_INDENT = potentialNewIndent;
-    }
+    MAX_INDENT = event.target.getAttribute('indent');
 }
 
 function check_block(event, ui) {
@@ -24,7 +19,7 @@ function check_block(event, ui) {
 
 function set_answer(event) {
     // We only care about when this function is fired
-    // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds
+    // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds 
     var textfield_name = event.target.getAttribute('name');
     var dom_objs = $('#' + textfield_name + '-dropzone').children();
     var student_answers_array = [];
@@ -37,7 +32,7 @@ function set_answer(event) {
                 answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
                 answer_indent = Math.round(answer_indent / TABWIDTH); // get how many times the answer is indented
             }
-
+            
             var answer_json = {'inner_html': answer_text, 'indent': answer_indent, 'uuid': uuid};
             student_answers_array.push(answer_json);
         }
@@ -52,21 +47,19 @@ function set_answer(event) {
 }
 
 
-function update_indent(ui) {
-    const $item = $(ui.item);
-    const $parent = $item.parent();
-    if ($parent.hasClass('inline')) {
+function update_indent(leftDiff, id, ui) {
+    if (ui.item.parent()[0].classList.contains('inline')) {
         return;
     }
-    if (!$parent.is('.dropzone.enableIndentation')) {
+    if (!ui.item.parent()[0].classList.contains('dropzone') || 
+        !ui.item.parent()[0].classList.contains('enableIndentation')){
         // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
-        $item.css('margin-left', 0);
+        ui.item[0].style.marginLeft = '0px';
         return;
     }
-
-    let leftDiff = ui.position.left - $parent.position().left;
-    const currentIndent = parseInt($item.css('margin-left'));
-    if (currentIndent <= MAX_INDENT + 1 && leftDiff < 0){
+    leftDiff = ui.position.left - ui.item.parent().position().left;
+    var currentIndent = ui.item[0].style.marginLeft;
+    if (parseInt(currentIndent) <= MAX_INDENT + 1 && leftDiff < 0){
         return; // if answer is not indented, and the student drag it left
                 // do nothing
     }
@@ -75,17 +68,18 @@ function update_indent(ui) {
 
     // leftDiff is the direction to move the MCQ answer tile, in px
     // we limit leftDiff to be increments of TABWIDTH, whether positive or negative
-    leftDiff += currentIndent;
-
+    if (currentIndent != ''){
+        leftDiff += parseInt(currentIndent); 
+    }
     // limit leftDiff to be in [, (TABWIDTH * MAX_INDENT) + ], within the bounds of the drag and drop box
-    // that is, at least indented 0 times, or at most indented by MAX_INDENT times
+    // that is, at least indented 0 times, or at most indented by MAX_INDENT times  
     leftDiff = Math.min(leftDiff, (TABWIDTH * MAX_INDENT));
 
     // when the user drag a tile into the answer box for the first time
     // the snap to grid dragging doesnt apply
     // so we have to manually enforce "snapping the leftDiff number to the nearest grid number" here
-    let remainder = leftDiff % TABWIDTH;
-    if (remainder !== 0) {
+    var remainder = leftDiff % TABWIDTH;
+    if (remainder != 0) {
         // Manually snap to grid here, by rounding to the nearest multiple of TABWIDTH
         if (remainder > (TABWIDTH / 2)){
             leftDiff += remainder; // round towards +∞, to the next bigger multiple of TABWIDTH
@@ -94,7 +88,7 @@ function update_indent(ui) {
         }
     }
 
-    $item.css('margin-left', leftDiff);
+    ui.item[0].style.marginLeft = leftDiff + 'px';
 }
 
 
@@ -119,7 +113,7 @@ $( document ).ready(function() {
         },
         stop: function(event, ui){
             // when the user stops interacting with the list
-            update_indent(ui);
+            update_indent(ui.position.left - ui.item.parent().position().left, ui.item[0].id, ui);
             set_answer(event);
         },
     });
