@@ -117,6 +117,7 @@
         "uuid": "^8.3.2",
         "viz.js": "^2.1.2",
         "winston": "^3.3.3",
+        "winston-aws-cloudwatch": "^3.0.0",
         "xml2js": "^0.4.23",
         "xss": "^1.0.9",
         "yargs": "^17.1.1",

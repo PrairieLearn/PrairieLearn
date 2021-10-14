@@ -1467,10 +1467,10 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha1-x57Zf380y48robyXkLzDZkdLS3k=
 
-aws-sdk@^2.981.0:
-  version "2.981.0"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.981.0.tgz#b2e6205db23d755e1c8fcbd0618e8309e69d3767"
-  integrity sha512-Itrj9O1zmPm/HupwUiWBhoMTuSjLQzsBcEpxHgLQmUPRv2pxud8kq5DbuKdS2tLlBFMuKx4OLcs9x5RbNOfj5A==
+aws-sdk@^2.293.0, aws-sdk@^2.981.0:
+  version "2.1008.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1008.0.tgz#0f6b58ef6093afec2027a49c0696bec52bb79ef6"
+  integrity sha512-wBEon+ARCuMcwEPpOFZqRT3elBLfLtPqv8jMql3Hsr7Ua5toPlgKMmjf368iTzBNaY7TOZsjLAT9nAhvtSZ++g==
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
@@ -1656,6 +1656,11 @@ bootstrap@^4.6.0:
   version "4.6.0"
   resolved "https://registry.yarnpkg.com/bootstrap/-/bootstrap-4.6.0.tgz#97b9f29ac98f98dfa43bf7468262d84392552fd7"
   integrity sha512-Io55IuQY3kydzHtbGvQya3H+KorS/M9rSNyfCGCg9WZ4pyT/lCxIlpJgG1GXW/PswzC84Tr2fBYi+7+jFVQQBw==
+
+bottleneck@^1.16.0:
+  version "1.16.0"
+  resolved "https://registry.yarnpkg.com/bottleneck/-/bottleneck-1.16.0.tgz#d6ce13808527afc80b69092f15606655e5b21f1a"
+  integrity sha1-1s4TgIUnr8gLaQkvFWBmVeWyHxo=
 
 bowser@^2.11.0:
   version "2.11.0"
@@ -5104,6 +5109,11 @@ lodash.get@^4.4.2:
   resolved "https://registry.yarnpkg.com/lodash.get/-/lodash.get-4.4.2.tgz#2d177f652fa31e939b4438d5341499dfa3825e99"
   integrity sha1-LRd/ZS+jHpObRDjVNBSZ36OCXpk=
 
+lodash.isempty@^4.2.1:
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/lodash.isempty/-/lodash.isempty-4.4.0.tgz#6f86cbedd8be4ec987be9aaf33c9684db1b31e7e"
+  integrity sha1-b4bL7di+TsmHvpqvM8loTbGzHn4=
+
 lodash.isplainobject@^4.0.6:
   version "4.0.6"
   resolved "https://registry.yarnpkg.com/lodash.isplainobject/-/lodash.isplainobject-4.0.6.tgz#7c526a52d89b45c45cc690b88163be0497f550cb"
@@ -8081,7 +8091,18 @@ widest-line@^3.1.0:
   dependencies:
     string-width "^4.0.0"
 
-winston-transport@^4.4.0:
+winston-aws-cloudwatch@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/winston-aws-cloudwatch/-/winston-aws-cloudwatch-3.0.0.tgz#243abc85ee4fed0dda92a934850166979b196d72"
+  integrity sha512-QpvP74HjVFGVW5Gap+QwBtg2PYPZToo1tfBTy6I9VIwVFp8KCGxQtqNLeDhpIwG3pg8mrOynrf6Ie/ILTbKkbA==
+  dependencies:
+    aws-sdk "^2.293.0"
+    bottleneck "^1.16.0"
+    debug "^3.1.0"
+    lodash.isempty "^4.2.1"
+    winston-transport "^4.2.0"
+
+winston-transport@^4.2.0, winston-transport@^4.4.0:
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/winston-transport/-/winston-transport-4.4.0.tgz#17af518daa690d5b2ecccaa7acf7b20ca7925e59"
   integrity sha512-Lc7/p3GtqtqPBYYtS6KCN3c77/2QCev51DvcJKbkFPQNoj1sinkGwLGFDxkXY9J6p9+EPnYs+D90uwbnaiURTw==
