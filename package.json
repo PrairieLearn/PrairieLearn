@@ -100,6 +100,7 @@
         "remark-rehype": "^8.1.0",
         "request-promise-native": "^1.0.9",
         "requirejs": "^2.3.5",
+        "s3-streamlogger": "^1.7.0",
         "search-string": "^3.1.0",
         "serve-favicon": "^2.5.0",
         "showdown": "^1.9.1",
