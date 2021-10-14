@@ -59,7 +59,10 @@ function update_indent(ui) {
     }
     let leftDiff = ui.position.left - ui.item.parent().position().left;
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
-    leftDiff += parseInt(ui.item[0].style.marginLeft);
+    let currentIndent = ui.item[0].style.marginLeft;
+    if (currentIndent != '') {
+        leftDiff += parseInt(ui.item[0].style.marginLeft);
+    }
 
     // limit leftDiff to be in within the bounds of the drag and drop box
     // that is, at least indented 0 times, or at most indented by MAX_INDENT times
