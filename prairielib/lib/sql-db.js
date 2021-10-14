@@ -9,6 +9,8 @@ const error = require('./error');
 
 let searchSchema = null;
 
+const SEARCH_SCHEMA = Symbol('SEARCH_SCHEMA');
+
 /**
  * Formats a string for debugging.
  *
@@ -112,6 +114,13 @@ module.exports.init = function(pgConfig, idleErrorHandler, callback) {
             idleErrorHandler(err, client);
         });
     });
+    pool.on('remove', (client) => {
+        // This shouldn't be necessary, as `pg` currently allows clients to be
+        // garbage collected after they're removed. However, if `pg` someday
+        // starts reusing client objects across difference connections, this
+        // will ensure that we re-set the search path when the client reconnects.
+        delete client[SEARCH_SCHEMA];
+    });
 
     let retryCount = 0;
     const retryTimeouts = [500, 1000, 2000, 5000, 10000];
@@ -179,13 +188,34 @@ module.exports.getClient = function(callback) {
     }
     pool.connect(function(err, client, done) {
         if (ERR(err, callback)) return;
-        if (searchSchema != null) {
+
+        // If we're configured to use a particular schema, we'll store whether or
+        // not the search path has already been configured for this particular
+        // client. If we acquire a client and it's already had its search path
+        // set, we can avoid setting it again since the search path will persist
+        // for the life of the client.
+        //
+        // We do this check for each call to `getClient` instead of on
+        // `pool.connect` so that we don't have to be really careful about
+        // destroying old clients that were created before `setSearchSchema` was 
+        // called. Instead, we'll just check if the search path matches the
+        // currently-desired schema, and if it's a mismatch (or doesn't exist
+        // at all), we re-set it for the current client.
+        //
+        // Note that this accidentally supports changing the search_path on the fly,
+        // although that's not something we currently do (or would be likely to do).
+        // It does NOT support clearing the existing search schema - e.g.,
+        // `setSearchSchema(null)` would not work as you expect. This is fine, as
+        // that's not something we ever do in practice.
+        if (searchSchema != null && client[SEARCH_SCHEMA] !== searchSchema) {
             const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
             module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
                 if (err) {
                     done();
-                    return ERR(err, callback); // unconditionally return
+                    // unconditionally return
+                    return ERR(err, callback);
                 }
+                client[SEARCH_SCHEMA] = searchSchema;
                 callback(null, client, done);
             });
         } else {
