@@ -47,7 +47,7 @@ function set_answer(event) {
 }
 
 
-function update_indent(leftDiff, id, ui) {
+function update_indent(ui) {
     if (ui.item.parent()[0].classList.contains('inline')) {
         return;
     }
@@ -57,7 +57,7 @@ function update_indent(leftDiff, id, ui) {
         ui.item[0].style.marginLeft = '0px';
         return;
     }
-
+    let leftDiff = ui.position.left - ui.item.parent().position().left
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
     leftDiff += parseInt(ui.item[0].style.marginLeft);
 
@@ -91,7 +91,7 @@ $( document ).ready(function() {
         },
         stop: function(event, ui){
             // when the user stops interacting with the list
-            update_indent(ui.position.left - ui.item.parent().position().left, ui.item[0].id, ui);
+            update_indent(ui);
             set_answer(event);
         },
     });
