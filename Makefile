@@ -18,8 +18,9 @@ start-redis:
 start-s3rver:
 	@docker/start_s3rver.sh
 
-test: test-js test-prairielib test-grader-host test-python
-test-js: start-support
+test: test-js test-python
+test-js: test-prairielearn test-prairielib test-grader-host
+test-prairielearn: start-support
 	@nyc --reporter=lcov mocha tests/index.js
 test-prairielib:
 	@jest prairielib/
