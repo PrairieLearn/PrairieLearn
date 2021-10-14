@@ -61,10 +61,10 @@ function update_indent(leftDiff, id, ui) {
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
     leftDiff += parseInt(ui.item[0].style.marginLeft);
 
-    // limit leftDiff to be in  within the bounds of the drag and drop box
+    // limit leftDiff to be in within the bounds of the drag and drop box
     // that is, at least indented 0 times, or at most indented by MAX_INDENT times
     leftDiff = Math.min(leftDiff, (TABWIDTH * MAX_INDENT));
-    leftDiff = leftDiff > 0 ? leftDiff : 0; // only allow indentation to the right of the margin
+    leftDiff = leftDiff > 0 ? leftDiff : 0;
 
     ui.item[0].style.marginLeft = leftDiff + 'px';
 }
