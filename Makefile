@@ -1,4 +1,4 @@
-PATH := node_modules/.bin/:$(PATH)
+export PATH := node_modules/.bin/:$(PATH)
 
 start: start-support
 	@node server.js
@@ -18,9 +18,13 @@ start-redis:
 start-s3rver:
 	@docker/start_s3rver.sh
 
-test: test-js test-python
+test: test-js test-prairielib test-grader-host test-python
 test-js: start-support
 	@nyc --reporter=lcov mocha tests/index.js
+test-prairielib:
+	@jest prairielib/
+test-grader-host:
+	@jest grader_host/
 test-nocoverage: start-support
 	@mocha tests/index.js
 test-python:
