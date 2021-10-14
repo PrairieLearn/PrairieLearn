@@ -60,7 +60,7 @@ function update_indent(ui) {
     let leftDiff = ui.position.left - ui.item.parent().position().left;
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
     let currentIndent = ui.item[0].style.marginLeft;
-    if (currentIndent != '') {
+    if (currentIndent !== '') {
         leftDiff += parseInt(currentIndent);
     }
 
