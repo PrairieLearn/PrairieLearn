@@ -64,7 +64,7 @@ function update_indent(ui) {
     // limit leftDiff to be in within the bounds of the drag and drop box
     // that is, at least indented 0 times, or at most indented by MAX_INDENT times
     leftDiff = Math.min(leftDiff, (TABWIDTH * MAX_INDENT));
-    leftDiff = leftDiff > 0 ? leftDiff : 0;
+    leftDiff = Math.max(leftDiff, 0);
 
     ui.item[0].style.marginLeft = leftDiff + 'px';
 }
