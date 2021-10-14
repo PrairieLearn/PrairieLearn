@@ -47,17 +47,14 @@ function set_answer(event) {
 }
 
 
-function update_indent(ui) {
-    if (ui.item.parent()[0].classList.contains('inline')) {
-        return;
+function calculate_indent(ui, parent) {
+    if (!parent[0].classList.contains('dropzone') ||
+        !parent[0].classList.contains('enableIndentation')) {
+        // don't indent on option panel or solution panel with indents explicitly disabled
+        return 0;
     }
-    if (!ui.item.parent()[0].classList.contains('dropzone') ||
-        !ui.item.parent()[0].classList.contains('enableIndentation')) {
-        // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
-        ui.item[0].style.marginLeft = '0px';
-        return;
-    }
-    let leftDiff = ui.position.left - ui.item.parent().position().left;
+
+    let leftDiff = ui.position.left - parent.position().left;
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
     let currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent !== '') {
@@ -69,7 +66,7 @@ function update_indent(ui) {
     leftDiff = Math.min(leftDiff, (TABWIDTH * MAX_INDENT));
     leftDiff = Math.max(leftDiff, 0);
 
-    ui.item[0].style.marginLeft = leftDiff + 'px';
+    return leftDiff;
 }
 
 
@@ -81,11 +78,20 @@ $( document ).ready(function() {
         cancel: '.info',
         connectWith: '.pl-order-blocks-connected-sortable',
         placeholder: 'ui-state-highlight',
-        create: function(event){
+        create: function(event) {
             // when the sortable is created, we need to put the two functions here
             // to restore progress when the user refresh/submits an answer
             set_answer(event);
             set_max_indent(event);
+        },
+        sort: function(event, ui) {
+            // update the location of the placeholder as the item is dragged
+            let placeholders = $('.ui-sortable-placeholder');
+            if (placeholders.length > 0) {
+                let parent = $(placeholders[0].parentElement);
+                let leftDiff = calculate_indent(ui, parent);
+                placeholders[0].style.marginLeft = leftDiff + 'px';
+            }
         },
         beforeStop: function(event, ui){
             if (!check_block(event, ui)) {
@@ -94,7 +100,8 @@ $( document ).ready(function() {
         },
         stop: function(event, ui){
             // when the user stops interacting with the list
-            update_indent(ui);
+            let leftDiff = calculate_indent(ui, ui.item.parent())
+            ui.item[0].style.marginLeft = leftDiff + 'px';
             set_answer(event);
         },
     });
