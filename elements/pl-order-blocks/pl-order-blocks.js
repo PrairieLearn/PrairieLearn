@@ -100,7 +100,7 @@ $( document ).ready(function() {
         },
         stop: function(event, ui){
             // when the user stops interacting with the list
-            let leftDiff = calculate_indent(ui, ui.item.parent())
+            let leftDiff = calculate_indent(ui, ui.item.parent());
             ui.item[0].style.marginLeft = leftDiff + 'px';
             set_answer(event);
         },
