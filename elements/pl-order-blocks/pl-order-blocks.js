@@ -61,7 +61,7 @@ function update_indent(ui) {
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
     let currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent != '') {
-        leftDiff += parseInt(ui.item[0].style.marginLeft);
+        leftDiff += parseInt(currentIndent);
     }
 
     // limit leftDiff to be in within the bounds of the drag and drop box
