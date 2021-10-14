@@ -19,7 +19,7 @@ function check_block(event, ui) {
 
 function set_answer(event) {
     // We only care about when this function is fired
-    // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds
+    // from an answer dropzone, aka dropzones with yellow backgrounds
     var textfield_name = event.target.getAttribute('name');
     var dom_objs = $('#' + textfield_name + '-dropzone').children();
     var student_answers_array = [];
@@ -52,7 +52,7 @@ function update_indent(ui) {
         return;
     }
     if (!ui.item.parent()[0].classList.contains('dropzone') ||
-        !ui.item.parent()[0].classList.contains('enableIndentation')){
+        !ui.item.parent()[0].classList.contains('enableIndentation')) {
         // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
         ui.item[0].style.marginLeft = '0px';
         return;
