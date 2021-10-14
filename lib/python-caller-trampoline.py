@@ -17,12 +17,22 @@
 
 import sys, os, json, importlib, copy, base64, io, matplotlib, signal, sklearn, nltk
 from inspect import signature
+import sympy
 
 saved_path = copy.copy(sys.path)
 
 # pre-loading imports
 sys.path.insert(0, os.path.abspath('../question-servers/freeformPythonLib'))
 import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib
+
+def convert_json_dumps_default(obj):
+    if isinstance(obj, sympy.Symbol):
+        return str(obj)
+    else:
+        try:
+            return str(obj)
+        except:
+            raise TypeError("Object of type %s cannot be JSON serialized!" % type(obj)) 
 
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
@@ -31,7 +41,7 @@ import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib
 # debug the problem.
 def try_dumps(obj, sort_keys=False, allow_nan=False):
     try:
-        return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
+        return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan, default=lambda o: convert_json_dumps_default(o))
     except:
         print('Error converting this object to json:\n{:s}\n'.format(str(obj)))
         raise

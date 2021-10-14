@@ -68,6 +68,142 @@
         <p>The <code>allow-blank</code> attribute allows an expression to be left blank by the user and still be considered valid. By default a blank expression is equivalent to the expression <code>0</code>, unless the <code>blank-value</code> is used.</p>
         <p>Simplify the expression $x^2+x+1$, or leave it blank if the expression cannot be simplified further.</p>
       </pl-question-panel>
-      <pl-symbolic-input answers-name="simplify" variables="x" allow-blank="true" blank-value="x^2+x+1"></pl-symbolic-input>
+      <pl-symbolic-input answers-name="simplify_example" variables="x" allow-blank="true" blank-value="x^2+x+1"></pl-symbolic-input>
     </div>
 </div>
+
+<div class="card my-2">
+     <div class="card-header">
+     Basic symbolic parsing of expressions with variables:
+     </div>
+     <div class="card-body">
+          <pl-question-panel>
+                <p><i>Enter the following response:</i> <code>x + y + 1</code></p>
+          </pl-question-panel>
+          <pl-symbolic-input answers-name="symbolic_math_example1" variables="x, y" label="$z =$" />
+     </div>
+</div>
+
+<div class="card my-2">
+     <div class="card-header">
+     Parsing of expressions with custom symbolic function names:
+     </div>
+     <div class="card-body">
+       <pl-question-panel>
+          <p>We expect an input expression involving the two <code>extra-functions</code> denoted by 
+          <code>log32</code> and <code>zeta</code>. Note that there are no corresponding function bodies behind 
+          these two functions as specified.</p>
+          <p><i>Enter the following response:</i> <code>log32(x^2) * zeta(5) + y</code></p>
+       </pl-question-panel>
+       <pl-symbolic-input answers-name="symbolic_math_example2" variables="x, y" 
+               extra-functions="log32, zeta" label="$z =$" />
+     </div>
+</div>
+
+<div class="card my-2">
+     <div class="card-header">
+     Enabling non-default sets of functions by group name:
+     </div>
+     <div class="card-body">
+       <pl-question-panel>
+          <p>We will give an example where a few of the allowed function group names are enabled. 
+             The next listings document what named function definitions are included 
+             by enabling these individual groups:
+             <ul>
+                  <li><code>trig-base</code>: Support for definitions of basic (non-hyperbolic) trigonometric functions 
+                      including $\cos$, $\sin$, $\tan$, $\sec$, $\cot$, $\csc$, 
+                      $\operatorname{acos}$, $\operatorname{asin}$, $\operatorname{atan}$, 
+                      $\operatorname{asec}$, $\operatorname{acot}$, $\operatorname{acsc}$, 
+                      $\operatorname{arccos}$, $\operatorname{arcsin}$, 
+                      $\operatorname{arctan}$, and $\operatorname{atan2}$.
+                  </li>
+                  <li><code>trig-hyperbolic</code>: Support for definitions of hyperbolic trig functions and their inverses 
+                      including $\cosh$, $\sinh$, $\tanh$, $\operatorname{sech}$, $\coth$, $\operatorname{csch}$, 
+                      $\operatorname{acosh}$, $\operatorname{asinh}$, $\operatorname{atanh}$, 
+                      $\operatorname{asech}$, $\operatorname{acoth}$, and $\operatorname{acsch}$. 
+                  </li>
+                  <li><code>complex-variables</code>: Support for definitions of standard functions used 
+                       with complex variables including $\operatorname{arg}$, $\operatorname{mod}$, 
+                       $\operatorname{re}$, $\operatorname{im}$, and $\operatorname{conj}$. 
+                  </li>
+                  <li><code>logarithmic</code>: Support for definitions of common variants on notation for a few 
+                      logarithm type functions including $\log$, $\ln$, $\operatorname{lg}$, $\operatorname{log2}$, 
+                      $\operatorname{log10}$, $\exp$. 
+                  </li>
+                  <li><code>prog-extended</code>: Support for definitions of functions that are otherwise common in 
+                      discrete math and / or theory classes including 
+                      $\max$, $\min$, $\operatorname{ceil}$, $\operatorname{floor}$, 
+                      $\operatorname{frac}$, $\operatorname{abs}$, $\operatorname{sgn}$, 
+                      $\gcd$, $\operatorname{lcm}$, and $\operatorname{sqrt}$. 
+                  </li>
+                  <li><code>calculus-extended</code>: Support for definitions of function names and implementations 
+                      that are common in problem sets for typical introductory courses in differential and integral calculus
+                      including $\cos$, $\sin$, $\tan$, $\sec$, $\cot$, $\csc$, 
+                      $\operatorname{acos}$, $\operatorname{asin}$, $\operatorname{atan}$, 
+                      $\operatorname{asec}$, $\operatorname{acot}$, $\operatorname{acsc}$, 
+                      $\operatorname{arccos}$, $\operatorname{arcsin}$, 
+                      $\operatorname{arctan}$, $\operatorname{atan2}$, $\cosh$, 
+                      $\sinh$, $\tanh$, $\operatorname{sech}$, $\coth$, $\operatorname{csch}$, 
+                      $\operatorname{acosh}$, $\operatorname{asinh}$, $\operatorname{atanh}$, 
+                      $\operatorname{asech}$, $\operatorname{acoth}$, $\operatorname{acsch}$, 
+                      $\ln$, and $\exp$. 
+                  </li>
+             </ul>
+          </p>
+           <p><i>Enter the following response:</i> <code>ln((max(1-t, x) + min(y+2, z) - lg(w^2)) / 2)</code></p>
+       </pl-question-panel>
+       <pl-symbolic-input answers-name="symbolic_math_example3" variables="x, y, z, w, t" 
+               enable-function-groups="calculus-extended, logarithmic, prog-extended" 
+               label="$z =$" />
+     </div>
+</div>
+            
+<div class="card my-2">
+     <div class="card-header">
+     Enabling non-default groups of symbolic constants and units:
+     </div>
+     <div class="card-body">
+       <pl-question-panel>
+          <p>We have three sets of symbolic constant values that can be enabled for use in symbolic parsing of 
+             the student input. The next listings document what named function definitions are included 
+             by enabling these individual groups:
+             <ul>
+                  <li><code>named-constants</code>: Support for special symbolic values including 
+                      $\mathtt{inf}$ (undirected extended real infinity), $\mathtt{zoo}$ 
+                      (undirected complex infinity), $\mathtt{NaN}$, $\mathtt{pi}$, $\mathtt{e}$, 
+                      $\mathtt{golden\_ratio}$, $\mathtt{catalanK}$, $\mathtt{euler\_gamma}$, 
+                      $\mathtt{zeta2}$, $\mathtt{zeta3}$, $\mathtt{log2}$, $\mathtt{sqrtpi}$, 
+                      $\mathtt{sqrt2}$, $\mathtt{log2e}$, $\mathtt{log10e}$, $\mathtt{ln10}$, and 
+                      $\mathtt{cbrt\_omega}$ (primitive cube root of unity, the other of which is 
+                      available by complex conjugation). 
+                  </li>
+                  <li><code>named-units</code>: Support for a subset of the common SI unit (as powers of ten) 
+                      and binary unit (as powers of two) multipliers including 
+                      $\mathtt{peta\_si}$, $\mathtt{tera\_si}$, $\mathtt{giga\_si}$, $\mathtt{mega\_si}$, 
+                      $\mathtt{kilo\_si}$, $\mathtt{deci\_si}$, $\mathtt{centi\_si}$, 
+                      $\mathtt{milli\_si}$, $\mathtt{micro\_si}$, $\mathtt{nano\_si}$, $\mathtt{pico\_si}$, 
+                      $\mathtt{kibi}$, $\mathtt{mibi}$, $\mathtt{gibi}$, and $\mathtt{tebi}$. 
+                  </li>
+                  <li><code>named-physical-constants</code>: Support for common physical constants that is a good start for 
+                      applications but by no means exhaustive including 
+                      $\mathtt{speed\_of\_light}$ (in a vacuum), $\mathtt{planck\_h}$, 
+                      $\mathtt{newton\_G}$ (constant of gravitation), $\mathtt{acc\_g}$ (standard acceleration of gravity), 
+                      $\mathtt{molgas\_R}$ (molar gas constant), $\mathtt{boltzmann\_k}$, 
+                      $\mathtt{liter}$ (in cubic meters), $\mathtt{speed\_of\_sound}$ 
+                      (One Mach (approx., at 15 C, 1 atm) in meters per second), 
+                      $\mathtt{zero\_celsius}$ (on the Kelvin scale), $\mathtt{one\_degree\_F}$ (Kelvin), 
+                      $\mathtt{eV}$ (one electron volt in Joules), $\mathtt{colorie}$ (one thermochemical calorie in Joules), 
+                      $\mathtt{Btu}$ (unit in Joules), $\mathtt{pound_force}$ (in Newtons), and 
+                      $\mathtt{kilogram\_force}$ (in Newtons). 
+                  </li>
+             </ul>
+          </p>
+           <p><i>Enter the following response:</i> <code>x * mod(cbrt_omega) / 137 + 1 - t^(3 / 2)</code></p>
+          </pl-question-panel>
+          <pl-symbolic-input answers-name="symbolic_math_example4" variables="x, t" 
+               allow-complex="true" enable-function-groups="complex-variables" 
+               enable-constant-groups="named-constants" 
+               label="$z =$" />
+     </div>
+</div>
+
