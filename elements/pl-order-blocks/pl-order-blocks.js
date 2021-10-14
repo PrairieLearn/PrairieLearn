@@ -57,7 +57,7 @@ function update_indent(ui) {
         ui.item[0].style.marginLeft = '0px';
         return;
     }
-    let leftDiff = ui.position.left - ui.item.parent().position().left
+    let leftDiff = ui.position.left - ui.item.parent().position().left;
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
     leftDiff += parseInt(ui.item[0].style.marginLeft);
 
