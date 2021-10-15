@@ -535,24 +535,26 @@ module.exports.queryZeroOrOneRow = callbackify(module.exports.queryZeroOrOneRowA
  *
  * @param {string} functionName - The name of the function to call
  * @param {any[]} params - The params for the function
- * @param {ResultsCallback} callback
+ * @returns {Promise<QueryResult>}
  */
-module.exports.call = function(functionName, params, callback) {
+module.exports.callAsync = async function(functionName, params) {
     debug('call()', 'function:', functionName);
     debug('call()', 'params:', debugParams(params));
     const placeholders = _.map(_.range(1, params.length + 1), v => '$' + v).join();
-    const sql = 'SELECT * FROM ' + functionName + '(' + placeholders + ')';
-    module.exports.query(sql, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        debug('call() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const sql = `SELECT * FROM ${functionName}(${placeholders});`;
+    const result = await module.exports.queryAsync(sql, params);
+    debug('call() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Calls the given function with the specified parameters.
+ * 
+ * @param {string} functionName - The name of the function to call
+ * @param {any[]} params - The params for the function
+ * @param {ResultsCallback} callback
  */
-module.exports.callAsync = promisify(module.exports.call);
+module.exports.call = callbackify(module.exports.callAsync);
 
 /**
  * Calls the given function with the specified parameters. Errors if the
