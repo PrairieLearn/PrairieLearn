@@ -621,25 +621,28 @@ module.exports.callZeroOrOneRow = callbackify(module.exports.callZeroOrOneRowAsy
  *
  * @param { import("pg").PoolClient } client
  * @param {string} functionName
- * @param {Params} params
- * @param {ResultsCallback} callback
+ * @param {any[]} params
+ * @returs {Promise<QueryResult>}
  */
-module.exports.callWithClient = function(client, functionName, params, callback) {
+module.exports.callWithClientAsync = async function(client, functionName, params) {
     debug('callWithClient()', 'function:', functionName);
     debug('callWithClient()', 'params:', debugParams(params));
     const placeholders = _.map(_.range(1, params.length + 1), v => '$' + v).join();
-    const sql = 'SELECT * FROM ' + functionName + '(' + placeholders + ')';
-    module.exports.queryWithClient(client, sql, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        debug('callWithClient() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const sql = `SELECT * FROM ${functionName}(${placeholders})`;
+    const result = await module.exports.queryWithClientAsync(client, sql, params);
+    debug('callWithClient() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Calls a function with the specified parameters using a specific client.
+ * 
+ * @param { import("pg").PoolClient } client
+ * @param {string} functionName
+ * @param {Params} params
+ * @param {ResultsCallback} callback
  */
-module.exports.callWithClientAsync = promisify(module.exports.callWithClient);
+module.exports.callWithClient = callbackify(module.exports.callWithClientAsync);
 
 /**
  * Calls a function with the specified parameters using a specific client.
