@@ -47,12 +47,18 @@ function debugParams(params) {
  *
  * @param {String} sql
  * @param {Params} params
- * @param {(error: Error | null, processedSql: string, paramsArray: any[])} callback
+ * @returns {{ processedSql: string, paramsArray: any }}
  */
-function paramsToArray(sql, params, callback) {
-    if (!_.isString(sql)) return callback(new Error('SQL must be a string'));
-    if (_.isArray(params)) return callback(null, sql, params);
-    if (!_.isObjectLike(params)) return callback(new Error('params must be array or object'));
+function paramsToArray(sql, params) {
+    if (typeof sql !== 'string') throw new Error('SQL must be a string');
+    if (Array.isArray(params)) {
+        return {
+            processedSql: sql,
+            paramsArray: params,
+        };
+    }
+    if (!_.isObjectLike(params)) throw new Error('params must be array or object');
+
     const re = /\$([-_a-zA-Z0-9]+)/;
     let result;
     let processedSql = '';
@@ -63,7 +69,7 @@ function paramsToArray(sql, params, callback) {
     while ((result = re.exec(remainingSql)) !== null) {
         const v = result[1];
         if (!_(map).has(v)) {
-            if (!_(params).has(v)) return callback(new Error('Missing parameter: ' + v));
+            if (!_(params).has(v)) throw new Error(`Missing parameter: ${v}`);
             if (_.isArray(params[v])) {
                 map[v] = 'ARRAY[' + _.map(_.range(nParams + 1, nParams + params[v].length + 1), function(n) {return '$' + n;}).join(',') + ']';
                 nParams += params[v].length;
@@ -79,7 +85,7 @@ function paramsToArray(sql, params, callback) {
     }
     processedSql += remainingSql;
     remainingSql = '';
-    callback(null, processedSql, paramsArray);
+    return { processedSql, paramsArray };
 }
 
 /**
@@ -251,19 +257,16 @@ module.exports.getClientAsync = function() {
 module.exports.queryWithClient = function(client, sql, params, callback) {
     debug('queryWithClient()', 'sql:', debugString(sql));
     debug('queryWithClient()', 'params:', debugParams(params));
-    paramsToArray(sql, params, function(err, newSql, newParams) {
-        if (err) err = error.addData(err, {sql: sql, sqlParams: params});
+    const { processedSql, paramsArray } = paramsToArray(sql, params);
+    client.query(processedSql, paramsArray, function(err, result) {
+        if (err) {
+            const sqlError = JSON.parse(JSON.stringify(err));
+            sqlError.message = err.message;
+            err = error.addData(err, {sqlError: sqlError, sql: sql, sqlParams: params, result: result});
+        }
         if (ERR(err, callback)) return;
-        client.query(newSql, newParams, function(err, result) {
-            if (err) {
-                const sqlError = JSON.parse(JSON.stringify(err));
-                sqlError.message = err.message;
-                err = error.addData(err, {sqlError: sqlError, sql: sql, sqlParams: params, result: result});
-            }
-            if (ERR(err, callback)) return;
-            debug('queryWithClient() success', 'rowCount:', result.rowCount);
-            callback(null, result);
-        });
+        debug('queryWithClient() success', 'rowCount:', result.rowCount);
+        callback(null, result);
     });
 };
 
