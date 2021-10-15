@@ -591,28 +591,30 @@ module.exports.callOneRow = callbackify(module.exports.callOneRowAsync);
  * function returns more than one row.
  *
  * @param {string} functionName - The name of the function to call
- * @param {Params} params - The params for the function
- * @param {ResultsCallback} callback
+ * @param {any[]} params - The params for the function
+ * @returns {Promise<QueryResult>}
  */
-module.exports.callZeroOrOneRow = function(functionName, params, callback) {
+module.exports.callZeroOrOneRowAsync = async function(functionName, params) {
     debug('callZeroOrOneRow()', 'function:', functionName);
     debug('callZeroOrOneRow()', 'params:', debugParams(params));
-    module.exports.call(functionName, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount > 1) {
-            const data = {functionName: functionName, sqlParams: params};
-            return callback(error.makeWithData('Incorrect rowCount: ' + result.rowCount, data));
-        }
-        debug('callZeroOrOneRow() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const result = await module.exports.callAsync(functionName, params);
+    if (result.rowCount > 1) {
+        const data = {functionName: functionName, sqlParams: params};
+        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, data);
+    }
+    debug('callZeroOrOneRow() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Calls the given function with the specified parameters. Errors if the
  * function returns more than one row.
+ * 
+ * @param {string} functionName - The name of the function to call
+ * @param {Params} params - The params for the function
+ * @param {ResultsCallback} callback
  */
-module.exports.callZeroOrOneRowAsync = promisify(module.exports.callZeroOrOneRow);
+module.exports.callZeroOrOneRow = callbackify(module.exports.callZeroOrOneRowAsync);
 
 /**
  * Calls a function with the specified parameters using a specific client.
