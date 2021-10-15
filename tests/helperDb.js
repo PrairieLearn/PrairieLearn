@@ -77,6 +77,7 @@ var createFullDatabase = function(dbName, dropFirst, mochaThis, callback) {
     // long timeout because DROP DATABASE might take a long time to error
     // if other processes have an open connection to that database
     mochaThis.timeout(20000);
+    /** @type {import('pg').Client} */
     var client;
     async.series([
         function(callback) {
@@ -214,6 +215,7 @@ var dropDatabase = function(dbName, mochaThis, callback, forceDrop=false) {
     // long timeout because DROP DATABASE might take a long time to error
     // if other processes have an open connection to that database
     mochaThis.timeout(20000);
+    /** @type {import('pg').Client} */
     var client;
     async.series([
         function(callback) {
