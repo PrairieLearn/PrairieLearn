@@ -266,30 +266,37 @@ module.exports.queryWithClient = callbackify(module.exports.queryWithClientAsync
  * Performs a query with the given client. Errors if the query returns more
  * than one row.
  *
- * @param { import("pg").PoolClient } client - The client with which to execute the query
+ * @param {import("pg").PoolClient} client - The client with which to execute the query
  * @param {String} sql - The SQL query to execute
  * @param {Params} params
+ * @returns {Promise<QueryResult>}
  * @param {ResultsCallback} callback
  */
-module.exports.queryWithClientOneRow = function(client, sql, params, callback) {
+module.exports.queryWithClientOneRowAsync = async function(client, sql, params, callback) {
     debug('queryWithClientOneRow()', 'sql:', debugString(sql));
     debug('queryWithClientOneRow()', 'params:', debugParams(params));
-    module.exports.queryWithClient(client, sql, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount !== 1) {
-            const data = {sql: sql, sqlParams: params, result: result};
-            return callback(error.makeWithData('Incorrect rowCount: ' + result.rowCount, data));
-        }
-        debug('queryWithClientOneRow() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const result = await module.exports.queryWithClientAsync(client, sql, params);
+    if (result.rowCount !== 1) {
+        throw error.makeWithData(`Incorrect rowCount: ${result.rowCount}`, {
+            sql,
+            sqlParams: params,
+            result,
+        });
+    }
+    debug('queryWithClientOneRow() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Performs a query with the given client. Errors if the query returns more
  * than one row.
+ * 
+ * @param {import("pg").PoolClient} client - The client with which to execute the query
+ * @param {String} sql - The SQL query to execute
+ * @param {Params} params
+ * @param {ResultsCallback} callback
  */
-module.exports.queryWithClientOneRowAsync = promisify(module.exports.queryWithClientOneRow);
+module.exports.queryWithClientOneRow = callbackify(module.exports.queryWithClientOneRowAsync);
 
 /**
  * Performs a query with the given client. Errors if the query returns more
