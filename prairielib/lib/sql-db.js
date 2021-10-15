@@ -506,27 +506,29 @@ module.exports.queryOneRow = callbackify(module.exports.queryOneRowAsync);
  *
  * @param {string} sql - The SQL query to execute
  * @param {Params} params - The params for the query
- * @param {ResultsCallback} callback
+ * @returns {Promise<QueryResult>}
  */
-module.exports.queryZeroOrOneRow = function(sql, params, callback) {
+module.exports.queryZeroOrOneRowAsync = async function(sql, params) {
     debug('queryZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryZeroOrOneRow()', 'params:', debugParams(params));
-    module.exports.query(sql, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount > 1) {
-            const data = {sql: sql, sqlParams: params};
-            return callback(error.makeWithData('Incorrect rowCount: ' + result.rowCount, data));
-        }
-        debug('queryZeroOrOneRow() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const result = await module.exports.queryAsync(sql, params);
+    if (result.rowCount > 1) {
+        const data = {sql: sql, sqlParams: params};
+        throw error.makeWithData(`Incorrect rowCount: ${result.rowCount}`, data);
+    }
+    debug('queryZeroOrOneRow() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Executes a query with the specified parameters. Errors if the query
  * returns more than one row.
+ * 
+ * @param {string} sql - The SQL query to execute
+ * @param {Params} params - The params for the query
+ * @param {ResultsCallback} callback
  */
-module.exports.queryZeroOrOneRowAsync = promisify(module.exports.queryZeroOrOneRow);
+module.exports.queryZeroOrOneRow = callbackify(module.exports.queryZeroOrOneRowAsync);
 
 /**
  * Calls the given function with the specified parameters.
