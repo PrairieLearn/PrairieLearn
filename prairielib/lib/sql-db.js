@@ -153,10 +153,8 @@ module.exports.init = callbackify(module.exports.initAsync);
  * 
  * @returns {Promise<void>}
  */
-module.exports.closeAsync = async function(callback) {
-    if (!pool) {
-        return callback(null);
-    }
+module.exports.closeAsync = async function() {
+    if (!pool) return;
     await pool.end();
     pool = null;
 };
@@ -222,11 +220,9 @@ module.exports.getClientAsync = async function() {
  * @param {(error: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
  */
 module.exports.getClient = function(callback) {
-    module.exports.getClientAsync().then(({ client, done }) => {
-        callback(null, client, done);
-    }).catch((err) => {
-        callback(err);
-    });
+    module.exports.getClientAsync()
+        .then(({ client, done }) => callback(null, client, done))
+        .catch((err) => callback(err));
 };
 
 /**
@@ -261,15 +257,7 @@ module.exports.queryWithClientAsync = async function(client, sql, params) {
  * @param {Params} params
  * @param {ResultsCallback} callback
  */
-module.exports.queryWithClient = (client, sql, params, callback) => {
-    // Note that we can't use `util.callbackify` because TypeScript incorrectly
-    // infers the arity of the function we're wrapping.
-    // https://github.com/microsoft/TypeScript/issues/41607
-    module.exports.queryWithClientAsync(client, sql, params)
-        .then((result) => callback(null, result))
-        .catch((err) => callback(err));
-};
-    callbackify(module.exports.queryWithClientAsync);
+module.exports.queryWithClient = callbackify(module.exports.queryWithClientAsync);
 
 /**
  * Performs a query with the given client. Errors if the query returns more
