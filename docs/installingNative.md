@@ -8,7 +8,7 @@ This page describes the procedure to install and run PrairieLearn without any us
 * Install the pre-requisites:
 
     * [Node.js](http://nodejs.org/)
-    * [npm](https://npmjs.org/) (included with Node.js on Windows)
+    * [Yarn](https://classic.yarnpkg.com/lang/en/docs/install/)
     * [PostgreSQL](https://www.postgresql.org)
     * [Python 3](https://www.python.org)
     * command-line git or [GitHub Desktop](https://desktop.github.com)
@@ -27,19 +27,7 @@ git clone https://github.com/PrairieLearn/PrairieLearn.git
 
 ```sh
 cd PrairieLearn
-npm ci
-```
-
-On OS X, it is possible that this process will fail on `node-gyp rebuild` during the install of `mcrypt`. In this case, use the following command instead:
-
-```sh
-npm ci --python=PATH_TO_PYTHON2
-```
-
-For example, this might be:
-
-```sh
-npm ci --python=/usr/bin/python2.7
+yarn
 ```
 
 * Make sure `python3` and `python3.6` will run the right version, and make executable links if needed:
