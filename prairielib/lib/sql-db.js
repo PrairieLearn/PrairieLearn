@@ -561,28 +561,30 @@ module.exports.call = callbackify(module.exports.callAsync);
  * function does not return exactly one row.
  *
  * @param {string} functionName - The name of the function to call
- * @param {Params} params - The params for the function
- * @param {ResultsCallback} callback
+ * @param {any[]} params - The params for the function
+ * @returns {Promise<QueryResult>}
  */
-module.exports.callOneRow = function(functionName, params, callback) {
+module.exports.callOneRowAsync = async function(functionName, params) {
     debug('callOneRow()', 'function:', functionName);
     debug('callOneRow()', 'params:', debugParams(params));
-    module.exports.call(functionName, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount !== 1) {
-            const data = {functionName: functionName, sqlParams: params};
-            return callback(error.makeWithData('Incorrect rowCount: ' + result.rowCount, data));
-        }
-        debug('callOneRow() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const result = await module.exports.callAsync(functionName, params);
+    if (result.rowCount !== 1) {
+        const data = {functionName: functionName, sqlParams: params};
+        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, data);
+    }
+    debug('callOneRow() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Calls the given function with the specified parameters. Errors if the
  * function does not return exactly one row.
+ * 
+ * @param {string} functionName - The name of the function to call
+ * @param {Params} params - The params for the function
+ * @param {ResultsCallback} callback
  */
-module.exports.callOneRowAsync = promisify(module.exports.callOneRow);
+module.exports.callOneRow = callbackify(module.exports.callOneRowAsync);
 
 /**
  * Calls the given function with the specified parameters. Errors if the
