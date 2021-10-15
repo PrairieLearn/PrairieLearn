@@ -129,7 +129,8 @@ module.exports.initAsync = async function(pgConfig, idleErrorHandler) {
     const retryTimeouts = [500, 1000, 2000, 5000, 10000];
     while (retryCount <= retryTimeouts.length) {
         try {
-            await pool.connect();
+            const client = await pool.connect();
+            client.release();
             return;
         } catch (err) {
             if (retryCount === retryTimeouts.length) {
