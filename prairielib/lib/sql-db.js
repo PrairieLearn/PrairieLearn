@@ -447,26 +447,28 @@ module.exports.endTransaction = callbackify(module.exports.endTransactionAsync);
  * Executes a query with the specified parameters.
  *
  * @param {string} sql - The SQL query to execute
- * @param {Params} params - The params for the query
- * @param {ResultsCallback} callback
+ * @param {Params} [params] - The params for the query
+ * @returns {Promise<QueryResult>}
  */
-module.exports.query = function(sql, params, callback) {
+module.exports.queryAsync = async function(sql, params) {
     debug('query()', 'sql:', debugString(sql));
     debug('query()', 'params:', debugParams(params));
-    module.exports.getClient((err, client, done) => {
-        if (ERR(err, callback)) return;
-        module.exports.queryWithClient(client, sql, params, (err, result) => {
-            done();
-            if (ERR(err, callback)) return;
-            callback(null, result);
-        });
-    });
+    const { client } = await module.exports.getClientAsync();
+    try {
+        return await module.exports.queryWithClientAsync(client, sql, params);
+    } finally {
+        client.release();
+    }
 };
 
 /**
  * Executes a query with the specified parameters.
+ * 
+ * @param {string} sql - The SQL query to execute
+ * @param {Params} params - The params for the query
+ * @param {ResultsCallback} callback
  */
-module.exports.queryAsync = promisify(module.exports.query);
+module.exports.query = callbackify(module.exports.queryAsync);
 
 /**
  * Executes a query with the specified parameters. Errors if the query does
