@@ -338,28 +338,36 @@ module.exports.queryWithClientZeroOrOneRow = callbackify(module.exports.queryWit
  * Rolls back the current transaction for the given client.
  *
  * @param {import("pg").PoolClient} client
- * @param {(release?: any) => void} done
- * @param {(err: Error | null) => void} callback
  */
-module.exports.rollbackWithClient = function(client, done, callback) {
+module.exports.rollbackWithClientAsync = async function(client) {
     debug('rollbackWithClient()');
-    // from https://github.com/brianc/node-postgres/wiki/Transactions
-    client.query('ROLLBACK;', function(err) {
-        //if there was a problem rolling back the query
-        //something is seriously messed up.  Return the error
-        //to the done function to close & remove this client from
-        //the pool.  If you leave a client in the pool with an unaborted
-        //transaction weird, hard to diagnose problems might happen.
-        done(err);
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
+    // From https://node-postgres.com/features/transactions
+    try { 
+        await client.query('ROLLBACK');
+    } catch (err) {
+        // If there was a problem rolling back the query, something is
+        // seriously messed up. Return the error to the done function to
+        // close & remove this client from the pool. If you leave a client in
+        // the pool with an unaborted transaction, weird and hard to diagnose
+        // problems might happen.
+        client.release(err);
+    }
 };
 
 /**
  * Rolls back the current transaction for the given client.
+ * 
+ * @param {import("pg").PoolClient} client
+ * @param {(release?: any) => void} done
+ * @param {(err: Error | null) => void} callback
  */
-module.exports.rollbackWithClientAsync = promisify(module.exports.rollbackWithClient);
+module.exports.rollbackWithClient = (client, done, callback) => {
+    // Note that we can't use `util.callbackify` here because this function
+    // has an additional unused `done` parameter for backwards compatibility.
+    module.exports.rollbackWithClientAsync(client)
+        .then(() => callback(null))
+        .catch((err) => callback(err));
+};
 
 /**
  * Begins a new transaction.
