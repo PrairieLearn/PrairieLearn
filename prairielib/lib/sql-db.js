@@ -45,7 +45,7 @@ function debugParams(params) {
  * Given an SQL string and params, creates an array of params and an SQL string
  * with any named dollar-sign placeholders replaced with parameters.
  *
- * @param {String} sql
+ * @param {string} sql
  * @param {Params} params
  * @returns {{ processedSql: string, paramsArray: any }}
  */
