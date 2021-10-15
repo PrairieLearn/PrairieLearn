@@ -650,30 +650,31 @@ module.exports.callWithClient = callbackify(module.exports.callWithClientAsync);
  *
  * @param { import("pg").PoolClient } client
  * @param {string} functionName
- * @param {Params} params
- * @param {ResultsCallback} callback
+ * @param {any[]} params
+ * @returns {Promise<QueryResult>}
  */
-module.exports.callWithClientOneRow = function(client, functionName, params, callback) {
+module.exports.callWithClientOneRowAsync = async function(client, functionName, params) {
     debug('callWithClientOneRow()', 'function:', functionName);
     debug('callWithClientOneRow()', 'params:', debugParams(params));
-    const placeholders = _.map(_.range(1, params.length + 1), v => '$' + v).join();
-    const sql = 'SELECT * FROM ' + functionName + '(' + placeholders + ')';
-    module.exports.queryWithClient(client, sql, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount !== 1) {
-            const data = {functionName: functionName, sqlParams: params};
-            return callback(error.makeWithData('Incorrect rowCount: ' + result.rowCount, data));
-        }
-        debug('callWithClientOneRow() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const result = await module.exports.callWithClientAsync(client, functionName, params);
+    if (result.rowCount !== 1) {
+        const data = {functionName: functionName, sqlParams: params};
+        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, data);
+    }
+    debug('callWithClientOneRow() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Calls a function with the specified parameters using a specific client.
  * Errors if the function does not return exactly one row.
+ * 
+ * @param { import("pg").PoolClient } client
+ * @param {string} functionName
+ * @param {Params} params
+ * @param {ResultsCallback} callback
  */
-module.exports.callWithClientOneRowAsync = promisify(module.exports.callWithClientOneRow);
+module.exports.callWithClientOneRow = callbackify(module.exports.callWithClientOneRowAsync);
 
 /**
  * Calls a function with the specified parameters using a specific client.
