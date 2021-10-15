@@ -150,24 +150,21 @@ module.exports.init = callbackify(module.exports.initAsync);
 
 /**
  * Closes the connection pool.
- *
- * @param {(error: Error | null) => void} callback
+ * 
+ * @returns {Promise<void>}
  */
-module.exports.close = function(callback) {
+module.exports.closeAsync = async function(callback) {
     if (!pool) {
         return callback(null);
     }
-    pool.end((err) => {
-        if (ERR(err, callback)) return;
-        pool = null;
-        callback(null);
-    });
+    await pool.end();
+    pool = null;
 };
 
 /**
  * Closes the connection pool.
  */
-module.exports.closeAsync = promisify(module.exports.close);
+module.exports.close = promisify(module.exports.closeAsync);
 
 /**
  * Gets a new client from the connection pool. If `err` is not null
