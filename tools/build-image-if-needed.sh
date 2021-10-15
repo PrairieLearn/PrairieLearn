@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 if [ "$#" -ne 2 ]; then
   echo "USAGE: $0 build_directory tag_name" >& 2
   echo "Example: $0 images/plbase prairielearn/plbase" >& 2

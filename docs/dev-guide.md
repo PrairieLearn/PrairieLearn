@@ -36,7 +36,7 @@ PrairieLearn
 +-- migrations         # DB migrations
 |   +-- index.js       # entry point for migrations
 |   `-- ...            # one PGSQL file per migration, executed in order by index.js
-+-- package.json       # npm configuration file
++-- package.json       # JavaScript package manifest
 +-- pages              # one sub-dir per web page
 |   +-- partials       # EJS helper sub-templates
 |   +-- instructorHome # all the code for the instructorHome page
@@ -60,7 +60,7 @@ PrairieLearn
 
 * Tests are stored in the `tests/` directory and listed in `tests/index.js`.
 
-* To run the tests during development, see [Running the test suite](installingLocal/#running-the-test-suite).
+* To run the tests during development, see [Running the test suite](../installingLocal/#running-the-test-suite).
 
 * The tests are run by the CI server on every push to GitHub.
 

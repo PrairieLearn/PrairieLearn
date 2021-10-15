@@ -230,7 +230,7 @@ def render(element_html, data):
             return ''  # external grader is responsible for displaying results screen
 
         student_submission = ''
-        score = 0
+        score = None
         feedback = None
 
         if answer_name in data['submitted_answers']:
@@ -246,16 +246,17 @@ def render(element_html, data):
             'feedback': feedback
         }
 
-        try:
-            score = float(score * 100)
-            if score >= 100:
-                html_params['correct'] = True
-            elif score > 0:
-                html_params['partially_correct'] = math.floor(score)
-            else:
-                html_params['incorrect'] = True
-        except Exception:
-            raise ValueError('invalid score: ' + data['partial_scores'][answer_name]['score'])
+        if score is not None:
+            try:
+                score = float(score * 100)
+                if score >= 100:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partially_correct'] = math.floor(score)
+                else:
+                    html_params['incorrect'] = True
+            except Exception:
+                raise ValueError('invalid score: ' + data['partial_scores'][answer_name]['score'])
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params)
@@ -409,7 +410,7 @@ def grade(element_html, data):
                 else:
                     feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(str(first_wrong + 1))
 
-    if check_indentation:
+    if check_indentation and final_score > 0:
         student_answer_indent = filter_multiple_from_array(data['submitted_answers'][answer_name], ['indent'])
         student_answer_indent = list(map(lambda x: x['indent'], student_answer_indent))
         true_answer_indent = filter_multiple_from_array(data['correct_answers'][answer_name], ['indent'])
