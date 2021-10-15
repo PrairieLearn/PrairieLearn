@@ -21,8 +21,12 @@ jobs:
       run: sh ./tools/build-image-if-needed.sh graders/python prairielearn/grader-python
     - name: Build the grader-r docker image if needed
       run: sh ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r
+    - name: Build the workspace-desktop docker image if needed
+      run: sh ./tools/build-image-if-needed.sh workspaces/desktop prairielearn/workspace-desktop
     - name: Build the workspace-jupyterlab docker image if needed
       run: sh ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab
+    - name: Build the workspace-rstudio docker image if needed
+      run: sh ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio
     - name: Build the workspace-xtermjs docker image if needed
       run: sh ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs
     - name: Build the testing docker image
