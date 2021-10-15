@@ -175,64 +175,57 @@ module.exports.close = promisify(module.exports.closeAsync);
  * destruction of the client, but this should not be used except in
  * unusual circumstances.
  *
- * @param {(error: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
+ * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
  */
-module.exports.getClient = function(callback) {
+module.exports.getClientAsync = async function() {
     if (!pool) {
-        return callback(new Error('Connection pool is not open'));
+        throw new Error('Connection pool is not open');
     }
-    pool.connect(function(err, client, done) {
-        if (ERR(err, callback)) return;
 
-        // If we're configured to use a particular schema, we'll store whether or
-        // not the search path has already been configured for this particular
-        // client. If we acquire a client and it's already had its search path
-        // set, we can avoid setting it again since the search path will persist
-        // for the life of the client.
-        //
-        // We do this check for each call to `getClient` instead of on
-        // `pool.connect` so that we don't have to be really careful about
-        // destroying old clients that were created before `setSearchSchema` was 
-        // called. Instead, we'll just check if the search path matches the
-        // currently-desired schema, and if it's a mismatch (or doesn't exist
-        // at all), we re-set it for the current client.
-        //
-        // Note that this accidentally supports changing the search_path on the fly,
-        // although that's not something we currently do (or would be likely to do).
-        // It does NOT support clearing the existing search schema - e.g.,
-        // `setSearchSchema(null)` would not work as you expect. This is fine, as
-        // that's not something we ever do in practice.
-        if (searchSchema != null && client[SEARCH_SCHEMA] !== searchSchema) {
-            const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
-            module.exports.queryWithClient(client, setSearchPathSql, {}, (err) => {
-                if (err) {
-                    done();
-                    // unconditionally return
-                    return ERR(err, callback);
-                }
-                client[SEARCH_SCHEMA] = searchSchema;
-                callback(null, client, done);
-            });
-        } else {
-            callback(null, client, done);
+    const client = await pool.connect();
+
+    // If we're configured to use a particular schema, we'll store whether or
+    // not the search path has already been configured for this particular
+    // client. If we acquire a client and it's already had its search path
+    // set, we can avoid setting it again since the search path will persist
+    // for the life of the client.
+    //
+    // We do this check for each call to `getClient` instead of on
+    // `pool.connect` so that we don't have to be really careful about
+    // destroying old clients that were created before `setSearchSchema` was 
+    // called. Instead, we'll just check if the search path matches the
+    // currently-desired schema, and if it's a mismatch (or doesn't exist
+    // at all), we re-set it for the current client.
+    //
+    // Note that this accidentally supports changing the search_path on the fly,
+    // although that's not something we currently do (or would be likely to do).
+    // It does NOT support clearing the existing search schema - e.g.,
+    // `setSearchSchema(null)` would not work as you expect. This is fine, as
+    // that's not something we ever do in practice.
+    if (searchSchema != null && client[SEARCH_SCHEMA] !== searchSchema) {
+        const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
+        try {
+            await module.exports.queryWithClientAsync(client, setSearchPathSql, {});
+        } catch (err) {
+            client.release();
+            throw err;
         }
-    });
+        client[SEARCH_SCHEMA] = searchSchema;
+    }
+
+    return { client, done: client.release };
 };
 
 /**
  * Gets a new client from the connection pool.
  *
- * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
+ * @param {(error: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
  */
-module.exports.getClientAsync = function() {
-    return new Promise((resolve, reject) => {
-        module.exports.getClient((err, client, done) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve({ client, done });
-            }
-        });
+module.exports.getClient = function(callback) {
+    module.exports.getClientAsync().then(({ client, done }) => {
+        callback(null, client, done);
+    }).catch((err) => {
+        callback(err);
     });
 };
 
