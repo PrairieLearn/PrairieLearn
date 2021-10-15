@@ -3,7 +3,7 @@
 
 # whitelist things to copy
 !.eslintignore
-!.eslintrc.json
+!.eslintrc.js
 !tsconfig.json
 !admin_queries/
 !api/
