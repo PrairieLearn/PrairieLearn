@@ -475,28 +475,30 @@ module.exports.query = callbackify(module.exports.queryAsync);
  * not return exactly one row.
  *
  * @param {string} sql - The SQL query to execute
- * @param {Params} params - The params for the query
- * @param {ResultsCallback} callback
+ * @param {Params} [params] - The params for the query
+ * @returns {Promise<QueryResult>}
  */
-module.exports.queryOneRow = function(sql, params, callback) {
+module.exports.queryOneRowAsync = async function(sql, params) {
     debug('queryOneRow()', 'sql:', debugString(sql));
     debug('queryOneRow()', 'params:', debugParams(params));
-    module.exports.query(sql, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount !== 1) {
-            const data = {sql: sql, sqlParams: params};
-            return callback(error.makeWithData('Incorrect rowCount: ' + result.rowCount, data));
-        }
-        debug('queryOneRow() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const result = await module.exports.queryAsync(sql, params);
+    if (result.rowCount !== 1) {
+        const data = {sql: sql, sqlParams: params};
+        throw error.makeWithData(`Incorrect rowCount: ${result.rowCount}`, data);
+    }
+    debug('queryOneRow() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
+ * 
+ * @param {string} sql - The SQL query to execute
+ * @param {Params} params - The params for the query
+ * @param {ResultsCallback} callback
  */
-module.exports.queryOneRowAsync = promisify(module.exports.queryOneRow);
+module.exports.queryOneRow = callbackify(module.exports.queryOneRowAsync);
 
 /**
  * Executes a query with the specified parameters. Errors if the query
