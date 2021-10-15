@@ -146,7 +146,7 @@ module.exports.initAsync = async function(pgConfig, idleErrorHandler) {
 /**
  * Creates a new connection pool and attempts to connect to the database.
  */
-module.exports.init = callbackify(module.exports.init);
+module.exports.init = callbackify(module.exports.initAsync);
 
 /**
  * Closes the connection pool.
