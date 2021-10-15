@@ -7,6 +7,7 @@ const debug = require('debug')('prairielib:' + path.basename(__filename, '.js'))
 const { promisify, callbackify } = require('util');
 
 const error = require('./error');
+const { resolve } = require('path/posix');
 
 let searchSchema = null;
 
@@ -235,7 +236,7 @@ module.exports.getClient = function(callback) {
  *
  * @param { import("pg").PoolClient } client - The client with which to execute the query
  * @param {String} sql - The SQL query to execute
- * @param {Params} params
+ * @param {Params} [params]
  * @returns {Promise<QueryResult>}
  */
 module.exports.queryWithClientAsync = async function(client, sql, params) {
@@ -372,40 +373,29 @@ module.exports.rollbackWithClient = (client, done, callback) => {
 /**
  * Begins a new transaction.
  *
- * @param {(err: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
+ * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
  */
-module.exports.beginTransaction = function(callback) {
+module.exports.beginTransactionAsync = async function() {
     debug('beginTransaction()');
-    module.exports.getClient(function(err, client, done) {
-        if (ERR(err, callback)) return;
-        module.exports.queryWithClient(client, 'START TRANSACTION;', [], function(err) {
-            if (err) {
-                module.exports.rollbackWithClient(client, done, function(rollbackErr) {
-                    if (ERR(rollbackErr, callback)) return;
-                    return ERR(err, callback);
-                });
-            } else {
-                callback(null, client, done);
-            }
-        });
-    });
+    const { client, done } = await module.exports.getClientAsync();
+    try {
+        await module.exports.queryWithClientAsync(client, 'START TRANSACTION;');
+        return { client, done };
+    } catch (err) {
+        await module.exports.rollbackWithClientAsync(client);
+        throw err;
+    }
 };
 
 /**
  * Begins a new transation.
  *
- * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
+ * @param {(err: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
  */
-module.exports.beginTransactionAsync = function() {
-    return new Promise((resolve, reject) => {
-        module.exports.beginTransaction((err, client, done) => {
-            if (err) {
-                reject(err);
-            } else {
-                resolve({ client, done });
-            }
-        });
-    });
+module.exports.beginTransaction = function(callback) {
+    module.exports.beginTransactionAsync()
+        .then(({ client, done }) => callback(null, client, done))
+        .catch((err) => callback(err));
 };
 
 /**
