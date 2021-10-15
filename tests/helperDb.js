@@ -47,12 +47,9 @@ var runMigrationsAndSprocs = function(dbName, mochaThis, runMigrations, callback
                 callback(null);
             });
         },
-        function(callback) {
+        async () => {
             debug('runMigrationsAndSprocs(): setting random search schema');
-            sqldb.setRandomSearchSchema('test', (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
+            await sqldb.setRandomSearchSchemaAsync('test');
         },
         function(callback) {
             debug('runMigrationsAndSprocs(): initializing sprocs');

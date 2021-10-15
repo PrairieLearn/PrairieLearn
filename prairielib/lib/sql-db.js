@@ -712,30 +712,26 @@ module.exports.callWithClientZeroOrOneRow = callbackify(module.exports.callWithC
  * Set the schema to use for the search path.
  *
  * @param {string} schema - The schema name to use (can be "null" to unset the search path)
- * @param {(error: Error | null) => void} callback
  */
-module.exports.setSearchSchema = function(schema, callback) {
+module.exports.setSearchSchema = async function(schema) {
     if (schema == null) {
         searchSchema = schema;
         return;
     }
-    /* Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
-     * https://github.com/brianc/node-postgres/pull/396
-     * https://github.com/brianc/node-postgres/issues/1978
-     * https://www.postgresql.org/docs/12/sql-syntax-lexical.html
-     */
-    module.exports.query(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`, [], (err) => {
-        if (ERR(err, callback)) return;
-        // we only set searchSchema after CREATE to avoid the above query() call using searchSchema
-        searchSchema = schema;
-        callback(null);
-    });
+
+    // Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
+    // https://github.com/brianc/node-postgres/pull/396
+    // https://github.com/brianc/node-postgres/issues/1978
+    // https://www.postgresql.org/docs/12/sql-syntax-lexical.html
+    await module.exports.queryAsync(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`);
+    // We only set searchSchema after CREATE to avoid the above query() call using searchSchema.
+    searchSchema = schema;
 };
 
 /**
  * Get the schema that is currently used for the search path.
  *
- * @return {string} schema in use (may be "null" to indicate no schema)
+ * @return {string | null} schema in use (may be "null" to indicate no schema)
  */
 module.exports.getSearchSchema = function() {
     return searchSchema;
@@ -745,9 +741,9 @@ module.exports.getSearchSchema = function() {
  * Generate, set, and return a random schema name.
  *
  * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used (after lowercasing).
- * @param {(error: Error | null, schema: String) => void} callback
+ * @returns {Promise<string>} The randomly-generated search schema.
  */
-module.exports.setRandomSearchSchema = function(prefix, callback) {
+module.exports.setRandomSearchSchemaAsync = async function(prefix) {
     // truncated prefix (max 28 characters)
     const truncPrefix = prefix.substring(0, 28);
     // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
@@ -760,8 +756,14 @@ module.exports.setRandomSearchSchema = function(prefix, callback) {
     // which is the default PostgreSQL identifier limit.
     // Note that this schema name will need quoting because of characters like ':', '-', etc
     const schema = `${truncPrefix}_${timestamp}_${suffix}`;
-    module.exports.setSearchSchema(schema, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null, schema);
-    });
+    await module.exports.setSearchSchema(schema);
+    return schema;
 };
+
+/**
+ * Generate, set, and return a random schema name.
+ *
+ * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used (after lowercasing).
+ * @param {(error: Error | null, schema: String) => void} callback
+ */
+module.exports.setRandomSearchSchema = callbackify(module.exports.setRandomSearchSchemaAsync);
