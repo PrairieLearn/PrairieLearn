@@ -3,7 +3,7 @@ const _ = require('lodash');
 const pg = require('pg');
 const path = require('path');
 const debug = require('debug')('prairielib:' + path.basename(__filename, '.js'));
-const { promisify, callbackify } = require('util');
+const { callbackify } = require('util');
 
 const error = require('./error');
 
@@ -164,7 +164,7 @@ module.exports.closeAsync = async function(callback) {
 /**
  * Closes the connection pool.
  */
-module.exports.close = promisify(module.exports.closeAsync);
+module.exports.close = callbackify(module.exports.closeAsync);
 
 /**
  * Gets a new client from the connection pool. If `err` is not null
