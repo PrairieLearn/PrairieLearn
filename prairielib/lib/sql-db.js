@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const pg = require('pg');
 const path = require('path');
@@ -7,7 +6,6 @@ const debug = require('debug')('prairielib:' + path.basename(__filename, '.js'))
 const { promisify, callbackify } = require('util');
 
 const error = require('./error');
-const { resolve } = require('path/posix');
 
 let searchSchema = null;
 
@@ -234,7 +232,7 @@ module.exports.getClient = function(callback) {
 /**
  * Performs a query with the given client.
  *
- * @param { import("pg").PoolClient } client - The client with which to execute the query
+ * @param {import("pg").PoolClient} client - The client with which to execute the query
  * @param {string} sql - The SQL query to execute
  * @param {Params} [params]
  * @returns {Promise<QueryResult>}
@@ -414,7 +412,7 @@ module.exports.beginTransaction = function(callback) {
  * @param {(rollback?: any) => void} done
  * @param {Error | null} err
  */
-module.exports.endTransactionAsync = async function(client, done, err, callback) {
+module.exports.endTransactionAsync = async function(client, done, err) {
     debug('endTransaction()');
     if (err) {
         try {
@@ -436,7 +434,7 @@ module.exports.endTransactionAsync = async function(client, done, err, callback)
  * Commits the transaction if err is null, otherwize rollbacks the transaction.
  * Also releasese the client.
  * 
- * @param { import("pg").PoolClient } client
+ * @param {import("pg").PoolClient} client
  * @param {(rollback?: any) => void} done
  * @param {Error | null} err
  * @param {(error: Error | null) => void} callback
@@ -581,7 +579,7 @@ module.exports.callOneRowAsync = async function(functionName, params) {
  * function does not return exactly one row.
  * 
  * @param {string} functionName - The name of the function to call
- * @param {Params} params - The params for the function
+ * @param {any[]} params - The params for the function
  * @param {ResultsCallback} callback
  */
 module.exports.callOneRow = callbackify(module.exports.callOneRowAsync);
@@ -611,7 +609,7 @@ module.exports.callZeroOrOneRowAsync = async function(functionName, params) {
  * function returns more than one row.
  * 
  * @param {string} functionName - The name of the function to call
- * @param {Params} params - The params for the function
+ * @param {any[]} params - The params for the function
  * @param {ResultsCallback} callback
  */
 module.exports.callZeroOrOneRow = callbackify(module.exports.callZeroOrOneRowAsync);
@@ -619,7 +617,7 @@ module.exports.callZeroOrOneRow = callbackify(module.exports.callZeroOrOneRowAsy
 /**
  * Calls a function with the specified parameters using a specific client.
  *
- * @param { import("pg").PoolClient } client
+ * @param {import("pg").PoolClient} client
  * @param {string} functionName
  * @param {any[]} params
  * @returs {Promise<QueryResult>}
@@ -637,9 +635,9 @@ module.exports.callWithClientAsync = async function(client, functionName, params
 /**
  * Calls a function with the specified parameters using a specific client.
  * 
- * @param { import("pg").PoolClient } client
+ * @param {import("pg").PoolClient} client
  * @param {string} functionName
- * @param {Params} params
+ * @param {any[]} params
  * @param {ResultsCallback} callback
  */
 module.exports.callWithClient = callbackify(module.exports.callWithClientAsync);
@@ -648,7 +646,7 @@ module.exports.callWithClient = callbackify(module.exports.callWithClientAsync);
  * Calls a function with the specified parameters using a specific client.
  * Errors if the function does not return exactly one row.
  *
- * @param { import("pg").PoolClient } client
+ * @param {import("pg").PoolClient} client
  * @param {string} functionName
  * @param {any[]} params
  * @returns {Promise<QueryResult>}
@@ -669,7 +667,7 @@ module.exports.callWithClientOneRowAsync = async function(client, functionName, 
  * Calls a function with the specified parameters using a specific client.
  * Errors if the function does not return exactly one row.
  * 
- * @param { import("pg").PoolClient } client
+ * @param {import("pg").PoolClient} client
  * @param {string} functionName
  * @param {any[]} params
  * @param {ResultsCallback} callback
@@ -680,7 +678,7 @@ module.exports.callWithClientOneRow = callbackify(module.exports.callWithClientO
  * Calls a function with the specified parameters using a specific client.
  * Errors if the function returns more than one row.
  *
- * @param { import("pg").PoolClient } client
+ * @param {import("pg").PoolClient} client
  * @param {string} functionName
  * @param {any[]} params
  * @returns {Promise<QueryResult>}
@@ -701,7 +699,7 @@ module.exports.callWithClientZeroOrOneRowAsync = async function(client, function
  * Calls a function with the specified parameters using a specific client.
  * Errors if the function returns more than one row.
  * 
- * @param { import("pg").PoolClient } client
+ * @param {import("pg").PoolClient} client
  * @param {string} functionName
  * @param {any[]} params
  * @param {ResultsCallback} callback
