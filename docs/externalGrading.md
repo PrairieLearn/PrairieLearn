@@ -70,6 +70,8 @@ External grading configuration is done on a per-question basis. All configuratio
 
 * `enableNetworking`: Allows the container to access the public internet. This is disabled by default to make secure, isolated execution the default behavior.
 
+* `environment`: Environment variables to set inside the grading container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`). This property is optional.
+
 Here's an example of a complete `externalGradingOptions` portion of a question's `info.json`:
 
 ```json

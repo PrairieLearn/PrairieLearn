@@ -14,12 +14,6 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
 
-// cd /PrairieLearn
-// docker/start_postgres.sh
-// git config --global user.email "dev@illinois.edu"
-// git config --global user.name "Dev User"
-// npm test -- --grep "Group based homework assess control on student side"
-
 let page, elemList;
 const locals = {};
 locals.helperClient = require('./helperClient');

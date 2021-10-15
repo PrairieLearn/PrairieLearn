@@ -21,7 +21,7 @@
 !models/
 !news_items/
 !package.json
-!package-lock.json
+!yarn.lock
 !pages/
 !prairielib/
 !public/

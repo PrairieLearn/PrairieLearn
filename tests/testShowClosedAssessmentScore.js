@@ -21,7 +21,11 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
 
     const headers = {
-        cookie: 'pl_test_user=test_student', // need student mode to get a timed exam (instructor override bypasses this)
+        cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T00:00:01',
+        // need student mode to get a timed exam (instructor override bypasses this)
+    };
+    const headersTimeLimit = {
+        cookie: 'pl_test_user=test_student; pl_test_date=2000-01-19T12:00:01',
     };
 
     before('set up testing server', async function() {
@@ -76,7 +80,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
             __action: 'timeLimitFinish',
             __csrf_token: context.__csrf_token,
         };
-        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers});
+        const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form , headers: headersTimeLimit });
         assert.equal(response.status, 403);
 
         // We should have been redirected back to the same assessment instance
