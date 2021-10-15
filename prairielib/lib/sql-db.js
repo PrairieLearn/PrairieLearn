@@ -302,30 +302,37 @@ module.exports.queryWithClientOneRow = callbackify(module.exports.queryWithClien
 /**
  * Performs a query with the given client. Errors if the query returns more
  * than one row.
- * @param { import("pg").PoolClient } client - The client with which to execute the query
+ *
+ * @param {import("pg").PoolClient} client - The client with which to execute the query
  * @param {String} sql - The SQL query to execute
  * @param {Params} params
- * @param {ResultsCallback} callback
+ * @returns {Promise<QueryResult>}
  */
-module.exports.queryWithClientZeroOrOneRow = function(client, sql, params, callback) {
+module.exports.queryWithClientZeroOrOneRowAsync = async function(client, sql, params) {
     debug('queryWithClientZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryWithClientZeroOrOneRow()', 'params:', debugParams(params));
-    module.exports.queryWithClient(client, sql, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount > 1) {
-            const data = {sql: sql, sqlParams: params, result: result};
-            return callback(error.makeWithData('Incorrect rowCount: ' + result.rowCount, data));
-        }
-        debug('queryWithClientZeroOrOneRow() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const result = await module.exports.queryWithClientAsync(client, sql, params);
+    if (result.rowCount > 1) {
+        throw error.makeWithData(`Incorrect rowCount: ${result.rowCount}`, {
+            sql,
+            sqlParams: params,
+            result,
+        });
+    }
+    debug('queryWithClientZeroOrOneRow() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Performs a query with the given client. Errors if the query returns more
  * than one row.
+ * 
+ * @param {import("pg").PoolClient} client - The client with which to execute the query
+ * @param {String} sql - The SQL query to execute
+ * @param {Params} params
+ * @param {ResultsCallback} callback
  */
-module.exports.queryWithClientZeroOrOneRowAsync = promisify(module.exports.queryWithClientZeroOrOneRow);
+module.exports.queryWithClientZeroOrOneRow = callbackify(module.exports.queryWithClientZeroOrOneRowAsync);
 
 /**
  * Rolls back the current transaction for the given client.
