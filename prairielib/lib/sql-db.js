@@ -243,7 +243,9 @@ module.exports.queryWithClientAsync = async function(client, sql, params) {
     debug('queryWithClient()', 'params:', debugParams(params));
     const { processedSql, paramsArray } = paramsToArray(sql, params);
     try {
-        return await client.query(processedSql, paramsArray);
+        const result = await client.query(processedSql, paramsArray);
+        debug('queryWithClient() success', 'rowCount:', result.rowCount);
+        return result;
     } catch (err) {
         // TODO: why do we do this?
         const sqlError = JSON.parse(JSON.stringify(err));
@@ -270,9 +272,8 @@ module.exports.queryWithClient = callbackify(module.exports.queryWithClientAsync
  * @param {String} sql - The SQL query to execute
  * @param {Params} params
  * @returns {Promise<QueryResult>}
- * @param {ResultsCallback} callback
  */
-module.exports.queryWithClientOneRowAsync = async function(client, sql, params, callback) {
+module.exports.queryWithClientOneRowAsync = async function(client, sql, params) {
     debug('queryWithClientOneRow()', 'sql:', debugString(sql));
     debug('queryWithClientOneRow()', 'params:', debugParams(params));
     const result = await module.exports.queryWithClientAsync(client, sql, params);
