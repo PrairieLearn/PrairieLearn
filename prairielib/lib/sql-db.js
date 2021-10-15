@@ -475,8 +475,10 @@ module.exports.queryOneRowAsync = async function(sql, params) {
     debug('queryOneRow()', 'params:', debugParams(params));
     const result = await module.exports.queryAsync(sql, params);
     if (result.rowCount !== 1) {
-        const data = {sql: sql, sqlParams: params};
-        throw error.makeWithData(`Incorrect rowCount: ${result.rowCount}`, data);
+        throw error.makeWithData(`Incorrect rowCount: ${result.rowCount}`, {
+            sql,
+            sqlParams: params,
+        });
     }
     debug('queryOneRow() success', 'rowCount:', result.rowCount);
     return result;
@@ -505,8 +507,10 @@ module.exports.queryZeroOrOneRowAsync = async function(sql, params) {
     debug('queryZeroOrOneRow()', 'params:', debugParams(params));
     const result = await module.exports.queryAsync(sql, params);
     if (result.rowCount > 1) {
-        const data = {sql: sql, sqlParams: params};
-        throw error.makeWithData(`Incorrect rowCount: ${result.rowCount}`, data);
+        throw error.makeWithData(`Incorrect rowCount: ${result.rowCount}`, {
+            sql,
+            sqlParams: params,
+        });
     }
     debug('queryZeroOrOneRow() success', 'rowCount:', result.rowCount);
     return result;
@@ -561,8 +565,10 @@ module.exports.callOneRowAsync = async function(functionName, params) {
     debug('callOneRow()', 'params:', debugParams(params));
     const result = await module.exports.callAsync(functionName, params);
     if (result.rowCount !== 1) {
-        const data = {functionName: functionName, sqlParams: params};
-        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, data);
+        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, {
+            functionName,
+            sqlParams: params,
+        });
     }
     debug('callOneRow() success', 'rowCount:', result.rowCount);
     return result;
@@ -591,8 +597,10 @@ module.exports.callZeroOrOneRowAsync = async function(functionName, params) {
     debug('callZeroOrOneRow()', 'params:', debugParams(params));
     const result = await module.exports.callAsync(functionName, params);
     if (result.rowCount > 1) {
-        const data = {functionName: functionName, sqlParams: params};
-        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, data);
+        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, {
+            functionName,
+            sqlParams: params,
+        });
     }
     debug('callZeroOrOneRow() success', 'rowCount:', result.rowCount);
     return result;
@@ -650,8 +658,10 @@ module.exports.callWithClientOneRowAsync = async function(client, functionName, 
     debug('callWithClientOneRow()', 'params:', debugParams(params));
     const result = await module.exports.callWithClientAsync(client, functionName, params);
     if (result.rowCount !== 1) {
-        const data = {functionName: functionName, sqlParams: params};
-        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, data);
+        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, {
+            functionName,
+            sqlParams: params,
+        });
     }
     debug('callWithClientOneRow() success', 'rowCount:', result.rowCount);
     return result;
@@ -682,8 +692,10 @@ module.exports.callWithClientZeroOrOneRowAsync = async function(client, function
     debug('callWithClientZeroOrOneRow()', 'params:', debugParams(params));
     const result = await module.exports.callWithClientAsync(client, functionName, params);
     if (result.rowCount > 1) {
-        const data = {functionName: functionName, sqlParams: params};
-        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, data);
+        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, {
+            functionName,
+            sqlParams: params,
+        });
     }
     debug('callWithClientZeroOrOneRow() success', 'rowCount:', result.rowCount);
     return result;
