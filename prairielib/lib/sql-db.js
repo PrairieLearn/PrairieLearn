@@ -410,39 +410,38 @@ module.exports.beginTransaction = function(callback) {
  * Commits the transaction if err is null, otherwize rollbacks the transaction.
  * Also releasese the client.
  *
- * @param { import("pg").PoolClient } client
+ * @param {import('pg').PoolClient} client
  * @param {(rollback?: any) => void} done
  * @param {Error | null} err
- * @param {(error: Error | null) => void} callback
  */
-module.exports.endTransaction = function(client, done, err, callback) {
+module.exports.endTransactionAsync = async function(client, done, err, callback) {
     debug('endTransaction()');
     if (err) {
-        module.exports.rollbackWithClient(client, done, function(rollbackErr) {
-            if (rollbackErr) {
-                rollbackErr = error.addData(rollbackErr, {prevErr: err, rollback: 'fail'});
-                return ERR(rollbackErr, callback);
-            }
-            err = error.addData(err, {rollback: 'success'});
-            ERR(err, callback);
-        });
+        try {
+            await module.exports.rollbackWithClientAsync(client);
+            throw error.addData(err, {rollback: 'success'});
+        } catch (rollbackErr) {
+            throw error.addData(rollbackErr, {prevErr: err, rollback: 'fail'});
+        }
     } else {
-        module.exports.queryWithClient(client, 'COMMIT', [], function(err, _result) {
-            if (err) {
-                done();
-                return ERR(err, callback); // unconditionally return
-            }
-            done();
-            callback(null);
-        });
+        try {
+            await module.exports.queryWithClientAsync(client, 'COMMIT');
+        } finally {
+            client.release();
+        }
     }
 };
 
 /**
  * Commits the transaction if err is null, otherwize rollbacks the transaction.
  * Also releasese the client.
+ * 
+ * @param { import("pg").PoolClient } client
+ * @param {(rollback?: any) => void} done
+ * @param {Error | null} err
+ * @param {(error: Error | null) => void} callback
  */
-module.exports.endTransactionAsync = promisify(module.exports.endTransaction);
+module.exports.endTransaction = callbackify(module.exports.endTransactionAsync);
 
 /**
  * Executes a query with the specified parameters.
