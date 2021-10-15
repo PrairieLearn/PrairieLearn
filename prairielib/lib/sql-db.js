@@ -211,6 +211,9 @@ module.exports.getClientAsync = async function() {
         client[SEARCH_SCHEMA] = searchSchema;
     }
 
+    // TODO: consider refactoring to just returning `client` directly. Other
+    // code can then call `client.release()` directly instead of invoking our
+    // custom `done()` callback.
     return { client, done: client.release };
 };
 
@@ -374,6 +377,9 @@ module.exports.beginTransactionAsync = async function() {
     const { client, done } = await module.exports.getClientAsync();
     try {
         await module.exports.queryWithClientAsync(client, 'START TRANSACTION;', {});
+        // TODO: consider refactoring to just returning `client` directly. Other
+        // code can then call `client.release()` directly instead of invoking our
+        // custom `done()` callback.
         return { client, done };
     } catch (err) {
         await module.exports.rollbackWithClientAsync(client);
