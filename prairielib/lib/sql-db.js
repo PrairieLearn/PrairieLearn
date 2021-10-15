@@ -1,9 +1,10 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const pg = require('pg');
 const path = require('path');
 const debug = require('debug')('prairielib:' + path.basename(__filename, '.js'));
-const { promisify } = require('util');
+const { promisify, callbackify } = require('util');
 
 const error = require('./error');
 
@@ -95,23 +96,17 @@ function paramsToArray(sql, params) {
 let pool = null;
 
 /** @typedef {{[key: string]: any} | any[]} Params */
-/** @typedef {(error: Error | null, result: import("pg").QueryResult) => void} ResultsCallback */
+/** @typedef {(error: Error | null, result?: import("pg").QueryResult) => void} ResultsCallback */
 
 /**
  * Creates a new connection pool and attempts to connect to the database.
  *
  * @param { import("pg").PoolConfig } pgConfig - The config object for Postgres
  * @param {(error: Error, client: import("pg").PoolClient) => void} idleErrorHandler - A handler for async errors
- * @param {(error: Error | null) => void} callback - Callback once the connection is initialized
+ * @returns {Promise<void>}
  */
-module.exports.init = function(pgConfig, idleErrorHandler, callback) {
-    try {
-        pool = new pg.Pool(pgConfig);
-    } catch (err) {
-        error.addData(err, {pgConfig: pgConfig});
-        callback(err);
-        return;
-    }
+module.exports.initAsync = async function(pgConfig, idleErrorHandler) {
+    pool = new pg.Pool(pgConfig);
     pool.on('error', function(err, client) {
         idleErrorHandler(err, client);
     });
@@ -128,33 +123,30 @@ module.exports.init = function(pgConfig, idleErrorHandler, callback) {
         delete client[SEARCH_SCHEMA];
     });
 
+    // Attempt to connect to the database so that we can fail quickly if
+    // something isn't configured correctly.
     let retryCount = 0;
     const retryTimeouts = [500, 1000, 2000, 5000, 10000];
-    const tryConnect = () => {
-        pool.connect((err, client, done) => {
-            if (err) {
-                if (retryCount >= retryTimeouts.length) {
-                    err.message = `Couldn't connect to Postgres after ${retryTimeouts.length} retries: ${err.message}`;
-                    callback(err);
-                    return;
-                }
-
-                const timeout = retryTimeouts[retryCount];
-                retryCount++;
-                setTimeout(tryConnect, timeout);
-            } else {
-                done();
-                callback(null);
+    while (retryCount <= retryTimeouts.length) {
+        try {
+            await pool.connect();
+            return;
+        } catch (err) {
+            if (retryCount === retryTimeouts.length) {
+                throw new Error(`Cound not connect to Postgres after ${retryTimeouts.length} attempts: ${err.message}`);
             }
-        });
-    };
-    tryConnect();
+
+            const timeout = retryTimeouts[retryCount];
+            retryCount++;
+            await new Promise((resolve) => setTimeout(resolve, timeout));
+        }
+    }
 };
 
 /**
  * Creates a new connection pool and attempts to connect to the database.
  */
-module.exports.initAsync = promisify(module.exports.init);
+module.exports.init = callbackify(module.exports.init);
 
 /**
  * Closes the connection pool.
@@ -186,7 +178,7 @@ module.exports.closeAsync = promisify(module.exports.close);
  * destruction of the client, but this should not be used except in
  * unusual circumstances.
  *
- * @param {(error: Error | null, client: import("pg").PoolClient, done: (release?: any) => void) => void} callback
+ * @param {(error: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
  */
 module.exports.getClient = function(callback) {
     if (!pool) {
