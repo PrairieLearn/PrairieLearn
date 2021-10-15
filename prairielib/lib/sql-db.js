@@ -234,7 +234,7 @@ module.exports.getClient = function(callback) {
  *
  * @param {import("pg").PoolClient} client - The client with which to execute the query
  * @param {string} sql - The SQL query to execute
- * @param {Params} [params]
+ * @param {Params} params
  * @returns {Promise<QueryResult>}
  */
 module.exports.queryWithClientAsync = async function(client, sql, params) {
@@ -385,7 +385,7 @@ module.exports.beginTransactionAsync = async function() {
     debug('beginTransaction()');
     const { client, done } = await module.exports.getClientAsync();
     try {
-        await module.exports.queryWithClientAsync(client, 'START TRANSACTION;');
+        await module.exports.queryWithClientAsync(client, 'START TRANSACTION;', {});
         return { client, done };
     } catch (err) {
         await module.exports.rollbackWithClientAsync(client);
@@ -423,7 +423,7 @@ module.exports.endTransactionAsync = async function(client, done, err) {
         }
     } else {
         try {
-            await module.exports.queryWithClientAsync(client, 'COMMIT');
+            await module.exports.queryWithClientAsync(client, 'COMMIT', {});
         } finally {
             client.release();
         }
@@ -445,7 +445,7 @@ module.exports.endTransaction = callbackify(module.exports.endTransactionAsync);
  * Executes a query with the specified parameters.
  *
  * @param {string} sql - The SQL query to execute
- * @param {Params} [params] - The params for the query
+ * @param {Params} params - The params for the query
  * @returns {Promise<QueryResult>}
  */
 module.exports.queryAsync = async function(sql, params) {
@@ -473,7 +473,7 @@ module.exports.query = callbackify(module.exports.queryAsync);
  * not return exactly one row.
  *
  * @param {string} sql - The SQL query to execute
- * @param {Params} [params] - The params for the query
+ * @param {Params} params - The params for the query
  * @returns {Promise<QueryResult>}
  */
 module.exports.queryOneRowAsync = async function(sql, params) {
@@ -721,7 +721,7 @@ module.exports.setSearchSchema = async function(schema) {
     // https://github.com/brianc/node-postgres/pull/396
     // https://github.com/brianc/node-postgres/issues/1978
     // https://www.postgresql.org/docs/12/sql-syntax-lexical.html
-    await module.exports.queryAsync(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`);
+    await module.exports.queryAsync(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`, {});
     // We only set searchSchema after CREATE to avoid the above query() call using searchSchema.
     searchSchema = schema;
 };
