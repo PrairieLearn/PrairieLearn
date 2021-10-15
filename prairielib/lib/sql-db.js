@@ -12,6 +12,10 @@ let searchSchema = null;
 
 const SEARCH_SCHEMA = Symbol('SEARCH_SCHEMA');
 
+/** @typedef {{[key: string]: any} | any[]} Params */
+/** @typedef {import("pg").QueryResult} QueryResult */
+/** @typedef {(error: Error | null, result?: QueryResult) => void} ResultsCallback */
+
 /**
  * Formats a string for debugging.
  *
@@ -94,9 +98,6 @@ function paramsToArray(sql, params) {
  * @type { import("pg").Pool }
  */
 let pool = null;
-
-/** @typedef {{[key: string]: any} | any[]} Params */
-/** @typedef {(error: Error | null, result?: import("pg").QueryResult) => void} ResultsCallback */
 
 /**
  * Creates a new connection pool and attempts to connect to the database.
@@ -235,27 +236,31 @@ module.exports.getClient = function(callback) {
  * @param { import("pg").PoolClient } client - The client with which to execute the query
  * @param {String} sql - The SQL query to execute
  * @param {Params} params
+ * @returns {Promise<QueryResult>}
  */
-module.exports.queryWithClient = function(client, sql, params, callback) {
+module.exports.queryWithClientAsync = async function(client, sql, params) {
     debug('queryWithClient()', 'sql:', debugString(sql));
     debug('queryWithClient()', 'params:', debugParams(params));
     const { processedSql, paramsArray } = paramsToArray(sql, params);
-    client.query(processedSql, paramsArray, function(err, result) {
-        if (err) {
-            const sqlError = JSON.parse(JSON.stringify(err));
-            sqlError.message = err.message;
-            err = error.addData(err, {sqlError: sqlError, sql: sql, sqlParams: params, result: result});
-        }
-        if (ERR(err, callback)) return;
-        debug('queryWithClient() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    try {
+        return await client.query(processedSql, paramsArray);
+    } catch (err) {
+        // TODO: why do we do this?
+        const sqlError = JSON.parse(JSON.stringify(err));
+        sqlError.message = err.message;
+        throw error.addData(err, {sqlError: sqlError, sql: sql, sqlParams: params });
+    }
 };
 
 /**
  * Performs a query with the given client.
+ * 
+ * @param { import("pg").PoolClient } client - The client with which to execute the query
+ * @param {String} sql - The SQL query to execute
+ * @param {Params} params
+ * @param {ResultsCallback}
  */
-module.exports.queryWithClientAsync = promisify(module.exports.queryWithClient);
+module.exports.queryWithClient = callbackify(module.exports.queryWithClientAsync);
 
 /**
  * Performs a query with the given client. Errors if the query returns more
