@@ -671,7 +671,7 @@ module.exports.callWithClientOneRowAsync = async function(client, functionName, 
  * 
  * @param { import("pg").PoolClient } client
  * @param {string} functionName
- * @param {Params} params
+ * @param {any[]} params
  * @param {ResultsCallback} callback
  */
 module.exports.callWithClientOneRow = callbackify(module.exports.callWithClientOneRowAsync);
@@ -682,30 +682,31 @@ module.exports.callWithClientOneRow = callbackify(module.exports.callWithClientO
  *
  * @param { import("pg").PoolClient } client
  * @param {string} functionName
- * @param {Params} params
- * @param {ResultsCallback} callback
+ * @param {any[]} params
+ * @returns {Promise<QueryResult>}
  */
-module.exports.callWithClientZeroOrOneRow = function(client, functionName, params, callback) {
+module.exports.callWithClientZeroOrOneRowAsync = async function(client, functionName, params) {
     debug('callWithClientZeroOrOneRow()', 'function:', functionName);
     debug('callWithClientZeroOrOneRow()', 'params:', debugParams(params));
-    const placeholders = _.map(_.range(1, params.length + 1), v => '$' + v).join();
-    const sql = 'SELECT * FROM ' + functionName + '(' + placeholders + ')';
-    module.exports.queryWithClient(client, sql, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount > 1) {
-            const data = {functionName: functionName, sqlParams: params};
-            return callback(error.makeWithData('Incorrect rowCount: ' + result.rowCount, data));
-        }
-        debug('callWithClientZeroOrOneRow() success', 'rowCount:', result.rowCount);
-        callback(null, result);
-    });
+    const result = await module.exports.callWithClientAsync(client, functionName, params);
+    if (result.rowCount > 1) {
+        const data = {functionName: functionName, sqlParams: params};
+        throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, data);
+    }
+    debug('callWithClientZeroOrOneRow() success', 'rowCount:', result.rowCount);
+    return result;
 };
 
 /**
  * Calls a function with the specified parameters using a specific client.
  * Errors if the function returns more than one row.
+ * 
+ * @param { import("pg").PoolClient } client
+ * @param {string} functionName
+ * @param {any[]} params
+ * @param {ResultsCallback} callback
  */
-module.exports.callWithClientZeroOrOneRowAsync = promisify(module.exports.callWithClientZeroOrOneRow);
+module.exports.callWithClientZeroOrOneRow = callbackify(module.exports.callWithClientZeroOrOneRowAsync);
 
 /**
  * Set the schema to use for the search path.
