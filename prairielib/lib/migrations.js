@@ -4,8 +4,8 @@ const path = require('path');
 const async = require('async');
 const _ = require('lodash');
 
-const namedLocks = require('../lib/named-locks');
-const logger = require('../lib/logger');
+const namedLocks = require('../../lib/named-locks');
+const logger = require('../../lib/logger');
 const sqldb = require('../lib/sql-db');
 const sqlLoader = require('../lib/sql-loader');
 const error = require('../lib/error');
