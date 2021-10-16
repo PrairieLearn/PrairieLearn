@@ -97,7 +97,7 @@
         "remark-gfm": "^1.0.0",
         "remark-math": "^4.0.0",
         "remark-parse": "^9.0.0",
-        "remark-rehype": "^8.1.0",
+        "remark-rehype": "^10.0.0",
         "request-promise-native": "^1.0.9",
         "requirejs": "^2.3.5",
         "s3-streamlogger": "^1.7.0",
