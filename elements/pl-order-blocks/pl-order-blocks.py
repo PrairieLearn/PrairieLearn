@@ -234,7 +234,14 @@ def render(element_html, data):
         feedback = None
 
         if answer_name in data['submitted_answers']:
-            student_submission = filter_multiple_from_array(data['submitted_answers'][answer_name], ['inner_html'])
+            student_submission = []
+            for attempt in data['submitted_answers'][answer_name]:
+                attempt_params = {
+                    'inner_html': attempt['inner_html'],
+                    'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+                }
+                student_submission.append(attempt_params)
+
         if answer_name in data['partial_scores']:
             score = data['partial_scores'][answer_name]['score']
             feedback = data['partial_scores'][answer_name]['feedback']
@@ -284,9 +291,18 @@ def render(element_html, data):
         check_indentation = ', with correct indentation' if check_indentation is True else None
 
         if answer_name in data['correct_answers']:
+
+            question_solution = []
+            for solution in data['correct_answers'][answer_name]:
+                solution_params = {
+                    'inner_html': solution['inner_html'],
+                    'indent': ((solution['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+                }
+                question_solution.append(solution_params)
+
             html_params = {
                 'true_answer': True,
-                'question_solution': filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html']),
+                'question_solution': question_solution,
                 'grading_mode': grading_mode,
                 'check_indentation': check_indentation
             }
@@ -423,8 +439,8 @@ def grade(element_html, data):
 
 
 def test(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
     grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
+    element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
     answer_name_field = answer_name + '-input'
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
