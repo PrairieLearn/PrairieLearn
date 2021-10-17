@@ -439,8 +439,8 @@ def grade(element_html, data):
 
 
 def test(element_html, data):
-    grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
     element = lxml.html.fragment_fromstring(element_html)
+    grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
     answer_name = pl.get_string_attrib(element, 'answers-name')
     answer_name_field = answer_name + '-input'
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
