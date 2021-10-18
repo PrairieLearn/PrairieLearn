@@ -1,6 +1,6 @@
 const path = require('path');
 const express = require('express');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 const _ = require('lodash');
 
 const config = require('../../lib/config');
@@ -29,7 +29,14 @@ router.get('/*', function(req, res, next) {
     // and `maxAge` options on the `Cache-Control` header. This router is
     // mounted twice - one with the cachebuster in the URL, and once without it
     // for backwards compatibility. See `server.js` for more details.
-    const isCached = req.params.cachebuster;
+    const isCached = !!req.params.cachebuster;
+
+    if (isCached) {
+        // `middlewares/cors.js` disables caching for all routes by default.
+        // We need to remove this header so that `res.sendFile` can set it
+        // correctly.
+        res.removeHeader('Cache-Control');
+    }
 
     let elementFilesDir = path.join(res.locals.course.path, 'elementExtensions');
     res.sendFile(filename, {
@@ -37,7 +44,7 @@ router.get('/*', function(req, res, next) {
         immutable: isCached,
         // As with `/assets/`, we assume that element files are likely to change
         // when running in dev mode, so we skip caching entirely in that case.
-        maxAge: (isCached && !config.devMode) ? '31557600' : '0',
+        maxAge: (isCached && !config.devMode) ? '31536000s' : 0,
     });
 });
 

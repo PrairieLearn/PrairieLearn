@@ -249,7 +249,7 @@ module.exports.initExpress = function() {
     app.use('/assets/:cachebuster', express.static(path.join(__dirname, 'public'), {
         // In dev mode, assets are likely to change while the server is running,
         // so we'll prevent them from being cached.
-        maxAge: config.devMode ? '0' : '31557600',
+        maxAge: config.devMode ? 0 : '31536000s',
         immutable: true,
     }));
     // This route is kept around for legacy reasons - new code should prefer the
@@ -260,7 +260,7 @@ module.exports.initExpress = function() {
     // we insert a hash of the module version into the resource path. This allows
     // us to treat those files as immutable and cache them essentially forever.
     app.use('/cacheable_node_modules/:cachebuster', express.static(path.join(__dirname, 'node_modules'), {
-        maxAge: '31557600',
+        maxAge: '31536000s',
         immutable: true,
     }));
     // This is included for backwards-compatibility with pages that might still
