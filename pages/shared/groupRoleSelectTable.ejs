@@ -110,9 +110,17 @@
         <td><%= row.uid %></td>
         <td>
           <% ['Manager', 'Reflector', 'Recorder', 'Contributor'].forEach(function (role) { %>
-            <button type="button" class="btn btn-outline-secondary" data-toggle="button" aria-pressed="false">
+            <input
+              class="ml-2"
+              type="checkbox"
+              id="<%= role %>-<%= row.uid %>"
+              name="<%= role %>-<%= row.uid %>"
+              value="checked"
+              form="role-select-form"
+            >
+            <label for="<%= role %>-<%= row.uid %>">
               <%= role %>
-            </button>
+            </label>
           <% }) %>
         </td>
       </tr>

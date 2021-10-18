@@ -83,13 +83,15 @@ router.post('/', function(req, res, next) {
     // New stuff!
     if (req.body.__action == 'claim_role') {
 
+        console.log('request body: ', req.body);
+
         // Get all keys from req.body
         const roleKeys = Object.keys(req.body);
         
         // Create dictionary of <uid, list[role]>
         const roles = {};
         for (const roleKey of roleKeys) {
-            if (roleKey.startsWith("__")) {
+            if (roleKey.startsWith('__')) {
                 continue;
             }
             const [role, uid] = roleKey.split('-');
@@ -150,12 +152,12 @@ router.post('/', function(req, res, next) {
                 res.locals.has_reflector = roleCounts['reflector'] === 1;
                 res.locals.has_invalid_contributor = roleCounts['contributor'] > 0 && groupSize < 3;
     
-                console.log("Refreshing page");
-                console.log(res.locals);
+                console.log('Refreshing page');
+                // console.log(res.locals);
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            })
+            });
 
-        })
+        });
     } else if (req.body.__action == 'new_instance') {
         var params = {
             assessment_id: res.locals.assessment.id,
