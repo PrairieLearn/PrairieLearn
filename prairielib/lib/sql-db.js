@@ -174,7 +174,7 @@ module.exports.close = callbackify(module.exports.closeAsync);
  * destruction of the client, but this should not be used except in
  * unusual circumstances.
  *
- * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
+ * @returns {Promise<import('pg').PoolClient>}
  */
 module.exports.getClientAsync = async function() {
     if (!pool) {
@@ -212,10 +212,7 @@ module.exports.getClientAsync = async function() {
         client[SEARCH_SCHEMA] = searchSchema;
     }
 
-    // TODO: consider refactoring to just returning `client` directly. Other
-    // code can then call `client.release()` directly instead of invoking our
-    // custom `done()` callback.
-    return { client, done: client.release };
+    return client;
 };
 
 /**
@@ -225,7 +222,7 @@ module.exports.getClientAsync = async function() {
  */
 module.exports.getClient = function(callback) {
     module.exports.getClientAsync()
-        .then(({ client, done }) => callback(null, client, done))
+        .then((client) => callback(null, client, client.release))
         .catch((err) => callback(err));
 };
 
@@ -371,17 +368,14 @@ module.exports.rollbackWithClient = (client, done, callback) => {
 /**
  * Begins a new transaction.
  *
- * @returns {Promise<{client: import("pg").PoolClient, done: (release?: any) => void}>}
+ * @returns {Promise<import('pg').PoolClient>}
  */
 module.exports.beginTransactionAsync = async function() {
     debug('beginTransaction()');
-    const { client, done } = await module.exports.getClientAsync();
+    const client = await module.exports.getClientAsync();
     try {
         await module.exports.queryWithClientAsync(client, 'START TRANSACTION;', {});
-        // TODO: consider refactoring to just returning `client` directly. Other
-        // code can then call `client.release()` directly instead of invoking our
-        // custom `done()` callback.
-        return { client, done };
+        return client;
     } catch (err) {
         await module.exports.rollbackWithClientAsync(client);
         throw err;
@@ -395,7 +389,7 @@ module.exports.beginTransactionAsync = async function() {
  */
 module.exports.beginTransaction = function(callback) {
     module.exports.beginTransactionAsync()
-        .then(({ client, done }) => callback(null, client, done))
+        .then((client) => callback(null, client, client.release))
         .catch((err) => callback(err));
 };
 
@@ -404,10 +398,9 @@ module.exports.beginTransaction = function(callback) {
  * Also releasese the client.
  *
  * @param {import('pg').PoolClient} client
- * @param {(rollback?: any) => void} done
  * @param {Error | null} err
  */
-module.exports.endTransactionAsync = async function(client, done, err) {
+module.exports.endTransactionAsync = async function(client, err) {
     debug('endTransaction()');
     if (err) {
         try {
@@ -434,7 +427,11 @@ module.exports.endTransactionAsync = async function(client, done, err) {
  * @param {Error | null} err
  * @param {(error: Error | null) => void} callback
  */
-module.exports.endTransaction = callbackify(module.exports.endTransactionAsync);
+module.exports.endTransaction = function(client, done, err, callback) {
+    module.exports.endTransactionAsync(client, err)
+        .then(() => callback(null))
+        .catch((error) => callback(error));
+};
 
 /**
  * Executes a query with the specified parameters.
@@ -446,7 +443,7 @@ module.exports.endTransaction = callbackify(module.exports.endTransactionAsync);
 module.exports.queryAsync = async function(sql, params) {
     debug('query()', 'sql:', debugString(sql));
     debug('query()', 'params:', debugParams(params));
-    const { client } = await module.exports.getClientAsync();
+    const client = await module.exports.getClientAsync();
     try {
         return await module.exports.queryWithClientAsync(client, sql, params);
     } finally {
