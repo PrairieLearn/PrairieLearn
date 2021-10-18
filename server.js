@@ -1161,7 +1161,7 @@ if (config.startServer) {
                 callback(null);
             }
         },
-        function(callback) {
+        async () => {
             // We create and activate a random DB schema name
             // (https://www.postgresql.org/docs/12/ddl-schemas.html)
             // after we have run the migrations but before we create
@@ -1171,10 +1171,7 @@ if (config.startServer) {
             // of its sprocs, allowing us to update servers while old
             // servers are still running. See docs/dev-guide.md for
             // more info.
-            sqldb.setRandomSearchSchema(config.instanceId, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
+            await sqldb.setRandomSearchSchemaAsync(config.instanceId);
         },
         function(callback) {
             sprocs.init(function(err) {
