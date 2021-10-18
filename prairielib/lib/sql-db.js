@@ -93,6 +93,21 @@ function paramsToArray(sql, params) {
 }
 
 /**
+ * Escapes the given identifier for use in an SQL query. Useful for preventing
+ * SQL injection.
+ *
+ * @param {string} identifier
+ * @returns {string}
+ */
+function escapeIdentifier(identifier) {
+    // Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
+    // https://github.com/brianc/node-postgres/pull/396
+    // https://github.com/brianc/node-postgres/issues/1978
+    // https://www.postgresql.org/docs/12/sql-syntax-lexical.html
+    return pg.Client.prototype.escapeIdentifier(identifier);
+}
+
+/**
  * The pool from which clients will be acquired.
  * @type { import("pg").Pool }
  */
@@ -202,7 +217,7 @@ module.exports.getClientAsync = async function() {
     // `setSearchSchema(null)` would not work as you expect. This is fine, as
     // that's not something we ever do in practice.
     if (searchSchema != null && client[SEARCH_SCHEMA] !== searchSchema) {
-        const setSearchPathSql = `SET search_path TO ${client.escapeIdentifier(searchSchema)},public`;
+        const setSearchPathSql = `SET search_path TO ${escapeIdentifier(searchSchema)},public`;
         try {
             await module.exports.queryWithClientAsync(client, setSearchPathSql, {});
         } catch (err) {
@@ -535,7 +550,7 @@ module.exports.callAsync = async function(functionName, params) {
     debug('call()', 'function:', functionName);
     debug('call()', 'params:', debugParams(params));
     const placeholders = _.map(_.range(1, params.length + 1), v => '$' + v).join();
-    const sql = `SELECT * FROM ${functionName}(${placeholders});`;
+    const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders});`;
     const result = await module.exports.queryAsync(sql, params);
     debug('call() success', 'rowCount:', result.rowCount);
     return result;
@@ -626,7 +641,7 @@ module.exports.callWithClientAsync = async function(client, functionName, params
     debug('callWithClient()', 'function:', functionName);
     debug('callWithClient()', 'params:', debugParams(params));
     const placeholders = _.map(_.range(1, params.length + 1), v => '$' + v).join();
-    const sql = `SELECT * FROM ${functionName}(${placeholders})`;
+    const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders})`;
     const result = await module.exports.queryWithClientAsync(client, sql, params);
     debug('callWithClient() success', 'rowCount:', result.rowCount);
     return result;
@@ -721,11 +736,7 @@ module.exports.setSearchSchema = async function(schema) {
         return;
     }
 
-    // Note that as of 2021-06-29 escapeIdentifier() is undocumented. See:
-    // https://github.com/brianc/node-postgres/pull/396
-    // https://github.com/brianc/node-postgres/issues/1978
-    // https://www.postgresql.org/docs/12/sql-syntax-lexical.html
-    await module.exports.queryAsync(`CREATE SCHEMA IF NOT EXISTS ${pg.Client.prototype.escapeIdentifier(schema)}`, {});
+    await module.exports.queryAsync(`CREATE SCHEMA IF NOT EXISTS ${escapeIdentifier(schema)}`, {});
     // We only set searchSchema after CREATE to avoid the above query() call using searchSchema.
     searchSchema = schema;
 };
