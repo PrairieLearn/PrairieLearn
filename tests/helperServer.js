@@ -18,6 +18,7 @@ const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
 const workers = require('../lib/workers');
+const tracing = require('../lib/tracing');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -40,6 +41,10 @@ module.exports = {
             debug('before()');
             var that = this;
             async.series([
+                async () => {
+                    // We (currently) don't ever want tracing to run during tests.
+                    await tracing.init({ openTelemetryEnabled: false });
+                },
                 async () => {
                     await aws.init();
                 },
