@@ -234,13 +234,10 @@ def render(element_html, data):
         feedback = None
 
         if answer_name in data['submitted_answers']:
-            student_submission = []
-            for attempt in data['submitted_answers'][answer_name]:
-                attempt_params = {
-                    'inner_html': attempt['inner_html'],
-                    'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
-                }
-                student_submission.append(attempt_params)
+            student_submission = [{
+                'inner_html': attempt['inner_html'],
+                'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+            } for attempt in data['submitted_answers'][answer_name]]
 
         if answer_name in data['partial_scores']:
             score = data['partial_scores'][answer_name]['score']
@@ -291,14 +288,10 @@ def render(element_html, data):
         check_indentation = ', with correct indentation' if check_indentation is True else None
 
         if answer_name in data['correct_answers']:
-
-            question_solution = []
-            for solution in data['correct_answers'][answer_name]:
-                solution_params = {
-                    'inner_html': solution['inner_html'],
-                    'indent': ((solution['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
-                }
-                question_solution.append(solution_params)
+            question_solution = [{
+                'inner_html': solution['inner_html'],
+                'indent': ((solution['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+            } for solution in data['correct_answers'][answer_name]]
 
             html_params = {
                 'true_answer': True,
