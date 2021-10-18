@@ -436,11 +436,29 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();},
     ]);
 
-    // Serve element statics
+    // Serve element statics. As with core PrairieLearn assets and files served
+    // from `node_modules`, we include a cachebuster in the URL. This allows
+    // files to be treated as immutable in production and cached aggressively.
+    app.use('/pl/static/cacheableElements/:cachebuster', require('./pages/elementFiles/elementFiles'));
+    app.use('/pl/course_instance/:course_instance_id/cacheableElements/:cachebuster', require('./pages/elementFiles/elementFiles'));
+    app.use('/pl/course_instance/:course_instance_id/instructor/cacheableElements/:cachebuster', require('./pages/elementFiles/elementFiles'));
+    app.use('/pl/course/:course_id/cacheableElements/:cachebuster', require('./pages/elementFiles/elementFiles'));
+    app.use('/pl/course_instance/:course_instance_id/cacheableElementExtensions/:cachebuster', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+    app.use('/pl/course_instance/:course_instance_id/instructor/cacheableElementExtensions/:cachebuster', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+    app.use('/pl/course/:course_id/cacheableElementExtensions/:cachebuster', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+
+
+    // For backwards compatibility, we continue to serve the non-cached element
+    // files.
+    // TODO: if we can determine that these routes are no longer receiving
+    // traffic in the future, we can delete these.
     app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
     app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/elementFiles/elementFiles'));
     app.use('/pl/course_instance/:course_instance_id/instructor/elements', require('./pages/elementFiles/elementFiles'));
     app.use('/pl/course/:course_id/elements', require('./pages/elementFiles/elementFiles'));
+    app.use('/pl/course_instance/:course_instance_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+    app.use('/pl/course_instance/:course_instance_id/instructor/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
+    app.use('/pl/course/:course_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
 
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
@@ -767,11 +785,6 @@ module.exports.initExpress = function() {
         app.use('/pl/course_instance/:course_instance_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
         app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
     }
-
-    // Serve extension statics
-    app.use('/pl/course_instance/:course_instance_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
-    app.use('/pl/course_instance/:course_instance_id/instructor/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
-    app.use('/pl/course/:course_id/elementExtensions', require('./pages/elementExtensionFiles/elementExtensionFiles'));
 
     // clientFiles
     app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
