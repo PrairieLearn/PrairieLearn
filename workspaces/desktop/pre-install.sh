@@ -1,3 +1,5 @@
+set -ex
+
 # update base system
 apt-get update && apt-get upgrade
 

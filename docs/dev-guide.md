@@ -36,7 +36,7 @@ PrairieLearn
 +-- migrations         # DB migrations
 |   +-- index.js       # entry point for migrations
 |   `-- ...            # one PGSQL file per migration, executed in order by index.js
-+-- package.json       # npm configuration file
++-- package.json       # JavaScript package manifest
 +-- pages              # one sub-dir per web page
 |   +-- partials       # EJS helper sub-templates
 |   +-- instructorHome # all the code for the instructorHome page
