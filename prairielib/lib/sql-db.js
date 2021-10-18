@@ -357,7 +357,7 @@ module.exports.rollbackWithClientAsync = async function(client) {
         await client.query('ROLLBACK');
     } catch (err) {
         // If there was a problem rolling back the query, something is
-        // seriously messed up. Return the error to the done function to
+        // seriously messed up. Return the error to the release() function to
         // close & remove this client from the pool. If you leave a client in
         // the pool with an unaborted transaction, weird and hard to diagnose
         // problems might happen.
