@@ -1214,12 +1214,12 @@ module.exports = {
                         dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`));
                         dependencies.clientFilesQuestionStyles.forEach((file) => styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
                         dependencies.clientFilesQuestionScripts.forEach((file) => scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`));
-                        dependencies.coreElementStyles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
-                        dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
-                        dependencies.courseElementStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elements/${file}`));
-                        dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elements/${file}`));
-                        dependencies.extensionStyles.forEach((file) => styleUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`));
-                        dependencies.extensionScripts.forEach((file) => scriptUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`));
+                        dependencies.coreElementStyles.forEach((file) => styleUrls.push(assets.coreElementAssetPath(file)));
+                        dependencies.coreElementScripts.forEach((file) => scriptUrls.push(assets.coreElementAssetPath(file)));
+                        dependencies.courseElementStyles.forEach((file) => styleUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)));
+                        dependencies.courseElementScripts.forEach((file) => scriptUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)));
+                        dependencies.extensionStyles.forEach((file) => styleUrls.push(assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)));
+                        dependencies.extensionScripts.forEach((file) => scriptUrls.push(assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)));
 
                         const headerHtmls = [
                             ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
