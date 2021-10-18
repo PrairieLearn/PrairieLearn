@@ -3,6 +3,8 @@ const async = require('async');
 const _ = require('lodash');
 const debug = require('debug')('prairielearn:cron');
 const { v4: uuidv4 } = require('uuid');
+const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
+const { suppressTracing } = require('@opentelemetry/core');
 
 const logger = require('../lib/logger');
 const config = require('../lib/config');
@@ -206,17 +208,38 @@ module.exports = {
         debug(`runJobs()`);
         const cronUuid = uuidv4();
         logger.verbose('cron: jobs starting', {cronUuid});
-        async.eachSeries(jobsList, (job, callback) => {
+        async.eachSeries(jobsList, async (job) => {
             debug(`runJobs(): running ${job.name}`);
-            this.tryJobWithLock(job, cronUuid, (err) => {
-                if (ERR(err, () => {})) {
-                    debug(`runJobs(): error running ${job.name}: ${err}`);
-                    logger.error('cron: ' + job.name + ' failure: ' + String(err),
-                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data), cronUuid});
-                }
-                // return null even on error so that we run all jobs even if one fails
-                debug(`runJobs(): completed ${job.name}`);
-                callback(null);
+            const tracer = trace.getTracer('cron');
+            return tracer.startActiveSpan(`cron:${job.name}`, async (span) => {
+                // Don't actually trace anything that runs during the job;
+                // that would create too many events for us. The only thing
+                // we're interested in for now is the duration and the
+                // success/failure state.
+                await context.with(suppressTracing(context.active()), async () => {
+                    await new Promise((resolve) => {
+                        this.tryJobWithLock(job, cronUuid, (err) => {
+                            if (ERR(err, () => {})) {
+                                debug(`runJobs(): error running ${job.name}: ${err}`);
+                                logger.error('cron: ' + job.name + ' failure: ' + String(err),
+                                            {message: err.message, stack: err.stack, data: JSON.stringify(err.data), cronUuid});
+
+                                span.recordException(err);
+                                span.setStatus({
+                                    status: SpanStatusCode.ERROR,
+                                    message: err.message,
+                                });
+                            } else {
+                                span.setStatus({ status: SpanStatusCode.OK });
+                            }
+
+                            // resolve no matter what so that we run all jobs even if one fails
+                            resolve();
+                        });
+                        debug(`runJobs(): completed ${job.name}`);
+                    });
+                });
+                span.end();
             });
         }, () => {
             debug(`runJobs(): done`);

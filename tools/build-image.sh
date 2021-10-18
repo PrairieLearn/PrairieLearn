@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 if [ "$#" -ne 1 ]; then
   echo "USAGE: $0 image_name" >& 2
   echo "image_name should correspond to directory images/image_name"

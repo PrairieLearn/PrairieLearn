@@ -19,7 +19,7 @@ function check_block(event, ui) {
 
 function set_answer(event) {
     // We only care about when this function is fired
-    // from an ANSWER DROPZONE, aka dropzones with yellow backgrounds 
+    // from an answer dropzone, aka dropzones with yellow backgrounds
     var textfield_name = event.target.getAttribute('name');
     var dom_objs = $('#' + textfield_name + '-dropzone').children();
     var student_answers_array = [];
@@ -32,7 +32,7 @@ function set_answer(event) {
                 answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
                 answer_indent = Math.round(answer_indent / TABWIDTH); // get how many times the answer is indented
             }
-            
+
             var answer_json = {'inner_html': answer_text, 'indent': answer_indent, 'uuid': uuid};
             student_answers_array.push(answer_json);
         }
@@ -47,46 +47,27 @@ function set_answer(event) {
 }
 
 
-function update_indent(leftDiff, id, ui) {
+function update_indent(ui) {
     if (ui.item.parent()[0].classList.contains('inline')) {
         return;
     }
-    if (!ui.item.parent()[0].classList.contains('dropzone') || 
-        !ui.item.parent()[0].classList.contains('enableIndentation')){
+    if (!ui.item.parent()[0].classList.contains('dropzone') ||
+        !ui.item.parent()[0].classList.contains('enableIndentation')) {
         // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
         ui.item[0].style.marginLeft = '0px';
         return;
     }
-    leftDiff = ui.position.left - ui.item.parent().position().left;
-    var currentIndent = ui.item[0].style.marginLeft;
-    if (parseInt(currentIndent) <= MAX_INDENT + 1 && leftDiff < 0){
-        return; // if answer is not indented, and the student drag it left
-                // do nothing
-    }
-
+    let leftDiff = ui.position.left - ui.item.parent().position().left;
     leftDiff = (Math.round(leftDiff / TABWIDTH) * TABWIDTH);
-
-    // leftDiff is the direction to move the MCQ answer tile, in px
-    // we limit leftDiff to be increments of TABWIDTH, whether positive or negative
-    if (currentIndent !== ''){
-        leftDiff += parseInt(currentIndent); 
+    let currentIndent = ui.item[0].style.marginLeft;
+    if (currentIndent !== '') {
+        leftDiff += parseInt(currentIndent);
     }
-    // limit leftDiff to be in [, (TABWIDTH * MAX_INDENT) + ], within the bounds of the drag and drop box
-    // that is, at least indented 0 times, or at most indented by MAX_INDENT times  
+
+    // limit leftDiff to be in within the bounds of the drag and drop box
+    // that is, at least indented 0 times, or at most indented by MAX_INDENT times
     leftDiff = Math.min(leftDiff, (TABWIDTH * MAX_INDENT));
-
-    // when the user drag a tile into the answer box for the first time
-    // the snap to grid dragging doesnt apply
-    // so we have to manually enforce "snapping the leftDiff number to the nearest grid number" here
-    var remainder = leftDiff % TABWIDTH;
-    if (remainder !== 0) {
-        // Manually snap to grid here, by rounding to the nearest multiple of TABWIDTH
-        if (remainder > (TABWIDTH / 2)){
-            leftDiff += remainder; // round towards +∞, to the next bigger multiple of TABWIDTH
-        } else {
-            leftDiff -= remainder; // round towards -∞, to the next smaller multiple of TABWIDTH
-        }
-    }
+    leftDiff = Math.max(leftDiff, 0);
 
     ui.item[0].style.marginLeft = leftDiff + 'px';
 }
@@ -113,7 +94,7 @@ $( document ).ready(function() {
         },
         stop: function(event, ui){
             // when the user stops interacting with the list
-            update_indent(ui.position.left - ui.item.parent().position().left, ui.item[0].id, ui);
+            update_indent(ui);
             set_answer(event);
         },
     });
