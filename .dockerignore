@@ -3,7 +3,7 @@
 
 # whitelist things to copy
 !.eslintignore
-!.eslintrc.json
+!.eslintrc.js
 !tsconfig.json
 !admin_queries/
 !api/
@@ -21,7 +21,7 @@
 !models/
 !news_items/
 !package.json
-!package-lock.json
+!yarn.lock
 !pages/
 !prairielib/
 !public/
