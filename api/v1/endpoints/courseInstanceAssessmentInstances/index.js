@@ -68,6 +68,7 @@ router.get('/:assessment_instance_id/submissions', (req, res, next) => {
 router.put('/:assessment_instance_id/submission/:submission_id/file', upload.single('file'), (req, res, next) => {
     const {assessment_instance_id, course_instance_id, submission_id} = req.params;
 
+    // # TO DO - split out error to user through API if these errors are hit.
     if (!assessment_instance_id || !course_instance_id || !submission_id) {
         ERR(Error('Required params for artifact upload: course_instance_id, assessment_instance_id, and submission_id'));
     }

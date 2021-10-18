@@ -360,6 +360,10 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navPage = 'request_course'; next();},
         require('./pages/instructorRequestCourse/instructorRequestCourse.js'),
     ]);
+    app.use('/pl/scrap_paper', [
+        function(req, res, next) {res.locals.navPage = 'scrap_paper'; next();},
+        require('./pages/instructorScrapPaper/instructorScrapPaper.js'),
+    ]);
 
     app.use('/pl/workspace/:workspace_id', [
         (req, res, next) => {res.locals.workspace_id = req.params.workspace_id; next();},

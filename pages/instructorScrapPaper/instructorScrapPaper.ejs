@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+    <!--We need these to run front-end leverging Canvas to avoid adding bloatware to Linux dist image-->
+    <script src="<%= node_modules_asset_path('jsbarcode/dist/JsBarcode.all.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('jspdf/dist/jspdf.umd.min.js') %>"></script>
+    <script>
+        window.onload = () => {
+            const doc = new jspdf.jsPDF();
+
+            // ean-13 standard size in millimeters; pdf page in mm 
+            const barcodeWidth = 37.29; 
+            const barcodeHeight = 25.93;
+            const pdfWidth = doc.internal.pageSize.getWidth(); // also in mm
+            const pdfHeight = doc.internal.pageSize.getHeight();
+
+            JsBarcode('#barcode', '123321212333', {format: 'EAN13'});
+            const barcodeImg = document.querySelector('#barcode');
+
+            console.log('pdfWidth', pdfWidth);
+            console.log('pdfHeight', pdfHeight);
+
+            console.log(barcodeWidth)
+
+            // pdf center (page width - image width) / 2;
+            const topPadding = 15;
+            const bottomPadding = 5;
+            const sideMargins = 15 * 2;
+            const centerWidth = (pdfWidth - barcodeWidth) / 2;
+
+            doc.setFontSize(14);
+            doc.text('University of British Columbia - CPSC 999 - Exam 3 - Question 4 - Proof of work sdf ads fasd f adsf asd f asdf sd s ', pdfWidth / 2, 0 + topPadding, {align: 'center', maxWidth: pdfWidth - sideMargins});
+            doc.addImage(barcodeImg.src, centerWidth, (pdfHeight - barcodeHeight) - bottomPadding, barcodeWidth, barcodeHeight);
+
+            // new page
+            doc.addPage();
+            doc.addImage(barcodeImg.src, 15, 40);
+            doc.text(30, 20, 'Hello world!');
+
+            // output pdf
+            const base64pdf = doc.output('datauri');
+
+            document.querySelector("#question-block-artifact-pdf").src = base64pdf;
+            doc.save();
+            window.open(base64pdf);
+        }
+    </script>
+</head>
+<body>
+    <div>
+        
+    </div>
+    <div class="question-block-artifact-container">
+        <iframe id="question-block-artifact-pdf" width="100%" height="800px" type="text/html" src=""></iframe>
+      </div>
+    <!--Hardcode CSS in cm so we know the absolutes for PDF printing-->
+    <img id="barcode" style="width: 3.729cm; height: 2.593cm;" />
+  <script>
+  </script>
+
+</body>
+</html>
