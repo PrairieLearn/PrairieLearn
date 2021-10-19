@@ -246,8 +246,8 @@ module.exports.getLastJobSequenceId = util.callbackify(
 
 module.exports.waitForJobSequenceAsync = async (job_sequence_id) => {
   let job_sequence;
+  // eslint-disable-next-line no-constant-condition
   while (true) {
-    // eslint-disable-line no-constant-condition
     const result = await sqldb.queryOneRowAsync(sql.select_job_sequence, {
       job_sequence_id,
     });
