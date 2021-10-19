@@ -125,3 +125,13 @@ Some questions may include libraries and base classes that are common across mul
 ```
 
 The libraries required to run JUnit 5 tests are already included as part of the autograder container, and don't need to be included again.
+
+## Technical details
+
+### Sandbox environment and access to files
+
+The JUnit tests, as well as the student code, are executed in a sandboxed environment as a non-root user. The code has the ability to create, modify or delete any files within the sandbox user's home directory (`/home/sbuser`), but cannot access most other directories in the environment. This is set up to deter students from creating code that manipulates the autograder or the grading results, since these can only be updated by the autograder script.
+
+The user directory is initially empty. Any files and directories that are required for testing must be created by the JUnit test class itself.
+
+The [instructor provided library files](index.md#libraries-and-instructor-provided-classes) are copied to the testing environment as they are to a directory called `/grade/classpath`. To ensure they can be used in the Java library, this directory and its contents are readable by the sandbox user. Instructors are warned that any file that should not be viewed by the student (e.g., the source code of test files or some libraries) should not be included in the question's `tests/libs` directory or in the course's `serverFilesCourse/java/libs` directory, as such files could be visible by a well-crafted malicious student submission.
