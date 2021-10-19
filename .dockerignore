@@ -2,6 +2,7 @@
 *
 
 # whitelist things to copy
+!.editorconfig
 !.eslintignore
 !.eslintrc.js
 !.prettierignore
