@@ -29,7 +29,10 @@ router.get('/*', function(req, res, next) {
     // and `maxAge` options on the `Cache-Control` header. This router is
     // mounted twice - one with the cachebuster in the URL, and once without it
     // for backwards compatibility. See `server.js` for more details.
-    const isCached = !!req.params.cachebuster;
+    //
+    // As with `/assets/`, we assume that element files are likely to change
+    // when running in dev mode, so we skip caching entirely in that case.
+    const isCached = !!req.params.cachebuster && !config.devMode;
 
     if (isCached) {
         // `middlewares/cors.js` disables caching for all routes by default.
@@ -42,9 +45,7 @@ router.get('/*', function(req, res, next) {
     res.sendFile(filename, {
         root: elementFilesDir,
         immutable: isCached,
-        // As with `/assets/`, we assume that element files are likely to change
-        // when running in dev mode, so we skip caching entirely in that case.
-        maxAge: (isCached && !config.devMode) ? '31536000s' : 0,
+        maxAge: isCached ? '31536000s' : 0,
     });
 });
 
