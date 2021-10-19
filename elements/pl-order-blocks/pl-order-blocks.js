@@ -86,12 +86,9 @@ $( document ).ready(function() {
         },
         sort: function(event, ui) {
             // update the location of the placeholder as the item is dragged
-            let placeholders = ui.item.closest('.pl-order-blocks').find('.ui-sortable-placeholder');
-            if (placeholders.length > 0) {
-                let parent = $(placeholders[0].parentElement);
-                let leftDiff = calculate_indent(ui, parent);
-                placeholders[0].style.marginLeft = leftDiff + 'px';
-            }
+            let placeholder = ui.placeholder;
+            let leftDiff = calculate_indent(ui, placeholder.parent());
+            placeholder[0].style.marginLeft = leftDiff + 'px';
         },
         beforeStop: function(event, ui){
             if (!check_block(event, ui)) {
