@@ -912,13 +912,15 @@ and external grading system.
 
 ![](elements/pl-file-editor.png)
 
+<!-- prettier-ignore -->
 ```html
 <pl-file-editor
   file-name="fib.py"
   ace-mode="ace/mode/python"
   ace-theme="ace/theme/monokai"
 >
-  def fib(n): pass
+def fib(n):
+    pass
 </pl-file-editor>
 ```
 
