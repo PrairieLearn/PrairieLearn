@@ -82,9 +82,9 @@ describe('Course element extensions', function() {
         locals.isStudentPage = false;
         const testQid = 'demo/custom/extension';
 
-        const incJs = 'elementExtensions/extendable-element/extension-cssjs/extension-cssjs.js';
-        const incCss = 'elementExtensions/extendable-element/extension-cssjs/extension-cssjs.css';
-        const incImg = 'elementExtensions/extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
+        const incJs = 'extendable-element/extension-cssjs/extension-cssjs.js';
+        const incCss = 'extendable-element/extension-cssjs/extension-cssjs.css';
+        const incImg = 'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
         step('find the example question in the database', async () => {
             let results = await sqldb.queryZeroOrOneRowAsync(sql.select_question_by_qid, {qid: testQid});
