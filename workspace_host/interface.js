@@ -169,11 +169,8 @@ async.series([
             callback(null);
         });
     },
-    (callback) => {
-        sqldb.setRandomSearchSchema(config.instanceId, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
+    async () => {
+        await sqldb.setRandomSearchSchemaAsync(config.instanceId);
     },
     (callback) => {
         sprocs.init(function(err) {
