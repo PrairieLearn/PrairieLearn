@@ -34,8 +34,13 @@ test-python:
 lint: lint-js lint-python
 lint-js:
 	@eslint --ext js "**/*.js"
+	@prettier --check "**/*.{js,ts,md}"
 lint-python:
 	@python3 -m flake8 ./
+
+format: format-js
+format-js:
+	@prettier --write "**/*.{js,ts,md}"
 
 typecheck:
 	@tsc
