@@ -40,6 +40,7 @@ lint-python:
 
 format: format-js
 format-js:
+	@eslint --ext js --fix "**/*.js"
 	@prettier --write "**/*.{js,ts,md}"
 
 typecheck:
