@@ -84,14 +84,14 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {SEBConfig} SEBConfig
  */
 
- /**
-  * @typedef {Object} QuestionAlternative
-  * @property {number | number[]} points
-  * @property {numer | number[]} maxPoints
-  * @property {string} id
-  * @property {boolean} forceMaxPoints
-  * @property {number} triesPerVariant
-  */
+/**
+ * @typedef {Object} QuestionAlternative
+ * @property {number | number[]} points
+ * @property {numer | number[]} maxPoints
+ * @property {string} id
+ * @property {boolean} forceMaxPoints
+ * @property {number} triesPerVariant
+ */
 
 /**
  * @typedef {Object} ZoneQuestion
@@ -163,23 +163,23 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Record<string, string | null>=} environment
  */
 
- /**
-  * @typedef {Object} Question
-  * @property {string} uuid
-  * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
-  * @property {string} title
-  * @property {string} topic
-  * @property {string[]} [tags]
-  * @property {string[]} [clientFiles]
-  * @property {string[]} [clientTemplates]
-  * @property {string} [template]
-  * @property {"Internal" | "External" | "Manual"} [gradingMethod]
-  * @property {boolean} [singleVariant]
-  * @property {boolean} [partialCredit]
-  * @property {Object} [options]
-  * @property {QuestionExternalGradingOptions} [externalGradingOptions]
-  * @property {QuestionWorkspaceOptions} [workspaceOptions]
-  */
+/**
+ * @typedef {Object} Question
+ * @property {string} uuid
+ * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
+ * @property {string} title
+ * @property {string} topic
+ * @property {string[]} [tags]
+ * @property {string[]} [clientFiles]
+ * @property {string[]} [clientTemplates]
+ * @property {string} [template]
+ * @property {"Internal" | "External" | "Manual"} [gradingMethod]
+ * @property {boolean} [singleVariant]
+ * @property {boolean} [partialCredit]
+ * @property {Object} [options]
+ * @property {QuestionExternalGradingOptions} [externalGradingOptions]
+ * @property {QuestionWorkspaceOptions} [workspaceOptions]
+ */
 
 /** @typedef {{ assessments: { [id: string]: Assessment }, courseInstance: CourseInstance }} CourseInstanceData */
 /** @typedef {{ course: Course, questions: { [id: string]: Question }, courseInstances: { [id: string]: CourseInstanceData } }} CourseData */
@@ -191,7 +191,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @param {CourseData} courseData - The course data to write to disk
  * @returns {Promise<string>} - The path to the directory containing the course data
  */
-module.exports.writeCourseToTempDirectory = async function(courseData) {
+module.exports.writeCourseToTempDirectory = async function (courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
   await this.writeCourseToDirectory(courseData, coursePath);
   return coursePath;
@@ -205,7 +205,10 @@ module.exports.writeCourseToTempDirectory = async function(courseData) {
  * @param {CourseData} courseData - The course data to write to disk
  * @param {string} coursePath - The path to the directory to write to
  */
-module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
+module.exports.writeCourseToDirectory = async function (
+  courseData,
+  coursePath,
+) {
   await fs.emptyDir(coursePath);
 
   // courseInfo.json
@@ -231,9 +234,15 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
     const courseInstance = courseData.courseInstances[shortName];
     // Handle nested course instances - split on '/' and use components to construct
     // the nested directory structure.
-    const courseInstancePath = path.join(courseInstancesPath, ...shortName.split('/'));
+    const courseInstancePath = path.join(
+      courseInstancesPath,
+      ...shortName.split('/'),
+    );
     await fs.ensureDir(courseInstancePath);
-    const courseInstanceInfoPath = path.join(courseInstancePath, 'infoCourseInstance.json');
+    const courseInstanceInfoPath = path.join(
+      courseInstancePath,
+      'infoCourseInstance.json',
+    );
     await fs.writeJSON(courseInstanceInfoPath, courseInstance.courseInstance);
 
     // Write all assessments for this course instance
@@ -242,10 +251,19 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
     for (const assessmentName of Object.keys(courseInstance.assessments)) {
       // Handle nested assessments - split on '/' and use components to construct
       // the nested directory structure.
-      const assessmentPath = path.join(assessmentsPath, ...assessmentName.split('/'));
+      const assessmentPath = path.join(
+        assessmentsPath,
+        ...assessmentName.split('/'),
+      );
       await fs.ensureDir(assessmentPath);
-      const assessmentInfoPath = path.join(assessmentPath, 'infoAssessment.json');
-      await fs.writeJSON(assessmentInfoPath, courseInstance.assessments[assessmentName]);
+      const assessmentInfoPath = path.join(
+        assessmentPath,
+        'infoAssessment.json',
+      );
+      await fs.writeJSON(
+        assessmentInfoPath,
+        courseInstance.assessments[assessmentName],
+      );
     }
   }
 };
@@ -259,40 +277,50 @@ const course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
-  assessmentSets: [{
-    name: 'TEST',
-    abbreviation: 'Test',
-    heading: 'Testing set',
-    color: 'red1',
-  }, {
-    name: 'ANOTHER TEST',
-    abbreviation: 'Another Test',
-    heading: 'Another testing set',
-    color: 'red2',
-  }, {
-    name: 'PRIVATE SET',
-    abbreviation: 'Private',
-    heading: 'Used by the default assessment, do not use in your own tests',
-    color: 'red2',
-  }],
-  topics: [{
-    name: 'Test',
-    color: 'gray1',
-    description: 'A test topic',
-  }, {
-    name: 'Another test',
-    color: 'gray2',
-    description: 'Another test topic',
-  }],
-  tags: [{
-    name: 'test',
-    color: 'blue1',
-    description: 'A test tag',
-  }, {
-    name: 'another test',
-    color: 'blue2',
-    description: 'Another test tag',
-  }],
+  assessmentSets: [
+    {
+      name: 'TEST',
+      abbreviation: 'Test',
+      heading: 'Testing set',
+      color: 'red1',
+    },
+    {
+      name: 'ANOTHER TEST',
+      abbreviation: 'Another Test',
+      heading: 'Another testing set',
+      color: 'red2',
+    },
+    {
+      name: 'PRIVATE SET',
+      abbreviation: 'Private',
+      heading: 'Used by the default assessment, do not use in your own tests',
+      color: 'red2',
+    },
+  ],
+  topics: [
+    {
+      name: 'Test',
+      color: 'gray1',
+      description: 'A test topic',
+    },
+    {
+      name: 'Another test',
+      color: 'gray2',
+      description: 'Another test topic',
+    },
+  ],
+  tags: [
+    {
+      name: 'test',
+      color: 'blue1',
+      description: 'A test tag',
+    },
+    {
+      name: 'another test',
+      color: 'blue2',
+      description: 'Another test tag',
+    },
+  ],
 };
 
 /** @type {{ [id: string]: Question }} */
@@ -333,13 +361,8 @@ const questions = {
       port: 8080,
       home: '/home/coder',
       args: '--auth none',
-      gradedFiles: [
-        'animal.h',
-        'animal.c',
-      ],
-      syncIgnore: [
-        '.local/share/code-server/',
-      ],
+      gradedFiles: ['animal.h', 'animal.c'],
+      syncIgnore: ['.local/share/code-server/'],
     },
   },
 };
@@ -354,25 +377,33 @@ const courseInstances = {
         type: 'Exam',
         set: 'PRIVATE SET',
         number: '100',
-        allowAccess: [{
-          mode: 'Exam',
-        }],
-        zones: [{
-          title: 'zone 1',
-          questions: [{
-            points: 10,
-            alternatives: [{ id: 'private' }],
-          }],
-        }],
+        allowAccess: [
+          {
+            mode: 'Exam',
+          },
+        ],
+        zones: [
+          {
+            title: 'zone 1',
+            questions: [
+              {
+                points: 10,
+                alternatives: [{ id: 'private' }],
+              },
+            ],
+          },
+        ],
       },
     },
     courseInstance: {
       uuid: 'a17b1abd-eaf6-45dc-99bc-9890a7fb345e',
       longName: 'Testing instance',
-      allowAccess: [{
-        startDate: '2019-01-14T00:00:00',
-        endDate: '2019-05-15T00:00:00',
-      }],
+      allowAccess: [
+        {
+          startDate: '2019-01-14T00:00:00',
+          endDate: '2019-05-15T00:00:00',
+        },
+      ],
     },
   },
 };
@@ -380,7 +411,7 @@ const courseInstances = {
 /**
  * @returns {CourseData} - The base course data for syncing testing
  */
-module.exports.getCourseData = function() {
+module.exports.getCourseData = function () {
   // Round-trip through JSON.stringify to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   const courseData = {
@@ -391,7 +422,7 @@ module.exports.getCourseData = function() {
   return JSON.parse(JSON.stringify(courseData));
 };
 
-module.exports.getFakeLogger = function() {
+module.exports.getFakeLogger = function () {
   return {
     verbose: () => {},
     debug: () => {},
@@ -404,7 +435,7 @@ module.exports.getFakeLogger = function() {
  * Async wrapper for syncing course data from a directory. Also stubs out the
  * logger interface.
  */
-module.exports.syncCourseData = function(courseDir) {
+module.exports.syncCourseData = function (courseDir) {
   const logger = this.getFakeLogger();
   return new Promise((resolve, reject) => {
     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
@@ -417,7 +448,7 @@ module.exports.syncCourseData = function(courseDir) {
   });
 };
 
-module.exports.createAndSyncCourseData = async function() {
+module.exports.createAndSyncCourseData = async function () {
   const courseData = this.getCourseData();
   const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
   await module.exports.syncCourseData(courseDir);
@@ -435,7 +466,7 @@ module.exports.createAndSyncCourseData = async function() {
  * @param {CourseData} courseData - The course data to write and sync
  * @returns {Promise<string>} the path to the new temp directory
  */
-module.exports.writeAndSyncCourseData = async function(courseData) {
+module.exports.writeAndSyncCourseData = async function (courseData) {
   const courseDir = await this.writeCourseToTempDirectory(courseData);
   await this.syncCourseData(courseDir);
   return courseDir;
@@ -447,7 +478,10 @@ module.exports.writeAndSyncCourseData = async function(courseData) {
  * @param {CourseData} courseData - The course data write and sync
  * @param {string} courseDir - The path to write the course data to
  */
-module.exports.overwriteAndSyncCourseData = async function(courseData, courseDir) {
+module.exports.overwriteAndSyncCourseData = async function (
+  courseData,
+  courseDir,
+) {
   await this.writeCourseToDirectory(courseData, courseDir);
   await this.syncCourseData(courseDir);
 };
@@ -458,20 +492,24 @@ module.exports.overwriteAndSyncCourseData = async function(courseData, courseDir
  * @param {string} tableName - The name of the table to query
  * @return {Promise<Record<string, any>[]>} - The rows of the given table
  */
-module.exports.dumpTable = async function(tableName) {
+module.exports.dumpTable = async function (tableName) {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
   return res.rows;
 };
 
-module.exports.captureDatabaseSnapshot = async function() {
+module.exports.captureDatabaseSnapshot = async function () {
   return {
     courseInstances: await module.exports.dumpTable('course_instances'),
     assessments: await module.exports.dumpTable('assessments'),
     assessmentSets: await module.exports.dumpTable('assessment_sets'),
     topics: await module.exports.dumpTable('topics'),
     tags: await module.exports.dumpTable('tags'),
-    courseInstanceAccesRules: await module.exports.dumpTable('course_instance_access_rules'),
-    assessmentAccessRules: await module.exports.dumpTable('assessment_access_rules'),
+    courseInstanceAccesRules: await module.exports.dumpTable(
+      'course_instance_access_rules',
+    ),
+    assessmentAccessRules: await module.exports.dumpTable(
+      'assessment_access_rules',
+    ),
     zones: await module.exports.dumpTable('zones'),
     alternativeGroups: await module.exports.dumpTable('alternative_groups'),
     assessmentQuestions: await module.exports.dumpTable('assessment_questions'),
@@ -516,14 +554,24 @@ function checkSetsSame(setA, setB) {
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotsMatch = function(snapshotA, snapshotB, ignoredKeys = []) {
+module.exports.assertSnapshotsMatch = function (
+  snapshotA,
+  snapshotB,
+  ignoredKeys = [],
+) {
   // Sanity check - make sure both snapshots have the same keys
-  assert(checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))), 'snapshots contained different keys');
+  assert(
+    checkSetsSame(
+      new Set(Object.keys(snapshotA)),
+      new Set(Object.keys(snapshotB)),
+    ),
+    'snapshots contained different keys',
+  );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
     // Build a set of deterministically-stringified rows for each snapshot
-    const setA = new Set(snapshotA[key].map(s => stringify(s)));
-    const setB = new Set(snapshotB[key].map(s => stringify(s)));
+    const setA = new Set(snapshotA[key].map((s) => stringify(s)));
+    const setB = new Set(snapshotB[key].map((s) => stringify(s)));
     assert(checkSetsSame(setA, setB), `Snapshot of ${key} did not match`);
   }
 };
@@ -536,14 +584,27 @@ module.exports.assertSnapshotsMatch = function(snapshotA, snapshotB, ignoredKeys
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotSubset = function(snapshotA, snapshotB, ignoredKeys = []) {
+module.exports.assertSnapshotSubset = function (
+  snapshotA,
+  snapshotB,
+  ignoredKeys = [],
+) {
   // Sanity check - make sure both snapshots have the same keys
-  assert(checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))), 'snapshots contained different keys');
+  assert(
+    checkSetsSame(
+      new Set(Object.keys(snapshotA)),
+      new Set(Object.keys(snapshotB)),
+    ),
+    'snapshots contained different keys',
+  );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
     // Build a set of deterministically-stringified rows for each snapshot
-    const setA = new Set(snapshotA[key].map(s => stringify(s)));
-    const setB = new Set(snapshotB[key].map(s => stringify(s)));
-    assert([...setA].every(entry => setB.has(entry)), `Snapshot of ${key} is not a subset`);
+    const setA = new Set(snapshotA[key].map((s) => stringify(s)));
+    const setB = new Set(snapshotB[key].map((s) => stringify(s)));
+    assert(
+      [...setA].every((entry) => setB.has(entry)),
+      `Snapshot of ${key} is not a subset`,
+    );
   }
 };

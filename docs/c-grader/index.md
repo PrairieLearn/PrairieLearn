@@ -1,12 +1,12 @@
 # C/C++ Autograder
 
-This file documents the default C/C++ autograder included in the `prairielearn/grader-c` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default C/C++ autograder included in the `prairielearn/grader-c` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
 
 ## Setting up
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings.  To use the specific C/C++ autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-c"` and `"entrypoint"` should point to a test file in the question, which will then invoke the autograder.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific C/C++ autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-c"` and `"entrypoint"` should point to a test file in the question, which will then invoke the autograder.
 
 A full `info.json` file should look something like:
 
@@ -32,11 +32,14 @@ Note that the `entrypoint` setting includes a call to `python3` before the test 
 
 ### `question.html`
 
-Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grading-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions.  An example question markup is given below:
+Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grading-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html
 <pl-question-panel>
-  <pl-file-editor file-name="square.c" ace-mode="ace/mode/c_cpp"></pl-file-editor>
+  <pl-file-editor
+    file-name="square.c"
+    ace-mode="ace/mode/c_cpp"
+  ></pl-file-editor>
 </pl-question-panel>
 
 <pl-submission-panel>
@@ -190,13 +193,13 @@ self.test_run('./square', args=['3', '5'], exp_output=['9', '25'],
               must_match_all_outputs=True)
 ```
 
-Some times a test must ensure that some strings are *not* found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
+Some times a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
 
 ```python
 self.test_run('diff -q output.txt expected.txt', reject_output=['differ'])
 ```
 
-By default, any sequence of space-like characters (space, line break, carriage return, tab) in the program output, expected output and rejected output strings will be treated as a single space for comparison. This means difference in the number and type of spacing will be ignored. So, for example, if the output prints two numbers as `1  \n 2`, while the expected output is `1 2`, the test will pass. If, however, the intention is that spaces must match a pattern exactly, the `ignore_consec_spaces` option can be set to `False`:
+By default, any sequence of space-like characters (space, line break, carriage return, tab) in the program output, expected output and rejected output strings will be treated as a single space for comparison. This means difference in the number and type of spacing will be ignored. So, for example, if the output prints two numbers as `1 \n 2`, while the expected output is `1 2`, the test will pass. If, however, the intention is that spaces must match a pattern exactly, the `ignore_consec_spaces` option can be set to `False`:
 
 ```python
 self.test_run('./pattern', exp_output='  1  2  3\n  4  5  6\n  7  8  9',
@@ -310,4 +313,3 @@ self.change_mode('/grade/student/myfile.txt', '744')
 ```
 
 Any program compiled with `test_compile_file()` will be granted executable permissions (mode `755`), so these programs don't need to be explicitly allowed by your tests.
-

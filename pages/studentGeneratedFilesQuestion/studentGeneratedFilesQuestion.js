@@ -8,23 +8,30 @@ var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/variant/:variant_id/*', function(req, res, next) {
-    var variant_id = req.params.variant_id;
-    var filename = req.params[0];
-    var params = {
-        instance_question_id: res.locals.instance_question.id,
-        variant_id: variant_id,
-    };
-    sqldb.queryOneRow(sql.select_variant, params, function(err, result) {
-        if (ERR(err, next)) return;
-        var variant = result.rows[0];
+router.get('/variant/:variant_id/*', function (req, res, next) {
+  var variant_id = req.params.variant_id;
+  var filename = req.params[0];
+  var params = {
+    instance_question_id: res.locals.instance_question.id,
+    variant_id: variant_id,
+  };
+  sqldb.queryOneRow(sql.select_variant, params, function (err, result) {
+    if (ERR(err, next)) return;
+    var variant = result.rows[0];
 
-        question.getFile(filename, variant, res.locals.question, res.locals.course, res.locals.authn_user.user_id, function(err, fileData) {
-            if (ERR(err, next)) return;
-            res.attachment(filename);
-            res.send(fileData);
-        });
-    });
+    question.getFile(
+      filename,
+      variant,
+      res.locals.question,
+      res.locals.course,
+      res.locals.authn_user.user_id,
+      function (err, fileData) {
+        if (ERR(err, next)) return;
+        res.attachment(filename);
+        res.send(fileData);
+      },
+    );
+  });
 });
 
 module.exports = router;

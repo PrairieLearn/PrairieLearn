@@ -2,12 +2,10 @@
 
 In this 5-day training course, we will provide an introduction to the following topics:
 
- 
-* how to create questions and assessments
-* overview of existing PL elements
-* how to use the external grader
-* how to use the drawing tools
-
+- how to create questions and assessments
+- overview of existing PL elements
+- how to use the external grader
+- how to use the drawing tools
 
 ## What you need to do BEFORE the workshop
 
@@ -23,24 +21,20 @@ In this 5-day training course, we will provide an introduction to the following 
 
 Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
 
-
 ```html
-Course rubric: XX-100
-Course name: <enter course name>
-Your email: netid@illinois.edu
-Your institution: UIUC
+Course rubric: XX-100 Course name:
+<enter course name>
+  Your email: netid@illinois.edu Your institution: UIUC</enter
+>
 ```
 
-#### 2) You are a Teaching Assistant already assigned to a course 
+#### 2) You are a Teaching Assistant already assigned to a course
 
 Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
 
-
 ```html
-I want access to the course listed below:
-Course rubric: XX-100
-Instructor name: <enter instructor name>
-Your email: netid@illinois.edu
+I want access to the course listed below: Course rubric: XX-100 Instructor name:
+<enter instructor name> Your email: netid@illinois.edu</enter>
 ```
 
 #### 3) Others
@@ -49,10 +43,8 @@ You may be a teaching assistant not yet assigned to a course, or just someone wa
 
 Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
 
-
 ```html
-I want access to the training course TRAIN-101
-Your email: netid@illinois.edu
+I want access to the training course TRAIN-101 Your email: netid@illinois.edu
 ```
 
 Note that we will add all teaching assistants to `TRAIN-101`, in addition to their assigned courses (in case that information is available).
@@ -61,15 +53,16 @@ Note that we will add all teaching assistants to `TRAIN-101`, in addition to the
 
 Once you receive an email indicating that you have access to PrairieLearn, complete the [Get Started](../getStarted.md) tutorial, which will show you how to create:
 
-* course instances
-* assessments
-* questions
+- course instances
+- assessments
+- questions
 
 If you are using the course `TRAIN-101`, when adding your course instance, use:
 
 ```json
 "longName": "Summer 2020 xxxx"
 ```
+
 where `xxxx` is your netid.
 
 ## Workshop Schedule
@@ -83,7 +76,6 @@ where `xxxx` is your netid.
 #### [Day 4](lesson4.md): customizing the grading method
 
 #### [Day 5](lesson5.md): using graphical/drawing elements
-
 
 ## PrairieLearn Overview Video
 

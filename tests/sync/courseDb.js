@@ -8,7 +8,7 @@ const courseDb = require('../../sync/course-db');
 const infofile = require('../../sync/infofile');
 
 /**
- * @param {(dir: string) => Promise<void>} callback 
+ * @param {(dir: string) => Promise<void>} callback
  */
 async function withTempDirectory(callback) {
   const dir = await tmp.dir({ unsafeCleanup: true });
@@ -34,22 +34,25 @@ async function withTempFile(callback) {
 }
 
 /**
- * @param {string} courseDir 
- * @param {object} course 
+ * @param {string} courseDir
+ * @param {object} course
  */
 async function writeCourse(courseDir, course) {
   await fs.writeJSON(path.join(courseDir, 'infoCourse.json'), course);
 }
 
 /**
- * 
- * @param {string} courseDir 
- * @param {string} qid 
- * @param {object} question 
+ *
+ * @param {string} courseDir
+ * @param {string} qid
+ * @param {object} question
  */
 async function writeQuestion(courseDir, qid, question) {
   await fs.mkdirs(path.join(courseDir, 'questions', qid));
-  await fs.writeJSON(path.join(courseDir, 'questions', qid, 'info.json'), question);
+  await fs.writeJSON(
+    path.join(courseDir, 'questions', qid, 'info.json'),
+    question,
+  );
 }
 
 function getCourse() {
@@ -201,7 +204,10 @@ describe('course database', () => {
         const result = await courseDb.loadCourseInfo(dir);
         assert.isFalse(infofile.hasErrors(result));
         assert.isTrue(infofile.hasWarnings(result));
-        assert.include(result.warnings, 'Default assessmentSet "Homework" should not be included in infoCourse.json');
+        assert.include(
+          result.warnings,
+          'Default assessmentSet "Homework" should not be included in infoCourse.json',
+        );
         assert.isOk(result.data);
       });
     });
@@ -234,9 +240,15 @@ describe('course database', () => {
         assert.isFalse(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.equal(Object.keys(result).length, 3);
-        assert.match(infofile.stringifyErrors(result['question1']), /UUID.*is used in other questions/);
+        assert.match(
+          infofile.stringifyErrors(result['question1']),
+          /UUID.*is used in other questions/,
+        );
         assert.isFalse(infofile.hasWarnings(result['question1']));
-        assert.match(infofile.stringifyErrors(result['question2']), /UUID.*is used in other questions/);
+        assert.match(
+          infofile.stringifyErrors(result['question2']),
+          /UUID.*is used in other questions/,
+        );
         assert.isFalse(infofile.hasWarnings(result['question2']));
         assert.isFalse(infofile.hasErrors(result['question3']));
         assert.isFalse(infofile.hasWarnings(result['question3']));
