@@ -14,7 +14,7 @@ that is in the first quadrant.
 
 **Solution:**
 
-$ A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
+$A = \int_0^2 (4-x^2) dx = \frac{16}{3}$
 
 **Take one step further:**
 
@@ -40,9 +40,9 @@ $$ N_v = N \, \exp(-Q_v/(k T)) $$
 
 where $N$ is the concentration of atomic sites, $k$ is the Boltzmann constant and $T$ is the absolute temperature. Hence we can write:
 
-$$ \ln(N) = \ln(N*{v1}) + \frac{Q_v}{k T_1} = \ln(N*{v2}) + \frac{Q_v}{k T_2}$$
+$$\ln(N) = \ln(N*{v1}) + \frac{Q_v}{k T_1} = \ln(N*{v2}) + \frac{Q_v}{k T_2}$$
 
-where $T_1 = (800 + 273) \rm K$, $ N*{v1} = 1/10000$ and $ N*{v2} = 1/1000$. Solving for $T_2$ we get:
+where $T_1 = (800 + 273) \rm K$, $N_{v1} = 1/10000$ and $N_{v2} = 1/1000$. Solving for $T_2$ we get:
 
 $$\frac{1}{T_2} = \frac{1}{T_1} - \frac{k}{Q_v} \ln\left(\frac{N_{v2}}{N_{v1}} \right)$$
 
