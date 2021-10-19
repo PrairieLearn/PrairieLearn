@@ -12,19 +12,11 @@ module.exports = {
     ecmaVersion: 12,
   },
   rules: {
-    'comma-dangle': ['error', 'always-multiline'],
     'handle-callback-err': 'error',
-    'no-tabs': 'error',
     'no-unused-vars': [
       'error',
       { args: 'after-used', argsIgnorePattern: '^_' },
     ],
-    quotes: [
-      'error',
-      'single',
-      { avoidEscape: true, allowTemplateLiterals: true },
-    ],
-    semi: ['error', 'always'],
 
     // By default, eslint-plugin-import only validates ESM syntax. We're still
     // using CommonJS, so we need to explicitly enable support for that.
