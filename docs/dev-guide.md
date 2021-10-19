@@ -889,19 +889,11 @@ router.post('/', function (req, res, next) {
 
 ## Coding style
 
-- [ESLint](http://eslint.org/) is used to enforce a consistent coding style throughout the codebase. We use the [default rule set](http://eslint.org/docs/rules/) , with the following additional rules enforced:
+[ESLint](http://eslint.org/) and [Prettier](https://prettier.io/) are used to enforce consistent code conventions and formatting throughout the codebase. See `.eslintrc.js` and `.prettierrc.json` in the root of the PrairieLearn repository to view our specific configuration.
 
-  - Use 4 spaces for indents
-  - Always terminate lines with a semicolon
-  - For callbacks with standard function signatures (e.g. `Express` route handlers), unused arguments should be included but prefaced with an underscore. For instance:
+To lint the code, use `make lint`. This is also run by the CI tests.
 
-```javascript
-app.use(/^\/?$/, function (req, res, _next) {
-  res.redirect('/pl');
-});
-```
-
-- To lint the code, use `make lint`. This is also run by the CI tests.
+To automatically fix lint and formatting errors, run `make format`.
 
 ## Question-rendering control flow
 
