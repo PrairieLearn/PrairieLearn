@@ -21,20 +21,22 @@ In this 5-day training course, we will provide an introduction to the following 
 
 Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
 
-```html
-Course rubric: XX-100 Course name:
-<enter course name>
-  Your email: netid@illinois.edu Your institution: UIUC</enter
->
+```
+Course rubric: XX-100
+Course name: <enter course name>
+Your email: netid@illinois.edu
+Your institution: UIUC
 ```
 
 #### 2) You are a Teaching Assistant already assigned to a course
 
 Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
 
-```html
-I want access to the course listed below: Course rubric: XX-100 Instructor name:
-<enter instructor name> Your email: netid@illinois.edu</enter>
+```
+I want access to the course listed below:
+Course rubric: XX-100
+Instructor name: <enter instructor name>
+Your email: netid@illinois.edu
 ```
 
 #### 3) Others
@@ -43,8 +45,9 @@ You may be a teaching assistant not yet assigned to a course, or just someone wa
 
 Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
 
-```html
-I want access to the training course TRAIN-101 Your email: netid@illinois.edu
+```
+I want access to the training course TRAIN-101
+Your email: netid@illinois.edu
 ```
 
 Note that we will add all teaching assistants to `TRAIN-101`, in addition to their assigned courses (in case that information is available).
