@@ -36,7 +36,7 @@ Detemine the temperature $T_2$ needed to achieve a concentration of 1 vacancy fo
 
 The temperature dependence of vacancy concentration $N_v$ is given by:
 
-$$ N_v = N \, \exp(-Q_v/(k T)) $$
+$$N_v = N \, \exp(-Q_v/(k T))$$
 
 where $N$ is the concentration of atomic sites, $k$ is the Boltzmann constant and $T$ is the absolute temperature. Hence we can write:
 

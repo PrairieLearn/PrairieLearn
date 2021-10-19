@@ -38,7 +38,7 @@ For the **S20 x 66** beam, what is the maximum normal stress $\sigma_x$ assuming
 
 For the **S20 x 66** beam, we use $I_x = 1190 \rm\ in^4$ and $c = h/2 = 10 \rm\ in$. Hence the maximum normal stress is:
 
-$$ \sigma*x = \frac{M*{max} \,c}{I_x} = 0.042 \times 10^5 \rm\ lb/in^2 = 4.2 \rm\ ksi$$
+$$\sigma_x = \frac{M_{max} \,c}{I_x} = 0.042 \times 10^5 \rm\ lb/in^2 = 4.2 \rm\ ksi$$
 
 **Take one step further:**
 
