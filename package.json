@@ -70,7 +70,7 @@
         "json-stringify-safe": "^5.0.1",
         "klaw": "^3.0.0",
         "lodash": "^4.17.21",
-        "logform": "^2.2.0",
+        "logform": "^2.3.0",
         "lru-cache": "^6.0.0",
         "mathjax": "^3.2.0",
         "mersenne": "0.0.4",
