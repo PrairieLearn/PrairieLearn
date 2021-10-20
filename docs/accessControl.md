@@ -1,4 +1,3 @@
-
 # Access control to course instances and assessments
 
 By default, course instances and assessments are only accessible to [course staff](course.md#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
@@ -25,20 +24,20 @@ The general format of `allowAccess` is:
 
 Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible to students. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows. The "courseInstance" and "assessment" columns indicate whether the restiction is available for the respective objects.
 
-Access restriction                                          | courseInstance | assessment | Meaning | Example
----                                                         | --- | --- | --- | ---
-`uids`                                                      | ✓ | ✓ | Require one of the UIDs in the array to access. | `"uids": ["mwest@illinois.edu", "zilles@illinois.edu"]`
-[`startDate`](#dates)                                       | ✓ | ✓ | Only allow access after this date. | `"startDate": "2015-01-19T00:00:01"`
-[`endDate`](#dates)                                         | ✓ | ✓ | Only access access before this date. | `"endDate": "2015-05-13T23:59:59"`
-[`institution`](#institutions)                              | ✓ |   | Only people from this institution (or "Any" or "LTI"). | `"institution": "UIUC"`
-[`mode`](#server-modes)                                     |   | ✓ | Only allow access from this server mode. | `"mode": "Exam"`
-[`credit`](#credit)                                         |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
-[`timeLimitMin`](#time-limits)                              |   | ✓ | Time limit in minutes to complete an assessment (only for Exams). | `"timeLimitMin": 60`
-[`password`](#passwords)                                    |   | ✓ | Password required to start an assessment (only for Exams). | `"password": "mysecret"`
-[`examUuid`](#exam-uuids)                                   |   | ✓ | Exam scheduler UUID that students must register for. | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`
-[`showClosedAssessment`](#showinghiding-closed-assessments) |   | ✓ | Whether to allow viewing of assessment contents when closed (default `true`). | `"showClosedAssessment": false`
-[`showClosedAssessmentScore`](#showinghiding-all-score-information) |   | ✓ | Whether to allow viewing of the score of a closed assessment  (default `true`). | `"showClosedAssessmentScore": false`
-[`active`](#active-assessments) |   | ✓ | Whether the student can create a new assessment instance and submit answers to questions (default `true`). | `"active": false`
+| Access restriction                                                  | courseInstance | assessment | Meaning                                                                                                    | Example                                                 |
+| ------------------------------------------------------------------- | -------------- | ---------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `uids`                                                              | ✓              | ✓          | Require one of the UIDs in the array to access.                                                            | `"uids": ["mwest@illinois.edu", "zilles@illinois.edu"]` |
+| [`startDate`](#dates)                                               | ✓              | ✓          | Only allow access after this date.                                                                         | `"startDate": "2015-01-19T00:00:01"`                    |
+| [`endDate`](#dates)                                                 | ✓              | ✓          | Only access access before this date.                                                                       | `"endDate": "2015-05-13T23:59:59"`                      |
+| [`institution`](#institutions)                                      | ✓              |            | Only people from this institution (or "Any" or "LTI").                                                     | `"institution": "UIUC"`                                 |
+| [`mode`](#server-modes)                                             |                | ✓          | Only allow access from this server mode.                                                                   | `"mode": "Exam"`                                        |
+| [`credit`](#credit)                                                 |                | ✓          | Maximum credit as percentage of full credit (can be more than 100).                                        | `"credit": 100`                                         |
+| [`timeLimitMin`](#time-limits)                                      |                | ✓          | Time limit in minutes to complete an assessment (only for Exams).                                          | `"timeLimitMin": 60`                                    |
+| [`password`](#passwords)                                            |                | ✓          | Password required to start an assessment (only for Exams).                                                 | `"password": "mysecret"`                                |
+| [`examUuid`](#exam-uuids)                                           |                | ✓          | Exam scheduler UUID that students must register for.                                                       | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`    |
+| [`showClosedAssessment`](#showinghiding-closed-assessments)         |                | ✓          | Whether to allow viewing of assessment contents when closed (default `true`).                              | `"showClosedAssessment": false`                         |
+| [`showClosedAssessmentScore`](#showinghiding-all-score-information) |                | ✓          | Whether to allow viewing of the score of a closed assessment (default `true`).                             | `"showClosedAssessmentScore": false`                    |
+| [`active`](#active-assessments)                                     |                | ✓          | Whether the student can create a new assessment instance and submit answers to questions (default `true`). | `"active": false`                                       |
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -67,14 +66,13 @@ Every course belongs to an **institution** and by default access is only allowed
 
 Each user accesses the PrairieLearn server in a `mode`, as listed below. This can be used to restrict access to assessments based on the current mode. The `mode` setting of an access rule has the following effect:
 
-Mode | When is access allowed?
---- | ---
-`Public` | Access is normally allowed, but is blocked when the student is signed in for an exam in the Computer-Based Testing Facility (CBTF).
-`Exam` | Access is normally blocked, and is only allowed when the student is signed in to the Computer-Based Testing Facility (CBTF). The `examUuid` should also be specified in the same access rule to limit access to a specific exam.
-no mode set | Access is allowed anytime, both during CBTF exams and outside of exams.
+| Mode        | When is access allowed?                                                                                                                                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Public`    | Access is normally allowed, but is blocked when the student is signed in for an exam in the Computer-Based Testing Facility (CBTF).                                                                                              |
+| `Exam`      | Access is normally blocked, and is only allowed when the student is signed in to the Computer-Based Testing Facility (CBTF). The `examUuid` should also be specified in the same access rule to limit access to a specific exam. |
+| no mode set | Access is allowed anytime, both during CBTF exams and outside of exams.                                                                                                                                                          |
 
 In general usage it is best to set `"mode": "Public"` for any homework (assessments that students should do at home or without special access control), and to set both `"mode": "Exam"` and `"examUuid"` for exams in the Computer-Based Testing Facility (CBTF). This will make it so that exams are only accessible in the CBTF, and homework is _not_ accessible during exams.
-
 
 ## Credit
 
@@ -109,10 +107,10 @@ Changes to the time limits in the `infoAssessment.json` file only take effect be
 
 On the Staff View for the assessment, select the Students tab. This tab will show a list of all students that have started the assessment. The "Remaining" column will include one of the following values:
 
-* The value "Closed" indicates that the student has already finished the assessment, that their time ran out, or ([for exam assessments with `autoClose` set as `true`](assessment.md#auto-closing-exam-assessments)) that the student was inactive for over six hours. Students do not have the ability to submit answers for these assessments.
-* The value "Open (no time limit)" indicates that the assessment is open and has no time limit (other than the `autoClose` setting listed above). Students are able to submit answers for these assessments.
-* The value "Expired" indicates that the student's time limit has ran out, but the assessment was not yet closed. This may be due to the student having closed the assessment without selecting the Finished button, or because the time limit was recently changed and the student's browser has not yet updated its time limit. Students will get a message that their timer has run out as soon as they try to open the assessment, and will be unable to submit further answers.
-* A value indicating a number of minutes indicates the remaining time until the exam is automatically closed. Students are able to submit answers until this time expires. Note that this time is computed when the page is loaded, so to get an updated time, the page must be refreshed.
+- The value "Closed" indicates that the student has already finished the assessment, that their time ran out, or ([for exam assessments with `autoClose` set as `true`](assessment.md#auto-closing-exam-assessments)) that the student was inactive for over six hours. Students do not have the ability to submit answers for these assessments.
+- The value "Open (no time limit)" indicates that the assessment is open and has no time limit (other than the `autoClose` setting listed above). Students are able to submit answers for these assessments.
+- The value "Expired" indicates that the student's time limit has ran out, but the assessment was not yet closed. This may be due to the student having closed the assessment without selecting the Finished button, or because the time limit was recently changed and the student's browser has not yet updated its time limit. Students will get a message that their timer has run out as soon as they try to open the assessment, and will be unable to submit further answers.
+- A value indicating a number of minutes indicates the remaining time until the exam is automatically closed. Students are able to submit answers until this time expires. Note that this time is computed when the page is loaded, so to get an updated time, the page must be refreshed.
 
 An edit button is presented inside the "Remaining" tab for each student, which should allow proctors to modify the time limit for a student. For instances with no time limit, this action allows the proctor to set the total time limit (based on the time the student started the assessment) or the remaining time (from the current time). For instances with a set time limit, in addition to these two options, the action also allows the instructor to add or subtract time from the current limit, or to remove the time limit. An option to set the time limit as Expired is also available, which will cause the timer to be set to the current time, and in effect block any further submissions by the student. Changing the time limit will re-open an assessment if it has been closed already.
 
@@ -150,7 +148,7 @@ To require that students are taking a particular exam in the Computer-Based Test
 ]
 ```
 
-Note that in this case the `startDate` and `endDate` should *NOT* be specified. These will be automatically determined by the scheduler app and should not be set in PrairieLearn.
+Note that in this case the `startDate` and `endDate` should _NOT_ be specified. These will be automatically determined by the scheduler app and should not be set in PrairieLearn.
 
 ## Showing/hiding closed assessments
 
@@ -218,8 +216,6 @@ An example of the `active` access rule restriction is shown below:
 ```
 
 In the example above, from January 1st to February 15th, students can see the assessment on the Assessments page but cannot begin the assessment. They will see a message saying that the assessment will be available on February 16th. The first access rule applies on February 16th, and since `active` is `true` (by default), students can start the assessment and submit answers to questions on that day.
-
-
 
 ## Course instance example
 
