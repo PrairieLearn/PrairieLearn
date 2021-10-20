@@ -12,6 +12,6 @@ applications like `emacs` and `vim` to support a terminal workflow.
 Various command-line arguments can be passed to the xterm.js server to customize the workspace experience:
 
 | Name            | Alias | Description                   | Default     |
-|-----------------|-------|-------------------------------|-------------|
+| --------------- | ----- | ----------------------------- | ----------- |
 | `--command`     | `-c`  | Command to execute on startup | `/bin/bash` |
 | `--working-dir` | `-w`  | Initial working directory     | Home folder |
