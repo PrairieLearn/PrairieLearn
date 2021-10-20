@@ -119,7 +119,10 @@ module.exports.initExpress = function () {
       parts: config.fileUploadMaxParts,
     },
   });
-  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
+  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, {
+    base: 10,
+    round: 0,
+  });
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads',
     upload.single('file')
@@ -247,7 +250,10 @@ module.exports.initExpress = function () {
       }
     },
     onError: (err, req, res) => {
-      logger.error(`Error proxying workspace request: ${err}`, { err, url: req.url });
+      logger.error(`Error proxying workspace request: ${err}`, {
+        err,
+        url: req.url,
+      });
       /* Check to make sure we weren't already in the middle of sending a response
                before replying with an error 500 */
       if (res && !res.headersSent) {

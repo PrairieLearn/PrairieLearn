@@ -38,7 +38,9 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
 
   // we need to access the homepage to create the test_student user in the DB
   step('visit home page', async () => {
-    const response = await helperClient.fetchCheerio(context.baseUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.baseUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
   });
 
@@ -47,7 +49,9 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
   });
 
   step('visit start exam page', async () => {
-    const response = await helperClient.fetchCheerio(context.assessmentUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.assessmentUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     assert.equal(response.$('#start-assessment').text(), 'Start assessment');
@@ -114,7 +118,9 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
   });
 
   step('check that accessing a question gives the "assessment closed" message', async () => {
-    const response = await helperClient.fetchCheerio(context.questionUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.questionUrl, {
+      headers,
+    });
     assert.equal(response.status, 403);
 
     assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);

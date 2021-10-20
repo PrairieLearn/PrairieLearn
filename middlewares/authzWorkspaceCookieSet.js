@@ -14,6 +14,8 @@ module.exports = (req, res, next) => {
     workspace_id: res.locals.workspace_id,
   };
   const cookieData = csrf.generateToken(tokenData, config.secretKey);
-  res.cookie(cookieName, cookieData, { maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds });
+  res.cookie(cookieName, cookieData, {
+    maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds,
+  });
   next();
 };

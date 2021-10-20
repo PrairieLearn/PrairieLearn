@@ -131,7 +131,9 @@ describe('Test workspace authorization access', function () {
 
   describe('workspaces created by instructors in a course (no instance)', function () {
     before('give the instructor owner access', async function () {
-      await sqldb.queryAsync(sql.give_owner_access_to_uid, { uid: storedConfig.authUid });
+      await sqldb.queryAsync(sql.give_owner_access_to_uid, {
+        uid: storedConfig.authUid,
+      });
     });
     after('revoke owner access from the instructor', async function () {
       await sqldb.queryAsync(sql.revoke_owner_access, {});

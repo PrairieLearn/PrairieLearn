@@ -26,7 +26,11 @@ locals.questionsUrl = locals.courseInstanceBaseUrl + '/course_admin/questions';
 locals.questionsUrlCourse = locals.courseBaseUrl + '/course_admin/questions';
 locals.isStudentPage = false;
 
-const addNumbers = { qid: 'addNumbers', type: 'Freeform', title: 'Add two numbers' };
+const addNumbers = {
+  qid: 'addNumbers',
+  type: 'Freeform',
+  title: 'Add two numbers',
+};
 const addVectors = {
   qid: 'addVectors',
   type: 'Calculation',
@@ -73,12 +77,16 @@ describe('Instructor questions', function () {
       addVectors.id = question.id;
     });
     it('should contain the downloadFile question', function () {
-      const question = _.find(locals.questions, { directory: downloadFile.qid });
+      const question = _.find(locals.questions, {
+        directory: downloadFile.qid,
+      });
       assert.isDefined(question);
       downloadFile.id = question.id;
     });
     it('should contain the differentiatePolynomial question', function () {
-      const question = _.find(locals.questions, { directory: differentiatePolynomial.qid });
+      const question = _.find(locals.questions, {
+        directory: differentiatePolynomial.qid,
+      });
       assert.isDefined(question);
       differentiatePolynomial.id = question.id;
     });

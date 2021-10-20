@@ -67,7 +67,12 @@ router.post('/:job_sequence_id', (req, res, next) => {
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     });
   } else {
-    return next(error.make(400, 'unknown __action', { locals: res.locals, body: req.body }));
+    return next(
+      error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
   }
 });
 

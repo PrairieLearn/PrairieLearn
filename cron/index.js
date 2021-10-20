@@ -188,7 +188,14 @@ module.exports = {
       const dayMS = 24 * 60 * 60 * 1000;
       var tMS = (cronDailyMS - sinceMidnightMS + dayMS) % dayMS;
       if (tMS < 0) {
-        logger.error('negative tMS', { now, midnight, sinceMidnightMS, cronDailyMS, dayMS, tMS });
+        logger.error('negative tMS', {
+          now,
+          midnight,
+          sinceMidnightMS,
+          cronDailyMS,
+          dayMS,
+          tMS,
+        });
         tMS = 24 * 60 * 60 * 1000;
       }
       return tMS;
@@ -272,7 +279,9 @@ module.exports = {
       if (ERR(err, callback)) return;
       if (lock == null) {
         debug(`tryJobWithLock(): ${job.name}: did not acquire lock`);
-        logger.verbose('cron: ' + job.name + ' did not acquire lock', { cronUuid });
+        logger.verbose('cron: ' + job.name + ' did not acquire lock', {
+          cronUuid,
+        });
         callback(null);
       } else {
         debug(`tryJobWithLock(): ${job.name}: acquired lock`);
@@ -282,7 +291,9 @@ module.exports = {
             if (ERR(lockErr, callback)) return;
             if (ERR(err, callback)) return;
             debug(`tryJobWithLock(): ${job.name}: released lock`);
-            logger.verbose('cron: ' + job.name + ' released lock', { cronUuid });
+            logger.verbose('cron: ' + job.name + ' released lock', {
+              cronUuid,
+            });
             callback(null);
           });
         });
@@ -315,7 +326,9 @@ module.exports = {
         callback(null);
       } else {
         debug(`tryJobWithTime(): ${job.name}: job was not recently run`);
-        logger.verbose('cron: ' + job.name + ' job was not recently run', { cronUuid });
+        logger.verbose('cron: ' + job.name + ' job was not recently run', {
+          cronUuid,
+        });
         const params = { name: job.name };
         sqldb.query(sql.update_cron_job_time, params, (err, _result) => {
           if (ERR(err, callback)) return;
@@ -346,7 +359,10 @@ module.exports = {
       var endTime = new Date();
       var elapsedTimeMS = endTime - startTime;
       debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
-      logger.verbose('cron: ' + job.name + ' success', { cronUuid, elapsedTimeMS });
+      logger.verbose('cron: ' + job.name + ' success', {
+        cronUuid,
+        elapsedTimeMS,
+      });
       callback(null);
     });
   },

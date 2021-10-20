@@ -23,7 +23,12 @@ router.post('/', function (req, res, next) {
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
   } else {
-    return next(error.make(400, 'unknown __action', { locals: res.locals, body: req.body }));
+    return next(
+      error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
   }
 });
 

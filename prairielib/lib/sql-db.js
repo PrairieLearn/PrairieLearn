@@ -269,7 +269,11 @@ module.exports.queryWithClientAsync = async function (client, sql, params) {
     // TODO: why do we do this?
     const sqlError = JSON.parse(JSON.stringify(err));
     sqlError.message = err.message;
-    throw error.addData(err, { sqlError: sqlError, sql: sql, sqlParams: params });
+    throw error.addData(err, {
+      sqlError: sqlError,
+      sql: sql,
+      sqlParams: params,
+    });
   }
 };
 

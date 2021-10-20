@@ -36,7 +36,9 @@ router.get(
     if (action === 'reboot') {
       debug(`Rebooting workspace ${workspace_id}`);
       await workspaceHelper.updateState(workspace_id, 'stopped', 'Rebooting container');
-      await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, { workspace_id });
+      await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {
+        workspace_id,
+      });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else if (action === 'reset') {
       debug(`Resetting workspace ${workspace_id}`);
@@ -44,7 +46,12 @@ router.get(
       await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
-      return next(error.make(400, 'unknown action', { locals: res.locals, body: req.body }));
+      return next(
+        error.make(400, 'unknown action', {
+          locals: res.locals,
+          body: req.body,
+        })
+      );
     }
   })
 );

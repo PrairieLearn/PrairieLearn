@@ -9,7 +9,12 @@ const app = express();
 express_ws(app);
 
 const argument_option_defs = [
-  { name: 'help', alias: 'h', type: Boolean, description: 'display this usage guide' },
+  {
+    name: 'help',
+    alias: 'h',
+    type: Boolean,
+    description: 'display this usage guide',
+  },
   {
     name: 'port',
     alias: 'p',

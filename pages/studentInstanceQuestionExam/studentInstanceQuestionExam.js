@@ -77,7 +77,12 @@ function processSubmission(req, res, callback) {
           }
         );
       } else {
-        callback(error.make(400, 'unknown __action', { locals: res.locals, body: req.body }));
+        callback(
+          error.make(400, 'unknown __action', {
+            locals: res.locals,
+            body: req.body,
+          })
+        );
       }
     }
   );
@@ -178,7 +183,12 @@ router.post('/', function (req, res, next) {
       );
     });
   } else {
-    return next(error.make(400, 'unknown __action', { locals: res.locals, body: req.body }));
+    return next(
+      error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
   }
 });
 

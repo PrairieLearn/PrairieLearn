@@ -562,7 +562,11 @@ describe('Group based homework assess control on student side', function () {
         __csrf_token: locals.__csrf_token,
       };
       request.post(
-        { url: locals.assessmentInstanceURL, form: form, followAllRedirects: true },
+        {
+          url: locals.assessmentInstanceURL,
+          form: form,
+          followAllRedirects: true,
+        },
         function (error, response, body) {
           if (ERR(error, callback)) return;
           if (response.statusCode !== 200) {

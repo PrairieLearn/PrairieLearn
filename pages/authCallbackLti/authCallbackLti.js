@@ -128,7 +128,9 @@ router.post('/', function (req, res, next) {
           authn_provider_name: 'LTI',
         };
         var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-        res.cookie('pl_authn', pl_authn, { maxAge: config.authnCookieMaxAgeMilliseconds });
+        res.cookie('pl_authn', pl_authn, {
+          maxAge: config.authnCookieMaxAgeMilliseconds,
+        });
 
         const params = {
           course_instance_id: ltiresult.course_instance_id,

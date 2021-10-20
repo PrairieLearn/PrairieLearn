@@ -155,7 +155,10 @@ module.exports = {
       path.join(coursePath, 'elements'),
       'course'
     );
-    courseElementsCache[course.id] = { commit_hash: course.commit_hash, data: elements };
+    courseElementsCache[course.id] = {
+      commit_hash: course.commit_hash,
+      data: elements,
+    };
     return elements;
   },
 
@@ -242,7 +245,10 @@ module.exports = {
     let extensions = await module.exports.loadExtensionsAsync(
       path.join(coursePath, 'elementExtensions')
     );
-    courseExtensionsCache[course.id] = { commit_hash: course.commit_hash, data: extensions };
+    courseExtensionsCache[course.id] = {
+      commit_hash: course.commit_hash,
+      data: extensions,
+    };
     return extensions;
   },
 

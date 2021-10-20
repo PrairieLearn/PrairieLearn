@@ -50,7 +50,9 @@ describe('Exam and homework assessment with active access restriction', function
   });
 
   step('visit home page', async () => {
-    const response = await helperClient.fetchCheerio(context.baseUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.baseUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
   });
 
@@ -73,7 +75,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('try to access the exam when no access rule applies', async () => {
     headers.cookie = 'pl_test_date=1850-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.examUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.examUrl, {
+      headers,
+    });
     assert.equal(response.status, 403);
   });
 
@@ -93,7 +97,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('try to access the exam when it is not active', async () => {
     headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.examUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.examUrl, {
+      headers,
+    });
     assert.equal(response.status, 403);
 
     const msg = response.$('div.test-suite-assessment-closed-message');
@@ -121,7 +127,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('visit start exam page when the exam is active', async () => {
     headers.cookie = 'pl_test_date=2010-01-01T23:50:01Z';
 
-    const response = await helperClient.fetchCheerio(context.examUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.examUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     assert.equal(response.$('#start-assessment').text(), 'Start assessment');
@@ -199,7 +207,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('access the exam when it is no longer active', async () => {
     headers.cookie = 'pl_test_date=2010-01-02T00:01:01Z';
 
-    const response = await helperClient.fetchCheerio(context.examInstanceUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.examInstanceUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     const msg = response.$('p.small.mb-0');
@@ -236,7 +246,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('try to access the homework when it is not active', async () => {
     headers.cookie = 'pl_test_date=2000-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwUrl, {
+      headers,
+    });
     assert.equal(response.status, 403);
 
     const msg = response.$('div.test-suite-assessment-closed-message');
@@ -247,7 +259,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('access the homework when it is active', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     // We should have been redirected to the assessment instance
@@ -266,7 +280,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('access a question when homework is active', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     helperClient.extractAndSaveCSRFToken(context, response.$, '.question-form');
@@ -276,7 +292,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('access the homework when it is no longer active', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     const msg = response.$('p.small.mb-0');
@@ -290,7 +308,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('access a question when homework is no longer active', async () => {
     headers.cookie = 'pl_test_date=2021-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     // There should be no save or grade buttons
@@ -303,7 +323,9 @@ describe('Exam and homework assessment with active access restriction', function
     async () => {
       headers.cookie = 'pl_test_date=2026-06-01T00:00:01Z';
 
-      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+        headers,
+      });
       assert.equal(response.status, 403);
 
       const msg = response.$('div.test-suite-assessment-closed-message');
@@ -319,7 +341,9 @@ describe('Exam and homework assessment with active access restriction', function
     async () => {
       headers.cookie = 'pl_test_date=2030-06-01T00:00:01Z';
 
-      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+        headers,
+      });
       assert.isTrue(response.ok);
     }
   );
@@ -329,7 +353,9 @@ describe('Exam and homework assessment with active access restriction', function
     async () => {
       headers.cookie = 'pl_test_date=2036-06-01T00:00:01Z';
 
-      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+      const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+        headers,
+      });
       assert.equal(response.status, 403);
 
       const msg = response.$('div.test-suite-assessment-closed-message');
@@ -373,7 +399,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('get CSRF token and variant ID for attaching file on question page', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
@@ -402,7 +430,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('get CSRF token for attaching file on assessment instance page', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-file-form');
@@ -430,7 +460,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('get CSRF token and variant ID for attaching text on question page', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwQuestionUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwQuestionUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');
@@ -459,7 +491,9 @@ describe('Exam and homework assessment with active access restriction', function
   step('get CSRF token for attaching text on assessment instance page', async () => {
     headers.cookie = 'pl_test_date=2020-06-01T00:00:01Z';
 
-    const response = await helperClient.fetchCheerio(context.hwInstanceUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.hwInstanceUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
 
     helperClient.extractAndSaveCSRFToken(context, response.$, '.attach-text-form');

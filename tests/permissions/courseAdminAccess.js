@@ -55,9 +55,27 @@ function runTest(context) {
       cr: 'Owner',
       cir: null,
     },
-    { uid: 'staff03@illinois.edu', name: 'Staff Three', uin: null, cr: null, cir: null },
-    { uid: 'staff04@illinois.edu', name: 'Staff Four', uin: null, cr: null, cir: null },
-    { uid: 'staff05@illinois.edu', name: 'Staff Five', uin: null, cr: null, cir: null },
+    {
+      uid: 'staff03@illinois.edu',
+      name: 'Staff Three',
+      uin: null,
+      cr: null,
+      cir: null,
+    },
+    {
+      uid: 'staff04@illinois.edu',
+      name: 'Staff Four',
+      uin: null,
+      cr: null,
+      cir: null,
+    },
+    {
+      uid: 'staff05@illinois.edu',
+      name: 'Staff Five',
+      uin: null,
+      cr: null,
+      cir: null,
+    },
   ];
 
   var new_user = 'garbage@illinois.edu';
@@ -92,7 +110,9 @@ function runTest(context) {
   });
 
   step('cannot add multiple users with owner role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
@@ -115,7 +135,9 @@ function runTest(context) {
   });
 
   step('can add multiple users', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
@@ -140,7 +162,9 @@ function runTest(context) {
   });
 
   step('can add valid subset of multiple users', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
@@ -165,7 +189,9 @@ function runTest(context) {
   });
 
   step('can add course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -189,7 +215,9 @@ function runTest(context) {
   });
 
   step('can delete user', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -212,7 +240,9 @@ function runTest(context) {
   });
 
   step('cannot delete self', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     const __csrf_token = response.$('span[id=test_csrf_token]').text();
     assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
@@ -231,7 +261,9 @@ function runTest(context) {
   });
 
   step('can change course role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -255,7 +287,9 @@ function runTest(context) {
   });
 
   step('cannot change course role of self', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     const __csrf_token = response.$('span[id=test_csrf_token]').text();
     assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
@@ -278,7 +312,9 @@ function runTest(context) {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
     };
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     const __csrf_token = response.$('span[id=test_csrf_token]').text();
     assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
@@ -300,7 +336,9 @@ function runTest(context) {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
     };
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     const __csrf_token = response.$('span[id=test_csrf_token]').text();
     assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
@@ -320,7 +358,9 @@ function runTest(context) {
   });
 
   step('can add user', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
@@ -343,7 +383,9 @@ function runTest(context) {
   });
 
   step('can add course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -367,7 +409,9 @@ function runTest(context) {
   });
 
   step('can update course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -392,7 +436,9 @@ function runTest(context) {
   });
 
   step('can add course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -416,7 +462,9 @@ function runTest(context) {
   });
 
   step('can delete course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -440,7 +488,9 @@ function runTest(context) {
   });
 
   step('can delete all course instance permissions', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
@@ -462,7 +512,9 @@ function runTest(context) {
   });
 
   step('can add course instance permission', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -486,7 +538,9 @@ function runTest(context) {
   });
 
   step('can delete users with no access', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
@@ -509,7 +563,9 @@ function runTest(context) {
   });
 
   step('can delete non-owners', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
@@ -531,7 +587,9 @@ function runTest(context) {
   });
 
   step('can change course role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.isTrue(response.ok);
     helperClient.extractAndSaveCSRFToken(
       context,
@@ -558,7 +616,9 @@ function runTest(context) {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
     };
-    const response = await helperClient.fetchCheerio(context.pageUrl, { headers });
+    const response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
     assert.equal(response.status, 403);
   });
 }

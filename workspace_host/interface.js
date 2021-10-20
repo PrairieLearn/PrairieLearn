@@ -427,7 +427,9 @@ async function pushAllRunningContainersToS3() {
  */
 async function pruneStoppedContainers() {
   const instance_id = workspace_server_settings.instance_id;
-  const recently_stopped = await sqldb.queryAsync(sql.get_stopped_workspaces, { instance_id });
+  const recently_stopped = await sqldb.queryAsync(sql.get_stopped_workspaces, {
+    instance_id,
+  });
   await async.each(recently_stopped.rows, async (ws) => {
     let container;
     try {
@@ -455,7 +457,9 @@ async function pruneStoppedContainers() {
  */
 async function pruneRunawayContainers() {
   const instance_id = workspace_server_settings.instance_id;
-  const db_workspaces = await sqldb.queryAsync(sql.get_running_workspaces, { instance_id });
+  const db_workspaces = await sqldb.queryAsync(sql.get_running_workspaces, {
+    instance_id,
+  });
   const db_workspaces_uuid_set = new Set(
     db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`)
   );
@@ -694,7 +698,9 @@ const _checkServerAsync = util.promisify(_checkServer);
  * @return {object} Workspace launch settings.
  */
 async function _getWorkspaceSettingsAsync(workspace_id) {
-  const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, { workspace_id });
+  const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
+    workspace_id,
+  });
   const workspace_environment = result.rows[0].workspace_environment || {};
 
   // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
@@ -1240,7 +1246,9 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     await sqldb.queryOneRowAsync(sql.select_workspace_version, { workspace_id })
   ).rows[0];
   const { homedir_location } = (
-    await sqldb.queryOneRowAsync(sql.select_workspace_homedir_location, { workspace_id })
+    await sqldb.queryOneRowAsync(sql.select_workspace_homedir_location, {
+      workspace_id,
+    })
   ).rows[0];
   const workspace = {
     id: workspace_id,
@@ -1304,7 +1312,10 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     try {
       workspaceHelper.updateMessage(workspace.id, 'Creating container');
       const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-      await sqldb.queryAsync(sql.update_workspace_hostname, { workspace_id, hostname });
+      await sqldb.queryAsync(sql.update_workspace_hostname, {
+        workspace_id,
+        hostname,
+      });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       workspaceHelper.updateState(

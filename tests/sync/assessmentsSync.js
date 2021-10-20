@@ -48,7 +48,9 @@ function makeAssessmentSet() {
 }
 
 async function getSyncedAssessmentData(tid) {
-  const res = await sqldb.queryOneRowAsync(sql.get_data_for_assessment, { tid });
+  const res = await sqldb.queryOneRowAsync(sql.get_data_for_assessment, {
+    tid,
+  });
   return res.rows[0];
 }
 

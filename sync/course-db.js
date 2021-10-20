@@ -30,14 +30,44 @@ const DEFAULT_COURSE_INSTANCE_INFO = {};
 const DEFAULT_ASSESSMENT_INFO = {};
 
 const DEFAULT_ASSESSMENT_SETS = [
-  { abbreviation: 'HW', name: 'Homework', heading: 'Homeworks', color: 'green1' },
+  {
+    abbreviation: 'HW',
+    name: 'Homework',
+    heading: 'Homeworks',
+    color: 'green1',
+  },
   { abbreviation: 'Q', name: 'Quiz', heading: 'Quizzes', color: 'red1' },
-  { abbreviation: 'PQ', name: 'Practice Quiz', heading: 'Practice Quizzes', color: 'pink1' },
+  {
+    abbreviation: 'PQ',
+    name: 'Practice Quiz',
+    heading: 'Practice Quizzes',
+    color: 'pink1',
+  },
   { abbreviation: 'E', name: 'Exam', heading: 'Exams', color: 'brown1' },
-  { abbreviation: 'PE', name: 'Practice Exam', heading: 'Practice Exams', color: 'yellow1' },
-  { abbreviation: 'P', name: 'Prep', heading: 'Question Preparation', color: 'gray1' },
-  { abbreviation: 'MP', name: 'Machine Problem', heading: 'Machine Problems', color: 'turquoise1' },
-  { abbreviation: 'WS', name: 'Worksheet', heading: 'Worksheets', color: 'purple1' },
+  {
+    abbreviation: 'PE',
+    name: 'Practice Exam',
+    heading: 'Practice Exams',
+    color: 'yellow1',
+  },
+  {
+    abbreviation: 'P',
+    name: 'Prep',
+    heading: 'Question Preparation',
+    color: 'gray1',
+  },
+  {
+    abbreviation: 'MP',
+    name: 'Machine Problem',
+    heading: 'Machine Problems',
+    color: 'turquoise1',
+  },
+  {
+    abbreviation: 'WS',
+    name: 'Worksheet',
+    heading: 'Worksheets',
+    color: 'purple1',
+  },
   { abbreviation: 'U', name: 'Unknown', heading: 'Unknown', color: 'red3' },
 ];
 
@@ -47,7 +77,11 @@ const DEFAULT_TAGS = [
     color: 'brown1',
     description: 'The answer format is one or more numerical values.',
   },
-  { name: 'symbolic', color: 'blue1', description: 'The answer format is a symbolic expression.' },
+  {
+    name: 'symbolic',
+    color: 'blue1',
+    description: 'The answer format is a symbolic expression.',
+  },
   {
     name: 'drawing',
     color: 'yellow1',
@@ -60,7 +94,11 @@ const DEFAULT_TAGS = [
     description:
       'The answer format is choosing from a small finite set of answers (multiple choice, possibly with multiple selections allowed, up to 10 possible answers).',
   },
-  { name: 'code', color: 'turquoise1', description: 'The answer format is a piece of code.' },
+  {
+    name: 'code',
+    color: 'turquoise1',
+    description: 'The answer format is a piece of code.',
+  },
   {
     name: 'multianswer',
     color: 'orange2',
@@ -621,7 +659,9 @@ module.exports.loadInfoFile = async function ({
       const valid = validate(json);
       if (!valid) {
         const result = { uuid: json.uuid };
-        const errorText = betterAjvErrors(schema, json, validate.errors, { indent: 2 });
+        const errorText = betterAjvErrors(schema, json, validate.errors, {
+          indent: 2,
+        });
         const errorTextString = String(errorText); // hack to fix incorrect type in better-ajv-errors/typings.d.ts
         infofile.addError(result, errorTextString);
         return result;

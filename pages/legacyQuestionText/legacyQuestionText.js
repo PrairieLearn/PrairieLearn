@@ -14,7 +14,10 @@ router.get('/:filename', function (req, res, next) {
   chunks.getTemplateQuestionIds(question, (err, questionIds) => {
     if (ERR(err, next)) return;
 
-    const templateQuestionChunks = questionIds.map((id) => ({ type: 'question', questionId: id }));
+    const templateQuestionChunks = questionIds.map((id) => ({
+      type: 'question',
+      questionId: id,
+    }));
     const chunksToLoad = [
       {
         type: 'question',

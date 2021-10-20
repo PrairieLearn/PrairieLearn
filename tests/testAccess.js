@@ -259,7 +259,12 @@ describe('Access control', function () {
     };
     if (includePassword) form.password = 'secret';
     request.post(
-      { url: assessmentUrl, form: form, jar: cookies, followAllRedirects: true },
+      {
+        url: assessmentUrl,
+        form: form,
+        jar: cookies,
+        followAllRedirects: true,
+      },
       function (error, response, body) {
         if (error) {
           return callback(error);

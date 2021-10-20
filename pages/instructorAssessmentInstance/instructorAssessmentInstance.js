@@ -43,7 +43,9 @@ router.get('/', (req, res, next) => {
         result.rows[0].assessment_instance_date_formatted;
       res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
 
-      const params = { assessment_instance_id: res.locals.assessment_instance.id };
+      const params = {
+        assessment_instance_id: res.locals.assessment_instance.id,
+      };
       sqlDb.query(sql.select_instance_questions, params, (err, result) => {
         if (ERR(err, next)) return;
         res.locals.instance_questions = result.rows;
@@ -175,7 +177,12 @@ router.post('/', (req, res, next) => {
       });
     });
   } else {
-    return next(error.make(400, 'unknown __action', { locals: res.locals, body: req.body }));
+    return next(
+      error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
   }
 });
 

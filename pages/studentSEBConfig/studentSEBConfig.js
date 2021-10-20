@@ -40,8 +40,18 @@ var load_default_config = function (res, _req) {
   defobj['removeBrowserProfile'] = true;
 
   defobj['URLFilterRules'] = [
-    { active: true, regex: false, expression: config.SEBServerFilter, action: 1 },
-    { active: true, regex: false, expression: 'shibboleth.illinois.edu/*', action: 1 },
+    {
+      active: true,
+      regex: false,
+      expression: config.SEBServerFilter,
+      action: 1,
+    },
+    {
+      active: true,
+      regex: false,
+      expression: 'shibboleth.illinois.edu/*',
+      action: 1,
+    },
   ];
 
   defobj['quitURL'] = fullUrlPrefix + '/pl/SEBquit';

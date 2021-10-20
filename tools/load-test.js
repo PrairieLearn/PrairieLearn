@@ -200,7 +200,10 @@ async function postQuestionAnswer(questionSubmitInfo) {
     form = {
       __action: 'grade',
       __csrf_token: questionSubmitInfo.csrf_token,
-      postData: JSON.stringify({ variant: questionSubmitInfo.variant, submittedAnswer }),
+      postData: JSON.stringify({
+        variant: questionSubmitInfo.variant,
+        submittedAnswer,
+      }),
     };
   } else if (argv.type === 'v3') {
     form = {

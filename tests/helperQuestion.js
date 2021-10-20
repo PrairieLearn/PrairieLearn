@@ -506,7 +506,11 @@ module.exports = {
           __csrf_token: locals.__csrf_token,
         };
         request.post(
-          { url: locals.instructorAssessmentRegradingUrl, form: form, followAllRedirects: true },
+          {
+            url: locals.instructorAssessmentRegradingUrl,
+            form: form,
+            followAllRedirects: true,
+          },
           function (error, response, body) {
             if (error) {
               return callback(error);

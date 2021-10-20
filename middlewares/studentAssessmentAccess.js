@@ -111,7 +111,9 @@ function checkUserAgent(res, userAgent) {
   if (examHash === null) return;
   var key = examHash[1];
 
-  var fromSEB = csrf.getCheckedData(key, config.secretKey, { maxAge: timeout * 60 * 60 * 1000 });
+  var fromSEB = csrf.getCheckedData(key, config.secretKey, {
+    maxAge: timeout * 60 * 60 * 1000,
+  });
 
   if ('assessment' in res.locals) {
     if (

@@ -69,7 +69,9 @@ async function checkDBConsistency() {
   const not_in_db = set_difference(running_host_set, db_hosts_nonterminated);
   if (not_in_db.size > 0) {
     logger.info('Terminating hosts that are not in the database', Array.from(not_in_db));
-    await sqldb.queryAsync(sql.add_terminating_hosts, { instances: Array.from(not_in_db) });
+    await sqldb.queryAsync(sql.add_terminating_hosts, {
+      instances: Array.from(not_in_db),
+    });
     await ec2.terminateInstances({ InstanceIds: Array.from(not_in_db) }).promise();
   }
 
@@ -113,7 +115,9 @@ async function checkHealth() {
 
     if (!healthy) {
       logger.info(`Host ${host.hostname} (${host.instance_id}) is unhealthy!`);
-      await sqldb.queryAsync(sql.set_host_unhealthy, { instance_id: host.instance_id });
+      await sqldb.queryAsync(sql.set_host_unhealthy, {
+        instance_id: host.instance_id,
+      });
     }
   });
 }

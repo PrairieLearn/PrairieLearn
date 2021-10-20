@@ -244,7 +244,11 @@ describe('Instructor assessment editing', function () {
         points: 4,
       };
       request.post(
-        { url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true },
+        {
+          url: locals.instructorAssessmentInstanceUrl,
+          form: form,
+          followAllRedirects: true,
+        },
         function (error, response, body) {
           if (error) {
             return callback(error);
@@ -318,7 +322,11 @@ describe('Instructor assessment editing', function () {
         score_perc: 50,
       };
       request.post(
-        { url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true },
+        {
+          url: locals.instructorAssessmentInstanceUrl,
+          form: form,
+          followAllRedirects: true,
+        },
         function (error, response, body) {
           if (error) {
             return callback(error);
@@ -391,7 +399,11 @@ describe('Instructor assessment editing', function () {
         points: 7,
       };
       request.post(
-        { url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true },
+        {
+          url: locals.instructorAssessmentInstanceUrl,
+          form: form,
+          followAllRedirects: true,
+        },
         function (error, response, body) {
           if (error) {
             return callback(error);
@@ -464,7 +476,11 @@ describe('Instructor assessment editing', function () {
         score_perc: assessmentSetScorePerc,
       };
       request.post(
-        { url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true },
+        {
+          url: locals.instructorAssessmentInstanceUrl,
+          form: form,
+          followAllRedirects: true,
+        },
         function (error, response, body) {
           if (error) {
             return callback(error);
@@ -556,7 +572,11 @@ describe('Instructor assessment editing', function () {
         score_perc: assessmentSetScorePerc2,
       };
       request.post(
-        { url: locals.instructorGradebookUrl, form: form, followAllRedirects: true },
+        {
+          url: locals.instructorGradebookUrl,
+          form: form,
+          followAllRedirects: true,
+        },
         function (error, response, body) {
           if (error) {
             return callback(error);

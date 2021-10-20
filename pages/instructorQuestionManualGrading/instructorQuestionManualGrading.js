@@ -127,7 +127,12 @@ router.post('/', function (req, res, next) {
   } else if (req.body.__action === 'update_manual_grade') {
     // TODO: Update grade in DB?
   } else {
-    return next(error.make(400, 'unknown __action', { locals: res.locals, body: req.body }));
+    return next(
+      error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
   }
 });
 module.exports = router;

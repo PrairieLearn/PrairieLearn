@@ -155,25 +155,21 @@ function parallel_histograms(selector, data, options) {
     .attr('transform', 'rotate(-90)')
     .style('text-anchor', 'start');
 
-  plot
-    .append('line')
-    .attr({
-      x1: yAxisWidth,
-      y1: topPadding,
-      x2: width + yAxisWidth,
-      y2: topPadding,
-      class: 'x axis',
-    });
+  plot.append('line').attr({
+    x1: yAxisWidth,
+    y1: topPadding,
+    x2: width + yAxisWidth,
+    y2: topPadding,
+    class: 'x axis',
+  });
 
-  plot
-    .append('line')
-    .attr({
-      x1: width + yAxisWidth,
-      y1: topPadding,
-      x2: width + yAxisWidth,
-      y2: heightWithPadding,
-      class: 'y axis',
-    });
+  plot.append('line').attr({
+    x1: width + yAxisWidth,
+    y1: topPadding,
+    x2: width + yAxisWidth,
+    y2: heightWithPadding,
+    class: 'y axis',
+  });
 
   var xTickFormat =
     options.xTickLabels == 'auto'

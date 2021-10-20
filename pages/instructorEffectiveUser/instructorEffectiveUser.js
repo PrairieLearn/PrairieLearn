@@ -69,7 +69,9 @@ router.post('/', function (req, res, next) {
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeUid') {
-    res.cookie('pl_requested_uid', req.body.pl_requested_uid, { maxAge: 60 * 60 * 1000 });
+    res.cookie('pl_requested_uid', req.body.pl_requested_uid, {
+      maxAge: 60 * 60 * 1000,
+    });
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeCourseRole') {
@@ -85,7 +87,9 @@ router.post('/', function (req, res, next) {
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeMode') {
-    res.cookie('pl_requested_mode', req.body.pl_requested_mode, { maxAge: 60 * 60 * 1000 });
+    res.cookie('pl_requested_mode', req.body.pl_requested_mode, {
+      maxAge: 60 * 60 * 1000,
+    });
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeDate') {
@@ -94,7 +98,9 @@ router.post('/', function (req, res, next) {
     if (!date.isValid()) {
       return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
     }
-    res.cookie('pl_requested_date', date.toISOString(), { maxAge: 60 * 60 * 1000 });
+    res.cookie('pl_requested_date', date.toISOString(), {
+      maxAge: 60 * 60 * 1000,
+    });
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
   } else {

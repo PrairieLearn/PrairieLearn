@@ -33,7 +33,11 @@ function set_answer(event) {
         answer_indent = Math.round(answer_indent / TABWIDTH); // get how many times the answer is indented
       }
 
-      var answer_json = { inner_html: answer_text, indent: answer_indent, uuid: uuid };
+      var answer_json = {
+        inner_html: answer_text,
+        indent: answer_indent,
+        uuid: uuid,
+      };
       student_answers_array.push(answer_json);
     }
   }

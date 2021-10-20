@@ -80,7 +80,10 @@ router.post('/', function (req, res, next) {
           );
           sqldb.queryOneRow(
             sql.select_assessment_id_from_uuid,
-            { uuid: editor.uuid, course_instance_id: res.locals.course_instance.id },
+            {
+              uuid: editor.uuid,
+              course_instance_id: res.locals.course_instance.id,
+            },
             (err, result) => {
               if (ERR(err, next)) return;
               res.redirect(

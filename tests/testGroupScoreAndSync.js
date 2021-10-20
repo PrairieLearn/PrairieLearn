@@ -92,7 +92,11 @@ describe('assessment instance group synchronization test', function () {
           locals.studentUsers[2].uid,
       };
       request.post(
-        { url: locals.instructorAssessmentsUrlGroupTab, form: form, followAllRedirects: true },
+        {
+          url: locals.instructorAssessmentsUrlGroupTab,
+          form: form,
+          followAllRedirects: true,
+        },
         function (err, response) {
           if (ERR(err, callback)) return;
           if (response.statusCode !== 200) {
@@ -305,7 +309,12 @@ describe('assessment instance group synchronization test', function () {
         function (error, response, body) {
           if (ERR(error, callback)) return;
           if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+            return callback(
+              new Error('bad status: ' + response.statusCode, {
+                response,
+                body,
+              })
+            );
           }
           page = body;
           callback(null);
