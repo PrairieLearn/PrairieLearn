@@ -33,7 +33,7 @@ const fetchCheerio = async (url, options = {}) => {
   return response;
 };
 
-describe('Exam assessment response to `requireHonorCode`', function() {
+describe('Exam assessment response to `requireHonorCode`', function () {
   this.timeout(60000);
 
   const context = {};
@@ -46,7 +46,7 @@ describe('Exam assessment response to `requireHonorCode`', function() {
   after('shut down testing server', helperServer.after);
 
   step('get default exam info', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, {number: '1'});
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, { number: '1' });
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
@@ -62,7 +62,7 @@ describe('Exam assessment response to `requireHonorCode`', function() {
   });
 
   step('get `"requireHonorCode": false` exam info', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, {number: '2'});
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, { number: '2' });
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });

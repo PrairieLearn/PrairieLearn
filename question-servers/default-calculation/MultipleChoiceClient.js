@@ -1,3 +1,3 @@
-define(["MCQClient"], function(MCQClient) {
-    return new MCQClient.MCQClient();
+define(['MCQClient'], function (MCQClient) {
+  return new MCQClient.MCQClient();
 });

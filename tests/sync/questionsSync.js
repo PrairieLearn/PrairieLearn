@@ -13,7 +13,7 @@ const { assert } = chai;
 
 /**
  * Makes an empty question.
- * 
+ *
  * @param {import('./util').CourseData} courseData
  * @returns {import('./util').Question}
  */
@@ -28,12 +28,12 @@ function makeQuestion(courseData) {
 
 async function findSyncedQuestion(qid) {
   const syncedQuestions = await util.dumpTable('questions');
-  return syncedQuestions.find(q => q.qid === qid);
+  return syncedQuestions.find((q) => q.qid === qid);
 }
 
 async function findSyncedUndeletedQuestion(qid) {
   const syncedQuestions = await util.dumpTable('questions');
-  return syncedQuestions.find(q => q.qid === qid && q.deleted_at == null);
+  return syncedQuestions.find((q) => q.qid === qid && q.deleted_at == null);
 }
 
 describe('Question syncing', () => {
@@ -42,7 +42,7 @@ describe('Question syncing', () => {
   beforeEach('set up testing database', helperDb.before);
   afterEach('tear down testing database', helperDb.after);
 
-  it('allows nesting of questions in subfolders', async() => {
+  it('allows nesting of questions in subfolders', async () => {
     const courseData = util.getCourseData();
     const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedQuestion'];
     const questionId = nestedQuestionStructure.join('/');
@@ -51,27 +51,27 @@ describe('Question syncing', () => {
     await util.syncCourseData(courseDir);
 
     const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find(q => q.qid === questionId);
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === questionId);
     assert.isOk(syncedQuestion);
   });
 
   it('soft-deletes and restores questions', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const oldSyncedQuestions = await util.dumpTable('questions');
-    const oldSyncedQuestion = oldSyncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    const oldSyncedQuestion = oldSyncedQuestions.find((q) => q.qid === util.QUESTION_ID);
 
     const oldQuestion = courseData.questions[util.QUESTION_ID];
     delete courseData.questions[util.QUESTION_ID];
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const midSyncedQuestions = await util.dumpTable('questions');
-    const midSyncedQuestion = midSyncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    const midSyncedQuestion = midSyncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.isOk(midSyncedQuestion);
     assert.isNotNull(midSyncedQuestion.deleted_at);
 
     courseData.questions[util.QUESTION_ID] = oldQuestion;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const newSyncedQuestions = await util.dumpTable('questions');
-    const newSyncedQuestion = newSyncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    const newSyncedQuestion = newSyncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.deepEqual(newSyncedQuestion, oldSyncedQuestion);
   });
 
@@ -82,14 +82,17 @@ describe('Question syncing', () => {
     courseData.questions[util.QUESTION_ID].tags.push(missingTagName);
     const courseDir = await util.writeAndSyncCourseData(courseData);
     let syncedTags = await util.dumpTable('tags');
-    let syncedTag = syncedTags.find(tag => tag.name === missingTagName);
+    let syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
-    assert(syncedTag.description && syncedTag.description.length > 0, 'tag should not have empty description');
+    assert(
+      syncedTag.description && syncedTag.description.length > 0,
+      'tag should not have empty description'
+    );
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     syncedTags = await util.dumpTable('tags');
-    syncedTag = syncedTags.find(tag => tag.name === missingTagName);
+    syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
 
     // When missing tags are no longer used in any questions, they should
@@ -97,7 +100,7 @@ describe('Question syncing', () => {
     courseData.questions[util.QUESTION_ID].tags.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     syncedTags = await util.dumpTable('tags');
-    syncedTag = syncedTags.find(tag => tag.name === missingTagName);
+    syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isUndefined(syncedTag);
   });
 
@@ -109,14 +112,17 @@ describe('Question syncing', () => {
     courseData.questions[util.QUESTION_ID].topic = missingTopicName;
     const courseDir = await util.writeAndSyncCourseData(courseData);
     let syncedTopics = await util.dumpTable('topics');
-    let syncedTopic = syncedTopics.find(topic => topic.name === missingTopicName);
+    let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
-    assert(syncedTopic.description && syncedTopic.description.length > 0, 'tag should not have empty description');
+    assert(
+      syncedTopic.description && syncedTopic.description.length > 0,
+      'tag should not have empty description'
+    );
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     syncedTopics = await util.dumpTable('topics');
-    syncedTopic = syncedTopics.find(topic => topic.name === missingTopicName);
+    syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
 
     // When missing topics are no longer used in any questions, they should
@@ -124,7 +130,7 @@ describe('Question syncing', () => {
     courseData.questions[util.QUESTION_ID].topic = originalTopicName;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     syncedTopics = await util.dumpTable('topics');
-    syncedTopic = syncedTopics.find(topic => topic.name === missingTopicName);
+    syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isUndefined(syncedTopic);
   });
 
@@ -139,7 +145,7 @@ describe('Question syncing', () => {
     };
     await util.writeAndSyncCourseData(courseData);
     const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     const { client_files, external_grading_files } = syncedQuestion;
     assert.isArray(client_files, 'client_files should be an array');
     assert.isEmpty(client_files, 'client_files should be empty');
@@ -157,7 +163,7 @@ describe('Question syncing', () => {
     await util.syncCourseData(firstDirectory);
     await util.syncCourseData(secondDirectory);
     const syncedQuestions = await util.dumpTable('questions');
-    const questions = syncedQuestions.filter(q => q.qid === util.QUESTION_ID);
+    const questions = syncedQuestions.filter((q) => q.qid === util.QUESTION_ID);
     assert.equal(questions.length, 2);
   });
 
@@ -182,7 +188,7 @@ describe('Question syncing', () => {
 
     // Check that we have a valid auto-created topic
     const syncedTopics = await util.dumpTable('topics');
-    const syncedTopic = syncedTopics.find(t => t.name === newTopic.name);
+    const syncedTopic = syncedTopics.find((t) => t.name === newTopic.name);
     assert.equal(newSyncedQuestion.topic_id, syncedTopic.id);
   });
 
@@ -207,11 +213,10 @@ describe('Question syncing', () => {
 
     // Check that we have a valid auto-created tag
     const syncedTags = await util.dumpTable('tags');
-    const syncedTag = syncedTags.find(t => t.name === newTag.name);
+    const syncedTag = syncedTags.find((t) => t.name === newTag.name);
     const syncedQuestionTags = await util.dumpTable('question_tags');
-    const syncedQuestionTag = syncedQuestionTags.find(qt =>
-      idsEqual(qt.question_id, newSyncedQuestion.id) &&
-      idsEqual(qt.tag_id, syncedTag.id),
+    const syncedQuestionTag = syncedQuestionTags.find(
+      (qt) => idsEqual(qt.question_id, newSyncedQuestion.id) && idsEqual(qt.tag_id, syncedTag.id)
     );
     assert.ok(syncedQuestionTag);
   });
@@ -228,8 +233,11 @@ describe('Question syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
-    assert.match(syncedQuestion.sync_errors, /data should have required property 'incorrectAnswers'/);
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.match(
+      syncedQuestion.sync_errors,
+      /data should have required property 'incorrectAnswers'/
+    );
   });
 
   it('records a warning if same UUID is used in multiple questions', async () => {
@@ -238,10 +246,18 @@ describe('Question syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
     const syncedQuestions = await util.dumpTable('questions');
-    const firstSyncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
-    assert.match(firstSyncedQuestion.sync_warnings, /UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: test2/);
-    const secondSyncedQuestion = syncedQuestions.find(q => q.qid === util.QUESTION_ID);
-    assert.match(secondSyncedQuestion.sync_warnings, new RegExp(`UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}`));
+    const firstSyncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.match(
+      firstSyncedQuestion.sync_warnings,
+      /UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: test2/
+    );
+    const secondSyncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.match(
+      secondSyncedQuestion.sync_warnings,
+      new RegExp(
+        `UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}`
+      )
+    );
   });
 
   it('records an error if a question directory is missing an info.json file', async () => {
@@ -251,12 +267,15 @@ describe('Question syncing', () => {
     await util.syncCourseData(courseDir);
 
     const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find(q => q.qid === 'badQuestion');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === 'badQuestion');
     assert.isOk(syncedQuestion);
-    assert.match(syncedQuestion.sync_errors, /Missing JSON file: questions\/badQuestion\/info.json/);
+    assert.match(
+      syncedQuestion.sync_errors,
+      /Missing JSON file: questions\/badQuestion\/info.json/
+    );
   });
 
-  it('records an error if a nested question directory does not eventually contain an info.json file', async() => {
+  it('records an error if a nested question directory does not eventually contain an info.json file', async () => {
     const courseData = util.getCourseData();
     const nestedQuestionStructure = ['subfolder1', 'subfolder2', 'subfolder3', 'nestedQuestion'];
     const questionId = nestedQuestionStructure.join('/');
@@ -265,16 +284,19 @@ describe('Question syncing', () => {
     await util.syncCourseData(courseDir);
 
     const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find(q => q.qid === questionId);
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === questionId);
     assert.isOk(syncedQuestion);
-    assert.match(syncedQuestion.sync_errors, /Missing JSON file: questions\/subfolder1\/subfolder2\/subfolder3\/nestedQuestion\/info.json/);
+    assert.match(
+      syncedQuestion.sync_errors,
+      /Missing JSON file: questions\/subfolder1\/subfolder2\/subfolder3\/nestedQuestion\/info.json/
+    );
 
     // We should only record an error for the most deeply nested directories,
     // not any of the intermediate ones.
     for (let i = 0; i < nestedQuestionStructure.length - 1; i++) {
-      const partialNestedQuestionStructure  = nestedQuestionStructure.slice(0, i);
+      const partialNestedQuestionStructure = nestedQuestionStructure.slice(0, i);
       const partialQuestionId = partialNestedQuestionStructure.join('/');
-      const syncedQuestion = syncedQuestions.find(q => q.qid === partialQuestionId);
+      const syncedQuestion = syncedQuestions.find((q) => q.qid === partialQuestionId);
       assert.isUndefined(syncedQuestion);
     }
   });
@@ -299,13 +321,15 @@ describe('Question syncing', () => {
     const courseDir = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID and title of the question and re-sync
-    const newQuestion = {...originalQuestion};
+    const newQuestion = { ...originalQuestion };
     newQuestion.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
     newQuestion.title = 'Changed title';
     courseData.questions['repeatedQuestion'] = newQuestion;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedQuestions = await util.dumpTable('questions');
-    const deletedQuestion = syncedQuestions.find(q => q.qid === 'repeatedQuestion' && q.deleted_at != null);
+    const deletedQuestion = syncedQuestions.find(
+      (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null
+    );
     assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
     assert.equal(deletedQuestion.title, originalQuestion.title);
   });
@@ -317,7 +341,7 @@ describe('Question syncing', () => {
     const courseDir = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the question, add an error and re-sync
-    const newQuestion = {...originalQuestion};
+    const newQuestion = { ...originalQuestion };
     newQuestion.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
     delete newQuestion.title; // will make the question broken
     courseData.questions['repeatedQuestion'] = newQuestion;
@@ -325,12 +349,16 @@ describe('Question syncing', () => {
 
     // check that the newly-synced question has an error
     const syncedQuestions = await util.dumpTable('questions');
-    const syncedQuestion = syncedQuestions.find(q => q.qid === 'repeatedQuestion' && q.deleted_at == null);
+    const syncedQuestion = syncedQuestions.find(
+      (q) => q.qid === 'repeatedQuestion' && q.deleted_at == null
+    );
     assert.equal(syncedQuestion.uuid, newQuestion.uuid);
     assert.match(syncedQuestion.sync_errors, /should have required property 'title'/);
 
     // check that the old deleted question does not have any errors
-    const deletedQuestion = syncedQuestions.find(q => q.qid === 'repeatedQuestion' && q.deleted_at != null);
+    const deletedQuestion = syncedQuestions.find(
+      (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null
+    );
     assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
     assert.equal(deletedQuestion.sync_errors, null);
   });
