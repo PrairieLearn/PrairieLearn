@@ -138,8 +138,9 @@ async function sendStatsToCloudwatch(stats) {
 }
 
 async function handleWorkspaceAutoscaling(stats) {
-  if ((await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', 'true')) !== 'true')
+  if ((await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', 'true')) !== 'true') {
     return;
+  }
 
   let desired_hosts = await config.getDBConfigValueAsync('workspaceDesiredHostCount', null);
   if (desired_hosts !== null) {

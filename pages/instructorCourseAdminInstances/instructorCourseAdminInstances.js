@@ -25,14 +25,17 @@ router.get('/', function (req, res, next) {
           if (err) {
             if (err.code == 'ENOENT') {
               res.locals.needToSync = true;
-            } else return ERR(err, callback);
+            } else {
+              return ERR(err, callback);
+            }
           }
           callback(null);
         });
       },
       (callback) => {
-        if (!res.locals.authz_data || !res.locals.authz_data.course_instances)
+        if (!res.locals.authz_data || !res.locals.authz_data.course_instances) {
           return callback(null);
+        }
         const params = {
           course_id: res.locals.course.id,
         };

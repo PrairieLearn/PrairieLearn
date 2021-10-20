@@ -29,8 +29,9 @@ const chunks = require('../../lib/chunks');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be course editor)'));
+  }
 
   let workingPath;
   if (req.params[0]) {
@@ -226,8 +227,9 @@ router.get('/*', (req, res, next) => {
 
 router.post('/*', (req, res, next) => {
   debug(`Responding to post with action ${req.body.__action}`);
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be course editor)'));
+  }
 
   let workingPath;
   if (req.params[0]) {
