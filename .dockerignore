@@ -2,8 +2,11 @@
 *
 
 # whitelist things to copy
+!.editorconfig
 !.eslintignore
-!.eslintrc.json
+!.eslintrc.js
+!.prettierignore
+!.prettierrc.json
 !tsconfig.json
 !admin_queries/
 !api/

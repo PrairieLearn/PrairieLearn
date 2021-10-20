@@ -51,7 +51,7 @@
         </ul>
         <ul class="list-group submission_table">
             {{#student_submission}}
-            	<li class="list-group-item">{{{inner_html}}}</li>
+            	<li class="list-group-item" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
             {{/student_submission}}
         </ul>
         {{{feedback}}}
@@ -74,7 +74,7 @@
         </ul>
         <ul class="list-group answer_table">
         {{#question_solution}}
-            <li class="list-group-item">{{{inner_html}}}</li>
+            <li class="list-group-item" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
         {{/question_solution}}
         </ul>
     </div>
