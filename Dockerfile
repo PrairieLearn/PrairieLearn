@@ -4,18 +4,10 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
-COPY package.json package-lock.json /PrairieLearn/
-COPY grader_host/package.json grader_host/package-lock.json /PrairieLearn/grader_host/
-COPY prairielib/package.json prairielib/package-lock.json /PrairieLearn/prairielib/
+COPY package.json yarn.lock /PrairieLearn/
 RUN cd /PrairieLearn \
-    && npm ci \
-    && npm --force cache clean \
-    && cd /PrairieLearn/grader_host \
-    && npm ci \
-    && npm --force cache clean \
-    && cd /PrairieLearn/prairielib \
-    && npm ci \
-    && npm --force cache clean
+    && yarn install --frozen-lockfile \
+    && yarn cache clean
 
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.
 COPY . /PrairieLearn/

@@ -230,11 +230,15 @@ def render(element_html, data):
             return ''  # external grader is responsible for displaying results screen
 
         student_submission = ''
-        score = 0
+        score = None
         feedback = None
 
         if answer_name in data['submitted_answers']:
-            student_submission = filter_multiple_from_array(data['submitted_answers'][answer_name], ['inner_html'])
+            student_submission = [{
+                'inner_html': attempt['inner_html'],
+                'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+            } for attempt in data['submitted_answers'][answer_name]]
+
         if answer_name in data['partial_scores']:
             score = data['partial_scores'][answer_name]['score']
             feedback = data['partial_scores'][answer_name]['feedback']
@@ -246,16 +250,17 @@ def render(element_html, data):
             'feedback': feedback
         }
 
-        try:
-            score = float(score * 100)
-            if score >= 100:
-                html_params['correct'] = True
-            elif score > 0:
-                html_params['partially_correct'] = math.floor(score)
-            else:
-                html_params['incorrect'] = True
-        except Exception:
-            raise ValueError('invalid score: ' + data['partial_scores'][answer_name]['score'])
+        if score is not None:
+            try:
+                score = float(score * 100)
+                if score >= 100:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partially_correct'] = math.floor(score)
+                else:
+                    html_params['incorrect'] = True
+            except Exception:
+                raise ValueError('invalid score: ' + data['partial_scores'][answer_name]['score'])
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params)
@@ -283,9 +288,14 @@ def render(element_html, data):
         check_indentation = ', with correct indentation' if check_indentation is True else None
 
         if answer_name in data['correct_answers']:
+            question_solution = [{
+                'inner_html': solution['inner_html'],
+                'indent': ((solution['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+            } for solution in data['correct_answers'][answer_name]]
+
             html_params = {
                 'true_answer': True,
-                'question_solution': filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html']),
+                'question_solution': question_solution,
                 'grading_mode': grading_mode,
                 'check_indentation': check_indentation
             }
