@@ -1,4 +1,3 @@
-
 # Questions
 
 **NOTE:** Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Edits to HTML or Python files can be picked up by reloading the page. You might need to generate a new variant of a question to run new Python code.
@@ -50,66 +49,57 @@ The `info.json` file for each question defines properties of the question. For e
 
 ```json
 {
-    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
-    "title": "Newton's third law",
-    "topic": "Forces",
-    "tags": ["secret", "Fa18"],
-    "type": "v3",
-    "comment": "You can add comments to JSON files using this property."
+  "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+  "title": "Newton's third law",
+  "topic": "Forces",
+  "tags": ["secret", "Fa18"],
+  "type": "v3",
+  "comment": "You can add comments to JSON files using this property."
 }
 ```
 
-Property | Type | Description
---- | --- | ---
-`uuid` | string | [Unique identifier](uuid.md). (Required; no default)
-`type` | enum | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)
-`title` | string | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)
-`topic` | string | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)
-`tags` | array | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)
-`gradingMethod` | enum | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`. (Optional; default: `Internal`)
-`singleVariant` | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)
-`partialCredit` | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)
-`externalGradingOptions` | object | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)
-`dependencies` | object | External JavaScript or CSS dependencies to load.  See below.  (Optional; default: `{}`)
+| Property                 | Type    | Description                                                                                                                   |
+| ------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `uuid`                   | string  | [Unique identifier](uuid.md). (Required; no default)                                                                          |
+| `type`                   | enum    | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)                                              |
+| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                    |
+| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)              |
+| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                |
+| `gradingMethod`          | enum    | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`. (Optional; default: `Internal`) |
+| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                      |
+| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                              |
+| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)       |
+| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                         |
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
 
 ### Question Dependencies
 
-Your question can load client-side assets such as scripts or stylesheets from different sources.  A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be deduplicated and loaded onto the page.
+Your question can load client-side assets such as scripts or stylesheets from different sources. A full list of dependencies will be compiled based on the question's needs and any dependencies needed by page elements, then they will be deduplicated and loaded onto the page.
 
 These dependencies are specified in the `info.json` file, and can be configured as follows:
 
 ```json
 {
-    "dependencies": {
-        "nodeModulesScripts": [
-            "three/build/three.min.js"
-        ],
-        "clientFilesQuestionScripts": [
-            "my-question-script.js"
-        ],
-        "clientFilesQuestionStyles": [
-            "my-question-style.css"
-        ],
-        "clientFilesCourseStyles": [
-            "courseStylesheet1.css",
-            "courseStylesheet2.css"
-        ]
-    }
+  "dependencies": {
+    "nodeModulesScripts": ["three/build/three.min.js"],
+    "clientFilesQuestionScripts": ["my-question-script.js"],
+    "clientFilesQuestionStyles": ["my-question-style.css"],
+    "clientFilesCourseStyles": ["courseStylesheet1.css", "courseStylesheet2.css"]
+  }
 }
 ```
 
 The different types of dependency properties available are summarized in this table:
 
-Property | Description
---- | ---
-`nodeModulesStyles` | The styles required by this question, relative to `[PrairieLearn directory]/node_modules`.
-`nodeModulesScripts` | The scripts required by this question, relative to `[PrairieLearn directory]/node_modules`.
-`clientFilesQuestionStyles` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
-`clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory.
-`clientFilesCourseStyles` | The styles required by this question relative to `[course directory]/clientFilesCourse`.
-`clientFilesCourseScripts` | The scripts required by this question relative to `[course directory]/clientFilesCourse`.
+| Property                     | Description                                                                                       |
+| ---------------------------- | ------------------------------------------------------------------------------------------------- |
+| `nodeModulesStyles`          | The styles required by this question, relative to `[PrairieLearn directory]/node_modules`.        |
+| `nodeModulesScripts`         | The scripts required by this question, relative to `[PrairieLearn directory]/node_modules`.       |
+| `clientFilesQuestionStyles`  | The scripts required by this question relative to the question's `clientFilesQuestion` directory. |
+| `clientFilesQuestionScripts` | The scripts required by this question relative to the question's `clientFilesQuestion` directory. |
+| `clientFilesCourseStyles`    | The styles required by this question relative to `[course directory]/clientFilesCourse`.          |
+| `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
 ## Question `question.html`
 
@@ -117,11 +107,17 @@ The `question.html` is a template used to render the question to the student. A 
 
 ```html
 <pl-question-panel>
-  <p> A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have acceleration $a = {{params.a}}\rm\ m/s^2$.
-  <p> What is the total force $F$ currently acting on the particle?
-</pl-question-panel>
+  <p>
+    A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have acceleration $a =
+    {{params.a}}\rm\ m/s^2$.
+  </p>
+  <p>What is the total force $F$ currently acting on the particle?</p></pl-question-panel
+>
 
-<p>$F = $ <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
+<p>
+  $F = $
+  <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
+</p>
 ```
 
 The `question.html` is regular HTML, with four special features:
@@ -138,14 +134,14 @@ The `question.html` is regular HTML, with four special features:
 
 The `server.py` file for each question creates randomized question variants by generating random parameters and the corresponding correct answer. The `server.py` functions are:
 
-Function | Return object | modifiable `data` keys | unmodifiable `data` keys | Description
---- | --- | --- | --- | ---
-`generate()` | | `correct_answers`, `params` | `options`, `variant_seed` | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Return the modified `data` dictionary.
-`prepare()` | | `correct_answers`, `params` | `options`, `variant_seed` | Final question preparation after element code has run. Can modify data as necessary. Return the modified `data` dictionary.
-`render()` | `html` (string) | | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed` | Render the HTML for one panel and return it as a string.
-`parse()` | | `format_errors`, `submitted_answers` | `correct_answers`, `options`, `params`, `raw_submitted_answers`, `variant_seed` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
-`grade()` | | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
-`file()` | `object` (string, bytes-like, file-like) | | `correct_answers`, `filename`, `options`, `params`, `variant_seed` | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used.
+| Function     | Return object                            | modifiable `data` keys                                                                                   | unmodifiable `data` keys                                                                                                                                                          | Description                                                                                                                                                                                                                                                                   |
+| ------------ | ---------------------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `generate()` |                                          | `correct_answers`, `params`                                                                              | `options`, `variant_seed`                                                                                                                                                         | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Return the modified `data` dictionary.                                                                 |
+| `prepare()`  |                                          | `correct_answers`, `params`                                                                              | `options`, `variant_seed`                                                                                                                                                         | Final question preparation after element code has run. Can modify data as necessary. Return the modified `data` dictionary.                                                                                                                                                   |
+| `render()`   | `html` (string)                          |                                                                                                          | `correct_answers`, `editable`, `feedback`, `format_errors`, `options`, `panel`, `params`, `partial_scores`, `raw_submitted_answers`, `score`, `submitted_answers`, `variant_seed` | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                      |
+| `parse()`    |                                          | `format_errors`, `submitted_answers`                                                                     | `correct_answers`, `options`, `params`, `raw_submitted_answers`, `variant_seed`                                                                                                   | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.                                                                                                                                       |
+| `grade()`    |                                          | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | `options`, `raw_submitted_answers`, `variant_seed`                                                                                                                                | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.                                                 |
+| `file()`     | `object` (string, bytes-like, file-like) |                                                                                                          | `correct_answers`, `filename`, `options`, `params`, `variant_seed`                                                                                                                | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
 
 A complete `question.html` and `server.py` example looks like:
 
@@ -264,8 +260,8 @@ You can also use this functionality in file-based elements (`pl-figure`, `pl-fil
 
 While it is recommended that all questions contain random parameters, sometimes it is impractical to do this. For questions that don't have a meaningful amount of randomization in them, the `info.json` file should set `"singleVariant": true`. This has the following effects:
 
-* On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
-* On `Exam`-type assessments, the `singleVariant` option has no effect and the question is treated like any other.
+- On `Homework`-type assessments, each student will only ever be given one variant of the question, which they can repeatedly attempt without limit. The correct answer will never be shown to students.
+- On `Exam`-type assessments, the `singleVariant` option has no effect and the question is treated like any other.
 
 ## The `partialCredit` option
 
@@ -285,7 +281,7 @@ In the future, PrairieLearn may add an option to prevent this lock from occurrin
 
 HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
 
-```html
+```
 <markdown>
 # Hello, world!
 
@@ -306,7 +302,7 @@ A few special behaviors have been added to enable Markdown to work better within
 
 Fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
 
-`````html
+````
 <markdown>
 ```cpp{1-2,4}
 int i = 1;
@@ -315,10 +311,11 @@ int k = 3;
 int m = 4;
 ```
 </markdown>
-`````
+````
 
 This will be rendered to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
 
+<!-- prettier-ignore -->
 ```html
 <pl-code language="cpp" highlight-lines="1-2,4">
 int i = 1;
@@ -388,11 +385,11 @@ If you imagine this being parsed into an abstract syntax tree, we have a `<pl-mu
 
 ```html
 <div class="foo">
-  <input type="radio" name="student">
+  <input type="radio" name="student" />
   <pl-figure file-name="fig1.png"></pl-figure>
 </div>
 <div class="foo">
-  <input type="radio" name="student">
+  <input type="radio" name="student" />
   <pl-figure file-name="fig2.png"></pl-figure>
 </div>
 ```
@@ -401,12 +398,12 @@ We then re-parse this tree and again begin looking for more elements to render. 
 
 ```html
 <div class="foo">
-  <input type="radio" name="student">
-  <img src="fig1.png">
+  <input type="radio" name="student" />
+  <img src="fig1.png" />
 </div>
 <div class="foo">
-  <input type="radio" name="student">
-  <img src="fig2.png">
+  <input type="radio" name="student" />
+  <img src="fig2.png" />
 </div>
 ```
 
@@ -416,9 +413,9 @@ To opt in to the new renderer, add the following to your `infoCourse.json` file:
 
 ```json
 {
-    "options": {
-        "useNewQuestionRenderer": true
-    },
+  "options": {
+    "useNewQuestionRenderer": true
+  }
 }
 ```
 
@@ -427,8 +424,7 @@ Note that this will apply to all questions, so make sure to check that you've be
 Example of invalid HTML:
 
 ```html
-<p>This is a picture of a bird
-<pl-figure file-name="bird.html"/>
+<p>This is a picture of a bird <pl-figure file-name="bird.html" /></p>
 ```
 
 Example of valid HTML:
