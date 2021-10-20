@@ -50,19 +50,16 @@ function set_answer(event) {
   $(textfield_name).val(JSON.stringify(student_answers_array));
 }
 
-function update_indent(ui) {
-  if (ui.item.parent()[0].classList.contains('inline')) {
-    return;
-  }
+function calculate_indent(ui, parent) {
   if (
-    !ui.item.parent()[0].classList.contains('dropzone') ||
-    !ui.item.parent()[0].classList.contains('enableIndentation')
+    !parent[0].classList.contains('dropzone') ||
+    !parent[0].classList.contains('enableIndentation')
   ) {
-    // no need to support indent on MCQ option panel or solution panel with indents explicitly disabled
-    ui.item[0].style.marginLeft = '0px';
-    return;
+    // don't indent on option panel or solution panel with indents explicitly disabled
+    return 0;
   }
-  let leftDiff = ui.position.left - ui.item.parent().position().left;
+
+  let leftDiff = ui.position.left - parent.position().left;
   leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
   let currentIndent = ui.item[0].style.marginLeft;
   if (currentIndent !== '') {
@@ -74,7 +71,7 @@ function update_indent(ui) {
   leftDiff = Math.min(leftDiff, TABWIDTH * MAX_INDENT);
   leftDiff = Math.max(leftDiff, 0);
 
-  ui.item[0].style.marginLeft = leftDiff + 'px';
+  return leftDiff;
 }
 
 $(document).ready(function () {
@@ -91,6 +88,12 @@ $(document).ready(function () {
       set_answer(event);
       set_max_indent(event);
     },
+    sort: function (event, ui) {
+      // update the location of the placeholder as the item is dragged
+      let placeholder = ui.placeholder;
+      let leftDiff = calculate_indent(ui, placeholder.parent());
+      placeholder[0].style.marginLeft = leftDiff + 'px';
+    },
     beforeStop: function (event, ui) {
       if (!check_block(event, ui)) {
         $(this).sortable('cancel');
@@ -98,7 +101,8 @@ $(document).ready(function () {
     },
     stop: function (event, ui) {
       // when the user stops interacting with the list
-      update_indent(ui);
+      let leftDiff = calculate_indent(ui, ui.item.parent());
+      ui.item[0].style.marginLeft = leftDiff + 'px';
       set_answer(event);
     },
   });
