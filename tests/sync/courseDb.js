@@ -49,10 +49,7 @@ async function writeCourse(courseDir, course) {
  */
 async function writeQuestion(courseDir, qid, question) {
   await fs.mkdirs(path.join(courseDir, 'questions', qid));
-  await fs.writeJSON(
-    path.join(courseDir, 'questions', qid, 'info.json'),
-    question,
-  );
+  await fs.writeJSON(path.join(courseDir, 'questions', qid, 'info.json'), question);
 }
 
 function getCourse() {
@@ -206,7 +203,7 @@ describe('course database', () => {
         assert.isTrue(infofile.hasWarnings(result));
         assert.include(
           result.warnings,
-          'Default assessmentSet "Homework" should not be included in infoCourse.json',
+          'Default assessmentSet "Homework" should not be included in infoCourse.json'
         );
         assert.isOk(result.data);
       });
@@ -242,12 +239,12 @@ describe('course database', () => {
         assert.equal(Object.keys(result).length, 3);
         assert.match(
           infofile.stringifyErrors(result['question1']),
-          /UUID.*is used in other questions/,
+          /UUID.*is used in other questions/
         );
         assert.isFalse(infofile.hasWarnings(result['question1']));
         assert.match(
           infofile.stringifyErrors(result['question2']),
-          /UUID.*is used in other questions/,
+          /UUID.*is used in other questions/
         );
         assert.isFalse(infofile.hasWarnings(result['question2']));
         assert.isFalse(infofile.hasErrors(result['question3']));

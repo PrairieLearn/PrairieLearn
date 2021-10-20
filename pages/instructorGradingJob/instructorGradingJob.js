@@ -32,9 +32,7 @@ router.get('/:job_id', (req, res, next) => {
     // The way we implement this check right now with authz_assessment_instance
     // is overkill, yes, but is easy and robust (we hope).
     if (result.rows[0].aai && !result.rows[0].aai.authorized) {
-      return next(
-        error.make(403, 'Access denied (must be a student data viewer)'),
-      );
+      return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
     _.assign(res.locals, result.rows[0]);
@@ -42,12 +40,7 @@ router.get('/:job_id', (req, res, next) => {
   });
 });
 
-const allowedFiles = [
-  'job.tar.gz',
-  'archive.tar.gz',
-  'output.log',
-  'results.json',
-];
+const allowedFiles = ['job.tar.gz', 'archive.tar.gz', 'output.log', 'results.json'];
 
 router.get('/:job_id/file/:file', (req, res, next) => {
   const file = req.params.file;
@@ -71,18 +64,12 @@ router.get('/:job_id/file/:file', (req, res, next) => {
     // The way we implement this check right now with authz_assessment_instance
     // is overkill, yes, but is easy and robust (we hope).
     if (result.rows[0].aai && !result.rows[0].aai.authorized) {
-      return next(
-        error.make(403, 'Access denied (must be a student data viewer)'),
-      );
+      return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
     const grading_job = result.rows[0].grading_job;
     if (!grading_job.s3_bucket || !grading_job.s3_root_key) {
-      return next(
-        new Error(
-          `Job ${grading_job.id} does not have any files stored in S3.`,
-        ),
-      );
+      return next(new Error(`Job ${grading_job.id} does not have any files stored in S3.`));
     }
 
     const params = {

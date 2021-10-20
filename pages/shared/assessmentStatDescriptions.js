@@ -2,14 +2,12 @@ var stat_descriptions = {
   MEAN_SCORE: {
     title: 'Mean (μ)',
     non_html_title: 'Mean',
-    description:
-      'Mean score of a question is the average score for all students on the question.',
+    description: 'Mean score of a question is the average score for all students on the question.',
   },
   VARIANCE: {
     title: 'SD (σ)',
     non_html_title: 'SD',
-    description:
-      'This is the standard deviation of student scores on this question.',
+    description: 'This is the standard deviation of student scores on this question.',
   },
   DISCRIMINATION: {
     title: 'Discrim.',
@@ -50,8 +48,7 @@ var stat_descriptions = {
   FIRST_SUBMISSION_SCORE_HIST: {
     title: 'First Sub. Score Hist.',
     non_html_title: 'First Sub. Score Hist.',
-    description:
-      '(first submission score histogram): The histogram of first submission scores.',
+    description: '(first submission score histogram): The histogram of first submission scores.',
   },
   AVERAGE_LAST_SUBMISSION_SCORE: {
     title: 'μ<sub>Last Sub. Score</sub>',
@@ -68,8 +65,7 @@ var stat_descriptions = {
   LAST_SUBMISSION_SCORE_HIST: {
     title: 'Last Sub. Score Hist.',
     non_html_title: 'Last Sub. Score Hist.',
-    description:
-      '(last submission score histogram): The histogram of last submission scores.',
+    description: '(last submission score histogram): The histogram of last submission scores.',
   },
   AVERAGE_MAX_SUBMISSION_SCORE: {
     title: 'μ<sub>Max Sub. Score</sub>',
@@ -86,8 +82,7 @@ var stat_descriptions = {
   MAX_SUBMISSIONS_SCORE_HIST: {
     title: 'Max Sub. Score Hist.',
     non_html_title: 'Max Sub. Score Hist.',
-    description:
-      '(max submission score histogram): The histogram of best-submission scores.',
+    description: '(max submission score histogram): The histogram of best-submission scores.',
   },
   AVERAGE_AVERAGE_SUBMISSION_SCORE: {
     title: 'μ<sub>Avg. Sub. Score</sub>',
@@ -128,8 +123,7 @@ var stat_descriptions = {
   AVERAGE_NUMBER_SUBMISSIONS: {
     title: 'μ<sub>Num. Sub.</sub>',
     non_html_title: 'Num. Sub. average',
-    description:
-      '(average number of submissions): The average number of submissions.',
+    description: '(average number of submissions): The average number of submissions.',
   },
   NUMBER_SUBMISSIONS_VARIANCE: {
     title: 'σ<sub>Num. Sub.</sub>',
@@ -140,8 +134,7 @@ var stat_descriptions = {
   NUMBER_SUBMISSIONS_HIST: {
     title: 'Num. Sub. Hist.',
     non_html_title: 'Num. Sub. Hist.',
-    description:
-      '(number of submissions histogram): The histogram of the number of submissions.',
+    description: '(number of submissions histogram): The histogram of the number of submissions.',
   },
   QUINTILE_SCORES_AS_ARRAY: {
     title: 'Quintile Scores',

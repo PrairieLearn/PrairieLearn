@@ -74,7 +74,5 @@ describe('Auto-test questions in exampleCourse', function () {
   before('set up testing server', helperServer.before(exampleCourseDir));
   after('shut down testing server', helperServer.after);
 
-  qidsExampleCourse.forEach((qid) =>
-    helperQuestion.autoTestQuestion(locals, qid),
-  );
+  qidsExampleCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
 });

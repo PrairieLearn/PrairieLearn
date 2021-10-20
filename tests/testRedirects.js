@@ -21,8 +21,7 @@ const redirects = [
   },
   {
     original: '/pl/course_instance/1/instructor/question/4?variant_id=99',
-    redirect:
-      '/pl/course_instance/1/instructor/question/4/preview?variant_id=99',
+    redirect: '/pl/course_instance/1/instructor/question/4/preview?variant_id=99',
   },
 ];
 
@@ -47,7 +46,7 @@ describe('Redirects', function () {
           assert.equal(response.statusCode, 302);
           assert.equal(response.headers.location, redirect.redirect);
           done();
-        },
+        }
       );
     });
   });

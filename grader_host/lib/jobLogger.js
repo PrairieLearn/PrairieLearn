@@ -21,18 +21,13 @@ module.exports = function (options) {
   ];
 
   if (config.useConsoleLoggingForJobs) {
-    transports.push(
-      new winston.transports.Console({ timestamp: true, colorize: true }),
-    );
+    transports.push(new winston.transports.Console({ timestamp: true, colorize: true }));
   }
 
   const logger = winston.createLogger({ transports });
 
   logger.on('error', (err) => {
-    globalLogger.error(
-      `Error sending logs to ${bucket}/${rootKey}/output.log:`,
-      err,
-    );
+    globalLogger.error(`Error sending logs to ${bucket}/${rootKey}/output.log:`, err);
   });
 
   return logger;

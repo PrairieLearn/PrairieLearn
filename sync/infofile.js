@@ -43,9 +43,7 @@ module.exports.hasWarnings = function (infoFile) {
  * @returns {boolean}
  */
 module.exports.hasErrorsOrWarnings = function (infoFile) {
-  return (
-    module.exports.hasErrors(infoFile) || module.exports.hasWarnings(infoFile)
-  );
+  return module.exports.hasErrors(infoFile) || module.exports.hasWarnings(infoFile);
 };
 
 /**

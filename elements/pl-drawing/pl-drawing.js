@@ -167,9 +167,7 @@ window.PLDrawingApi = {
           }
           let base = image_base_url;
           if (window.PLDrawingApi.elementModule[elem_name] !== '_base') {
-            base =
-              element_base_url[window.PLDrawingApi.elementModule[elem_name]] +
-              '/';
+            base = element_base_url[window.PLDrawingApi.elementModule[elem_name]] + '/';
           }
           img.setAttribute('src', base + image_filename);
         }
@@ -178,9 +176,7 @@ window.PLDrawingApi = {
           btn.setAttribute('title', image_tooltip);
         }
         let cloned_opts = _.clone(opts || {});
-        $(btn).click(() =>
-          elem.button_press(canvas, cloned_opts, submittedAnswer),
-        );
+        $(btn).click(() => elem.button_press(canvas, cloned_opts, submittedAnswer));
       }
     });
 
@@ -215,7 +211,7 @@ window.PLDrawingApi = {
         canvas,
         canvas_width,
         canvas_height,
-        elem_options.grid_size,
+        elem_options.grid_size
       );
     }
 
@@ -224,10 +220,7 @@ window.PLDrawingApi = {
     canvas.on('object:moving', function (e) {
       var obj = e.target;
       // if object is too big ignore,
-      if (
-        obj.currentHeight > canvas_width ||
-        obj.currentWidth > canvas_height
-      ) {
+      if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;
       }
       let rect = obj.getBoundingRect(true, true);
@@ -238,26 +231,14 @@ window.PLDrawingApi = {
         obj.left = Math.max(obj.left, obj.left - rect.left);
       }
       // bot-right corner
-      if (
-        rect.top + rect.height > canvas_height ||
-        rect.left + rect.width > canvas_width
-      ) {
-        obj.top = Math.min(
-          obj.top,
-          canvas_height - rect.height + obj.top - rect.top,
-        );
-        obj.left = Math.min(
-          obj.left,
-          canvas_width - rect.width + obj.left - rect.left,
-        );
+      if (rect.top + rect.height > canvas_height || rect.left + rect.width > canvas_width) {
+        obj.top = Math.min(obj.top, canvas_height - rect.height + obj.top - rect.top);
+        obj.left = Math.min(obj.left, canvas_width - rect.width + obj.left - rect.left);
       }
       /* snap the element to the grid if enabled */
       if (elem_options.snap_to_grid) {
-        obj.top =
-          Math.round(obj.top / elem_options.grid_size) * elem_options.grid_size;
-        obj.left =
-          Math.round(obj.left / elem_options.grid_size) *
-          elem_options.grid_size;
+        obj.top = Math.round(obj.top / elem_options.grid_size) * elem_options.grid_size;
+        obj.left = Math.round(obj.left / elem_options.grid_size) * elem_options.grid_size;
       }
 
       obj.setCoords();
@@ -297,10 +278,7 @@ class PLDrawingAnswerState {
 
   _updateAnswerInput() {
     /* Correctly escape double back-slashes... (\\) */
-    let temp = JSON.stringify(_.values(this._answerData)).replace(
-      '\\\\',
-      '\\\\\\\\',
-    );
+    let temp = JSON.stringify(_.values(this._answerData)).replace('\\\\', '\\\\\\\\');
     this._htmlInput.val(temp);
   }
 
@@ -312,9 +290,9 @@ class PLDrawingAnswerState {
     if (object.id in this._answerData) {
       if (this._answerData[object.id].type !== object.type) {
         console.trace(
-          `Trying to set id ${object.id} from type ${
-            this._answerData[object.id].type
-          } to ${object.type}`,
+          `Trying to set id ${object.id} from type ${this._answerData[object.id].type} to ${
+            object.type
+          }`
         );
         console.warn('Existing', this._answerData[object.id]);
         console.warn('New', object);

@@ -17,45 +17,26 @@ router.post('/', function (req, res, next) {
     return next(error.make(403, 'Not authorized', res.locals));
 
   if (req.body.__action == 'attach_file') {
-    util.callbackify(studentAssessmentInstance.processFileUpload)(
-      req,
-      res,
-      function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      },
-    );
+    util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
+      if (ERR(err, next)) return;
+      res.redirect(req.originalUrl);
+    });
   } else if (req.body.__action == 'attach_text') {
-    util.callbackify(studentAssessmentInstance.processTextUpload)(
-      req,
-      res,
-      function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      },
-    );
+    util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
+      if (ERR(err, next)) return;
+      res.redirect(req.originalUrl);
+    });
   } else if (req.body.__action == 'delete_file') {
-    util.callbackify(studentAssessmentInstance.processDeleteFile)(
-      req,
-      res,
-      function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      },
-    );
-  } else if (
-    ['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)
-  ) {
+    util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
+      if (ERR(err, next)) return;
+      res.redirect(req.originalUrl);
+    });
+  } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
     const overrideGradeRate = false;
     var closeExam;
     if (req.body.__action == 'grade') {
       if (!res.locals.assessment.allow_real_time_grading) {
-        next(
-          error.make(
-            403,
-            'Real-time grading is not allowed for this assessment',
-          ),
-        );
+        next(error.make(403, 'Real-time grading is not allowed for this assessment'));
         return;
       }
       closeExam = false;
@@ -72,7 +53,7 @@ router.post('/', function (req, res, next) {
         error.make(400, 'unknown __action', {
           locals: res.locals,
           body: req.body,
-        }),
+        })
       );
     }
     assessment.gradeAssessmentInstance(
@@ -87,14 +68,14 @@ router.post('/', function (req, res, next) {
         } else {
           res.redirect(req.originalUrl);
         }
-      },
+      }
     );
   } else {
     next(
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });
@@ -114,8 +95,7 @@ router.get('/', function (req, res, next) {
         if (ERR(err, next)) return;
         res.locals.assessment_text_templated = assessment_text_templated;
 
-        res.locals.showTimeLimitExpiredModal =
-          req.query.timeLimitExpired == 'true';
+        res.locals.showTimeLimitExpiredModal = req.query.timeLimitExpired == 'true';
         res.locals.savedAnswers = 0;
         res.locals.suspendedSavedAnswers = 0;
         res.locals.instance_questions.forEach((question) => {
@@ -129,7 +109,7 @@ router.get('/', function (req, res, next) {
         });
 
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      },
+      }
     );
   });
 });

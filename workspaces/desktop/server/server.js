@@ -38,9 +38,7 @@ const argument_option_defs = [
 ];
 const options = cl_args(argument_option_defs);
 if (options.help) {
-  const usage = cl_usage([
-    { header: 'Arguments', optionList: argument_option_defs },
-  ]);
+  const usage = cl_usage([{ header: 'Arguments', optionList: argument_option_defs }]);
   console.log(usage);
   return;
 }
@@ -83,12 +81,7 @@ const spawn_gui = async (width, height) => {
   if (xvfb_proc) {
     await kill_and_wait(xvfb_proc);
   }
-  xvfb_proc = child_process.spawn('/usr/bin/Xvfb', [
-    ':1',
-    '-screen',
-    '0',
-    `${width}x${height}x24`,
-  ]);
+  xvfb_proc = child_process.spawn('/usr/bin/Xvfb', [':1', '-screen', '0', `${width}x${height}x24`]);
   attach_listeners(xvfb_proc);
 
   /* Then, create the vnc server */
@@ -114,7 +107,7 @@ const spawn_gui = async (width, height) => {
       env: {
         X11VNC_FINDDISPLAY_ALWAYS_FAILS: '1',
       },
-    },
+    }
   );
   attach_listeners(x11vnc_proc);
 

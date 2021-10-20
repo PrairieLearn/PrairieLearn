@@ -8,16 +8,11 @@ const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const filenames = function (locals) {
-  const prefix = sanitizeName.questionFilenamePrefix(
-    locals.question,
-    locals.course,
-  );
+  const prefix = sanitizeName.questionFilenamePrefix(locals.question, locals.course);
   return {
     questionStatsCsvFilename: prefix + 'stats.csv',
   };
@@ -39,7 +34,7 @@ router.get('/', function (req, res, next) {
             if (ERR(err, callback)) return;
             res.locals.assessment_stats = result.rows;
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
@@ -57,7 +52,7 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 });
 
@@ -109,20 +104,12 @@ router.get('/:filename', function (req, res, next) {
           questionStatsData.push(questionStats.average_max_submission_score);
           questionStatsData.push(questionStats.max_submission_score_variance);
           questionStatsData.push(questionStats.max_submission_score_hist);
-          questionStatsData.push(
-            questionStats.average_average_submission_score,
-          );
-          questionStatsData.push(
-            questionStats.average_submission_score_variance,
-          );
+          questionStatsData.push(questionStats.average_average_submission_score);
+          questionStatsData.push(questionStats.average_submission_score_variance);
           questionStatsData.push(questionStats.average_submission_score_hist);
           questionStatsData.push(questionStats.submission_score_array_averages);
-          questionStatsData.push(
-            questionStats.incremental_submission_score_array_averages,
-          );
-          questionStatsData.push(
-            questionStats.incremental_submission_points_array_averages,
-          );
+          questionStatsData.push(questionStats.incremental_submission_score_array_averages);
+          questionStatsData.push(questionStats.incremental_submission_points_array_averages);
           questionStatsData.push(questionStats.average_number_submissions);
           questionStatsData.push(questionStats.number_submissions_variance);
           questionStatsData.push(questionStats.number_submissions_hist);
@@ -140,7 +127,7 @@ router.get('/:filename', function (req, res, next) {
           res.attachment(req.params.filename);
           res.send(csv);
         });
-      },
+      }
     );
   } else {
     next(new Error('Unknown filename: ' + req.params.filename));

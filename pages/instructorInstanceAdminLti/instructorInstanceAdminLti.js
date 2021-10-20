@@ -67,7 +67,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });
@@ -77,7 +77,6 @@ module.exports = router;
 function randomString() {
   var len = 10;
   return (
-    Math.random().toString(36).substring(2, len) +
-    Math.random().toString(36).substring(2, len)
+    Math.random().toString(36).substring(2, len) + Math.random().toString(36).substring(2, len)
   );
 }

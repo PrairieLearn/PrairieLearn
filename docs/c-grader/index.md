@@ -36,10 +36,7 @@ Most questions using this autograder will contain a `pl-file-editor` or `pl-file
 
 ```html
 <pl-question-panel>
-  <pl-file-editor
-    file-name="square.c"
-    ace-mode="ace/mode/c_cpp"
-  ></pl-file-editor>
+  <pl-file-editor file-name="square.c" ace-mode="ace/mode/c_cpp"></pl-file-editor>
 </pl-question-panel>
 
 <pl-submission-panel>

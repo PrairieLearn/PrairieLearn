@@ -178,9 +178,7 @@ module.exports.pullAndUpdate = function (locals, callback) {
 
             const checkJsonErrors = () => {
               if (result.hadJsonErrors) {
-                job.fail(
-                  'One or more JSON files contained errors and were unable to be synced',
-                );
+                job.fail('One or more JSON files contained errors and were unable to be synced');
               } else {
                 job.succeed();
               }
@@ -201,12 +199,12 @@ module.exports.pullAndUpdate = function (locals, callback) {
                   } else {
                     checkJsonErrors();
                   }
-                },
+                }
               );
             } else {
               checkJsonErrors();
             }
-          },
+          }
         );
       });
     };
@@ -293,13 +291,7 @@ module.exports.gitStatus = function (locals, callback) {
         description: 'List git history',
         job_sequence_id: job_sequence_id,
         command: 'git',
-        arguments: [
-          'log',
-          '--all',
-          '--graph',
-          '--date=short',
-          '--format=format:%h %cd%d %cn %s',
-        ],
+        arguments: ['log', '--all', '--graph', '--date=short', '--format=format:%h %cd%d %cn %s'],
         working_directory: locals.course.path,
         last_in_sequence: true,
       };

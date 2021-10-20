@@ -29,7 +29,7 @@ describe('chunks', () => {
     it('should identify change in element', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['elements/my-special-element/impl.py'],
-        COURSE,
+        COURSE
       );
       assert.isOk(chunks.elements);
     });
@@ -37,7 +37,7 @@ describe('chunks', () => {
     it('should identify change in clientFilesCourse', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['clientFilesCourse/path/to/file.js'],
-        COURSE,
+        COURSE
       );
       assert.isOk(chunks.clientFilesCourse);
     });
@@ -45,7 +45,7 @@ describe('chunks', () => {
     it('should identify change in serverFilesCourse', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['serverFilesCourse/path/to/file.js'],
-        COURSE,
+        COURSE
       );
       assert.isOk(chunks.serverFilesCourse);
     });
@@ -53,7 +53,7 @@ describe('chunks', () => {
     it('should identify simple question', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['questions/simple-question/tests/test.py'],
-        COURSE,
+        COURSE
       );
       assert.isOk(chunks.questions.has('simple-question'));
     });
@@ -61,7 +61,7 @@ describe('chunks', () => {
     it('should identify complex question', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         ['questions/complex/question/tests/test.py'],
-        COURSE,
+        COURSE
       );
       assert.isOk(chunks.questions.has('complex/question'));
     });
@@ -71,12 +71,10 @@ describe('chunks', () => {
         [
           'courseInstances/simple-course-instance/assessments/simple-assessment/clientFilesAssessment/file.txt',
         ],
-        COURSE,
+        COURSE
       );
       assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has(
-          'simple-assessment',
-        ),
+        chunks.courseInstances['simple-course-instance'].assessments.has('simple-assessment')
       );
     });
 
@@ -85,12 +83,10 @@ describe('chunks', () => {
         [
           'courseInstances/simple-course-instance/assessments/complex/assessment/clientFilesAssessment/file.txt',
         ],
-        COURSE,
+        COURSE
       );
       assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has(
-          'complex/assessment',
-        ),
+        chunks.courseInstances['simple-course-instance'].assessments.has('complex/assessment')
       );
     });
 
@@ -99,12 +95,10 @@ describe('chunks', () => {
         [
           'courseInstances/complex/course/instance/assessments/simple-assessment/clientFilesAssessment/file.txt',
         ],
-        COURSE,
+        COURSE
       );
       assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has(
-          'simple-assessment',
-        ),
+        chunks.courseInstances['complex/course/instance'].assessments.has('simple-assessment')
       );
     });
 
@@ -113,39 +107,27 @@ describe('chunks', () => {
         [
           'courseInstances/complex/course/instance/assessments/complex/assessment/clientFilesAssessment/file.txt',
         ],
-        COURSE,
+        COURSE
       );
       assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has(
-          'complex/assessment',
-        ),
+        chunks.courseInstances['complex/course/instance'].assessments.has('complex/assessment')
       );
     });
 
     it('should identify clientFilesCourseInstance in simple course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
-        [
-          'courseInstances/simple-course-instance/clientFilesCourseInstance/file.txt',
-        ],
-        COURSE,
+        ['courseInstances/simple-course-instance/clientFilesCourseInstance/file.txt'],
+        COURSE
       );
-      assert.isOk(
-        chunks.courseInstances['simple-course-instance']
-          .clientFilesCourseInstance,
-      );
+      assert.isOk(chunks.courseInstances['simple-course-instance'].clientFilesCourseInstance);
     });
 
     it('should identify clientFilesCourseInstance in complex course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
-        [
-          'courseInstances/complex/course/instance/clientFilesCourseInstance/file.txt',
-        ],
-        COURSE,
+        ['courseInstances/complex/course/instance/clientFilesCourseInstance/file.txt'],
+        COURSE
       );
-      assert.isOk(
-        chunks.courseInstances['complex/course/instance']
-          .clientFilesCourseInstance,
-      );
+      assert.isOk(chunks.courseInstances['complex/course/instance'].clientFilesCourseInstance);
     });
   });
 });

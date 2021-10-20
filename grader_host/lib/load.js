@@ -7,11 +7,7 @@ const healthCheck = require('./healthCheck');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 var initialized = false;
-var currentJobs,
-  maxJobs,
-  lastEstimateTimeMS,
-  lastIncrementTimeMS,
-  integratedLoad;
+var currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;
 
 module.exports = {
   init(newMaxJobs) {
@@ -31,8 +27,7 @@ module.exports = {
     if (!initialized) return;
     this._addIntegratedLoad();
     currentJobs++;
-    if (currentJobs > maxJobs)
-      throw new Error('startJob(): currentJobs > maxJobs');
+    if (currentJobs > maxJobs) throw new Error('startJob(): currentJobs > maxJobs');
   },
 
   endJob() {

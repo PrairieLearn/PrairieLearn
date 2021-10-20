@@ -59,7 +59,7 @@ module.exports.run = function (callback) {
               Unit: 'Percent',
               Value: row.load_perc,
             },
-          ],
+          ]
         );
         cloudwatch.putMetricData(params, function (err, _data) {
           if (ERR(err, callback)) return;
@@ -69,7 +69,7 @@ module.exports.run = function (callback) {
       (err) => {
         if (ERR(err, callback)) return;
         callback(null);
-      },
+      }
     );
   });
 };

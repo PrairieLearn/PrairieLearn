@@ -37,10 +37,7 @@ describe('Generate chunks and use them for a student homework', function () {
   step('generate course chunks', async () => {
     const course_ids = [1];
     const authn_user_id = 1;
-    const job_sequence_id = await chunks.generateAllChunksForCourseList(
-      course_ids,
-      authn_user_id,
-    );
+    const job_sequence_id = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
     await helperServer.waitForJobSequenceSuccessAsync(job_sequence_id);
   });
 
@@ -54,9 +51,7 @@ describe('Generate chunks and use them for a student homework', function () {
     context.assessmentInstanceUrl = assessmentInstanceUrl;
 
     // save the questionUrl for later
-    const questionUrl = response
-      .$('a:contains("Add two numbers")')
-      .attr('href');
+    const questionUrl = response.$('a:contains("Add two numbers")').attr('href');
     context.questionUrl = `${context.siteUrl}${questionUrl}`;
   });
 

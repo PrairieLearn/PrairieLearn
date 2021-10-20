@@ -6,9 +6,7 @@ $(function () {
     questionContainer.find('.question-data').each(function (i, x) {
       questionData = JSON.parse(decodeURIComponent(atob(x.innerHTML)));
     });
-    var client = new document.questionClients[
-      questionData.effectiveQuestionType
-    ]();
+    var client = new document.questionClients[questionData.effectiveQuestionType]();
     clients[questionContainer.attr('id')] = client;
     client.initialize(questionData, callback);
   };
@@ -42,19 +40,14 @@ $(function () {
     });
 
     var clientContainer = questionContainer.find('.question-body');
-    var submittedAnswer = client.getSubmittedAnswer(
-      clientContainer,
-      questionData,
-    );
+    var submittedAnswer = client.getSubmittedAnswer(clientContainer, questionData);
 
     var postData = {
       submittedAnswer: submittedAnswer,
       variant: questionData.variant,
       type: 'score',
     };
-    questionContainer
-      .find('form.question-form input.postData')
-      .val(JSON.stringify(postData));
+    questionContainer.find('form.question-form input.postData').val(JSON.stringify(postData));
     questionContainer.find('form.question-form input.__action').val(action);
     questionContainer.find('form.question-form').submit();
   };

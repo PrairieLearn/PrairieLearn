@@ -48,11 +48,7 @@ function scatter(selector, xdata, ydata, options) {
           return options.xTickLabels[i];
         };
 
-  var xAxis = d3
-    .axisBottom()
-    .scale(x)
-    .tickValues(options.xgrid)
-    .tickFormat(xTickFormat);
+  var xAxis = d3.axisBottom().scale(x).tickValues(options.xgrid).tickFormat(xTickFormat);
 
   var yTickFormat =
     options.yTickLabels == 'auto'
@@ -60,25 +56,11 @@ function scatter(selector, xdata, ydata, options) {
       : function (d, i) {
           return options.yTickLabels[i];
         };
-  var yAxis = d3
-    .axisLeft()
-    .scale(y)
-    .tickValues(options.ygrid)
-    .tickFormat(yTickFormat);
+  var yAxis = d3.axisLeft().scale(y).tickValues(options.ygrid).tickFormat(yTickFormat);
 
-  var xGrid = d3
-    .axisBottom()
-    .scale(x)
-    .tickValues(options.xgrid)
-    .tickSize(-height)
-    .tickFormat('');
+  var xGrid = d3.axisBottom().scale(x).tickValues(options.xgrid).tickSize(-height).tickFormat('');
 
-  var yGrid = d3
-    .axisLeft()
-    .scale(y)
-    .tickValues(options.ygrid)
-    .tickSize(-width)
-    .tickFormat('');
+  var yGrid = d3.axisLeft().scale(y).tickValues(options.ygrid).tickSize(-width).tickFormat('');
 
   var svg = d3
     .select(this.$(selector).get(0))
@@ -87,10 +69,7 @@ function scatter(selector, xdata, ydata, options) {
     .attr('height', height + options.topMargin + options.bottomMargin)
     .attr('class', 'center-block statsPlot')
     .append('g')
-    .attr(
-      'transform',
-      'translate(' + options.leftMargin + ',' + options.topMargin + ')',
-    );
+    .attr('transform', 'translate(' + options.leftMargin + ',' + options.topMargin + ')');
 
   svg
     .append('g')
@@ -126,9 +105,7 @@ function scatter(selector, xdata, ydata, options) {
 
   svg.append('line').attr({ x1: 0, y1: 0, x2: width, y2: 0, class: 'x axis' });
 
-  svg
-    .append('line')
-    .attr({ x1: width, y1: 0, x2: width, y2: height, class: 'y axis' });
+  svg.append('line').attr({ x1: width, y1: 0, x2: width, y2: height, class: 'y axis' });
 
   // zips the data used to create the scatter plot
   // each data point has value [x, y, label]

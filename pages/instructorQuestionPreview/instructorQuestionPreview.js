@@ -7,27 +7,17 @@ const error = require('../../prairielib/lib/error');
 const question = require('../../lib/question');
 const sqldb = require('../../prairielib/lib/sql-db');
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
-const logPageView = require('../../middlewares/logPageView')(
-  path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
 
 function processSubmission(req, res, callback) {
   let variant_id, submitted_answer;
   if (res.locals.question.type == 'Freeform') {
     variant_id = req.body.__variant_id;
-    submitted_answer = _.omit(req.body, [
-      '__action',
-      '__csrf_token',
-      '__variant_id',
-    ]);
+    submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData)
-      return callback(
-        error.make(400, 'No postData', { locals: res.locals, body: req.body }),
-      );
+      return callback(error.make(400, 'No postData', { locals: res.locals, body: req.body }));
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
@@ -36,7 +26,7 @@ function processSubmission(req, res, callback) {
         error.make(400, 'JSON parse failed on body.postData', {
           locals: res.locals,
           body: req.body,
-        }),
+        })
       );
     }
     variant_id = postData.variant ? postData.variant.id : null;
@@ -64,7 +54,7 @@ function processSubmission(req, res, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, submission.variant_id);
-          },
+          }
         );
       } else if (req.body.__action == 'save') {
         question.saveSubmission(
@@ -75,17 +65,17 @@ function processSubmission(req, res, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, submission.variant_id);
-          },
+          }
         );
       } else {
         callback(
           error.make(400, 'unknown __action', {
             locals: res.locals,
             body: req.body,
-          }),
+          })
         );
       }
-    },
+    }
   );
 }
 
@@ -102,12 +92,7 @@ function processIssue(req, res, callback) {
     (err, _result) => {
       if (ERR(err, callback)) return;
 
-      const course_data = _.pick(res.locals, [
-        'variant',
-        'question',
-        'course_instance',
-        'course',
-      ]);
+      const course_data = _.pick(res.locals, ['variant', 'question', 'course_instance', 'course']);
       const params = [
         variant_id,
         description, // student message
@@ -122,7 +107,7 @@ function processIssue(req, res, callback) {
         if (ERR(err, callback)) return;
         callback(null, variant_id);
       });
-    },
+    }
   );
 }
 
@@ -135,7 +120,7 @@ router.post('/', function (req, res, next) {
           '/question/' +
           res.locals.question.id +
           '/preview/?variant_id=' +
-          variant_id,
+          variant_id
       );
     });
   } else if (req.body.__action == 'report_issue') {
@@ -146,7 +131,7 @@ router.post('/', function (req, res, next) {
           '/question/' +
           res.locals.question.id +
           '/preview/?variant_id=' +
-          variant_id,
+          variant_id
       );
     });
   } else {
@@ -154,7 +139,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });
@@ -173,7 +158,7 @@ router.get('/', function (req, res, next) {
           function (err) {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
@@ -186,7 +171,7 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 });
 

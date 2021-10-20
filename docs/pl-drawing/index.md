@@ -227,14 +227,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-triangle
-      x1="40"
-      y1="180"
-      x2="160"
-      y2="180"
-      x3="160"
-      y3="40"
-    ></pl-triangle>
+    <pl-triangle x1="40" y1="180" x2="160" y2="180" x3="160" y3="40"></pl-triangle>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -269,14 +262,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
     <pl-rectangle x1="80" y1="50" width="100" height="40"></pl-rectangle>
-    <pl-rectangle
-      x1="120"
-      y1="140"
-      width="120"
-      height="20"
-      angle="30"
-      color="pink1"
-    ></pl-rectangle>
+    <pl-rectangle x1="120" y1="140" width="120" height="20" angle="30" color="pink1"></pl-rectangle>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -309,13 +295,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-circle
-      x1="40"
-      y1="100"
-      radius="30"
-      color="#95A5A6"
-      stroke-width="3"
-    ></pl-circle>
+    <pl-circle x1="40" y1="100" radius="30" color="#95A5A6" stroke-width="3"></pl-circle>
     <pl-circle x1="120" y1="100" radius="50" color="#D0D3D4"></pl-circle>
   </pl-drawing-initial>
 </pl-drawing>
@@ -350,9 +330,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-polygon
-      plist='[{"x": 40, "y": 40}, {"x": 140,"y": 80}, {"x": 60,"y": 180}]'
-    ></pl-polygon>
+    <pl-polygon plist='[{"x": 40, "y": 40}, {"x": 140,"y": 80}, {"x": 60,"y": 180}]'></pl-polygon>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -425,14 +403,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-3pointrod
-      x1="40"
-      y1="100"
-      x2="100"
-      y2="100"
-      x3="100"
-      y3="180"
-    ></pl-3pointrod>
+    <pl-3pointrod x1="40" y1="100" x2="100" y2="100" x3="100" y3="180"></pl-3pointrod>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -688,21 +659,8 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 <pl-drawing width="200" height="200" grid-size="20">
   <pl-drawing-initial>
     <pl-spring x1="50" y1="40" width="140" draw-pin="true"></pl-spring>
-    <pl-spring
-      x1="20"
-      y1="80"
-      angle="20"
-      width="120"
-      height="20"
-      interval="5"
-    ></pl-spring>
-    <pl-spring
-      x1="20"
-      y1="160"
-      width="30"
-      height="20"
-      stroke-color="purple3"
-    ></pl-spring>
+    <pl-spring x1="20" y1="80" angle="20" width="120" height="20" interval="5"></pl-spring>
+    <pl-spring x1="20" y1="160" width="30" height="20" stroke-color="purple3"></pl-spring>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -736,24 +694,8 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-pulley
-      x1="100"
-      y1="150"
-      x2="20"
-      y2="120"
-      x3="140"
-      y3="60"
-      radius="40"
-    ></pl-pulley>
-    <pl-pulley
-      x1="50"
-      y1="40"
-      x2="50"
-      y2="100"
-      x3="160"
-      y3="40"
-      color="blue1"
-    ></pl-pulley>
+    <pl-pulley x1="100" y1="150" x2="20" y2="120" x3="140" y3="60" radius="40"></pl-pulley>
+    <pl-pulley x1="50" y1="40" x2="50" y2="100" x3="160" y3="40" color="blue1"></pl-pulley>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -824,13 +766,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
       dim-offset-angle="-90"
       stroke-color="green3"
     ></pl-dimensions>
-    <pl-dimensions
-      x1="60"
-      y1="100"
-      width="60"
-      stroke-color="pink3"
-      label="a"
-    ></pl-dimensions>
+    <pl-dimensions x1="60" y1="100" width="60" stroke-color="pink3" label="a"></pl-dimensions>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -927,14 +863,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
     <pl-point x1="100" y1="100"></pl-point>
-    <pl-line
-      x1="20"
-      y1="20"
-      angle="45"
-      width="240"
-      dashed-size="4"
-      stroke-width="1"
-    ></pl-line>
+    <pl-line x1="20" y1="20" angle="45" width="240" dashed-size="4" stroke-width="1"></pl-line>
     <pl-vector x1="100" y1="100" width="80" angle="45" label="F"></pl-vector>
     <pl-vector
       x1="100"
@@ -1045,14 +974,7 @@ More information about the grading attributes in the Grading section below.
   <pl-drawing-initial>
     <pl-point x1="40" y1="40"></pl-point>
     <pl-point x1="140" y1="140"></pl-point>
-    <pl-line
-      x1="20"
-      y1="20"
-      angle="45"
-      width="240"
-      dashed-size="4"
-      stroke-width="1"
-    ></pl-line>
+    <pl-line x1="20" y1="20" angle="45" width="240" dashed-size="4" stroke-width="1"></pl-line>
     <pl-paired-vector
       x1="40"
       y1="40"
@@ -1104,13 +1026,7 @@ More information about the grading attributes in the Grading section below.
 ```html
 <pl-drawing width="200" height="200">
   <pl-drawing-initial>
-    <pl-arc-vector
-      x1="80"
-      y1="80"
-      label="M"
-      radius="60"
-      stroke-width="2"
-    ></pl-arc-vector>
+    <pl-arc-vector x1="80" y1="80" label="M" radius="60" stroke-width="2"></pl-arc-vector>
   </pl-drawing-initial>
 </pl-drawing>
 ```
@@ -1507,16 +1423,8 @@ If the orientation of the arc vector is not important (both clockwise and counte
 #### To insert a distributed load:
 
 ```html
-<pl-drawing-button
-  type="pl-distributed-load"
-  w1="20"
-  anchor_is_tail="true"
-></pl-drawing-button>
-<pl-drawing-button
-  type="pl-distributed-load"
-  w1="20"
-  anchor_is_tail="false"
-></pl-drawing-button>
+<pl-drawing-button type="pl-distributed-load" w1="20" anchor_is_tail="true"></pl-drawing-button>
+<pl-drawing-button type="pl-distributed-load" w1="20" anchor_is_tail="false"></pl-drawing-button>
 <pl-drawing-button type="pl-distributed-load"></pl-drawing-button>
 ```
 

@@ -27,9 +27,7 @@ async function set_resolution() {
   const height = screen.clientHeight;
 
   const base_url = `${window.location.protocol}//${window.location.hostname}:${window.location.port}${window.location.pathname}`;
-  const url = `${strip_trailing_slash(
-    base_url,
-  )}/resize?width=${width}&height=${height}`;
+  const url = `${strip_trailing_slash(base_url)}/resize?width=${width}&height=${height}`;
   const req = new XMLHttpRequest();
   return new Promise((res, rej) => {
     req.addEventListener('error', rej);

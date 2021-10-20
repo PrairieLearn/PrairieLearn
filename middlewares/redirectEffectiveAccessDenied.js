@@ -16,8 +16,7 @@ module.exports = function (err, req, res, next) {
   if (res.locals?.user?.user_id == null) return next(err);
 
   // we are only interested in cases where we are emulating a different user
-  if (res.locals.authn_user.user_id == res.locals.user.user_id)
-    return next(err);
+  if (res.locals.authn_user.user_id == res.locals.user.user_id) return next(err);
 
   // check that we have a plainUrlPrefix
   if (res.locals.plainUrlPrefix == null) return next(err);
@@ -29,28 +28,20 @@ module.exports = function (err, req, res, next) {
       res.locals?.authz_data?.has_course_permission_preview)
   ) {
     res.redirect(
-      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/instructor`,
+      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/instructor`
     );
     return;
   }
 
   // try to redirect to the instructor course
-  if (
-    res.locals?.course?.id &&
-    res.locals?.authz_data?.has_course_permission_preview
-  ) {
+  if (res.locals?.course?.id && res.locals?.authz_data?.has_course_permission_preview) {
     res.redirect(`${res.locals.plainUrlPrefix}/course/${res.locals.course.id}`);
     return;
   }
 
   // try to redirect to the student course instance
-  if (
-    res.locals?.course_instance?.id &&
-    res.locals?.authz_data?.has_student_access
-  ) {
-    res.redirect(
-      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
-    );
+  if (res.locals?.course_instance?.id && res.locals?.authz_data?.has_student_access) {
+    res.redirect(`${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`);
     return;
   }
 

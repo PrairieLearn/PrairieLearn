@@ -28,8 +28,7 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-  if (!res.locals.is_administrator)
-    return next(new Error('Insufficient permissions'));
+  if (!res.locals.is_administrator) return next(new Error('Insufficient permissions'));
   if (req.body.__action == 'administrators_insert_by_user_uid') {
     let params = [req.body.uid, res.locals.authn_user.user_id];
     sqlDb.call('administrators_insert_by_user_uid', params, (err, _result) => {
@@ -84,8 +83,8 @@ router.post('/', (req, res, next) => {
               req.body.confirm_short_name +
               '" did not match expected value of "' +
               short_name +
-              '"',
-          ),
+              '"'
+          )
         );
       }
 
@@ -139,31 +138,26 @@ router.post('/', (req, res, next) => {
         display_timezone: req.body.display_timezone,
         path: req.body.path,
         repo_short_name: req.body.repository_short_name,
-        github_user:
-          req.body.github_user.length > 0 ? req.body.github_user : null,
+        github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
         course_request_id: id,
       };
 
-      github.createCourseRepoJob(
-        repo_options,
-        res.locals.authn_user,
-        (err, job_id) => {
-          if (ERR(err, next)) return;
+      github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, job_id) => {
+        if (ERR(err, next)) return;
 
-          res.redirect(`/pl/administrator/jobSequence/${job_id}/`);
-          opsbot.sendCourseRequestMessage(
-            `*Creating course*\n` +
-              `Course rubric: ${repo_options.short_name}\n` +
-              `Course title: ${repo_options.title}\n` +
-              `Approved by: ${res.locals.authn_user.name}`,
-            (err) => {
-              ERR(err, () => {
-                logger.error(err);
-              });
-            },
-          );
-        },
-      );
+        res.redirect(`/pl/administrator/jobSequence/${job_id}/`);
+        opsbot.sendCourseRequestMessage(
+          `*Creating course*\n` +
+            `Course rubric: ${repo_options.short_name}\n` +
+            `Course title: ${repo_options.title}\n` +
+            `Approved by: ${res.locals.authn_user.name}`,
+          (err) => {
+            ERR(err, () => {
+              logger.error(err);
+            });
+          }
+        );
+      });
     });
   } else if (req.body.__action === 'generate_chunks') {
     const course_ids_string = req.body.course_ids || '';
@@ -176,8 +170,8 @@ router.post('/', (req, res, next) => {
       return next(
         error.make(
           400,
-          `could not split course_ids into an array of integers: ${course_ids_string}`,
-        ),
+          `could not split course_ids into an array of integers: ${course_ids_string}`
+        )
       );
     }
     util.callbackify(chunks.generateAllChunksForCourseList)(
@@ -185,19 +179,15 @@ router.post('/', (req, res, next) => {
       authn_user_id,
       (err, job_sequence_id) => {
         if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/administrator/jobSequence/' +
-            job_sequence_id,
-        );
-      },
+        res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + job_sequence_id);
+      }
     );
   } else {
     return next(
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

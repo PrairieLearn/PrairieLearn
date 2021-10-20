@@ -18,20 +18,14 @@ router.get('/', function (req, res, next) {
       assessment_id: res.locals.assessment.id,
       user_id: res.locals.user.user_id,
     };
-    sqldb.query(
-      sql.select_single_assessment_instance,
-      params,
-      function (err, result) {
-        if (ERR(err, next)) return;
-        if (result.rowCount == 0) {
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        } else {
-          res.redirect(
-            res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id,
-          );
-        }
-      },
-    );
+    sqldb.query(sql.select_single_assessment_instance, params, function (err, result) {
+      if (ERR(err, next)) return;
+      if (result.rowCount == 0) {
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      } else {
+        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
+      }
+    });
   }
 });
 
@@ -58,19 +52,15 @@ router.post('/', function (req, res, next) {
       res.locals.req_date,
       (err, assessment_instance_id) => {
         if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/assessment_instance/' +
-            assessment_instance_id,
-        );
-      },
+        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+      }
     );
   } else {
     return next(
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

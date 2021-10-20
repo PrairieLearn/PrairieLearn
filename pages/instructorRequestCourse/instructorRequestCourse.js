@@ -12,16 +12,12 @@ const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 function get(req, res, next) {
-  sqldb.query(
-    sql.get_requests,
-    { user_id: res.locals.authn_user.user_id },
-    (err, result) => {
-      if (ERR(err, next)) return;
+  sqldb.query(sql.get_requests, { user_id: res.locals.authn_user.user_id }, (err, result) => {
+    if (ERR(err, next)) return;
 
-      res.locals.course_requests = result.rows;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
-  );
+    res.locals.course_requests = result.rows;
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  });
 }
 
 router.get('/', get);
@@ -84,12 +80,7 @@ router.post('/', function (req, res, next) {
           } else {
             /* Otherwise, insert the course request and send a Slack message */
 
-            const sql_params = [
-              res.locals.authn_user.user_id,
-              short_name,
-              title,
-              github_user,
-            ];
+            const sql_params = [res.locals.authn_user.user_id, short_name, title, github_user];
             sqldb.call('course_requests_insert', sql_params, (err, result) => {
               if (ERR(err, next)) return;
               const auto_created = result.rows[0].auto_created;
@@ -102,8 +93,7 @@ router.post('/', function (req, res, next) {
                   { user_id: res.locals.authn_user.user_id },
                   (err, result) => {
                     if (ERR(err, next)) return;
-                    const repo_short_name =
-                      github.reponameFromShortname(short_name);
+                    const repo_short_name = github.reponameFromShortname(short_name);
                     const repo_options = {
                       short_name: short_name,
                       title: title,
@@ -114,37 +104,33 @@ router.post('/', function (req, res, next) {
                       github_user,
                       course_request_id: creq_id,
                     };
-                    github.createCourseRepoJob(
-                      repo_options,
-                      res.locals.authn_user,
-                      (err, _job) => {
-                        if (
+                    github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, _job) => {
+                      if (
+                        ERR(err, () => {
+                          logger.error(err);
+                        })
+                      )
+                        return;
+
+                      /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
+                      opsbot.sendCourseRequestMessage(
+                        `*Automatically creating course*\n` +
+                          `Course repo: ${repo_short_name}\n` +
+                          `Course rubric: ${short_name}\n` +
+                          `Course title: ${title}\n` +
+                          `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                          `GitHub username: ${github_user || 'not provided'}`,
+                        (err) => {
                           ERR(err, () => {
                             logger.error(err);
-                          })
-                        )
-                          return;
+                          });
+                        }
+                      );
 
-                        /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
-                        opsbot.sendCourseRequestMessage(
-                          `*Automatically creating course*\n` +
-                            `Course repo: ${repo_short_name}\n` +
-                            `Course rubric: ${short_name}\n` +
-                            `Course title: ${title}\n` +
-                            `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
-                            `GitHub username: ${github_user || 'not provided'}`,
-                          (err) => {
-                            ERR(err, () => {
-                              logger.error(err);
-                            });
-                          },
-                        );
-
-                        /* Redirect on success so that refreshing doesn't create another request */
-                        res.redirect(req.originalUrl);
-                      },
-                    );
-                  },
+                      /* Redirect on success so that refreshing doesn't create another request */
+                      res.redirect(req.originalUrl);
+                    });
+                  }
                 );
               } else {
                 /* Not automatically created */
@@ -158,15 +144,15 @@ router.post('/', function (req, res, next) {
                     ERR(err, () => {
                       logger.error(err);
                     });
-                  },
+                  }
                 );
                 res.redirect(req.originalUrl);
               }
             });
           }
-        },
+        }
       );
-    },
+    }
   );
 });
 router.post('/', get);

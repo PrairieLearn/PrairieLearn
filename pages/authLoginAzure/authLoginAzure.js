@@ -7,8 +7,7 @@ const config = require('../../lib/config');
 router.get(
   '/',
   function (req, res, next) {
-    if (!config.hasAzure)
-      return next(new Error('Microsoft login is not enabled'));
+    if (!config.hasAzure) return next(new Error('Microsoft login is not enabled'));
     const authData = {
       response: res,
       failureRedirect: '/pl',
@@ -18,7 +17,7 @@ router.get(
   },
   function (req, res) {
     res.redirect('/pl');
-  },
+  }
 );
 
 module.exports = router;

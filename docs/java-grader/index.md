@@ -65,10 +65,7 @@ As with other autograders, most questions using this autograder will contain a `
 
 ```html
 <pl-question-panel>
-  <pl-file-editor
-    file-name="Example.java"
-    ace-mode="ace/mode/java"
-  ></pl-file-editor>
+  <pl-file-editor file-name="Example.java" ace-mode="ace/mode/java"></pl-file-editor>
 </pl-question-panel>
 
 <pl-submission-panel>

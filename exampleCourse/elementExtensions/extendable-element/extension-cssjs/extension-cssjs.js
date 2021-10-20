@@ -26,8 +26,7 @@ function set_wave(host) {
 
     /* Compute x_{t+1} */
     u[0] = 2 * x[0] - x_p[0] + cdtdx * (0 - 2 * x[0] + x[1]);
-    u[n - 1] =
-      2 * x[n - 1] - x_p[n - 1] + cdtdx * (x[n - 2] - 2 * x[n - 1] + 0);
+    u[n - 1] = 2 * x[n - 1] - x_p[n - 1] + cdtdx * (x[n - 2] - 2 * x[n - 1] + 0);
     for (let i = 1; i < n - 1; i++) {
       u[i] = 2 * x[i] - x_p[i] + cdtdx * (x[i - 1] - 2 * x[i] + x[i + 1]);
     }

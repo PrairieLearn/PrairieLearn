@@ -50,32 +50,21 @@ router.get('/', function (req, res, next) {
               data.imageDetails.forEach((imageDetails) => {
                 if (imageDetails.imageTags) {
                   imageDetails.imageTags.forEach((tag) => {
-                    res.locals.ecrInfo[
-                      imageDetails.repositoryName + ':' + tag
-                    ] = imageDetails;
+                    res.locals.ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
                   });
                 }
               });
 
               // Put info from ECR into image for EJS
               var repoName = repository.getCombined(true);
-              image.digest_full = _.get(
-                res.locals.ecrInfo[repoName],
-                'imageDigest',
-                '',
-              );
+              image.digest_full = _.get(res.locals.ecrInfo[repoName], 'imageDigest', '');
               image.digest = image.digest_full.substring(0, 24);
               if (image.digest != image.digest_full) {
                 image.digest += '...';
               }
               image.size =
-                _.get(res.locals.ecrInfo[repoName], 'imageSizeInBytes', 0) /
-                (1000 * 1000);
-              var pushed_at = _.get(
-                res.locals.ecrInfo[repoName],
-                'imagePushedAt',
-                null,
-              );
+                _.get(res.locals.ecrInfo[repoName], 'imageSizeInBytes', 0) / (1000 * 1000);
+              var pushed_at = _.get(res.locals.ecrInfo[repoName], 'imagePushedAt', null);
               if (pushed_at) {
                 image.pushed_at = moment.utc(pushed_at).format();
               } else {
@@ -98,13 +87,12 @@ router.get('/', function (req, res, next) {
               }
 
               for (let i = 0; i < res.locals.images.length; i++) {
-                res.locals.images[i].pushed_at_formatted =
-                  result.rows[i].pushed_at_formatted;
+                res.locals.images[i].pushed_at_formatted = result.rows[i].pushed_at_formatted;
               }
 
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
-          },
+          }
         );
       } else {
         //  no config.cacheImageRegistry
@@ -133,10 +121,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.locals.images = result.rows;
       if ('single_image' in req.body) {
-        res.locals.images = _.filter(result.rows, [
-          'image',
-          req.body.single_image,
-        ]);
+        res.locals.images = _.filter(result.rows, ['image', req.body.single_image]);
       }
       syncHelpers.ecrUpdate(res.locals, function (err, job_sequence_id) {
         if (ERR(err, next)) return;
@@ -148,7 +133,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

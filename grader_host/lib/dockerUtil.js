@@ -7,10 +7,7 @@ module.exports.setupDockerAuth = function (callback) {
   ecr.getAuthorizationToken({}, (err, data) => {
     if (ERR(err, callback)) return;
     //debug(data);
-    let buff = Buffer.from(
-      data.authorizationData[0].authorizationToken,
-      'base64',
-    );
+    let buff = Buffer.from(data.authorizationData[0].authorizationToken, 'base64');
     let authString = buff.toString('ascii');
     let authArray = authString.split(':');
 

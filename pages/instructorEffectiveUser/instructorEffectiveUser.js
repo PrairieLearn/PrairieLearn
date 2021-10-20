@@ -4,9 +4,7 @@ var express = require('express');
 var router = express.Router();
 
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var error = require('../../prairielib/lib/error');
 var sqldb = require('../../prairielib/lib/sql-db');
@@ -23,12 +21,7 @@ router.get('/', function (req, res, next) {
       res.locals.authz_data.authn_has_course_instance_permission_view
     )
   ) {
-    return next(
-      error.make(
-        403,
-        'Access denied (must be course previewer or student data viewer)',
-      ),
-    );
+    return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
   }
 
   debug(`GET: res.locals.req_date = ${res.locals.req_date}`);
@@ -51,9 +44,7 @@ router.get('/', function (req, res, next) {
     if (res.locals.ipaddress.substr(0, 7) == '::ffff:') {
       res.locals.ipaddress = res.locals.ipaddress.substr(7);
     }
-    res.locals.req_date_for_display = moment(res.locals.req_date).toISOString(
-      true,
-    );
+    res.locals.req_date_for_display = moment(res.locals.req_date).toISOString(true);
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
@@ -66,12 +57,7 @@ router.post('/', function (req, res, next) {
       res.locals.authz_data.authn_has_course_instance_permission_view
     )
   ) {
-    return next(
-      error.make(
-        403,
-        'Access denied (must be course previewer or student data viewer)',
-      ),
-    );
+    return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
   }
 
   if (req.body.__action == 'reset') {
@@ -95,11 +81,9 @@ router.post('/', function (req, res, next) {
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
   } else if (req.body.__action == 'changeCourseInstanceRole') {
-    res.cookie(
-      'pl_requested_course_instance_role',
-      req.body.pl_requested_course_instance_role,
-      { maxAge: 60 * 60 * 1000 },
-    );
+    res.cookie('pl_requested_course_instance_role', req.body.pl_requested_course_instance_role, {
+      maxAge: 60 * 60 * 1000,
+    });
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
   } else if (req.body.__action == 'changeMode') {
@@ -112,12 +96,7 @@ router.post('/', function (req, res, next) {
     debug(`POST: req.body.pl_requested_date = ${req.body.pl_requested_date}`);
     let date = moment(req.body.pl_requested_date, moment.ISO_8601);
     if (!date.isValid()) {
-      return next(
-        error.make(
-          400,
-          `invalid requested date: ${req.body.pl_requested_date}`,
-        ),
-      );
+      return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
     }
     res.cookie('pl_requested_date', date.toISOString(), {
       maxAge: 60 * 60 * 1000,
@@ -129,7 +108,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown action: ' + res.locals.__action, {
         __action: req.body.__action,
         body: req.body,
-      }),
+      })
     );
   }
 });

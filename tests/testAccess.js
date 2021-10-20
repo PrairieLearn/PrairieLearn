@@ -57,55 +57,37 @@ describe('Access control', function () {
 
   var cookiesStudentExamBeforeCourseInstance = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(
-      request.cookie('pl_test_date=1750-06-13T13:12:00Z'),
-      siteUrl,
-    );
+    cookies.setCookie(request.cookie('pl_test_date=1750-06-13T13:12:00Z'), siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamBeforeAssessment = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(
-      request.cookie('pl_test_date=1850-06-13T13:12:00Z'),
-      siteUrl,
-    );
+    cookies.setCookie(request.cookie('pl_test_date=1850-06-13T13:12:00Z'), siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamBeforeReservation = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(
-      request.cookie('pl_test_date=1950-06-13T13:12:00Z'),
-      siteUrl,
-    );
+    cookies.setCookie(request.cookie('pl_test_date=1950-06-13T13:12:00Z'), siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamAfterReservation = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(
-      request.cookie('pl_test_date=2250-06-13T13:12:00Z'),
-      siteUrl,
-    );
+    cookies.setCookie(request.cookie('pl_test_date=2250-06-13T13:12:00Z'), siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamAfterAssessment = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(
-      request.cookie('pl_test_date=2350-06-13T13:12:00Z'),
-      siteUrl,
-    );
+    cookies.setCookie(request.cookie('pl_test_date=2350-06-13T13:12:00Z'), siteUrl);
     return cookies;
   };
 
   var cookiesStudentExamAfterCourseInstance = function () {
     var cookies = cookiesStudentExam();
-    cookies.setCookie(
-      request.cookie('pl_test_date=2450-06-13T13:12:00Z'),
-      siteUrl,
-    );
+    cookies.setCookie(request.cookie('pl_test_date=2450-06-13T13:12:00Z'), siteUrl);
     return cookies;
   };
 
@@ -189,26 +171,23 @@ describe('Access control', function () {
   /**********************************************************************/
 
   var getAssessments = function (cookies, shouldContainE1, callback) {
-    request(
-      { url: assessmentsUrl, jar: cookies },
-      function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode != 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        try {
-          $ = cheerio.load(page);
-          elemList = $('td a:contains("Exam for automatic test suite")');
-          assert.lengthOf(elemList, shouldContainE1 ? 1 : 0);
-        } catch (err) {
-          return callback(err);
-        }
-        callback(null);
-      },
-    );
+    request({ url: assessmentsUrl, jar: cookies }, function (error, response, body) {
+      if (error) {
+        return callback(error);
+      }
+      if (response.statusCode != 200) {
+        return callback(new Error('bad status: ' + response.statusCode));
+      }
+      page = body;
+      try {
+        $ = cheerio.load(page);
+        elemList = $('td a:contains("Exam for automatic test suite")');
+        assert.lengthOf(elemList, shouldContainE1 ? 1 : 0);
+      } catch (err) {
+        return callback(err);
+      }
+      callback(null);
+    });
   };
 
   describe('6. GET /pl/assessments', function () {
@@ -227,29 +206,23 @@ describe('Access control', function () {
     it('should have the correct link for E1', function () {
       assert.nestedProperty(elemList[0], 'attribs.href');
       assessmentUrl = siteUrl + elemList[0].attribs.href;
-      assert.equal(
-        assessmentUrl,
-        courseInstanceBaseUrl + '/assessment/' + assessment_id + '/',
-      );
+      assert.equal(assessmentUrl, courseInstanceBaseUrl + '/assessment/' + assessment_id + '/');
     });
   });
 
   /**********************************************************************/
 
   var getAssessment = function (cookies, expectedStatusCode, callback) {
-    request(
-      { url: assessmentUrl, jar: cookies },
-      function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode != expectedStatusCode) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      },
-    );
+    request({ url: assessmentUrl, jar: cookies }, function (error, response, body) {
+      if (error) {
+        return callback(error);
+      }
+      if (response.statusCode != expectedStatusCode) {
+        return callback(new Error('bad status: ' + response.statusCode));
+      }
+      page = body;
+      callback(null);
+    });
   };
 
   describe('7. GET to assessment URL', function () {
@@ -279,12 +252,7 @@ describe('Access control', function () {
 
   /**********************************************************************/
 
-  var postAssessment = function (
-    cookies,
-    includePassword,
-    expectedStatusCode,
-    callback,
-  ) {
+  var postAssessment = function (cookies, includePassword, expectedStatusCode, callback) {
     var form = {
       __action: 'new_instance',
       __csrf_token: __csrf_token,
@@ -306,7 +274,7 @@ describe('Access control', function () {
         }
         page = body;
         callback(null);
-      },
+      }
     );
   };
 
@@ -333,19 +301,16 @@ describe('Access control', function () {
   /**********************************************************************/
 
   var getAssessmentInstance = function (cookies, expectedStatusCode, callback) {
-    request(
-      { url: assessmentInstanceUrl, jar: cookies },
-      function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode != expectedStatusCode) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      },
-    );
+    request({ url: assessmentInstanceUrl, jar: cookies }, function (error, response, body) {
+      if (error) {
+        return callback(error);
+      }
+      if (response.statusCode != expectedStatusCode) {
+        return callback(new Error('bad status: ' + response.statusCode));
+      }
+      page = body;
+      callback(null);
+    });
   };
 
   describe('9. GET to assessment_instance URL', function () {
@@ -353,11 +318,7 @@ describe('Access control', function () {
       getAssessmentInstance(cookiesStudent(), 403, callback);
     });
     it('as student in Exam mode before time period should return 403', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamBeforeAssessment(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 403, callback);
     });
     it('as student in Exam mode after time period should return 403', function (callback) {
       getAssessmentInstance(cookiesStudentExamAfterAssessment(), 403, callback);
@@ -369,31 +330,21 @@ describe('Access control', function () {
       $ = cheerio.load(page);
     });
     it('should produce an addVectors instance_question in the DB', function (callback) {
-      sqldb.query(
-        sql.select_instance_question_addVectors,
-        [],
-        function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount == 0) {
-            return callback(
-              new Error('did not find addVectors instance question in DB'),
-            );
-          } else if (result.rowCount > 1) {
-            return callback(
-              new Error(
-                'multiple rows found: ' +
-                  JSON.stringify(result.rows, null, '    '),
-              ),
-            );
-          }
-          instance_question = result.rows[0];
-          callback(null);
-        },
-      );
+      sqldb.query(sql.select_instance_question_addVectors, [], function (err, result) {
+        if (ERR(err, callback)) return;
+        if (result.rowCount == 0) {
+          return callback(new Error('did not find addVectors instance question in DB'));
+        } else if (result.rowCount > 1) {
+          return callback(
+            new Error('multiple rows found: ' + JSON.stringify(result.rows, null, '    '))
+          );
+        }
+        instance_question = result.rows[0];
+        callback(null);
+      });
     });
     it('should link to addVectors question', function () {
-      const urlTail =
-        '/pl/course_instance/1/instance_question/' + instance_question.id + '/';
+      const urlTail = '/pl/course_instance/1/instance_question/' + instance_question.id + '/';
       q1Url = siteUrl + urlTail;
       elemList = $(`td a[href="${urlTail}"]`);
       assert.lengthOf(elemList, 1);
@@ -442,9 +393,7 @@ describe('Access control', function () {
     });
     it('base64 data should parse to JSON', function () {
       questionData = JSON.parse(
-        decodeURIComponent(
-          Buffer.from(elemList[0].children[0].data, 'base64').toString(),
-        ),
+        decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString())
       );
     });
     it('should have a variant_id in the questionData', function () {
@@ -482,7 +431,7 @@ describe('Access control', function () {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);
-      },
+      }
     );
   };
 
@@ -527,48 +476,28 @@ describe('Access control', function () {
       getAssessmentInstance(cookiesStudentExam(), 403, callback);
     });
     it('should block access to the assessment_instance before the reservation', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamBeforeReservation(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
     });
     it('should block access to the assessment_instance after the reservation', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamAfterReservation(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
     });
   });
 
   describe('15. check in PrairieSchedule reservation', function () {
     it('should succeed', function (callback) {
-      sqldb.query(
-        sql.update_ps_reservation_to_checked_in,
-        [],
-        function (err, _result) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        },
-      );
+      sqldb.query(sql.update_ps_reservation_to_checked_in, [], function (err, _result) {
+        if (ERR(err, callback)) return;
+        callback(null);
+      });
     });
     it('should enable access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 200, callback);
     });
     it('should block access to the assessment_instance before the reservation', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamBeforeReservation(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
     });
     it('should block access to the assessment_instance after the reservation', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamAfterReservation(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
     });
   });
 
@@ -612,14 +541,10 @@ describe('Access control', function () {
 
   describe('19. insert exam-linked access rule', function () {
     it('should succeed', function (callback) {
-      sqldb.query(
-        sql.insert_ps_exam_access_rule,
-        { assessment_id },
-        function (err, _result) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        },
-      );
+      sqldb.query(sql.insert_ps_exam_access_rule, { assessment_id }, function (err, _result) {
+        if (ERR(err, callback)) return;
+        callback(null);
+      });
     });
     it('should block access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 403, callback);
@@ -638,31 +563,19 @@ describe('Access control', function () {
       getAssessmentInstance(cookiesStudentExam(), 403, callback);
     });
     it('should block access to the assessment_instance before the reservation', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamBeforeReservation(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
     });
     it('should block access to the assessment_instance after the reservation', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamAfterReservation(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
     });
   });
 
   describe('21. check in PrairieSchedule reservation', function () {
     it('should succeed', function (callback) {
-      sqldb.query(
-        sql.update_ps_reservation_to_checked_in,
-        [],
-        function (err, _result) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        },
-      );
+      sqldb.query(sql.update_ps_reservation_to_checked_in, [], function (err, _result) {
+        if (ERR(err, callback)) return;
+        callback(null);
+      });
     });
     it('should enable access to the assessment_instance', function (callback) {
       getAssessmentInstance(cookiesStudentExam(), 200, callback);
@@ -681,18 +594,10 @@ describe('Access control', function () {
       });
     });
     it('should block access to the assessment_instance before the reservation', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamBeforeReservation(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamBeforeReservation(), 403, callback);
     });
     it('should block access to the assessment_instance after the reservation', function (callback) {
-      getAssessmentInstance(
-        cookiesStudentExamAfterReservation(),
-        403,
-        callback,
-      );
+      getAssessmentInstance(cookiesStudentExamAfterReservation(), 403, callback);
     });
   });
 

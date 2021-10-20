@@ -2,9 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
 const sqlDb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -34,19 +32,13 @@ router.get('/', function (req, res, next) {
       assessment_id: res.locals.assessment.id,
       assessment_question_id: res.locals.assessment_question_id,
     };
-    sqlDb.query(
-      sql.select_instance_questions_manual_grading,
-      params,
-      function (err, result) {
-        if (ERR(err, next)) return;
-        res.locals.instance_questions_to_grade = result.rows.filter(isGradable);
-        res.locals.instance_questions_graded = result.rows.filter(
-          (iq) => !isGradable(iq),
-        );
-        debug('render page');
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      },
-    );
+    sqlDb.query(sql.select_instance_questions_manual_grading, params, function (err, result) {
+      if (ERR(err, next)) return;
+      res.locals.instance_questions_to_grade = result.rows.filter(isGradable);
+      res.locals.instance_questions_graded = result.rows.filter((iq) => !isGradable(iq));
+      debug('render page');
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
   });
 });
 
@@ -101,7 +93,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

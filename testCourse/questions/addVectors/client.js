@@ -3,12 +3,7 @@ define([
   'text!./question.html',
   'text!./answer.html',
   'text!./submission.html',
-], function (
-  SimpleClient,
-  questionTemplate,
-  answerTemplate,
-  submissionTemplate,
-) {
+], function (SimpleClient, questionTemplate, answerTemplate, submissionTemplate) {
   return new SimpleClient.SimpleClient({
     questionTemplate: questionTemplate,
     answerTemplate: answerTemplate,

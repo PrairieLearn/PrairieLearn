@@ -85,10 +85,7 @@ These dependencies are specified in the `info.json` file, and can be configured 
     "nodeModulesScripts": ["three/build/three.min.js"],
     "clientFilesQuestionScripts": ["my-question-script.js"],
     "clientFilesQuestionStyles": ["my-question-style.css"],
-    "clientFilesCourseStyles": [
-      "courseStylesheet1.css",
-      "courseStylesheet2.css"
-    ]
+    "clientFilesCourseStyles": ["courseStylesheet1.css", "courseStylesheet2.css"]
   }
 }
 ```
@@ -111,18 +108,15 @@ The `question.html` is a template used to render the question to the student. A 
 ```html
 <pl-question-panel>
   <p>
-    A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have
-    acceleration $a = {{params.a}}\rm\ m/s^2$.
+    A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have acceleration $a =
+    {{params.a}}\rm\ m/s^2$.
   </p>
-  <p>
-    What is the total force $F$ currently acting on the particle?
-  </p></pl-question-panel
+  <p>What is the total force $F$ currently acting on the particle?</p></pl-question-panel
 >
 
 <p>
   $F = $
-  <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm
-  m/s^2$
+  <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
 </p>
 ```
 
@@ -235,10 +229,7 @@ You can dynamically generate file objects in `server.py`. These files never appe
 ```html
 <!-- question.html -->
 
-<p>
-  Here is a dynamically-rendered figure showing a line of slope $a =
-  {{params.a}}$:
-</p>
+<p>Here is a dynamically-rendered figure showing a line of slope $a = {{params.a}}$:</p>
 <img src="{{options.client_files_question_dynamic_url}}/fig.png" />
 ```
 

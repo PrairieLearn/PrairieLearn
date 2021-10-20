@@ -1,8 +1,4 @@
-define(['sylvester', 'underscore', 'numeric'], function (
-  Sylvester,
-  _,
-  numeric,
-) {
+define(['sylvester', 'underscore', 'numeric'], function (Sylvester, _, numeric) {
   var $V = Sylvester.Vector.create;
   var $M = Sylvester.Matrix.create;
   var Vector = Sylvester.Vector;
@@ -131,10 +127,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
         @return {Number} The difference between a1 and a2 in [0, 2 pi).
     */
   PrairieGeom.prototype.angleDifference = function (a1, a2) {
-    return Math.min(
-      this.fixedMod(a1 - a2, 2 * Math.PI),
-      this.fixedMod(a2 - a1, 2 * Math.PI),
-    );
+    return Math.min(this.fixedMod(a1 - a2, 2 * Math.PI), this.fixedMod(a2 - a1, 2 * Math.PI));
   };
 
   /** Angle difference function in degrees.
@@ -348,11 +341,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
         @return {Vector} The position in rectangular coordinates (x, y, z).
     */
   PrairieGeom.prototype.cylindricalToRect = function (pC) {
-    var pR = $V([
-      pC.e(1) * Math.cos(pC.e(2)),
-      pC.e(1) * Math.sin(pC.e(2)),
-      pC.e(3),
-    ]);
+    var pR = $V([pC.e(1) * Math.cos(pC.e(2)), pC.e(1) * Math.sin(pC.e(2)), pC.e(3)]);
     return pR;
   };
 
@@ -518,10 +507,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
     var that = this;
     return _.chain(blocks)
       .map(function (r) {
-        return _.chain(r)
-          .map(that.ensureArray2D)
-          .reduce(that.hConcatArray2D, undefined)
-          .value();
+        return _.chain(r).map(that.ensureArray2D).reduce(that.hConcatArray2D, undefined).value();
       })
       .reduce(that.vConcatArray2D, undefined)
       .value();
@@ -561,12 +547,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
         @param {Array} vars An array with entries giving the partially complete data.
         @return {Array} The complete solution.
     */
-  PrairieGeom.prototype.solveRemainingVars = function (
-    lhs,
-    rhs,
-    givenVars,
-    vars,
-  ) {
+  PrairieGeom.prototype.solveRemainingVars = function (lhs, rhs, givenVars, vars) {
     var givenInds = [],
       givenX = [],
       findInds = [];
@@ -757,7 +738,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
         [factor.e(1), 0, 0],
         [0, factor.e(2), 0],
         [0, 0, 1],
-      ]),
+      ])
     );
   };
 
@@ -773,7 +754,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
         [1, 0, offset.e(1)],
         [0, 1, offset.e(2)],
         [0, 0, 1],
-      ]),
+      ])
     );
   };
 
@@ -798,13 +779,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
         @param {Vector} new2 The new location of point 2.
         @return {Matrix} The new transformation.
     */
-  PrairieGeom.prototype.transformByPointsTransform = function (
-    transform,
-    old1,
-    old2,
-    new1,
-    new2,
-  ) {
+  PrairieGeom.prototype.transformByPointsTransform = function (transform, old1, old2, new1, new2) {
     var oldMid = old1.add(old2).x(0.5);
     var newMid = new1.add(new2).x(0.5);
     var oldDelta = old2.subtract(old1);
@@ -868,7 +843,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
         [0, factor, 0, 0],
         [0, 0, factor, 0],
         [0, 0, 1],
-      ]),
+      ])
     );
   };
 
@@ -885,7 +860,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
         [0, 1, 0, offset.e(2)],
         [0, 0, 1, offset.e(3)],
         [0, 0, 0, 1],
-      ]),
+      ])
     );
   };
 
@@ -943,18 +918,10 @@ define(['sylvester', 'underscore', 'numeric'], function (
         @param {number} angleZ Angle to rotate by around the Z axis (radians).
         @return {Matrix} The new 3D transformation.
     */
-  PrairieGeom.prototype.rotateTransform3D = function (
-    transform,
-    angleX,
-    angleY,
-    angleZ,
-  ) {
+  PrairieGeom.prototype.rotateTransform3D = function (transform, angleX, angleY, angleZ) {
     return this.rotateTransform3DZ(
-      this.rotateTransform3DY(
-        this.rotateTransform3DX(transform, angleX),
-        angleY,
-      ),
-      angleZ,
+      this.rotateTransform3DY(this.rotateTransform3DX(transform, angleX), angleY),
+      angleZ
     );
   };
 
@@ -1422,7 +1389,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
           points[i].e(1).toFixed(numDecPlaces) +
           ', ' +
           points[i].e(2).toFixed(numDecPlaces) +
-          ']),',
+          ']),'
       );
     }
     console.log('],');
@@ -1777,8 +1744,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
     */
   PrairieGeom.prototype.hammingDistance = function (a1, a2) {
     var n = Math.max(a1.length, a2.length) - Math.min(a1.length, a2.length);
-    for (var i = 0; i < Math.min(a1.length, a2.length); i++)
-      if (a1[i] != a2[i]) n++;
+    for (var i = 0; i < Math.min(a1.length, a2.length); i++) if (a1[i] != a2[i]) n++;
     return n;
   };
 
@@ -1815,7 +1781,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
       return numeric.norm2(
         _(val).map(function (v) {
           return that.norm(v);
-        }),
+        })
       );
     } else if (val instanceof Sylvester.Vector) {
       return val.modulus();
@@ -1824,7 +1790,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
       return numeric.norm2(
         _(val).map(function (v) {
           return that.norm(v);
-        }),
+        })
       );
     } else {
       return Infinity;
@@ -1857,7 +1823,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
       return numeric.norm2(
         _(_.zip(trueVal, submittedVal)).map(function (v) {
           return that.absError(v[0], v[1]);
-        }),
+        })
       );
     } else if (trueVal instanceof Sylvester.Vector) {
       subVal = submittedVal;
@@ -1869,7 +1835,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
       return numeric.norm2(
         _(trueVal).map(function (val, key) {
           return that.absError(val, submittedVal[key]);
-        }),
+        })
       );
     } else {
       return Infinity;
@@ -1900,20 +1866,12 @@ define(['sylvester', 'underscore', 'numeric'], function (
         @param {Number} absTol The absolute tolerance (for numerical comparisons).
         @return {Boolean} Whether the objects are equal to within relTol or absTol.
     */
-  PrairieGeom.prototype.checkEqual = function (
-    trueVal,
-    submittedVal,
-    relTol,
-    absTol,
-  ) {
+  PrairieGeom.prototype.checkEqual = function (trueVal, submittedVal, relTol, absTol) {
     var that = this;
     var subVal;
     if (_.isFinite(trueVal)) {
       subVal = Number(submittedVal);
-      if (
-        this.relError(trueVal, subVal) < relTol ||
-        this.absError(trueVal, subVal) < absTol
-      )
+      if (this.relError(trueVal, subVal) < relTol || this.absError(trueVal, subVal) < absTol)
         return true;
       return false;
     } else if (_.isBoolean(trueVal)) {
@@ -1937,10 +1895,7 @@ define(['sylvester', 'underscore', 'numeric'], function (
       subVal = submittedVal;
       if (_.isArray(subVal)) subVal = $V(subVal);
       if (!(subVal instanceof Sylvester.Vector)) return false;
-      if (
-        this.relError(trueVal, subVal) < relTol ||
-        this.absError(trueVal, subVal) < absTol
-      )
+      if (this.relError(trueVal, subVal) < relTol || this.absError(trueVal, subVal) < absTol)
         return true;
       return false;
     } else if (_.isObject(trueVal)) {

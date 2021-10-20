@@ -8,12 +8,7 @@ window.PLRTE = function (uuid, options) {
     options.modules.toolbar = [
       ['bold', 'italic', 'underline', 'strike'],
       ['blockquote', 'code-block', { script: 'sub' }, { script: 'super' }],
-      [
-        { list: 'ordered' },
-        { list: 'bullet' },
-        { indent: '-1' },
-        { indent: '+1' },
-      ],
+      [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
       [{ size: ['small', false, 'large'] }],
       [{ header: [1, 2, 3, false] }],
       [{ color: [] }, { background: [] }],
@@ -32,8 +27,8 @@ window.PLRTE = function (uuid, options) {
         he.encode(quill.root.innerHTML, {
           allowUnsafeSymbols: true, // HTML tags should be kept
           useNamedReferences: true,
-        }),
-      ),
+        })
+      )
     );
   });
 };

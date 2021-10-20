@@ -17,7 +17,7 @@ router.post('/', function (req, res) {
 
     var pwCookie = csrf.generateToken(
       { password: req.body.password, maxAge: maxAge },
-      config.secretKey,
+      config.secretKey
     );
     res.cookie('pl_assessmentpw', pwCookie, { maxAge: maxAge });
     res.clearCookie('pl_pw_origUrl');

@@ -34,14 +34,9 @@ describe('LTI', function () {
     context_id: 'testContext',
   };
   var secret = 'sFDpR@RzLdDW';
-  var genSignature = oauthSignature.generate(
-    'POST',
-    locals.ltiUrl,
-    body,
-    secret,
-    null,
-    { encodeSignature: false },
-  );
+  var genSignature = oauthSignature.generate('POST', locals.ltiUrl, body, secret, null, {
+    encodeSignature: false,
+  });
 
   describe('test LTI callback', function () {
     it('should throw 500 with an invalid consumer_key', function (callback) {

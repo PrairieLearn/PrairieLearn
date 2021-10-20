@@ -62,9 +62,7 @@ module.exports.abandonLaunch = async () => {
 
   if (lifecycleState == 'Launching') {
     lifecycleState = 'AbandoningLaunch';
-    logger.info(
-      `lifecycle.abandonLaunch(): changing to state ${lifecycleState}`,
-    );
+    logger.info(`lifecycle.abandonLaunch(): changing to state ${lifecycleState}`);
 
     const autoscaling = new AWS.AutoScaling();
     const params = {
@@ -78,15 +76,10 @@ module.exports.abandonLaunch = async () => {
       logger.info('lifecycle.abandonLaunch(): completed action', params);
     } catch (e) {
       // don't return the error, because there is nothing to be done about it
-      logger.error(
-        'lifecycle.abandonLaunch(): error completing action',
-        params,
-      );
+      logger.error('lifecycle.abandonLaunch(): error completing action', params);
     }
   } else {
-    logger.info(
-      `lifecycle.abandonLaunch(): in state ${lifecycleState}, taking no action`,
-    );
+    logger.info(`lifecycle.abandonLaunch(): in state ${lifecycleState}, taking no action`);
   }
 };
 
@@ -104,8 +97,6 @@ function heartbeat() {
       setTimeout(heartbeat, config.lifecycleHeartbeatIntervalMS);
     });
   } else {
-    logger.info(
-      `lifecycle.heartbeat(): in state ${lifecycleState}, not sending heartbeat`,
-    );
+    logger.info(`lifecycle.heartbeat(): in state ${lifecycleState}, not sending heartbeat`);
   }
 }

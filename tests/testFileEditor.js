@@ -33,10 +33,7 @@ const courseDir = courseLiveDir;
 const courseInstancePath = path.join('courseInstances', 'Fa18');
 const assessmentPath = path.join(courseInstancePath, 'assessments', 'HW1');
 const infoCoursePath = 'infoCourse.json';
-const infoCourseInstancePath = path.join(
-  courseInstancePath,
-  'infoCourseInstance.json',
-);
+const infoCourseInstancePath = path.join(courseInstancePath, 'infoCourseInstance.json');
 const infoAssessmentPath = path.join(assessmentPath, 'infoAssessment.json');
 const questionPath = path.join('questions', 'test', 'question');
 const questionJsonPath = path.join(questionPath, 'info.json');
@@ -44,74 +41,58 @@ const questionHtmlPath = path.join(questionPath, 'question.html');
 const questionPythonPath = path.join(questionPath, 'server.py');
 
 const infoCourseJsonA = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8')
 );
 let infoCourseJsonB = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8')
 );
 infoCourseJsonB.title = 'Test Course (Renamed)';
 let infoCourseJsonC = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, infoCoursePath), 'utf-8')
 );
 infoCourseJsonC.title = 'Test Course (Renamed Yet Again)';
 
 const infoCourseInstanceJsonA = JSON.parse(
-  fs.readFileSync(
-    path.join(courseTemplateDir, infoCourseInstancePath),
-    'utf-8',
-  ),
+  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8')
 );
 let infoCourseInstanceJsonB = JSON.parse(
-  fs.readFileSync(
-    path.join(courseTemplateDir, infoCourseInstancePath),
-    'utf-8',
-  ),
+  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8')
 );
 infoCourseInstanceJsonB.longName = 'Fall 2019';
 let infoCourseInstanceJsonC = JSON.parse(
-  fs.readFileSync(
-    path.join(courseTemplateDir, infoCourseInstancePath),
-    'utf-8',
-  ),
+  fs.readFileSync(path.join(courseTemplateDir, infoCourseInstancePath), 'utf-8')
 );
 infoCourseInstanceJsonC.longName = 'Spring 2020';
 
 const infoAssessmentJsonA = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8')
 );
 let infoAssessmentJsonB = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8')
 );
 infoAssessmentJsonB.title = 'Homework for file editor test (Renamed)';
 let infoAssessmentJsonC = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, infoAssessmentPath), 'utf-8')
 );
-infoAssessmentJsonC.title =
-  'Homework for file editor test (Renamed Yet Aagain)';
+infoAssessmentJsonC.title = 'Homework for file editor test (Renamed Yet Aagain)';
 
 const questionJsonA = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8')
 );
 let questionJsonB = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8')
 );
 questionJsonB.title = 'Test question (Renamed)';
 let questionJsonC = JSON.parse(
-  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8'),
+  fs.readFileSync(path.join(courseTemplateDir, questionJsonPath), 'utf-8')
 );
 questionJsonC.title = 'Test question (Renamed Yet Again)';
 
-const questionHtmlA = fs.readFileSync(
-  path.join(courseTemplateDir, questionHtmlPath),
-  'utf-8',
-);
+const questionHtmlA = fs.readFileSync(path.join(courseTemplateDir, questionHtmlPath), 'utf-8');
 const questionHtmlB = questionHtmlA + '\nAnother line of text.\n\n';
 const questionHtmlC = questionHtmlB + '\nYet another line of text.\n\n';
 
-const questionPythonA = fs.readFileSync(
-  path.join(courseTemplateDir, questionPythonPath),
-  'utf-8',
-);
+const questionPythonA = fs.readFileSync(path.join(courseTemplateDir, questionPythonPath), 'utf-8');
 const questionPythonB = questionPythonA + '\n# Comment.\n\n';
 const questionPythonC = questionPythonB + '\n# Another comment.\n\n';
 
@@ -119,37 +100,29 @@ const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 const courseAdminUrl = baseUrl + '/course/1/course_admin';
 const courseAdminSettingsUrl = courseAdminUrl + '/settings';
-const courseAdminEditUrl =
-  courseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
+const courseAdminEditUrl = courseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const courseInstanceCourseAdminUrl = courseInstanceUrl + '/course_admin';
-const courseInstanceCourseAdminSettingsUrl =
-  courseInstanceCourseAdminUrl + '/settings';
+const courseInstanceCourseAdminSettingsUrl = courseInstanceCourseAdminUrl + '/settings';
 const courseInstanceCourseAdminEditUrl =
   courseInstanceCourseAdminUrl + `/file_edit/${encodePath(infoCoursePath)}`;
 const courseInstanceInstanceAdminUrl = courseInstanceUrl + '/instance_admin';
-const courseInstanceInstanceAdminSettingsUrl =
-  courseInstanceInstanceAdminUrl + '/settings';
+const courseInstanceInstanceAdminSettingsUrl = courseInstanceInstanceAdminUrl + '/settings';
 const courseInstanceInstanceAdminEditUrl =
-  courseInstanceInstanceAdminUrl +
-  `/file_edit/${encodePath(infoCourseInstancePath)}`;
+  courseInstanceInstanceAdminUrl + `/file_edit/${encodePath(infoCourseInstancePath)}`;
 const assessmentUrl = courseInstanceUrl + '/assessment/1';
 const assesmentSettingsUrl = assessmentUrl + '/settings';
-const assessmentEditUrl =
-  assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
+const assessmentEditUrl = assessmentUrl + `/file_edit/${encodePath(infoAssessmentPath)}`;
 const courseInstanceQuestionUrl = courseInstanceUrl + '/question/1';
-const courseInstanceQuestionSettingsUrl =
-  courseInstanceQuestionUrl + '/settings';
+const courseInstanceQuestionSettingsUrl = courseInstanceQuestionUrl + '/settings';
 const courseInstanceQuestionJsonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionJsonPath)}`;
 const courseInstanceQuestionHtmlEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionHtmlPath)}`;
 const courseInstanceQuestionPythonEditUrl =
   courseInstanceUrl + `/question/1/file_edit/${encodePath(questionPythonPath)}`;
-const badPathUrl =
-  assessmentUrl + '/file_edit/' + encodePath('../PrairieLearn/config.json');
-const badExampleCoursePathUrl =
-  courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
+const badPathUrl = assessmentUrl + '/file_edit/' + encodePath('../PrairieLearn/config.json');
+const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('infoCourse.json');
 
 const findEditUrlData = [
   {
@@ -317,12 +290,7 @@ describe('test file editor', function () {
 
     describe('verify existence of edit links', function () {
       findEditUrlData.forEach((element) => {
-        findEditUrl(
-          element.name,
-          element.selector,
-          element.url,
-          element.expectedEditUrl,
-        );
+        findEditUrl(element.name, element.selector, element.url, element.expectedEditUrl);
       });
     });
 
@@ -344,10 +312,7 @@ describe('test file editor', function () {
   });
 
   describe('the exampleCourse', function () {
-    before(
-      'set up testing server',
-      helperServer.before(courseDirExampleCourse),
-    );
+    before('set up testing server', helperServer.before(courseDirExampleCourse));
 
     after('shut down testing server', helperServer.after);
 
@@ -397,12 +362,10 @@ function badPost(action, fileEditContents, url) {
           }
           locals.postEndTime = Date.now();
           if (response.statusCode != 400) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           callback(null);
-        },
+        }
       );
     });
   });
@@ -432,14 +395,10 @@ function createCourseFiles(callback) {
           cwd: '.',
           env: process.env,
         };
-        exec(
-          `git clone ${courseOriginDir} ${courseLiveDir}`,
-          execOptions,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        exec(`git clone ${courseOriginDir} ${courseLiveDir}`, execOptions, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
       (callback) => {
         ncp(courseTemplateDir, courseLiveDir, { clobber: false }, (err) => {
@@ -482,20 +441,16 @@ function createCourseFiles(callback) {
           cwd: '.',
           env: process.env,
         };
-        exec(
-          `git clone ${courseOriginDir} ${courseDevDir}`,
-          execOptions,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        exec(`git clone ${courseOriginDir} ${courseDevDir}`, execOptions, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 
@@ -524,7 +479,7 @@ function deleteCourseFiles(callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 
@@ -534,7 +489,7 @@ function editPost(
   url,
   expectedToFindResults,
   expectedToFindChoice,
-  expectedDiskContents,
+  expectedDiskContents
 ) {
   describe(`POST to edit url with action ${action}`, function () {
     it('should load successfully', function (callback) {
@@ -557,13 +512,11 @@ function editPost(
           }
           locals.postEndTime = Date.now();
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {
@@ -574,7 +527,7 @@ function editPost(
         expectedToFindResults,
         expectedToFindChoice,
         fileEditContents,
-        expectedDiskContents,
+        expectedDiskContents
       );
     }
   });
@@ -617,7 +570,7 @@ function verifyEdit(
   expectedToFindResults,
   expectedToFindChoice,
   expectedDraftContents,
-  expectedDiskContents,
+  expectedDiskContents
 ) {
   it('should have a CSRF token', function () {
     elemList = locals.$('form[name="editor-form"] input[name="__csrf_token"]');
@@ -627,45 +580,35 @@ function verifyEdit(
     assert.isString(locals.__csrf_token);
   });
   it('should have a file_edit_user_id', function () {
-    elemList = locals.$(
-      'form[name="editor-form"] input[name="file_edit_user_id"]',
-    );
+    elemList = locals.$('form[name="editor-form"] input[name="file_edit_user_id"]');
     assert.lengthOf(elemList, 1);
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.file_edit_user_id = elemList[0].attribs.value;
     assert.isString(locals.file_edit_user_id);
   });
   it('should have a file_edit_course_id', function () {
-    elemList = locals.$(
-      'form[name="editor-form"] input[name="file_edit_course_id"]',
-    );
+    elemList = locals.$('form[name="editor-form"] input[name="file_edit_course_id"]');
     assert.lengthOf(elemList, 1);
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.file_edit_course_id = elemList[0].attribs.value;
     assert.isString(locals.file_edit_course_id);
   });
   it('should have a file_edit_dir_name', function () {
-    elemList = locals.$(
-      'form[name="editor-form"] input[name="file_edit_dir_name"]',
-    );
+    elemList = locals.$('form[name="editor-form"] input[name="file_edit_dir_name"]');
     assert.lengthOf(elemList, 1);
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.file_edit_dir_name = elemList[0].attribs.value;
     assert.isString(locals.file_edit_dir_name);
   });
   it('should have a file_edit_file_name', function () {
-    elemList = locals.$(
-      'form[name="editor-form"] input[name="file_edit_file_name"]',
-    );
+    elemList = locals.$('form[name="editor-form"] input[name="file_edit_file_name"]');
     assert.lengthOf(elemList, 1);
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.file_edit_file_name = elemList[0].attribs.value;
     assert.isString(locals.file_edit_file_name);
   });
   it('should have a file_edit_orig_hash', function () {
-    elemList = locals.$(
-      'form[name="editor-form"] input[name="file_edit_orig_hash"]',
-    );
+    elemList = locals.$('form[name="editor-form"] input[name="file_edit_orig_hash"]');
     assert.lengthOf(elemList, 1);
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.file_edit_orig_hash = elemList[0].attribs.value;
@@ -675,14 +618,11 @@ function verifyEdit(
     elemList = locals.$('script');
     for (let i = 0; i < elemList.length; i++) {
       let elem = elemList[i];
-      if (
-        typeof elem != undefined &&
-        Object.prototype.hasOwnProperty.call(elem, 'children')
-      ) {
+      if (typeof elem != undefined && Object.prototype.hasOwnProperty.call(elem, 'children')) {
         if (elem.children.length > 0) {
           if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
             let match = elem.children[0].data.match(
-              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-draft"[^{]*}/ms,
+              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-draft"[^{]*}/ms
             );
             if (match != null) {
               locals.fileContents = b64Util.b64DecodeUnicode(match[1]);
@@ -709,23 +649,18 @@ function verifyEdit(
     elemList = locals.$('script');
     for (let i = 0; i < elemList.length; i++) {
       let elem = elemList[i];
-      if (
-        typeof elem != undefined &&
-        Object.prototype.hasOwnProperty.call(elem, 'children')
-      ) {
+      if (typeof elem != undefined && Object.prototype.hasOwnProperty.call(elem, 'children')) {
         if (elem.children.length > 0) {
           if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
             let match = elem.children[0].data.match(
-              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-disk"[^{]*}/ms,
+              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-disk"[^{]*}/ms
             );
             if (match != null) {
               if (expectedToFindChoice) {
                 locals.diskContents = b64Util.b64DecodeUnicode(match[1]);
                 return callback(null);
               } else {
-                return callback(
-                  new Error('found a script with disk file contents'),
-                );
+                return callback(new Error('found a script with disk file contents'));
               }
             }
           }
@@ -750,7 +685,7 @@ function editGet(
   expectedToFindResults,
   expectedToFindChoice,
   expectedDraftContents,
-  expectedDiskContents,
+  expectedDiskContents
 ) {
   describe(`GET to edit url`, function () {
     it('should load successfully', function (callback) {
@@ -774,7 +709,7 @@ function editGet(
       expectedToFindResults,
       expectedToFindChoice,
       expectedDraftContents,
-      expectedDiskContents,
+      expectedDiskContents
     );
   });
 }
@@ -823,14 +758,7 @@ function doEdits(data) {
     writeAndCommitFileInLive(data.path, data.contentsB);
     // (A, B, B, B)
 
-    editPost(
-      'save_and_sync',
-      data.contentsC,
-      data.url,
-      true,
-      true,
-      data.contentsB,
-    );
+    editPost('save_and_sync', data.contentsC, data.url, true, true, data.contentsB);
     // (A, B, B, B)
 
     waitForJobSequence(locals, 'Error');
@@ -847,10 +775,7 @@ function doEdits(data) {
     pullAndVerifyFileInDev(data.path, data.contentsA);
     // (A, A, A, A)
 
-    writeAndPushFileInDev(
-      'README.md',
-      `New readme to test edit of ${data.path}`,
-    );
+    writeAndPushFileInDev('README.md', `New readme to test edit of ${data.path}`);
     // (A, A, A*, A*)
 
     editGet(data.url, false, false, data.contentsA, null);
@@ -872,10 +797,7 @@ function doEdits(data) {
     pullAndVerifyFileInDev(data.path, data.contentsC);
     // (C, C, C, C)
 
-    writeAndPushFileInDev(
-      'README.md',
-      `Another new readme to test edit of ${data.path}`,
-    );
+    writeAndPushFileInDev('README.md', `Another new readme to test edit of ${data.path}`);
     // (C, C, C*, C*)
 
     editGet(data.url, false, false, data.contentsC, null);
@@ -885,14 +807,7 @@ function doEdits(data) {
     // (C, C, C*, C*)
 
     waitForJobSequence(locals, 'Error');
-    editPost(
-      'pull_and_save_and_sync',
-      data.contentsB,
-      data.url,
-      true,
-      false,
-      null,
-    );
+    editPost('pull_and_save_and_sync', data.contentsB, data.url, true, false, null);
     // (B, B, C, B)
 
     waitForJobSequence(locals, 'Success');
@@ -969,10 +884,7 @@ function pullAndVerifyFileInDev(fileName, fileContents) {
       });
     });
     it('should match contents', function () {
-      assert.strictEqual(
-        fs.readFileSync(path.join(courseDevDir, fileName), 'utf-8'),
-        fileContents,
-      );
+      assert.strictEqual(fs.readFileSync(path.join(courseDevDir, fileName), 'utf-8'), fileContents);
     });
   });
 }
@@ -1131,10 +1043,7 @@ function doFiles(data) {
       });
 
       testUploadFile({
-        url:
-          data.url +
-          '/' +
-          encodePath(path.join(data.path, data.clientFilesDir)),
+        url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
         path: path.join(data.path, data.clientFilesDir, 'testfile.txt'),
         id: 0,
         contents: 'This is a different line of text.',
@@ -1142,33 +1051,17 @@ function doFiles(data) {
       });
 
       testRenameFile({
-        url:
-          data.url +
-          '/' +
-          encodePath(path.join(data.path, data.clientFilesDir)),
+        url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir)),
         id: 0,
-        path: path.join(
-          data.path,
-          data.clientFilesDir,
-          'subdir',
-          'testfile.txt',
-        ),
+        path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
         contents: 'This is a different line of text.',
         new_file_name: path.join('subdir', 'testfile.txt'),
       });
 
       testDeleteFile({
-        url:
-          data.url +
-          '/' +
-          encodePath(path.join(data.path, data.clientFilesDir, 'subdir')),
+        url: data.url + '/' + encodePath(path.join(data.path, data.clientFilesDir, 'subdir')),
         id: 0,
-        path: path.join(
-          data.path,
-          data.clientFilesDir,
-          'subdir',
-          'testfile.txt',
-        ),
+        path: path.join(data.path, data.clientFilesDir, 'subdir', 'testfile.txt'),
       });
     });
     describe('Server Files', function () {
@@ -1181,10 +1074,7 @@ function doFiles(data) {
       });
 
       testUploadFile({
-        url:
-          data.url +
-          '/' +
-          encodePath(path.join(data.path, data.serverFilesDir)),
+        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
         path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
         id: 0,
         contents: 'This is a different line of text.',
@@ -1192,33 +1082,17 @@ function doFiles(data) {
       });
 
       testRenameFile({
-        url:
-          data.url +
-          '/' +
-          encodePath(path.join(data.path, data.serverFilesDir)),
+        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
         id: 0,
-        path: path.join(
-          data.path,
-          data.serverFilesDir,
-          'subdir',
-          'testfile.txt',
-        ),
+        path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
         contents: 'This is a different line of text.',
         new_file_name: path.join('subdir', 'testfile.txt'),
       });
 
       testDeleteFile({
-        url:
-          data.url +
-          '/' +
-          encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
+        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
         id: 0,
-        path: path.join(
-          data.path,
-          data.serverFilesDir,
-          'subdir',
-          'testfile.txt',
-        ),
+        path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
       });
     });
     if (data.testFilesDir) {
@@ -1232,10 +1106,7 @@ function doFiles(data) {
         });
 
         testUploadFile({
-          url:
-            data.url +
-            '/' +
-            encodePath(path.join(data.path, data.testFilesDir)),
+          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
           path: path.join(data.path, data.testFilesDir, 'testfile.txt'),
           id: 0,
           contents: 'This is a different line of text.',
@@ -1243,33 +1114,17 @@ function doFiles(data) {
         });
 
         testRenameFile({
-          url:
-            data.url +
-            '/' +
-            encodePath(path.join(data.path, data.testFilesDir)),
+          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir)),
           id: 0,
-          path: path.join(
-            data.path,
-            data.testFilesDir,
-            'subdir',
-            'testfile.txt',
-          ),
+          path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
           contents: 'This is a different line of text.',
           new_file_name: path.join('subdir', 'testfile.txt'),
         });
 
         testDeleteFile({
-          url:
-            data.url +
-            '/' +
-            encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
+          url: data.url + '/' + encodePath(path.join(data.path, data.testFilesDir, 'subdir')),
           id: 0,
-          path: path.join(
-            data.path,
-            data.testFilesDir,
-            'subdir',
-            'testfile.txt',
-          ),
+          path: path.join(data.path, data.testFilesDir, 'subdir', 'testfile.txt'),
         });
       });
     }
@@ -1288,16 +1143,14 @@ function testUploadFile(params) {
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
       elemList = $(
-        `form[name="instructor-file-upload-form-${params.id}"] input[name="__csrf_token"]`,
+        `form[name="instructor-file-upload-form-${params.id}"] input[name="__csrf_token"]`
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // file_path or working_path
-      elemList = $(
-        `form[name="instructor-file-upload-form-${params.id}"] input[name="file_path"]`,
-      );
+      elemList = $(`form[name="instructor-file-upload-form-${params.id}"] input[name="file_path"]`);
       if (elemList.length > 0) {
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1305,7 +1158,7 @@ function testUploadFile(params) {
         locals.working_path = undefined;
       } else {
         elemList = $(
-          `form[name="instructor-file-upload-form-${params.id}"] input[name="working_path"]`,
+          `form[name="instructor-file-upload-form-${params.id}"] input[name="working_path"]`
         );
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1333,8 +1186,7 @@ function testUploadFile(params) {
         },
       };
       if (locals.file_path) options.formData.file_path = locals.file_path;
-      else if (locals.working_path)
-        options.formData.working_path = locals.working_path;
+      else if (locals.working_path) options.formData.working_path = locals.working_path;
       else assert.fail('found neither file_path nor working_path');
       page = await requestp.post(options);
       locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
@@ -1356,7 +1208,7 @@ function testRenameFile(params) {
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
       elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="__csrf_token"]`,
+        `form[name="instructor-file-rename-form-${params.id}"] input[name="__csrf_token"]`
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1364,14 +1216,14 @@ function testRenameFile(params) {
       assert.isString(locals.__csrf_token);
       // old_file_name
       elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="old_file_name"]`,
+        `form[name="instructor-file-rename-form-${params.id}"] input[name="old_file_name"]`
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.old_file_name = elemList[0].attribs.value;
       // working_path
       elemList = $(
-        `form[name="instructor-file-rename-form-${params.id}"] input[name="working_path"]`,
+        `form[name="instructor-file-rename-form-${params.id}"] input[name="working_path"]`
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1412,16 +1264,14 @@ function testDeleteFile(params) {
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
       elemList = $(
-        `form[name="instructor-file-delete-form-${params.id}"] input[name="__csrf_token"]`,
+        `form[name="instructor-file-delete-form-${params.id}"] input[name="__csrf_token"]`
       );
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
       // file_path
-      elemList = $(
-        `form[name="instructor-file-delete-form-${params.id}"] input[name="file_path"]`,
-      );
+      elemList = $(`form[name="instructor-file-delete-form-${params.id}"] input[name="file_path"]`);
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.file_path = elemList[0].attribs.value;

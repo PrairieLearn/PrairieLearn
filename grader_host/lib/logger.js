@@ -28,7 +28,7 @@ logger.initCloudWatchLogging = function (groupName, streamName) {
       submissionInterval: 500,
       batchSize: 100,
       awsConfig: config.awsConfig,
-    }),
+    })
   );
 };
 

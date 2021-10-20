@@ -48,7 +48,7 @@
           Matrix.I(4),
           this._initViewAngleX3D,
           this._initViewAngleY3D,
-          this._initViewAngleZ3D,
+          this._initViewAngleZ3D
         );
         this._trans3DStack = [];
 
@@ -238,13 +238,7 @@
         @param {Vector} new2 The new location of point 2.
     */
   PrairieDraw.prototype.transformByPoints = function (old1, old2, new1, new2) {
-    this._trans = PrairieGeom.transformByPointsTransform(
-      this._trans,
-      old1,
-      old2,
-      new1,
-      new2,
-    );
+    this._trans = PrairieGeom.transformByPointsTransform(this._trans, old1, old2, new1, new2);
   };
 
   /*****************************************************************************/
@@ -290,9 +284,7 @@
         @return {bool} Whether the current transformation is a reflection.
     */
   PrairieDraw.prototype._transIsReflection = function () {
-    var det =
-      this._trans.e(1, 1) * this._trans.e(2, 2) -
-      this._trans.e(1, 2) * this._trans.e(2, 1);
+    var det = this._trans.e(1, 1) * this._trans.e(2, 2) - this._trans.e(1, 2) * this._trans.e(2, 1);
     if (det < 0) {
       return true;
     } else {
@@ -329,13 +321,7 @@
         @param {bool} clip (Optional) Whether to clip to max/min range (default: true).
         @param {bool} redraw (Optional) Whether to redraw (default: true).
     */
-  PrairieDraw.prototype.setView3D = function (
-    angleX,
-    angleY,
-    angleZ,
-    clip,
-    redraw,
-  ) {
+  PrairieDraw.prototype.setView3D = function (angleX, angleY, angleZ, clip, redraw) {
     clip = clip === undefined ? true : clip;
     redraw = redraw === undefined ? true : redraw;
     this._viewAngleX3D = angleX;
@@ -345,24 +331,24 @@
       this._viewAngleX3D = PrairieGeom.clip(
         this._viewAngleX3D,
         this._props.viewAngleXMin,
-        this._props.viewAngleXMax,
+        this._props.viewAngleXMax
       );
       this._viewAngleY3D = PrairieGeom.clip(
         this._viewAngleY3D,
         this._props.viewAngleYMin,
-        this._props.viewAngleYMax,
+        this._props.viewAngleYMax
       );
       this._viewAngleZ3D = PrairieGeom.clip(
         this._viewAngleZ3D,
         this._props.viewAngleZMin,
-        this._props.viewAngleZMax,
+        this._props.viewAngleZMax
       );
     }
     this._trans3D = PrairieGeom.rotateTransform3D(
       Matrix.I(4),
       this._viewAngleX3D,
       this._viewAngleY3D,
-      this._viewAngleZ3D,
+      this._viewAngleZ3D
     );
     if (redraw) {
       this.redraw();
@@ -379,7 +365,7 @@
       this._initViewAngleY3D,
       this._initViewAngleZ3D,
       undefined,
-      redraw,
+      redraw
     );
   };
 
@@ -390,17 +376,12 @@
         @param {number} deltaAngleZ The incremental rotation angle about the Z axis.
         @param {bool} clip (Optional) Whether to clip to max/min range (default: true).
     */
-  PrairieDraw.prototype.incrementView3D = function (
-    deltaAngleX,
-    deltaAngleY,
-    deltaAngleZ,
-    clip,
-  ) {
+  PrairieDraw.prototype.incrementView3D = function (deltaAngleX, deltaAngleY, deltaAngleZ, clip) {
     this.setView3D(
       this._viewAngleX3D + deltaAngleX,
       this._viewAngleY3D + deltaAngleY,
       this._viewAngleZ3D + deltaAngleZ,
-      clip,
+      clip
     );
   };
 
@@ -429,12 +410,7 @@
         @param {number} angleZ Angle to rotate by around the Z axis (radians).
     */
   PrairieDraw.prototype.rotate3D = function (angleX, angleY, angleZ) {
-    this._trans3D = PrairieGeom.rotateTransform3D(
-      this._trans3D,
-      angleX,
-      angleY,
-      angleZ,
-    );
+    this._trans3D = PrairieGeom.rotateTransform3D(this._trans3D, angleX, angleY, angleZ);
   };
 
   /*****************************************************************************/
@@ -640,13 +616,7 @@
         @param {Object} trigger (Optional) The object that triggered the change.
         @param {bool} setReset (Optional) Also set this value to be the new reset value (default: false).
     */
-  PrairieDraw.prototype.setOption = function (
-    name,
-    value,
-    redraw,
-    trigger,
-    setReset,
-  ) {
+  PrairieDraw.prototype.setOption = function (name, value, redraw, trigger, setReset) {
     redraw = redraw === undefined ? true : redraw;
     setReset = setReset === undefined ? false : setReset;
     if (!(name in this._options)) {
@@ -705,11 +675,7 @@
         @param {Function} callback The callback(value) function.
         @param {string} callbackID (Optional) The ID of the callback. If omitted, a new unique ID will be generated.
     */
-  PrairieDraw.prototype.registerOptionCallback = function (
-    name,
-    callback,
-    callbackID,
-  ) {
+  PrairieDraw.prototype.registerOptionCallback = function (name, callback, callbackID) {
     if (!(name in this._options)) {
       throw new Error('PrairieDraw: unknown option: ' + name);
     }
@@ -788,9 +754,7 @@
   PrairieDraw.prototype.restore = function () {
     this._ctx.restore();
     if (this._propStack.length === 0) {
-      throw new Error(
-        'PrairieDraw: tried to restore() without corresponding save()',
-      );
+      throw new Error('PrairieDraw: tried to restore() without corresponding save()');
     }
     if (this._propStack.length !== this._transStack.length) {
       throw new Error('PrairieDraw: incompatible save stack lengths');
@@ -845,12 +809,7 @@
         @param {number} canvasWidth (Optional) The width of the canvas in px.
         @param {bool} preserveCanvasSize (Optional) If true, do not resize the canvas to match the coordinate ratio.
     */
-  PrairieDraw.prototype.setUnits = function (
-    xSize,
-    ySize,
-    canvasWidth,
-    preserveCanvasSize,
-  ) {
+  PrairieDraw.prototype.setUnits = function (xSize, ySize, canvasWidth, preserveCanvasSize) {
     this.clearDrawing();
     this._trans = Matrix.I(3);
     if (canvasWidth !== undefined) {
@@ -899,13 +858,7 @@
     posDw = this.pos3To2(posDw);
     var posPx = this.pos2Px(posDw);
     this._ctx.beginPath();
-    this._ctx.arc(
-      posPx.e(1),
-      posPx.e(2),
-      this._props.pointRadiusPx,
-      0,
-      2 * Math.PI,
-    );
+    this._ctx.arc(posPx.e(1), posPx.e(2), this._props.pointRadiusPx, 0, 2 * Math.PI);
     this._ctx.fillStyle = this._props.shapeOutlineColor;
     this._ctx.fill();
   };
@@ -982,14 +935,7 @@
     this._ctx.setLineDash(this._dashPattern(this._props.shapeStrokePattern));
     this._ctx.beginPath();
     this._ctx.moveTo(p0Px.e(1), p0Px.e(2));
-    this._ctx.bezierCurveTo(
-      p1Px.e(1),
-      p1Px.e(2),
-      p2Px.e(1),
-      p2Px.e(2),
-      p3Px.e(1),
-      p3Px.e(2),
-    );
+    this._ctx.bezierCurveTo(p1Px.e(1), p1Px.e(2), p2Px.e(1), p2Px.e(2), p3Px.e(1), p3Px.e(2));
     this._ctx.stroke();
     this._ctx.restore();
   };
@@ -1049,11 +995,9 @@
       lineEndDw = endDw;
       drawArrowHead = false;
     } else {
-      var arrowheadMaxLengthPx =
-        this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
+      var arrowheadMaxLengthPx = this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
       arrowheadLengthPx = Math.min(arrowheadMaxLengthPx, arrowLengthPx / 2);
-      var arrowheadCenterLengthPx =
-        (1 - this._props.arrowheadOffsetRatio) * arrowheadLengthPx;
+      var arrowheadCenterLengthPx = (1 - this._props.arrowheadOffsetRatio) * arrowheadLengthPx;
       var lineLengthPx = arrowLengthPx - arrowheadCenterLengthPx;
       lineEndDw = startDw.add(offsetDw.x(lineLengthPx / arrowLengthPx));
       drawArrowHead = true;
@@ -1174,7 +1118,7 @@
     centerAngleDw,
     extentAngleDw,
     type,
-    fixedRad,
+    fixedRad
   ) {
     var startAngleDw = centerAngleDw - extentAngleDw / 2;
     var endAngleDw = centerAngleDw + extentAngleDw / 2;
@@ -1198,7 +1142,7 @@
     endAngleDw,
     type,
     fixedRad,
-    idealSegmentSize,
+    idealSegmentSize
   ) {
     this.save();
     this._ctx.lineWidth = this._props.arrowLineWidthPx;
@@ -1222,55 +1166,38 @@
       startAnglePx,
       startAnglePx,
       endAnglePx,
-      fixedRad,
+      fixedRad
     );
     var endRadiusPx = this._circleArrowRadius(
       radiusPx,
       endAnglePx,
       startAnglePx,
       endAnglePx,
-      fixedRad,
+      fixedRad
     );
     var arrowLengthPx = radiusPx * Math.abs(endAnglePx - startAnglePx);
-    var arrowheadMaxLengthPx =
-      this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
+    var arrowheadMaxLengthPx = this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
     var arrowheadLengthPx = Math.min(arrowheadMaxLengthPx, arrowLengthPx / 2);
-    var arrowheadCenterLengthPx =
-      (1 - this._props.arrowheadOffsetRatio) * arrowheadLengthPx;
+    var arrowheadCenterLengthPx = (1 - this._props.arrowheadOffsetRatio) * arrowheadLengthPx;
     var arrowheadExtraCenterLengthPx =
       (1 - this._props.arrowheadOffsetRatio / 3) * arrowheadLengthPx;
     var arrowheadAnglePx = arrowheadCenterLengthPx / endRadiusPx;
     var arrowheadExtraAnglePx = arrowheadExtraCenterLengthPx / endRadiusPx;
-    var preEndAnglePx =
-      endAnglePx -
-      PrairieGeom.sign(endAnglePx - startAnglePx) * arrowheadAnglePx;
+    var preEndAnglePx = endAnglePx - PrairieGeom.sign(endAnglePx - startAnglePx) * arrowheadAnglePx;
     var arrowBaseAnglePx =
-      endAnglePx -
-      PrairieGeom.sign(endAnglePx - startAnglePx) * arrowheadExtraAnglePx;
+      endAnglePx - PrairieGeom.sign(endAnglePx - startAnglePx) * arrowheadExtraAnglePx;
 
     this._ctx.save();
     this._ctx.translate(posPx.e(1), posPx.e(2));
     idealSegmentSize = idealSegmentSize === undefined ? 0.2 : idealSegmentSize; // radians
-    var numSegments = Math.ceil(
-      Math.abs(preEndAnglePx - startAnglePx) / idealSegmentSize,
-    );
+    var numSegments = Math.ceil(Math.abs(preEndAnglePx - startAnglePx) / idealSegmentSize);
     var i, anglePx, rPx;
     var offsetPx = PrairieGeom.vector2DAtAngle(startAnglePx).x(startRadiusPx);
     this._ctx.beginPath();
     this._ctx.moveTo(offsetPx.e(1), offsetPx.e(2));
     for (i = 1; i <= numSegments; i++) {
-      anglePx = PrairieGeom.linearInterp(
-        startAnglePx,
-        preEndAnglePx,
-        i / numSegments,
-      );
-      rPx = this._circleArrowRadius(
-        radiusPx,
-        anglePx,
-        startAnglePx,
-        endAnglePx,
-        fixedRad,
-      );
+      anglePx = PrairieGeom.linearInterp(startAnglePx, preEndAnglePx, i / numSegments);
+      rPx = this._circleArrowRadius(radiusPx, anglePx, startAnglePx, endAnglePx, fixedRad);
       offsetPx = PrairieGeom.vector2DAtAngle(anglePx).x(rPx);
       this._ctx.lineTo(offsetPx.e(1), offsetPx.e(2));
     }
@@ -1282,13 +1209,11 @@
       arrowBaseAnglePx,
       startAnglePx,
       endAnglePx,
-      fixedRad,
+      fixedRad
     );
-    var arrowPosPx = posPx.add(
-      PrairieGeom.vector2DAtAngle(endAnglePx).x(endRadiusPx),
-    );
+    var arrowPosPx = posPx.add(PrairieGeom.vector2DAtAngle(endAnglePx).x(endRadiusPx));
     var arrowBasePosPx = posPx.add(
-      PrairieGeom.vector2DAtAngle(arrowBaseAnglePx).x(arrowBaseRadiusPx),
+      PrairieGeom.vector2DAtAngle(arrowBaseAnglePx).x(arrowBaseRadiusPx)
     );
     var arrowDirPx = arrowPosPx.subtract(arrowBasePosPx);
     var arrowPosDw = this.pos2Dw(arrowPosPx);
@@ -1312,7 +1237,7 @@
     anglePx,
     startAnglePx,
     endAnglePx,
-    fixedRad,
+    fixedRad
   ) {
     if (fixedRad !== undefined && fixedRad === true) {
       return midRadPx;
@@ -1320,8 +1245,7 @@
     if (Math.abs(endAnglePx - startAnglePx) < 1e-4) {
       return midRadPx;
     }
-    var arrowheadMaxLengthPx =
-      this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
+    var arrowheadMaxLengthPx = this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
     /* jshint laxbreak: true */
     var spacingPx =
       arrowheadMaxLengthPx *
@@ -1329,8 +1253,7 @@
       this._props.circleArrowWrapOffsetRatio;
     var circleArrowWrapDensity = (midRadPx * Math.PI * 2) / spacingPx;
     var midAnglePx = (startAnglePx + endAnglePx) / 2;
-    var offsetAnglePx =
-      (anglePx - midAnglePx) * PrairieGeom.sign(endAnglePx - startAnglePx);
+    var offsetAnglePx = (anglePx - midAnglePx) * PrairieGeom.sign(endAnglePx - startAnglePx);
     if (offsetAnglePx > 0) {
       return midRadPx * (1 + offsetAnglePx / circleArrowWrapDensity);
     } else {
@@ -1358,7 +1281,7 @@
     refDw,
     startAngleDw,
     endAngleDw,
-    options,
+    options
   ) {
     posDw = this.pos2To3(posDw);
     normDw = normDw === undefined ? Vector.k : normDw;
@@ -1369,26 +1292,16 @@
 
     options = options === undefined ? {} : options;
     var idealSegmentSize =
-      options.idealSegmentSize === undefined
-        ? (2 * Math.PI) / 40
-        : options.idealSegmentSize;
+      options.idealSegmentSize === undefined ? (2 * Math.PI) / 40 : options.idealSegmentSize;
 
     var uDw = PrairieGeom.orthComp(refDw, normDw).toUnitVector();
     var vDw = normDw.toUnitVector().cross(uDw);
-    var numSegments = Math.ceil(
-      Math.abs(endAngleDw - startAngleDw) / idealSegmentSize,
-    );
+    var numSegments = Math.ceil(Math.abs(endAngleDw - startAngleDw) / idealSegmentSize);
     var points = [];
     var theta, p;
     for (var i = 0; i <= numSegments; i++) {
-      theta = PrairieGeom.linearInterp(
-        startAngleDw,
-        endAngleDw,
-        i / numSegments,
-      );
-      p = posDw
-        .add(uDw.x(radDw * Math.cos(theta)))
-        .add(vDw.x(radDw * Math.sin(theta)));
+      theta = PrairieGeom.linearInterp(startAngleDw, endAngleDw, i / numSegments);
+      p = posDw.add(uDw.x(radDw * Math.cos(theta))).add(vDw.x(radDw * Math.sin(theta)));
       points.push(this.pos3To2(p));
     }
     if (fullCircle) {
@@ -1420,7 +1333,7 @@
     startAngleDw,
     endAngleDw,
     type,
-    options,
+    options
   ) {
     posDw = this.pos2To3(posDw);
     normDw = normDw || Vector.k;
@@ -1430,26 +1343,16 @@
 
     options = options === undefined ? {} : options;
     var idealSegmentSize =
-      options.idealSegmentSize === undefined
-        ? (2 * Math.PI) / 40
-        : options.idealSegmentSize;
+      options.idealSegmentSize === undefined ? (2 * Math.PI) / 40 : options.idealSegmentSize;
 
     var uDw = PrairieGeom.orthComp(refDw, normDw).toUnitVector();
     var vDw = normDw.toUnitVector().cross(uDw);
-    var numSegments = Math.ceil(
-      Math.abs(endAngleDw - startAngleDw) / idealSegmentSize,
-    );
+    var numSegments = Math.ceil(Math.abs(endAngleDw - startAngleDw) / idealSegmentSize);
     var points = [];
     var theta, p;
     for (var i = 0; i <= numSegments; i++) {
-      theta = PrairieGeom.linearInterp(
-        startAngleDw,
-        endAngleDw,
-        i / numSegments,
-      );
-      p = posDw
-        .add(uDw.x(radDw * Math.cos(theta)))
-        .add(vDw.x(radDw * Math.sin(theta)));
+      theta = PrairieGeom.linearInterp(startAngleDw, endAngleDw, i / numSegments);
+      p = posDw.add(uDw.x(radDw * Math.cos(theta))).add(vDw.x(radDw * Math.sin(theta)));
       points.push(this.pos3To2(p));
     }
     this.polyLineArrow(points, type);
@@ -1474,7 +1377,7 @@
     normDw,
     refDw,
     startAngleDw,
-    endAngleDw,
+    endAngleDw
   ) {
     if (labelText === undefined) {
       return;
@@ -1488,14 +1391,8 @@
     var uDw = PrairieGeom.orthComp(refDw, normDw).toUnitVector();
     var vDw = normDw.toUnitVector().cross(uDw);
 
-    var theta = PrairieGeom.linearInterp(
-      startAngleDw,
-      endAngleDw,
-      (labelAnchor.e(1) + 1) / 2,
-    );
-    var p = posDw
-      .add(uDw.x(radDw * Math.cos(theta)))
-      .add(vDw.x(radDw * Math.sin(theta)));
+    var theta = PrairieGeom.linearInterp(startAngleDw, endAngleDw, (labelAnchor.e(1) + 1) / 2);
+    var p = posDw.add(uDw.x(radDw * Math.cos(theta))).add(vDw.x(radDw * Math.sin(theta)));
     var p2Dw = this.pos3To2(p);
     var t3Dw = uDw.x(-Math.sin(theta)).add(vDw.x(Math.cos(theta)));
     var n3Dw = uDw.x(Math.cos(theta)).add(vDw.x(Math.sin(theta)));
@@ -1507,9 +1404,7 @@
     var oPx = t2Px.x(labelAnchor.e(1)).add(n2Px.x(labelAnchor.e(2)));
     var oDw = this.vec2Dw(oPx);
     var aDw = oDw.x(-1).toUnitVector();
-    var anchor = aDw
-      .x(1.0 / Math.abs(aDw.max()))
-      .x(Math.abs(labelAnchor.max()));
+    var anchor = aDw.x(1.0 / Math.abs(aDw.max())).x(Math.abs(labelAnchor.max()));
     this.text(p2Dw, anchor, labelText);
   };
 
@@ -1552,7 +1447,7 @@
     drawFront,
     refDw,
     startAngleDw,
-    endAngleDw,
+    endAngleDw
   ) {
     var cRDwSq = radDw * radDw - distDw * distDw;
     if (cRDwSq <= 0) {
@@ -1624,7 +1519,7 @@
           } else {
             intersections = PrairieGeom.intersectAngleRanges(
               [theta1, theta2],
-              [startAngleDw, endAngleDw],
+              [startAngleDw, endAngleDw]
             );
             for (i = 0; i < intersections.length; i++) {
               range = intersections[i];
@@ -1636,18 +1531,11 @@
       }
       if (drawFront) {
         if (startAngleDw === undefined || endAngleDw === undefined) {
-          this.arc3D(
-            circlePosDw,
-            cRDw,
-            normDw,
-            refDw,
-            theta2,
-            theta1 + 2 * Math.PI,
-          );
+          this.arc3D(circlePosDw, cRDw, normDw, refDw, theta2, theta1 + 2 * Math.PI);
         } else {
           intersections = PrairieGeom.intersectAngleRanges(
             [theta2, theta1 + 2 * Math.PI],
-            [startAngleDw, endAngleDw],
+            [startAngleDw, endAngleDw]
           );
           for (i = 0; i < intersections.length; i++) {
             range = intersections[i];
@@ -1689,14 +1577,7 @@
         @param {bool} filled (Optional) Whether to fill the arc (default: false).
         @param {Number} aspect (Optional) The aspect ratio (major / minor) (default: 1).
     */
-  PrairieDraw.prototype.arc = function (
-    centerDw,
-    radiusDw,
-    startAngle,
-    endAngle,
-    filled,
-    aspect,
-  ) {
+  PrairieDraw.prototype.arc = function (centerDw, radiusDw, startAngle, endAngle, filled, aspect) {
     startAngle = startAngle === undefined ? 0 : startAngle;
     endAngle = endAngle === undefined ? 2 * Math.PI : endAngle;
     filled = filled === undefined ? false : filled;
@@ -1789,11 +1670,9 @@
       drawArrowHead = false;
     } else {
       drawArrowHead = true;
-      var arrowheadMaxLengthPx =
-        this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
+      var arrowheadMaxLengthPx = this._props.arrowheadLengthRatio * this._props.arrowLineWidthPx;
       arrowheadLengthPx = Math.min(arrowheadMaxLengthPx, polyLineLengthPx / 2);
-      var arrowheadCenterLengthPx =
-        (1 - this._props.arrowheadOffsetRatio) * arrowheadLengthPx;
+      var arrowheadCenterLengthPx = (1 - this._props.arrowheadOffsetRatio) * arrowheadLengthPx;
       var lengthToRemovePx = arrowheadCenterLengthPx;
       i = pointsPx.length - 1;
       arrowheadEndPx = pointsPx[i];
@@ -1808,7 +1687,7 @@
           pointsPx[i] = PrairieGeom.linearInterpVector(
             pointsPx[i],
             pointsPx[i - 1],
-            lengthToRemovePx / segmentLengthPx,
+            lengthToRemovePx / segmentLengthPx
           );
           break;
         }
@@ -1910,7 +1789,7 @@
     labelStart,
     labelEnd,
     arrowToLine,
-    arrowDown,
+    arrowDown
   ) {
     var LengthDw = endDw.subtract(startDw);
     var L = LengthDw.modulus();
@@ -1937,31 +1816,23 @@
     this.setProp('arrowheadLengthRatio', 11);
 
     if (arrowToLine) {
-      this.line(
-        startDw.add($V([0, sizeStartDwSign])),
-        endDw.add($V([0, sizeEndDwSign])),
-      );
+      this.line(startDw.add($V([0, sizeStartDwSign])), endDw.add($V([0, sizeEndDwSign])));
       var startArrow = startDw.add($V([0, sizeStartDwSign]));
       var endArrow = startDw;
       for (i = 0; i <= nSpaces; i++) {
         this.arrow(
-          startArrow.add(
-            $V([inc, (inc * (sizeEndDwSign - sizeStartDwSign)) / L]),
-          ),
-          endArrow.add($V([inc, 0])),
+          startArrow.add($V([inc, (inc * (sizeEndDwSign - sizeStartDwSign)) / L])),
+          endArrow.add($V([inc, 0]))
         );
         inc = inc + spacing;
       }
       this.text(startArrow, $V([2, 0]), labelStart);
       this.text(
         startArrow.add(
-          $V([
-            inc - spacing,
-            ((inc - spacing) * (sizeEndDwSign - sizeStartDwSign)) / L,
-          ]),
+          $V([inc - spacing, ((inc - spacing) * (sizeEndDwSign - sizeStartDwSign)) / L])
         ),
         $V([-2, 0]),
-        labelEnd,
+        labelEnd
       );
     } else {
       this.line(startDw, endDw);
@@ -1970,22 +1841,17 @@
       for (i = 0; i <= nSpaces; i++) {
         this.arrow(
           startArrow.add($V([inc, 0])),
-          endArrow.add(
-            $V([inc, (-inc * (sizeEndDwSign - sizeStartDwSign)) / L]),
-          ),
+          endArrow.add($V([inc, (-inc * (sizeEndDwSign - sizeStartDwSign)) / L]))
         );
         inc = inc + spacing;
       }
       this.text(endArrow, $V([2, 0]), labelStart);
       this.text(
         endArrow.add(
-          $V([
-            inc - spacing,
-            (-(inc - spacing) * (sizeEndDwSign - sizeStartDwSign)) / L,
-          ]),
+          $V([inc - spacing, (-(inc - spacing) * (sizeEndDwSign - sizeStartDwSign)) / L])
         ),
         $V([-2, 0]),
-        labelEnd,
+        labelEnd
       );
     }
 
@@ -2038,12 +1904,7 @@
         @param {Vector} endDw The third hinge point (drawing coordinates).
         @param {number} widthDw The width of the rod (drawing coordinates).
     */
-  PrairieDraw.prototype.LshapeRod = function (
-    startDw,
-    centerDw,
-    endDw,
-    widthDw,
-  ) {
+  PrairieDraw.prototype.LshapeRod = function (startDw, centerDw, endDw, widthDw) {
     var offsetLength1Dw = centerDw.subtract(startDw);
     var offsetLength2Dw = endDw.subtract(centerDw);
     var offsetWidthDw = offsetLength1Dw
@@ -2109,13 +1970,7 @@
         @param {Vector} centerEndDw The fourth hinge point (drawing coordinates).
         @param {number} widthDw The width of the rod (drawing coordinates).
     */
-  PrairieDraw.prototype.TshapeRod = function (
-    startDw,
-    centerDw,
-    endDw,
-    centerEndDw,
-    widthDw,
-  ) {
+  PrairieDraw.prototype.TshapeRod = function (startDw, centerDw, endDw, centerEndDw, widthDw) {
     var offsetStartRodDw = centerDw.subtract(startDw);
     var offsetEndRodDw = endDw.subtract(centerDw);
     var offsetCenterRodDw = centerEndDw.subtract(centerDw);
@@ -2142,14 +1997,8 @@
     this._ctx.beginPath();
     this._ctx.moveTo(0, rPx);
 
-    var angleStartToEnd = PrairieGeom.angleFrom(
-      offsetStartRodPx,
-      offsetEndRodPx,
-    );
-    var angleEndToCenter = PrairieGeom.angleFrom(
-      offsetEndRodPx,
-      offsetCenterRodPx,
-    );
+    var angleStartToEnd = PrairieGeom.angleFrom(offsetStartRodPx, offsetEndRodPx);
+    var angleEndToCenter = PrairieGeom.angleFrom(offsetEndRodPx, offsetCenterRodPx);
 
     if (Math.abs(angleEndToCenter) < Math.PI) {
       var length1Px = lengthStartRodPx;
@@ -2179,14 +2028,10 @@
     var y6 = y5 - rPx * Math.cos(beta);
     var x7 =
       length1Px +
-      rPx *
-        Math.cos(beta) *
-        (1 / Math.sin(alpha) + 1 / Math.tan(alpha) - Math.tan(beta));
+      rPx * Math.cos(beta) * (1 / Math.sin(alpha) + 1 / Math.tan(alpha) - Math.tan(beta));
     var y7 =
       -rPx / Math.cos(beta) -
-      rPx *
-        Math.sin(beta) *
-        (1 / Math.sin(alpha) + 1 / Math.tan(alpha) - Math.tan(beta));
+      rPx * Math.sin(beta) * (1 / Math.sin(alpha) + 1 / Math.tan(alpha) - Math.tan(beta));
     var x8 = length1Px + length3Px * Math.cos(beta + alpha);
     var y8 = -length3Px * Math.sin(beta + alpha);
     var x9 = x8 + rPx * Math.sin(beta + alpha);
@@ -2197,8 +2042,7 @@
     var y11 = y8 - rPx * Math.sin(beta + alpha);
     var x12 = x11 - rPx * Math.sin(beta + alpha);
     var y12 = y11 - rPx * Math.cos(beta + alpha);
-    var x13 =
-      length1Px - rPx / Math.sin(beta + alpha) + rPx / Math.tan(beta + alpha);
+    var x13 = length1Px - rPx / Math.sin(beta + alpha) + rPx / Math.tan(beta + alpha);
     var y13 = -rPx;
 
     this._ctx.arcTo(x1, y1, x3, y3, rPx);
@@ -2291,13 +2135,7 @@
         @param {number} angleDw Optional: The rotation angle of the rectangle (default: zero).
         @param {bool} filled Optional: Whether to fill the rectangle (default: true).
     */
-  PrairieDraw.prototype.rectangle = function (
-    widthDw,
-    heightDw,
-    centerDw,
-    angleDw,
-    filled,
-  ) {
+  PrairieDraw.prototype.rectangle = function (widthDw, heightDw, centerDw, angleDw, filled) {
     centerDw = centerDw === undefined ? $V([0, 0]) : centerDw;
     angleDw = angleDw === undefined ? 0 : angleDw;
     var pointsDw = [
@@ -2322,9 +2160,7 @@
         @param {number} heightDw The height of the rectangle.
     */
   PrairieDraw.prototype.rectangleGeneric = function (pos1Dw, pos2Dw, heightDw) {
-    var dDw = PrairieGeom.perp(pos2Dw.subtract(pos1Dw))
-      .toUnitVector()
-      .x(heightDw);
+    var dDw = PrairieGeom.perp(pos2Dw.subtract(pos1Dw)).toUnitVector().x(heightDw);
     var pointsDw = [pos1Dw, pos2Dw, pos2Dw.add(dDw), pos1Dw.add(dDw)];
     var closed = true;
     this.polyLine(pointsDw, closed);
@@ -2372,12 +2208,7 @@
         @param (number} lengthDw The total length of the ground segment (drawing coords).
         @param {number} offsetDw (Optional) The offset of the shading (drawing coords).
     */
-  PrairieDraw.prototype.groundHashed = function (
-    posDw,
-    normDw,
-    lengthDw,
-    offsetDw,
-  ) {
+  PrairieDraw.prototype.groundHashed = function (posDw, normDw, lengthDw, offsetDw) {
     offsetDw = offsetDw === undefined ? 0 : offsetDw;
     var tangentDw = normDw
       .rotate(Math.PI / 2, $V([0, 0]))
@@ -2408,10 +2239,7 @@
     while (x < lengthPx / 2) {
       this._ctx.beginPath();
       this._ctx.moveTo(x, 0);
-      this._ctx.lineTo(
-        x - this._props.groundWidthPx,
-        this._props.groundDepthPx,
-      );
+      this._ctx.lineTo(x - this._props.groundWidthPx, this._props.groundDepthPx);
       this._ctx.stroke();
       x += this._props.groundSpacingPx;
     }
@@ -2419,10 +2247,7 @@
     while (x > -lengthPx / 2) {
       this._ctx.beginPath();
       this._ctx.moveTo(x, 0);
-      this._ctx.lineTo(
-        x - this._props.groundWidthPx,
-        this._props.groundDepthPx,
-      );
+      this._ctx.lineTo(x - this._props.groundWidthPx, this._props.groundDepthPx);
       this._ctx.stroke();
       x -= this._props.groundSpacingPx;
     }
@@ -2438,13 +2263,7 @@
         @param {number} endAngle (Optional) The end angle of the arc (radians, default: 2 pi).
         @param {bool} outside (Optional) Whether to draw the ground outside the curve (default: true).
     */
-  PrairieDraw.prototype.arcGround = function (
-    centerDw,
-    radiusDw,
-    startAngle,
-    endAngle,
-    outside,
-  ) {
+  PrairieDraw.prototype.arcGround = function (centerDw, radiusDw, startAngle, endAngle, outside) {
     startAngle = startAngle === undefined ? 0 : startAngle;
     endAngle = endAngle === undefined ? 2 * Math.PI : endAngle;
     outside = outside === undefined ? true : outside;
@@ -2457,33 +2276,20 @@
     this._ctx.save();
     // fill the shaded area
     this._ctx.beginPath();
-    this._ctx.arc(
-      centerPx.e(1),
-      centerPx.e(2),
-      radiusPx,
-      -endAngle,
-      -startAngle,
-      false,
-    );
+    this._ctx.arc(centerPx.e(1), centerPx.e(2), radiusPx, -endAngle, -startAngle, false);
     this._ctx.arc(
       centerPx.e(1),
       centerPx.e(2),
       radiusPx + groundOffsetPx,
       -startAngle,
       -endAngle,
-      true,
+      true
     );
     this._ctx.fillStyle = this._props.groundInsideColor;
     this._ctx.fill();
     // draw the ground surface
     this._ctx.beginPath();
-    this._ctx.arc(
-      centerPx.e(1),
-      centerPx.e(2),
-      radiusPx,
-      -endAngle,
-      -startAngle,
-    );
+    this._ctx.arc(centerPx.e(1), centerPx.e(2), radiusPx, -endAngle, -startAngle);
     this._ctx.lineWidth = this._props.shapeStrokeWidthPx;
     this._ctx.setLineDash(this._dashPattern(this._props.shapeStrokePattern));
     this._ctx.strokeStyle = this._props.groundOutlineColor;
@@ -2535,9 +2341,7 @@
     var o = this._props.measurementOffsetPx;
     this._ctx.save();
     this._ctx.lineWidth = this._props.measurementStrokeWidthPx;
-    this._ctx.setLineDash(
-      this._dashPattern(this._props.measurementStrokePattern),
-    );
+    this._ctx.setLineDash(this._dashPattern(this._props.measurementStrokePattern));
     this._ctx.strokeStyle = this._props.measurementColor;
     this._ctx.translate(startPx.e(1), startPx.e(2));
     this._ctx.rotate(PrairieGeom.angleOf(offsetPx));
@@ -2583,18 +2387,14 @@
     var posPx, dirPx, normPx;
     if (posDw.elements.length === 3) {
       posPx = this.pos2Px(this.pos3To2(posDw));
-      var d = this.vec2To3(
-        this.vec2Dw($V([this._props.rightAngleSizePx, 0])),
-      ).modulus();
+      var d = this.vec2To3(this.vec2Dw($V([this._props.rightAngleSizePx, 0]))).modulus();
       dirPx = this.vec2Px(this.vec3To2(dirDw.toUnitVector().x(d), posDw));
       normPx = this.vec2Px(this.vec3To2(normDw.toUnitVector().x(d), posDw));
     } else {
       posPx = this.pos2Px(posDw);
       dirPx = this.vec2Px(dirDw).toUnitVector().x(this._props.rightAngleSizePx);
       if (normDw !== undefined) {
-        normPx = this.vec2Px(normDw)
-          .toUnitVector()
-          .x(this._props.rightAngleSizePx);
+        normPx = this.vec2Px(normDw).toUnitVector().x(this._props.rightAngleSizePx);
       } else {
         normPx = dirPx.rotate(-Math.PI / 2, $V([0, 0]));
       }
@@ -2685,7 +2485,7 @@
             xPx - offsetPx.e(1) - textBorderPx,
             yPx + offsetPx.e(2) - textBorderPx,
             img.width + 2 * textBorderPx,
-            img.height + 2 * textBorderPx,
+            img.height + 2 * textBorderPx
           );
           this._ctx.restore();
         }
@@ -2736,9 +2536,7 @@
       this._ctx.textAlign = align;
       this._ctx.textBaseline = baseline;
       this._ctx.translate(posPx.e(1), posPx.e(2));
-      offsetPx = anchor
-        .toUnitVector()
-        .x(Math.abs(anchor.max()) * this._props.textOffsetPx);
+      offsetPx = anchor.toUnitVector().x(Math.abs(anchor.max()) * this._props.textOffsetPx);
       var drawPx = $V([-offsetPx.e(1), offsetPx.e(2)]);
       var metrics = this._ctx.measureText(text);
       var d = this._props.textOffsetPx;
@@ -2746,18 +2544,11 @@
       //var bb1 = drawPx.add($V([metrics.actualBoundingBoxRight + d, metrics.actualBoundingBoxDescent + d]));
       var textHeight = this._props.textFontSize;
       var bb0 = drawPx.add($V([-bbRelOffset * metrics.width - d, -d]));
-      var bb1 = drawPx.add(
-        $V([(1 - bbRelOffset) * metrics.width + d, textHeight + d]),
-      );
+      var bb1 = drawPx.add($V([(1 - bbRelOffset) * metrics.width + d, textHeight + d]));
       if (boxed) {
         this._ctx.save();
         this._ctx.fillStyle = 'white';
-        this._ctx.fillRect(
-          bb0.e(1),
-          bb0.e(2),
-          bb1.e(1) - bb0.e(1),
-          bb1.e(2) - bb0.e(2),
-        );
+        this._ctx.fillRect(bb0.e(1), bb0.e(2), bb1.e(1) - bb0.e(1), bb1.e(2) - bb0.e(2));
         this._ctx.restore();
       }
       this._ctx.font = this._props.textFontSize.toString() + 'px serif';
@@ -2774,13 +2565,7 @@
         @param {string} text The text to draw.
         @param {Vector} anchor (Optional) The anchor position on the text.
     */
-  PrairieDraw.prototype.labelLine = function (
-    startDw,
-    endDw,
-    pos,
-    text,
-    anchor,
-  ) {
+  PrairieDraw.prototype.labelLine = function (startDw, endDw, pos, text, anchor) {
     if (text === undefined) {
       return;
     }
@@ -2816,7 +2601,7 @@
     endAngleDw,
     pos,
     text,
-    fixedRad,
+    fixedRad
   ) {
     // convert to Px coordinates
     var startOffsetDw = PrairieGeom.vector2DAtAngle(startAngleDw).x(radDw);
@@ -2830,8 +2615,7 @@
     var endAnglePx = startAnglePx + deltaAnglePx;
 
     var textAnglePx =
-      ((1.0 - pos.e(1)) / 2.0) * startAnglePx +
-      ((1.0 + pos.e(1)) / 2.0) * endAnglePx;
+      ((1.0 - pos.e(1)) / 2.0) * startAnglePx + ((1.0 + pos.e(1)) / 2.0) * endAnglePx;
     var u1Px = PrairieGeom.vector2DAtAngle(textAnglePx);
     var u2Px = u1Px.rotate(-Math.PI / 2, $V([0, 0]));
     var u1Dw = this.vec2Dw(u1Px).toUnitVector();
@@ -2840,13 +2624,7 @@
     var aDw = oDw.x(-1).toUnitVector();
     var a = aDw.x(1.0 / Math.abs(aDw.max())).x(Math.abs(pos.max()));
 
-    var rPx = this._circleArrowRadius(
-      radiusPx,
-      textAnglePx,
-      startAnglePx,
-      endAnglePx,
-      fixedRad,
-    );
+    var rPx = this._circleArrowRadius(radiusPx, textAnglePx, startAnglePx, endAnglePx, fixedRad);
     var pPx = u1Px.x(rPx).add(posPx);
     var pDw = this.pos2Dw(pPx);
     this.text(pDw, a, text);
@@ -2858,10 +2636,7 @@
         @param {Array} points The end of the lines that meet at labelPoint.
         @return {Vector} The anchor offset.
     */
-  PrairieDraw.prototype.findAnchorForIntersection = function (
-    labelPointDw,
-    pointsDw,
-  ) {
+  PrairieDraw.prototype.findAnchorForIntersection = function (labelPointDw, pointsDw) {
     // find the angles on the unit circle for each of the lines
     var labelPointPx = this.pos2Px(this.pos3To2(labelPointDw));
     var i, v;
@@ -2928,12 +2703,7 @@
         @param {String} label The label text.
         @param {Number} scaleOffset (Optional) Scale factor for the offset (default: 1).
     */
-  PrairieDraw.prototype.labelIntersection = function (
-    labelPoint,
-    points,
-    label,
-    scaleOffset,
-  ) {
+  PrairieDraw.prototype.labelIntersection = function (labelPoint, points, label, scaleOffset) {
     scaleOffset = scaleOffset === undefined ? 1 : scaleOffset;
     var anchor = this.findAnchorForIntersection(labelPoint, points);
     this.text(labelPoint, anchor.x(scaleOffset), label);
@@ -2962,13 +2732,7 @@
         @param {object} curValue The current data value.
         @return {Array} A history array of vectors of the form [time, value].
     */
-  PrairieDraw.prototype.history = function (
-    name,
-    dt,
-    maxTime,
-    curTime,
-    curValue,
-  ) {
+  PrairieDraw.prototype.history = function (name, dt, maxTime, curTime, curValue) {
     if (!(name in this._history)) {
       this._history[name] = [[curTime, curValue]];
     } else {
@@ -3031,14 +2795,14 @@
     timeOffset,
     yLabel,
     data,
-    type,
+    type
   ) {
     var scale = $V([sizeDw.e(1) / sizeData.e(1), sizeDw.e(2) / sizeData.e(2)]);
     var lastTime = data[data.length - 1][0];
     var offset = $V([timeOffset - lastTime, 0]);
     var plotData = PrairieGeom.scalePoints(
       PrairieGeom.translatePoints(this.pairsToVectors(data), offset),
-      scale,
+      scale
     );
 
     this.save();
@@ -3075,13 +2839,7 @@
         @param {Array} currentRGB RGB triple for current time color.
         @param {Array} oldRGB RGB triple for old time color.
     */
-  PrairieDraw.prototype.fadeHistoryLine = function (
-    history,
-    t,
-    maxT,
-    currentRGB,
-    oldRGB,
-  ) {
+  PrairieDraw.prototype.fadeHistoryLine = function (history, t, maxT, currentRGB, oldRGB) {
     if (history.length < 2) {
       return;
     }
@@ -3093,13 +2851,7 @@
       var alpha = (t - pT) / maxT;
       var rgb = PrairieGeom.linearInterpArray(currentRGB, oldRGB, alpha);
       var color =
-        'rgb(' +
-        rgb[0].toFixed(0) +
-        ', ' +
-        rgb[1].toFixed(0) +
-        ', ' +
-        rgb[2].toFixed(0) +
-        ')';
+        'rgb(' + rgb[0].toFixed(0) + ', ' + rgb[1].toFixed(0) + ', ' + rgb[2].toFixed(0) + ')';
       this.line(pDw1, pDw2, color);
     }
   };
@@ -3138,11 +2890,7 @@
      * whole window is that we can get the event during the "capture"
      * phase rather than the later "bubble" phase, allowing us to
      * preventDefault() before things like select-drag starts. */
-    this._canvas.addEventListener(
-      'mousedown',
-      this.mouseDown3D.bind(this),
-      true,
-    );
+    this._canvas.addEventListener('mousedown', this.mouseDown3D.bind(this), true);
     window.addEventListener('mouseup', this.mouseUp3D.bind(this), true);
     window.addEventListener('mousemove', this.mouseMove3D.bind(this), true);
   };
@@ -3169,17 +2917,9 @@
   };
 
   PrairieDraw.prototype.activateMouseTracking = function () {
-    this._canvas.addEventListener(
-      'mousedown',
-      this.mouseDownTracking.bind(this),
-      true,
-    );
+    this._canvas.addEventListener('mousedown', this.mouseDownTracking.bind(this), true);
     window.addEventListener('mouseup', this.mouseUpTracking.bind(this), true);
-    window.addEventListener(
-      'mousemove',
-      this.mouseMoveTracking.bind(this),
-      true,
-    );
+    window.addEventListener('mousemove', this.mouseMoveTracking.bind(this), true);
   };
 
   PrairieDraw.prototype.mouseDown = function () {
@@ -3393,11 +3133,7 @@
   };
 
   PrairieDrawAnim.prototype.activateAnimOnClick = function () {
-    this._canvas.addEventListener(
-      'mousedown',
-      this.mouseDownAnimOnClick.bind(this),
-      true,
-    );
+    this._canvas.addEventListener('mousedown', this.mouseDownAnimOnClick.bind(this), true);
   };
 
   /*****************************************************************************/
@@ -3410,12 +3146,7 @@
         @param {Array} t Current time.
         @return Object with state variables set to current values, as well as t being the time within the current transition (0 if holding), index being the current state index (or the next state if transitioning), and alpha being the proportion of the current transition (0 if holding).
     */
-  PrairieDrawAnim.prototype.sequence = function (
-    states,
-    transTimes,
-    holdTimes,
-    t,
-  ) {
+  PrairieDrawAnim.prototype.sequence = function (states, transTimes, holdTimes, t) {
     var totalTime = 0;
     var i;
     for (i = 0; i < states.length; i++) {
@@ -3436,11 +3167,7 @@
         state.index = i;
         state.alpha = state.t / (totalTime - lastTotalTime);
         for (e in states[i]) {
-          state[e] = PrairieGeom.linearInterp(
-            states[i][e],
-            states[ip][e],
-            state.alpha,
-          );
+          state[e] = PrairieGeom.linearInterp(states[i][e], states[ip][e], state.alpha);
         }
         return state;
       }
@@ -3470,12 +3197,7 @@
         @param {Array} t Current animation time.
         @return Object with state variables set to current values, as well as t being the time within the current transition (0 if holding), index being the current state index (or the next state if transitioning), and alpha being the proportion of the current transition (0 if holding).
     */
-  PrairieDrawAnim.prototype.controlSequence = function (
-    name,
-    states,
-    transTimes,
-    t,
-  ) {
+  PrairieDrawAnim.prototype.controlSequence = function (name, states, transTimes, t) {
     if (!(name in this._sequences)) {
       this._sequences[name] = {
         index: 0,
@@ -3513,11 +3235,7 @@
     }
     var alpha = transTime / transTimes[seq.index];
     var nextIndex = (seq.index + 1) % states.length;
-    state = PrairieGeom.linearInterpState(
-      states[seq.index],
-      states[nextIndex],
-      alpha,
-    );
+    state = PrairieGeom.linearInterpState(states[seq.index], states[nextIndex], alpha);
     state.t = transTime;
     state.index = seq.index;
     state.alpha = alpha;
@@ -3565,7 +3283,7 @@
     holdTimes,
     interps,
     names,
-    t,
+    t
   ) {
     var seq = this._sequences[name];
     if (seq === undefined) {
@@ -3621,7 +3339,7 @@
             states[nextIndex],
             interps,
             endTime,
-            endTime,
+            endTime
           );
           seq.lastState.inTransition = false;
           seq.lastState.index = nextIndex;
@@ -3635,45 +3353,25 @@
             seq.callbacks[i]('enter', seq.lastState.index, seq.lastState.name);
           }
         } else {
-          return this._interpState(
-            seq.lastState,
-            states[nextIndex],
-            interps,
-            t,
-            endTime,
-          );
+          return this._interpState(seq.lastState, states[nextIndex], interps, t, endTime);
         }
       } else {
         endTime = seq.lastState.realT + holdTimes[seq.lastState.index];
         if (holdTimes[seq.lastState.index] >= 0 && t > endTime) {
-          seq.lastState = this._extrapState(
-            seq.lastState,
-            states[seq.lastState.index],
-            endTime,
-          );
+          seq.lastState = this._extrapState(seq.lastState, states[seq.lastState.index], endTime);
           seq.lastState.inTransition = true;
           seq.lastState.indefiniteHold = false;
           for (i = 0; i < seq.callbacks.length; i++) {
             seq.callbacks[i]('exit', seq.lastState.index, seq.lastState.name);
           }
         } else {
-          return this._extrapState(
-            seq.lastState,
-            states[seq.lastState.index],
-            t,
-          );
+          return this._extrapState(seq.lastState, states[seq.lastState.index], t);
         }
       }
     }
   };
 
-  PrairieDrawAnim.prototype._interpState = function (
-    lastState,
-    nextState,
-    interps,
-    t,
-    tFinal,
-  ) {
+  PrairieDrawAnim.prototype._interpState = function (lastState, nextState, interps, t, tFinal) {
     var s1 = PrairieGeom.dupState(nextState);
     s1.realT = tFinal;
     s1.t = tFinal - lastState.realT;
@@ -3695,11 +3393,7 @@
     return s;
   };
 
-  PrairieDrawAnim.prototype._extrapState = function (
-    lastState,
-    lastStateData,
-    t,
-  ) {
+  PrairieDrawAnim.prototype._extrapState = function (lastState, lastStateData, t) {
     var s = {};
     for (var e in lastStateData) {
       if (typeof lastStateData[e] === 'number') {
@@ -3748,15 +3442,7 @@
     var holdTimes = [-1, -1];
     var interps = {};
     var names = ['zero', 'one'];
-    var state = this.newSequence(
-      name,
-      states,
-      transTimes,
-      holdTimes,
-      interps,
-      names,
-      t,
-    );
+    var state = this.newSequence(name, states, transTimes, holdTimes, interps, names, t);
     return state.trans;
   };
 
@@ -3859,11 +3545,7 @@
     var numDecPlaces = 2;
     /* jshint laxbreak: true */
     console.log(
-      '$V([' +
-        posDw.e(1).toFixed(numDecPlaces) +
-        ', ' +
-        posDw.e(2).toFixed(numDecPlaces) +
-        ']),',
+      '$V([' + posDw.e(1).toFixed(numDecPlaces) + ', ' + posDw.e(2).toFixed(numDecPlaces) + ']),'
     );
   };
 
@@ -3885,21 +3567,9 @@
       if (this._mouseDrawCallbacks === undefined) {
         this._mouseDrawCallbacks = [];
       }
-      this._canvas.addEventListener(
-        'mousedown',
-        this.mouseLineDrawMousedown.bind(this),
-        true,
-      );
-      window.addEventListener(
-        'mouseup',
-        this.mouseLineDrawMouseup.bind(this),
-        true,
-      );
-      window.addEventListener(
-        'mousemove',
-        this.mouseLineDrawMousemove.bind(this),
-        true,
-      );
+      this._canvas.addEventListener('mousedown', this.mouseLineDrawMousedown.bind(this), true);
+      window.addEventListener('mouseup', this.mouseLineDrawMouseup.bind(this), true);
+      window.addEventListener('mousemove', this.mouseLineDrawMousemove.bind(this), true);
     }
     /*
           for (var i = 0; i < this._mouseDrawCallbacks.length; i++) {
@@ -4016,31 +3686,24 @@
     drawPoint,
     pointLabel,
     pointAnchor,
-    options,
+    options
   ) {
     drawAxes = drawAxes === undefined ? true : drawAxes;
     drawPoint = drawPoint === undefined ? true : drawPoint;
     options = options === undefined ? {} : options;
-    var horizAxisPos =
-      options.horizAxisPos === undefined ? 'bottom' : options.horizAxisPos;
-    var vertAxisPos =
-      options.vertAxisPos === undefined ? 'left' : options.vertAxisPos;
+    var horizAxisPos = options.horizAxisPos === undefined ? 'bottom' : options.horizAxisPos;
+    var vertAxisPos = options.vertAxisPos === undefined ? 'left' : options.vertAxisPos;
     var drawXGrid = options.drawXGrid === undefined ? false : options.drawXGrid;
     var drawYGrid = options.drawYGrid === undefined ? false : options.drawYGrid;
     var dXGrid = options.dXGrid === undefined ? 1 : options.dXGrid;
     var dYGrid = options.dYGrid === undefined ? 1 : options.dYGrid;
-    var drawXTickLabels =
-      options.drawXTickLabels === undefined ? false : options.drawXTickLabels;
-    var drawYTickLabels =
-      options.drawYTickLabels === undefined ? false : options.drawYTickLabels;
+    var drawXTickLabels = options.drawXTickLabels === undefined ? false : options.drawXTickLabels;
+    var drawYTickLabels = options.drawYTickLabels === undefined ? false : options.drawYTickLabels;
     var xLabelPos = options.xLabelPos === undefined ? 1 : options.xLabelPos;
     var yLabelPos = options.yLabelPos === undefined ? 1 : options.yLabelPos;
-    var xLabelAnchor =
-      options.xLabelAnchor === undefined ? $V([1, 1.5]) : options.xLabelAnchor;
-    var yLabelAnchor =
-      options.yLabelAnchor === undefined ? $V([1.5, 1]) : options.yLabelAnchor;
-    var yLabelRotate =
-      options.yLabelRotate === undefined ? false : options.yLabelRotate;
+    var xLabelAnchor = options.xLabelAnchor === undefined ? $V([1, 1.5]) : options.xLabelAnchor;
+    var yLabelAnchor = options.yLabelAnchor === undefined ? $V([1.5, 1]) : options.yLabelAnchor;
+    var yLabelRotate = options.yLabelRotate === undefined ? false : options.yLabelRotate;
     this.save();
     this.translate(originDw);
 
@@ -4061,7 +3724,7 @@
           originData.e(1) + sizeData.e(1),
           0,
           sizeDw.e(1),
-          i * dXGrid,
+          i * dXGrid
         );
         this.line($V([x, y0]), $V([x, y1]), 'grid');
       }
@@ -4073,7 +3736,7 @@
           originData.e(2) + sizeData.e(2),
           0,
           sizeDw.e(2),
-          i * dYGrid,
+          i * dYGrid
         );
         this.line($V([x0, y]), $V([x1, y]), 'grid');
       }
@@ -4086,7 +3749,7 @@
           originData.e(1) + sizeData.e(1),
           0,
           sizeDw.e(1),
-          i * dXGrid,
+          i * dXGrid
         );
         label = String(i * dXGrid);
         this.text($V([x, y0]), $V([0, 1]), label);
@@ -4099,7 +3762,7 @@
           originData.e(2) + sizeData.e(2),
           0,
           sizeDw.e(2),
-          i * dYGrid,
+          i * dYGrid
         );
         label = String(i * dYGrid);
         this.text($V([x0, y]), $V([1, 0]), label);
@@ -4118,7 +3781,7 @@
         originData.e(1) + sizeData.e(1),
         0,
         sizeDw.e(1),
-        vertAxisPos,
+        vertAxisPos
       );
     }
     if (horizAxisPos === 'bottom') {
@@ -4131,7 +3794,7 @@
         originData.e(2) + sizeData.e(2),
         0,
         sizeDw.e(2),
-        horizAxisPos,
+        horizAxisPos
       );
     }
     if (drawAxes) {

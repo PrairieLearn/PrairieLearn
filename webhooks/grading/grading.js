@@ -13,9 +13,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const externalGradingSocket = require('../../lib/externalGradingSocket');
 
 function processResults(jobId, data) {
-  assessment.processGradingResult(
-    externalGraderCommon.makeGradingResult(jobId, data),
-  );
+  assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
 }
 
 router.post('/', function (req, res, next) {
@@ -28,9 +26,7 @@ router.post('/', function (req, res, next) {
         throw new Error();
       }
     } catch (e) {
-      return next(
-        new Error('Grading result does not contain a valid grading job id.'),
-      );
+      return next(new Error('Grading result does not contain a valid grading job id.'));
     }
 
     const params = {
@@ -38,19 +34,10 @@ router.post('/', function (req, res, next) {
       received_time: data.data.received_time,
     };
 
-    sqldb.queryOneRow(
-      sql.update_grading_received_time,
-      params,
-      (err, _result) => {
-        if (
-          ERR(err, (err) =>
-            logger.error('Error in sql.update_grading_received_time', err),
-          )
-        )
-          return;
-        externalGradingSocket.gradingJobStatusUpdated(jobId);
-      },
-    );
+    sqldb.queryOneRow(sql.update_grading_received_time, params, (err, _result) => {
+      if (ERR(err, (err) => logger.error('Error in sql.update_grading_received_time', err))) return;
+      externalGradingSocket.gradingJobStatusUpdated(jobId);
+    });
 
     res.status(200);
     res.send();
@@ -62,9 +49,7 @@ router.post('/', function (req, res, next) {
         throw new Error();
       }
     } catch (e) {
-      return next(
-        new Error('Grading result does not contain a valid grading job id.'),
-      );
+      return next(new Error('Grading result does not contain a valid grading job id.'));
     }
 
     // Always send 200 right away to allow the grading instance to die as
@@ -108,12 +93,7 @@ router.post('/', function (req, res, next) {
               ResponseContentType: 'application/json',
             };
             new AWS.S3().getObject(params, (err, s3Data) => {
-              if (
-                ERR(err, (err) =>
-                  logger.error('Error in AWS.S3().getObject()', err),
-                )
-              )
-                return;
+              if (ERR(err, (err) => logger.error('Error in AWS.S3().getObject()', err))) return;
               processResults(jobId, s3Data.Body);
               callback(null);
             });
@@ -121,13 +101,8 @@ router.post('/', function (req, res, next) {
         },
       ],
       (err) => {
-        if (
-          ERR(err, (err) =>
-            logger.error('Error in processing grading result', err),
-          )
-        )
-          return;
-      },
+        if (ERR(err, (err) => logger.error('Error in processing grading result', err))) return;
+      }
     );
   } else {
     logger.error('Invalid grading event received:', data);

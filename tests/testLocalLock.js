@@ -81,10 +81,7 @@ describe('local locks', function () {
             setTimeout(() => {
               lock.unlock();
               if (i == num_runners) {
-                assert.isFalse(
-                  lock._lock,
-                  'lock was locked after all callers finished',
-                );
+                assert.isFalse(lock._lock, 'lock was locked after all callers finished');
                 resolve();
               }
             }, 100);
@@ -182,10 +179,7 @@ describe('local locks', function () {
             setTimeout(() => {
               lock.unlock();
               if (i == num_runners) {
-                assert.isFalse(
-                  lock._lock,
-                  'lock was locked after all callers finished',
-                );
+                assert.isFalse(lock._lock, 'lock was locked after all callers finished');
                 callback(null);
               }
             }, 100);

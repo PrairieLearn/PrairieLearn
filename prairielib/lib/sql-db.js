@@ -2,9 +2,7 @@
 const _ = require('lodash');
 const pg = require('pg');
 const path = require('path');
-const debug = require('debug')(
-  'prairielib:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielib:' + path.basename(__filename, '.js'));
 const { callbackify } = require('util');
 
 const error = require('./error');
@@ -63,8 +61,7 @@ function paramsToArray(sql, params) {
       paramsArray: params,
     };
   }
-  if (!_.isObjectLike(params))
-    throw new Error('params must be array or object');
+  if (!_.isObjectLike(params)) throw new Error('params must be array or object');
 
   const re = /\$([-_a-zA-Z0-9]+)/;
   let result;
@@ -80,12 +77,9 @@ function paramsToArray(sql, params) {
       if (_.isArray(params[v])) {
         map[v] =
           'ARRAY[' +
-          _.map(
-            _.range(nParams + 1, nParams + params[v].length + 1),
-            function (n) {
-              return '$' + n;
-            },
-          ).join(',') +
+          _.map(_.range(nParams + 1, nParams + params[v].length + 1), function (n) {
+            return '$' + n;
+          }).join(',') +
           ']';
         nParams += params[v].length;
         paramsArray = paramsArray.concat(params[v]);
@@ -161,7 +155,7 @@ module.exports.initAsync = async function (pgConfig, idleErrorHandler) {
     } catch (err) {
       if (retryCount === retryTimeouts.length) {
         throw new Error(
-          `Cound not connect to Postgres after ${retryTimeouts.length} attempts: ${err.message}`,
+          `Cound not connect to Postgres after ${retryTimeouts.length} attempts: ${err.message}`
         );
       }
 
@@ -230,9 +224,7 @@ module.exports.getClientAsync = async function () {
   // `setSearchSchema(null)` would not work as you expect. This is fine, as
   // that's not something we ever do in practice.
   if (searchSchema != null && client[SEARCH_SCHEMA] !== searchSchema) {
-    const setSearchPathSql = `SET search_path TO ${escapeIdentifier(
-      searchSchema,
-    )},public`;
+    const setSearchPathSql = `SET search_path TO ${escapeIdentifier(searchSchema)},public`;
     try {
       await module.exports.queryWithClientAsync(client, setSearchPathSql, {});
     } catch (err) {
@@ -293,9 +285,7 @@ module.exports.queryWithClientAsync = async function (client, sql, params) {
  * @param {Params} params
  * @param {ResultsCallback} callback
  */
-module.exports.queryWithClient = callbackify(
-  module.exports.queryWithClientAsync,
-);
+module.exports.queryWithClient = callbackify(module.exports.queryWithClientAsync);
 
 /**
  * Performs a query with the given client. Errors if the query returns more
@@ -306,11 +296,7 @@ module.exports.queryWithClient = callbackify(
  * @param {Params} params
  * @returns {Promise<QueryResult>}
  */
-module.exports.queryWithClientOneRowAsync = async function (
-  client,
-  sql,
-  params,
-) {
+module.exports.queryWithClientOneRowAsync = async function (client, sql, params) {
   debug('queryWithClientOneRow()', 'sql:', debugString(sql));
   debug('queryWithClientOneRow()', 'params:', debugParams(params));
   const result = await module.exports.queryWithClientAsync(client, sql, params);
@@ -334,9 +320,7 @@ module.exports.queryWithClientOneRowAsync = async function (
  * @param {Params} params
  * @param {ResultsCallback} callback
  */
-module.exports.queryWithClientOneRow = callbackify(
-  module.exports.queryWithClientOneRowAsync,
-);
+module.exports.queryWithClientOneRow = callbackify(module.exports.queryWithClientOneRowAsync);
 
 /**
  * Performs a query with the given client. Errors if the query returns more
@@ -347,11 +331,7 @@ module.exports.queryWithClientOneRow = callbackify(
  * @param {Params} params
  * @returns {Promise<QueryResult>}
  */
-module.exports.queryWithClientZeroOrOneRowAsync = async function (
-  client,
-  sql,
-  params,
-) {
+module.exports.queryWithClientZeroOrOneRowAsync = async function (client, sql, params) {
   debug('queryWithClientZeroOrOneRow()', 'sql:', debugString(sql));
   debug('queryWithClientZeroOrOneRow()', 'params:', debugParams(params));
   const result = await module.exports.queryWithClientAsync(client, sql, params);
@@ -376,7 +356,7 @@ module.exports.queryWithClientZeroOrOneRowAsync = async function (
  * @param {ResultsCallback} callback
  */
 module.exports.queryWithClientZeroOrOneRow = callbackify(
-  module.exports.queryWithClientZeroOrOneRowAsync,
+  module.exports.queryWithClientZeroOrOneRowAsync
 );
 
 /**
@@ -574,9 +554,7 @@ module.exports.queryZeroOrOneRowAsync = async function (sql, params) {
  * @param {Params} params - The params for the query
  * @param {ResultsCallback} callback
  */
-module.exports.queryZeroOrOneRow = callbackify(
-  module.exports.queryZeroOrOneRowAsync,
-);
+module.exports.queryZeroOrOneRow = callbackify(module.exports.queryZeroOrOneRowAsync);
 
 /**
  * Calls the given function with the specified parameters.
@@ -588,13 +566,8 @@ module.exports.queryZeroOrOneRow = callbackify(
 module.exports.callAsync = async function (functionName, params) {
   debug('call()', 'function:', functionName);
   debug('call()', 'params:', debugParams(params));
-  const placeholders = _.map(
-    _.range(1, params.length + 1),
-    (v) => '$' + v,
-  ).join();
-  const sql = `SELECT * FROM ${escapeIdentifier(
-    functionName,
-  )}(${placeholders});`;
+  const placeholders = _.map(_.range(1, params.length + 1), (v) => '$' + v).join();
+  const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders});`;
   const result = await module.exports.queryAsync(sql, params);
   debug('call() success', 'rowCount:', result.rowCount);
   return result;
@@ -671,9 +644,7 @@ module.exports.callZeroOrOneRowAsync = async function (functionName, params) {
  * @param {any[]} params - The params for the function
  * @param {ResultsCallback} callback
  */
-module.exports.callZeroOrOneRow = callbackify(
-  module.exports.callZeroOrOneRowAsync,
-);
+module.exports.callZeroOrOneRow = callbackify(module.exports.callZeroOrOneRowAsync);
 
 /**
  * Calls a function with the specified parameters using a specific client.
@@ -683,20 +654,11 @@ module.exports.callZeroOrOneRow = callbackify(
  * @param {any[]} params
  * @returs {Promise<QueryResult>}
  */
-module.exports.callWithClientAsync = async function (
-  client,
-  functionName,
-  params,
-) {
+module.exports.callWithClientAsync = async function (client, functionName, params) {
   debug('callWithClient()', 'function:', functionName);
   debug('callWithClient()', 'params:', debugParams(params));
-  const placeholders = _.map(
-    _.range(1, params.length + 1),
-    (v) => '$' + v,
-  ).join();
-  const sql = `SELECT * FROM ${escapeIdentifier(
-    functionName,
-  )}(${placeholders})`;
+  const placeholders = _.map(_.range(1, params.length + 1), (v) => '$' + v).join();
+  const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders})`;
   const result = await module.exports.queryWithClientAsync(client, sql, params);
   debug('callWithClient() success', 'rowCount:', result.rowCount);
   return result;
@@ -721,18 +683,10 @@ module.exports.callWithClient = callbackify(module.exports.callWithClientAsync);
  * @param {any[]} params
  * @returns {Promise<QueryResult>}
  */
-module.exports.callWithClientOneRowAsync = async function (
-  client,
-  functionName,
-  params,
-) {
+module.exports.callWithClientOneRowAsync = async function (client, functionName, params) {
   debug('callWithClientOneRow()', 'function:', functionName);
   debug('callWithClientOneRow()', 'params:', debugParams(params));
-  const result = await module.exports.callWithClientAsync(
-    client,
-    functionName,
-    params,
-  );
+  const result = await module.exports.callWithClientAsync(client, functionName, params);
   if (result.rowCount !== 1) {
     throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, {
       functionName,
@@ -752,9 +706,7 @@ module.exports.callWithClientOneRowAsync = async function (
  * @param {any[]} params
  * @param {ResultsCallback} callback
  */
-module.exports.callWithClientOneRow = callbackify(
-  module.exports.callWithClientOneRowAsync,
-);
+module.exports.callWithClientOneRow = callbackify(module.exports.callWithClientOneRowAsync);
 
 /**
  * Calls a function with the specified parameters using a specific client.
@@ -765,18 +717,10 @@ module.exports.callWithClientOneRow = callbackify(
  * @param {any[]} params
  * @returns {Promise<QueryResult>}
  */
-module.exports.callWithClientZeroOrOneRowAsync = async function (
-  client,
-  functionName,
-  params,
-) {
+module.exports.callWithClientZeroOrOneRowAsync = async function (client, functionName, params) {
   debug('callWithClientZeroOrOneRow()', 'function:', functionName);
   debug('callWithClientZeroOrOneRow()', 'params:', debugParams(params));
-  const result = await module.exports.callWithClientAsync(
-    client,
-    functionName,
-    params,
-  );
+  const result = await module.exports.callWithClientAsync(client, functionName, params);
   if (result.rowCount > 1) {
     throw error.makeWithData('Incorrect rowCount: ' + result.rowCount, {
       functionName,
@@ -797,7 +741,7 @@ module.exports.callWithClientZeroOrOneRowAsync = async function (
  * @param {ResultsCallback} callback
  */
 module.exports.callWithClientZeroOrOneRow = callbackify(
-  module.exports.callWithClientZeroOrOneRowAsync,
+  module.exports.callWithClientZeroOrOneRowAsync
 );
 
 /**
@@ -811,10 +755,7 @@ module.exports.setSearchSchema = async function (schema) {
     return;
   }
 
-  await module.exports.queryAsync(
-    `CREATE SCHEMA IF NOT EXISTS ${escapeIdentifier(schema)}`,
-    {},
-  );
+  await module.exports.queryAsync(`CREATE SCHEMA IF NOT EXISTS ${escapeIdentifier(schema)}`, {});
   // We only set searchSchema after CREATE to avoid the above query() call using searchSchema.
   searchSchema = schema;
 };
@@ -859,6 +800,4 @@ module.exports.setRandomSearchSchemaAsync = async function (prefix) {
  * @param {string} prefix - The prefix of the new schema, only the first 28 characters will be used (after lowercasing).
  * @param {(error: Error | null, schema: String) => void} callback
  */
-module.exports.setRandomSearchSchema = callbackify(
-  module.exports.setRandomSearchSchemaAsync,
-);
+module.exports.setRandomSearchSchema = callbackify(module.exports.setRandomSearchSchemaAsync);

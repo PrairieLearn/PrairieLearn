@@ -8,9 +8,7 @@ var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
 const logger = require('../../lib/logger');
 const { CourseInstanceAddEditor } = require('../../lib/editors');
@@ -47,10 +45,7 @@ router.get('/', function (req, res, next) {
         sqldb.query(sql.select_enrollment_counts, params, (err, result) => {
           if (ERR(err, callback)) return;
           res.locals.authz_data.course_instances.forEach((ci) => {
-            var row = _.find(
-              result.rows,
-              (row) => row.course_instance_id == ci.id,
-            );
+            var row = _.find(result.rows, (row) => row.course_instance_id == ci.id);
             ci.number = row?.number || 0;
           });
           callback(null);
@@ -60,7 +55,7 @@ router.get('/', function (req, res, next) {
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 });
 
@@ -78,7 +73,7 @@ router.post('/', (req, res, next) => {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
           debug(
-            `Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`,
+            `Get course_instance_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`
           );
           sqldb.queryOneRow(
             sql.select_course_instance_id_from_uuid,
@@ -89,9 +84,9 @@ router.post('/', (req, res, next) => {
                 res.locals.plainUrlPrefix +
                   '/course_instance/' +
                   result.rows[0].course_instance_id +
-                  '/instructor/instance_admin/settings',
+                  '/instructor/instance_admin/settings'
               );
-            },
+            }
           );
         }
       });
@@ -101,7 +96,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

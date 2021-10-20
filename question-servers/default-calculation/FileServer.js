@@ -21,13 +21,7 @@ define(['fs', 'module', 'path'], function (fs, module, path) {
     };
   };
 
-  server.gradeAnswer = function (
-    vid,
-    params,
-    trueAnswer,
-    submittedAnswer,
-    options,
-  ) {
+  server.gradeAnswer = function (vid, params, trueAnswer, submittedAnswer, options) {
     return { score: 1 };
   };
 

@@ -113,33 +113,25 @@ describe('Instructor questions', function () {
       questionData.forEach((question) => assert.isObject(question));
     });
     it('should include addNumbers question', function () {
-      elemList = questionData.filter(
-        (question) => question.id == addNumbers.id,
-      );
+      elemList = questionData.filter((question) => question.id == addNumbers.id);
       assert.lengthOf(elemList, 1);
       assert.equal(addNumbers.qid, elemList[0].qid);
       assert.equal(addNumbers.title, elemList[0].title);
     });
     it('should include addVectors question', function () {
-      elemList = questionData.filter(
-        (question) => question.id == addVectors.id,
-      );
+      elemList = questionData.filter((question) => question.id == addVectors.id);
       assert.lengthOf(elemList, 1);
       assert.equal(addVectors.qid, elemList[0].qid);
       assert.equal(addVectors.title, elemList[0].title);
     });
     it('should include downloadFile question', function () {
-      elemList = questionData.filter(
-        (question) => question.id == downloadFile.id,
-      );
+      elemList = questionData.filter((question) => question.id == downloadFile.id);
       assert.lengthOf(elemList, 1);
       assert.equal(downloadFile.qid, elemList[0].qid);
       assert.equal(downloadFile.title, elemList[0].title);
     });
     it('should include differentiatePolynomial question', function () {
-      elemList = questionData.filter(
-        (question) => question.id == differentiatePolynomial.id,
-      );
+      elemList = questionData.filter((question) => question.id == differentiatePolynomial.id);
       assert.lengthOf(elemList, 1);
       assert.equal(differentiatePolynomial.qid, elemList[0].qid);
       assert.equal(differentiatePolynomial.title, elemList[0].title);
@@ -168,33 +160,25 @@ describe('Instructor questions', function () {
       questionData.forEach((question) => assert.isObject(question));
     });
     it('should include addNumbers question', function () {
-      elemList = questionData.filter(
-        (question) => question.id == addNumbers.id,
-      );
+      elemList = questionData.filter((question) => question.id == addNumbers.id);
       assert.lengthOf(elemList, 1);
       assert.equal(addNumbers.qid, elemList[0].qid);
       assert.equal(addNumbers.title, elemList[0].title);
     });
     it('should include addVectors question', function () {
-      elemList = questionData.filter(
-        (question) => question.id == addVectors.id,
-      );
+      elemList = questionData.filter((question) => question.id == addVectors.id);
       assert.lengthOf(elemList, 1);
       assert.equal(addVectors.qid, elemList[0].qid);
       assert.equal(addVectors.title, elemList[0].title);
     });
     it('should include downloadFile question', function () {
-      elemList = questionData.filter(
-        (question) => question.id == downloadFile.id,
-      );
+      elemList = questionData.filter((question) => question.id == downloadFile.id);
       assert.lengthOf(elemList, 1);
       assert.equal(downloadFile.qid, elemList[0].qid);
       assert.equal(downloadFile.title, elemList[0].title);
     });
     it('should include differentiatePolynomial question', function () {
-      elemList = questionData.filter(
-        (question) => question.id == differentiatePolynomial.id,
-      );
+      elemList = questionData.filter((question) => question.id == differentiatePolynomial.id);
       assert.lengthOf(elemList, 1);
       assert.equal(differentiatePolynomial.qid, elemList[0].qid);
       assert.equal(differentiatePolynomial.title, elemList[0].title);
@@ -394,9 +378,7 @@ describe('Instructor questions', function () {
         assert.equal(page, 'This data is specific to the question.');
       });
       it('should contain a new tab link to clientFilesQuestion/data.txt', function () {
-        elemList = locals.$(
-          'a[href*="clientFilesQuestion"][target="_blank"]:not([download])',
-        );
+        elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
         assert.lengthOf(elemList, 1);
       });
       it('should download something with the new tab link to clientFilesQuestion/data.txt', function (callback) {
@@ -418,9 +400,7 @@ describe('Instructor questions', function () {
     });
     describe('downloading dynamic text file', function () {
       it('should contain a link to generatedFilesQuestion/data.txt', function () {
-        elemList = locals.$(
-          'a[href*="generatedFilesQuestion"][href$="data.txt"]',
-        );
+        elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
         assert.lengthOf(elemList, 1);
       });
       it('should download something with the link to generatedFilesQuestion/data.txt', function (callback) {
@@ -442,26 +422,21 @@ describe('Instructor questions', function () {
     });
     describe('downloading dynamic image file', function () {
       it('should contain a link to generatedFilesQuestion/figure.png', function () {
-        elemList = locals.$(
-          'a[href*="generatedFilesQuestion"][href$="figure.png"]',
-        );
+        elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
         assert.lengthOf(elemList, 1);
       });
       it('should download something with the link to generatedFilesQuestion/figure.png', function (callback) {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(
-          { url: fileUrl, encoding: null },
-          function (error, response, body) {
-            if (error) {
-              return callback(error);
-            }
-            if (response.statusCode != 200) {
-              return callback(new Error('bad status: ' + response.statusCode));
-            }
-            page = body;
-            callback(null);
-          },
-        );
+        request({ url: fileUrl, encoding: null }, function (error, response, body) {
+          if (error) {
+            return callback(error);
+          }
+          if (response.statusCode != 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        });
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/figure.png', function () {
         // assert.equal(page,'This data is generated by code.')
@@ -471,11 +446,7 @@ describe('Instructor questions', function () {
         sqldb.query(sql.select_issues_for_last_variant, [], (err, result) => {
           if (ERR(err, callback)) return;
           if (result.rowCount > 0) {
-            callback(
-              new Error(
-                `found ${result.rowCount} issues (expected zero issues)`,
-              ),
-            );
+            callback(new Error(`found ${result.rowCount} issues (expected zero issues)`));
             return;
           }
           callback(null);

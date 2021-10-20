@@ -222,8 +222,7 @@ describe('Homework assessment', function () {
         locals.siteUrl = 'http://localhost:' + config.serverPort;
         locals.baseUrl = locals.siteUrl + '/pl';
         locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
-        locals.questionBaseUrl =
-          locals.courseInstanceBaseUrl + '/instance_question';
+        locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
         locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
         locals.isStudentPage = true;
         locals.totalPoints = 0;
@@ -271,19 +270,14 @@ describe('Homework assessment', function () {
         locals.$ = cheerio.load(page);
       });
       it('should contain HW1', function () {
-        elemList = locals.$(
-          'td a:contains("Homework for automatic test suite")',
-        );
+        elemList = locals.$('td a:contains("Homework for automatic test suite")');
         assert.lengthOf(elemList, 1);
       });
       it('should have the correct link for HW1', function () {
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
         assert.equal(
           locals.assessmentUrl,
-          locals.courseInstanceBaseUrl +
-            '/assessment/' +
-            locals.assessment_id +
-            '/',
+          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/'
         );
       });
     });
@@ -306,34 +300,20 @@ describe('Homework assessment', function () {
       });
       it('should redirect to the correct path', function () {
         locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
-        assert.equal(
-          res.req.path,
-          '/pl/course_instance/1/assessment_instance/1',
-        );
+        assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
       });
       it('should create one assessment_instance', function (callback) {
-        sqldb.query(
-          sql.select_assessment_instances,
-          [],
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            if (result.rowCount != 1) {
-              return callback(
-                new Error(
-                  'expected one assessment_instance, got: ' + result.rowCount,
-                ),
-              );
-            }
-            locals.assessment_instance = result.rows[0];
-            callback(null);
-          },
-        );
+        sqldb.query(sql.select_assessment_instances, [], function (err, result) {
+          if (ERR(err, callback)) return;
+          if (result.rowCount != 1) {
+            return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
+          }
+          locals.assessment_instance = result.rows[0];
+          callback(null);
+        });
       });
       it('should have the correct assessment_instance.assessment_id', function () {
-        assert.equal(
-          locals.assessment_instance.assessment_id,
-          locals.assessment_id,
-        );
+        assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
       it(`should create ${questionsArray.length} instance_questions`, function (callback) {
         sqldb.query(sql.select_instance_questions, [], function (err, result) {
@@ -341,9 +321,8 @@ describe('Homework assessment', function () {
           if (result.rowCount != questionsArray.length) {
             return callback(
               new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` +
-                  result.rowCount,
-              ),
+                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
+              )
             );
           }
           locals.instance_questions = result.rows;
@@ -351,9 +330,7 @@ describe('Homework assessment', function () {
         });
       });
       questionsArray.forEach(function (question, i) {
-        it(`should have question #${
-          i + 1
-        } as QID ${question.qid}`, function () {
+        it(`should have question #${i + 1} as QID ${question.qid}`, function () {
           question.id = locals.instance_questions[i].id;
           assert.equal(locals.instance_questions[i].qid, question.qid);
         });
@@ -379,8 +356,7 @@ describe('Homework assessment', function () {
       });
       questionsArray.forEach(function (question) {
         it(`should link to ${question.qid} question`, function () {
-          const urlTail =
-            '/pl/course_instance/1/instance_question/' + question.id + '/';
+          const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
           question.url = locals.siteUrl + urlTail;
           elemList = locals.$(`td a[href="${urlTail}"]`);
           assert.lengthOf(elemList, 1);
@@ -429,8 +405,7 @@ describe('Homework assessment', function () {
     helperQuestion.getInstanceQuestion(locals);
     describe('set attach files page URL', function () {
       it('should succeed', function () {
-        locals.attachFilesUrl =
-          locals.questionBaseUrl + '/' + locals.question.id;
+        locals.attachFilesUrl = locals.questionBaseUrl + '/' + locals.question.id;
       });
     });
   });
@@ -842,17 +817,12 @@ describe('Homework assessment', function () {
     helperQuestion.checkAssessmentScore(locals);
     describe('check the submission is not gradable', function () {
       it('should succeed', function (callback) {
-        sqldb.queryOneRow(
-          sql.select_last_submission,
-          [],
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            const submission = result.rows[0];
-            if (submission.gradable)
-              return callback(new Error('submission.gradable is true'));
-            callback(null);
-          },
-        );
+        sqldb.queryOneRow(sql.select_last_submission, [], function (err, result) {
+          if (ERR(err, callback)) return;
+          const submission = result.rows[0];
+          if (submission.gradable) return callback(new Error('submission.gradable is true'));
+          callback(null);
+        });
       });
     });
     describe('the submission panel contents', function () {
@@ -1189,9 +1159,7 @@ describe('Homework assessment', function () {
         assert.equal(page, 'This data is specific to the question.');
       });
       it('should contain a new tab link to clientFilesQuestion/data.txt', function () {
-        elemList = locals.$(
-          'a[href*="clientFilesQuestion"][target="_blank"]:not([download])',
-        );
+        elemList = locals.$('a[href*="clientFilesQuestion"][target="_blank"]:not([download])');
         assert.lengthOf(elemList, 1);
       });
       it('should download something with the new tab link to clientFilesQuestion/data.txt', function (callback) {
@@ -1213,9 +1181,7 @@ describe('Homework assessment', function () {
     });
     describe('downloading dynamic text file', function () {
       it('should contain a link to generatedFilesQuestion/data.txt', function () {
-        elemList = locals.$(
-          'a[href*="generatedFilesQuestion"][href$="data.txt"]',
-        );
+        elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
         assert.lengthOf(elemList, 1);
       });
       it('should download something with the link to generatedFilesQuestion/data.txt', function (callback) {
@@ -1237,26 +1203,21 @@ describe('Homework assessment', function () {
     });
     describe('downloading dynamic image file', function () {
       it('should contain a link to generatedFilesQuestion/figure.png', function () {
-        elemList = locals.$(
-          'a[href*="generatedFilesQuestion"][href$="figure.png"]',
-        );
+        elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
         assert.lengthOf(elemList, 1);
       });
       it('should download something with the link to generatedFilesQuestion/figure.png', function (callback) {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
-        request(
-          { url: fileUrl, encoding: null },
-          function (error, response, body) {
-            if (error) {
-              return callback(error);
-            }
-            if (response.statusCode != 200) {
-              return callback(new Error('bad status: ' + response.statusCode));
-            }
-            page = body;
-            callback(null);
-          },
-        );
+        request({ url: fileUrl, encoding: null }, function (error, response, body) {
+          if (error) {
+            return callback(error);
+          }
+          if (response.statusCode != 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        });
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/figure.png', function () {
         // assert.equal(page,'This data is generated by code.')
@@ -1391,18 +1352,13 @@ describe('Homework assessment', function () {
                   ? questionTest.score
                   : questionTest.submission_score;
               locals.expectedResult = {
-                submission_score:
-                  questionTest.action == 'save' ? null : submission_score / 100,
-                submission_correct:
-                  questionTest.action == 'save'
-                    ? null
-                    : submission_score == 100,
+                submission_score: questionTest.action == 'save' ? null : submission_score / 100,
+                submission_correct: questionTest.action == 'save' ? null : submission_score == 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
                 assessment_instance_points: locals.totalPoints,
-                assessment_instance_score_perc:
-                  (locals.totalPoints / assessmentMaxPoints) * 100,
+                assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
               locals.getSubmittedAnswer = function (_variant) {
                 return {
@@ -1439,10 +1395,7 @@ describe('Homework assessment', function () {
             helperQuestion.postInstanceQuestionAndFail(locals);
           } else if (questionTest.action == 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
-          } else if (
-            questionTest.action == 'save' ||
-            questionTest.action == 'grade'
-          ) {
+          } else if (questionTest.action == 'save' || questionTest.action == 'grade') {
             helperQuestion.getInstanceQuestion(locals);
             helperQuestion.postInstanceQuestion(locals);
             helperQuestion.checkQuestionScore(locals);

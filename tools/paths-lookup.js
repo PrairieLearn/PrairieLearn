@@ -26,12 +26,7 @@ var pgConfig = {
   idleTimeoutMillis: 3000,
 };
 logger.verbose(
-  'Connecting to database ' +
-    pgConfig.user +
-    '@' +
-    pgConfig.host +
-    ':' +
-    pgConfig.database,
+  'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
 );
 var idleErrorHandler = function (err) {
   logger.error('idle client error', err);

@@ -82,9 +82,7 @@ DEBUG=prairielearn:* node server
 
 ```javascript
 var path = require('path');
-var debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 // in some function later
 debug('func()', 'param:', param);
@@ -141,7 +139,7 @@ pages/instructorGradebook
 ```javascript
 app.use(
   '/instructor/:courseInstanceId/gradebook',
-  require('./pages/instructorGradebook/instructorGradebook'),
+  require('./pages/instructorGradebook/instructorGradebook')
 );
 ```
 
@@ -498,16 +496,11 @@ sqldb.beginTransaction(function (err, client, done) {
     [
       function (callback) {
         // only use queryWithClient() and queryWithClientOneRow() inside the transaction
-        sqldb.queryWithClient(
-          client,
-          sql.block_name,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            // do things
-            callback(null);
-          },
-        );
+        sqldb.queryWithClient(client, sql.block_name, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          // do things
+          callback(null);
+        });
       },
       // more series functions inside the transaction
     ],
@@ -518,7 +511,7 @@ sqldb.beginTransaction(function (err, client, done) {
         // transaction successfully committed at this point
         callback(null);
       });
-    },
+    }
   );
 });
 
@@ -621,7 +614,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, next) => {
     // can use "await" here
-  }),
+  })
 );
 ```
 
@@ -854,7 +847,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         body: req.body,
         locals: res.locals,
-      }),
+      })
     );
   }
 });
@@ -869,9 +862,7 @@ router.post('/', function (req, res, next) {
   <input type="hidden" name="__action" value="enroll" />
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
   <input type="hidden" name="course_instance_id" value="56" />
-  <button type="submit" class="btn btn-info">
-    Enroll in course instance 56
-  </button>
+  <button type="submit" class="btn btn-info">Enroll in course instance 56</button>
 </form>
 ```
 

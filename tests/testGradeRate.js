@@ -57,28 +57,17 @@ describe('Exam assessment with grade rate set', function () {
     context.question2Url = `${context.siteUrl}${question2Url}`;
   });
 
-  step(
-    'check for enabled grade button on a question page before submission',
-    async () => {
-      const response = await helperClient.fetchCheerio(context.question1Url);
-      assert.isTrue(response.ok);
+  step('check for enabled grade button on a question page before submission', async () => {
+    const response = await helperClient.fetchCheerio(context.question1Url);
+    assert.isTrue(response.ok);
 
-      let elemList = response.$('button[name="__action"][value="grade"]');
-      assert.lengthOf(elemList, 1);
-      assert.isFalse(elemList.is(':disabled'));
+    let elemList = response.$('button[name="__action"][value="grade"]');
+    assert.lengthOf(elemList, 1);
+    assert.isFalse(elemList.is(':disabled'));
 
-      helperClient.extractAndSaveCSRFToken(
-        context,
-        response.$,
-        '.question-form',
-      );
-      helperClient.extractAndSaveVariantId(
-        context,
-        response.$,
-        '.question-form',
-      );
-    },
-  );
+    helperClient.extractAndSaveCSRFToken(context, response.$, '.question-form');
+    helperClient.extractAndSaveVariantId(context, response.$, '.question-form');
+  });
 
   step('submit an answer to the question', async () => {
     const form = {
@@ -95,17 +84,14 @@ describe('Exam assessment with grade rate set', function () {
     assert.isTrue(response.ok);
   });
 
-  step(
-    'check for disabled grade button on a question page after submission',
-    async () => {
-      const response = await helperClient.fetchCheerio(context.question1Url);
-      assert.isTrue(response.ok);
+  step('check for disabled grade button on a question page after submission', async () => {
+    const response = await helperClient.fetchCheerio(context.question1Url);
+    assert.isTrue(response.ok);
 
-      let elemList = response.$('button[name="__action"][value="grade"]');
-      assert.lengthOf(elemList, 1);
-      assert.isTrue(elemList.is(':disabled'));
-    },
-  );
+    let elemList = response.$('button[name="__action"][value="grade"]');
+    assert.lengthOf(elemList, 1);
+    assert.isTrue(elemList.is(':disabled'));
+  });
 
   step('check for enabled grade button on another question page', async () => {
     const response = await helperClient.fetchCheerio(context.question2Url);

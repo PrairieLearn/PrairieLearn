@@ -33,8 +33,7 @@ describe('API', function () {
           instance_question_points: assessmentPoints,
           instance_question_score_perc: (assessmentPoints / 5) * 100,
           assessment_instance_points: assessmentPoints,
-          assessment_instance_score_perc:
-            (assessmentPoints / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (assessmentPoints / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -119,13 +118,11 @@ describe('API', function () {
           }
           locals.postEndTime = Date.now();
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {
@@ -138,9 +135,7 @@ describe('API', function () {
     });
     it('the new token should have the correct format', function () {
       assert.ok(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
-          locals.api_token,
-        ),
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.api_token)
       );
     });
   });
@@ -201,7 +196,7 @@ describe('API', function () {
     it('should contain E1', function () {
       const objectList = _.filter(
         locals.json,
-        (o) => o.assessment_name == 'exam1-automaticTestSuite',
+        (o) => o.assessment_name == 'exam1-automaticTestSuite'
       );
       assert.lengthOf(objectList, 1);
       locals.assessment_id = objectList[0].assessment_id;
@@ -244,8 +239,7 @@ describe('API', function () {
   describe('7. GET to API for Exam 1 assessment instances', function () {
     it('should load successfully', function (callback) {
       locals.apiAssessmentInstancesUrl =
-        locals.apiCourseInstanceUrl +
-        `/assessments/${locals.assessment_id}/assessment_instances`;
+        locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}/assessment_instances`;
       const options = {
         url: locals.apiAssessmentInstancesUrl,
         headers: {
@@ -282,8 +276,7 @@ describe('API', function () {
   describe('8. GET to API for a single Exam 1 assessment instance', function () {
     it('should load successfully', function (callback) {
       locals.apiAssessmentInstanceUrl =
-        locals.apiCourseInstanceUrl +
-        `/assessment_instances/${locals.assessment_instance_id}`;
+        locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}`;
       const options = {
         url: locals.apiAssessmentInstanceUrl,
         headers: {
@@ -305,10 +298,7 @@ describe('API', function () {
       locals.json = JSON.parse(page);
     });
     it('should have the correct assessment_instance_id', function () {
-      assert.equal(
-        locals.json.assessment_instance_id,
-        locals.assessment_instance_id,
-      );
+      assert.equal(locals.json.assessment_instance_id, locals.assessment_instance_id);
     });
     it('should have the correct assessment_id', function () {
       assert.equal(locals.json.assessment_id, locals.assessment_id);
@@ -384,10 +374,7 @@ describe('API', function () {
       assert.equal(locals.json.submission_id, locals.submission_id);
     });
     it('should have the correct assessment_instance_id', function () {
-      assert.equal(
-        locals.json.assessment_instance_id,
-        locals.assessment_instance_id,
-      );
+      assert.equal(locals.json.assessment_instance_id, locals.assessment_instance_id);
     });
     it('should have the correct assessment_id', function () {
       assert.equal(locals.json.assessment_id, locals.assessment_id);
@@ -421,27 +408,18 @@ describe('API', function () {
       locals.json = JSON.parse(page);
     });
     it('should have one entry for the dev user', function () {
-      const objectList = _.filter(
-        locals.json,
-        (o) => o.user_uid == 'dev@illinois.edu',
-      );
+      const objectList = _.filter(locals.json, (o) => o.user_uid == 'dev@illinois.edu');
       assert.lengthOf(objectList, 1);
       locals.devObject = objectList[0];
     });
     it('should contain Exam 1', function () {
-      const objectList = _.filter(
-        locals.devObject.assessments,
-        (o) => o.assessment_label == 'E1',
-      );
+      const objectList = _.filter(locals.devObject.assessments, (o) => o.assessment_label == 'E1');
       assert.lengthOf(objectList, 1);
       locals.gradebookEntry = objectList[0];
     });
     it('should have the correct points', function () {
       assert.equal(locals.gradebookEntry.points, assessmentPoints);
-      assert.equal(
-        locals.gradebookEntry.max_points,
-        helperExam.assessmentMaxPoints,
-      );
+      assert.equal(locals.gradebookEntry.max_points, helperExam.assessmentMaxPoints);
     });
   });
 

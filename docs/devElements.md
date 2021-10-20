@@ -116,10 +116,7 @@ Dependencies are listed in your element's `info.json`. You can configure them fo
     "nodeModulesScripts": ["three/build/three.min.js"],
     "elementScripts": ["pl-my-element.js"],
     "elementStyles": ["pl-my-element.css"],
-    "clientFilesCourseStyles": [
-      "courseStylesheet1.css",
-      "courseStylesheet2.css"
-    ]
+    "clientFilesCourseStyles": ["courseStylesheet1.css", "courseStylesheet2.css"]
   }
 }
 ```

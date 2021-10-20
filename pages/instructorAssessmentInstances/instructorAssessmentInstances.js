@@ -2,9 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const error = require('../../prairielib/lib/error');
 const regrading = require('../../lib/regrading');
@@ -17,9 +15,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/raw_data.json', function (req, res, next) {
   debug('GET /raw_data.json');
   if (!res.locals.authz_data.has_course_instance_permission_view)
-    return next(
-      error.make(403, 'Access denied (must be a student data viewer)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data viewer)'));
   const params = {
     assessment_id: res.locals.assessment.id,
     group_work: res.locals.assessment.group_work,
@@ -34,27 +30,21 @@ router.get('/raw_data.json', function (req, res, next) {
 router.get('/client.js', function (req, res, next) {
   debug('GET /client.js');
   if (!res.locals.authz_data.has_course_instance_permission_view)
-    return next(
-      error.make(403, 'Access denied (must be a student data viewer)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data viewer)'));
   res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
 });
 
 router.get('/', function (req, res, next) {
   debug('GET /');
   if (!res.locals.authz_data.has_course_instance_permission_view)
-    return next(
-      error.make(403, 'Access denied (must be a student data viewer)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data viewer)'));
   debug('render page');
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_edit)
-    return next(
-      error.make(403, 'Access denied (must be a student data editor)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data editor)'));
   if (req.body.__action == 'close') {
     const assessment_id = res.locals.assessment.id;
     const assessment_instance_id = req.body.assessment_instance_id;
@@ -71,7 +61,7 @@ router.post('/', function (req, res, next) {
         function (err) {
           if (ERR(err, next)) return;
           res.send(JSON.stringify({}));
-        },
+        }
       );
     });
   } else if (req.body.__action == 'delete') {
@@ -86,10 +76,7 @@ router.post('/', function (req, res, next) {
         res.send(JSON.stringify({}));
       });
     });
-  } else if (
-    req.body.__action == 'grade_all' ||
-    req.body.__action == 'close_all'
-  ) {
+  } else if (req.body.__action == 'grade_all' || req.body.__action == 'close_all') {
     const assessment_id = res.locals.assessment.id;
     const close = req.body.__action == 'close_all';
     const overrideGradeRate = true;
@@ -102,7 +89,7 @@ router.post('/', function (req, res, next) {
       function (err, job_sequence_id) {
         if (ERR(err, next)) return;
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      },
+      }
     );
   } else if (req.body.__action == 'delete_all') {
     const params = [res.locals.assessment.id, res.locals.authn_user.user_id];
@@ -122,10 +109,8 @@ router.post('/', function (req, res, next) {
         res.locals.authn_user.id,
         function (err, job_sequence_id) {
           if (ERR(err, next)) return;
-          res.redirect(
-            res.locals.urlPrefix + '/jobSequence/' + job_sequence_id,
-          );
-        },
+          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        }
       );
     });
   } else if (req.body.__action == 'set_time_limit') {
@@ -185,7 +170,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

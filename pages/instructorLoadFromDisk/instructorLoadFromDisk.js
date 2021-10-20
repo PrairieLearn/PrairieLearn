@@ -5,9 +5,7 @@ var path = require('path');
 var util = require('util');
 var express = require('express');
 var router = express.Router();
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var config = require('../../lib/config');
 var serverJobs = require('../../lib/server-jobs');
@@ -54,33 +52,29 @@ var update = function (locals, callback) {
               if (index !== config.courseDirs.length - 1) job.info('');
               callback(null);
             } else {
-              syncFromDisk.syncOrCreateDiskToSql(
-                courseDir,
-                job,
-                function (err, result) {
-                  if (index !== config.courseDirs.length - 1) job.info('');
-                  if (ERR(err, callback)) return;
-                  if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
-                  debug('successfully loaded course', { courseDir });
-                  if (config.chunksGenerator) {
-                    util.callbackify(chunks.updateChunksForCourse)(
-                      {
-                        coursePath: courseDir,
-                        courseId: result.courseId,
-                        courseData: result.courseData,
-                        oldHash: 'HEAD~1',
-                        newHash: 'HEAD',
-                      },
-                      (err) => {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                      },
-                    );
-                  } else {
-                    callback(null);
-                  }
-                },
-              );
+              syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function (err, result) {
+                if (index !== config.courseDirs.length - 1) job.info('');
+                if (ERR(err, callback)) return;
+                if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
+                debug('successfully loaded course', { courseDir });
+                if (config.chunksGenerator) {
+                  util.callbackify(chunks.updateChunksForCourse)(
+                    {
+                      coursePath: courseDir,
+                      courseId: result.courseId,
+                      courseData: result.courseData,
+                      oldHash: 'HEAD~1',
+                      newHash: 'HEAD',
+                    },
+                    (err) => {
+                      if (ERR(err, callback)) return;
+                      callback(null);
+                    }
+                  );
+                } else {
+                  callback(null);
+                }
+              });
             }
           });
         },
@@ -89,12 +83,12 @@ var update = function (locals, callback) {
             job.fail(err);
           } else if (anyCourseHadJsonErrors) {
             job.fail(
-              'One or more courses had JSON files that contained errors and were unable to be synced',
+              'One or more courses had JSON files that contained errors and were unable to be synced'
             );
           } else {
             job.succeed();
           }
-        },
+        }
       );
     });
   });

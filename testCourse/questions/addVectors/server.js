@@ -1,8 +1,4 @@
-define(['PrairieRandom', 'PrairieGeom', 'QServer'], function (
-  PrairieRandom,
-  PrairieGeom,
-  QServer,
-) {
+define(['PrairieRandom', 'PrairieGeom', 'QServer'], function (PrairieRandom, PrairieGeom, QServer) {
   var server = new QServer();
 
   server.getData = function (vid) {
@@ -46,33 +42,17 @@ define(['PrairieRandom', 'PrairieGeom', 'QServer'], function (
 
   // OPTIONAL gradeAnswer() function
   // if not present, then the submittedAnswer will be automatically checked against the trueAnswer
-  server.gradeAnswer = function (
-    vid,
-    params,
-    trueAnswer,
-    submittedAnswer,
-    options,
-  ) {
+  server.gradeAnswer = function (vid, params, trueAnswer, submittedAnswer, options) {
     var score = 1;
     var feedback = { wx: '', wy: '' };
     if (
-      !PrairieGeom.checkEqual(
-        trueAnswer.wx,
-        submittedAnswer.wx,
-        options.relTol,
-        options.absTol,
-      )
+      !PrairieGeom.checkEqual(trueAnswer.wx, submittedAnswer.wx, options.relTol, options.absTol)
     ) {
       score = 0;
       feedback.wx = 'The first component $w_x$ is incorrect.';
     }
     if (
-      !PrairieGeom.checkEqual(
-        trueAnswer.wy,
-        submittedAnswer.wy,
-        options.relTol,
-        options.absTol,
-      )
+      !PrairieGeom.checkEqual(trueAnswer.wy, submittedAnswer.wy, options.relTol, options.absTol)
     ) {
       score = 0;
       feedback.wy = 'The second component $w_y$ is incorrect.';

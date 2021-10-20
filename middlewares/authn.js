@@ -33,12 +33,9 @@ module.exports = function (req, res, next) {
   // look for load-testing override cookie
   if (req.cookies.load_test_token) {
     if (
-      !csrf.checkToken(
-        req.cookies.load_test_token,
-        'load_test',
-        config.secretKey,
-        { maxAge: 24 * 60 * 60 * 1000 },
-      )
+      !csrf.checkToken(req.cookies.load_test_token, 'load_test', config.secretKey, {
+        maxAge: 24 * 60 * 60 * 1000,
+      })
     ) {
       return next(new Error('invalid load_test_token'));
     }
@@ -46,12 +43,7 @@ module.exports = function (req, res, next) {
     async.series(
       [
         (callback) => {
-          const params = [
-            'loadtest@prairielearn.org',
-            'Load Test',
-            '999999999',
-            'dev',
-          ];
+          const params = ['loadtest@prairielearn.org', 'Load Test', '999999999', 'dev'];
           sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
             res.locals.authn_user = result.rows[0].user;
@@ -77,20 +69,16 @@ module.exports = function (req, res, next) {
             uid: 'loadtest@prairielearn.org',
             course_short_name: 'XC 101',
           };
-          sqldb.query(
-            sql.insert_course_permissions_for_user,
-            params,
-            (err, _result) => {
-              if (ERR(err, callback)) return;
-              callback(null);
-            },
-          );
+          sqldb.query(sql.insert_course_permissions_for_user, params, (err, _result) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+          });
         },
       ],
       (err) => {
         if (ERR(err, next)) return;
         return next();
-      },
+      }
     );
   }
 
@@ -123,17 +111,14 @@ module.exports = function (req, res, next) {
       sqldb.query(sql.select_user, params, (err, result) => {
         if (ERR(err, next)) return;
         if (result.rowCount == 0)
-          return next(
-            new Error('user not found with user_id ' + authnData.user_id),
-          );
+          return next(new Error('user not found with user_id ' + authnData.user_id));
         res.locals.authn_user = result.rows[0].user;
         res.locals.authn_institution = result.rows[0].institution;
         res.locals.authn_provider_name = 'Local';
         res.locals.authn_is_administrator = result.rows[0].is_administrator;
         res.locals.authn_is_instructor = result.rows[0].is_instructor;
         checkAdministratorAccess(req, res);
-        res.locals.news_item_notification_count =
-          result.rows[0].news_item_notification_count;
+        res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
         next();
       });
     });
@@ -171,17 +156,14 @@ module.exports = function (req, res, next) {
   sqldb.query(sql.select_user, params, (err, result) => {
     if (ERR(err, next)) return;
     if (result.rowCount == 0)
-      return next(
-        new Error('user not found with user_id ' + authnData.user_id),
-      );
+      return next(new Error('user not found with user_id ' + authnData.user_id));
     res.locals.authn_user = result.rows[0].user;
     res.locals.authn_institution = result.rows[0].institution;
     res.locals.authn_provider_name = authnData.authn_provider_name;
     res.locals.authn_is_administrator = result.rows[0].is_administrator;
     res.locals.authn_is_instructor = result.rows[0].is_instructor;
     checkAdministratorAccess(req, res);
-    res.locals.news_item_notification_count =
-      result.rows[0].news_item_notification_count;
+    res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
 
     // reset cookie timeout (#2268)
     var tokenData = {
@@ -199,8 +181,7 @@ module.exports = function (req, res, next) {
 
 function checkAdministratorAccess(req, res) {
   const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
-  const accessType =
-    req.cookies.pl_access_as_administrator || defaultAccessType;
+  const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
   res.locals.access_as_administrator = accessType == 'active';
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;

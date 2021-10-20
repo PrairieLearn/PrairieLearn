@@ -12,9 +12,7 @@ window.PLFileEditor = function (uuid, options) {
   this.inputElement = this.element.find('input');
   this.editorElement = this.element.find('.editor');
   this.restoreOriginalButton = this.element.find('.restore-original');
-  this.restoreOriginalConfirmContainer = this.element.find(
-    '.restore-original-confirm-container',
-  );
+  this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
   this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
   this.editor = ace.edit(this.editorElement.get(0));
@@ -65,8 +63,7 @@ window.PLFileEditor = function (uuid, options) {
     this.updatePreview(this.editor.getValue());
   } else if (options.preview !== undefined) {
     let preview = this.element.find('.preview')[0];
-    preview.innerHTML =
-      '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
+    preview.innerHTML = '<p>Unknown preview type: <code>' + options.preview + '</code></p>';
   }
 
   var currentContents = '';
@@ -138,7 +135,7 @@ window.PLFileEditor.prototype.b64DecodeUnicode = function (str) {
       .map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       })
-      .join(''),
+      .join('')
   );
 };
 
@@ -147,11 +144,8 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
   // then we convert the percent encodings into raw bytes which
   // can be fed into btoa.
   return btoa(
-    encodeURIComponent(str).replace(
-      /%([0-9A-F]{2})/g,
-      function toSolidBytes(match, p1) {
-        return String.fromCharCode('0x' + p1);
-      },
-    ),
+    encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
+      return String.fromCharCode('0x' + p1);
+    })
   );
 };

@@ -20,46 +20,30 @@ module.exports.run = (callback) => {
   async.series(
     [
       (callback) => {
-        loadQueueUrl(
-          sqs,
-          config.externalGradingJobsDeadLetterQueueName,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        loadQueueUrl(sqs, config.externalGradingJobsDeadLetterQueueName, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
       (callback) => {
-        loadQueueUrl(
-          sqs,
-          config.externalGradingResultsDeadLetterQueueName,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        loadQueueUrl(sqs, config.externalGradingResultsDeadLetterQueueName, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
       (callback) => {
-        getDeadLetterMsg(
-          sqs,
-          config.externalGradingJobsDeadLetterQueueName,
-          (err, msgDL) => {
-            if (ERR(err, callback)) return;
-            msg = msgDL;
-            callback(null);
-          },
-        );
+        getDeadLetterMsg(sqs, config.externalGradingJobsDeadLetterQueueName, (err, msgDL) => {
+          if (ERR(err, callback)) return;
+          msg = msgDL;
+          callback(null);
+        });
       },
       (callback) => {
-        getDeadLetterMsg(
-          sqs,
-          config.externalGradingResultsDeadLetterQueueName,
-          (err, msgDL) => {
-            if (ERR(err, callback)) return;
-            msg += msgDL;
-            callback(null);
-          },
-        );
+        getDeadLetterMsg(sqs, config.externalGradingResultsDeadLetterQueueName, (err, msgDL) => {
+          if (ERR(err, callback)) return;
+          msg += msgDL;
+          callback(null);
+        });
       },
       (callback) => {
         opsbot.sendMessage(msg, (err, res, body) => {
@@ -67,7 +51,7 @@ module.exports.run = (callback) => {
           if (res.statusCode != 200) {
             logger.error(
               'Error posting external grading dead letters to slack [status code ${res.statusCode}]',
-              body,
+              body
             );
           }
           callback(null);
@@ -77,7 +61,7 @@ module.exports.run = (callback) => {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 };
 
@@ -92,9 +76,7 @@ function loadQueueUrl(sqs, queueName, callback) {
     sqs.getQueueUrl(params, (err, data) => {
       if (ERR(err, callback)) return;
       QUEUE_URLS[queueName] = data.QueueUrl;
-      logger.verbose(
-        `Dead letter queue ${queueName}: got URL ${QUEUE_URLS[queueName]}`,
-      );
+      logger.verbose(`Dead letter queue ${queueName}: got URL ${QUEUE_URLS[queueName]}`);
       callback(null);
     });
   }
@@ -154,7 +136,7 @@ function drainQueue(sqs, queueName, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, true); // keep getting messages if we got some this time
-          },
+          }
         );
       });
     },
@@ -164,6 +146,6 @@ function drainQueue(sqs, queueName, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null, messages);
-    },
+    }
   );
 }

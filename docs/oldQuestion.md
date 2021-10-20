@@ -38,11 +38,7 @@ A `MultipleChoice` question has an `info.json` that provides the question text, 
   "type": "MultipleChoice",
   "options": {
     "text": "Which of the following is an advantage of fossil fuels relative to renewable energy sources?",
-    "correctAnswers": [
-      "Cheap",
-      "High energy density",
-      "Provide energy on demand"
-    ],
+    "correctAnswers": ["Cheap", "High energy density", "Provide energy on demand"],
     "incorrectAnswers": [
       "Non-polluting",
       "Low energy density",
@@ -104,11 +100,7 @@ A `Checkbox` question has an `info.json` that provides the question text, one or
   "type": "Checkbox",
   "options": {
     "text": "Which of the following are advantages of fossil fuels relative to renewable energy sources? Select all that apply.",
-    "correctAnswers": [
-      "Cheap",
-      "High energy density",
-      "Provide energy on demand"
-    ],
+    "correctAnswers": ["Cheap", "High energy density", "Provide energy on demand"],
     "incorrectAnswers": [
       "Non-polluting",
       "Low energy density",
@@ -189,16 +181,9 @@ define(['PrairieRandom'], function (PrairieRandom) {
     return questionData;
   };
 
-  server.gradeAnswer = function (
-    vid,
-    params,
-    trueAnswer,
-    submittedAnswer,
-    options,
-  ) {
+  server.gradeAnswer = function (vid, params, trueAnswer, submittedAnswer, options) {
     var score = 0;
-    if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, 1e-2, 1e-8))
-      score = 1;
+    if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, 1e-2, 1e-8)) score = 1;
     return { score: score };
   };
 
@@ -239,10 +224,7 @@ Best practice for writing a question is to divide it into three sections:
 For example:
 
 ```html
-<p>
-  The length $c$ is defined by $c = {{params.a}}{\rm\ m} + {{params.b}}{\rm\
-  m}$.
-</p>
+<p>The length $c$ is defined by $c = {{params.a}}{\rm\ m} + {{params.b}}{\rm\ m}$.</p>
 <p>What is $c$?</p>
 <p>$c = $ <input data-instavalue="submittedAnswer.c" />$\rm\ m$</p>
 ```

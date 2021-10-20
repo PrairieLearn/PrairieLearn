@@ -21,24 +21,19 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const csvFilename = (locals) => {
   return (
-    sanitizeName.courseInstanceFilenamePrefix(
-      locals.course_instance,
-      locals.course,
-    ) + 'assessment_stats.csv'
+    sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course) +
+    'assessment_stats.csv'
   );
 };
 
 const fileSubmissionsName = (locals) => {
   return (
-    sanitizeName.courseInstanceFilenamePrefix(
-      locals.course_instance,
-      locals.course,
-    ) + 'file_submissions'
+    sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course) +
+    'file_submissions'
   );
 };
 
-const fileSubmissionsFilename = (locals) =>
-  `${fileSubmissionsName(locals)}.zip`;
+const fileSubmissionsFilename = (locals) => `${fileSubmissionsName(locals)}.zip`;
 
 router.get('/', function (req, res, next) {
   res.locals.csvFilename = csvFilename(res.locals);
@@ -52,10 +47,8 @@ router.get('/', function (req, res, next) {
     if (ERR(err, next)) return;
 
     res.locals.rows = _.map(result.rows, (row) => {
-      if (row.sync_errors)
-        row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-      if (row.sync_warnings)
-        row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+      if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
+      if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
       return row;
     });
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -137,9 +130,7 @@ router.get('/:filename', function (req, res, next) {
     });
   } else if (req.params.filename == fileSubmissionsFilename(res.locals)) {
     if (!res.locals.authz_data.has_course_instance_permission_view)
-      return next(
-        error.make(403, 'Access denied (must be a student data viewer)'),
-      );
+      return next(error.make(403, 'Access denied (must be a student data viewer)'));
 
     const params = {
       course_instance_id: res.locals.course_instance.id,
@@ -162,7 +153,7 @@ router.get('/:filename', function (req, res, next) {
       (err) => {
         if (ERR(err, next)) return;
         archive.finalize();
-      },
+      }
     );
   } else {
     next(new Error('Unknown filename: ' + req.params.filename));
@@ -183,7 +174,7 @@ router.post('/', (req, res, next) => {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
           debug(
-            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`,
+            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`
           );
           sqldb.queryOneRow(
             sql.select_assessment_id_from_uuid,
@@ -194,12 +185,9 @@ router.post('/', (req, res, next) => {
             (err, result) => {
               if (ERR(err, next)) return;
               res.redirect(
-                res.locals.urlPrefix +
-                  '/assessment/' +
-                  result.rows[0].assessment_id +
-                  '/settings',
+                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings'
               );
-            },
+            }
           );
         }
       });
@@ -209,7 +197,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

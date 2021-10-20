@@ -43,12 +43,9 @@ module.exports = {
         locals.baseUrl = locals.siteUrl + '/pl';
         locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
         locals.instructorBaseUrl = locals.courseInstanceBaseUrl + '/instructor';
-        locals.instructorAssessmentsUrl =
-          locals.instructorBaseUrl + '/instance_admin/assessments';
-        locals.instructorGradebookUrl =
-          locals.instructorBaseUrl + '/instance_admin/gradebook';
-        locals.questionBaseUrl =
-          locals.courseInstanceBaseUrl + '/instance_question';
+        locals.instructorAssessmentsUrl = locals.instructorBaseUrl + '/instance_admin/assessments';
+        locals.instructorGradebookUrl = locals.instructorBaseUrl + '/instance_admin/gradebook';
+        locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
         locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
         locals.isStudentPage = true;
         locals.totalPoints = 0;
@@ -103,10 +100,7 @@ module.exports = {
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
         assert.equal(
           locals.assessmentUrl,
-          locals.courseInstanceBaseUrl +
-            '/assessment/' +
-            locals.assessment_id +
-            '/',
+          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/'
         );
       });
     });
@@ -165,7 +159,7 @@ module.exports = {
             res = response;
             page = body;
             callback(null);
-          },
+          }
         );
       });
       it('should parse', function () {
@@ -173,34 +167,20 @@ module.exports = {
       });
       it('should redirect to the correct path', function () {
         locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
-        assert.equal(
-          res.req.path,
-          '/pl/course_instance/1/assessment_instance/1',
-        );
+        assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
       });
       it('should create one assessment_instance', function (callback) {
-        sqldb.query(
-          sql.select_assessment_instances,
-          [],
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            if (result.rowCount != 1) {
-              return callback(
-                new Error(
-                  'expected one assessment_instance, got: ' + result.rowCount,
-                ),
-              );
-            }
-            locals.assessment_instance = result.rows[0];
-            callback(null);
-          },
-        );
+        sqldb.query(sql.select_assessment_instances, [], function (err, result) {
+          if (ERR(err, callback)) return;
+          if (result.rowCount != 1) {
+            return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
+          }
+          locals.assessment_instance = result.rows[0];
+          callback(null);
+        });
       });
       it('should have the correct assessment_instance.assessment_id', function () {
-        assert.equal(
-          locals.assessment_instance.assessment_id,
-          locals.assessment_id,
-        );
+        assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
       it(`should create ${questionsArray.length} instance_questions`, function (callback) {
         sqldb.query(sql.select_instance_questions, [], function (err, result) {
@@ -208,9 +188,8 @@ module.exports = {
           if (result.rowCount != questionsArray.length) {
             return callback(
               new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` +
-                  result.rowCount,
-              ),
+                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
+              )
             );
           }
           locals.instance_questions = result.rows;
@@ -218,9 +197,7 @@ module.exports = {
         });
       });
       questionsArray.forEach(function (question, i) {
-        it(`should have question #${
-          i + 1
-        } as QID ${question.qid}`, function () {
+        it(`should have question #${i + 1} as QID ${question.qid}`, function () {
           question.id = locals.instance_questions[i].id;
           assert.equal(locals.instance_questions[i].qid, question.qid);
         });
@@ -246,8 +223,7 @@ module.exports = {
       });
       questionsArray.forEach(function (question) {
         it(`should link to ${question.qid} question`, function () {
-          const urlTail =
-            '/pl/course_instance/1/instance_question/' + question.id + '/';
+          const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
           question.url = locals.siteUrl + urlTail;
           elemList = locals.$(`td a[href="${urlTail}"]`);
           assert.lengthOf(elemList, 1);

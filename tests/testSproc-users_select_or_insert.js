@@ -291,12 +291,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 4 created with wrong netid and correct UIN', (callback) => {
-    var params = [
-      'uin-888899990@illinois.edu',
-      'UIN 888899990',
-      '888899990',
-      'Shibboleth',
-    ];
+    var params = ['uin-888899990@illinois.edu', 'UIN 888899990', '888899990', 'Shibboleth'];
     var user = _.clone(params);
 
     user[3] = '200';
@@ -315,12 +310,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 4 logs in with full correct credentials, no institution, account updated', (callback) => {
-    var params = [
-      'newstudent',
-      'Johnny New Student',
-      '888899990',
-      'Shibboleth',
-    ];
+    var params = ['newstudent', 'Johnny New Student', '888899990', 'Shibboleth'];
     var user = _.clone(params);
 
     user[3] = '1';

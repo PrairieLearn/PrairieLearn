@@ -76,10 +76,10 @@ describe('Exam assessment with real-time grading disabled', function () {
       __action: 'grade',
       __csrf_token: context.__csrf_token,
     };
-    const response = await helperClient.fetchCheerio(
-      context.assessmentInstanceUrl,
-      { method: 'POST', form },
-    );
+    const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+      method: 'POST',
+      form,
+    });
 
     assert.isFalse(response.ok);
     assert.equal(response.status, 403);

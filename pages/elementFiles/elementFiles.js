@@ -31,15 +31,11 @@ router.get('/*', function (req, res, next) {
   if (res.locals.course) {
     // Files should be served from the course directory
     const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
-    chunks.ensureChunksForCourse(
-      res.locals.course.id,
-      { type: 'elements' },
-      (err) => {
-        if (ERR(err, next)) return;
-        elementFilesDir = path.join(coursePath, 'elements');
-        res.sendFile(filename, { root: elementFilesDir });
-      },
-    );
+    chunks.ensureChunksForCourse(res.locals.course.id, { type: 'elements' }, (err) => {
+      if (ERR(err, next)) return;
+      elementFilesDir = path.join(coursePath, 'elements');
+      res.sendFile(filename, { root: elementFilesDir });
+    });
   } else {
     elementFilesDir = path.join(__dirname, '..', '..', 'elements');
     res.sendFile(filename, { root: elementFilesDir });

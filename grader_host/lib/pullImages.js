@@ -53,7 +53,7 @@ module.exports = function (callback) {
               logger.info(
                 `Pulling latest version of "${image}" image from ${
                   config.cacheImageRegistry || 'default registry'
-                }`,
+                }`
               );
               var repository = new dockerUtil.DockerName(image);
               if (config.cacheImageRegistry) {
@@ -76,7 +76,7 @@ module.exports = function (callback) {
                   },
                   (output) => {
                     logger.info('docker output:', output);
-                  },
+                  }
                 );
               });
             })((err) => {
@@ -88,13 +88,13 @@ module.exports = function (callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 };

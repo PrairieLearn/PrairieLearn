@@ -13,14 +13,11 @@ module.exports = function (pageType) {
       return;
     }
 
-    const user_id = res.locals.user
-      ? res.locals.user.user_id
-      : res.locals.authn_user.user_id;
+    const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
 
     // If this page view required a v3 question render, these properties
     // will be defined
-    const { panel_render_count = null, panel_render_cache_hit_count = null } =
-      res.locals;
+    const { panel_render_count = null, panel_render_cache_hit_count = null } = res.locals;
 
     // Originally, we opted to only record page views for assessments if
     // the authn'ed user is also the owner of the assessment instance.
@@ -31,9 +28,7 @@ module.exports = function (pageType) {
     const params = {
       authn_user_id: res.locals.authn_user.user_id,
       user_id: user_id,
-      course_instance_id: res.locals.course_instance
-        ? res.locals.course_instance.id
-        : null,
+      course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
       assessment_id: res.locals.assessment ? res.locals.assessment.id : null,
       assessment_instance_id: res.locals.assessment_instance
         ? res.locals.assessment_instance.id
@@ -47,8 +42,7 @@ module.exports = function (pageType) {
     };
 
     sqlDb.queryOneRow(sql.log_page_view, params, function (err, result) {
-      if (ERR(err, (e) => logger.error('error logging page view', e)))
-        return next();
+      if (ERR(err, (e) => logger.error('error logging page view', e))) return next();
       res.locals.page_view_id = result.rows[0].id;
       next();
     });

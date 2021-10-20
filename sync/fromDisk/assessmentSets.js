@@ -12,9 +12,7 @@ module.exports.sync = async function (courseId, courseData) {
   // We can only safely remove unused assessment sets if both `infoCourse.json`
   // and all `infoAssessment.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
-  const areAllInfoAssessmentsValid = Object.values(
-    courseData.courseInstances,
-  ).every((ci) => {
+  const areAllInfoAssessmentsValid = Object.values(courseData.courseInstances).every((ci) => {
     return Object.values(ci.assessments).every((a) => !infofile.hasErrors(a));
   });
   const deleteUnused = isInfoCourseValid && areAllInfoAssessmentsValid;
@@ -23,7 +21,7 @@ module.exports.sync = async function (courseId, courseData) {
   let courseAssessmentSets = [];
   if (!infofile.hasErrors(courseData.course)) {
     courseAssessmentSets = courseData.course.data.assessmentSets.map((t) =>
-      JSON.stringify([t.name, t.abbreviation, t.heading, t.color]),
+      JSON.stringify([t.name, t.abbreviation, t.heading, t.color])
     );
   }
 

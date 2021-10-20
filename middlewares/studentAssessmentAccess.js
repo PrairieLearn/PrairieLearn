@@ -40,10 +40,7 @@ router.all('/', function (req, res, next) {
   // SafeExamBrowser protect the assesment
   if ('authz_result' in res.locals && res.locals.authz_result.mode == 'SEB') {
     // If the assessment is complete, use this middleware to show the logout page
-    if (
-      'assessment_instance' in res.locals &&
-      res.locals.assessment_instance.open == false
-    ) {
+    if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {
       return badSEB(req, res);
     }
 
@@ -58,10 +55,7 @@ router.all('/', function (req, res, next) {
     'authz_result' in res.locals &&
     'password' in res.locals.authz_result &&
     res.locals.authz_result.password &&
-    !(
-      'assessment_instance' in res.locals &&
-      res.locals.assessment_instance.open == false
-    )
+    !('assessment_instance' in res.locals && res.locals.assessment_instance.open == false)
   ) {
     // No password yet case
     if (req.cookies.pl_assessmentpw == null) {
@@ -69,15 +63,10 @@ router.all('/', function (req, res, next) {
     }
 
     // Invalid or expired password case
-    var pwData = csrf.getCheckedData(
-      req.cookies.pl_assessmentpw,
-      config.secretKey,
-      { maxAge: timeout * 60 * 60 * 1000 },
-    );
-    if (
-      pwData == null ||
-      pwData.password !== res.locals.authz_result.password
-    ) {
+    var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey, {
+      maxAge: timeout * 60 * 60 * 1000,
+    });
+    if (pwData == null || pwData.password !== res.locals.authz_result.password) {
       return badPassword(res, req);
     }
 
@@ -109,9 +98,7 @@ function badSEB(req, res) {
   //res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
   res.locals.SEBUrl = config.SEBDownloadUrl;
   res.locals.prompt = 'SEB';
-  return res
-    .status(403)
-    .render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  return res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
 
 function checkUserAgent(res, userAgent) {

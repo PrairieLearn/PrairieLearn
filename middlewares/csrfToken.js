@@ -1,7 +1,5 @@
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var config = require('../lib/config');
 var error = require('../prairielib/lib/error');
@@ -31,7 +29,7 @@ module.exports = function (req, res, next) {
           locals: res.locals,
           tokenData,
           __csrf_token,
-        }),
+        })
       );
     }
   }

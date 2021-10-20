@@ -372,9 +372,7 @@ function testEdit(params) {
         locals.__csrf_token = elemList[0].attribs.value;
         assert.isString(locals.__csrf_token);
       } else {
-        elemList = locals.$(
-          `form[name="${params.form}"] input[name="__csrf_token"]`,
-        );
+        elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -425,9 +423,7 @@ function testEdit(params) {
     });
     if (params.info) {
       it('should have a uuid', function () {
-        const infoJson = JSON.parse(
-          fs.readFileSync(path.join(courseDevDir, params.info), 'utf-8'),
-        );
+        const infoJson = JSON.parse(fs.readFileSync(path.join(courseDevDir, params.info), 'utf-8'));
         assert.isString(infoJson.uuid);
       });
     }
@@ -458,14 +454,10 @@ function createCourseFiles(callback) {
           cwd: '.',
           env: process.env,
         };
-        exec(
-          `git clone ${courseOriginDir} ${courseLiveDir}`,
-          execOptions,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        exec(`git clone ${courseOriginDir} ${courseLiveDir}`, execOptions, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
       (callback) => {
         ncp(courseTemplateDir, courseLiveDir, { clobber: false }, (err) => {
@@ -508,20 +500,16 @@ function createCourseFiles(callback) {
           cwd: '.',
           env: process.env,
         };
-        exec(
-          `git clone ${courseOriginDir} ${courseDevDir}`,
-          execOptions,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        exec(`git clone ${courseOriginDir} ${courseDevDir}`, execOptions, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 
@@ -550,7 +538,7 @@ function deleteCourseFiles(callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 

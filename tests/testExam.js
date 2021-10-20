@@ -2,9 +2,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const assert = require('chai').assert;
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
@@ -233,7 +231,12 @@ const partialCreditTests = [
       score: 0,
       sub_points: 0,
     },
-    { qid: 'partialCredit2', action: 'check-closed', score: 0, sub_points: 0 },
+    {
+      qid: 'partialCredit2',
+      action: 'check-closed',
+      score: 0,
+      sub_points: 0,
+    },
   ],
 ];
 
@@ -285,8 +288,7 @@ describe('Exam assessment', function () {
     helperQuestion.getInstanceQuestion(locals);
     describe('set attach files page URL', function () {
       it('should succeed', function () {
-        locals.attachFilesUrl =
-          locals.questionBaseUrl + '/' + locals.question.id;
+        locals.attachFilesUrl = locals.questionBaseUrl + '/' + locals.question.id;
       });
     });
   });
@@ -325,8 +327,7 @@ describe('Exam assessment', function () {
           instance_question_points: 0,
           instance_question_score_perc: (0 / 11) * 100,
           assessment_instance_points: 0,
-          assessment_instance_score_perc:
-            (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -354,8 +355,7 @@ describe('Exam assessment', function () {
           instance_question_points: 0,
           instance_question_score_perc: (0 / 11) * 100,
           assessment_instance_points: 0,
-          assessment_instance_score_perc:
-            (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
           return {
@@ -383,8 +383,7 @@ describe('Exam assessment', function () {
           instance_question_points: 0,
           instance_question_score_perc: (0 / 5) * 100,
           assessment_instance_points: 0,
-          assessment_instance_score_perc:
-            (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -411,8 +410,7 @@ describe('Exam assessment', function () {
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
           assessment_instance_points: 0,
-          assessment_instance_score_perc:
-            (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -439,8 +437,7 @@ describe('Exam assessment', function () {
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
           assessment_instance_points: 0,
-          assessment_instance_score_perc:
-            (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
           return {
@@ -455,17 +452,12 @@ describe('Exam assessment', function () {
     helperQuestion.checkAssessmentScore(locals);
     describe('check the submission is not gradable', function () {
       it('should succeed', function (callback) {
-        sqldb.queryOneRow(
-          sql.select_last_submission,
-          [],
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            const submission = result.rows[0];
-            if (submission.gradable)
-              return callback(new Error('submission.gradable is true'));
-            callback(null);
-          },
-        );
+        sqldb.queryOneRow(sql.select_last_submission, [], function (err, result) {
+          if (ERR(err, callback)) return;
+          const submission = result.rows[0];
+          if (submission.gradable) return callback(new Error('submission.gradable is true'));
+          callback(null);
+        });
       });
     });
     describe('the submission panel contents', function () {
@@ -506,18 +498,14 @@ describe('Exam assessment', function () {
         let params = {
           qid: locals.question.qid,
         };
-        sqldb.query(
-          sql.select_variants_for_qid,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            if (result.rowCount == 0) {
-              callback(null);
-            } else {
-              callback(new Error(`Found ${result.rowCount} variants`));
-            }
-          },
-        );
+        sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          if (result.rowCount == 0) {
+            callback(null);
+          } else {
+            callback(new Error(`Found ${result.rowCount} variants`));
+          }
+        });
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -530,18 +518,14 @@ describe('Exam assessment', function () {
         let params = {
           qid: locals.question.qid,
         };
-        sqldb.query(
-          sql.select_variants_for_qid,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            if (result.rowCount == 1) {
-              callback(null);
-            } else {
-              callback(new Error(`Found ${result.rowCount} variants`));
-            }
-          },
-        );
+        sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          if (result.rowCount == 1) {
+            callback(null);
+          } else {
+            callback(new Error(`Found ${result.rowCount} variants`));
+          }
+        });
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -554,18 +538,14 @@ describe('Exam assessment', function () {
         let params = {
           qid: locals.question.qid,
         };
-        sqldb.query(
-          sql.select_variants_for_qid,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            if (result.rowCount == 2) {
-              callback(null);
-            } else {
-              callback(new Error(`Found ${result.rowCount} variants`));
-            }
-          },
-        );
+        sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          if (result.rowCount == 2) {
+            callback(null);
+          } else {
+            callback(new Error(`Found ${result.rowCount} variants`));
+          }
+        });
       });
     });
   });
@@ -598,8 +578,7 @@ describe('Exam assessment', function () {
           instance_question_points: 3,
           instance_question_score_perc: (3 / 5) * 100,
           assessment_instance_points: 3,
-          assessment_instance_score_perc:
-            (3 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -647,8 +626,7 @@ describe('Exam assessment', function () {
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
           assessment_instance_points: 3,
-          assessment_instance_score_perc:
-            (3 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -691,8 +669,7 @@ describe('Exam assessment', function () {
           instance_question_points: 0,
           instance_question_score_perc: (0 / 11) * 100,
           assessment_instance_points: 3,
-          assessment_instance_score_perc:
-            (3 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (_variant) {
           return {
@@ -748,14 +725,10 @@ describe('Exam assessment', function () {
 
   describe('31. close exam', function () {
     it('should succeed', function (callback) {
-      sqldb.queryOneRow(
-        sql.close_all_assessment_instances,
-        [],
-        function (err, _result) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        },
-      );
+      sqldb.queryOneRow(sql.close_all_assessment_instances, [], function (err, _result) {
+        if (ERR(err, callback)) return;
+        callback(null);
+      });
     });
   });
 
@@ -783,14 +756,10 @@ describe('Exam assessment', function () {
   describe('33. regrading', function () {
     describe('set forceMaxPoints = true for question addVectors', function () {
       it('should succeed', function (callback) {
-        sqldb.query(
-          sql.update_addVectors_force_max_points,
-          [],
-          function (err, _result) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        sqldb.query(sql.update_addVectors_force_max_points, [], function (err, _result) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       });
     });
     helperQuestion.regradeAssessment(locals);
@@ -835,8 +804,7 @@ describe('Exam assessment', function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 14,
-            assessment_instance_score_perc:
-              (14 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc: (14 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
@@ -889,8 +857,7 @@ describe('Exam assessment', function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 7.5,
-            assessment_instance_score_perc:
-              (7.5 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc: (7.5 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
@@ -934,10 +901,7 @@ describe('Exam assessment', function () {
         const params = {
           qid: helperExam.questions.addNumbers.qid,
         };
-        const result = await sqldb.queryAsync(
-          sql.select_submissions_by_qid,
-          params,
-        );
+        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
         // make sure we've got lots of submissions to make the later checks work
         assert.isAtLeast(result.rowCount, 4);
         // we are going to add feedback to one of the submissions
@@ -992,8 +956,7 @@ describe('Exam assessment', function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 5.9,
-            assessment_instance_score_perc:
-              (5.9 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc: (5.9 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
@@ -1064,8 +1027,7 @@ describe('Exam assessment', function () {
   describe('36. assessment instance score_perc uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should succeed', function () {
-        locals.csvData =
-          'uid,instance,score_perc\n' + 'dev@illinois.edu,1,43.7\n';
+        locals.csvData = 'uid,instance,score_perc\n' + 'dev@illinois.edu,1,43.7\n';
       });
     });
     helperQuestion.uploadAssessmentInstanceScores(locals);
@@ -1103,8 +1065,7 @@ describe('Exam assessment', function () {
       describe('setting up the expected assessment results', function () {
         it('should succeed', function () {
           locals.expectedResult = {
-            assessment_instance_points:
-              (43.7 / 100) * helperExam.assessmentMaxPoints,
+            assessment_instance_points: (43.7 / 100) * helperExam.assessmentMaxPoints,
             assessment_instance_score_perc: 43.7,
           };
         });
@@ -1155,8 +1116,7 @@ describe('Exam assessment', function () {
         it('should succeed', function () {
           locals.expectedResult = {
             assessment_instance_points: 29.6,
-            assessment_instance_score_perc:
-              (29.6 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_score_perc: (29.6 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
@@ -1207,14 +1167,9 @@ describe('Exam assessment', function () {
               locals.question.points += questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
               locals.expectedResult = {
-                submission_score:
-                  questionTest.action == 'save'
-                    ? null
-                    : questionTest.score / 100,
+                submission_score: questionTest.action == 'save' ? null : questionTest.score / 100,
                 submission_correct:
-                  questionTest.action == 'save'
-                    ? null
-                    : questionTest.score == 100,
+                  questionTest.action == 'save' ? null : questionTest.score == 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
@@ -1257,10 +1212,7 @@ describe('Exam assessment', function () {
             helperQuestion.postInstanceQuestionAndFail(locals);
           } else if (questionTest.action == 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
-          } else if (
-            questionTest.action == 'save' ||
-            questionTest.action == 'grade'
-          ) {
+          } else if (questionTest.action == 'save' || questionTest.action == 'grade') {
             helperQuestion.getInstanceQuestion(locals);
             helperQuestion.postInstanceQuestion(locals);
             helperQuestion.checkQuestionScore(locals);

@@ -8,16 +8,13 @@ const testMarkdown = (question, expected) => {
 
 describe('Markdown processing', () => {
   it('renders basic markdown correctly', () => {
-    const question =
-      '<markdown>\n# Hello, world!\nThis **works**.\n</markdown>';
-    const expected =
-      '<h1>Hello, world!</h1>\n<p>This <strong>works</strong>.</p>';
+    const question = '<markdown>\n# Hello, world!\nThis **works**.\n</markdown>';
+    const expected = '<h1>Hello, world!</h1>\n<p>This <strong>works</strong>.</p>';
     testMarkdown(question, expected);
   });
 
   it('handles multiple <markdown> tags', () => {
-    const question =
-      '<markdown>`nice`</markdown><markdown>`also nice`</markdown>';
+    const question = '<markdown>`nice`</markdown><markdown>`also nice`</markdown>';
     const expected = '<p><code>nice</code></p><p><code>also nice</code></p>';
     testMarkdown(question, expected);
   });
@@ -36,31 +33,25 @@ describe('Markdown processing', () => {
 
   it('handles code blocks with highlighted lines', () => {
     const question = '<markdown>\n```{1,2-3}\nint a = 12;\n```\n</markdown>';
-    const expected =
-      '<pl-code no-highlight="true" highlight-lines="1,2-3">int a = 12;</pl-code>';
+    const expected = '<pl-code no-highlight="true" highlight-lines="1,2-3">int a = 12;</pl-code>';
     testMarkdown(question, expected);
   });
 
   it('handles code blocks with language and highlighted lines', () => {
     const question = '<markdown>\n```cpp{1,2-3}\nint a = 12;\n```\n</markdown>';
-    const expected =
-      '<pl-code language="cpp" highlight-lines="1,2-3">int a = 12;</pl-code>';
+    const expected = '<pl-code language="cpp" highlight-lines="1,2-3">int a = 12;</pl-code>';
     testMarkdown(question, expected);
   });
 
   it('handles escaped <markdown> tags', () => {
-    const question =
-      '<markdown>```html\n<markdown#></markdown#>\n```</markdown>';
-    const expected =
-      '<pl-code language="html">&#x3C;markdown>&#x3C;/markdown></pl-code>';
+    const question = '<markdown>```html\n<markdown#></markdown#>\n```</markdown>';
+    const expected = '<pl-code language="html">&#x3C;markdown>&#x3C;/markdown></pl-code>';
     testMarkdown(question, expected);
   });
 
   it('handles weird escaped <markdown> tags', () => {
-    const question =
-      '<markdown>```html\n<markdown###></markdown###>\n```</markdown>';
-    const expected =
-      '<pl-code language="html">&#x3C;markdown##>&#x3C;/markdown##></pl-code>';
+    const question = '<markdown>```html\n<markdown###></markdown###>\n```</markdown>';
+    const expected = '<pl-code language="html">&#x3C;markdown##>&#x3C;/markdown##></pl-code>';
     testMarkdown(question, expected);
   });
 

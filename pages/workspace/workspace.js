@@ -6,9 +6,7 @@ const asyncHandler = require('express-async-handler');
 const config = require('../../lib/config');
 const workspaceHelper = require('../../lib/workspace');
 
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -16,8 +14,7 @@ const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (_req, res, _next) => {
-  res.locals.workspaceHeartbeatIntervalSec =
-    config.workspaceHeartbeatIntervalSec;
+  res.locals.workspaceHeartbeatIntervalSec = config.workspaceHeartbeatIntervalSec;
   if (res.locals.assessment == null) {
     // instructor preview
     res.locals.pageNote = 'Preview';
@@ -38,22 +35,14 @@ router.get(
 
     if (action === 'reboot') {
       debug(`Rebooting workspace ${workspace_id}`);
-      await workspaceHelper.updateState(
-        workspace_id,
-        'stopped',
-        'Rebooting container',
-      );
+      await workspaceHelper.updateState(workspace_id, 'stopped', 'Rebooting container');
       await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {
         workspace_id,
       });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else if (action === 'reset') {
       debug(`Resetting workspace ${workspace_id}`);
-      await workspaceHelper.updateState(
-        workspace_id,
-        'uninitialized',
-        'Resetting container',
-      );
+      await workspaceHelper.updateState(workspace_id, 'uninitialized', 'Resetting container');
       await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
@@ -61,10 +50,10 @@ router.get(
         error.make(400, 'unknown action', {
           locals: res.locals,
           body: req.body,
-        }),
+        })
       );
     }
-  }),
+  })
 );
 
 module.exports = router;

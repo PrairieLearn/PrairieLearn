@@ -18,10 +18,10 @@ const logCsvFilename = (locals) => {
       locals.assessment,
       locals.assessment_set,
       locals.course_instance,
-      locals.course,
+      locals.course
     ) +
     sanitizeName.sanitizeString(
-      locals.instance_group?.name ?? locals.instance_user?.uid ?? 'unknown',
+      locals.instance_group?.name ?? locals.instance_user?.uid ?? 'unknown'
     ) +
     '_' +
     locals.assessment_instance.number +
@@ -37,36 +37,27 @@ router.get('/', (req, res, next) => {
     if (ERR(err, next)) return;
     res.locals.assessment_instance_stats = result.rows;
 
-    sqlDb.queryOneRow(
-      sql.select_date_formatted_duration,
-      params,
-      (err, result) => {
+    sqlDb.queryOneRow(sql.select_date_formatted_duration, params, (err, result) => {
+      if (ERR(err, next)) return;
+      res.locals.assessment_instance_date_formatted =
+        result.rows[0].assessment_instance_date_formatted;
+      res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
+
+      const params = {
+        assessment_instance_id: res.locals.assessment_instance.id,
+      };
+      sqlDb.query(sql.select_instance_questions, params, (err, result) => {
         if (ERR(err, next)) return;
-        res.locals.assessment_instance_date_formatted =
-          result.rows[0].assessment_instance_date_formatted;
-        res.locals.assessment_instance_duration =
-          result.rows[0].assessment_instance_duration;
+        res.locals.instance_questions = result.rows;
 
-        const params = {
-          assessment_instance_id: res.locals.assessment_instance.id,
-        };
-        sqlDb.query(sql.select_instance_questions, params, (err, result) => {
+        const params = [res.locals.assessment_instance.id, false];
+        sqlDb.call('assessment_instances_select_log', params, (err, result) => {
           if (ERR(err, next)) return;
-          res.locals.instance_questions = result.rows;
-
-          const params = [res.locals.assessment_instance.id, false];
-          sqlDb.call(
-            'assessment_instances_select_log',
-            params,
-            (err, result) => {
-              if (ERR(err, next)) return;
-              res.locals.log = result.rows;
-              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            },
-          );
+          res.locals.log = result.rows;
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
-      },
-    );
+      });
+    });
   });
 });
 
@@ -114,9 +105,7 @@ router.get('/:filename', (req, res, next) => {
 
 router.post('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit)
-    return next(
-      error.make(403, 'Access denied (must be a student data editor)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data editor)'));
   if (req.body.__action == 'edit_total_points') {
     const params = [
       res.locals.assessment_instance.id,
@@ -125,14 +114,10 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('assessment_instances_update_points', params, (err, _result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(
-        res.locals.assessment_instance.id,
-        null,
-        (err) => {
-          if (ERR(err, next)) return;
-          res.redirect(req.originalUrl);
-        },
-      );
+      ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
     });
   } else if (req.body.__action == 'edit_total_score_perc') {
     const params = [
@@ -140,21 +125,13 @@ router.post('/', (req, res, next) => {
       req.body.score_perc,
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call(
-      'assessment_instances_update_score_perc',
-      params,
-      (err, _result) => {
+    sqlDb.call('assessment_instances_update_score_perc', params, (err, _result) => {
+      if (ERR(err, next)) return;
+      ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
         if (ERR(err, next)) return;
-        ltiOutcomes.updateScore(
-          res.locals.assessment_instance.id,
-          null,
-          (err) => {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-          },
-        );
-      },
-    );
+        res.redirect(req.originalUrl);
+      });
+    });
   } else if (req.body.__action == 'edit_question_points') {
     const params = [
       null, // assessment_id
@@ -172,14 +149,10 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('instance_questions_update_score', params, (err, _result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(
-        res.locals.assessment_instance.id,
-        null,
-        (err) => {
-          if (ERR(err, next)) return;
-          res.redirect(req.originalUrl);
-        },
-      );
+      ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
     });
   } else if (req.body.__action == 'edit_question_score_perc') {
     const params = [
@@ -198,21 +171,17 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('instance_questions_update_score', params, (err, _result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(
-        res.locals.assessment_instance.id,
-        null,
-        (err) => {
-          if (ERR(err, next)) return;
-          res.redirect(req.originalUrl);
-        },
-      );
+      ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
     });
   } else {
     return next(
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

@@ -205,10 +205,7 @@ module.exports.writeCourseToTempDirectory = async function (courseData) {
  * @param {CourseData} courseData - The course data to write to disk
  * @param {string} coursePath - The path to the directory to write to
  */
-module.exports.writeCourseToDirectory = async function (
-  courseData,
-  coursePath,
-) {
+module.exports.writeCourseToDirectory = async function (courseData, coursePath) {
   await fs.emptyDir(coursePath);
 
   // courseInfo.json
@@ -234,15 +231,9 @@ module.exports.writeCourseToDirectory = async function (
     const courseInstance = courseData.courseInstances[shortName];
     // Handle nested course instances - split on '/' and use components to construct
     // the nested directory structure.
-    const courseInstancePath = path.join(
-      courseInstancesPath,
-      ...shortName.split('/'),
-    );
+    const courseInstancePath = path.join(courseInstancesPath, ...shortName.split('/'));
     await fs.ensureDir(courseInstancePath);
-    const courseInstanceInfoPath = path.join(
-      courseInstancePath,
-      'infoCourseInstance.json',
-    );
+    const courseInstanceInfoPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     await fs.writeJSON(courseInstanceInfoPath, courseInstance.courseInstance);
 
     // Write all assessments for this course instance
@@ -251,19 +242,10 @@ module.exports.writeCourseToDirectory = async function (
     for (const assessmentName of Object.keys(courseInstance.assessments)) {
       // Handle nested assessments - split on '/' and use components to construct
       // the nested directory structure.
-      const assessmentPath = path.join(
-        assessmentsPath,
-        ...assessmentName.split('/'),
-      );
+      const assessmentPath = path.join(assessmentsPath, ...assessmentName.split('/'));
       await fs.ensureDir(assessmentPath);
-      const assessmentInfoPath = path.join(
-        assessmentPath,
-        'infoAssessment.json',
-      );
-      await fs.writeJSON(
-        assessmentInfoPath,
-        courseInstance.assessments[assessmentName],
-      );
+      const assessmentInfoPath = path.join(assessmentPath, 'infoAssessment.json');
+      await fs.writeJSON(assessmentInfoPath, courseInstance.assessments[assessmentName]);
     }
   }
 };
@@ -478,10 +460,7 @@ module.exports.writeAndSyncCourseData = async function (courseData) {
  * @param {CourseData} courseData - The course data write and sync
  * @param {string} courseDir - The path to write the course data to
  */
-module.exports.overwriteAndSyncCourseData = async function (
-  courseData,
-  courseDir,
-) {
+module.exports.overwriteAndSyncCourseData = async function (courseData, courseDir) {
   await this.writeCourseToDirectory(courseData, courseDir);
   await this.syncCourseData(courseDir);
 };
@@ -504,12 +483,8 @@ module.exports.captureDatabaseSnapshot = async function () {
     assessmentSets: await module.exports.dumpTable('assessment_sets'),
     topics: await module.exports.dumpTable('topics'),
     tags: await module.exports.dumpTable('tags'),
-    courseInstanceAccesRules: await module.exports.dumpTable(
-      'course_instance_access_rules',
-    ),
-    assessmentAccessRules: await module.exports.dumpTable(
-      'assessment_access_rules',
-    ),
+    courseInstanceAccesRules: await module.exports.dumpTable('course_instance_access_rules'),
+    assessmentAccessRules: await module.exports.dumpTable('assessment_access_rules'),
     zones: await module.exports.dumpTable('zones'),
     alternativeGroups: await module.exports.dumpTable('alternative_groups'),
     assessmentQuestions: await module.exports.dumpTable('assessment_questions'),
@@ -554,18 +529,11 @@ function checkSetsSame(setA, setB) {
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotsMatch = function (
-  snapshotA,
-  snapshotB,
-  ignoredKeys = [],
-) {
+module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
   assert(
-    checkSetsSame(
-      new Set(Object.keys(snapshotA)),
-      new Set(Object.keys(snapshotB)),
-    ),
-    'snapshots contained different keys',
+    checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
+    'snapshots contained different keys'
   );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
@@ -584,18 +552,11 @@ module.exports.assertSnapshotsMatch = function (
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotSubset = function (
-  snapshotA,
-  snapshotB,
-  ignoredKeys = [],
-) {
+module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
   assert(
-    checkSetsSame(
-      new Set(Object.keys(snapshotA)),
-      new Set(Object.keys(snapshotB)),
-    ),
-    'snapshots contained different keys',
+    checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
+    'snapshots contained different keys'
   );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
@@ -604,7 +565,7 @@ module.exports.assertSnapshotSubset = function (
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
     assert(
       [...setA].every((entry) => setB.has(entry)),
-      `Snapshot of ${key} is not a subset`,
+      `Snapshot of ${key} is not a subset`
     );
   }
 };

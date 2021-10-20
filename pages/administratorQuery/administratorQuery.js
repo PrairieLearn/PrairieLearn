@@ -22,15 +22,12 @@ router.get(
     res.locals.jsonFilename = req.params.query + '.json';
     res.locals.sqlFilename = req.params.query + '.sql';
 
-    res.locals.info = await jsonLoad.readJSONAsync(
-      path.join(queriesDir, res.locals.jsonFilename),
-    );
+    res.locals.info = await jsonLoad.readJSONAsync(path.join(queriesDir, res.locals.jsonFilename));
     const schema = await jsonLoad.readJSONAsync(schemaFilename);
     await jsonLoad.validateJSONAsync(res.locals.info, schema);
-    res.locals.sql = await fsPromises.readFile(
-      path.join(queriesDir, res.locals.sqlFilename),
-      { encoding: 'utf8' },
-    );
+    res.locals.sql = await fsPromises.readFile(path.join(queriesDir, res.locals.sqlFilename), {
+      encoding: 'utf8',
+    });
     res.locals.sqlHighlighted = hljs.highlight(res.locals.sql, {
       language: 'sql',
     }).value;
@@ -65,7 +62,7 @@ router.get(
     } else {
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
-  }),
+  })
 );
 
 router.post(
@@ -74,17 +71,14 @@ router.post(
     const jsonFilename = req.params.query + '.json';
     const sqlFilename = req.params.query + '.sql';
 
-    const info = await jsonLoad.readJSONAsync(
-      path.join(queriesDir, jsonFilename),
-    );
-    const querySql = await fsPromises.readFile(
-      path.join(queriesDir, sqlFilename),
-      { encoding: 'utf8' },
-    );
+    const info = await jsonLoad.readJSONAsync(path.join(queriesDir, jsonFilename));
+    const querySql = await fsPromises.readFile(path.join(queriesDir, sqlFilename), {
+      encoding: 'utf8',
+    });
 
     const queryParams = _.pick(
       req.body,
-      _.map(info.params || {}, (p) => p.name),
+      _.map(info.params || {}, (p) => p.name)
     );
     const params = {
       name: req.params.query,
@@ -108,7 +102,7 @@ router.post(
     const result = await sqldb.queryOneRowAsync(sql.insert_query_run, params);
     const query_run_id = result.rows[0].id;
     res.redirect(`${req.baseUrl}${req.path}?query_run_id=${query_run_id}`);
-  }),
+  })
 );
 
 module.exports = router;

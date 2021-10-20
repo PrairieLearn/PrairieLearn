@@ -17,10 +17,7 @@ async function loadNewsItems() {
     const infoFilename = path.join(__dirname, dir, 'info.json');
     let info;
     try {
-      info = await jsonLoad.readInfoJSONAsync(
-        infoFilename,
-        schemas.infoNewsItem,
-      );
+      info = await jsonLoad.readInfoJSONAsync(infoFilename, schemas.infoNewsItem);
     } catch (err) {
       if (err.code == 'ENOTDIR' || err.code == 'ENOENT') return; // skip dir entries without an info.json
       throw err;
@@ -36,9 +33,7 @@ async function loadNewsItems() {
     .each(function (aList, uuid) {
       if (aList.length > 1) {
         const directories = aList.map((a) => a.directory).join(', ');
-        throw new Error(
-          `UUID ${uuid} is used in multiple news items: ${directories}`,
-        );
+        throw new Error(`UUID ${uuid} is used in multiple news items: ${directories}`);
       }
     });
 
@@ -48,9 +43,7 @@ async function loadNewsItems() {
     .each(function (aList, index) {
       if (aList.length > 1) {
         const directories = aList.map((a) => a.directory).join(', ');
-        throw new Error(
-          `News item index ${index} is used in multiple news items: ${directories}`,
-        );
+        throw new Error(`News item index ${index} is used in multiple news items: ${directories}`);
       }
     });
 
@@ -62,10 +55,7 @@ module.exports.initAsync = async function (notify_with_new_server) {
   const lock = await namedLocks.waitLockAsync(lockName, {});
   try {
     const news_items = await loadNewsItems();
-    await sqldb.callAsync('sync_news_items', [
-      JSON.stringify(news_items),
-      notify_with_new_server,
-    ]);
+    await sqldb.callAsync('sync_news_items', [JSON.stringify(news_items), notify_with_new_server]);
   } catch (err) {
     await namedLocks.releaseLockAsync(lock);
     throw err;

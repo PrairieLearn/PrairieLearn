@@ -23,7 +23,7 @@ router.get('/', function (req, res, next) {
     oauth2Client = new OAuth2(
       config.googleClientId,
       config.googleClientSecret,
-      config.googleRedirectUrl,
+      config.googleRedirectUrl
     );
   } catch (err) {
     ERR(err, next);

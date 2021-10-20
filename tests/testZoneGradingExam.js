@@ -124,11 +124,9 @@ describe('Zone grading exam assessment', function () {
         locals.baseUrl = locals.siteUrl + '/pl';
         locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
         locals.instructorBaseUrl = locals.courseInstanceBaseUrl + '/instructor';
-        locals.instructorAssessmentsUrl =
-          locals.instructorBaseUrl + '/assessments';
+        locals.instructorAssessmentsUrl = locals.instructorBaseUrl + '/assessments';
         locals.instructorGradebookUrl = locals.instructorBaseUrl + '/gradebook';
-        locals.questionBaseUrl =
-          locals.courseInstanceBaseUrl + '/instance_question';
+        locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
         locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
         locals.isStudentPage = true;
         locals.totalPoints = 0;
@@ -183,10 +181,7 @@ describe('Zone grading exam assessment', function () {
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
         assert.equal(
           locals.assessmentUrl,
-          locals.courseInstanceBaseUrl +
-            '/assessment/' +
-            locals.assessment_id +
-            '/',
+          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/'
         );
       });
     });
@@ -245,7 +240,7 @@ describe('Zone grading exam assessment', function () {
             res = response;
             page = body;
             callback(null);
-          },
+          }
         );
       });
       it('should parse', function () {
@@ -253,34 +248,20 @@ describe('Zone grading exam assessment', function () {
       });
       it('should redirect to the correct path', function () {
         locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
-        assert.equal(
-          res.req.path,
-          '/pl/course_instance/1/assessment_instance/1',
-        );
+        assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
       });
       it('should create one assessment_instance', function (callback) {
-        sqldb.query(
-          sql.select_assessment_instances,
-          [],
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            if (result.rowCount != 1) {
-              return callback(
-                new Error(
-                  'expected one assessment_instance, got: ' + result.rowCount,
-                ),
-              );
-            }
-            locals.assessment_instance = result.rows[0];
-            callback(null);
-          },
-        );
+        sqldb.query(sql.select_assessment_instances, [], function (err, result) {
+          if (ERR(err, callback)) return;
+          if (result.rowCount != 1) {
+            return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
+          }
+          locals.assessment_instance = result.rows[0];
+          callback(null);
+        });
       });
       it('should have the correct assessment_instance.assessment_id', function () {
-        assert.equal(
-          locals.assessment_instance.assessment_id,
-          locals.assessment_id,
-        );
+        assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
       it(`should create ${questionsArray.length} instance_questions`, function (callback) {
         sqldb.query(sql.select_instance_questions, [], function (err, result) {
@@ -288,9 +269,8 @@ describe('Zone grading exam assessment', function () {
           if (result.rowCount != questionsArray.length) {
             return callback(
               new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` +
-                  result.rowCount,
-              ),
+                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
+              )
             );
           }
           locals.instance_questions = result.rows;
@@ -298,9 +278,7 @@ describe('Zone grading exam assessment', function () {
         });
       });
       questionsArray.forEach(function (question, i) {
-        it(`should have question #${
-          i + 1
-        } as QID ${question.qid}`, function () {
+        it(`should have question #${i + 1} as QID ${question.qid}`, function () {
           question.id = locals.instance_questions[i].id;
           assert.equal(locals.instance_questions[i].qid, question.qid);
         });
@@ -326,8 +304,7 @@ describe('Zone grading exam assessment', function () {
       });
       questionsArray.forEach(function (question) {
         it(`should link to ${question.qid} question`, function () {
-          const urlTail =
-            '/pl/course_instance/1/instance_question/' + question.id + '/';
+          const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
           question.url = locals.siteUrl + urlTail;
           elemList = locals.$(`td a[href="${urlTail}"]`);
           assert.lengthOf(elemList, 1);
@@ -379,18 +356,13 @@ describe('Zone grading exam assessment', function () {
                   ? questionTest.score
                   : questionTest.submission_score;
               locals.expectedResult = {
-                submission_score:
-                  questionTest.action == 'save' ? null : submission_score / 100,
-                submission_correct:
-                  questionTest.action == 'save'
-                    ? null
-                    : submission_score == 100,
+                submission_score: questionTest.action == 'save' ? null : submission_score / 100,
+                submission_correct: questionTest.action == 'save' ? null : submission_score == 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
                 assessment_instance_points: locals.totalPoints,
-                assessment_instance_score_perc:
-                  (locals.totalPoints / assessmentMaxPoints) * 100,
+                assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
               locals.getSubmittedAnswer = function (_variant) {
                 return {
@@ -427,10 +399,7 @@ describe('Zone grading exam assessment', function () {
             helperQuestion.postInstanceQuestionAndFail(locals);
           } else if (questionTest.action == 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
-          } else if (
-            questionTest.action == 'save' ||
-            questionTest.action == 'grade'
-          ) {
+          } else if (questionTest.action == 'save' || questionTest.action == 'grade') {
             helperQuestion.getInstanceQuestion(locals);
             helperQuestion.postInstanceQuestion(locals);
             helperQuestion.checkQuestionScore(locals);

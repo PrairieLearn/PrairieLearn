@@ -11,7 +11,7 @@ var caa_reservation_tests = function (
   exam_id,
   second_assessment_id,
   expectWideOpen = false,
-  seeOtherExams = false,
+  seeOtherExams = false
 ) {
   var expectedWord = 'fail';
   var expectedBool = false;
@@ -42,15 +42,12 @@ var caa_reservation_tests = function (
   });
 
   describe(`with checked-in reservation for student for exam ${exam_id}`, () => {
-    before(
-      `create checked-in reservation for student for exam ${exam_id}`,
-      function (callback) {
-        sqldb.query(sql.insert_ps_reservation, { exam_id }, (err, _result) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-    );
+    before(`create checked-in reservation for student for exam ${exam_id}`, function (callback) {
+      sqldb.query(sql.insert_ps_reservation, { exam_id }, (err, _result) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+      });
+    });
 
     it('pass for student inside start_date/end_date, checked-in reservation, inside access_start/end', function (callback) {
       var params = [
@@ -91,7 +88,7 @@ var caa_reservation_tests = function (
           assert.strictEqual(result.rows[0].authorized, expectedBool);
           callback(null);
         });
-      },
+      }
     );
 
     var otherExams = {

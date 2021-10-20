@@ -18,17 +18,12 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
   const accessRules = (courseInstance.allowAccess || [])
-    .filter(
-      (accessRule) =>
-        !_(accessRule).has('role') || accessRule.role == 'Student',
-    )
+    .filter((accessRule) => !_(accessRule).has('role') || accessRule.role == 'Student')
     .map((accessRule) => ({
       uids: _(accessRule).has('uids') ? accessRule.uids : null,
       start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
       end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
-      institution: _(accessRule).has('institution')
-        ? accessRule.institution
-        : null,
+      institution: _(accessRule).has('institution') ? accessRule.institution : null,
     }));
 
   return {
@@ -36,8 +31,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
     long_name: courseInstance.longName,
     number: courseInstance.number,
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
-    display_timezone:
-      courseInstance.timezone || courseTimezone || 'America/Chicago',
+    display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
     access_rules: accessRules,
   };
 }
@@ -48,8 +42,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
  * @returns {Promise<{ [ciid: string]: any }>}
  */
 module.exports.sync = async function (courseId, courseData) {
-  const courseTimezone =
-    (courseData.course.data && courseData.course.data.timezone) || null;
+  const courseTimezone = (courseData.course.data && courseData.course.data.timezone) || null;
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
     ([shortName, courseIntanceData]) => {
       const { courseInstance } = courseIntanceData;
@@ -60,7 +53,7 @@ module.exports.sync = async function (courseId, courseData) {
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data, courseTimezone),
       ]);
-    },
+    }
   );
 
   const params = [courseInstanceParams, courseId];

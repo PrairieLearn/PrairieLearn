@@ -29,9 +29,7 @@ function set_answer(event) {
       var uuid = dom_objs[i].getAttribute('uuid');
       var answer_indent = null;
       if (dom_objs[i].parentElement.classList.contains('enableIndentation')) {
-        answer_indent = parseInt(
-          $(dom_objs[i]).css('marginLeft').replace('px', ''),
-        );
+        answer_indent = parseInt($(dom_objs[i]).css('marginLeft').replace('px', ''));
         answer_indent = Math.round(answer_indent / TABWIDTH); // get how many times the answer is indented
       }
 

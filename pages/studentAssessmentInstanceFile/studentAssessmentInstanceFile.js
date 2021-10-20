@@ -15,7 +15,7 @@ router.get(
 
     const stream = await fileStore.getStream(options.file_id);
     stream.on('error', next).pipe(res);
-  }),
+  })
 );
 
 module.exports = router;

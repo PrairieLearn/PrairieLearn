@@ -69,20 +69,16 @@ describe('Test workspace authorization access', function () {
   describe('workspaces created by instructors in a course instance', function () {
     let workspace_id;
     it('create instructor workspace', async function () {
-      const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {}))
-        .rows[0];
+      const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {})).rows[0];
       const workspace_url =
-        baseUrl +
-        `/course_instance/1/instructor/question/${result.question_id}/preview`;
+        baseUrl + `/course_instance/1/instructor/question/${result.question_id}/preview`;
       const response = await requestAsync(workspace_url);
 
       const $ = cheerio.load(response.body);
       const workspace_btns = $('a:contains("Open workspace")');
       assert.equal(workspace_btns.length, 1);
 
-      workspace_id = workspace_btns[0].attribs.href.match(
-        '/pl/workspace/([0-9]+)',
-      )[1];
+      workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
       assert.isDefined(workspace_id);
     });
     describe('can be accessed by the instructor', function () {
@@ -145,19 +141,15 @@ describe('Test workspace authorization access', function () {
 
     let workspace_id;
     it('create instructor workspace', async function () {
-      const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {}))
-        .rows[0];
-      const workspace_url =
-        baseUrl + `/course/1/question/${result.question_id}/preview`;
+      const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {})).rows[0];
+      const workspace_url = baseUrl + `/course/1/question/${result.question_id}/preview`;
       const response = await requestAsync(workspace_url);
 
       const $ = cheerio.load(response.body);
       const workspace_btns = $('a:contains("Open workspace")');
       assert.equal(workspace_btns.length, 1);
 
-      workspace_id = workspace_btns[0].attribs.href.match(
-        '/pl/workspace/([0-9]+)',
-      )[1];
+      workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
       assert.isDefined(workspace_id);
     });
     describe('can be accessed by the instructor', function () {
@@ -222,21 +214,17 @@ describe('Test workspace authorization access', function () {
         let response = await requestAsync(assessments_url);
         let $ = cheerio.load(response.body);
 
-        const hw2_url =
-          siteUrl + $('a:contains("Miscellaneous homework")')[0].attribs.href;
+        const hw2_url = siteUrl + $('a:contains("Miscellaneous homework")')[0].attribs.href;
         response = await requestAsync(hw2_url);
         $ = cheerio.load(response.body);
 
-        const workspace_question_url =
-          siteUrl + $('a:contains("Workspace test")')[0].attribs.href;
+        const workspace_question_url = siteUrl + $('a:contains("Workspace test")')[0].attribs.href;
         response = await requestAsync(workspace_question_url);
         $ = cheerio.load(response.body);
 
         const workspace_btns = $('a:contains("Open workspace")');
         assert.equal(workspace_btns.length, 1);
-        workspace_id = workspace_btns[0].attribs.href.match(
-          '/pl/workspace/([0-9]+)',
-        )[1];
+        workspace_id = workspace_btns[0].attribs.href.match('/pl/workspace/([0-9]+)')[1];
         assert.isDefined(workspace_id);
       });
     });

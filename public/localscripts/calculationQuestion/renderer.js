@@ -28,15 +28,7 @@ define(function () {
     }
     nText = nText === undefined ? n.toString() : nText;
     extraAtts = extraAtts === undefined ? '' : extraAtts;
-    return (
-      '<span class="label label-' +
-      labelType +
-      '" ' +
-      extraAtts +
-      '>' +
-      nText +
-      '</span>'
-    );
+    return '<span class="label label-' + labelType + '" ' + extraAtts + '>' + nText + '</span>';
   };
 
   Renderer.prototype.scoreLabel = function (score, counts, extraAtts) {
@@ -46,15 +38,7 @@ define(function () {
     }
     var perc = (score * 100).toFixed(0) + '%';
     extraAtts = extraAtts === undefined ? '' : extraAtts;
-    return (
-      '<span class="label label-' +
-      labelType +
-      '" ' +
-      extraAtts +
-      '>' +
-      perc +
-      '</span>'
-    );
+    return '<span class="label label-' + labelType + '" ' + extraAtts + '>' + perc + '</span>';
   };
 
   Renderer.prototype.zeroCounts = function () {
@@ -85,7 +69,7 @@ define(function () {
     toolTipTexts,
     placement,
     showCounts,
-    percentages,
+    percentages
   ) {
     var total = counts.success + counts.warning + counts.danger;
     total = Math.max(1, total);
@@ -121,9 +105,7 @@ define(function () {
         ((counts[type] / total) * 100).toFixed(3) +
         '%">' +
         (showCounts
-          ? '<div class="progress-num">' +
-            (counts[type] > 0 ? counts[type] : '') +
-            '</div>'
+          ? '<div class="progress-num">' + (counts[type] > 0 ? counts[type] : '') + '</div>'
           : '') +
         '</div>'
       );
@@ -166,10 +148,7 @@ define(function () {
         answerHTML = '';
         answerHTML += '<div class="checkbox">';
         answerHTML += '<label>';
-        answerHTML +=
-          '<input type="checkbox" data-checkedoptional="submittedAnswer.a' +
-          i +
-          '" />';
+        answerHTML += '<input type="checkbox" data-checkedoptional="submittedAnswer.a' + i + '" />';
         answerHTML += answers[i];
         answerHTML += '</label>';
         answerHTML += '</div>';

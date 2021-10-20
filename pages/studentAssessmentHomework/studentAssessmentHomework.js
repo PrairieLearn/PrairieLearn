@@ -2,9 +2,7 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 var path = require('path');
-var debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var error = require('../../prairielib/lib/error');
 var assessment = require('../../lib/assessment');
@@ -19,10 +17,9 @@ router.get('/', function (req, res, next) {
   debug('is Homework');
   if (res.locals.assessment.multiple_instance) {
     return next(
-      error.makeWithData(
-        '"Homework" assessments do not support multiple instances',
-        { assessment: res.locals.assessment },
-      ),
+      error.makeWithData('"Homework" assessments do not support multiple instances', {
+        assessment: res.locals.assessment,
+      })
     );
   }
 
@@ -32,77 +29,65 @@ router.get('/', function (req, res, next) {
     user_id: res.locals.user.user_id,
   };
 
-  sqldb.query(
-    sql.find_single_assessment_instance,
-    params,
-    function (err, result) {
-      if (ERR(err, next)) return;
-      if (result.rowCount == 0) {
-        debug('no assessment instance');
+  sqldb.query(sql.find_single_assessment_instance, params, function (err, result) {
+    if (ERR(err, next)) return;
+    if (result.rowCount == 0) {
+      debug('no assessment instance');
 
-        // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
-        // only for an assessment instance, not an assessment).
-        //
-        // The assessment that is created here will be owned by the effective user. The only
-        // reason to worry, therefore, is if the effective user has a different UID than the
-        // authn user. This is only allowed, however, if the authn user has permission to edit
-        // student data in the course instance (which has already been checked), exactly the
-        // permission required to create an assessment for the effective user.
+      // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
+      // only for an assessment instance, not an assessment).
+      //
+      // The assessment that is created here will be owned by the effective user. The only
+      // reason to worry, therefore, is if the effective user has a different UID than the
+      // authn user. This is only allowed, however, if the authn user has permission to edit
+      // student data in the course instance (which has already been checked), exactly the
+      // permission required to create an assessment for the effective user.
 
-        //if it is a group_work with no instance, jump to a confirm page.
-        if (res.locals.assessment.group_work) {
-          sqldb.query(sql.get_config_info, params, function (err, result) {
+      //if it is a group_work with no instance, jump to a confirm page.
+      if (res.locals.assessment.group_work) {
+        sqldb.query(sql.get_config_info, params, function (err, result) {
+          if (ERR(err, next)) return;
+          res.locals.permissions = result.rows[0];
+          res.locals.minsize = result.rows[0].minimum || 0;
+          res.locals.maxsize = result.rows[0].maximum || 999;
+          sqldb.query(sql.get_group_info, params, function (err, result) {
             if (ERR(err, next)) return;
-            res.locals.permissions = result.rows[0];
-            res.locals.minsize = result.rows[0].minimum || 0;
-            res.locals.maxsize = result.rows[0].maximum || 999;
-            sqldb.query(sql.get_group_info, params, function (err, result) {
-              if (ERR(err, next)) return;
-              res.locals.groupsize = result.rowCount;
-              res.locals.needsize = res.locals.minsize - res.locals.groupsize;
-              if (res.locals.groupsize > 0) {
-                res.locals.group_info = result.rows;
-                res.locals.join_code =
-                  res.locals.group_info[0].name +
-                  '-' +
-                  res.locals.group_info[0].join_code;
-                res.locals.start = false;
-                if (res.locals.needsize <= 0) {
-                  res.locals.start = true;
-                }
+            res.locals.groupsize = result.rowCount;
+            res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+            if (res.locals.groupsize > 0) {
+              res.locals.group_info = result.rows;
+              res.locals.join_code =
+                res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+              res.locals.start = false;
+              if (res.locals.needsize <= 0) {
+                res.locals.start = true;
               }
-              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            });
+            }
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           });
-        } else {
-          const time_limit_min = null;
-          assessment.makeAssessmentInstance(
-            res.locals.assessment.id,
-            res.locals.user.user_id,
-            res.locals.assessment.group_work,
-            res.locals.authn_user.user_id,
-            res.locals.authz_data.mode,
-            time_limit_min,
-            res.locals.authz_data.date,
-            (err, assessment_instance_id) => {
-              if (ERR(err, next)) return;
-              debug('redirecting');
-              res.redirect(
-                res.locals.urlPrefix +
-                  '/assessment_instance/' +
-                  assessment_instance_id,
-              );
-            },
-          );
-        }
+        });
       } else {
-        debug('redirecting');
-        res.redirect(
-          res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id,
+        const time_limit_min = null;
+        assessment.makeAssessmentInstance(
+          res.locals.assessment.id,
+          res.locals.user.user_id,
+          res.locals.assessment.group_work,
+          res.locals.authn_user.user_id,
+          res.locals.authz_data.mode,
+          time_limit_min,
+          res.locals.authz_data.date,
+          (err, assessment_instance_id) => {
+            if (ERR(err, next)) return;
+            debug('redirecting');
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+          }
         );
       }
-    },
-  );
+    } else {
+      debug('redirecting');
+      res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
+    }
+  });
 });
 
 router.post('/', function (req, res, next) {
@@ -112,39 +97,29 @@ router.post('/', function (req, res, next) {
       assessment_id: res.locals.assessment.id,
       user_id: res.locals.user.user_id,
     };
-    sqldb.query(
-      sql.find_single_assessment_instance,
-      params,
-      function (err, result) {
-        if (ERR(err, next)) return;
-        if (result.rowCount == 0) {
-          const time_limit_min = null;
-          assessment.makeAssessmentInstance(
-            res.locals.assessment.id,
-            res.locals.user.user_id,
-            res.locals.assessment.group_work,
-            res.locals.authn_user.user_id,
-            res.locals.authz_data.mode,
-            time_limit_min,
-            res.locals.authz_data.date,
-            (err, assessment_instance_id) => {
-              if (ERR(err, next)) return;
-              debug('redirecting');
-              res.redirect(
-                res.locals.urlPrefix +
-                  '/assessment_instance/' +
-                  assessment_instance_id,
-              );
-            },
-          );
-        } else {
-          debug('redirecting');
-          res.redirect(
-            res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id,
-          );
-        }
-      },
-    );
+    sqldb.query(sql.find_single_assessment_instance, params, function (err, result) {
+      if (ERR(err, next)) return;
+      if (result.rowCount == 0) {
+        const time_limit_min = null;
+        assessment.makeAssessmentInstance(
+          res.locals.assessment.id,
+          res.locals.user.user_id,
+          res.locals.assessment.group_work,
+          res.locals.authn_user.user_id,
+          res.locals.authz_data.mode,
+          time_limit_min,
+          res.locals.authz_data.date,
+          (err, assessment_instance_id) => {
+            if (ERR(err, next)) return;
+            debug('redirecting');
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
+          }
+        );
+      } else {
+        debug('redirecting');
+        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
+      }
+    });
   } else if (req.body.__action == 'join_group') {
     try {
       const group_name = req.body.join_code.split('-')[0];
@@ -242,7 +217,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

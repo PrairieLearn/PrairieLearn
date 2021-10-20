@@ -5,9 +5,7 @@ const tmp = require('tmp-promise');
 const path = require('path');
 const delay = require('delay');
 const assert = require('chai').assert;
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const config = require('../lib/config');
 const load = require('../lib/load');
@@ -80,22 +78,18 @@ module.exports = {
           },
           function (callback) {
             debug('before(): sync from disk');
-            syncFromDisk.syncOrCreateDiskToSql(
-              courseDir,
-              logger,
-              function (err, result) {
-                if (ERR(err, callback)) return;
-                if (result.hadJsonErrorsOrWarnings) {
-                  console.log(logger.getOutput());
-                  return callback(
-                    new Error(
-                      `Errors or warnings found during sync of ${courseDir} (output printed to console)`,
-                    ),
-                  );
-                }
-                callback(null);
-              },
-            );
+            syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+              if (ERR(err, callback)) return;
+              if (result.hadJsonErrorsOrWarnings) {
+                console.log(logger.getOutput());
+                return callback(
+                  new Error(
+                    `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+                  )
+                );
+              }
+              callback(null);
+            });
           },
           function (callback) {
             debug('before(): set up load estimators');
@@ -149,7 +143,7 @@ module.exports = {
           debug('before(): completed');
           if (ERR(err, callback)) return;
           callback(null);
-        },
+        }
       );
     };
   },
@@ -225,24 +219,19 @@ module.exports = {
         debug('after(): complete');
         if (ERR(err, callback)) return;
         callback(null);
-      },
+      }
     );
   },
 };
 
 module.exports.getLastJobSequenceIdAsync = async () => {
-  const result = await sqldb.queryZeroOrOneRowAsync(
-    sql.select_last_job_sequence,
-    [],
-  );
+  const result = await sqldb.queryZeroOrOneRowAsync(sql.select_last_job_sequence, []);
   if (result.rowCount == 0)
     throw new Error('Could not find last job_sequence_id: did the job start?');
   const job_sequence_id = result.rows[0].id;
   return job_sequence_id;
 };
-module.exports.getLastJobSequenceId = util.callbackify(
-  module.exports.getLastJobSequenceIdAsync,
-);
+module.exports.getLastJobSequenceId = util.callbackify(module.exports.getLastJobSequenceIdAsync);
 
 module.exports.waitForJobSequenceAsync = async (job_sequence_id) => {
   let job_sequence;
@@ -257,16 +246,12 @@ module.exports.waitForJobSequenceAsync = async (job_sequence_id) => {
   }
   return job_sequence;
 };
-module.exports.waitForJobSequence = util.callbackify(
-  module.exports.waitForJobSequenceAsync,
-);
+module.exports.waitForJobSequence = util.callbackify(module.exports.waitForJobSequenceAsync);
 
 module.exports.waitForJobSequenceSuccessAsync = async (job_sequence_id) => {
-  const job_sequence = await module.exports.waitForJobSequenceAsync(
-    job_sequence_id,
-  );
+  const job_sequence = await module.exports.waitForJobSequenceAsync(job_sequence_id);
   assert.equal(job_sequence.status, 'Success');
 };
 module.exports.waitForJobSequenceSuccess = util.callbackify(
-  module.exports.waitForJobSequenceSuccessAsync,
+  module.exports.waitForJobSequenceSuccessAsync
 );

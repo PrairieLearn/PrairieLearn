@@ -108,8 +108,7 @@ const DEFAULT_TAGS = [
   {
     name: 'graph',
     color: 'purple1',
-    description:
-      'The question tests reading information from a graph or drawing a graph.',
+    description: 'The question tests reading information from a graph or drawing a graph.',
   },
   {
     name: 'concept',
@@ -131,8 +130,7 @@ const DEFAULT_TAGS = [
   {
     name: 'software',
     color: 'orange1',
-    description:
-      'The question tests the use of a specific piece of software (e.g., Matlab).',
+    description: 'The question tests the use of a specific piece of software (e.g., Matlab).',
   },
   {
     name: 'estimation',
@@ -176,8 +174,7 @@ const DEFAULT_TAGS = [
 ];
 
 // For testing if a string is a v4 UUID
-const UUID_REGEX =
-  /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+const UUID_REGEX = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
 // For finding all v4 UUIDs in a string/file
 const FILE_UUID_REGEX =
   /"uuid":\s*"([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
@@ -406,19 +403,13 @@ module.exports.loadFullCourse = function (courseDir, logger, callback) {
     }
     for (const qid in courseData.questions) {
       if (infofile.hasErrors(courseData.questions[qid])) {
-        return callback(
-          new Error(infofile.stringifyErrors(courseData.questions[qid])),
-        );
+        return callback(new Error(infofile.stringifyErrors(courseData.questions[qid])));
       }
     }
     for (const ciid in courseData.courseInstances) {
       if (infofile.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
         return callback(
-          new Error(
-            infofile.stringifyErrors(
-              courseData.courseInstances[ciid].courseInstance,
-            ),
-          ),
+          new Error(infofile.stringifyErrors(courseData.courseInstances[ciid].courseInstance))
         );
       }
     }
@@ -426,35 +417,27 @@ module.exports.loadFullCourse = function (courseDir, logger, callback) {
       const courseInstance = courseData.courseInstances[ciid];
       for (const tid in courseInstance.assessments) {
         if (infofile.hasErrors(courseInstance.assessments[tid])) {
-          return callback(
-            new Error(
-              infofile.stringifyErrors(courseInstance.assessments[tid]),
-            ),
-          );
+          return callback(new Error(infofile.stringifyErrors(courseInstance.assessments[tid])));
         }
       }
     }
 
     const questions = {};
     Object.entries(courseData.questions).forEach(
-      ([qid, question]) => (questions[qid] = question.data),
+      ([qid, question]) => (questions[qid] = question.data)
     );
 
     const courseInstances = {};
-    Object.entries(courseData.courseInstances).forEach(
-      ([ciid, courseInstance]) => {
-        const assessments = {};
-        Object.entries(courseInstance.assessments).forEach(
-          ([tid, assessment]) => {
-            assessments[tid] = assessment.data;
-          },
-        );
-        courseInstances[ciid] = {
-          ...courseInstance.courseInstance.data,
-          assessmentDB: assessments,
-        };
-      },
-    );
+    Object.entries(courseData.courseInstances).forEach(([ciid, courseInstance]) => {
+      const assessments = {};
+      Object.entries(courseInstance.assessments).forEach(([tid, assessment]) => {
+        assessments[tid] = assessment.data;
+      });
+      courseInstances[ciid] = {
+        ...courseInstance.courseInstance.data,
+        assessmentDB: assessments,
+      };
+    });
 
     const course = {
       courseInfo: courseData.course.data,
@@ -474,18 +457,15 @@ module.exports.loadFullCourseNew = async function (courseDir) {
   perf.start('loadQuestions');
   const questions = await module.exports.loadQuestions(courseDir);
   perf.end('loadQuestions');
-  const courseInstanceInfos = await module.exports.loadCourseInstances(
-    courseDir,
-  );
-  const courseInstances =
-    /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
+  const courseInstanceInfos = await module.exports.loadCourseInstances(courseDir);
+  const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
   for (const courseInstanceId in courseInstanceInfos) {
     // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
     // If so, duplicate all that here
     const assessments = await module.exports.loadAssessments(
       courseDir,
       courseInstanceId,
-      questions,
+      questions
     );
     const courseInstance = {
       courseInstance: courseInstanceInfos[courseInstanceId],
@@ -507,12 +487,7 @@ module.exports.loadFullCourseNew = async function (courseDir) {
  * @param {InfoFile<T>} infoFile
  * @param {(line?: string) => void} writeLine
  */
-function writeErrorsAndWarningsForInfoFileIfNeeded(
-  courseId,
-  filePath,
-  infoFile,
-  writeLine,
-) {
+function writeErrorsAndWarningsForInfoFileIfNeeded(courseId, filePath, infoFile, writeLine) {
   if (!infofile.hasErrorsOrWarnings(infoFile)) return;
   // TODO: if https://github.com/drudru/ansi_up/issues/58 is ever resolved,
   // add a direct link to a file editor with `terminal-link` package
@@ -537,58 +512,36 @@ function writeErrorsAndWarningsForInfoFileIfNeeded(
  * @param {CourseData} courseData
  * @param {(line?: string) => void} writeLine
  */
-module.exports.writeErrorsAndWarningsForCourseData = function (
-  courseId,
-  courseData,
-  writeLine,
-) {
+module.exports.writeErrorsAndWarningsForCourseData = function (courseId, courseData, writeLine) {
   writeErrorsAndWarningsForInfoFileIfNeeded(
     courseId,
     'infoCourse.json',
     courseData.course,
-    writeLine,
+    writeLine
   );
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     const questionPath = path.posix.join('questions', qid, 'info.json');
+    writeErrorsAndWarningsForInfoFileIfNeeded(courseId, questionPath, question, writeLine);
+  });
+  Object.entries(courseData.courseInstances).forEach(([ciid, courseInstanceData]) => {
+    const courseInstancePath = path.posix.join('courseInstances', ciid, 'infoCourseInstance.json');
     writeErrorsAndWarningsForInfoFileIfNeeded(
       courseId,
-      questionPath,
-      question,
-      writeLine,
+      courseInstancePath,
+      courseInstanceData.courseInstance,
+      writeLine
     );
-  });
-  Object.entries(courseData.courseInstances).forEach(
-    ([ciid, courseInstanceData]) => {
-      const courseInstancePath = path.posix.join(
+    Object.entries(courseInstanceData.assessments).forEach(([aid, assessment]) => {
+      const assessmentPath = path.posix.join(
         'courseInstances',
         ciid,
-        'infoCourseInstance.json',
+        'assessments',
+        aid,
+        'infoAssessment.json'
       );
-      writeErrorsAndWarningsForInfoFileIfNeeded(
-        courseId,
-        courseInstancePath,
-        courseInstanceData.courseInstance,
-        writeLine,
-      );
-      Object.entries(courseInstanceData.assessments).forEach(
-        ([aid, assessment]) => {
-          const assessmentPath = path.posix.join(
-            'courseInstances',
-            ciid,
-            'assessments',
-            aid,
-            'infoAssessment.json',
-          );
-          writeErrorsAndWarningsForInfoFileIfNeeded(
-            courseId,
-            assessmentPath,
-            assessment,
-            writeLine,
-          );
-        },
-      );
-    },
-  );
+      writeErrorsAndWarningsForInfoFileIfNeeded(courseId, assessmentPath, assessment, writeLine);
+    });
+  });
 };
 
 /**
@@ -614,15 +567,11 @@ module.exports.courseDataHasErrors = function (courseData) {
  */
 module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
   if (infofile.hasErrorsOrWarnings(courseData.course)) return true;
-  if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings))
-    return true;
+  if (Object.values(courseData.questions).some(infofile.hasErrorsOrWarnings)) return true;
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
-      if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance))
-        return true;
-      return Object.values(courseInstance.assessments).some(
-        infofile.hasErrorsOrWarnings,
-      );
+      if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
+      return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
     })
   )
     return true;
@@ -680,9 +629,7 @@ module.exports.loadInfoFile = async function ({
 
     // If it wasn't a missing file, this is another error. Propagate it to
     // the caller.
-    return infofile.makeError(
-      `Error reading JSON file ${filePath}: ${err.code}`,
-    );
+    return infofile.makeError(`Error reading JSON file ${filePath}: ${err.code}`);
   }
 
   try {
@@ -786,13 +733,11 @@ module.exports.loadCourseInfo = async function (coursePath) {
     knownAssessmentSets.set(aset.name, aset);
   });
   if (duplicateAssessmentSetNames.size > 0) {
-    const quotedNames = [...duplicateAssessmentSetNames.values()].map(
-      (name) => `"${name}"`,
-    );
+    const quotedNames = [...duplicateAssessmentSetNames.values()].map((name) => `"${name}"`);
     const duplicateNamesString = quotedNames.join(', ');
     infofile.addWarning(
       loadedData,
-      `Found duplicate assessment sets: ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
+      `Found duplicate assessment sets: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
     );
   }
 
@@ -818,13 +763,11 @@ module.exports.loadCourseInfo = async function (coursePath) {
     knownTags.set(tag.name, tag);
   });
   if (duplicateTagNames.size > 0) {
-    const quotedNames = [...duplicateTagNames.values()].map(
-      (name) => `"${name}"`,
-    );
+    const quotedNames = [...duplicateTagNames.values()].map((name) => `"${name}"`);
     const duplicateNamesString = quotedNames.join(', ');
     infofile.addWarning(
       loadedData,
-      `Found duplicate tags: ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
+      `Found duplicate tags: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
     );
   }
 
@@ -849,13 +792,11 @@ module.exports.loadCourseInfo = async function (coursePath) {
     knownTopics.set(topic.name, topic);
   });
   if (duplicateTopicNames.size > 0) {
-    const quotedNames = [...duplicateTopicNames.values()].map(
-      (name) => `"${name}"`,
-    );
+    const quotedNames = [...duplicateTopicNames.values()].map((name) => `"${name}"`);
     const duplicateNamesString = quotedNames.join(', ');
     infofile.addWarning(
       loadedData,
-      `Found duplicate topics: ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
+      `Found duplicate topics: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
     );
   }
 
@@ -877,11 +818,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
     topics,
     exampleCourse,
     options: {
-      useNewQuestionRenderer: _.get(
-        info,
-        'options.useNewQuestionRenderer',
-        false,
-      ),
+      useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
     },
   };
 
@@ -989,7 +926,7 @@ async function loadInfoForDirectory({
           const subInfoFiles = await walk(path.join(relativeDir, dir));
           if (_.size(subInfoFiles) == 0) {
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
-              `Missing JSON file: ${infoFilePath}`,
+              `Missing JSON file: ${infoFilePath}`
             );
           }
           _.assign(infoFiles, subInfoFiles);
@@ -999,7 +936,7 @@ async function loadInfoForDirectory({
           } else if (e.code === 'ENOENT') {
             // Missing directory; record it
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
-              `Missing JSON file: ${infoFilePath}`,
+              `Missing JSON file: ${infoFilePath}`
             );
           } else {
             // Some other error, permissions perhaps. Throw to abort sync.
@@ -1069,7 +1006,7 @@ function checkAllowAccessRoles(rule) {
   if ('role' in rule) {
     if (rule.role != 'Student') {
       warnings.push(
-        `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`,
+        `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`
       );
     }
   }
@@ -1088,23 +1025,19 @@ function checkAllowAccessDates(rule) {
     startDate = parseISO(rule.startDate);
     if (!isValid(startDate)) {
       startDate = null;
-      errors.push(
-        `Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`,
-      );
+      errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
     }
   }
   if ('endDate' in rule) {
     endDate = parseISO(rule.endDate);
     if (!isValid(endDate)) {
       endDate = null;
-      errors.push(
-        `Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`,
-      );
+      errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
     }
   }
   if (startDate && endDate && isAfter(startDate, endDate)) {
     errors.push(
-      `Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`,
+      `Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`
     );
   }
   let dateInFuture = false;
@@ -1151,9 +1084,7 @@ async function validateAssessment(assessment, questions) {
   // real-time grading to be disabled for them.
   const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
   if (!allowRealTimeGrading && assessment.type === 'Homework') {
-    errors.push(
-      `Real-time grading cannot be disabled for Homework-type assessments`,
-    );
+    errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
   }
 
   // Check assessment access rules
@@ -1164,15 +1095,8 @@ async function validateAssessment(assessment, questions) {
       anyDateInFuture = true;
     }
 
-    if (
-      'active' in rule &&
-      rule.active === false &&
-      'credit' in rule &&
-      rule.credit !== 0
-    ) {
-      errors.push(
-        `Invalid allowAccess rule: credit must be 0 if active is false`,
-      );
+    if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
+      errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
     }
 
     errors.push(...allowAccessResult.errors);
@@ -1208,7 +1132,7 @@ async function validateAssessment(assessment, questions) {
         zoneQuestion.points.length > 1
       ) {
         errors.push(
-          `Cannot specify an array of multiple point values for a question if real-time grading is disabled`,
+          `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
         );
       }
       // We'll normalize either single questions or alternative groups
@@ -1216,13 +1140,9 @@ async function validateAssessment(assessment, questions) {
       /** @type {{ points: number | number[], maxPoints: number | number[] }[]} */
       let alternatives = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
-        errors.push(
-          'Cannot specify both "alternatives" and "id" in one question',
-        );
+        errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if ('alternatives' in zoneQuestion) {
-        zoneQuestion.alternatives.forEach((alternative) =>
-          checkAndRecordQid(alternative.id),
-        );
+        zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
           if (
             !allowRealTimeGrading &&
@@ -1230,7 +1150,7 @@ async function validateAssessment(assessment, questions) {
             alternative.points.length > 1
           ) {
             errors.push(
-              `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`,
+              `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
             );
           }
           return {
@@ -1253,25 +1173,19 @@ async function validateAssessment(assessment, questions) {
       alternatives.forEach((alternative) => {
         if (assessment.type === 'Exam') {
           if (alternative.maxPoints != undefined) {
-            errors.push(
-              'Cannot specify "maxPoints" for a question in an "Exam" assessment',
-            );
+            errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
           }
           if (alternative.points == undefined) {
-            errors.push(
-              'Must specify "points" for a question in an "Exam" assessment',
-            );
+            errors.push('Must specify "points" for a question in an "Exam" assessment');
           }
         }
         if (assessment.type === 'Homework') {
           if (alternative.points == undefined) {
-            errors.push(
-              'Must specify "points" for a question in a "Homework" assessment',
-            );
+            errors.push('Must specify "points" for a question in a "Homework" assessment');
           }
           if (Array.isArray(alternative.points)) {
             errors.push(
-              'Cannot specify "points" as a list for a question in a "Homework" assessment',
+              'Cannot specify "points" as a list for a question in a "Homework" assessment'
             );
           }
         }
@@ -1281,17 +1195,13 @@ async function validateAssessment(assessment, questions) {
 
   if (duplicateQids.size > 0) {
     errors.push(
-      `The following questions are used more than once: ${[
-        ...duplicateQids,
-      ].join(', ')}`,
+      `The following questions are used more than once: ${[...duplicateQids].join(', ')}`
     );
   }
 
   if (missingQids.size > 0) {
     errors.push(
-      `The following questions do not exist in this course: ${[
-        ...missingQids,
-      ].join(', ')}`,
+      `The following questions do not exist in this course: ${[...missingQids].join(', ')}`
     );
   }
 
@@ -1311,7 +1221,7 @@ async function validateCourseInstance(courseInstance) {
       warnings.push('"allowIssueReporting" is no longer needed.');
     } else {
       errors.push(
-        '"allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.',
+        '"allowIssueReporting" is no longer permitted in "infoCourseInstance.json". Instead, set "allowIssueReporting" in "infoAssessment.json" files.'
       );
     }
   }
@@ -1335,7 +1245,7 @@ async function validateCourseInstance(courseInstance) {
 
     if (_(courseInstance).has('userRoles')) {
       warnings.push(
-        'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
+        'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.'
       );
     }
   }
@@ -1361,8 +1271,7 @@ module.exports.loadQuestions = async function (coursePath) {
   });
   checkDuplicateUUIDs(
     questions,
-    (uuid, ids) =>
-      `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`,
+    (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`
   );
   return questions;
 };
@@ -1385,8 +1294,7 @@ module.exports.loadCourseInstances = async function (coursePath) {
   });
   checkDuplicateUUIDs(
     courseInstances,
-    (uuid, ids) =>
-      `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`,
+    (uuid, ids) => `UUID "${uuid}" is used in other course instances: ${ids.join(', ')}`
   );
   return courseInstances;
 };
@@ -1398,19 +1306,10 @@ module.exports.loadCourseInstances = async function (coursePath) {
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions
  */
-module.exports.loadAssessments = async function (
-  coursePath,
-  courseInstance,
-  questions,
-) {
-  const assessmentsPath = path.join(
-    'courseInstances',
-    courseInstance,
-    'assessments',
-  );
+module.exports.loadAssessments = async function (coursePath, courseInstance, questions) {
+  const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   /** @type {(assessment: Assessment) => Promise<{ warnings?: string[], errors?: string[] }>} */
-  const validateAssessmentWithQuestions = (assessment) =>
-    validateAssessment(assessment, questions);
+  const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
   /** @type {{ [tid: string]: InfoFile<Assessment> }} */
   const assessments = await loadInfoForDirectory({
     coursePath,
@@ -1424,9 +1323,7 @@ module.exports.loadAssessments = async function (
   checkDuplicateUUIDs(
     assessments,
     (uuid, ids) =>
-      `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(
-        ', ',
-      )}`,
+      `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`
   );
   return assessments;
 };

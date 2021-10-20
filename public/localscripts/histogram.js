@@ -33,20 +33,11 @@ function histogram(selector, data, xgrid, options) {
       : function (d, i) {
           return options.xTickLabels[i];
         };
-  var xAxis = d3
-    .axisBottom()
-    .scale(x)
-    .tickValues(xgrid)
-    .tickFormat(xTickFormat);
+  var xAxis = d3.axisBottom().scale(x).tickValues(xgrid).tickFormat(xTickFormat);
 
   var yAxis = d3.axisLeft().scale(y);
 
-  var xGrid = d3
-    .axisBottom()
-    .scale(x)
-    .tickValues(xgrid)
-    .tickSize(-height)
-    .tickFormat('');
+  var xGrid = d3.axisBottom().scale(x).tickValues(xgrid).tickSize(-height).tickFormat('');
 
   var yGrid = d3.axisLeft().scale(y).tickSize(-width).tickFormat('');
 
@@ -57,10 +48,7 @@ function histogram(selector, data, xgrid, options) {
     .attr('height', height + options.topMargin + options.bottomMargin)
     .attr('class', 'center-block statsPlot')
     .append('g')
-    .attr(
-      'transform',
-      'translate(' + options.leftMargin + ',' + options.topMargin + ')',
-    );
+    .attr('transform', 'translate(' + options.leftMargin + ',' + options.topMargin + ')');
 
   svg
     .append('g')
@@ -124,7 +112,5 @@ function histogram(selector, data, xgrid, options) {
 
   svg.append('line').attr({ x1: 0, y1: 0, x2: width, y2: 0, class: 'x axis' });
 
-  svg
-    .append('line')
-    .attr({ x1: width, y1: 0, x2: width, y2: height, class: 'y axis' });
+  svg.append('line').attr({ x1: width, y1: 0, x2: width, y2: height, class: 'y axis' });
 }

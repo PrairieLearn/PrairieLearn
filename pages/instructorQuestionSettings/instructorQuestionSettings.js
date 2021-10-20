@@ -9,9 +9,7 @@ const sqlLoader = require('../../prairielib/lib/sql-loader');
 const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logger = require('../../lib/logger');
 const {
   QuestionRenameEditor,
@@ -28,9 +26,7 @@ router.post('/', function (req, res, next) {
       return next(error.make(403, 'Access denied (must be a course Viewer)'));
     const count = 1;
     const showDetails = true;
-    const assessmentGroupWork = res.locals.assessment
-      ? res.locals.assessment.group_work
-      : false;
+    const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
     question.startTestQuestion(
       count,
       showDetails,
@@ -42,7 +38,7 @@ router.post('/', function (req, res, next) {
       (err, job_sequence_id) => {
         if (ERR(err, next)) return;
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      },
+      }
     );
   } else if (req.body.__action == 'test_100') {
     if (!res.locals.authz_data.has_course_permission_view)
@@ -50,9 +46,7 @@ router.post('/', function (req, res, next) {
     if (res.locals.question.grading_method !== 'External') {
       const count = 100;
       const showDetails = false;
-      const assessmentGroupWork = res.locals.assessment
-        ? res.locals.assessment.group_work
-        : false;
+      const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
       question.startTestQuestion(
         count,
         showDetails,
@@ -63,31 +57,26 @@ router.post('/', function (req, res, next) {
         res.locals.authn_user.user_id,
         (err, job_sequence_id) => {
           if (ERR(err, next)) return;
-          res.redirect(
-            res.locals.urlPrefix + '/jobSequence/' + job_sequence_id,
-          );
-        },
+          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        }
       );
     } else {
       next(new Error('Not supported for externally-graded questions'));
     }
   } else if (req.body.__action == 'change_id') {
     debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
-    if (!req.body.id)
-      return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
+    if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id))
       return next(
         new Error(
-          `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
-        ),
+          `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`
+        )
       );
     let qid_new;
     try {
       qid_new = path.normalize(req.body.id);
     } catch (err) {
-      return next(
-        new Error(`Invalid QID (could not be normalized): ${req.body.id}`),
-      );
+      return next(new Error(`Invalid QID (could not be normalized): ${req.body.id}`));
     }
     if (res.locals.question.qid == qid_new) {
       debug('The new qid is the same as the old qid - do nothing');
@@ -101,9 +90,7 @@ router.post('/', function (req, res, next) {
         if (ERR(err, next)) return;
         editor.doEdit((err, job_sequence_id) => {
           if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-            res.redirect(
-              res.locals.urlPrefix + '/edit_error/' + job_sequence_id,
-            );
+            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
           } else {
             res.redirect(req.originalUrl);
           }
@@ -121,12 +108,10 @@ router.post('/', function (req, res, next) {
         if (ERR(err, next)) return;
         editor.doEdit((err, job_sequence_id) => {
           if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-            res.redirect(
-              res.locals.urlPrefix + '/edit_error/' + job_sequence_id,
-            );
+            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
           } else {
             debug(
-              `Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`,
+              `Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`
             );
             sqldb.queryOneRow(
               sql.select_question_id_from_uuid,
@@ -134,12 +119,9 @@ router.post('/', function (req, res, next) {
               (err, result) => {
                 if (ERR(err, next)) return;
                 res.redirect(
-                  res.locals.urlPrefix +
-                    '/question/' +
-                    result.rows[0].question_id +
-                    '/settings',
+                  res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings'
                 );
-              },
+              }
             );
           }
         });
@@ -154,11 +136,7 @@ router.post('/', function (req, res, next) {
         to_course_id: req.body.to_course_id,
         user_id: res.locals.user.user_id,
         transfer_type: 'CopyQuestion',
-        from_filename: path.join(
-          res.locals.course.path,
-          'questions',
-          res.locals.question.qid,
-        ),
+        from_filename: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
       };
       async.waterfall(
         [
@@ -166,8 +144,7 @@ router.post('/', function (req, res, next) {
             const f = uuidv4();
             const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
             params.storage_filename = path.join(relDir, f.slice(6));
-            if (config.filesRoot == null)
-              return callback(new Error('config.filesRoot is null'));
+            if (config.filesRoot == null) return callback(new Error('config.filesRoot is null'));
             fs.copy(
               params.from_filename,
               path.join(config.filesRoot, params.storage_filename),
@@ -175,26 +152,22 @@ router.post('/', function (req, res, next) {
               (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
-              },
+              }
             );
           },
           (callback) => {
-            sqldb.queryOneRow(
-              sql.insert_file_transfer,
-              params,
-              (err, result) => {
-                if (ERR(err, callback)) return;
-                callback(null, result.rows[0]);
-              },
-            );
+            sqldb.queryOneRow(sql.insert_file_transfer, params, (err, result) => {
+              if (ERR(err, callback)) return;
+              callback(null, result.rows[0]);
+            });
           },
         ],
         (err, results) => {
           if (ERR(err, next)) return;
           res.redirect(
-            `${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${results.id}`,
+            `${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${results.id}`
           );
-        },
+        }
       );
     }
   } else if (req.body.__action == 'delete_question') {
@@ -217,7 +190,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });
@@ -229,7 +202,7 @@ router.get('/', function (req, res, next) {
         res.locals.questionGHLink = null;
         if (res.locals.course.repository) {
           const GHfound = res.locals.course.repository.match(
-            /^git@github.com:\/?(.+?)(\.git)?\/?$/,
+            /^git@github.com:\/?(.+?)(\.git)?\/?$/
           );
           if (GHfound) {
             res.locals.questionGHLink =
@@ -244,15 +217,11 @@ router.get('/', function (req, res, next) {
         callback(null);
       },
       (callback) => {
-        sqldb.queryOneRow(
-          sql.qids,
-          { course_id: res.locals.course.id },
-          (err, result) => {
-            if (ERR(err, callback)) return;
-            res.locals.qids = result.rows[0].qids;
-            callback(null);
-          },
-        );
+        sqldb.queryOneRow(sql.qids, { course_id: res.locals.course.id }, (err, result) => {
+          if (ERR(err, callback)) return;
+          res.locals.qids = result.rows[0].qids;
+          callback(null);
+        });
       },
       (callback) => {
         sqldb.query(
@@ -260,20 +229,19 @@ router.get('/', function (req, res, next) {
           { question_id: res.locals.question.id },
           (err, result) => {
             if (ERR(err, callback)) return;
-            res.locals.a_with_q_for_all_ci =
-              result.rows[0].assessments_from_question_id;
+            res.locals.a_with_q_for_all_ci = result.rows[0].assessments_from_question_id;
             callback(null);
-          },
+          }
         );
       },
     ],
     (err) => {
       if (ERR(err, next)) return;
       res.locals.infoPath = encodePath(
-        path.join('questions', res.locals.question.qid, 'info.json'),
+        path.join('questions', res.locals.question.qid, 'info.json')
       );
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 });
 

@@ -69,19 +69,15 @@ module.exports._initWithLock = function (callback) {
       },
       (callback) => {
         // First, fetch the index of the last applied migration
-        sqldb.queryOneRow(
-          sql.get_last_migration,
-          { project },
-          (err, results) => {
-            if (ERR(err, callback)) return;
-            let last_migration = results.rows[0].last_migration;
-            if (last_migration == null) {
-              last_migration = -1;
-              noExistingMigrations = true;
-            }
-            callback(null, last_migration);
-          },
-        );
+        sqldb.queryOneRow(sql.get_last_migration, { project }, (err, results) => {
+          if (ERR(err, callback)) return;
+          let last_migration = results.rows[0].last_migration;
+          if (last_migration == null) {
+            last_migration = -1;
+            noExistingMigrations = true;
+          }
+          callback(null, last_migration);
+        });
       },
       (last_migration, callback) => {
         fs.readdir(migrationDir, (err, files) => {
@@ -107,15 +103,12 @@ module.exports._initWithLock = function (callback) {
             .pickBy((fileList) => fileList.length > 1)
             .map(
               (fileList, index) =>
-                `Repeated index ${index}:\n` +
-                _.map(fileList, 'filename').join('\n'),
+                `Repeated index ${index}:\n` + _.map(fileList, 'filename').join('\n')
             )
             .value();
           if (repeatedIndexes.length > 0) {
             return callback(
-              new Error(
-                `Repeated migration indexes:\n${repeatedIndexes.join('\n')}`,
-              ),
+              new Error(`Repeated migration indexes:\n${repeatedIndexes.join('\n')}`)
             );
           }
 
@@ -136,14 +129,10 @@ module.exports._initWithLock = function (callback) {
             async.waterfall(
               [
                 (callback) => {
-                  fs.readFile(
-                    path.join(migrationDir, file.filename),
-                    'utf8',
-                    (err, sql) => {
-                      if (ERR(err, callback)) return;
-                      callback(null, sql);
-                    },
-                  );
+                  fs.readFile(path.join(migrationDir, file.filename), 'utf8', (err, sql) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, sql);
+                  });
                 },
                 (sql, callback) => {
                   // Perform the migration
@@ -169,13 +158,13 @@ module.exports._initWithLock = function (callback) {
               (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
-              },
+              }
             );
           },
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
     ],
@@ -183,6 +172,6 @@ module.exports._initWithLock = function (callback) {
       if (ERR(err, callback)) return;
       logger.verbose('Successfully completed DB schema migration');
       callback(null);
-    },
+    }
   );
 };

@@ -29,8 +29,7 @@ const argv = yargs
   })
   .option('clients', {
     alias: 'c',
-    describe:
-      'Number of simultaneous clients to test with (repeat for multiple tests)',
+    describe: 'Number of simultaneous clients to test with (repeat for multiple tests)',
     default: 1,
     type: 'array',
   })
@@ -48,10 +47,10 @@ const argv = yargs
   })
   .example('node tools/load-test.js -s http://localhost:3000')
   .example(
-    'node tools/load-test.js -n 10 -c 1 3 5 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json',
+    'node tools/load-test.js -n 10 -c 1 3 5 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json'
   )
   .example(
-    'node tools/load-test.js -n 10 -c 1 3 5 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json',
+    'node tools/load-test.js -n 10 -c 1 3 5 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json'
   )
   .wrap(null)
   .help()
@@ -92,9 +91,7 @@ function sum(values) {
 function stats(values) {
   if (values.length == 0) return { mean: NaN, stddev: NaN };
   const mean = sum(values) / values.length;
-  const stddev = Math.sqrt(
-    sum(values.map((x) => (x - mean) ** 2)) / values.length,
-  );
+  const stddev = Math.sqrt(sum(values.map((x) => (x - mean) ** 2)) / values.length);
   return { mean, stddev };
 }
 
@@ -177,9 +174,7 @@ async function getQuestionSubmitInfo(questionUrl) {
     assert(elemList[0].children.length == 1);
     assert(elemList[0].children[0].data != null);
     const questionData = JSON.parse(
-      decodeURIComponent(
-        Buffer.from(elemList[0].children[0].data, 'base64').toString(),
-      ),
+      decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString())
     );
     assert(questionData.variant != null);
     questionSubmitInfo.variant = questionData.variant;
@@ -267,9 +262,7 @@ async function singleClientTest(iterations, iClient, clients) {
     timeTotal: [],
   };
   for (let i = 0; i < iterations; i++) {
-    console.log(
-      `start (iteration ${i} of ${iterations}, client ${iClient} of ${clients})`,
-    );
+    console.log(`start (iteration ${i} of ${iterations}, client ${iClient} of ${clients})`);
     try {
       const r = await singleRequest();
       results.success.push(1);
@@ -282,9 +275,7 @@ async function singleClientTest(iterations, iClient, clients) {
       console.log('Error', e);
       results.success.push(0);
     }
-    console.log(
-      `end (iteration ${i} of ${iterations}, client ${iClient} of ${clients})`,
-    );
+    console.log(`end (iteration ${i} of ${iterations}, client ${iClient} of ${clients})`);
   }
   return results;
 }
@@ -303,44 +294,26 @@ async function main() {
   try {
     let results = [];
     for (let c of argv.clients) {
-      console.log(
-        '######################################################################',
-      );
-      console.log(
-        `Starting test with ${c} clients and ${argv.iterations} iterations`,
-      );
+      console.log('######################################################################');
+      console.log(`Starting test with ${c} clients and ${argv.iterations} iterations`);
       console.log(`Sleeping for ${argv.delay} seconds...`);
       await sleep(argv.delay);
       const result = await singleTest(c, argv.iterations);
       console.log(
-        `${c} clients, ${argv.iterations} iterations, ${
-          result.success.mean * 100
-        }% success`,
+        `${c} clients, ${argv.iterations} iterations, ${result.success.mean * 100}% success`
       );
-      console.log(
-        `homepage: ${result.timeHomepage.mean} +/- ${result.timeHomepage.stddev} s`,
-      );
-      console.log(
-        `questions: ${result.timeQuestions.mean} +/- ${result.timeQuestions.stddev} s`,
-      );
-      console.log(
-        `question: ${result.timeQuestion.mean} +/- ${result.timeQuestion.stddev} s`,
-      );
-      console.log(
-        `submit: ${result.timeSubmit.mean} +/- ${result.timeSubmit.stddev} s`,
-      );
-      console.log(
-        `total: ${result.timeTotal.mean} +/- ${result.timeTotal.stddev} s`,
-      );
+      console.log(`homepage: ${result.timeHomepage.mean} +/- ${result.timeHomepage.stddev} s`);
+      console.log(`questions: ${result.timeQuestions.mean} +/- ${result.timeQuestions.stddev} s`);
+      console.log(`question: ${result.timeQuestion.mean} +/- ${result.timeQuestion.stddev} s`);
+      console.log(`submit: ${result.timeSubmit.mean} +/- ${result.timeSubmit.stddev} s`);
+      console.log(`total: ${result.timeTotal.mean} +/- ${result.timeTotal.stddev} s`);
       result.clients = c;
       result.iterations = argv.iterations;
       results.push(result);
     }
+    console.log('######################################################################');
     console.log(
-      '######################################################################',
-    );
-    console.log(
-      'clients,iterations,success fraction,homepage mean,homepage stddev,questions mean,questions stddev,question mean,question stddev,submit mean,submit stddev,total mean,total stddev,throughput',
+      'clients,iterations,success fraction,homepage mean,homepage stddev,questions mean,questions stddev,question mean,question stddev,submit mean,submit stddev,total mean,total stddev,throughput'
     );
     for (let result of results) {
       console.log(
@@ -348,11 +321,11 @@ async function main() {
           result.timeHomepage.mean
         },${result.timeHomepage.stddev},${result.timeQuestions.mean},${
           result.timeQuestions.stddev
-        },${result.timeQuestion.mean},${result.timeQuestion.stddev},${
-          result.timeSubmit.mean
-        },${result.timeSubmit.stddev},${result.timeTotal.mean},${
-          result.timeTotal.stddev
-        },${(result.clients * result.success.mean) / result.timeTotal.mean}`,
+        },${result.timeQuestion.mean},${result.timeQuestion.stddev},${result.timeSubmit.mean},${
+          result.timeSubmit.stddev
+        },${result.timeTotal.mean},${result.timeTotal.stddev},${
+          (result.clients * result.success.mean) / result.timeTotal.mean
+        }`
       );
     }
   } catch (e) {

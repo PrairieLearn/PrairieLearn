@@ -47,8 +47,7 @@ router.post('/', function (req, res, next) {
     { consumer_key: parameters.oauth_consumer_key },
     function (err, result) {
       if (ERR(err, next)) return;
-      if (result.rowCount == 0)
-        return next(error.make(500, 'Unknown consumer_key'));
+      if (result.rowCount == 0) return next(error.make(500, 'Unknown consumer_key'));
 
       var ltiresult = result.rows[0];
 
@@ -58,16 +57,14 @@ router.post('/', function (req, res, next) {
         parameters,
         ltiresult.secret,
         null,
-        { encodeSignature: false },
+        { encodeSignature: false }
       );
       if (genSignature != signature) {
         return next(error.make(500, 'Invalid signature'));
       }
 
       // Check oauth_timestamp within N seconds of now (3000 suggested)
-      var timeDiff = Math.abs(
-        Math.floor(Date.now() / 1000) - parameters.oauth_timestamp,
-      );
+      var timeDiff = Math.abs(Math.floor(Date.now() / 1000) - parameters.oauth_timestamp);
       if (timeDiff > timeTolerance) {
         return next(error.make(500, 'Invalid timestamp'));
       }
@@ -75,11 +72,7 @@ router.post('/', function (req, res, next) {
       // Check nonce hasn't been used by that consumer_key in that timeframe
       // https://oauth.net/core/1.0/#nonce
       var nonceReused = false;
-      var nonceKey =
-        'authCallbackLti:' +
-        parameters.oauth_timestamp +
-        ':' +
-        parameters.oauth_nonce;
+      var nonceKey = 'authCallbackLti:' + parameters.oauth_timestamp + ':' + parameters.oauth_nonce;
       cache.get(nonceKey, (err, val) => {
         if (ERR(err, next)) return;
         if (val) {
@@ -99,10 +92,7 @@ router.post('/', function (req, res, next) {
 
       if (!parameters.user_id) {
         return next(
-          error.make(
-            500,
-            'Authentication problem: UserID required. Anonymous access disabled.',
-          ),
+          error.make(500, 'Authentication problem: UserID required. Anonymous access disabled.')
         );
       }
 
@@ -111,11 +101,7 @@ router.post('/', function (req, res, next) {
            so that LTI doesn't conflict with other UIDs.
         */
       var authUid =
-        parameters.user_id +
-        '@' +
-        parameters.context_id +
-        '::ciid=' +
-        ltiresult.course_instance_id;
+        parameters.user_id + '@' + parameters.context_id + '::ciid=' + ltiresult.course_instance_id;
 
       var fallbackName = 'LTI user';
       if (parameters.context_title) {
@@ -133,96 +119,70 @@ router.post('/', function (req, res, next) {
         res.locals.req_date,
       ];
 
-      sqldb.call(
-        'users_select_or_insert_and_enroll_lti',
-        params,
-        (err, result) => {
+      sqldb.call('users_select_or_insert_and_enroll_lti', params, (err, result) => {
+        if (ERR(err, next)) return;
+        if (!result.rows[0].has_access) return next(error.make(403, 'Access denied'));
+
+        var tokenData = {
+          user_id: result.rows[0].user_id,
+          authn_provider_name: 'LTI',
+        };
+        var pl_authn = csrf.generateToken(tokenData, config.secretKey);
+        res.cookie('pl_authn', pl_authn, {
+          maxAge: config.authnCookieMaxAgeMilliseconds,
+        });
+
+        const params = {
+          course_instance_id: ltiresult.course_instance_id,
+          context_id: parameters.context_id,
+          resource_link_id: parameters.resource_link_id,
+          resource_link_title: parameters.resource_link_title || '',
+          resource_link_description: parameters.resource_link_description || '',
+        };
+        debug('lti link upsert params', params);
+        sqldb.queryOneRow(sql.upsert_current_link, params, function (err, result) {
           if (ERR(err, next)) return;
-          if (!result.rows[0].has_access)
-            return next(error.make(403, 'Access denied'));
 
-          var tokenData = {
-            user_id: result.rows[0].user_id,
-            authn_provider_name: 'LTI',
-          };
-          var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-          res.cookie('pl_authn', pl_authn, {
-            maxAge: config.authnCookieMaxAgeMilliseconds,
-          });
+          // Do we have an assessment linked to this resource_link_id?
+          if (result.rows[0].assessment_id) {
+            if ('lis_result_sourcedid' in parameters) {
+              // Save outcomes here
+              const params = {
+                user_id: tokenData.user_id,
+                assessment_id: result.rows[0].assessment_id,
+                lis_result_sourcedid: parameters.lis_result_sourcedid,
+                lis_outcome_service_url: parameters.lis_outcome_service_url,
+                lti_credential_id: ltiresult.id,
+              };
 
-          const params = {
-            course_instance_id: ltiresult.course_instance_id,
-            context_id: parameters.context_id,
-            resource_link_id: parameters.resource_link_id,
-            resource_link_title: parameters.resource_link_title || '',
-            resource_link_description:
-              parameters.resource_link_description || '',
-          };
-          debug('lti link upsert params', params);
-          sqldb.queryOneRow(
-            sql.upsert_current_link,
-            params,
-            function (err, result) {
+              sqldb.query(sql.upsert_outcome, params, function (err, _outcome_result) {
+                if (ERR(err, next)) return;
+              });
+            }
+
+            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
+            res.redirect(redirUrl);
+          } else {
+            // No linked assessment
+
+            const params = [tokenData.user_id, ltiresult.course_instance_id];
+            sqldb.call('users_is_instructor_in_course_instance', params, function (err, result) {
               if (ERR(err, next)) return;
-
-              // Do we have an assessment linked to this resource_link_id?
-              if (result.rows[0].assessment_id) {
-                if ('lis_result_sourcedid' in parameters) {
-                  // Save outcomes here
-                  const params = {
-                    user_id: tokenData.user_id,
-                    assessment_id: result.rows[0].assessment_id,
-                    lis_result_sourcedid: parameters.lis_result_sourcedid,
-                    lis_outcome_service_url: parameters.lis_outcome_service_url,
-                    lti_credential_id: ltiresult.id,
-                  };
-
-                  sqldb.query(
-                    sql.upsert_outcome,
-                    params,
-                    function (err, _outcome_result) {
-                      if (ERR(err, next)) return;
-                    },
-                  );
-                }
-
-                redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
-                res.redirect(redirUrl);
-              } else {
-                // No linked assessment
-
-                const params = [
-                  tokenData.user_id,
-                  ltiresult.course_instance_id,
-                ];
-                sqldb.call(
-                  'users_is_instructor_in_course_instance',
-                  params,
-                  function (err, result) {
-                    if (ERR(err, next)) return;
-                    if (result.rowCount == 0)
-                      return next(
-                        error.make(
-                          403,
-                          'Access denied (could not determine if user is instructor)',
-                        ),
-                      );
-                    if (result.rows[0].is_instructor) {
-                      redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
-                      res.redirect(redirUrl);
-                    }
-                    // Show an error that the assignment is unavailable
-                    return next(
-                      error.make(400, 'Assignment not available yet'),
-                    );
-                  },
+              if (result.rowCount == 0)
+                return next(
+                  error.make(403, 'Access denied (could not determine if user is instructor)')
                 );
+              if (result.rows[0].is_instructor) {
+                redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
+                res.redirect(redirUrl);
               }
-            },
-          );
-        },
-      );
-    },
+              // Show an error that the assignment is unavailable
+              return next(error.make(400, 'Assignment not available yet'));
+            });
+          }
+        });
+      });
+    }
   );
 });
 

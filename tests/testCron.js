@@ -47,10 +47,7 @@ describe('Cron', function () {
       assert.lengthOf(_.difference(cronJobs, runJobs), 0);
     });
     it('should all have successfully completed', async () => {
-      const result = await sqldb.queryAsync(
-        sql.select_unsuccessful_cron_jobs,
-        [],
-      );
+      const result = await sqldb.queryAsync(sql.select_unsuccessful_cron_jobs, []);
       assert.lengthOf(result.rows, 0);
     });
   });

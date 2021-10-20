@@ -21,11 +21,7 @@ function histmini(selector, data, options) {
     width = options.width - margin.left - margin.right,
     height = options.height - margin.top - margin.bottom;
 
-  var x = d3
-    .scaleBand()
-    .domain(d3.range(data.length))
-    .rangeRound([0, width])
-    .padding(0.2);
+  var x = d3.scaleBand().domain(d3.range(data.length)).rangeRound([0, width]).padding(0.2);
 
   var ymin = options.ymin == 'auto' ? _(data).min() : options.ymin;
   var ymax = options.ymax == 'auto' ? _(data).max() : options.ymax;

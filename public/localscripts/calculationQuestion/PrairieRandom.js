@@ -1,8 +1,4 @@
-define(['mersenne', 'underscore', 'PrairieGeom'], function (
-  mersenne,
-  _,
-  PrairieGeom,
-) {
+define(['mersenne', 'underscore', 'PrairieGeom'], function (mersenne, _, PrairieGeom) {
   /** RandomGenerator constructor.
 
         @param {String} seed (Optional, default uses current time) Seed value for the generator, must be in base 36.
@@ -288,19 +284,7 @@ define(['mersenne', 'underscore', 'PrairieGeom'], function (
         @param {Array} perm The permutation.
         @param {Array} a (Optional) Arrays.
     */
-  RandomGenerator.prototype.permute = function (
-    perm,
-    a0,
-    a1,
-    a2,
-    a3,
-    a4,
-    a5,
-    a6,
-    a7,
-    a8,
-    a9,
-  ) {
+  RandomGenerator.prototype.permute = function (perm, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
     if (a0) this.permuteArray(perm, a0);
     if (a1) this.permuteArray(perm, a1);
     if (a2) this.permuteArray(perm, a2);
@@ -318,18 +302,7 @@ define(['mersenne', 'underscore', 'PrairieGeom'], function (
         @param {Array} a (Optional) Arrays.
         @return {Array} the permutation used to shuffle.
     */
-  RandomGenerator.prototype.shuffle = function (
-    a0,
-    a1,
-    a2,
-    a3,
-    a4,
-    a5,
-    a6,
-    a7,
-    a8,
-    a9,
-  ) {
+  RandomGenerator.prototype.shuffle = function (a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
     var perm = this.randPerm(a0.length);
     this.permute(perm, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
     return perm;
@@ -348,11 +321,7 @@ define(['mersenne', 'underscore', 'PrairieGeom'], function (
     var nSelIdeals = numeric.mul(catWeights, nSel / totWeight);
     var sels = numeric.floor(nSelIdeals);
     var excessProbs = numeric.sub(nSelIdeals, sels);
-    var extras = this.randNElem(
-      nSel - numeric.sum(sels),
-      _.range(nCat),
-      excessProbs,
-    );
+    var extras = this.randNElem(nSel - numeric.sum(sels), _.range(nCat), excessProbs);
     _(extras).each(function (i) {
       sels[i]++;
     });
@@ -367,12 +336,7 @@ define(['mersenne', 'underscore', 'PrairieGeom'], function (
         @param {Number} negCoeffs (Optional, default true) Whether negative coefficients are allowed.
         @return {Array} The polynomial coefficients [a_0, a_1, ..., a_n].
     */
-  RandomGenerator.prototype.randPoly = function (
-    degree,
-    maxCoeff,
-    zeroProb,
-    negCoeffs,
-  ) {
+  RandomGenerator.prototype.randPoly = function (degree, maxCoeff, zeroProb, negCoeffs) {
     degree = degree === undefined ? 2 : degree;
     maxCoeff = maxCoeff === undefined ? 3 : maxCoeff;
     zeroProb = zeroProb === undefined ? 0.5 : zeroProb;
@@ -462,11 +426,7 @@ define(['mersenne', 'underscore', 'PrairieGeom'], function (
         @param {Array} lhs The left-hand-side of the system.
         @return {Number} Difficulty level (1 = single eqn, 2 = 2 sequential eqns, 3 = 2 simultaneous eqns, 4 = harder)
     */
-  RandomGenerator.prototype.solveDifficulty = function (
-    answerInd,
-    givenInds,
-    lhs,
-  ) {
+  RandomGenerator.prototype.solveDifficulty = function (answerInd, givenInds, lhs) {
     var unknownInds = _.chain(_.range(0, lhs[0].length))
       .difference(givenInds)
       .without(answerInd)
@@ -541,11 +501,7 @@ define(['mersenne', 'underscore', 'PrairieGeom'], function (
         @param {Array} lhs The left-hand-side of the system.
         @return {Number} Maximum difficulty level over the answerInds (see solveDifficulty()).
     */
-  RandomGenerator.prototype.maxSolveDifficulty = function (
-    answerInds,
-    givenInds,
-    lhs,
-  ) {
+  RandomGenerator.prototype.maxSolveDifficulty = function (answerInds, givenInds, lhs) {
     var that = this;
     return _.chain(answerInds)
       .map(function (answerInd) {
@@ -563,34 +519,21 @@ define(['mersenne', 'underscore', 'PrairieGeom'], function (
         @param {Array} lhs The left-hand-side of the equation system.
         @return {Array} List of groups to specify, or null if no solution could be found.
     */
-  RandomGenerator.prototype.chooseGiven = function (
-    difficulty,
-    varGroups,
-    answerGroup,
-    lhs,
-  ) {
+  RandomGenerator.prototype.chooseGiven = function (difficulty, varGroups, answerGroup, lhs) {
     var givenGroups, givenInds, maxDifficulty, g;
     var nTrials = 0;
     do {
       givenGroups = [];
       remainingGroups = _(_.range(0, varGroups.length)).without(answerGroup);
       givenInds = [];
-      maxDifficulty = this.maxSolveDifficulty(
-        varGroups[answerGroup],
-        givenInds,
-        lhs,
-      );
+      maxDifficulty = this.maxSolveDifficulty(varGroups[answerGroup], givenInds, lhs);
       while (maxDifficulty > difficulty) {
         if (nTrials++ > 1000) return null; // failure
         g = this.randElem(remainingGroups);
         givenGroups.push(g);
         remainingGroups = _(remainingGroups).without(g);
         givenInds = givenInds.concat(varGroups[g]);
-        maxDifficulty = this.maxSolveDifficulty(
-          varGroups[answerGroup],
-          givenInds,
-          lhs,
-        );
+        maxDifficulty = this.maxSolveDifficulty(varGroups[answerGroup], givenInds, lhs);
       }
     } while (maxDifficulty !== difficulty);
     return givenGroups;

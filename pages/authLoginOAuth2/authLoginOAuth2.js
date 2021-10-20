@@ -14,7 +14,7 @@ router.get('/', function (req, res, next) {
     const oauth2Client = new google.auth.OAuth2(
       config.googleClientId,
       config.googleClientSecret,
-      config.googleRedirectUrl,
+      config.googleRedirectUrl
     );
     const scopes = ['openid', 'profile', 'email'];
     url = oauth2Client.generateAuthUrl({

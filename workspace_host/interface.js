@@ -14,9 +14,7 @@ const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser')(process.argv.slice(2));
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
 const net = require('net');
 const unzipper = require('unzipper');
@@ -51,8 +49,8 @@ if (config.workspaceHostWatchJobFiles) {
     if (elapsedSec > 30) {
       logger.error(
         `_autoUpdateJobManager() has not run for ${elapsedSec} seconds, update_queue: ${JSON.stringify(
-          update_queue,
-        )}`,
+          update_queue
+        )}`
       );
     }
   }, 1000);
@@ -61,9 +59,7 @@ if (config.workspaceHostWatchJobFiles) {
 setInterval(() => {
   const elapsedSec = (Date.now() - lastPushAllTime) / 1000;
   if (elapsedSec > 900) {
-    logger.error(
-      `_pushAllRunningContainersToS3() has not run for ${elapsedSec} seconds`,
-    );
+    logger.error(`_pushAllRunningContainersToS3() has not run for ${elapsedSec} seconds`);
   }
 }, 1000);
 
@@ -103,7 +99,7 @@ app.get(
       docker: containers,
       postgres: db_status,
     });
-  }),
+  })
 );
 
 // TODO: refactor into RESTful endpoints (https://github.com/PrairieLearn/PrairieLearn/pull/2841#discussion_r467245108)
@@ -126,7 +122,7 @@ app.post(
     } else {
       res.status(500).send(`Action '${action}' undefined`);
     }
-  }),
+  })
 );
 
 let server;
@@ -145,13 +141,11 @@ async.series(
         // copy discovered variables into workspace_server_settings
         workspace_server_settings.instance_id = config.instanceId;
         workspace_server_settings.hostname = config.hostname;
-        workspace_server_settings.server_to_container_hostname =
-          config.hostname;
+        workspace_server_settings.server_to_container_hostname = config.hostname;
       } else {
         /* Otherwise, use the defaults in the config file */
         config.instanceId = config.workspaceDevHostInstanceId;
-        workspace_server_settings.instance_id =
-          config.workspaceDevHostInstanceId;
+        workspace_server_settings.instance_id = config.workspaceDevHostInstanceId;
         workspace_server_settings.hostname = config.workspaceDevHostHostname;
         workspace_server_settings.server_to_container_hostname =
           config.workspaceDevContainerHostname;
@@ -178,7 +172,7 @@ async.series(
         idleTimeoutMillis: 30000,
       };
       logger.verbose(
-        `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`,
+        `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`
       );
       const idleErrorHandler = function (err) {
         logger.error('idle client error', err);
@@ -215,9 +209,7 @@ async.series(
     (callback) => {
       server = http.createServer(app);
       server.listen(workspace_server_settings.port);
-      logger.verbose(
-        `Workspace server listening on port ${workspace_server_settings.port}`,
-      );
+      logger.verbose(`Workspace server listening on port ${workspace_server_settings.port}`);
       callback(null);
     },
     async () => {
@@ -284,43 +276,27 @@ async.series(
       async function autoUpdateJobManagerTimeout() {
         const timeout_id = setTimeout(() => {
           logger.info(
-            `_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(
-              update_queue,
-            )}`,
+            `_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`
           );
         }, config.workspaceHostFileWatchIntervalSec * 1000);
         try {
           await _autoUpdateJobManager();
         } catch (err) {
           logger.error(`Error from _autoUpdateJobManager(): ${err}`);
-          logger.error(
-            `PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`,
-          );
+          logger.error(`PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`);
         }
         clearTimeout(timeout_id);
-        setTimeout(
-          autoUpdateJobManagerTimeout,
-          config.workspaceHostFileWatchIntervalSec * 1000,
-        );
+        setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
       }
-      setTimeout(
-        autoUpdateJobManagerTimeout,
-        config.workspaceHostFileWatchIntervalSec * 1000,
-      );
+      setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
     },
     async () => {
       /* Set up a periodic hard push of all containers to S3 */
       async function pushAllContainersTimeout() {
         await pushAllRunningContainersToS3();
-        setTimeout(
-          pushAllContainersTimeout,
-          config.workspaceHostForceUploadIntervalSec * 1000,
-        );
+        setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
       }
-      setTimeout(
-        pushAllContainersTimeout,
-        config.workspaceHostForceUploadIntervalSec * 1000,
-      );
+      setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
     },
     async () => {
       /* Set up a periodic pruning of running containers */
@@ -331,25 +307,16 @@ async.series(
           instance_id: workspace_server_settings.instance_id,
         });
 
-        setTimeout(
-          pruneContainersTimeout,
-          config.workspaceHostPruneContainersSec * 1000,
-        );
+        setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
       }
-      setTimeout(
-        pruneContainersTimeout,
-        config.workspaceHostPruneContainersSec * 1000,
-      );
+      setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
     },
     (callback) => {
       // Add ourselves to the workspace hosts directory. After we
       // do this we will start receiving requests so everything else
       // must be initialized before this.
       const params = {
-        hostname:
-          workspace_server_settings.hostname +
-          ':' +
-          workspace_server_settings.port,
+        hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
         instance_id: workspace_server_settings.instance_id,
       };
       sqldb.query(sql.insert_workspace_hosts, params, function (err, _result) {
@@ -373,9 +340,7 @@ async.series(
             instance_id: workspace_server_settings.instance_id,
           });
           try {
-            const container = await _getDockerContainerByLaunchUuid(
-              ws.launch_uuid,
-            );
+            const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
             await dockerAttemptKillAndRemove(container);
           } catch (err) {
             debug(`Couldn't find container: ${err}`);
@@ -384,11 +349,7 @@ async.series(
           if (ws.launch_uuid) {
             await pushContainerContentsToS3(ws);
           } else {
-            await workspaceHelper.updateState(
-              ws.id,
-              'stopped',
-              'Shutting down',
-            );
+            await workspaceHelper.updateState(ws.id, 'stopped', 'Shutting down');
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
               workspace_id: ws.id,
               instance_id: workspace_server_settings.instance_id,
@@ -405,7 +366,7 @@ async.series(
     } else {
       logger.info('Workspace host ready');
     }
-  },
+  }
 );
 
 /* Periodic hard-push of files to S3 */
@@ -420,10 +381,7 @@ async function pushContainerContentsToS3(workspace) {
     return;
   }
 
-  const workspacePath = path.join(
-    workspacePrefix,
-    `workspace-${workspace.launch_uuid}`,
-  );
+  const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
   const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
   const settings = _getWorkspaceSettingsAsync(workspace.id);
   try {
@@ -431,7 +389,7 @@ async function pushContainerContentsToS3(workspace) {
       config.workspaceS3Bucket,
       s3Path,
       workspacePath,
-      settings.workspace_sync_ignore,
+      settings.workspace_sync_ignore
     );
   } catch (err) {
     /* Ignore any errors that may occur when the directory doesn't exist */
@@ -451,11 +409,11 @@ async function pushAllRunningContainersToS3() {
   await async.eachSeries(result.rows, async (ws) => {
     if (ws.state == 'running' && ws.homedir_location == 'S3') {
       logger.info(
-        `Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`,
+        `Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`
       );
       await pushContainerContentsToS3(ws);
       logger.info(
-        `Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`,
+        `Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`
       );
     }
   });
@@ -503,7 +461,7 @@ async function pruneRunawayContainers() {
     instance_id,
   });
   const db_workspaces_uuid_set = new Set(
-    db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`),
+    db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`)
   );
   let running_workspaces;
   try {
@@ -515,12 +473,8 @@ async function pruneRunawayContainers() {
 
   await async.each(running_workspaces, async (container_info) => {
     if (container_info.Names.length != 1) return;
-    const name =
-      container_info.Names[0].substring(
-        1,
-      ); /* Remove the preceding forward slash */
-    if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name))
-      return;
+    const name = container_info.Names[0].substring(1); /* Remove the preceding forward slash */
+    if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     await dockerAttemptKillAndRemove(container_info.Id);
   });
 }
@@ -539,9 +493,7 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
     });
     return docker.getContainer(containers[0].Id);
   } catch (err) {
-    throw new Error(
-      `Could not find unique container by launch UUID: ${launch_uuid}`,
-    );
+    throw new Error(`Could not find unique container by launch UUID: ${launch_uuid}`);
   }
 }
 
@@ -647,10 +599,7 @@ async function _allocateContainerPort(workspace) {
       instance_id: workspace_server_settings.instance_id,
       port,
     };
-    const result = await sqldb.queryOneRowAsync(
-      sql.get_is_port_occupied,
-      params,
-    );
+    const result = await sqldb.queryOneRowAsync(sql.get_is_port_occupied, params);
     return !result.rows[0].port_used;
   }
   /* Spin up a server to check if a port is free */
@@ -682,8 +631,7 @@ async function _allocateContainerPort(workspace) {
     port =
       config.workspaceHostMinPortRange +
       Math.floor(
-        Math.random() *
-          (config.workspaceHostMaxPortRange - config.workspaceHostMinPortRange),
+        Math.random() * (config.workspaceHostMaxPortRange - config.workspaceHostMinPortRange)
       );
     if (!(await check_port_db(port))) continue;
     if (!(await check_port_server(port))) continue;
@@ -728,16 +676,16 @@ function _checkServer(workspace, callback) {
                 if (ERR(err, callback)) return;
                 callback(
                   new Error(
-                    `Max startup time exceeded for workspace_id=${workspace.id} (launch uuid ${workspace.launch_uuid})\n${logs}`,
-                  ),
+                    `Max startup time exceeded for workspace_id=${workspace.id} (launch uuid ${workspace.launch_uuid})\n${logs}`
+                  )
                 );
-              },
+              }
             );
           } else {
             setTimeout(checkWorkspace, checkMilliseconds);
           }
         }
-      },
+      }
     );
   }
   setTimeout(checkWorkspace, checkMilliseconds);
@@ -756,9 +704,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
   const workspace_environment = result.rows[0].workspace_environment || {};
 
   // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
-  workspace_environment[
-    'WORKSPACE_BASE_URL'
-  ] = `/pl/workspace/${workspace_id}/container/`;
+  workspace_environment['WORKSPACE_BASE_URL'] = `/pl/workspace/${workspace_id}/container/`;
 
   const settings = {
     workspace_image: result.rows[0].workspace_image,
@@ -770,7 +716,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
     workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
     // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
     workspace_environment: Object.entries(workspace_environment).map(([k, v]) =>
-      v === null ? k : `${k}=${v}`,
+      v === null ? k : `${k}=${v}`
     ),
   };
 
@@ -793,10 +739,10 @@ async function _getRunningWorkspaceByPathAsync(path) {
   localPath = localPath.join('/');
 
   try {
-    const result = await sqldb.queryOneRowAsync(
-      sql.get_running_workspace_id_by_uuid,
-      { launch_uuid, instance_id: workspace_server_settings.instance_id },
-    );
+    const result = await sqldb.queryOneRowAsync(sql.get_running_workspace_id_by_uuid, {
+      launch_uuid,
+      instance_id: workspace_server_settings.instance_id,
+    });
     return {
       workspace_id: result.rows[0].id,
       local_path: localPath,
@@ -816,12 +762,8 @@ async function _autoUpdateJobManager() {
     logger.info(`_autoUpdateJobManager: key=${key}`);
     const [path, isDirectory_str] = key.split(',');
     const isDirectory = isDirectory_str == 'true';
-    const { workspace_id, local_path } = await _getRunningWorkspaceByPathAsync(
-      path,
-    );
-    logger.info(
-      `_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`,
-    );
+    const { workspace_id, local_path } = await _getRunningWorkspaceByPathAsync(path);
+    logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
     if (workspace_id == null) continue;
 
     debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
@@ -829,13 +771,11 @@ async function _autoUpdateJobManager() {
     const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
     const remote_name = workspace.remote_name;
     const sync_ignore = workspaceSettings.workspace_sync_ignore;
-    debug(
-      `watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`,
-    );
+    debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
     debug(`watch: localPath=${local_path}`);
     debug(`watch: syncIgnore=${sync_ignore}`);
     logger.info(
-      `_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`,
+      `_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`
     );
     logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
     logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
@@ -845,9 +785,7 @@ async function _autoUpdateJobManager() {
       // skip root localPath as it produces new S3 dir with empty name
       logger.info(`_autoUpdateJobManager: skip root`);
       continue;
-    } else if (
-      sync_ignore.filter((ignored) => local_path.startsWith(ignored)).length > 0
-    ) {
+    } else if (sync_ignore.filter((ignored) => local_path.startsWith(ignored)).length > 0) {
       logger.info(`_autoUpdateJobManager: skip ignored`);
       continue;
     } else {
@@ -860,48 +798,33 @@ async function _autoUpdateJobManager() {
       logger.info(`_autoUpdateJobManager: adding update job`);
       jobs.push((callback) => {
         logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
-        awsHelper.uploadToS3(
-          config.workspaceS3Bucket,
-          s3_path,
-          path,
-          isDirectory,
-          (err) => {
-            if (err) {
-              logger.error(
-                `Error uploading file to S3: ${s3_path}, ${path}, ${err}`,
-              );
-              logger.error(
-                `PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`,
-              );
-            } else {
-              logger.info(
-                `Successfully uploaded file to S3: ${s3_path}, ${path}`,
-              );
-            }
-            callback(null); // always return success to keep going
-          },
-        );
+        awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
+          if (err) {
+            logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
+            logger.error(
+              `PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`
+            );
+          } else {
+            logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
+          }
+          callback(null); // always return success to keep going
+        });
       });
     } else if (update_queue[key].action == 'delete') {
       logger.info(`_autoUpdateJobManager: adding delete job`);
       jobs.push((callback) => {
         logger.info(`Removing file from S3: ${s3_path}`);
-        awsHelper.deleteFromS3(
-          config.workspaceS3Bucket,
-          s3_path,
-          isDirectory,
-          (err) => {
-            if (err) {
-              logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
-              logger.error(
-                `PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`,
-              );
-            } else {
-              logger.info(`Successfully removed file from S3: ${s3_path}`);
-            }
-            callback(null); // always return success to keep going
-          },
-        );
+        awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
+          if (err) {
+            logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
+            logger.error(
+              `PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`
+            );
+          } else {
+            logger.info(`Successfully removed file from S3: ${s3_path}`);
+          }
+          callback(null); // always return success to keep going
+        });
       });
     }
   }
@@ -932,10 +855,7 @@ function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
     var ret = [];
     contents.forEach((dict) => {
       if ('Key' in dict) {
-        var filePath = path.join(
-          curDirPath,
-          dict['Key'].slice(S3curDirPath.length),
-        );
+        var filePath = path.join(curDirPath, dict['Key'].slice(S3curDirPath.length));
         var S3filePath = dict['Key'];
         ret.push([filePath, S3filePath]);
       }
@@ -959,12 +879,7 @@ async function _getInitialZipAsync(workspace) {
   };
   const isDirectory = false;
   update_queue[[zipPath, isDirectory]] = { action: 'skip' };
-  await awsHelper.downloadFromS3Async(
-    config.workspaceS3Bucket,
-    s3Path,
-    zipPath,
-    options,
-  );
+  await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, options);
   await fsPromises.access(zipPath);
 
   debug(`Making directory ${localPath}`);
@@ -972,7 +887,7 @@ async function _getInitialZipAsync(workspace) {
   await fsPromises.chown(
     localPath,
     config.workspaceJobsDirectoryOwnerUid,
-    config.workspaceJobsDirectoryOwnerGid,
+    config.workspaceJobsDirectoryOwnerGid
   );
 
   // FIXME: This unzipper was hotfixed to support workspaces with many/large/nested initial files.
@@ -983,7 +898,7 @@ async function _getInitialZipAsync(workspace) {
     .pipe(
       unzipper.Parse({
         forceStream: true,
-      }),
+      })
     )
     .pipe(
       stream.Transform({
@@ -997,7 +912,7 @@ async function _getInitialZipAsync(workspace) {
               await fsPromises.chown(
                 entryPath,
                 config.workspaceJobsDirectoryOwnerUid,
-                config.workspaceJobsDirectoryOwnerGid,
+                config.workspaceJobsDirectoryOwnerGid
               );
             })(callback);
           } else {
@@ -1007,13 +922,13 @@ async function _getInitialZipAsync(workspace) {
                 await fsPromises.chown(
                   entryPath,
                   config.workspaceJobsDirectoryOwnerUid,
-                  config.workspaceJobsDirectoryOwnerGid,
+                  config.workspaceJobsDirectoryOwnerGid
                 );
               })(callback);
             });
           }
         },
-      }),
+      })
     );
 
   return workspace;
@@ -1036,16 +951,10 @@ function _getInitialFiles(workspace, callback) {
         };
         const isDirectory = localPath.endsWith('/');
         update_queue[[localPath, isDirectory]] = { action: 'skip' };
-        awsHelper.downloadFromS3(
-          config.workspaceS3Bucket,
-          s3Path,
-          localPath,
-          options,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        awsHelper.downloadFromS3(config.workspaceS3Bucket, s3Path, localPath, options, (err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       });
     });
 
@@ -1070,7 +979,7 @@ function _pullImage(workspace, callback) {
         if (err) {
           logger.error(
             `Error pulling "${workspace_image}" image; attempting to fall back to cached version.`,
-            err,
+            err
           );
           return callback(null);
         }
@@ -1103,11 +1012,7 @@ function _pullImage(workspace, callback) {
             if (ERR(err, callback)) return;
             if (percentDisplayed) {
               const toDatabase = false;
-              workspaceHelper.updateMessage(
-                workspace.id,
-                `Pulling image (100%)`,
-                toDatabase,
-              );
+              workspaceHelper.updateMessage(workspace.id, `Pulling image (100%)`, toDatabase);
             }
             callback(null, workspace);
           },
@@ -1121,11 +1026,11 @@ function _pullImage(workspace, callback) {
             }
             current = Object.values(progressDetails).reduce(
               (current, detail) => detail.current + current,
-              0,
+              0
             );
             const newTotal = Object.values(progressDetails).reduce(
               (total, detail) => detail.total + total,
-              0,
+              0
             );
             if (outputCount <= 200) {
               // limit progress initially to wait for most layers to be seen
@@ -1139,18 +1044,13 @@ function _pullImage(workspace, callback) {
             if (total > 0) {
               outputCount++;
               const fractionIncrement =
-                total > currentBase
-                  ? (current - currentBase) / (total - currentBase)
-                  : 0;
+                total > currentBase ? (current - currentBase) / (total - currentBase) : 0;
               fraction = fractionBase + (1 - fractionBase) * fractionIncrement;
               const percent = Math.floor(fraction * 100);
               const date = Date.now();
               const percentDelta = percent - percentCache;
               const dateDeltaSec = (date - dateCache) / 1000;
-              if (
-                percentDelta > 0 &&
-                dateDeltaSec >= config.workspacePercentMessageRateLimitSec
-              ) {
+              if (percentDelta > 0 && dateDeltaSec >= config.workspacePercentMessageRateLimitSec) {
                 percentCache = percent;
                 dateCache = date;
                 percentDisplayed = true;
@@ -1158,11 +1058,11 @@ function _pullImage(workspace, callback) {
                 workspaceHelper.updateMessage(
                   workspace.id,
                   `Pulling image (${percent}%)`,
-                  toDatabase,
+                  toDatabase
                 );
               }
             }
-          },
+          }
         );
       });
     });
@@ -1197,9 +1097,7 @@ function _createContainer(workspace, callback) {
     workspacePath = path.join(workspaceDir, remoteName, 'current');
     workspaceJobPath = path.join(jobDirectory, remoteName, 'current');
   } else {
-    return callback(
-      new Error(`Unknown backing file storage: ${workspace.homedir_location}`),
-    );
+    return callback(new Error(`Unknown backing file storage: ${workspace.homedir_location}`));
   }
 
   const containerPath = workspace.settings.workspace_home;
@@ -1215,29 +1113,21 @@ function _createContainer(workspace, callback) {
     if (config.workspaceSupportNoInternet) {
       networkMode = 'no-internet';
     } else {
-      logger.verbose(
-        'Workspace requested unsupported feature enableNetworking:false',
-      );
+      logger.verbose('Workspace requested unsupported feature enableNetworking:false');
     }
   }
 
   let container;
 
-  debug(
-    `Creating docker container for image=${workspace.settings.workspace_image}`,
-  );
+  debug(`Creating docker container for image=${workspace.settings.workspace_image}`);
   debug(`Exposed port: ${workspace.settings.workspace_port}`);
-  debug(
-    `Networking enabled: ${workspace.settings.workspace_enable_networking}`,
-  );
+  debug(`Networking enabled: ${workspace.settings.workspace_enable_networking}`);
   debug(`Network mode: ${networkMode}`);
   debug(`Env vars: ${workspace.settings.workspace_environment}`);
   debug(
-    `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
+    `User binding: ${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`
   );
-  debug(
-    `Port binding: ${workspace.settings.workspace_port}:${workspace.launch_port}`,
-  );
+  debug(`Port binding: ${workspace.settings.workspace_port}:${workspace.launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
   debug(`Container name: ${localName}`);
   async.series(
@@ -1270,7 +1160,7 @@ function _createContainer(workspace, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
@@ -1316,16 +1206,16 @@ function _createContainer(workspace, callback) {
               function (err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null, container);
-              },
+              }
             );
-          },
+          }
         );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null, container);
-    },
+    }
   );
 }
 const _createContainerAsync = util.promisify(_createContainer);
@@ -1369,7 +1259,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
   };
 
   logger.info(
-    `Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`,
+    `Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`
   );
   try {
     // only errors at this level will set host to unhealthy
@@ -1389,7 +1279,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
         workspaceHelper.updateState(
           workspace_id,
           'stopped',
-          'Error loading workspace files.  Click "Reboot" to try again.',
+          'Error loading workspace files.  Click "Reboot" to try again.'
         );
         return; /* Don't set host to unhealthy, we've probably bungled something up with S3. */
       }
@@ -1403,7 +1293,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
-        `Error configuring workspace. Click "Reboot" to try again.`,
+        `Error configuring workspace. Click "Reboot" to try again.`
       );
       return; // don't set host to unhealthy
     }
@@ -1414,7 +1304,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
-        `Error pulling image. Click "Reboot" to try again.`,
+        `Error pulling image. Click "Reboot" to try again.`
       );
       return; // don't set host to unhealthy
     }
@@ -1431,7 +1321,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
-        `Error creating container. Click "Reboot" to try again.`,
+        `Error creating container. Click "Reboot" to try again.`
       );
       return; // don't set host to unhealthy
     }
@@ -1445,7 +1335,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
-        `Error starting container. Click "Reboot" to try again.`,
+        `Error starting container. Click "Reboot" to try again.`
       );
       return; // don't set host to unhealthy
     }
@@ -1469,7 +1359,7 @@ function resetSequence(workspace_id, res) {
       } else {
         res.status(200).send(`Code of workspace ${workspace_id} reset.`);
       }
-    },
+    }
   );
 }
 
@@ -1480,25 +1370,16 @@ function gradeSequence(workspace_id, res) {
     [
       async () => {
         const workspace = await _getWorkspaceAsync(workspace_id);
-        const workspaceSettings = await _getWorkspaceSettingsAsync(
-          workspace_id,
-        );
+        const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
         const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
         const zipName = `${workspace.remote_name}-${timestamp}.zip`;
         zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
 
         let homeDir;
         if (workspace.homedir_location == 'S3') {
-          homeDir = path.join(
-            config.workspaceJobsDirectory,
-            workspace.local_name,
-          );
+          homeDir = path.join(config.workspaceJobsDirectory, workspace.local_name);
         } else {
-          homeDir = path.join(
-            config.workspaceHostHomeDirRoot,
-            workspace.remote_name,
-            'current',
-          );
+          homeDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
         }
 
         return {
@@ -1560,6 +1441,6 @@ function gradeSequence(workspace_id, res) {
           }
         });
       }
-    },
+    }
   );
 }

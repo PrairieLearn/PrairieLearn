@@ -20,21 +20,17 @@ describe('Administrator pages', function () {
 
   describe('1. view administrator overview page', function () {
     it('should load successfully', function (callback) {
-      locals.administratorOverviewUrl =
-        locals.baseUrl + '/administrator/overview';
-      request(
-        locals.administratorOverviewUrl,
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      locals.administratorOverviewUrl = locals.baseUrl + '/administrator/overview';
+      request(locals.administratorOverviewUrl, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);

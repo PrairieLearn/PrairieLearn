@@ -63,13 +63,10 @@ CalculationClient.prototype.initialize = function (questionData, callback) {
   requirejs(['backbone'], function (Backbone) {
     require([questionData.questionFilePath + '/client.js'], function (qc) {
       that.questionDataModel = new Backbone.Model();
-      that.questionDataModel.set(
-        'questionFilePath',
-        questionData.questionFilePath,
-      );
+      that.questionDataModel.set('questionFilePath', questionData.questionFilePath);
       that.questionDataModel.set(
         'questionGeneratedFilePath',
-        questionData.questionGeneratedFilePath,
+        questionData.questionGeneratedFilePath
       );
       that.appModel = new Backbone.Model();
       that.qClient = qc;
@@ -88,30 +85,18 @@ CalculationClient.prototype.initialize = function (questionData, callback) {
   });
 };
 
-CalculationClient.prototype.renderQuestion = function (
-  container,
-  questionData,
-) {
-  this.qClient.renderQuestion(
-    container,
-    function () {},
-    this.questionDataModel,
-    this.appModel,
-  );
+CalculationClient.prototype.renderQuestion = function (container, questionData) {
+  this.qClient.renderQuestion(container, function () {}, this.questionDataModel, this.appModel);
 };
 
-CalculationClient.prototype.renderSubmission = function (
-  container,
-  questionData,
-  submissionIndex,
-) {
+CalculationClient.prototype.renderSubmission = function (container, questionData, submissionIndex) {
   this.qClient.renderSubmission(
     container,
     this.questionDataModel,
     this.appModel,
     questionData.submissions[submissionIndex].submitted_answer,
     questionData.submissions[submissionIndex].feedback,
-    submissionIndex,
+    submissionIndex
   );
 };
 
@@ -119,10 +104,7 @@ CalculationClient.prototype.renderAnswer = function (container, questionData) {
   this.qClient.renderAnswer(container, this.questionDataModel, this.appModel);
 };
 
-CalculationClient.prototype.getSubmittedAnswer = function (
-  container,
-  questionData,
-) {
+CalculationClient.prototype.getSubmittedAnswer = function (container, questionData) {
   return this.qClient.getSubmittedAnswer();
 };
 

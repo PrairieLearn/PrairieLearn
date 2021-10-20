@@ -5,9 +5,7 @@ const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
@@ -21,7 +19,7 @@ const setFilenames = function (locals) {
     locals.assessment,
     locals.assessment_set,
     locals.course_instance,
-    locals.course,
+    locals.course
   );
   locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
 };
@@ -33,15 +31,11 @@ router.get('/', function (req, res, next) {
     [
       function (callback) {
         var params = { assessment_id: res.locals.assessment.id };
-        sqldb.queryOneRow(
-          sql.assessment_stats_last_updated,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            res.locals.stats_last_updated = result.rows[0].stats_last_updated;
-            callback(null);
-          },
-        );
+        sqldb.queryOneRow(sql.assessment_stats_last_updated, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          res.locals.stats_last_updated = result.rows[0].stats_last_updated;
+          callback(null);
+        });
       },
       function (callback) {
         debug('query assessment_stats');
@@ -69,7 +63,7 @@ router.get('/', function (req, res, next) {
       if (ERR(err, next)) return;
       debug('render page');
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 });
 
@@ -125,12 +119,8 @@ router.get('/:filename', function (req, res, next) {
         questionStatsData.push(questionStats.average_submission_score_variance);
         questionStatsData.push(questionStats.average_submission_score_hist);
         questionStatsData.push(questionStats.submission_score_array_averages);
-        questionStatsData.push(
-          questionStats.incremental_submission_score_array_averages,
-        );
-        questionStatsData.push(
-          questionStats.incremental_submission_points_array_averages,
-        );
+        questionStatsData.push(questionStats.incremental_submission_score_array_averages);
+        questionStatsData.push(questionStats.incremental_submission_points_array_averages);
         questionStatsData.push(questionStats.average_number_submissions);
         questionStatsData.push(questionStats.number_submissions_variance);
         questionStatsData.push(questionStats.number_submissions_hist);
@@ -161,20 +151,16 @@ router.post('/', function (req, res, next) {
   // can view the page post this action and trigger a recalculation.
   if (req.body.__action == 'refresh_stats') {
     var params = [res.locals.assessment.id];
-    sqldb.call(
-      'assessment_questions_calculate_stats_for_assessment',
-      params,
-      function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      },
-    );
+    sqldb.call('assessment_questions_calculate_stats_for_assessment', params, function (err) {
+      if (ERR(err, next)) return;
+      res.redirect(req.originalUrl);
+    });
   } else {
     return next(
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

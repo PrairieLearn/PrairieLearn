@@ -134,15 +134,7 @@ define(['underscore'], function (_) {
         @param {String} basis3 The third basis element (can be "").
         @return {String} The formatted vector TeX string.
     */
-  var vectorInBasisString = function (
-    vec,
-    basis1,
-    basis2,
-    basis3,
-    basis4,
-    basis5,
-    basis6,
-  ) {
+  var vectorInBasisString = function (vec, basis1, basis2, basis3, basis4, basis5, basis6) {
     basis1 = basis1 === undefined ? '' : basis1;
     basis2 = basis1 === undefined ? '' : basis2;
     basis3 = basis1 === undefined ? '' : basis3;
@@ -189,12 +181,7 @@ define(['underscore'], function (_) {
         @return {String} The formatted vector TeX string.
     */
   var cylindricalVectorString = function (vec) {
-    return vectorInBasisString(
-      vec,
-      '\\hat{e}_r',
-      '\\hat{e}_{\\theta}',
-      '\\hat{k}',
-    );
+    return vectorInBasisString(vec, '\\hat{e}_r', '\\hat{e}_{\\theta}', '\\hat{k}');
   };
 
   /** Convert a vector to a TeX string with the given basis elements and fixed precision.
@@ -220,13 +207,7 @@ define(['underscore'], function (_) {
         @return {String} The formatted vector TeX string.
     */
   var cartesianVectorFixedString = function (vec, n) {
-    return vectorFixedString(
-      vec,
-      n,
-      '\\hat\\imath',
-      '\\hat\\jmath',
-      '\\hat{k}',
-    );
+    return vectorFixedString(vec, n, '\\hat\\imath', '\\hat\\jmath', '\\hat{k}');
   };
 
   /** Convert a polynomial to a TeX string.
@@ -248,15 +229,7 @@ define(['underscore'], function (_) {
         basis[poly.length - 1 - i] = indVar;
       }
     }
-    return vectorInBasisString(
-      vec,
-      basis[0],
-      basis[1],
-      basis[2],
-      basis[3],
-      basis[4],
-      basis[5],
-    );
+    return vectorInBasisString(vec, basis[0], basis[1], basis[2], basis[3], basis[4], basis[5]);
   };
 
   /** Convert a polynomial to a TeX string with parentheses if needed.
@@ -319,13 +292,7 @@ define(['underscore'], function (_) {
         @return {String} The formatted polynomial vector TeX string.
     */
   var cartesianVectorPolyString = function (vecPoly, indVar) {
-    return vectorPolyString(
-      vecPoly,
-      indVar,
-      '\\hat\\imath',
-      '\\hat\\jmath',
-      '\\hat{k}',
-    );
+    return vectorPolyString(vecPoly, indVar, '\\hat\\imath', '\\hat\\jmath', '\\hat{k}');
   };
 
   /** Render a number as a scalar coefficient, so 1 and -1 are convert to "" and "-".
@@ -393,14 +360,7 @@ define(['underscore'], function (_) {
         @return {String} The formatted trig TeX string (e.g., "3 sin(4t)").
     */
   var trigString = function (trig, indVar) {
-    var s = [
-      scalarCoeff(trig.coeff),
-      '\\' + trig.fcn,
-      '(',
-      scalarCoeff(trig.freq),
-      indVar,
-      ')',
-    ];
+    var s = [scalarCoeff(trig.coeff), '\\' + trig.fcn, '(', scalarCoeff(trig.freq), indVar, ')'];
     return s.join(' ');
   };
 
@@ -485,13 +445,7 @@ define(['underscore'], function (_) {
         @return {String} The formatted vector TeX string.
     */
   var cartesianVectorFcnString = function (vecFcn, indVar) {
-    return vectorFcnString(
-      vecFcn,
-      indVar,
-      '\\hat\\imath',
-      '\\hat\\jmath',
-      '\\hat{k}',
-    );
+    return vectorFcnString(vecFcn, indVar, '\\hat\\imath', '\\hat\\jmath', '\\hat{k}');
   };
 
   function template(text, data, questionDataModel, appModel, tInstance) {

@@ -31,18 +31,11 @@ function parallel_histograms(selector, data, options) {
   var numBuckets = data[0].histogram.length;
   var numDays = data.length;
 
-  var yOrdinal = d3
-    .scaleBand()
-    .domain(d3.range(numBuckets))
-    .rangeRound([0, height]);
+  var yOrdinal = d3.scaleBand().domain(d3.range(numBuckets)).rangeRound([0, height]);
 
   var yLinear = d3.scaleLinear().domain([0, numBuckets]).range([0, height]);
 
-  var xOrdinal = d3
-    .scaleBand()
-    .domain(d3.range(numDays))
-    .rangeRound([0, width])
-    .padding(0.0);
+  var xOrdinal = d3.scaleBand().domain(d3.range(numDays)).rangeRound([0, width]).padding(0.0);
 
   var xLinear = d3.scaleLinear().domain([0, numDays]).range([0, width]);
 
@@ -58,41 +51,23 @@ function parallel_histograms(selector, data, options) {
     return data[i].label;
   };
 
-  var verticalGridLinear = d3
-    .axisBottom()
-    .scale(xLinear)
-    .tickSize(-height)
-    .tickFormat('');
+  var verticalGridLinear = d3.axisBottom().scale(xLinear).tickSize(-height).tickFormat('');
 
   plot
     .append('g')
     .attr('class', 'grid')
-    .attr(
-      'transform',
-      'translate(' + yAxisWidth + ',' + heightWithPadding + ')',
-    )
+    .attr('transform', 'translate(' + yAxisWidth + ',' + heightWithPadding + ')')
     .call(verticalGridLinear);
 
-  var verticalGridOrdinal = d3
-    .axisBottom()
-    .scale(xOrdinal)
-    .tickSize(-height)
-    .tickFormat('');
+  var verticalGridOrdinal = d3.axisBottom().scale(xOrdinal).tickSize(-height).tickFormat('');
 
   plot
     .append('g')
     .attr('class', 'grid')
-    .attr(
-      'transform',
-      'translate(' + yAxisWidth + ',' + heightWithPadding + ')',
-    )
+    .attr('transform', 'translate(' + yAxisWidth + ',' + heightWithPadding + ')')
     .call(verticalGridOrdinal);
 
-  var horizontalGrid = d3
-    .axisLeft()
-    .scale(yLinear)
-    .tickSize(-width)
-    .tickFormat('');
+  var horizontalGrid = d3.axisLeft().scale(yLinear).tickSize(-width).tickFormat('');
 
   plot
     .append('g')
@@ -146,14 +121,10 @@ function parallel_histograms(selector, data, options) {
         return width_per_day / 2;
       })
       .attr('y1', function (d) {
-        return (
-          heightWithPadding - yLinear((Math.min(100, mean) / 100) * numBuckets)
-        );
+        return heightWithPadding - yLinear((Math.min(100, mean) / 100) * numBuckets);
       })
       .attr('y2', function (d) {
-        return (
-          heightWithPadding - yLinear((Math.min(100, mean) / 100) * numBuckets)
-        );
+        return heightWithPadding - yLinear((Math.min(100, mean) / 100) * numBuckets);
       });
   }
 

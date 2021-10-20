@@ -90,7 +90,7 @@ function PLThreeJS(options) {
           function (font) {
             this.font = font;
             callback(null);
-          }.bind(this),
+          }.bind(this)
         );
       }.bind(this),
       // Load each stl
@@ -110,7 +110,7 @@ function PLThreeJS(options) {
                   });
                   var mesh = new THREE.Mesh(
                     geometry.scale(obj.scale, obj.scale, obj.scale),
-                    material,
+                    material
                   );
                   mesh.castShadow = true;
                   mesh.receiveShadow = true;
@@ -123,7 +123,7 @@ function PLThreeJS(options) {
                   }
                   // objects_to_drag.push(mesh);
                   callback(null);
-                }.bind(this),
+                }.bind(this)
               );
             } else if (obj.type == 'txt') {
               var geometry = new THREE.TextGeometry(obj.text, {
@@ -141,10 +141,7 @@ function PLThreeJS(options) {
                 transparent: false,
                 opacity: obj.opacity,
               });
-              var mesh = new THREE.Mesh(
-                geometry.scale(obj.scale, obj.scale, obj.scale),
-                material,
-              );
+              var mesh = new THREE.Mesh(geometry.scale(obj.scale, obj.scale, obj.scale), material);
               // FIXME: avoid this hack with renderOrder (used to render text first
               // so it never "disappears" behind or inside of other transparent objects)
               mesh.renderOrder = 1;
@@ -164,7 +161,7 @@ function PLThreeJS(options) {
           }.bind(this),
           function (err) {
             callback(err);
-          },
+          }
         );
       }.bind(this),
       function (callback) {
@@ -193,16 +190,12 @@ function PLThreeJS(options) {
 
         // buttons to toggle between camera and body motion
         $('#toggle-type-of-motion-' + uuid).change(
-          PLThreeJS.prototype.toggleTypeOfMotion.bind(this),
+          PLThreeJS.prototype.toggleTypeOfMotion.bind(this)
         );
 
         // mouse control of body pose
-        $(this.renderer.domElement).mousedown(
-          PLThreeJS.prototype.onmousedown.bind(this),
-        );
-        $(this.renderer.domElement).mousemove(
-          PLThreeJS.prototype.onmousemove.bind(this),
-        );
+        $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
+        $(this.renderer.domElement).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
         $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
         // buttons to rotate body about coordinate axes of body frame
@@ -224,30 +217,24 @@ function PLThreeJS(options) {
         //  https://developers.google.com/web/tools/chrome-devtools/profile/evaluate-performance/rail
         //  and https://crbug.com/574343#c40 for more information.
         //
-        this.controls = new THREE.OrbitControls(
-          this.camera,
-          this.renderer.domElement,
-        );
+        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enablePan = false;
-        this.controls.addEventListener(
-          'change',
-          PLThreeJS.prototype.render.bind(this),
-        );
+        this.controls.addEventListener('change', PLThreeJS.prototype.render.bind(this));
         this.controls.enabled = this.cameraCanMove;
         this.updateBodyButtons();
 
         // buttons to toggle visibility
         $('#pl-threejs-button-bodyobjectsvisible-' + uuid).click(
-          PLThreeJS.prototype.toggleBodyObjectsVisible.bind(this),
+          PLThreeJS.prototype.toggleBodyObjectsVisible.bind(this)
         );
         $('#pl-threejs-button-spaceobjectsvisible-' + uuid).click(
-          PLThreeJS.prototype.toggleSpaceObjectsVisible.bind(this),
+          PLThreeJS.prototype.toggleSpaceObjectsVisible.bind(this)
         );
         $('#pl-threejs-button-framevisible-' + uuid).click(
-          PLThreeJS.prototype.toggleFrameVisible.bind(this),
+          PLThreeJS.prototype.toggleFrameVisible.bind(this)
         );
         $('#pl-threejs-button-shadowvisible-' + uuid).click(
-          PLThreeJS.prototype.toggleShadowVisible.bind(this),
+          PLThreeJS.prototype.toggleShadowVisible.bind(this)
         );
 
         // reset button
@@ -258,7 +245,7 @@ function PLThreeJS(options) {
             this.camera.position.fromArray(this.resetPose.camera_position);
             this.camera.lookAt(0, 0, 0);
             this.render();
-          }.bind(this),
+          }.bind(this)
         );
 
         // resize with window
@@ -270,7 +257,7 @@ function PLThreeJS(options) {
     function (_err, _results) {
       // Do nothing
       return;
-    },
+    }
   );
 }
 
@@ -523,17 +510,10 @@ PLThreeJS.prototype.onmousedown = function (event) {
     // - state for translation
     this.translatePlane.setFromNormalAndCoplanarPoint(
       this.camera.getWorldDirection(this.translatePlane.normal),
-      this.bodyGroup.position,
+      this.bodyGroup.position
     );
-    if (
-      this.raycaster.ray.intersectPlane(
-        this.translatePlane,
-        this.translateIntersection,
-      )
-    ) {
-      this.translateOffset
-        .copy(this.translateIntersection)
-        .sub(this.bodyGroup.position);
+    if (this.raycaster.ray.intersectPlane(this.translatePlane, this.translateIntersection)) {
+      this.translateOffset.copy(this.translateIntersection).sub(this.bodyGroup.position);
     }
   }
 };
@@ -546,15 +526,8 @@ PLThreeJS.prototype.onmousemove = function (e) {
       var y = -(event.offsetY / rect.height) * 2 + 1;
       var mouse = new THREE.Vector2(x, y);
       this.raycaster.setFromCamera(mouse, this.camera);
-      if (
-        this.raycaster.ray.intersectPlane(
-          this.translatePlane,
-          this.translateIntersection,
-        )
-      ) {
-        this.bodyGroup.position.copy(
-          this.translateIntersection.sub(this.translateOffset),
-        );
+      if (this.raycaster.ray.intersectPlane(this.translatePlane, this.translateIntersection)) {
+        this.bodyGroup.position.copy(this.translateIntersection.sub(this.translateOffset));
       }
       this.render();
     } else {
@@ -567,22 +540,14 @@ PLThreeJS.prototype.onmousemove = function (e) {
       var qCamera = this.camera.quaternion.clone();
       // Rotation to be applied by mouse motion (in camera frame)
       var qMotion = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(
-          deltaMove.y * (Math.PI / 180),
-          deltaMove.x * (Math.PI / 180),
-          0,
-          'XYZ',
-        ),
+        new THREE.Euler(deltaMove.y * (Math.PI / 180), deltaMove.x * (Math.PI / 180), 0, 'XYZ')
       );
       // Rotation to be applied by mouse motion (in world frame) - note that
       // ".inverse()" modifies qCamera in place, so the order here matters
       qMotion.multiplyQuaternions(qCamera, qMotion);
       qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
       // New orientation of object
-      this.bodyGroup.quaternion.multiplyQuaternions(
-        qMotion,
-        this.bodyGroup.quaternion,
-      );
+      this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
       // Render and update hidden input element
       this.render();
 
@@ -638,8 +603,7 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function quatToMatlab(q) {
-    var s =
-      '% The orientation of the body frame as a quaternion [x, y, z, w].\n';
+    var s = '% The orientation of the body frame as a quaternion [x, y, z, w].\n';
     s += 'q = [ ';
     for (var i = 0; i < 4; i++) {
       s += numToString(q[i], 4, 7);
@@ -653,8 +617,7 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function quatToPython(q) {
-    var s =
-      '# The orientation of the body frame as a quaternion [x, y, z, w].\n';
+    var s = '# The orientation of the body frame as a quaternion [x, y, z, w].\n';
     s += 'q = np.array([ ';
     for (var i = 0; i < 4; i++) {
       s += numToString(q[i], 4, 7);
@@ -706,8 +669,7 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function homToMatlab(R) {
-    var s =
-      '% The pose of the body frame as a homogeneous transformation matrix.\n';
+    var s = '% The pose of the body frame as a homogeneous transformation matrix.\n';
     s += 'T = [ ';
     for (var i = 0; i < 4; i++) {
       for (var j = 0; j < 4; j++) {
@@ -725,8 +687,7 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
   }
 
   function homToPython(R) {
-    var s =
-      '# The pose of the body frame as a homogeneous transformation matrix.\n';
+    var s = '# The pose of the body frame as a homogeneous transformation matrix.\n';
     s += 'T = np.array([';
     for (var i = 0; i < 4; i++) {
       s += '[ ';

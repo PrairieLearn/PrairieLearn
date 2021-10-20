@@ -1,8 +1,4 @@
-define(['underscore', 'backbone', 'PrairieDraw'], function (
-  _,
-  Backbone,
-  PrairieDraw,
-) {
+define(['underscore', 'backbone', 'PrairieDraw'], function (_, Backbone, PrairieDraw) {
   var SimpleFigureView = Backbone.View.extend({
     initialize: function () {
       this.params = this.options.params;
@@ -17,11 +13,7 @@ define(['underscore', 'backbone', 'PrairieDraw'], function (
       this.listenTo(this.trueAnswer, 'change', this.render);
       var that = this;
       this.pd.registerMouseLineDrawCallback(function () {
-        that.trigger(
-          'mouseLineDraw',
-          this.mouseLineDrawStart,
-          this.mouseLineDrawEnd,
-        );
+        that.trigger('mouseLineDraw', this.mouseLineDrawStart, this.mouseLineDrawEnd);
       });
       this.pd.registerRedrawCallback(function () {
         that.render();

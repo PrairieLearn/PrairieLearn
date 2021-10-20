@@ -7,25 +7,18 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
-const selectAndAuthzInstanceQuestion = promisify(
-  require('./selectAndAuthzInstanceQuestion'),
-);
-const selectAndAuthzAssessmentInstance = promisify(
-  require('./selectAndAuthzAssessmentInstance'),
-);
-const selectAndAuthzInstructorQuestion = promisify(
-  require('./selectAndAuthzInstructorQuestion'),
-);
+const selectAndAuthzInstanceQuestion = promisify(require('./selectAndAuthzInstanceQuestion'));
+const selectAndAuthzAssessmentInstance = promisify(require('./selectAndAuthzAssessmentInstance'));
+const selectAndAuthzInstructorQuestion = promisify(require('./selectAndAuthzInstructorQuestion'));
 const authzHasCoursePreviewOrInstanceView = promisify(
-  require('./authzHasCoursePreviewOrInstanceView'),
+  require('./authzHasCoursePreviewOrInstanceView')
 );
 
 module.exports = asyncHandler(async (req, res, next) => {
   // We rely on having res.locals.workspace_id already set to the correct value here
-  const result = await sqldb.queryOneRowAsync(
-    sql.select_auth_data_from_workspace,
-    { workspace_id: res.locals.workspace_id },
-  );
+  const result = await sqldb.queryOneRowAsync(sql.select_auth_data_from_workspace, {
+    workspace_id: res.locals.workspace_id,
+  });
   _.assign(res.locals, result.rows[0]);
 
   if (res.locals.course_instance_id) {

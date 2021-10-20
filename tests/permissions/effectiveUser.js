@@ -70,48 +70,33 @@ describe('effective user', function () {
     assert.isTrue(response.ok);
   });
 
-  step(
-    'student cannot override date (ignore when on student page)',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_student; pl_requested_date=1700-01-19T00:00:01',
-      };
-      const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
-        headers,
-      });
-      assert.isTrue(response.ok);
-    },
-  );
+  step('student cannot override date (ignore when on student page)', async () => {
+    const headers = {
+      cookie: 'pl_test_user=test_student; pl_requested_date=1700-01-19T00:00:01',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
+      headers,
+    });
+    assert.isTrue(response.ok);
+  });
 
-  step(
-    'student cannot override date (error when on instructor page)',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_student; pl_requested_date=1700-01-19T00:00:01',
-      };
-      const response = await helperClient.fetchCheerio(
-        context.pageUrlCourseInstance,
-        { headers },
-      );
-      assert.equal(response.status, 403);
-    },
-  );
+  step('student cannot override date (error when on instructor page)', async () => {
+    const headers = {
+      cookie: 'pl_test_user=test_student; pl_requested_date=1700-01-19T00:00:01',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    assert.equal(response.status, 403);
+  });
 
-  step(
-    'student cannot override date (error when on instructor page) - course route',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_student; pl_requested_date=1700-01-19T00:00:01',
-      };
-      const response = await helperClient.fetchCheerio(context.pageUrlCourse, {
-        headers,
-      });
-      assert.equal(response.status, 403);
-    },
-  );
+  step('student cannot override date (error when on instructor page) - course route', async () => {
+    const headers = {
+      cookie: 'pl_test_user=test_student; pl_requested_date=1700-01-19T00:00:01',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlCourse, {
+      headers,
+    });
+    assert.equal(response.status, 403);
+  });
 
   step('instructor can override date (and becomes enrolled)', async () => {
     let result = await sqldb.queryAsync(sql.select_enrollment, {
@@ -120,8 +105,7 @@ describe('effective user', function () {
     });
     assert.lengthOf(result.rows, 0);
     const headers = {
-      cookie:
-        'pl_test_user=test_instructor; pl_requested_date=1700-01-19T00:00:01',
+      cookie: 'pl_test_user=test_instructor; pl_requested_date=1700-01-19T00:00:01',
     };
     const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
       headers,
@@ -142,19 +126,15 @@ describe('effective user', function () {
     assert.isTrue(response.ok);
   });
 
-  step(
-    'instructor (no course instance role) cannot emulate student',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
-      };
-      const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
-        headers,
-      });
-      assert.equal(response.status, 403);
-    },
-  );
+  step('instructor (no course instance role) cannot emulate student', async () => {
+    const headers = {
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
+      headers,
+    });
+    assert.equal(response.status, 403);
+  });
 
   step('instructor (student data viewer) cannot emulate student', async () => {
     await sqldb.callOneRowAsync('course_instance_permissions_insert', [
@@ -165,8 +145,7 @@ describe('effective user', function () {
       2,
     ]);
     const headers = {
-      cookie:
-        'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
     };
     const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
       headers,
@@ -183,8 +162,7 @@ describe('effective user', function () {
       2,
     ]);
     const headers = {
-      cookie:
-        'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
     };
     const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
       headers,
@@ -192,19 +170,16 @@ describe('effective user', function () {
     assert.isTrue(response.ok);
   });
 
-  step(
-    'instructor can emulate student and override date in range (expect success)',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_requested_date=1900-01-19T00:00:01; pl_requested_uid=student@illinois.edu',
-      };
-      const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
-        headers,
-      });
-      assert.isTrue(response.ok);
-    },
-  );
+  step('instructor can emulate student and override date in range (expect success)', async () => {
+    const headers = {
+      cookie:
+        'pl_test_user=test_instructor; pl_requested_date=1900-01-19T00:00:01; pl_requested_uid=student@illinois.edu',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
+      headers,
+    });
+    assert.isTrue(response.ok);
+  });
 
   step(
     'instructor can emulate student and override date out of range (expect failure)',
@@ -217,36 +192,31 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    },
+    }
   );
 
   step(
     'instructor can emulate student and be denied access to instructor page (course instance route)',
     async () => {
       const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
+        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
       };
-      const response = await helperClient.fetchCheerio(
-        context.pageUrlCourseInstance,
-        { headers },
-      );
+      const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.equal(response.status, 403);
-    },
+    }
   );
 
   step(
     'instructor can emulate student and be denied access to instructor page (course route)',
     async () => {
       const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
+        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@illinois.edu',
       };
       const response = await helperClient.fetchCheerio(context.pageUrlCourse, {
         headers,
       });
       assert.equal(response.status, 403);
-    },
+    }
   );
 
   step('cannot request invalid date', async () => {
@@ -269,19 +239,15 @@ describe('effective user', function () {
     assert.equal(response.status, 403);
   });
 
-  step(
-    'cannot request uid of administrator when not administrator',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=dev@illinois.edu',
-      };
-      const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
-        headers,
-      });
-      assert.equal(response.status, 403);
-    },
-  );
+  step('cannot request uid of administrator when not administrator', async () => {
+    const headers = {
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=dev@illinois.edu',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
+      headers,
+    });
+    assert.equal(response.status, 403);
+  });
 
   step('can request uid of administrator when administrator', async () => {
     await sqldb.queryAsync(sql.insert_administrator, { user_id: 2 });
@@ -294,122 +260,83 @@ describe('effective user', function () {
     assert.isTrue(response.ok);
   });
 
-  step(
-    'cannot request uid of administrator when administrator access is inactive',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=dev@illinois.edu',
-      };
-      const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
-        headers,
-      });
-      assert.equal(response.status, 403);
-    },
-  );
+  step('cannot request uid of administrator when administrator access is inactive', async () => {
+    const headers = {
+      cookie:
+        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=dev@illinois.edu',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
+      headers,
+    });
+    assert.equal(response.status, 403);
+  });
 
   step('can request uid of course editor as course owner', async () => {
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
     };
-    const response = await helperClient.fetchCheerio(
-      context.pageUrlCourseInstance,
-      { headers },
-    );
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
     assert.isTrue(response.ok);
   });
 
   step('cannot request uid of course editor as course viewer', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [
+    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
+    const headers = {
+      cookie:
+        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    assert.equal(response.status, 403);
+  });
+
+  step('can request uid of student data viewer as student data editor', async () => {
+    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Owner', 1]);
+    await sqldb.callOneRowAsync('course_instance_permissions_insert', [
       1,
+      3,
+      1,
+      'Student Data Viewer',
       2,
-      'Viewer',
-      1,
     ]);
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
     };
-    const response = await helperClient.fetchCheerio(
-      context.pageUrlCourseInstance,
-      { headers },
-    );
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
+    assert.isTrue(response.ok);
+  });
+
+  step('cannot request uid of student data editor as student data viewer', async () => {
+    await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
+      1,
+      2,
+      1,
+      'Student Data Viewer',
+      2,
+    ]);
+    await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
+      1,
+      3,
+      1,
+      'Student Data Editor',
+      2,
+    ]);
+    const headers = {
+      cookie:
+        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
     assert.equal(response.status, 403);
   });
 
-  step(
-    'can request uid of student data viewer as student data editor',
-    async () => {
-      await sqldb.callAsync('course_permissions_update_role', [
-        1,
-        2,
-        'Owner',
-        1,
-      ]);
-      await sqldb.callOneRowAsync('course_instance_permissions_insert', [
-        1,
-        3,
-        1,
-        'Student Data Viewer',
-        2,
-      ]);
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
-      };
-      const response = await helperClient.fetchCheerio(
-        context.pageUrlCourseInstance,
-        { headers },
-      );
-      assert.isTrue(response.ok);
-    },
-  );
-
-  step(
-    'cannot request uid of student data editor as student data viewer',
-    async () => {
-      await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-        1,
-        2,
-        1,
-        'Student Data Viewer',
-        2,
-      ]);
-      await sqldb.callOneRowAsync('course_instance_permissions_update_role', [
-        1,
-        3,
-        1,
-        'Student Data Editor',
-        2,
-      ]);
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_uid=staff03@illinois.edu',
-      };
-      const response = await helperClient.fetchCheerio(
-        context.pageUrlCourseInstance,
-        { headers },
-      );
-      assert.equal(response.status, 403);
-    },
-  );
-
   step('instructor can request lower course role', async () => {
-    await sqldb.callAsync('course_permissions_update_role', [
-      1,
-      2,
-      'Viewer',
-      1,
-    ]);
+    await sqldb.callAsync('course_permissions_update_role', [1, 2, 'Viewer', 1]);
     const headers = {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=Previewer',
     };
-    const response = await helperClient.fetchCheerio(
-      context.pageUrlCourseInstance,
-      { headers },
-    );
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
     assert.isTrue(response.ok);
   });
 
@@ -418,10 +345,7 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=Editor',
     };
-    const response = await helperClient.fetchCheerio(
-      context.pageUrlCourseInstance,
-      { headers },
-    );
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
     assert.equal(response.status, 403);
   });
 
@@ -437,10 +361,7 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_instance_role=Student Data Viewer',
     };
-    const response = await helperClient.fetchCheerio(
-      context.pageUrlCourseInstance,
-      { headers },
-    );
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
     assert.isTrue(response.ok);
   });
 
@@ -456,26 +377,20 @@ describe('effective user', function () {
       cookie:
         'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_instance_role=Student Data Editor',
     };
-    const response = await helperClient.fetchCheerio(
-      context.pageUrlCourseInstance,
-      { headers },
-    );
+    const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
     assert.equal(response.status, 403);
   });
 
-  step(
-    'instructor can request no role and be granted access to student page',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=None; pl_requested_course_instance_role=None',
-      };
-      const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
-        headers,
-      });
-      assert.isTrue(response.ok);
-    },
-  );
+  step('instructor can request no role and be granted access to student page', async () => {
+    const headers = {
+      cookie:
+        'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=None; pl_requested_course_instance_role=None',
+    };
+    const response = await helperClient.fetchCheerio(context.pageUrlStudent, {
+      headers,
+    });
+    assert.isTrue(response.ok);
+  });
 
   step(
     'instructor can request no role and be denied access to instructor page (course instance route)',
@@ -484,12 +399,9 @@ describe('effective user', function () {
         cookie:
           'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=None; pl_requested_course_instance_role=None',
       };
-      const response = await helperClient.fetchCheerio(
-        context.pageUrlCourseInstance,
-        { headers },
-      );
+      const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.equal(response.status, 403);
-    },
+    }
   );
 
   step(
@@ -503,7 +415,7 @@ describe('effective user', function () {
         headers,
       });
       assert.equal(response.status, 403);
-    },
+    }
   );
 
   step(
@@ -513,11 +425,8 @@ describe('effective user', function () {
         cookie:
           'pl_test_user=test_instructor; pl_access_as_administrator=inactive; pl_requested_course_role=None',
       };
-      const response = await helperClient.fetchCheerio(
-        context.pageUrlCourseInstance,
-        { headers },
-      );
+      const response = await helperClient.fetchCheerio(context.pageUrlCourseInstance, { headers });
       assert.isTrue(response.ok);
-    },
+    }
   );
 });

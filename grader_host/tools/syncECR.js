@@ -72,12 +72,7 @@ async.series(
         idleTimeoutMillis: 30000,
       };
       logger.info(
-        'Connecting to database ' +
-          pgConfig.user +
-          '@' +
-          pgConfig.host +
-          ':' +
-          pgConfig.database,
+        'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
       );
       var idleErrorHandler = function (err) {
         logger.error('idle client error', err);
@@ -119,7 +114,7 @@ async.series(
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       });
     },
@@ -129,7 +124,7 @@ async.series(
     sqldb.close((err) => {
       if (ERR(err)) return;
     });
-  },
+  }
 );
 
 function locateImage(image, callback) {
@@ -210,10 +205,7 @@ var pullAndPushToECR = function (image, dockerAuth, callback) {
 
             // Create a new docker image instance with the new registry name
             // localImage isn't specific enough to the ECR repo
-            var pushImage = new Docker.Image(
-              docker.modem,
-              repository.getCombined(),
-            );
+            var pushImage = new Docker.Image(docker.modem, repository.getCombined());
 
             logger.info(`Pushing ${repository.getCombined()}`);
             pushImage.push(
@@ -227,7 +219,7 @@ var pullAndPushToECR = function (image, dockerAuth, callback) {
                   callback(null);
                 });
               },
-              dockerAuth,
+              dockerAuth
             );
           });
         });

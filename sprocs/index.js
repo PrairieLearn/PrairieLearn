@@ -192,26 +192,20 @@ module.exports = {
       ],
       function (filename, callback) {
         logger.verbose('Loading ' + filename);
-        fs.readFile(
-          path.join(__dirname, filename),
-          'utf8',
-          function (err, sql) {
+        fs.readFile(path.join(__dirname, filename), 'utf8', function (err, sql) {
+          if (ERR(err, callback)) return;
+          sqldb.query(sql, [], function (err, _result) {
+            if (err) error.addData(err, { sqlFile: filename });
             if (ERR(err, callback)) return;
-            sqldb.query(sql, [], function (err, _result) {
-              if (err) error.addData(err, { sqlFile: filename });
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
-          },
-        );
+            callback(null);
+          });
+        });
       },
       function (err) {
         if (ERR(err, callback)) return;
-        logger.verbose(
-          'Successfully completed DB stored procedure initialization',
-        );
+        logger.verbose('Successfully completed DB stored procedure initialization');
         callback(null);
-      },
+      }
     );
   },
 };

@@ -2,9 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sanitizeName = require('../../lib/sanitize-name');
 const error = require('../../prairielib/lib/error');
@@ -24,7 +22,7 @@ function obtainInfo(req, res, next) {
     res.locals.assessment,
     res.locals.assessment_set,
     res.locals.course_instance,
-    res.locals.course,
+    res.locals.course
   );
   res.locals.groupsCsvFilename = prefix + 'groups.csv';
 
@@ -66,17 +64,13 @@ function obtainInfo(req, res, next) {
 router.get('/', function (req, res, next) {
   debug('GET /');
   if (!res.locals.authz_data.has_course_instance_permission_view)
-    return next(
-      error.make(403, 'Access denied (must be a student data viewer)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data viewer)'));
   obtainInfo(req, res, next);
 });
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view)
-    return next(
-      error.make(403, 'Access denied (must be a student data editor)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data editor)'));
   if (req.body.__action == 'upload_assessment_groups') {
     groupUpdate.uploadInstanceGroups(
       res.locals.assessment.id,
@@ -86,7 +80,7 @@ router.post('/', function (req, res, next) {
       function (err, job_sequence_id) {
         if (ERR(err, next)) return;
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      },
+      }
     );
   } else if (req.body.__action == 'auto_assessment_groups') {
     groupUpdate.autoGroups(
@@ -99,7 +93,7 @@ router.post('/', function (req, res, next) {
       function (err, job_sequence_id) {
         if (ERR(err, next)) return;
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-      },
+      }
     );
   } else if (req.body.__action == 'copy_assessment_groups') {
     const params = [
@@ -136,10 +130,7 @@ router.post('/', function (req, res, next) {
     sqldb.call('assessment_groups_update', params, (err, result) => {
       if (err) {
         res.locals.errormsg =
-          'ERROR when adding group ' +
-          group_name +
-          ' - Internal ' +
-          String(err);
+          'ERROR when adding group ' + group_name + ' - Internal ' + String(err);
       } else {
         const notExist = result.rows[0].not_exist_user;
         if (notExist) {
@@ -172,12 +163,7 @@ router.post('/', function (req, res, next) {
     //start processing
     (async () => {
       for (const uid of uidlist) {
-        let params = [
-          assessment_id,
-          group_id,
-          uid,
-          res.locals.authn_user.user_id,
-        ];
+        let params = [assessment_id, group_id, uid, res.locals.authn_user.user_id];
         try {
           await sqldb.callAsync('assessment_groups_add_member', params);
         } catch (err) {
@@ -185,8 +171,7 @@ router.post('/', function (req, res, next) {
         }
       }
       if (failedUids.length > 0) {
-        res.locals.errormsg +=
-          'Failed to add ' + failedUids + '. Please check if the uid exist.\n';
+        res.locals.errormsg += 'Failed to add ' + failedUids + '. Please check if the uid exist.\n';
       }
       obtainInfo(req, res, next);
     })();
@@ -200,12 +185,7 @@ router.post('/', function (req, res, next) {
     //start processing
     (async () => {
       for (const uid of uidlist) {
-        let params = [
-          assessment_id,
-          group_id,
-          uid,
-          res.locals.authn_user.user_id,
-        ];
+        let params = [assessment_id, group_id, uid, res.locals.authn_user.user_id];
         try {
           await sqldb.callAsync('assessment_groups_delete_member', params);
         } catch (err) {
@@ -214,32 +194,22 @@ router.post('/', function (req, res, next) {
       }
       if (failedUids.length > 0) {
         res.locals.errormsg +=
-          'Failed to remove ' +
-          failedUids +
-          '. Please check if the uid exist.\n';
+          'Failed to remove ' + failedUids + '. Please check if the uid exist.\n';
       }
       obtainInfo(req, res, next);
     })();
   } else if (req.body.__action == 'delete_group') {
-    const params = [
-      res.locals.assessment.id,
-      req.body.group_id,
-      res.locals.authn_user.user_id,
-    ];
-    sqldb.call(
-      'assessment_groups_delete_group',
-      params,
-      function (err, _result) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      },
-    );
+    const params = [res.locals.assessment.id, req.body.group_id, res.locals.authn_user.user_id];
+    sqldb.call('assessment_groups_delete_group', params, function (err, _result) {
+      if (ERR(err, next)) return;
+      res.redirect(req.originalUrl);
+    });
   } else {
     return next(
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

@@ -34,8 +34,7 @@ describe('Instructor Assessment Downloads', function () {
           instance_question_points: assessmentPoints,
           instance_question_score_perc: (assessmentPoints / 5) * 100,
           assessment_instance_points: assessmentPoints,
-          assessment_instance_score_perc:
-            (assessmentPoints / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (assessmentPoints / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -57,21 +56,16 @@ describe('Instructor Assessment Downloads', function () {
         '/instructor/assessment/' +
         locals.assessment_id +
         '/downloads';
-      request(
-        { url: locals.instructorAssessmentDownloadsUrl },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.instructorAssessmentDownloadsUrl }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -84,30 +78,21 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@illinois.edu');
-      assert.approximately(
-        data[0]['Exam 1'],
-        locals.assessment_instance.score_perc,
-        1e-6,
-      );
+      assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
     });
   });
 
@@ -117,30 +102,21 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
       assert.equal(data[0]['Username'], 'dev');
-      assert.approximately(
-        data[0]['Exam 1'],
-        locals.assessment_instance.score_perc,
-        1e-6,
-      );
+      assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
     });
   });
 
@@ -150,30 +126,21 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@illinois.edu');
-      assert.approximately(
-        data[0]['Exam 1'],
-        locals.assessment_instance.points,
-        1e-6,
-      );
+      assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
     });
   });
 
@@ -183,30 +150,21 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
       assert.equal(data[0]['Username'], 'dev');
-      assert.approximately(
-        data[0]['Exam 1'],
-        locals.assessment_instance.points,
-        1e-6,
-      );
+      assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
     });
   });
 
@@ -216,42 +174,25 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
       assert.equal(data[0]['UID'], 'dev@illinois.edu');
       assert.equal(data[0][('Username', 'dev')]);
       assert.equal(data[0]['Assessment'], 'Exam 1');
-      assert.approximately(
-        data[0]['Score (%)'],
-        locals.assessment_instance.score_perc,
-        1e-6,
-      );
-      assert.approximately(
-        data[0]['Points'],
-        locals.assessment_instance.points,
-        1e-6,
-      );
-      assert.approximately(
-        data[0]['Max points'],
-        helperExam.assessmentMaxPoints,
-        1e-6,
-      );
+      assert.approximately(data[0]['Score (%)'], locals.assessment_instance.score_perc, 1e-6);
+      assert.approximately(data[0]['Points'], locals.assessment_instance.points, 1e-6);
+      assert.approximately(data[0]['Max points'], helperExam.assessmentMaxPoints, 1e-6);
     });
   });
 
@@ -261,21 +202,16 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
@@ -293,21 +229,16 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
@@ -322,21 +253,16 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
@@ -353,21 +279,16 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
@@ -386,21 +307,16 @@ describe('Instructor Assessment Downloads', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should succeed to download', function (callback) {
-      request(
-        { url: locals.siteUrl + elemList[0].attribs.href },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });

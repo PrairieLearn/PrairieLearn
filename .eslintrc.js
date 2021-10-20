@@ -9,10 +9,7 @@ module.exports = {
   },
   rules: {
     'handle-callback-err': 'error',
-    'no-unused-vars': [
-      'error',
-      { args: 'after-used', argsIgnorePattern: '^_' },
-    ],
+    'no-unused-vars': ['error', { args: 'after-used', argsIgnorePattern: '^_' }],
 
     // By default, eslint-plugin-import only validates ESM syntax. We're still
     // using CommonJS, so we need to explicitly enable support for that.

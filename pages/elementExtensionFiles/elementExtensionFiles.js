@@ -16,9 +16,7 @@ router.get('/*', function (req, res, next) {
   let pathSpl = path.normalize(filename).split('/');
   const valid =
     pathSpl[2] == CLIENT_FOLDER ||
-    _.some(FILE_TYPE_EXTENSION_WHITELIST, (extension) =>
-      filename.endsWith(extension),
-    );
+    _.some(FILE_TYPE_EXTENSION_WHITELIST, (extension) => filename.endsWith(extension));
   if (!valid) {
     res.status(404);
     const err = new Error('Unable to serve that file');

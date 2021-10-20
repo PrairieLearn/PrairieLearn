@@ -1,8 +1,4 @@
-define(['underscore', 'QServer', 'PrairieRandom'], function (
-  _,
-  QServer,
-  PrairieRandom,
-) {
+define(['underscore', 'QServer', 'PrairieRandom'], function (_, QServer, PrairieRandom) {
   function CBQServer() {
     QServer.call(this);
   }
@@ -20,15 +16,12 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (
     });
 
     // we can't choose more correct answers than we have
-    var maxNumberCorrect = Math.min(
-      options.maxCorrectAnswers,
-      options.correctAnswers.length,
-    );
+    var maxNumberCorrect = Math.min(options.maxCorrectAnswers, options.correctAnswers.length);
 
     // we need to choose at least this many correct answers to ensure we can make the total number
     var minNumberCorrect = Math.max(
       options.minCorrectAnswers,
-      options.numberAnswers - options.incorrectAnswers.length,
+      options.numberAnswers - options.incorrectAnswers.length
     );
 
     // but we must have minNumber <= maxNumber
@@ -41,18 +34,11 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (
     var numberIncorrect = options.numberAnswers - numberCorrect;
 
     // but we can't choose more incorrect answers than we have
-    numberIncorrect = Math.min(
-      numberIncorrect,
-      options.incorrectAnswers.length,
-    );
+    numberIncorrect = Math.min(numberIncorrect, options.incorrectAnswers.length);
 
     var answers = [];
-    answers = answers.concat(
-      rand.randNElem(numberCorrect, options.correctAnswers),
-    );
-    answers = answers.concat(
-      rand.randNElem(numberIncorrect, options.incorrectAnswers),
-    );
+    answers = answers.concat(rand.randNElem(numberCorrect, options.correctAnswers));
+    answers = answers.concat(rand.randNElem(numberIncorrect, options.incorrectAnswers));
     var perm = rand.shuffle(answers);
     answers = _(answers).map(function (value, index) {
       return {

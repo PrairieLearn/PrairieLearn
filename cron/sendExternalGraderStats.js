@@ -35,35 +35,17 @@ module.exports.run = (callback) => {
     msg += `Count: *${count}*\n`;
     msg += `Average total duration: *${Number(delta_total).toFixed(2)} s*\n`;
     msg += `Individual averages:\n`;
-    msg += `    Average time to submit: *${Number(delta_submitted_at).toFixed(
-      2,
-    )} s*\n`;
-    msg += `    Average time to queue: *${Number(delta_received_at).toFixed(
-      2,
-    )} s*\n`;
-    msg += `    Average time to start: *${Number(delta_started_at).toFixed(
-      2,
-    )} s*\n`;
-    msg += `    Average time to execute: *${Number(delta_finished_at).toFixed(
-      2,
-    )} s*\n`;
-    msg += `    Average time to report: *${Number(delta_final).toFixed(
-      2,
-    )} s*\n`;
+    msg += `    Average time to submit: *${Number(delta_submitted_at).toFixed(2)} s*\n`;
+    msg += `    Average time to queue: *${Number(delta_received_at).toFixed(2)} s*\n`;
+    msg += `    Average time to start: *${Number(delta_started_at).toFixed(2)} s*\n`;
+    msg += `    Average time to execute: *${Number(delta_finished_at).toFixed(2)} s*\n`;
+    msg += `    Average time to report: *${Number(delta_final).toFixed(2)} s*\n`;
     msg += `Maximum total duration: *${Number(max_total).toFixed(2)} s*\n`;
     msg += `Individual maximums:\n`;
-    msg += `    Maximum time to submit: *${Number(max_submitted_at).toFixed(
-      2,
-    )} s*\n`;
-    msg += `    Maximum time to queue: *${Number(max_received_at).toFixed(
-      2,
-    )} s*\n`;
-    msg += `    Maximum time to start: *${Number(max_started_at).toFixed(
-      2,
-    )} s*\n`;
-    msg += `    Maximum time to execute: *${Number(max_finished_at).toFixed(
-      2,
-    )} s*\n`;
+    msg += `    Maximum time to submit: *${Number(max_submitted_at).toFixed(2)} s*\n`;
+    msg += `    Maximum time to queue: *${Number(max_received_at).toFixed(2)} s*\n`;
+    msg += `    Maximum time to start: *${Number(max_started_at).toFixed(2)} s*\n`;
+    msg += `    Maximum time to execute: *${Number(max_finished_at).toFixed(2)} s*\n`;
     msg += `    Maximum time to report: *${Number(max_final).toFixed(2)} s*\n`;
 
     opsbot.sendMessage(msg, (err, res, body) => {
@@ -71,7 +53,7 @@ module.exports.run = (callback) => {
       if (res.statusCode != 200) {
         logger.error(
           'Error posting external grading stats to slack [status code ${res.statusCode}]',
-          body,
+          body
         );
       }
       callback(null);

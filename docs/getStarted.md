@@ -176,10 +176,7 @@ def generate(data):
 
 ```html
 <pl-question-panel>
-  <p>
-    What is the area of a rectangle that has sides {{params.a}} and
-    {{params.b}}?
-  </p>
+  <p>What is the area of a rectangle that has sides {{params.a}} and {{params.b}}?</p>
 </pl-question-panel>
 
 <pl-multiple-choice answers-name="area">

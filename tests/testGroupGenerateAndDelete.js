@@ -62,7 +62,7 @@ describe('test auto group and delete groups', function () {
           });
         };
         setTimeout(checkComplete, 10);
-      },
+      }
     );
   });
 
@@ -74,16 +74,12 @@ describe('test auto group and delete groups', function () {
         if (ERR(err, callback)) return;
         assert.equal(result.rows.length, 50);
 
-        sqldb.query(
-          'SELECT DISTINCT(user_id) FROM group_users',
-          [],
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            assert.equal(result.rows.length, 500);
-            callback(null);
-          },
-        );
-      },
+        sqldb.query('SELECT DISTINCT(user_id) FROM group_users', [], function (err, result) {
+          if (ERR(err, callback)) return;
+          assert.equal(result.rows.length, 500);
+          callback(null);
+        });
+      }
     );
   });
 
@@ -99,7 +95,7 @@ describe('test auto group and delete groups', function () {
           if (ERR(err, callback)) return;
           assert.equal(result.rows.length, 0);
           callback(null);
-        },
+        }
       );
     });
   });

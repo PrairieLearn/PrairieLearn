@@ -16,12 +16,8 @@ module.exports.run = callbackify(async () => {
 });
 
 async function getLoadStats() {
-  const params = [
-    config.workspaceLoadCapacityFactor,
-    config.workspaceLoadHostCapacity,
-  ];
-  return (await sqldb.callOneRowAsync('workspace_loads_current', params))
-    .rows[0];
+  const params = [config.workspaceLoadCapacityFactor, config.workspaceLoadHostCapacity];
+  return (await sqldb.callOneRowAsync('workspace_loads_current', params)).rows[0];
 }
 
 const cloudwatch_definitions = {
@@ -116,59 +112,42 @@ const cloudwatch_definitions = {
 };
 async function sendStatsToCloudwatch(stats) {
   const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
-  const dimensions = [
-    { Name: 'By Server', Value: config.workspaceCloudWatchName },
-  ];
+  const dimensions = [{ Name: 'By Server', Value: config.workspaceCloudWatchName }];
   const cloudwatch_metricdata_limit = 20; /* AWS limits to 20 items within each list */
   const entries = Object.entries(stats).filter(([key, _value]) => {
     return key !== 'timestamp_formatted';
   });
 
   for (let i = 0; i < entries.length; i += cloudwatch_metricdata_limit) {
-    const data = entries
-      .slice(i, i + cloudwatch_metricdata_limit)
-      .map(([key, value]) => {
-        if (!(key in cloudwatch_definitions)) {
-          throw new Error(`Unknown datapoint ${key}!`);
-        }
-        const def = cloudwatch_definitions[key];
-        return {
-          MetricName: def.name,
-          Dimensions: dimensions,
-          Timestamp: stats.timestamp_formatted,
-          Unit: def.unit,
-          Value: value,
-          StorageResolution: 1,
-        };
-      });
-    await cloudwatch
-      .putMetricData({ MetricData: data, Namespace: 'Workspaces' })
-      .promise();
+    const data = entries.slice(i, i + cloudwatch_metricdata_limit).map(([key, value]) => {
+      if (!(key in cloudwatch_definitions)) {
+        throw new Error(`Unknown datapoint ${key}!`);
+      }
+      const def = cloudwatch_definitions[key];
+      return {
+        MetricName: def.name,
+        Dimensions: dimensions,
+        Timestamp: stats.timestamp_formatted,
+        Unit: def.unit,
+        Value: value,
+        StorageResolution: 1,
+      };
+    });
+    await cloudwatch.putMetricData({ MetricData: data, Namespace: 'Workspaces' }).promise();
   }
 }
 
 async function handleWorkspaceAutoscaling(stats) {
-  if (
-    (await config.getDBConfigValueAsync(
-      'workspaceAutoscalingEnabled',
-      'true',
-    )) !== 'true'
-  )
+  if ((await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', 'true')) !== 'true')
     return;
 
-  let desired_hosts = await config.getDBConfigValueAsync(
-    'workspaceDesiredHostCount',
-    null,
-  );
+  let desired_hosts = await config.getDBConfigValueAsync('workspaceDesiredHostCount', null);
   if (desired_hosts !== null) {
     desired_hosts = parseInt(desired_hosts);
   } else {
     desired_hosts = stats.workspace_hosts_desired;
   }
-  let launch_template_id = await config.getDBConfigValueAsync(
-    'workspaceLaunchTemplateId',
-    null,
-  );
+  let launch_template_id = await config.getDBConfigValueAsync('workspaceLaunchTemplateId', null);
   if (!launch_template_id) {
     launch_template_id = config.workspaceLoadLaunchTemplateId;
   }
@@ -180,8 +159,8 @@ async function handleWorkspaceAutoscaling(stats) {
     /* First thing we can try is to "re-capture" draining hosts to be ready.  This is very cheap to do because we don't
            need to call out to AWS */
     const recaptured_hosts =
-      (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed]))
-        .rows[0].recaptured_hosts || 0;
+      (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0]
+        .recaptured_hosts || 0;
     needed -= recaptured_hosts;
     if (needed > 0) {
       /* We couldn't get enough hosts, so lets spin up some more and insert them into the db */
@@ -195,9 +174,7 @@ async function handleWorkspaceAutoscaling(stats) {
           },
         })
         .promise();
-      const instance_ids = data.Instances.map(
-        (instance) => instance.InstanceId,
-      );
+      const instance_ids = data.Instances.map((instance) => instance.InstanceId);
       await sqldb.queryAsync(sql.insert_new_instances, { instance_ids });
     }
   } else if (desired_hosts < ready_hosts) {

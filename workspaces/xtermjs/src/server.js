@@ -39,9 +39,7 @@ const argument_option_defs = [
 ];
 const options = cl_args(argument_option_defs);
 if (options.help) {
-  const usage = cl_usage([
-    { header: 'Arguments', optionList: argument_option_defs },
-  ]);
+  const usage = cl_usage([{ header: 'Arguments', optionList: argument_option_defs }]);
   console.log(usage);
   return;
 }
@@ -111,5 +109,5 @@ app.ws('/', (ws, req) => {
 });
 
 app.listen(options.port, () =>
-  console.log(`XTerm server listening at http://localhost:${options.port}`),
+  console.log(`XTerm server listening at http://localhost:${options.port}`)
 );

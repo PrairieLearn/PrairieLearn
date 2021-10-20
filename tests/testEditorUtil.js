@@ -10,9 +10,7 @@ describe('editor library', () => {
 
   it('gets details for course instance info file', () => {
     const details = /** @type {import('../lib/editor').CourseInstanceInfo} */ (
-      editor.getDetailsForFile(
-        'courseInstances/testinstance/infoCourseInstance.json',
-      )
+      editor.getDetailsForFile('courseInstances/testinstance/infoCourseInstance.json')
     );
     assert.equal(details.type, 'courseInstance');
     assert.equal(details.ciid, 'testinstance');
@@ -29,7 +27,7 @@ describe('editor library', () => {
   it('gets details for assessment info file', () => {
     const details = /** @type {import('../lib/editor').AssessmentInfo} */ (
       editor.getDetailsForFile(
-        'courseInstances/testinstance/assessments/testassessment/infoAssessment.json',
+        'courseInstances/testinstance/assessments/testassessment/infoAssessment.json'
       )
     );
     assert.equal(details.type, 'assessment');

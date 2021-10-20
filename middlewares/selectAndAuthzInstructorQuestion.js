@@ -21,22 +21,18 @@ module.exports = function (req, res, next) {
         if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
         _.assign(res.locals, result.rows[0]);
         next();
-      },
+      }
     );
   } else {
     const params = {
       question_id: req.params.question_id,
       course_id: res.locals.course.id,
     };
-    sqldb.queryZeroOrOneRow(
-      sql.select_and_auth,
-      params,
-      function (err, result) {
-        if (ERR(err, next)) return;
-        if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
-        _.assign(res.locals, result.rows[0]);
-        next();
-      },
-    );
+    sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function (err, result) {
+      if (ERR(err, next)) return;
+      if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+      _.assign(res.locals, result.rows[0]);
+      next();
+    });
   }
 };

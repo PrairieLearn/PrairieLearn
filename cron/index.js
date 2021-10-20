@@ -45,16 +45,12 @@ module.exports = {
       {
         name: 'autoFinishExams',
         module: require('./autoFinishExams'),
-        intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalAutoFinishExamsSec,
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalAutoFinishExamsSec,
       },
       {
         name: 'errorAbandonedJobs',
         module: require('./errorAbandonedJobs'),
-        intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalErrorAbandonedJobsSec,
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
       },
       {
         name: 'sendExternalGraderStats',
@@ -69,23 +65,17 @@ module.exports = {
       {
         name: 'externalGraderLoad',
         module: require('./externalGraderLoad'),
-        intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalExternalGraderLoadSec,
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
       },
       {
         name: 'serverLoad',
         module: require('./serverLoad'),
-        intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalServerLoadSec,
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
       },
       {
         name: 'serverUsage',
         module: require('./serverUsage'),
-        intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalServerUsageSec,
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerUsageSec,
       },
       {
         name: 'calculateAssessmentQuestionStats',
@@ -103,34 +93,29 @@ module.exports = {
         name: 'workspaceTimeoutStop',
         module: require('./workspaceTimeoutStop'),
         intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalWorkspaceTimeoutStopSec,
+          config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutStopSec,
       },
       {
         name: 'workspaceTimeoutWarn',
         module: require('./workspaceTimeoutWarn'),
         intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalWorkspaceTimeoutWarnSec,
+          config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutWarnSec,
       },
       {
         name: 'workspaceHostLoads',
         module: require('./workspaceHostLoads'),
-        intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalWorkspaceHostLoadsSec,
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
       },
       {
         name: 'workspaceHostTransitions',
         module: require('./workspaceHostTransitions'),
         intervalSec:
-          config.cronOverrideAllIntervalsSec ||
-          config.cronIntervalWorkspaceHostTransitionsSec,
+          config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
       },
     ];
     logger.verbose(
       'initializing cron',
-      _.map(module.exports.jobs, (j) => _.pick(j, ['name', 'intervalSec'])),
+      _.map(module.exports.jobs, (j) => _.pick(j, ['name', 'intervalSec']))
     );
 
     const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
@@ -253,15 +238,12 @@ module.exports = {
               this.tryJobWithLock(job, cronUuid, (err) => {
                 if (ERR(err, () => {})) {
                   debug(`runJobs(): error running ${job.name}: ${err}`);
-                  logger.error(
-                    'cron: ' + job.name + ' failure: ' + String(err),
-                    {
-                      message: err.message,
-                      stack: err.stack,
-                      data: JSON.stringify(err.data),
-                      cronUuid,
-                    },
-                  );
+                  logger.error('cron: ' + job.name + ' failure: ' + String(err), {
+                    message: err.message,
+                    stack: err.stack,
+                    data: JSON.stringify(err.data),
+                    cronUuid,
+                  });
 
                   span.recordException(err);
                   span.setStatus({
@@ -285,7 +267,7 @@ module.exports = {
         debug(`runJobs(): done`);
         logger.verbose('cron: jobs finished', { cronUuid });
         callback(null);
-      },
+      }
     );
   },
 
@@ -330,9 +312,7 @@ module.exports = {
     } else if (job.intervalSec == 'daily') {
       interval_secs = 12 * 60 * 60;
     } else {
-      return callback(
-        new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`),
-      );
+      return callback(new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`));
     }
     const params = {
       name: job.name,
@@ -342,10 +322,7 @@ module.exports = {
       if (ERR(err, callback)) return;
       if (result.rowCount > 0) {
         debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
-        logger.verbose(
-          'cron: ' + job.name + ' job was recently run, skipping',
-          { cronUuid },
-        );
+        logger.verbose('cron: ' + job.name + ' job was recently run, skipping', { cronUuid });
         callback(null);
       } else {
         debug(`tryJobWithTime(): ${job.name}: job was not recently run`);

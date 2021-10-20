@@ -28,16 +28,10 @@ describe('Course element extensions', function () {
     ];
 
     const check_ext = (loaded) => {
-      assert.isTrue(
-        element in loaded,
-        `did not find element ${element} in loaded extensions`,
-      );
+      assert.isTrue(element in loaded, `did not find element ${element} in loaded extensions`);
       assert(
-        _.isEqual(
-          Object.keys(loaded[element]).sort(),
-          element_extensions.sort(),
-        ),
-        'could not load all extensions',
+        _.isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
+        'could not load all extensions'
       );
     };
 
@@ -72,11 +66,11 @@ describe('Course element extensions', function () {
 
     it("shouldn't fail when there are no extensions to load", async () => {
       const extensions = await freeform.loadExtensionsAsync(
-        path.join(__dirname, '..', 'testCourse', 'elementExtensions'),
+        path.join(__dirname, '..', 'testCourse', 'elementExtensions')
       );
       assert(
         extensions.length === 0,
-        'non-zero number of extensions were loaded from a course without extensions',
+        'non-zero number of extensions were loaded from a course without extensions'
       );
     });
   });
@@ -88,8 +82,7 @@ describe('Course element extensions', function () {
     const locals = {};
     locals.siteUrl = 'http://localhost:' + config.serverPort;
     locals.baseUrl = locals.siteUrl + '/pl';
-    locals.courseInstanceBaseUrl =
-      locals.baseUrl + '/course_instance/1/instructor';
+    locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
     locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
     locals.questionPreviewTabUrl = '/preview';
     locals.questionSettingsTabUrl = '/settings';
@@ -97,44 +90,32 @@ describe('Course element extensions', function () {
     locals.isStudentPage = false;
     const testQid = 'demo/custom/extension';
 
-    const incJs =
-      'elementExtensions/extendable-element/extension-cssjs/extension-cssjs.js';
-    const incCss =
-      'elementExtensions/extendable-element/extension-cssjs/extension-cssjs.css';
+    const incJs = 'elementExtensions/extendable-element/extension-cssjs/extension-cssjs.js';
+    const incCss = 'elementExtensions/extendable-element/extension-cssjs/extension-cssjs.css';
     const incImg =
       'elementExtensions/extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
     step('find the example question in the database', async () => {
-      let results = await sqldb.queryZeroOrOneRowAsync(
-        sql.select_question_by_qid,
-        { qid: testQid },
-      );
+      let results = await sqldb.queryZeroOrOneRowAsync(sql.select_question_by_qid, {
+        qid: testQid,
+      });
       assert(results.rowCount === 1, `could not find question ${testQid}`);
 
       locals.question = results.rows[0];
     });
     step('check the question page for extension css and js files', async () => {
       let questionUrl =
-        locals.questionBaseUrl +
-        '/' +
-        locals.question.id +
-        (locals.questionPreviewTabUrl || '');
+        locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
 
       const html = response.$.html();
-      assert.isTrue(
-        html.includes(incJs),
-        'page did not load extension javascript',
-      );
+      assert.isTrue(html.includes(incJs), 'page did not load extension javascript');
       assert.isTrue(html.includes(incCss), 'page did not load extension css');
     });
     step('check the question page for a client-side image', async () => {
       let questionUrl =
-        locals.questionBaseUrl +
-        '/' +
-        locals.question.id +
-        (locals.questionPreviewTabUrl || '');
+        locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
 
@@ -149,7 +130,7 @@ describe('Course element extensions', function () {
       assert(found_image !== null, 'could not find image on page');
 
       const image_response = await helperClient.fetchCheerio(
-        locals.siteUrl + found_image.attribs.src,
+        locals.siteUrl + found_image.attribs.src
       );
       assert.isTrue(image_response.ok, 'could not fetch image');
     });

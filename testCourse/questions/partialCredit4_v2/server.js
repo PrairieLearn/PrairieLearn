@@ -1,8 +1,4 @@
-define(['PrairieRandom', 'PrairieGeom', 'QServer'], function (
-  PrairieRandom,
-  PrairieGeom,
-  QServer,
-) {
+define(['PrairieRandom', 'PrairieGeom', 'QServer'], function (PrairieRandom, PrairieGeom, QServer) {
   var server = new QServer();
 
   server.getData = function (vid) {
@@ -46,13 +42,7 @@ define(['PrairieRandom', 'PrairieGeom', 'QServer'], function (
 
   // OPTIONAL gradeAnswer() function
   // if not present, then the submittedAnswer will be automatically checked against the trueAnswer
-  server.gradeAnswer = function (
-    vid,
-    params,
-    trueAnswer,
-    submittedAnswer,
-    options,
-  ) {
+  server.gradeAnswer = function (vid, params, trueAnswer, submittedAnswer, options) {
     var score = submittedAnswer.s / 100;
     var feedback = { s: '' };
     return { score: score, feedback: feedback };

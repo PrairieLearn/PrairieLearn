@@ -58,12 +58,7 @@ async.series(
         idleTimeoutMillis: 30000,
       };
       globalLogger.info(
-        'Connecting to database ' +
-          pgConfig.user +
-          '@' +
-          pgConfig.host +
-          ':' +
-          pgConfig.database,
+        'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
       );
       var idleErrorHandler = function (err) {
         globalLogger.error('idle client error', err);
@@ -87,8 +82,7 @@ async.series(
       });
     },
     (callback) => {
-      if (!config.useDatabase || !config.useImagePreloading)
-        return callback(null);
+      if (!config.useDatabase || !config.useImagePreloading) return callback(null);
       pullImages((err) => {
         if (ERR(err, callback)) return;
         callback(null);
@@ -109,9 +103,7 @@ async.series(
             (job, fail, success) => {
               globalLogger.info(`received ${job.jobId} from queue`);
               handleJob(job, (err) => {
-                globalLogger.info(
-                  `handleJob(${job.jobId}) completed with err=${err}`,
-                );
+                globalLogger.info(`handleJob(${job.jobId}) completed with err=${err}`);
                 if (ERR(err, fail)) return;
                 globalLogger.info(`handleJob(${job.jobId}) succeeded`);
                 success();
@@ -121,7 +113,7 @@ async.series(
               if (ERR(err, (err) => globalLogger.error('receive error:', err)));
               globalLogger.info('Completed full request cycle');
               next();
-            },
+            }
           );
         });
       }
@@ -136,7 +128,7 @@ async.series(
         process.exit(1);
       }, 1000);
     });
-  },
+  }
 );
 
 function handleJob(job, done) {
@@ -148,9 +140,7 @@ function handleJob(job, done) {
   };
 
   const logger = jobLogger(loggerOptions);
-  globalLogger.info(
-    `Logging job ${job.jobId} to S3: ${job.s3Bucket}/${job.s3RootKey}`,
-  );
+  globalLogger.info(`Logging job ${job.jobId} to S3: ${job.s3Bucket}/${job.s3RootKey}`);
 
   const info = {
     docker: new Docker(),
@@ -189,7 +179,7 @@ function handleJob(job, done) {
       if (ERR(err, done)) return;
       logger.info('Successfully completed handleJob()');
       done(null);
-    },
+    }
   );
 }
 
@@ -278,7 +268,7 @@ function initDocker(info, callback) {
         docker.createImage(dockerAuth, params, (err, stream) => {
           if (err) {
             logger.warn(
-              `Error pulling "${image}" image; attempting to fall back to cached version`,
+              `Error pulling "${image}" image; attempting to fall back to cached version`
             );
             logger.warn('createImage error:', err);
             return ERR(err, callback);
@@ -292,7 +282,7 @@ function initDocker(info, callback) {
             },
             (output) => {
               logger.info('docker output:', output);
-            },
+            }
           );
         });
       },
@@ -300,7 +290,7 @@ function initDocker(info, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 
@@ -339,7 +329,7 @@ function initFiles(info, callback) {
             files.tempDir = dir;
             files.tempDirCleanup = cleanup;
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
@@ -368,23 +358,18 @@ function initFiles(info, callback) {
       },
       (callback) => {
         logger.info('Making entrypoint executable');
-        exec(
-          `chmod +x ${path.join(files.tempDir, entrypoint.slice(6))}`,
-          (err) => {
-            if (err) {
-              logger.error(
-                'Could not make file executable; continuing execution anyways',
-              );
-            }
-            callback(null);
-          },
-        );
+        exec(`chmod +x ${path.join(files.tempDir, entrypoint.slice(6))}`, (err) => {
+          if (err) {
+            logger.error('Could not make file executable; continuing execution anyways');
+          }
+          callback(null);
+        });
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null, files);
-    },
+    }
   );
 }
 
@@ -429,9 +414,7 @@ function runJob(info, callback) {
           {
             Image: runImage,
             // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
-            Env: Object.entries(jobEnvironment).map(([k, v]) =>
-              v === null ? k : `${k}=${v}`,
-            ),
+            Env: Object.entries(jobEnvironment).map(([k, v]) => (v === null ? k : `${k}=${v}`)),
             AttachStdout: true,
             AttachStderr: true,
             Tty: true,
@@ -452,7 +435,7 @@ function runJob(info, callback) {
           (err, container) => {
             if (ERR(err, callback)) return;
             callback(null, container);
-          },
+          }
         );
       },
       (container, callback) => {
@@ -469,7 +452,7 @@ function runJob(info, callback) {
               logger.info(`container> ${line.toString('utf8')}`);
             });
             callback(null, container);
-          },
+          }
         );
       },
       (container, callback) => {
@@ -511,9 +494,7 @@ function runJob(info, callback) {
           if (results.timedOut) {
             logger.info('Container timed out');
           } else {
-            logger.info(
-              `Container exited with exit code ${data.State.ExitCode}`,
-            );
+            logger.info(`Container exited with exit code ${data.State.ExitCode}`);
           }
           results.succeeded = !results.timedOut && data.State.ExitCode == 0;
           callback(null, container);
@@ -528,7 +509,7 @@ function runJob(info, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
@@ -539,38 +520,35 @@ function runJob(info, callback) {
         // Now that the job has completed, let's extract the results
         // First up: results.json
         if (results.succeeded) {
-          fs.readFile(
-            path.join(tempDir, 'results', 'results.json'),
-            (err, data) => {
-              if (err) {
-                logger.error('Could not read results.json');
+          fs.readFile(path.join(tempDir, 'results', 'results.json'), (err, data) => {
+            if (err) {
+              logger.error('Could not read results.json');
+              results.succeeded = false;
+              results.message = 'Could not read grading results.';
+              callback(null);
+            } else {
+              if (Buffer.byteLength(data) > 1024 * 1024) {
+                // Cap output at 1MB
                 results.succeeded = false;
-                results.message = 'Could not read grading results.';
-                callback(null);
-              } else {
-                if (Buffer.byteLength(data) > 1024 * 1024) {
-                  // Cap output at 1MB
-                  results.succeeded = false;
-                  results.message =
-                    'The grading results were larger than 1MB. ' +
-                    'If the problem persists, please contact course staff or a proctor.';
-                  return callback(null);
-                }
-
-                try {
-                  const parsedResults = JSON.parse(data);
-                  results.results = sanitizeObject(parsedResults);
-                  results.succeeded = true;
-                } catch (e) {
-                  logger.error('Could not parse results.json:', e);
-                  results.succeeded = false;
-                  results.message = 'Could not parse the grading results.';
-                }
-
-                callback(null);
+                results.message =
+                  'The grading results were larger than 1MB. ' +
+                  'If the problem persists, please contact course staff or a proctor.';
+                return callback(null);
               }
-            },
-          );
+
+              try {
+                const parsedResults = JSON.parse(data);
+                results.results = sanitizeObject(parsedResults);
+                results.succeeded = true;
+              } catch (e) {
+                logger.error('Could not parse results.json:', e);
+                results.succeeded = false;
+                results.message = 'Could not parse the grading results.';
+              }
+
+              callback(null);
+            }
+          });
         } else {
           if (results.timedOut) {
             results.message = `Your grading job did not complete within the time limit of ${timeout} seconds. Please fix your code before submitting again.`;
@@ -606,7 +584,7 @@ function runJob(info, callback) {
       } else {
         return callback(null, results);
       }
-    },
+    }
   );
 }
 
@@ -624,9 +602,7 @@ function uploadResults(info, callback) {
     [
       (callback) => {
         // Now we can send the results back to S3
-        logger.info(
-          `Uploading results.json to S3 bucket ${s3Bucket}/${s3RootKey}`,
-        );
+        logger.info(`Uploading results.json to S3 bucket ${s3Bucket}/${s3RootKey}`);
         const params = {
           Bucket: s3Bucket,
           Key: `${s3RootKey}/results.json`,
@@ -667,7 +643,7 @@ function uploadResults(info, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 
@@ -718,6 +694,6 @@ function uploadArchive(results, callback) {
       if (ERR(err, callback)) return;
       tempArchiveCleanup && tempArchiveCleanup();
       callback(null);
-    },
+    }
   );
 }

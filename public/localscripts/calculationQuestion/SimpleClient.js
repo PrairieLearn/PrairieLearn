@@ -1,10 +1,10 @@
-define([
-  'jquery',
-  'underscore',
-  'backbone',
-  'rivets',
-  'PrairieTemplate',
-], function ($, _, Backbone, rivets, PrairieTemplate) {
+define(['jquery', 'underscore', 'backbone', 'rivets', 'PrairieTemplate'], function (
+  $,
+  _,
+  Backbone,
+  rivets,
+  PrairieTemplate
+) {
   rivets.configure({
     templateDelimiters: ['{{', '}}'],
     adapter: {
@@ -67,20 +67,17 @@ define([
   rivets.formatters.cartesianVector = PrairieTemplate.cartesianVectorString;
   rivets.formatters.cylindricalVector = PrairieTemplate.cylindricalVectorString;
   rivets.formatters.vectorFixed = PrairieTemplate.vectorFixedString;
-  rivets.formatters.cartesianVectorFixed =
-    PrairieTemplate.cartesianVectorFixedString;
+  rivets.formatters.cartesianVectorFixed = PrairieTemplate.cartesianVectorFixedString;
   rivets.formatters.poly = PrairieTemplate.polyString;
   rivets.formatters.parenPoly = PrairieTemplate.parenPolyString;
   rivets.formatters.vectorPoly = PrairieTemplate.vectorPolyString;
-  rivets.formatters.cartesianVectorPoly =
-    PrairieTemplate.cartesianVectorPolyString;
+  rivets.formatters.cartesianVectorPoly = PrairieTemplate.cartesianVectorPolyString;
   rivets.formatters.scalarCoeff = PrairieTemplate.scalarCoeff;
   rivets.formatters.scalarProduct = PrairieTemplate.scalarProduct;
   rivets.formatters.fcn = PrairieTemplate.fcnString;
   rivets.formatters.parenFcn = PrairieTemplate.parenFcnString;
   rivets.formatters.vectorFcn = PrairieTemplate.vectorFcnString;
-  rivets.formatters.cartesianVectorFcn =
-    PrairieTemplate.cartesianVectorFcnString;
+  rivets.formatters.cartesianVectorFcn = PrairieTemplate.cartesianVectorFcnString;
   rivets.formatters.directionName = function (dir) {
     return dir > 0 ? 'counterclockwise' : 'clockwise';
   };
@@ -130,14 +127,14 @@ define([
         this.template,
         templateData,
         this.questionDataModel,
-        this.appModel,
+        this.appModel
       );
       if (this.options.templateTwice) {
         templatedHTML = PrairieTemplate.template(
           templatedHTML,
           {},
           this.questionDataModel,
-          this.appModel,
+          this.appModel
         );
       }
       this.$el.html(templatedHTML);
@@ -155,18 +152,14 @@ define([
           _.uniq(
             _.pluck(
               _.filter(this.rivetsView.bindings, function (binding) {
-                return (
-                  binding.key === 'submittedAnswer' &&
-                  binding.type === 'checkedoptional'
-                );
+                return binding.key === 'submittedAnswer' && binding.type === 'checkedoptional';
               }),
-              'keypath',
-            ),
+              'keypath'
+            )
           ),
           function (kp) {
-            if (!that.submittedAnswer.has(kp))
-              that.submittedAnswer.set(kp, false);
-          },
+            if (!that.submittedAnswer.has(kp)) that.submittedAnswer.set(kp, false);
+          }
         );
         _.each(
           _.uniq(
@@ -174,10 +167,10 @@ define([
               _.filter(this.rivetsView.bindings, function (binding) {
                 return binding.key === 'submittedAnswer';
               }),
-              'keypath',
-            ),
+              'keypath'
+            )
           ),
-          this.addAnswer.bind(this),
+          this.addAnswer.bind(this)
         );
       }
       this.checkSubmittable();
@@ -192,26 +185,14 @@ define([
 
     addAnswer: function (answerName) {
       this.answerAttributes.push({ name: answerName, required: true });
-      this.listenTo(
-        this.submittedAnswer,
-        'change:' + answerName,
-        this.checkSubmittable,
-      );
-      this.listenTo(
-        this.submittedAnswer,
-        'change:' + answerName,
-        this.answerChanged,
-      );
+      this.listenTo(this.submittedAnswer, 'change:' + answerName, this.checkSubmittable);
+      this.listenTo(this.submittedAnswer, 'change:' + answerName, this.answerChanged);
       this.checkSubmittable();
     },
 
     addOptionalAnswer: function (answerName) {
       this.answerAttributes.push({ name: answerName, required: false });
-      this.listenTo(
-        this.submittedAnswer,
-        'change:' + answerName,
-        this.answerChanged,
-      );
+      this.listenTo(this.submittedAnswer, 'change:' + answerName, this.answerChanged);
     },
 
     checkSubmittable: function () {
@@ -243,7 +224,7 @@ define([
       for (i = 0; i < this.answerAttributes.length; i++) {
         if (this.submittedAnswer.has(this.answerAttributes[i].name)) {
           answerData[this.answerAttributes[i].name] = this.submittedAnswer.get(
-            this.answerAttributes[i].name,
+            this.answerAttributes[i].name
           );
         }
       }
@@ -279,14 +260,14 @@ define([
         this.template,
         templateData,
         this.questionDataModel,
-        this.appModel,
+        this.appModel
       );
       if (this.options.templateTwice) {
         templatedHTML = PrairieTemplate.template(
           templatedHTML,
           {},
           this.questionDataModel,
-          this.appModel,
+          this.appModel
         );
       }
       this.$el.html(templatedHTML);
@@ -334,14 +315,14 @@ define([
         this.template,
         templateData,
         this.questionDataModel,
-        this.appModel,
+        this.appModel
       );
       if (this.options.templateTwice) {
         templatedHTML = PrairieTemplate.template(
           templatedHTML,
           {},
           this.questionDataModel,
-          this.appModel,
+          this.appModel
         );
       }
       this.$el.html(templatedHTML);
@@ -391,7 +372,7 @@ define([
     questionDivID,
     changeCallback,
     questionDataModel,
-    appModel,
+    appModel
   ) {
     var that = this;
     //this.listenTo(this.model, "answerChanged", changeCallback);
@@ -414,11 +395,7 @@ define([
     this.questionView.render();
   };
 
-  SimpleClient.prototype.renderAnswer = function (
-    answerDivID,
-    questionDataModel,
-    appModel,
-  ) {
+  SimpleClient.prototype.renderAnswer = function (answerDivID, questionDataModel, appModel) {
     var that = this;
     this.answerView = new AnswerView({
       el: answerDivID,
@@ -445,7 +422,7 @@ define([
     appModel,
     submittedAnswer,
     feedback,
-    submissionIndex,
+    submissionIndex
   ) {
     var that = this;
     feedback = feedback || {};

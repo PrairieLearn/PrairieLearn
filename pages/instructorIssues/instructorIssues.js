@@ -106,11 +106,7 @@ router.get('/', function (req, res, next) {
   sqldb.query(sql.issues_count, params, function (err, result) {
     if (ERR(err, next)) return;
     if (result.rowCount != 2)
-      return next(
-        new Error(
-          'unable to obtain issue count, rowCount = ' + result.rowCount,
-        ),
-      );
+      return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
     res.locals.closedCount = result.rows[0].count;
     res.locals.openCount = result.rows[1].count;
 
@@ -127,18 +123,17 @@ router.get('/', function (req, res, next) {
       if (ERR(err, next)) return;
 
       // Set of IDs of course instances to which the effective user has access
-      const linkable_course_instance_ids =
-        res.locals.authz_data.course_instances.reduce((acc, ci) => {
+      const linkable_course_instance_ids = res.locals.authz_data.course_instances.reduce(
+        (acc, ci) => {
           acc.add(ci.id);
           return acc;
-        }, new Set());
+        },
+        new Set()
+      );
 
       res.locals.issueCount = result.rowCount ? result.rows[0].issue_count : 0;
 
-      _.assign(
-        res.locals,
-        paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE),
-      );
+      _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE));
       res.locals.shouldPaginate = res.locals.issueCount > PAGE_SIZE;
 
       result.rows.forEach((row) => {
@@ -149,8 +144,8 @@ router.get('/', function (req, res, next) {
           if (!row.course_instance_id)
             return next(
               new Error(
-                `Issue id ${row.issue_id} is associated with an assessment but not a course instance`,
-              ),
+                `Issue id ${row.issue_id} is associated with an assessment but not a course instance`
+              )
             );
 
           // Each issue is associated with a question variant. If an issue is also
@@ -161,7 +156,7 @@ router.get('/', function (req, res, next) {
           //
           // Add a flag to each row saying if the effective user has this access.
           row.assessment.hide_link = !linkable_course_instance_ids.has(
-            parseInt(row.course_instance_id),
+            parseInt(row.course_instance_id)
           );
 
           // If necessary, construct the URL prefix to the appropriate course instance
@@ -248,7 +243,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

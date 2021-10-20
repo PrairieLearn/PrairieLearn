@@ -3,9 +3,7 @@ const async = require('async');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const config = require('../../lib/config');
 
 const sqldb = require('../../prairielib/lib/sql-db');
@@ -35,7 +33,7 @@ router.get('/', function (req, res, next) {
             if (ERR(err, callback)) return;
             res.locals.tids = result.rows[0].tids;
             callback(null);
-          },
+          }
         );
       },
     ],
@@ -56,11 +54,11 @@ router.get('/', function (req, res, next) {
           res.locals.course_instance.short_name,
           'assessments',
           res.locals.assessment.tid,
-          'infoAssessment.json',
-        ),
+          'infoAssessment.json'
+        )
       );
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 });
 
@@ -78,7 +76,7 @@ router.post('/', function (req, res, next) {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
         } else {
           debug(
-            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`,
+            `Get assessment_id from uuid=${editor.uuid} with course_instance_id=${res.locals.course_instance.id}`
           );
           sqldb.queryOneRow(
             sql.select_assessment_id_from_uuid,
@@ -89,12 +87,9 @@ router.post('/', function (req, res, next) {
             (err, result) => {
               if (ERR(err, next)) return;
               res.redirect(
-                res.locals.urlPrefix +
-                  '/assessment/' +
-                  result.rows[0].assessment_id +
-                  '/settings',
+                res.locals.urlPrefix + '/assessment/' + result.rows[0].assessment_id + '/settings'
               );
-            },
+            }
           );
         }
       });
@@ -116,21 +111,18 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action == 'change_id') {
     debug(`Change tid from ${res.locals.assessment.tid} to ${req.body.id}`);
-    if (!req.body.id)
-      return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
+    if (!req.body.id) return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id))
       return next(
         new Error(
-          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
-        ),
+          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`
+        )
       );
     let tid_new;
     try {
       tid_new = path.normalize(req.body.id);
     } catch (err) {
-      return next(
-        new Error(`Invalid TID (could not be normalized): ${req.body.id}`),
-      );
+      return next(new Error(`Invalid TID (could not be normalized): ${req.body.id}`));
     }
     if (res.locals.assessment.tid == tid_new) {
       debug('The new tid is the same as the old tid - do nothing');
@@ -145,9 +137,7 @@ router.post('/', function (req, res, next) {
         if (ERR(err, next)) return;
         editor.doEdit((err, job_sequence_id) => {
           if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-            res.redirect(
-              res.locals.urlPrefix + '/edit_error/' + job_sequence_id,
-            );
+            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
           } else {
             res.redirect(req.originalUrl);
           }
@@ -159,7 +149,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

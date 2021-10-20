@@ -39,10 +39,7 @@ function checkEntity(syncedEntity, entity) {
 
 function checkEntityOrder(entityName, syncedEntities, courseData) {
   courseData.course[entityName].forEach((entity, index) => {
-    assert.equal(
-      syncedEntities.find((e) => e.name === entity.name).number,
-      index + 1,
-    );
+    assert.equal(syncedEntities.find((e) => e.name === entity.name).number, index + 1);
   });
 }
 
@@ -99,13 +96,8 @@ async function testDuplicate(entityName) {
   const syncedEntity = syncedEntities.find((as) => as.name === newEntity1.name);
   checkEntity(syncedEntity, newEntity2);
   const syncedCourses = await util.dumpTable('pl_courses');
-  const syncedCourse = syncedCourses.find(
-    (c) => c.short_name === courseData.course.name,
-  );
-  assert.match(
-    syncedCourse.sync_warnings,
-    new RegExp(`Found duplicate ${entityName}`),
-  );
+  const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
+  assert.match(syncedCourse.sync_warnings, new RegExp(`Found duplicate ${entityName}`));
 }
 
 describe('Tag/topic syncing', () => {

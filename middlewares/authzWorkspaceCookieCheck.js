@@ -10,11 +10,9 @@ module.exports = (req, res, next) => {
   const cookieName = `pl_authz_workspace_${workspace_id}`;
   if (cookieName in req.cookies) {
     // if we have a workspace authz cookie then we try and unpack it
-    const cookieData = csrf.getCheckedData(
-      req.cookies[cookieName],
-      config.secretKey,
-      { maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds },
-    );
+    const cookieData = csrf.getCheckedData(req.cookies[cookieName], config.secretKey, {
+      maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds,
+    });
 
     // if we have a valid cookie with matching workspace_id then
     // short-circuit the current router to skip the rest of

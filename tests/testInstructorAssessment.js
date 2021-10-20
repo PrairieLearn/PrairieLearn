@@ -34,8 +34,7 @@ describe('Instructor assessment editing', function () {
           instance_question_points: 0,
           instance_question_score_perc: (0 / 5) * 100,
           assessment_instance_points: 0,
-          assessment_instance_score_perc:
-            (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -62,8 +61,7 @@ describe('Instructor assessment editing', function () {
           instance_question_points: 3,
           instance_question_score_perc: (3 / 5) * 100,
           assessment_instance_points: 3,
-          assessment_instance_score_perc:
-            (3 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -90,8 +88,7 @@ describe('Instructor assessment editing', function () {
           instance_question_points: 11,
           instance_question_score_perc: (11 / 11) * 100,
           assessment_instance_points: 14,
-          assessment_instance_score_perc:
-            (14 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (14 / helperExam.assessmentMaxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -109,19 +106,16 @@ describe('Instructor assessment editing', function () {
 
   describe('4. GET to instructor assessments URL', function () {
     it('should load successfully', function (callback) {
-      request(
-        locals.instructorAssessmentsUrl,
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request(locals.instructorAssessmentsUrl, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -131,32 +125,27 @@ describe('Instructor assessment editing', function () {
       assert.lengthOf(elemList, 1);
     });
     it('should have the correct link for E1', function () {
-      locals.instructorAssessmentUrl =
-        locals.siteUrl + elemList[0].attribs.href;
+      locals.instructorAssessmentUrl = locals.siteUrl + elemList[0].attribs.href;
       assert.equal(
         locals.instructorAssessmentUrl,
-        locals.instructorBaseUrl + '/assessment/' + locals.assessment_id + '/',
+        locals.instructorBaseUrl + '/assessment/' + locals.assessment_id + '/'
       );
     });
   });
 
   describe('5. GET to instructor assessment instances URL', function () {
     it('should load successfully', function (callback) {
-      locals.instructorAssessmentInstancesUrl =
-        locals.instructorAssessmentUrl + 'instances';
-      request(
-        locals.instructorAssessmentInstancesUrl,
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      locals.instructorAssessmentInstancesUrl = locals.instructorAssessmentUrl + 'instances';
+      request(locals.instructorAssessmentInstancesUrl, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -164,19 +153,16 @@ describe('Instructor assessment editing', function () {
     it('should load raw data file successfully', function (callback) {
       locals.instructorAssessmentInstancesUrl =
         locals.instructorAssessmentUrl + 'instances/raw_data.json';
-      request(
-        locals.instructorAssessmentInstancesUrl,
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request(locals.instructorAssessmentInstancesUrl, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse as JSON array of objects', function () {
       locals.pageData = JSON.parse(page);
@@ -184,33 +170,25 @@ describe('Instructor assessment editing', function () {
       locals.pageData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain the assessment instance', function () {
-      elemList = _.filter(
-        locals.pageData,
-        (row) => row.uid == 'dev@illinois.edu',
-      );
+      elemList = _.filter(locals.pageData, (row) => row.uid == 'dev@illinois.edu');
       assert.lengthOf(elemList, 1);
       locals.instructorAssessmentInstanceUrl =
-        locals.instructorBaseUrl +
-        '/assessment_instance/' +
-        elemList[0].assessment_instance_id;
+        locals.instructorBaseUrl + '/assessment_instance/' + elemList[0].assessment_instance_id;
     });
   });
 
   describe('6. GET to instructor assessment instance URL', function () {
     it('should load successfully', function (callback) {
-      request(
-        locals.instructorAssessmentInstanceUrl,
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request(locals.instructorAssessmentInstanceUrl, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -220,7 +198,7 @@ describe('Instructor assessment editing', function () {
   describe('7. edit-question-points form', function () {
     it('should exist', function () {
       elemList = locals.$(
-        '#instanceQuestionList td:contains("addNumbers") ~ td .editQuestionPointsButton',
+        '#instanceQuestionList td:contains("addNumbers") ~ td .editQuestionPointsButton'
       );
       assert.lengthOf(elemList, 1);
     });
@@ -277,13 +255,11 @@ describe('Instructor assessment editing', function () {
           }
           locals.postEndTime = Date.now();
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {
@@ -300,7 +276,7 @@ describe('Instructor assessment editing', function () {
   describe('9. edit-question-score-perc form', function () {
     it('should exist', function () {
       elemList = locals.$(
-        '#instanceQuestionList td:contains("addNumbers") ~ td .editQuestionScorePercButton',
+        '#instanceQuestionList td:contains("addNumbers") ~ td .editQuestionScorePercButton'
       );
       assert.lengthOf(elemList, 1);
     });
@@ -357,13 +333,11 @@ describe('Instructor assessment editing', function () {
           }
           locals.postEndTime = Date.now();
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {
@@ -436,13 +410,11 @@ describe('Instructor assessment editing', function () {
           }
           locals.postEndTime = Date.now();
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {
@@ -515,13 +487,11 @@ describe('Instructor assessment editing', function () {
           }
           locals.postEndTime = Date.now();
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {
@@ -531,10 +501,7 @@ describe('Instructor assessment editing', function () {
       elemList = locals.$('#total-points');
       assert.lengthOf(elemList, 1);
       const totalPoints = Number.parseFloat(elemList[0].children[0].data);
-      assert.equal(
-        totalPoints,
-        (assessmentSetScorePerc / 100) * helperExam.assessmentMaxPoints,
-      );
+      assert.equal(totalPoints, (assessmentSetScorePerc / 100) * helperExam.assessmentMaxPoints);
     });
   });
 
@@ -562,19 +529,16 @@ describe('Instructor assessment editing', function () {
       assert.isString(locals.__csrf_token);
     });
     it('should load raw data file successfully', function (callback) {
-      request(
-        locals.instructorGradebookUrl + '/raw_data.json',
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode != 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request(locals.instructorGradebookUrl + '/raw_data.json', function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse as JSON array of objects', function () {
       locals.gradebookData = JSON.parse(page);
@@ -584,21 +548,18 @@ describe('Instructor assessment editing', function () {
     it('should contain a row for the dev user', function () {
       locals.gradebookDataRow = _.filter(
         locals.gradebookData,
-        (row) => row.uid == 'dev@illinois.edu',
+        (row) => row.uid == 'dev@illinois.edu'
       );
       assert.lengthOf(locals.gradebookDataRow, 1);
     });
     it('should contain the correct score in the dev user row', function () {
       assert.equal(
         locals.gradebookDataRow[0][`score_${locals.assessment_id}`],
-        assessmentSetScorePerc,
+        assessmentSetScorePerc
       );
     });
     it('should contain the correct assessment instance id in the dev user row', function () {
-      assert.equal(
-        locals.gradebookDataRow[0][`score_${locals.assessment_id}_ai_id`],
-        1,
-      );
+      assert.equal(locals.gradebookDataRow[0][`score_${locals.assessment_id}_ai_id`], 1);
     });
   });
 
@@ -622,13 +583,11 @@ describe('Instructor assessment editing', function () {
           }
           locals.postEndTime = Date.now();
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {

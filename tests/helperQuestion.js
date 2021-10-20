@@ -52,18 +52,13 @@ module.exports = {
     describe('GET to instance_question URL', function () {
       it('should load successfully', function (callback) {
         var questionUrl =
-          locals.questionBaseUrl +
-          '/' +
-          locals.question.id +
-          (locals.questionPreviewTabUrl || '');
+          locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
         request(questionUrl, function (error, response, body) {
           if (error) {
             return callback(error);
           }
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
@@ -86,9 +81,7 @@ module.exports = {
       it('base64 data should parse to JSON if Calculation', function () {
         if (locals.question.type != 'Calculation') return;
         locals.questionData = JSON.parse(
-          decodeURIComponent(
-            Buffer.from(elemList[0].children[0].data, 'base64').toString(),
-          ),
+          decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString())
         );
       });
       it('should have a variant_id in the questionData if Calculation', function () {
@@ -243,10 +236,7 @@ module.exports = {
           throw Error('bad question.type:' + locals.question.type);
         }
         var questionUrl =
-          locals.questionBaseUrl +
-          '/' +
-          locals.question.id +
-          (locals.questionPreviewTabUrl || '');
+          locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
         locals.preEndTime = Date.now();
         request.post(
           { url: questionUrl, form: form, followAllRedirects: true },
@@ -256,13 +246,11 @@ module.exports = {
             }
             locals.postEndTime = Date.now();
             if (response.statusCode != 200) {
-              return callback(
-                new Error('bad status: ' + response.statusCode + '\n' + body),
-              );
+              return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             page = body;
             callback(null);
-          },
+          }
         );
       });
       it('should parse', function () {
@@ -273,9 +261,7 @@ module.exports = {
         sqldb.query(sql.select_last_submission, params, function (err, result) {
           if (ERR(err, callback)) return;
           if (result.rowCount != 1) {
-            return callback(
-              new Error('expected one submission, got: ' + result.rowCount),
-            );
+            return callback(new Error('expected one submission, got: ' + result.rowCount));
           }
           locals.submission = result.rows[0];
           callback(null);
@@ -290,20 +276,14 @@ module.exports = {
       });
       it('should select the assessment_instance duration from the DB if student page', function (callback) {
         if (!locals.isStudentPage) return callback(null);
-        sqldb.query(
-          sql.select_assessment_instance_durations,
-          [],
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            if (result.rowCount != 1) {
-              return callback(
-                new Error('expected one row, got: ' + result.rowCount),
-              );
-            }
-            locals.assessment_instance_duration = result.rows[0].duration;
-            callback(null);
-          },
-        );
+        sqldb.query(sql.select_assessment_instance_durations, [], function (err, result) {
+          if (ERR(err, callback)) return;
+          if (result.rowCount != 1) {
+            return callback(new Error('expected one row, got: ' + result.rowCount));
+          }
+          locals.assessment_instance_duration = result.rows[0].duration;
+          callback(null);
+        });
       });
       it('should have the correct assessment_instance duration if student page', function () {
         if (!locals.isStudentPage) return;
@@ -342,10 +322,7 @@ module.exports = {
           throw Error('bad question.type:' + locals.question.type);
         }
         var questionUrl =
-          locals.questionBaseUrl +
-          '/' +
-          locals.question.id +
-          (locals.questionPreviewTabUrl || '');
+          locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
         request.post(
           { url: questionUrl, form: form, followAllRedirects: true },
           function (error, response, body) {
@@ -354,14 +331,12 @@ module.exports = {
             }
             if (response.statusCode != 400 && response.statusCode != 500) {
               return callback(
-                new Error(
-                  'bad status (expected 400 or 500): ' + response.statusCode,
-                ),
+                new Error('bad status (expected 400 or 500): ' + response.statusCode)
               );
             }
             page = body;
             callback(null);
-          },
+          }
         );
       });
     });
@@ -373,27 +348,17 @@ module.exports = {
         var params = {
           question_id: locals.question.id,
         };
-        sqldb.queryOneRow(
-          sql.select_last_submission_for_question,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            locals.submission = result.rows[0];
-            callback(null);
-          },
-        );
+        sqldb.queryOneRow(sql.select_last_submission_for_question, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          locals.submission = result.rows[0];
+          callback(null);
+        });
       });
       it('should be graded with expected score', function () {
-        assert.equal(
-          locals.submission.score,
-          locals.expectedResult.submission_score,
-        );
+        assert.equal(locals.submission.score, locals.expectedResult.submission_score);
       });
       it('should be graded with expected correctness', function () {
-        assert.equal(
-          locals.submission.correct,
-          locals.expectedResult.submission_correct,
-        );
+        assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
       });
     });
   },
@@ -401,8 +366,7 @@ module.exports = {
   checkQuestionScore(locals) {
     describe('check question score', function () {
       it('should have the submission', function (callback) {
-        if (!_.has(locals.expectedResult, 'submission_score'))
-          return callback(null); // skip check
+        if (!_.has(locals.expectedResult, 'submission_score')) return callback(null); // skip check
         var params = {
           instance_question_id: locals.question.id,
         };
@@ -413,49 +377,39 @@ module.exports = {
             if (ERR(err, callback)) return;
             locals.submission = result.rows[0];
             callback(null);
-          },
+          }
         );
       });
       it('should be graded with expected score', function () {
         if (!_.has(locals.expectedResult, 'submission_score')) return; // skip check
-        assert.equal(
-          locals.submission.score,
-          locals.expectedResult.submission_score,
-        );
+        assert.equal(locals.submission.score, locals.expectedResult.submission_score);
       });
       it('should be graded with expected correctness', function () {
         if (!_.has(locals.expectedResult, 'submission_score')) return; // skip check
-        assert.equal(
-          locals.submission.correct,
-          locals.expectedResult.submission_correct,
-        );
+        assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
       });
       it('should still have the instance_question', function (callback) {
         var params = {
           instance_question_id: locals.question.id,
         };
-        sqldb.queryOneRow(
-          sql.select_instance_question,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            locals.instance_question = result.rows[0];
-            callback(null);
-          },
-        );
+        sqldb.queryOneRow(sql.select_instance_question, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          locals.instance_question = result.rows[0];
+          callback(null);
+        });
       });
       it('should have the correct instance_question points', function () {
         assert.approximately(
           locals.instance_question.points,
           locals.expectedResult.instance_question_points,
-          1e-6,
+          1e-6
         );
       });
       it('should have the correct instance_question score_perc', function () {
         assert.approximately(
           locals.instance_question.score_perc,
           locals.expectedResult.instance_question_score_perc,
-          1e-6,
+          1e-6
         );
       });
     });
@@ -467,28 +421,24 @@ module.exports = {
         var params = {
           assessment_instance_id: locals.assessment_instance.id,
         };
-        sqldb.queryOneRow(
-          sql.select_assessment_instance,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            locals.assessment_instance = result.rows[0];
-            callback(null);
-          },
-        );
+        sqldb.queryOneRow(sql.select_assessment_instance, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          locals.assessment_instance = result.rows[0];
+          callback(null);
+        });
       });
       it('should have the correct assessment_instance points', function () {
         assert.approximately(
           locals.assessment_instance.points,
           locals.expectedResult.assessment_instance_points,
-          1e-6,
+          1e-6
         );
       });
       it('should have the correct assessment_instance score_perc', function () {
         assert.approximately(
           locals.assessment_instance.score_perc,
           locals.expectedResult.assessment_instance_score_perc,
-          1e-6,
+          1e-6
         );
       });
     });
@@ -502,21 +452,17 @@ module.exports = {
           qid: locals.expectedFeedback.qid,
           submission_id: locals.expectedFeedback.submission_id || null,
         };
-        sqldb.queryOneRow(
-          sql.select_question_feedback,
-          params,
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            locals.question_feedback = result.rows[0];
-            callback(null);
-          },
-        );
+        sqldb.queryOneRow(sql.select_question_feedback, params, function (err, result) {
+          if (ERR(err, callback)) return;
+          locals.question_feedback = result.rows[0];
+          callback(null);
+        });
       });
       it('should have the correct feedback', function () {
         for (const p in locals.expectedFeedback.feedback) {
           assert.deepEqual(
             locals.question_feedback.feedback[p],
-            locals.expectedFeedback.feedback[p],
+            locals.expectedFeedback.feedback[p]
           );
         }
       });
@@ -531,29 +477,22 @@ module.exports = {
           '/instructor/assessment/' +
           locals.assessment_id +
           '/regrading';
-        request(
-          { url: locals.instructorAssessmentRegradingUrl },
-          function (error, response, body) {
-            if (error) {
-              return callback(error);
-            }
-            if (response.statusCode != 200) {
-              return callback(
-                new Error('bad status: ' + response.statusCode + '\n' + body),
-              );
-            }
-            page = body;
-            callback(null);
-          },
-        );
+        request({ url: locals.instructorAssessmentRegradingUrl }, function (error, response, body) {
+          if (error) {
+            return callback(error);
+          }
+          if (response.statusCode != 200) {
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+          }
+          page = body;
+          callback(null);
+        });
       });
       it('should parse', function () {
         locals.$ = cheerio.load(page);
       });
       it('should have a CSRF token', function () {
-        elemList = locals.$(
-          'form[name="regrade-all-form"] input[name="__csrf_token"]',
-        );
+        elemList = locals.$('form[name="regrade-all-form"] input[name="__csrf_token"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -577,12 +516,10 @@ module.exports = {
               return callback(error);
             }
             if (response.statusCode != 200) {
-              return callback(
-                new Error('bad status: ' + response.statusCode + '\n' + body),
-              );
+              return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             callback(null);
-          },
+          }
         );
       });
     });
@@ -597,30 +534,25 @@ module.exports = {
           '/instructor/assessment/' +
           locals.assessment_id +
           '/uploads';
-        request(
-          { url: locals.instructorAssessmentUploadsUrl },
-          function (error, response, body) {
-            if (error) {
-              return callback(error);
-            }
-            if (response.statusCode != 200) {
-              console.log(response);
-              console.log(body);
-              return callback(
-                new Error('bad status: ' + response.statusCode + '\n' + body),
-              );
-            }
-            page = body;
-            callback(null);
-          },
-        );
+        request({ url: locals.instructorAssessmentUploadsUrl }, function (error, response, body) {
+          if (error) {
+            return callback(error);
+          }
+          if (response.statusCode != 200) {
+            console.log(response);
+            console.log(body);
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+          }
+          page = body;
+          callback(null);
+        });
       });
       it('should parse', function () {
         locals.$ = cheerio.load(page);
       });
       it('should have a CSRF token', function () {
         elemList = locals.$(
-          'form[name="upload-instance-question-scores-form"] input[name="__csrf_token"]',
+          'form[name="upload-instance-question-scores-form"] input[name="__csrf_token"]'
         );
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -654,12 +586,10 @@ module.exports = {
             if (response.statusCode != 200) {
               console.log(response);
               console.log(body);
-              return callback(
-                new Error('bad status: ' + response.statusCode + '\n' + body),
-              );
+              return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             callback(null);
-          },
+          }
         );
       });
     });
@@ -674,30 +604,25 @@ module.exports = {
           '/instructor/assessment/' +
           locals.assessment_id +
           '/uploads';
-        request(
-          { url: locals.instructorAssessmentUploadsUrl },
-          function (error, response, body) {
-            if (error) {
-              return callback(error);
-            }
-            if (response.statusCode != 200) {
-              console.log(response);
-              console.log(body);
-              return callback(
-                new Error('bad status: ' + response.statusCode + '\n' + body),
-              );
-            }
-            page = body;
-            callback(null);
-          },
-        );
+        request({ url: locals.instructorAssessmentUploadsUrl }, function (error, response, body) {
+          if (error) {
+            return callback(error);
+          }
+          if (response.statusCode != 200) {
+            console.log(response);
+            console.log(body);
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+          }
+          page = body;
+          callback(null);
+        });
       });
       it('should parse', function () {
         locals.$ = cheerio.load(page);
       });
       it('should have a CSRF token', function () {
         elemList = locals.$(
-          'form[name="upload-assessment-instance-scores-form"] input[name="__csrf_token"]',
+          'form[name="upload-assessment-instance-scores-form"] input[name="__csrf_token"]'
         );
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -731,12 +656,10 @@ module.exports = {
             if (response.statusCode != 200) {
               console.log(response);
               console.log(body);
-              return callback(
-                new Error('bad status: ' + response.statusCode + '\n' + body),
-              );
+              return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             callback(null);
-          },
+          }
         );
       });
     });
@@ -747,20 +670,14 @@ module.exports = {
     describe('auto-testing question ' + qid, function () {
       describe('the setup', function () {
         it('should find the question in the database', function (callback) {
-          sqldb.queryZeroOrOneRow(
-            sql.select_question_by_qid,
-            { qid },
-            function (err, result) {
-              if (ERR(err, callback)) return;
-              if (result.rowCount == 0) {
-                return callback(
-                  new Error(`QID "${qid}" not found in the database`),
-                );
-              }
-              locals.question = result.rows[0];
-              callback(null);
-            },
-          );
+          sqldb.queryZeroOrOneRow(sql.select_question_by_qid, { qid }, function (err, result) {
+            if (ERR(err, callback)) return;
+            if (result.rowCount == 0) {
+              return callback(new Error(`QID "${qid}" not found in the database`));
+            }
+            locals.question = result.rows[0];
+            callback(null);
+          });
         });
         it('should be a Freeform question', function () {
           assert.equal(locals.question.type, 'Freeform');
@@ -779,8 +696,8 @@ module.exports = {
               callback(
                 new Error(
                   `found ${result.rowCount} issues (expected zero issues):\n` +
-                    JSON.stringify(result.rows, null, '    '),
-                ),
+                    JSON.stringify(result.rows, null, '    ')
+                )
               );
               return;
             }
@@ -800,9 +717,7 @@ module.exports = {
               return callback(error);
             }
             if (response.statusCode != 200) {
-              return callback(
-                new Error('bad status: ' + response.statusCode + '\n' + body),
-              );
+              return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             page = body;
             callback(null);
@@ -812,9 +727,7 @@ module.exports = {
           locals.$ = cheerio.load(page);
         });
         it('should have a CSRF token', function () {
-          elemList = locals.$(
-            'form[name="question-tests-form"] input[name="__csrf_token"]',
-          );
+          elemList = locals.$('form[name="question-tests-form"] input[name="__csrf_token"]');
           assert.lengthOf(elemList, 1);
           assert.nestedProperty(elemList[0], 'attribs.value');
           locals.__csrf_token = elemList[0].attribs.value;
@@ -839,12 +752,10 @@ module.exports = {
                 return callback(error);
               }
               if (response.statusCode != 200) {
-                return callback(
-                  new Error('bad status: ' + response.statusCode + '\n' + body),
-                );
+                return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
               }
               callback(null);
-            },
+            }
           );
         });
         it('should have an id', function (callback) {
@@ -857,19 +768,15 @@ module.exports = {
         it('should complete', function (callback) {
           var checkComplete = function () {
             var params = { job_sequence_id: locals.job_sequence_id };
-            sqldb.queryOneRow(
-              sql.select_job_sequence,
-              params,
-              (err, result) => {
-                if (ERR(err, callback)) return;
-                locals.job_sequence_status = result.rows[0].status;
-                if (locals.job_sequence_status == 'Running') {
-                  setTimeout(checkComplete, 10);
-                } else {
-                  callback(null);
-                }
-              },
-            );
+            sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+              if (ERR(err, callback)) return;
+              locals.job_sequence_status = result.rows[0].status;
+              if (locals.job_sequence_status == 'Running') {
+                setTimeout(checkComplete, 10);
+              } else {
+                callback(null);
+              }
+            });
           };
           setTimeout(checkComplete, 10);
         });
@@ -883,8 +790,8 @@ module.exports = {
               callback(
                 new Error(
                   `found ${result.rowCount} issues (expected zero issues):\n` +
-                    JSON.stringify(result.rows, null, '    '),
-                ),
+                    JSON.stringify(result.rows, null, '    ')
+                )
               );
               return;
             }
@@ -903,8 +810,8 @@ module.exports.checkNoIssuesForLastVariant = (callback) => {
       callback(
         new Error(
           `found ${result.rowCount} issues (expected zero issues):\n` +
-            JSON.stringify(result.rows, null, '    '),
-        ),
+            JSON.stringify(result.rows, null, '    ')
+        )
       );
       return;
     }
@@ -912,5 +819,5 @@ module.exports.checkNoIssuesForLastVariant = (callback) => {
   });
 };
 module.exports.checkNoIssuesForLastVariantAsync = util.promisify(
-  module.exports.checkNoIssuesForLastVariant,
+  module.exports.checkNoIssuesForLastVariant
 );

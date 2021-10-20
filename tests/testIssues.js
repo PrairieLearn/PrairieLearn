@@ -12,10 +12,8 @@ const helperServer = require('./helperServer');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const questionUrl =
-  baseUrl + '/course_instance/1/instructor/question/1/preview';
-const courseInstanceIssuesUrl =
-  baseUrl + '/course_instance/1/instructor/course_admin/issues';
+const questionUrl = baseUrl + '/course_instance/1/instructor/question/1/preview';
+const courseInstanceIssuesUrl = baseUrl + '/course_instance/1/instructor/course_admin/issues';
 const courseIssuesUrl = baseUrl + '/course/1/course_admin/issues';
 
 const locals = {};
@@ -76,8 +74,8 @@ function doTest(questionUrl, issuesUrl, label) {
           callback(
             new Error(
               `found ${result.rowCount} issues (expected one issue):\n` +
-                JSON.stringify(result.rows, null, '    '),
-            ),
+                JSON.stringify(result.rows, null, '    ')
+            )
           );
           return;
         }
@@ -91,9 +89,7 @@ function doTest(questionUrl, issuesUrl, label) {
     });
 
     it('should have a __csrf_token', () => {
-      elemList = locals.$(
-        'div[id="closeAllIssuesModal"] input[name="__csrf_token"]',
-      );
+      elemList = locals.$('div[id="closeAllIssuesModal"] input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
@@ -122,8 +118,8 @@ function doTest(questionUrl, issuesUrl, label) {
           callback(
             new Error(
               `found ${result.rowCount} issues (expected zero issues):\n` +
-                JSON.stringify(result.rows, null, '    '),
-            ),
+                JSON.stringify(result.rows, null, '    ')
+            )
           );
           return;
         }

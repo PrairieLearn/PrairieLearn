@@ -47,11 +47,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   const assessment = assessmentInfoFile.data;
 
   const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
-  const allowRealTimeGrading = !!_.get(
-    assessment,
-    'allowRealTimeGrading',
-    true,
-  );
+  const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
   const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
 
   const assessmentParams = {
@@ -68,11 +64,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     max_bonus_points: assessment.maxBonusPoints,
     set_name: assessment.set,
     text: assessment.text,
-    constant_question_value: !!_.get(
-      assessment,
-      'constantQuestionValue',
-      false,
-    ),
+    constant_question_value: !!_.get(assessment, 'constantQuestionValue', false),
     group_work: !!assessment.groupWork,
     group_max_size: assessment.groupMaxSize || null,
     group_min_size: assessment.groupMinSize || null,
@@ -87,38 +79,21 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   // non-empty role that is not Student.
   const allowAccess = assessment.allowAccess || [];
   assessmentParams.allowAccess = allowAccess
-    .filter(
-      (accessRule) =>
-        !_(accessRule).has('role') || accessRule.role == 'Student',
-    )
+    .filter((accessRule) => !_(accessRule).has('role') || accessRule.role == 'Student')
     .map((accessRule, index) => {
       return {
         number: index + 1,
         mode: _(accessRule).has('mode') ? accessRule.mode : null,
         uids: _(accessRule).has('uids') ? accessRule.uids : null,
-        start_date: _(accessRule).has('startDate')
-          ? accessRule.startDate
-          : null,
+        start_date: _(accessRule).has('startDate') ? accessRule.startDate : null,
         end_date: _(accessRule).has('endDate') ? accessRule.endDate : null,
         credit: _(accessRule).has('credit') ? accessRule.credit : null,
-        time_limit_min: _(accessRule).has('timeLimitMin')
-          ? accessRule.timeLimitMin
-          : null,
+        time_limit_min: _(accessRule).has('timeLimitMin') ? accessRule.timeLimitMin : null,
         password: _(accessRule).has('password') ? accessRule.password : null,
-        seb_config: _(accessRule).has('SEBConfig')
-          ? accessRule.SEBConfig
-          : null,
+        seb_config: _(accessRule).has('SEBConfig') ? accessRule.SEBConfig : null,
         exam_uuid: _(accessRule).has('examUuid') ? accessRule.examUuid : null,
-        show_closed_assessment: !!_.get(
-          accessRule,
-          'showClosedAssessment',
-          true,
-        ),
-        show_closed_assessment_score: !!_.get(
-          accessRule,
-          'showClosedAssessmentScore',
-          true,
-        ),
+        show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
+        show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
         active: !!_.get(accessRule, 'active', true),
       };
     });
@@ -228,7 +203,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             question_id: questionId,
             number_in_alternative_group: alternativeIndex + 1,
           };
-        },
+        }
       );
 
       return alternativeGroupParams;
@@ -247,12 +222,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
  * @param {{ [aid: string]: import('../infofile').InfoFile<import('../course-db').Assessment> }} assessments
  * @param {{ [qid: string]: any }} questionIds
  */
-module.exports.sync = async function (
-  courseId,
-  courseInstanceId,
-  assessments,
-  questionIds,
-) {
+module.exports.sync = async function (courseId, courseInstanceId, assessments, questionIds) {
   if (config.checkAccessRulesExamUuid) {
     // UUID-based exam access rules are validated here instead of course-db.js
     // because we need to hit the DB to check for them; we can't validate based
@@ -281,32 +251,27 @@ module.exports.sync = async function (
     });
 
     const uuidsParams = { exam_uuids: JSON.stringify([...examUuids]) };
-    const uuidsRes = await sqldb.queryAsync(
-      sql.check_access_rules_exam_uuid,
-      uuidsParams,
-    );
+    const uuidsRes = await sqldb.queryAsync(sql.check_access_rules_exam_uuid, uuidsParams);
     uuidsRes.rows.forEach(({ uuid, uuid_exists }) => {
       if (!uuid_exists) {
         uuidAssessmentMap.get(uuid).forEach((tid) => {
           infofile.addWarning(
             assessments[tid],
-            `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`,
+            `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`
           );
         });
       }
     });
   }
-  const assessmentParams = Object.entries(assessments).map(
-    ([tid, assessment]) => {
-      return JSON.stringify([
-        tid,
-        assessment.uuid,
-        infofile.stringifyErrors(assessment),
-        infofile.stringifyWarnings(assessment),
-        getParamsForAssessment(assessment, questionIds),
-      ]);
-    },
-  );
+  const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
+    return JSON.stringify([
+      tid,
+      assessment.uuid,
+      infofile.stringifyErrors(assessment),
+      infofile.stringifyWarnings(assessment),
+      getParamsForAssessment(assessment, questionIds),
+    ]);
+  });
 
   const params = [assessmentParams, courseId, courseInstanceId];
   perf.start('sproc:sync_assessments');

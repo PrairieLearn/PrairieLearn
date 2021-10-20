@@ -83,7 +83,7 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      'form[name="time-limit-finish-form"]',
+      'form[name="time-limit-finish-form"]'
     );
   });
 
@@ -92,17 +92,15 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
       __action: 'timeLimitFinish',
       __csrf_token: context.__csrf_token,
     };
-    const response = await helperClient.fetchCheerio(
-      context.assessmentInstanceUrl,
-      { method: 'POST', form, headers: headersTimeLimit },
-    );
+    const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+      method: 'POST',
+      form,
+      headers: headersTimeLimit,
+    });
     assert.equal(response.status, 403);
 
     // We should have been redirected back to the same assessment instance
-    assert.equal(
-      response.url,
-      context.assessmentInstanceUrl + '?timeLimitExpired=true',
-    );
+    assert.equal(response.url, context.assessmentInstanceUrl + '?timeLimitExpired=true');
 
     // we should not have any questions
     assert.lengthOf(response.$('a:contains("Question 1")'), 0);
@@ -119,41 +117,26 @@ describe('Exam assessment with showClosedAssessment AND showClosedAssessmentScor
     assert.equal(results.rows[0].open, false);
   });
 
-  step(
-    'check that accessing a question gives the "assessment closed" message',
-    async () => {
-      const response = await helperClient.fetchCheerio(context.questionUrl, {
-        headers,
-      });
-      assert.equal(response.status, 403);
+  step('check that accessing a question gives the "assessment closed" message', async () => {
+    const response = await helperClient.fetchCheerio(context.questionUrl, {
+      headers,
+    });
+    assert.equal(response.status, 403);
 
-      assert.lengthOf(
-        response.$('div.test-suite-assessment-closed-message'),
-        1,
-      );
-      assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
-    },
-  );
+    assert.lengthOf(response.$('div.test-suite-assessment-closed-message'), 1);
+    assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+  });
 
-  step(
-    'check that accessing assessment list shows score as withheld',
-    async () => {
-      const response = await helperClient.fetchCheerio(
-        context.assessmentListUrl,
-        { headers },
-      );
-      assert.equal(response.status, 200);
+  step('check that accessing assessment list shows score as withheld', async () => {
+    const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
+    assert.equal(response.status, 200);
 
-      assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
-      assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
-    },
-  );
+    assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show
+    assert.lengthOf(response.$('div.progress'), 0); // score should NOT be shown
+  });
 
   step('check that accessing gradebook shows score as withheld', async () => {
-    const response = await helperClient.fetchCheerio(
-      context.assessmentListUrl,
-      { headers },
-    );
+    const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
     assert.equal(response.status, 200);
 
     assert.lengthOf(response.$('td:contains("Score not shown")'), 1); // score withheld message should show

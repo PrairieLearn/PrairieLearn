@@ -27,10 +27,7 @@ describe('News items', function () {
   describe('News item initialization', () => {
     it('should prepare by creating the student test user', async () => {
       const cookies = requestp.jar();
-      cookies.setCookie(
-        requestp.cookie('pl_test_user=test_student'),
-        locals.siteUrl,
-      );
+      cookies.setCookie(requestp.cookie('pl_test_user=test_student'), locals.siteUrl);
       page = await requestp({ url: locals.baseUrl, jar: cookies });
       locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
     });
@@ -137,9 +134,7 @@ describe('News items', function () {
       locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
     });
     it('should load in course instance instructor level', async () => {
-      page = await requestp(
-        locals.baseUrl + '/course_instance/1/instructor/news_items',
-      );
+      page = await requestp(locals.baseUrl + '/course_instance/1/instructor/news_items');
       locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
     });
     it('should load in course instance student level', async () => {
@@ -154,9 +149,7 @@ describe('News items', function () {
       locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
     });
     it('should load in course instance instructor level', async () => {
-      page = await requestp(
-        locals.baseUrl + '/course_instance/1/instructor/news_item/1/',
-      );
+      page = await requestp(locals.baseUrl + '/course_instance/1/instructor/news_item/1/');
       locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
     });
     it('should load in course instance student level', async () => {

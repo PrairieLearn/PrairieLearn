@@ -1,8 +1,4 @@
-define(['underscore', 'QServer', 'PrairieRandom'], function (
-  _,
-  QServer,
-  PrairieRandom,
-) {
+define(['underscore', 'QServer', 'PrairieRandom'], function (_, QServer, PrairieRandom) {
   function MCQServer() {
     QServer.call(this);
   }
@@ -19,18 +15,11 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (
 
     var numberCorrect = 1;
     var numberIncorrect = options.numberAnswers - numberCorrect;
-    numberIncorrect = Math.min(
-      numberIncorrect,
-      options.incorrectAnswers.length,
-    );
+    numberIncorrect = Math.min(numberIncorrect, options.incorrectAnswers.length);
 
     var answers = [];
-    answers = answers.concat(
-      rand.randNElem(numberCorrect, options.correctAnswers),
-    );
-    answers = answers.concat(
-      rand.randNElem(numberIncorrect, options.incorrectAnswers),
-    );
+    answers = answers.concat(rand.randNElem(numberCorrect, options.correctAnswers));
+    answers = answers.concat(rand.randNElem(numberIncorrect, options.incorrectAnswers));
     var perm = rand.shuffle(answers);
     answers = _(answers).map(function (value, index) {
       return {

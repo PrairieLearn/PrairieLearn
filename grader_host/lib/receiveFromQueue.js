@@ -46,25 +46,20 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
         if (!messageSchema) {
-          fs.readJson(
-            path.join(__dirname, 'messageSchema.json'),
-            (err, data) => {
-              if (ERR(err, (err) => globalLogger.error(err))) {
-                globalLogger.error(
-                  'Failed to read message schema; exiting process.',
-                );
-                process.exit(1);
-              }
-              const ajv = new Ajv();
-              messageSchema = ajv.compile(data);
-              return callback(null);
-            },
-          );
+          fs.readJson(path.join(__dirname, 'messageSchema.json'), (err, data) => {
+            if (ERR(err, (err) => globalLogger.error(err))) {
+              globalLogger.error('Failed to read message schema; exiting process.');
+              process.exit(1);
+            }
+            const ajv = new Ajv();
+            messageSchema = ajv.compile(data);
+            return callback(null);
+          });
         } else {
           return callback(null);
         }
@@ -111,9 +106,7 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
       (callback) => {
         // Don't execute the job if it was canceled
         if (jobCanceled) {
-          globalLogger.info(
-            `Job ${parsedMessage.jobId} was canceled; skipping job.`,
-          );
+          globalLogger.info(`Job ${parsedMessage.jobId} was canceled; skipping job.`);
           return callback(null);
         }
 
@@ -124,11 +117,9 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
             callback(err);
           },
           () => {
-            globalLogger.info(
-              `Job ${parsedMessage.jobId} finished successfully.`,
-            );
+            globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
@@ -145,6 +136,6 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
     (err) => {
       if (ERR(err, doneCallback)) return;
       doneCallback(null);
-    },
+    }
   );
 };

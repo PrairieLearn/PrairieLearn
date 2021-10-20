@@ -5,34 +5,21 @@ const express = require('express');
 const router = express.Router();
 
 const error = require('../../prairielib/lib/error');
-const logPageView = require('../../middlewares/logPageView')(
-  'studentInstanceQuestion',
-);
+const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('../../prairielib/lib/sql-db');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.authz_result.active)
-    return callback(
-      error.make(
-        400,
-        'This assessment is not accepting submissions at this time.',
-      ),
-    );
+    return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
   let variant_id, submitted_answer;
   if (res.locals.question.type == 'Freeform') {
     variant_id = req.body.__variant_id;
-    submitted_answer = _.omit(req.body, [
-      '__action',
-      '__csrf_token',
-      '__variant_id',
-    ]);
+    submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData)
-      return callback(
-        error.make(400, 'No postData', { locals: res.locals, body: req.body }),
-      );
+      return callback(error.make(400, 'No postData', { locals: res.locals, body: req.body }));
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
@@ -41,7 +28,7 @@ function processSubmission(req, res, callback) {
         error.make(400, 'JSON parse failed on body.postData', {
           locals: res.locals,
           body: req.body,
-        }),
+        })
       );
     }
     variant_id = postData.variant ? postData.variant.id : null;
@@ -71,7 +58,7 @@ function processSubmission(req, res, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, submission.variant_id);
-          },
+          }
         );
       } else if (req.body.__action == 'save') {
         question.saveSubmission(
@@ -82,17 +69,17 @@ function processSubmission(req, res, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null, submission.variant_id);
-          },
+          }
         );
       } else {
         callback(
           error.make(400, 'unknown __action', {
             locals: res.locals,
             body: req.body,
-          }),
+          })
         );
       }
-    },
+    }
   );
 }
 
@@ -108,7 +95,7 @@ router.post('/', function (req, res, next) {
           '/instance_question/' +
           res.locals.instance_question.id +
           '/?variant_id=' +
-          variant_id,
+          variant_id
       );
     });
   } else if (req.body.__action == 'attach_file') {
@@ -122,9 +109,9 @@ router.post('/', function (req, res, next) {
             '/instance_question/' +
             res.locals.instance_question.id +
             '/?variant_id=' +
-            variant_id,
+            variant_id
         );
-      },
+      }
     );
   } else if (req.body.__action == 'attach_text') {
     util.callbackify(studentInstanceQuestion.processTextUpload)(
@@ -137,9 +124,9 @@ router.post('/', function (req, res, next) {
             '/instance_question/' +
             res.locals.instance_question.id +
             '/?variant_id=' +
-            variant_id,
+            variant_id
         );
-      },
+      }
     );
   } else if (req.body.__action == 'delete_file') {
     util.callbackify(studentInstanceQuestion.processDeleteFile)(
@@ -152,49 +139,40 @@ router.post('/', function (req, res, next) {
             '/instance_question/' +
             res.locals.instance_question.id +
             '/?variant_id=' +
-            variant_id,
+            variant_id
         );
-      },
+      }
     );
   } else if (req.body.__action == 'report_issue') {
-    util.callbackify(studentInstanceQuestion.processIssue)(
-      req,
-      res,
-      function (err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          res.locals.urlPrefix +
-            '/instance_question/' +
-            res.locals.instance_question.id +
-            '/?variant_id=' +
-            variant_id,
-        );
-      },
-    );
+    util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
+      if (ERR(err, next)) return;
+      res.redirect(
+        res.locals.urlPrefix +
+          '/instance_question/' +
+          res.locals.instance_question.id +
+          '/?variant_id=' +
+          variant_id
+      );
+    });
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });
 
 router.get('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Homework') return next();
-  question.getAndRenderVariant(
-    req.query.variant_id,
-    null,
-    res.locals,
-    function (err) {
+  question.getAndRenderVariant(req.query.variant_id, null, res.locals, function (err) {
+    if (ERR(err, next)) return;
+    logPageView(req, res, (err) => {
       if (ERR(err, next)) return;
-      logPageView(req, res, (err) => {
-        if (ERR(err, next)) return;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      });
-    },
-  );
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    });
+  });
 });
 
 module.exports = router;

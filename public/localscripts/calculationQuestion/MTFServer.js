@@ -1,8 +1,4 @@
-define(['underscore', 'QServer', 'PrairieRandom'], function (
-  _,
-  QServer,
-  PrairieRandom,
-) {
+define(['underscore', 'QServer', 'PrairieRandom'], function (_, QServer, PrairieRandom) {
   function MTFServer() {
     QServer.call(this);
   }
@@ -54,13 +50,7 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (
     return questionData;
   };
 
-  MTFServer.prototype.gradeAnswer = function (
-    vid,
-    params,
-    trueAnswer,
-    submittedAnswer,
-    options,
-  ) {
+  MTFServer.prototype.gradeAnswer = function (vid, params, trueAnswer, submittedAnswer, options) {
     trueAnswer = trueAnswer.correctAnswers;
     var finalScore = 0.0;
     var maxScore = options.correctScore * trueAnswer.length;
@@ -77,12 +67,8 @@ define(['underscore', 'QServer', 'PrairieRandom'], function (
         (!trueAnswer[i] && submittedAnswer[questionId + '-false'])
       ) {
         finalScore += options.correctScore;
-      } else if (
-        submittedAnswer[questionId + '-true'] ||
-        submittedAnswer[questionId + '-false']
-      ) {
-        finalScore =
-          finalScore + (options.incorrectScore + options.guessingPenalty);
+      } else if (submittedAnswer[questionId + '-true'] || submittedAnswer[questionId + '-false']) {
+        finalScore = finalScore + (options.incorrectScore + options.guessingPenalty);
       } else {
         finalScore += options.incorrectScore;
       }

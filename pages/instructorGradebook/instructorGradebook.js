@@ -15,18 +15,14 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var csvFilename = function (locals) {
   return (
-    sanitizeName.courseInstanceFilenamePrefix(
-      locals.course_instance,
-      locals.course,
-    ) + 'gradebook.csv'
+    sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course) +
+    'gradebook.csv'
   );
 };
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view)
-    return next(
-      error.make(403, 'Access denied (must be a student data viewer)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data viewer)'));
   res.locals.csvFilename = csvFilename(res.locals);
   var params = { course_instance_id: res.locals.course_instance.id };
   sqldb.query(sql.course_assessments, params, function (err, result) {
@@ -38,9 +34,7 @@ router.get('/', function (req, res, next) {
 
 router.get('/raw_data.json', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view)
-    return next(
-      error.make(403, 'Access denied (must be a student data viewer)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data viewer)'));
   var params = {
     course_id: res.locals.course.id,
     course_instance_id: res.locals.course_instance.id,
@@ -58,12 +52,8 @@ router.get('/raw_data.json', function (req, res, next) {
       };
       row.scores.forEach(function (score) {
         scores[`score_${score.assessment_id}`] = score.score_perc;
-        scores[`score_${score.assessment_id}_ai_id`] =
-          score.assessment_instance_id;
-        scores[`score_${score.assessment_id}_other`] = _.map(
-          score.uid_other_users_group,
-          _.escape,
-        );
+        scores[`score_${score.assessment_id}_ai_id`] = score.assessment_instance_id;
+        scores[`score_${score.assessment_id}_other`] = _.map(score.uid_other_users_group, _.escape);
       });
       return scores;
     });
@@ -73,9 +63,7 @@ router.get('/raw_data.json', function (req, res, next) {
 
 router.get('/:filename', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view)
-    return next(
-      error.make(403, 'Access denied (must be a student data viewer)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data viewer)'));
   if (req.params.filename == csvFilename(res.locals)) {
     var params = {
       course_id: res.locals.course.id,
@@ -88,14 +76,10 @@ router.get('/:filename', function (req, res, next) {
         if (ERR(err, next)) return;
         var userScores = result.rows;
 
-        var csvHeaders = ['UID', 'UIN', 'Name', 'Role'].concat(
-          _.map(courseAssessments, 'label'),
-        );
+        var csvHeaders = ['UID', 'UIN', 'Name', 'Role'].concat(_.map(courseAssessments, 'label'));
         var csvData = _.map(userScores, function (row) {
           const score_percs = _.map(row.scores, (s) => s.score_perc);
-          return [row.uid, row.uin, row.user_name, row.role].concat(
-            score_percs,
-          );
+          return [row.uid, row.uin, row.user_name, row.role].concat(score_percs);
         });
         csvData.splice(0, 0, csvHeaders);
         csvStringify(csvData, function (err, csv) {
@@ -112,9 +96,7 @@ router.get('/:filename', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_edit)
-    return next(
-      error.make(403, 'Access denied (must be a student data editor)'),
-    );
+    return next(error.make(403, 'Access denied (must be a student data editor)'));
   if (req.body.__action == 'edit_total_score_perc') {
     const course_instance_id = res.locals.course_instance.id;
     const assessment_instance_id = req.body.assessment_instance_id;
@@ -126,33 +108,25 @@ router.post('/', function (req, res, next) {
         req.body.score_perc,
         res.locals.authn_user.user_id,
       ];
-      sqldb.call(
-        'assessment_instances_update_score_perc',
-        params,
-        function (err, _result) {
+      sqldb.call('assessment_instances_update_score_perc', params, function (err, _result) {
+        if (ERR(err, next)) return;
+
+        params = {
+          assessment_instance_id: req.body.assessment_instance_id,
+        };
+
+        sqldb.query(sql.assessment_instance_score, params, function (err, result) {
           if (ERR(err, next)) return;
-
-          params = {
-            assessment_instance_id: req.body.assessment_instance_id,
-          };
-
-          sqldb.query(
-            sql.assessment_instance_score,
-            params,
-            function (err, result) {
-              if (ERR(err, next)) return;
-              res.send(JSON.stringify(result.rows));
-            },
-          );
-        },
-      );
+          res.send(JSON.stringify(result.rows));
+        });
+      });
     });
   } else {
     return next(
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

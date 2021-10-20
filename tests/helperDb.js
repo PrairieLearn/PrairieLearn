@@ -2,9 +2,7 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const pg = require('pg');
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const _ = require('lodash');
 
 const sqldb = require('../prairielib/lib/sql-db');
@@ -17,12 +15,7 @@ const postgresqlDatabaseTemplate = 'pltest_template';
 const postgresqlHost = 'localhost';
 const initConString = 'postgres://postgres@localhost/postgres';
 
-var runMigrationsAndSprocs = function (
-  dbName,
-  mochaThis,
-  runMigrations,
-  callback,
-) {
+var runMigrationsAndSprocs = function (dbName, mochaThis, runMigrations, callback) {
   debug(`runMigrationsAndSprocs(${dbName})`);
   mochaThis.timeout(20000);
   async.series(
@@ -50,14 +43,10 @@ var runMigrationsAndSprocs = function (
           return callback(null);
         }
         debug('runMigrationsAndSprocs(): running migrations');
-        migrations.init(
-          path.join(__dirname, '..', 'migrations'),
-          'prairielearn',
-          function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        migrations.init(path.join(__dirname, '..', 'migrations'), 'prairielearn', function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
       async () => {
         debug('runMigrationsAndSprocs(): setting random search schema');
@@ -82,7 +71,7 @@ var runMigrationsAndSprocs = function (
       debug('runMigrationsAndSprocs(): complete');
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 };
 
@@ -106,13 +95,10 @@ var createFullDatabase = function (dbName, dropFirst, mochaThis, callback) {
       function (callback) {
         if (dropFirst) {
           debug('createFullDatabase(): dropping database');
-          client.query(
-            'DROP DATABASE IF EXISTS ' + dbName + ';',
-            function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            },
-          );
+          client.query('DROP DATABASE IF EXISTS ' + dbName + ';', function (err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+          });
         } else {
           callback(null);
         }
@@ -141,17 +127,11 @@ var createFullDatabase = function (dbName, dropFirst, mochaThis, callback) {
       debug('createFullDatabase(): complete');
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 };
 
-var createFromTemplate = function (
-  dbName,
-  dbTemplateName,
-  dropFirst,
-  mochaThis,
-  callback,
-) {
+var createFromTemplate = function (dbName, dbTemplateName, dropFirst, mochaThis, callback) {
   debug(`createFromTemplate(${dbName}, ${dbTemplateName})`);
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
@@ -170,26 +150,20 @@ var createFromTemplate = function (
       function (callback) {
         if (dropFirst) {
           debug('createFromTemplate(): dropping database');
-          client.query(
-            'DROP DATABASE IF EXISTS ' + dbName + ';',
-            function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            },
-          );
+          client.query('DROP DATABASE IF EXISTS ' + dbName + ';', function (err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+          });
         } else {
           callback(null);
         }
       },
       function (callback) {
         debug('createFromTemplate(): creating database');
-        client.query(
-          `CREATE DATABASE ${dbName} TEMPLATE ${dbTemplateName};`,
-          function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
+        client.query(`CREATE DATABASE ${dbName} TEMPLATE ${dbTemplateName};`, function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
       function (callback) {
         debug('createFromTemplate(): ending client');
@@ -208,7 +182,7 @@ var createFromTemplate = function (
       debug('createFromTemplate(): complete');
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 };
 
@@ -244,9 +218,7 @@ var dropDatabase = function (dbName, mochaThis, callback, forceDrop = false) {
   debug(`dropDatabase(${dbName})`);
   if (_.has(process.env, 'PL_KEEP_TEST_DB') && !forceDrop) {
     // eslint-disable-next-line no-console
-    console.log(
-      `PL_KEEP_TEST_DB enviroment variable set, not dropping database ${dbName}`,
-    );
+    console.log(`PL_KEEP_TEST_DB enviroment variable set, not dropping database ${dbName}`);
     return callback(null);
   }
   // long timeout because DROP DATABASE might take a long time to error
@@ -281,7 +253,7 @@ var dropDatabase = function (dbName, mochaThis, callback, forceDrop = false) {
       debug('dropDatabase(): complete');
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 };
 
@@ -307,7 +279,7 @@ var databaseExists = function (dbName, callback) {
             if (ERR(err, callback)) return;
             existsResult = result.rows[0].exists;
             callback(null);
-          },
+          }
         );
       },
       function (callback) {
@@ -320,7 +292,7 @@ var databaseExists = function (dbName, callback) {
       debug('databaseExists(): complete returning ' + existsResult);
       if (ERR(err, callback)) return;
       callback(null, existsResult);
-    },
+    }
   );
 };
 
@@ -340,30 +312,25 @@ var setupDatabases = function (mochaThis, callback) {
             if (ERR(err, callback)) return;
             callback(null);
           });
-        },
+        }
       );
     } else {
-      createFullDatabase(
-        postgresqlDatabaseTemplate,
-        true,
-        mochaThis,
-        function (err) {
-          if (ERR(err, callback)) return;
-          createFromTemplate(
-            postgresqlDatabase,
-            postgresqlDatabaseTemplate,
-            true,
-            mochaThis,
-            function (err) {
+      createFullDatabase(postgresqlDatabaseTemplate, true, mochaThis, function (err) {
+        if (ERR(err, callback)) return;
+        createFromTemplate(
+          postgresqlDatabase,
+          postgresqlDatabaseTemplate,
+          true,
+          mochaThis,
+          function (err) {
+            if (ERR(err, callback)) return;
+            establishSql(postgresqlDatabase, function (err) {
               if (ERR(err, callback)) return;
-              establishSql(postgresqlDatabase, function (err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-              });
-            },
-          );
-        },
-      );
+              callback(null);
+            });
+          }
+        );
+      });
     }
   });
 };
@@ -418,7 +385,7 @@ module.exports = {
           if (ERR(err, callback)) return;
           callback(null);
         },
-        true,
+        true
       ); // add flag to always drop the template regardless of PL_KEEP_TEST_DB env
     });
   },

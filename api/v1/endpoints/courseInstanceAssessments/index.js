@@ -56,14 +56,10 @@ router.get('/:assessment_id/assessment_access_rules', (req, res, next) => {
     course_instance_id: res.locals.course_instance.id,
     assessment_id: req.params.assessment_id,
   };
-  sqldb.queryOneRow(
-    sql.select_assessment_access_rules,
-    params,
-    (err, result) => {
-      if (ERR(err, next)) return;
-      res.status(200).send(result.rows[0].item);
-    },
-  );
+  sqldb.queryOneRow(sql.select_assessment_access_rules, params, (err, result) => {
+    if (ERR(err, next)) return;
+    res.status(200).send(result.rows[0].item);
+  });
 });
 
 module.exports = router;

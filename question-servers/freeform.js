@@ -7,9 +7,7 @@ const mustache = require('mustache');
 const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { promisify, callbackify } = require('util');
 
 const schemas = require('../schemas');
@@ -34,15 +32,11 @@ let courseExtensionsCache = {};
 module.exports = {
   init: function (callback) {
     // Populate the list of PrairieLearn elements
-    module.exports.loadElements(
-      path.join(__dirname, '..', 'elements'),
-      'core',
-      (err, results) => {
-        if (ERR(err, callback)) return;
-        coreElementsCache = results;
-        return callback(null);
-      },
-    );
+    module.exports.loadElements(path.join(__dirname, '..', 'elements'), 'core', (err, results) => {
+      if (ERR(err, callback)) return;
+      coreElementsCache = results;
+      return callback(null);
+    });
   },
 
   close: function (callback) {
@@ -99,11 +93,7 @@ module.exports = {
           async.each(
             elementNames,
             (elementName, callback) => {
-              const elementInfoPath = path.join(
-                sourceDir,
-                elementName,
-                'info.json',
-              );
+              const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
               fs.readJson(elementInfoPath, (err, info) => {
                 if (err && err.code === 'ENOENT') {
                   // This must not be an element directory, skip it
@@ -136,14 +126,14 @@ module.exports = {
             (err) => {
               if (ERR(err, callback)) return;
               return callback(null, elements);
-            },
+            }
           );
         },
       ],
       (err, elements) => {
         if (ERR(err, callback)) return;
         return callback(null, elements);
-      },
+      }
     );
   },
 
@@ -163,7 +153,7 @@ module.exports = {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     const elements = await module.exports.loadElementsAsync(
       path.join(coursePath, 'elements'),
-      'course',
+      'course'
     );
     courseElementsCache[course.id] = {
       commit_hash: course.commit_hash,
@@ -253,7 +243,7 @@ module.exports = {
 
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     let extensions = await module.exports.loadExtensionsAsync(
-      path.join(coursePath, 'elementExtensions'),
+      path.join(coursePath, 'elementExtensions')
     );
     courseExtensionsCache[course.id] = {
       commit_hash: course.commit_hash,
@@ -301,48 +291,32 @@ module.exports = {
         data.options.base_url,
         'elements',
         elementName,
-        'clientFilesElement',
+        'clientFilesElement'
       );
       dataCopy.options.client_files_extensions_url = {};
 
       if (_.has(context.course_element_extensions, elementName)) {
-        Object.keys(context.course_element_extensions[elementName]).forEach(
-          (extension) => {
-            const url = path.posix.join(
-              data.options.base_url,
-              'elementExtensions',
-              elementName,
-              extension,
-              'clientFilesExtension',
-            );
-            dataCopy.options.client_files_extensions_url[extension] = url;
-          },
-        );
+        Object.keys(context.course_element_extensions[elementName]).forEach((extension) => {
+          const url = path.posix.join(
+            data.options.base_url,
+            'elementExtensions',
+            elementName,
+            extension,
+            'clientFilesExtension'
+          );
+          dataCopy.options.client_files_extensions_url[extension] = url;
+        });
       }
     }
     return dataCopy;
   },
 
-  elementFunction: async function (
-    pc,
-    fcn,
-    elementName,
-    elementHtml,
-    data,
-    context,
-  ) {
+  elementFunction: async function (pc, fcn, elementName, elementHtml, data, context) {
     return new Promise((resolve, reject) => {
-      const resolvedElement = module.exports.resolveElement(
-        elementName,
-        context,
-      );
+      const resolvedElement = module.exports.resolveElement(elementName, context);
       const cwd = resolvedElement.directory;
       const controller = resolvedElement.controller;
-      const dataCopy = module.exports.getElementClientFiles(
-        data,
-        elementName,
-        context,
-      );
+      const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
       const pythonArgs = [elementHtml, dataCopy];
       const pythonFile = controller.replace(/\.[pP][yY]$/, '');
@@ -357,10 +331,7 @@ module.exports = {
       pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
         if (err instanceof codeCaller.FunctionMissingError) {
           // function wasn't present in server
-          return resolve([
-            module.exports.defaultElementFunctionRet(fcn, dataCopy),
-            '',
-          ]);
+          return resolve([module.exports.defaultElementFunctionRet(fcn, dataCopy), '']);
         }
         if (ERR(err, reject)) return;
         resolve([ret, consoleLog]);
@@ -368,16 +339,7 @@ module.exports = {
     });
   },
 
-  legacyElementFunction: function (
-    pc,
-    fcn,
-    elementName,
-    $,
-    element,
-    data,
-    context,
-    callback,
-  ) {
+  legacyElementFunction: function (pc, fcn, elementName, $, element, data, context, callback) {
     let resolvedElement;
     try {
       resolvedElement = module.exports.resolveElement(elementName, context);
@@ -387,19 +349,11 @@ module.exports = {
 
     const cwd = resolvedElement.directory;
     const controller = resolvedElement.controller;
-    const dataCopy = module.exports.getElementClientFiles(
-      data,
-      elementName,
-      context,
-    );
+    const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
     if (_.isString(controller)) {
       // python module
-      const elementHtml = $(element)
-        .clone()
-        .wrap('<container/>')
-        .parent()
-        .html();
+      const elementHtml = $(element).clone().wrap('<container/>').parent().html();
       const pythonArgs = [elementHtml, dataCopy];
       const pythonFile = controller.replace(/\.[pP][yY]$/, '');
       const paths = [path.join(__dirname, 'freeformPythonLib')];
@@ -410,18 +364,12 @@ module.exports = {
         cwd,
         paths,
       };
-      debug(
-        `elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`,
-      );
+      debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
       pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
         if (err instanceof codeCaller.FunctionMissingError) {
           // function wasn't present in server
           debug(`elementFunction(): function not present`);
-          return callback(
-            null,
-            module.exports.defaultElementFunctionRet(fcn, dataCopy),
-            '',
-          );
+          return callback(null, module.exports.defaultElementFunctionRet(fcn, dataCopy), '');
         }
         if (ERR(err, callback)) return;
         debug(`elementFunction(): completed`);
@@ -473,36 +421,22 @@ module.exports = {
     fs.access(fullFilename, fs.constants.R_OK, (err) => {
       if (err) {
         // server.py does not exist
-        return callback(
-          null,
-          module.exports.defaultServerRet(phase, data, html, context),
-          '',
-        );
+        return callback(null, module.exports.defaultServerRet(phase, data, html, context), '');
       }
 
       debug(
-        `execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`,
+        `execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
       );
-      pc.call(
-        pythonFile,
-        pythonFunction,
-        pythonArgs,
-        opts,
-        (err, ret, consoleLog) => {
-          if (err instanceof codeCaller.FunctionMissingError) {
-            // function wasn't present in server
-            debug(`execPythonServer(): function not present`);
-            return callback(
-              null,
-              module.exports.defaultServerRet(phase, data, html, context),
-              '',
-            );
-          }
-          if (ERR(err, callback)) return;
-          debug(`execPythonServer(): completed`);
-          callback(null, ret, consoleLog);
-        },
-      );
+      pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
+        if (err instanceof codeCaller.FunctionMissingError) {
+          // function wasn't present in server
+          debug(`execPythonServer(): function not present`);
+          return callback(null, module.exports.defaultServerRet(phase, data, html, context), '');
+        }
+        if (ERR(err, callback)) return;
+        debug(`execPythonServer(): completed`);
+        callback(null, ret, consoleLog);
+      });
     });
   },
 
@@ -565,11 +499,10 @@ module.exports = {
         return 'invalid type: ' + String(type);
       }
       if (!editPhases.includes(phase)) {
-        if (!_.has(origData, prop))
-          return '"' + prop + '" is missing from "origData"';
+        if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
         if (!_.isEqual(data[prop], origData[prop])) {
           return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
-            data[prop],
+            data[prop]
           )}", original value: "${JSON.stringify(origData[prop])}"`;
         }
       }
@@ -578,15 +511,7 @@ module.exports = {
     };
 
     let err;
-    let allPhases = [
-      'generate',
-      'prepare',
-      'render',
-      'parse',
-      'grade',
-      'test',
-      'file',
-    ];
+    let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade', 'test', 'file'];
 
     if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
@@ -642,20 +567,12 @@ module.exports = {
     if (err) return err;
 
     const extraProps = _.difference(_.keys(data), checked);
-    if (extraProps.length > 0)
-      return '"data" has invalid extra keys: ' + extraProps.join(', ');
+    if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
     return null;
   },
 
-  traverseQuestionAndExecuteFunctions: async function (
-    phase,
-    pc,
-    data,
-    context,
-    html,
-    callback,
-  ) {
+  traverseQuestionAndExecuteFunctions: async function (phase, pc, data, context, html, callback) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -668,14 +585,8 @@ module.exports = {
     const visitNode = async (node) => {
       if (node.tagName && questionElements.has(node.tagName)) {
         const elementName = node.tagName;
-        const elementFile = module.exports.getElementController(
-          elementName,
-          context,
-        );
-        if (
-          phase === 'render' &&
-          !_.includes(renderedElementNames, elementName)
-        ) {
+        const elementFile = module.exports.getElementController(elementName, context);
+        if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
           renderedElementNames.push(elementName);
         }
         /* Populate the extensions used by this element */
@@ -696,11 +607,11 @@ module.exports = {
             elementName,
             serializedNode,
             data,
-            context,
+            context
           );
         } catch (e) {
           const courseIssue = new Error(
-            `${elementFile}: Error calling ${phase}(): ${e.toString()}`,
+            `${elementFile}: Error calling ${phase}(): ${e.toString()}`
           );
           courseIssue.data = e.data;
           courseIssue.fatal = true;
@@ -712,7 +623,7 @@ module.exports = {
         delete ret_val.extensions;
         if (_.isString(consoleLog) && consoleLog.length > 0) {
           const courseIssue = new Error(
-            `${elementFile}: output logged on console during ${phase}()`,
+            `${elementFile}: output logged on console during ${phase}()`
           );
           courseIssue.data = { outputBoth: consoleLog };
           courseIssue.fatal = false;
@@ -721,7 +632,7 @@ module.exports = {
         if (phase == 'render') {
           if (!_.isString(ret_val)) {
             const courseIssue = new Error(
-              `${elementFile}: Error calling ${phase}(): return value is not a string`,
+              `${elementFile}: Error calling ${phase}(): return value is not a string`
             );
             courseIssue.data = { ret_val };
             courseIssue.fatal = true;
@@ -737,7 +648,7 @@ module.exports = {
             if (fileData.length > 0) {
               // If fileData already has non-zero length, throw an error
               const courseIssue = new Error(
-                `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
+                `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`
               );
               courseIssue.fatal = true;
               throw courseIssue;
@@ -752,7 +663,7 @@ module.exports = {
           const checkErr = module.exports.checkData(data, origData, phase);
           if (checkErr) {
             const courseIssue = new Error(
-              `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
+              `${elementFile}: Invalid state after ${phase}(): ${checkErr}`
             );
             courseIssue.fatal = true;
             throw courseIssue;
@@ -784,14 +695,7 @@ module.exports = {
     callback(courseIssues, data, questionHtml, fileData, renderedElementNames);
   },
 
-  legacyTraverseQuestionAndExecuteFunctions: function (
-    phase,
-    pc,
-    data,
-    context,
-    $,
-    callback,
-  ) {
+  legacyTraverseQuestionAndExecuteFunctions: function (phase, pc, data, context, $, callback) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -807,17 +711,11 @@ module.exports = {
         async.eachSeries(
           $(elementName).toArray(),
           (element, callback) => {
-            if (
-              phase === 'render' &&
-              !_.includes(renderedElementNames, element)
-            ) {
+            if (phase === 'render' && !_.includes(renderedElementNames, element)) {
               renderedElementNames.push(elementName);
             }
 
-            const elementFile = module.exports.getElementController(
-              elementName,
-              context,
-            );
+            const elementFile = module.exports.getElementController(elementName, context);
             /* Populate the extensions used by this element */
             data.extensions = [];
             if (_.has(context.course_element_extensions, elementName)) {
@@ -835,11 +733,7 @@ module.exports = {
               (err, ret_val, consoleLog) => {
                 if (err) {
                   const courseIssue = new Error(
-                    elementFile +
-                      ': Error calling ' +
-                      phase +
-                      '(): ' +
-                      err.toString(),
+                    elementFile + ': Error calling ' + phase + '(): ' + err.toString()
                   );
                   courseIssue.data = err.data;
                   courseIssue.fatal = true;
@@ -850,10 +744,7 @@ module.exports = {
                 delete ret_val.extensions;
                 if (_.isString(consoleLog) && consoleLog.length > 0) {
                   const courseIssue = new Error(
-                    elementFile +
-                      ': output logged on console during ' +
-                      phase +
-                      '()',
+                    elementFile + ': output logged on console during ' + phase + '()'
                   );
                   courseIssue.data = { outputBoth: consoleLog };
                   courseIssue.fatal = false;
@@ -863,10 +754,7 @@ module.exports = {
                 if (phase == 'render') {
                   if (!_.isString(ret_val)) {
                     const courseIssue = new Error(
-                      elementFile +
-                        ': Error calling ' +
-                        phase +
-                        '(): return value is not a string',
+                      elementFile + ': Error calling ' + phase + '(): return value is not a string'
                     );
                     courseIssue.data = { ret_val };
                     courseIssue.fatal = true;
@@ -887,7 +775,7 @@ module.exports = {
                         elementFile +
                           ': Error calling ' +
                           phase +
-                          '(): attempting to overwrite non-empty fileData',
+                          '(): attempting to overwrite non-empty fileData'
                       );
                       courseIssue.fatal = true;
                       courseIssues.push(courseIssue);
@@ -899,18 +787,10 @@ module.exports = {
                   }
                 } else {
                   data = ret_val;
-                  const checkErr = module.exports.checkData(
-                    data,
-                    origData,
-                    phase,
-                  );
+                  const checkErr = module.exports.checkData(data, origData, phase);
                   if (checkErr) {
                     const courseIssue = new Error(
-                      elementFile +
-                        ': Invalid state after ' +
-                        phase +
-                        '(): ' +
-                        checkErr,
+                      elementFile + ': Invalid state after ' + phase + '(): ' + checkErr
                     );
                     courseIssue.fatal = true;
                     courseIssues.push(courseIssue);
@@ -919,20 +799,20 @@ module.exports = {
                 }
 
                 callback(null);
-              },
+              }
             );
           },
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
       (err) => {
         // Black-hole any errors, they were (should have been) handled by course issues
         ERR(err, () => {});
         callback(courseIssues, data, $.html(), fileData, renderedElementNames);
-      },
+      }
     );
   },
 
@@ -942,9 +822,7 @@ module.exports = {
 
     const checkErr = module.exports.checkData(data, origData, phase);
     if (checkErr) {
-      const courseIssue = new Error(
-        'Invalid state before ' + phase + ': ' + checkErr,
-      );
+      const courseIssue = new Error('Invalid state before ' + phase + ': ' + checkErr);
       courseIssue.fatal = true;
       courseIssues.push(courseIssue);
       return callback(null, courseIssues, data, '', Buffer.from(''));
@@ -960,19 +838,14 @@ module.exports = {
       }
 
       // Switch based on which renderer is enabled for this course
-      const useNewQuestionRenderer = _.get(
-        context,
-        'course.options.useNewQuestionRenderer',
-        false,
-      );
+      const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
       let processFunction;
       let args;
       if (useNewQuestionRenderer) {
         processFunction = module.exports.traverseQuestionAndExecuteFunctions;
         args = [phase, pc, data, context, html];
       } else {
-        processFunction =
-          module.exports.legacyTraverseQuestionAndExecuteFunctions;
+        processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;
         args = [phase, pc, data, context, $];
       }
 
@@ -989,17 +862,13 @@ module.exports = {
                 total_weight += weight;
                 total_weight_score += weight * score;
               });
-              data.score =
-                total_weight_score / (total_weight == 0 ? 1 : total_weight);
+              data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
               data.feedback = {};
             } else {
               let score = 0;
               if (
                 _.size(data.partial_scores) > 0 &&
-                _.every(
-                  data.partial_scores,
-                  (value) => _.get(value, 'score', 0) >= 1,
-                )
+                _.every(data.partial_scores, (value) => _.get(value, 'score', 0) >= 1)
               ) {
                 score = 1;
               }
@@ -1008,111 +877,87 @@ module.exports = {
             }
           }
 
-          callback(
-            null,
-            courseIssues,
-            data,
-            questionHtml,
-            fileData,
-            renderedElementNames,
-          );
-        },
+          callback(null, courseIssues, data, questionHtml, fileData, renderedElementNames);
+        }
       );
     });
   },
 
-  processQuestionServer: function (
-    phase,
-    pc,
-    data,
-    html,
-    fileData,
-    context,
-    callback,
-  ) {
+  processQuestionServer: function (phase, pc, data, html, fileData, context, callback) {
     const courseIssues = [];
     const origData = JSON.parse(JSON.stringify(data));
 
     const checkErr = module.exports.checkData(data, origData, phase);
     if (checkErr) {
       const courseIssue = new Error(
-        'Invalid state before calling server.' + phase + '(): ' + checkErr,
+        'Invalid state before calling server.' + phase + '(): ' + checkErr
       );
       courseIssue.fatal = true;
       courseIssues.push(courseIssue);
       return callback(null, courseIssues, data, '');
     }
 
-    module.exports.execPythonServer(
-      pc,
-      phase,
-      data,
-      html,
-      context,
-      (err, ret_val, consoleLog) => {
-        if (err) {
-          const serverFile = path.join(context.question_dir, 'server.py');
-          const courseIssue = new Error(
-            serverFile + ': Error calling ' + phase + '(): ' + err.toString(),
-          );
-          courseIssue.data = err.data;
-          courseIssue.fatal = true;
-          courseIssues.push(courseIssue);
-          return callback(null, courseIssues, data);
-        }
-        if (_.isString(consoleLog) && consoleLog.length > 0) {
-          const serverFile = path.join(context.question_dir, 'server.py');
-          const courseIssue = new Error(
-            serverFile + ': output logged on console',
-          );
-          courseIssue.data = { outputBoth: consoleLog };
-          courseIssue.fatal = false;
-          courseIssues.push(courseIssue);
-        }
+    module.exports.execPythonServer(pc, phase, data, html, context, (err, ret_val, consoleLog) => {
+      if (err) {
+        const serverFile = path.join(context.question_dir, 'server.py');
+        const courseIssue = new Error(
+          serverFile + ': Error calling ' + phase + '(): ' + err.toString()
+        );
+        courseIssue.data = err.data;
+        courseIssue.fatal = true;
+        courseIssues.push(courseIssue);
+        return callback(null, courseIssues, data);
+      }
+      if (_.isString(consoleLog) && consoleLog.length > 0) {
+        const serverFile = path.join(context.question_dir, 'server.py');
+        const courseIssue = new Error(serverFile + ': output logged on console');
+        courseIssue.data = { outputBoth: consoleLog };
+        courseIssue.fatal = false;
+        courseIssues.push(courseIssue);
+      }
 
-        if (phase == 'render') {
-          html = ret_val;
-        } else if (phase == 'file') {
-          // Convert ret_val from base64 back to buffer (this always works,
-          // whether or not ret_val is valid base64)
-          var buf = Buffer.from(ret_val, 'base64');
+      if (phase == 'render') {
+        html = ret_val;
+      } else if (phase == 'file') {
+        // Convert ret_val from base64 back to buffer (this always works,
+        // whether or not ret_val is valid base64)
+        var buf = Buffer.from(ret_val, 'base64');
 
-          // If the buffer has non-zero length...
-          if (buf.length > 0) {
-            if (fileData.length > 0) {
-              // If fileData already has non-zero length, throw an error
-              const serverFile = path.join(context.question_dir, 'server.py');
-              const courseIssue = new Error(
-                serverFile +
-                  ': Error calling ' +
-                  phase +
-                  '(): attempting to overwrite non-empty fileData',
-              );
-              courseIssue.fatal = true;
-              courseIssues.push(courseIssue);
-              return callback(null, courseIssues, data);
-            } else {
-              // If not, replace fileData with a copy of buffer
-              fileData = Buffer.from(buf);
-            }
+        // If the buffer has non-zero length...
+        if (buf.length > 0) {
+          if (fileData.length > 0) {
+            // If fileData already has non-zero length, throw an error
+            const serverFile = path.join(context.question_dir, 'server.py');
+            const courseIssue = new Error(
+              serverFile +
+                ': Error calling ' +
+                phase +
+                '(): attempting to overwrite non-empty fileData'
+            );
+            courseIssue.fatal = true;
+            courseIssues.push(courseIssue);
+            return callback(null, courseIssues, data);
+          } else {
+            // If not, replace fileData with a copy of buffer
+            fileData = Buffer.from(buf);
           }
-        } else {
-          data = ret_val;
         }
-        const checkErr = module.exports.checkData(data, origData, phase);
-        if (checkErr) {
-          const serverFile = path.join(context.question_dir, 'server.py');
-          const courseIssue = new Error(
-            serverFile + ': Invalid state after ' + phase + '(): ' + checkErr,
-          );
-          courseIssue.fatal = true;
-          courseIssues.push(courseIssue);
-          return callback(null, courseIssues, data);
-        }
+      } else {
+        data = ret_val;
+      }
+      const checkErr = module.exports.checkData(data, origData, phase);
+      if (checkErr) {
+        const serverFile = path.join(context.question_dir, 'server.py');
+        const courseIssue = new Error(
+          serverFile + ': Invalid state after ' + phase + '(): ' + checkErr
+        );
+        courseIssue.fatal = true;
+        courseIssues.push(courseIssue);
+        return callback(null, courseIssues, data);
+      }
 
-        callback(null, courseIssues, data, html, fileData);
-      },
-    );
+      callback(null, courseIssues, data, html, fileData);
+    });
   },
 
   processQuestion: function (phase, pc, data, context, callback) {
@@ -1127,7 +972,7 @@ module.exports = {
         (err, courseIssues, data, html, fileData) => {
           if (ERR(err, callback)) return;
           callback(null, courseIssues, data, html, fileData);
-        },
+        }
       );
     } else {
       module.exports.processQuestionHtml(
@@ -1138,8 +983,7 @@ module.exports = {
         (err, courseIssues, data, html, fileData, renderedElementNames) => {
           if (ERR(err, callback)) return;
           const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
-          if (hasFatalError)
-            return callback(null, courseIssues, data, html, fileData);
+          if (hasFatalError) return callback(null, courseIssues, data, html, fileData);
           module.exports.processQuestionServer(
             phase,
             pc,
@@ -1150,17 +994,10 @@ module.exports = {
             (err, ret_courseIssues, data, html, fileData) => {
               if (ERR(err, callback)) return;
               courseIssues.push(...ret_courseIssues);
-              callback(
-                null,
-                courseIssues,
-                data,
-                html,
-                fileData,
-                renderedElementNames,
-              );
-            },
+              callback(null, courseIssues, data, html, fileData, renderedElementNames);
+            }
           );
-        },
+        }
       );
     }
   },
@@ -1175,22 +1012,10 @@ module.exports = {
 
     let options = {};
     options.question_path = context.question_dir;
-    options.client_files_question_path = path.join(
-      context.question_dir,
-      'clientFilesQuestion',
-    );
-    options.client_files_course_path = path.join(
-      context.course_dir,
-      'clientFilesCourse',
-    );
-    options.server_files_course_path = path.join(
-      context.course_dir,
-      'serverFilesCourse',
-    );
-    options.course_extensions_path = path.join(
-      context.course_dir,
-      'elementExtensions',
-    );
+    options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+    options.client_files_course_path = path.join(context.course_dir, 'clientFilesCourse');
+    options.server_files_course_path = path.join(context.course_dir, 'serverFilesCourse');
+    options.course_extensions_path = path.join(context.course_dir, 'elementExtensions');
     return options;
   },
 
@@ -1214,14 +1039,7 @@ module.exports = {
           pc,
           data,
           context,
-          (
-            err,
-            courseIssues,
-            data,
-            _html,
-            _fileData,
-            _renderedElementNames,
-          ) => {
+          (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
             // don't immediately error here; we have to return the pythonCaller
             workers.returnPythonCaller(pc, (pcErr) => {
               if (ERR(pcErr, callback)) return;
@@ -1233,7 +1051,7 @@ module.exports = {
               debug(`generate(): completed`);
               callback(null, courseIssues, ret_vals);
             });
-          },
+          }
         );
       });
     });
@@ -1241,8 +1059,7 @@ module.exports = {
 
   prepare: function (question, course, variant, callback) {
     debug('prepare()');
-    if (variant.broken)
-      return callback(new Error('attemped to prepare broken variant'));
+    if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
     module.exports.getContext(question, course, (err, context) => {
       if (err) {
         return callback(new Error(`Error generating options: ${err}`));
@@ -1262,14 +1079,7 @@ module.exports = {
           pc,
           data,
           context,
-          (
-            err,
-            courseIssues,
-            data,
-            _html,
-            _fileData,
-            _renderedElementNames,
-          ) => {
+          (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
             // don't immediately error here; we have to return the pythonCaller
             workers.returnPythonCaller(pc, (pcErr) => {
               if (ERR(pcErr, callback)) return;
@@ -1281,41 +1091,23 @@ module.exports = {
               debug(`prepare(): completed`);
               callback(null, courseIssues, ret_vals);
             });
-          },
+          }
         );
       });
     });
   },
 
-  renderPanel: function (
-    panel,
-    pc,
-    variant,
-    question,
-    submission,
-    course,
-    locals,
-    callback,
-  ) {
+  renderPanel: function (panel, pc, variant, question, submission, course, locals, callback) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
-    if (variant.broken)
-      return callback(
-        null,
-        [],
-        'Broken question due to error in question code',
-      );
+    if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
 
     // broken submission kills the submission panel, but we can
     // proceed with other panels, treating the submission as
     // missing
     if (submission && submission.broken) {
       if (panel == 'submission') {
-        return callback(
-          null,
-          [],
-          'Broken submission due to error in question code',
-        );
+        return callback(null, [], 'Broken submission due to error in question code');
       } else {
         submission = null;
       }
@@ -1329,22 +1121,15 @@ module.exports = {
       const data = {
         params: _.get(variant, 'params', {}),
         correct_answers: _.get(variant, 'true_answer', {}),
-        submitted_answers: submission
-          ? _.get(submission, 'submitted_answer', {})
-          : {},
+        submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
         format_errors: submission ? _.get(submission, 'format_errors', {}) : {},
         partial_scores:
-          !submission || submission.partial_scores == null
-            ? {}
-            : submission.partial_scores,
+          !submission || submission.partial_scores == null ? {} : submission.partial_scores,
         score: !submission || submission.score == null ? 0 : submission.score,
-        feedback:
-          !submission || submission.feedback == null ? {} : submission.feedback,
+        feedback: !submission || submission.feedback == null ? {} : submission.feedback,
         variant_seed: parseInt(variant.variant_seed, 36),
         options: _.get(variant, 'options', {}),
-        raw_submitted_answers: submission
-          ? _.get(submission, 'raw_submitted_answer', {})
-          : {},
+        raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
         editable: !!locals.allowAnswerEditing,
         panel: panel,
       };
@@ -1352,8 +1137,7 @@ module.exports = {
       // Put base URLs in data.options for access by question code
       data.options.client_files_question_url = locals.clientFilesQuestionUrl;
       data.options.client_files_course_url = locals.clientFilesCourseUrl;
-      data.options.client_files_question_dynamic_url =
-        locals.clientFilesQuestionGeneratedFileUrl;
+      data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
       data.options.base_url = locals.baseUrl;
       data.options.workspace_url = locals.workspaceUrl || null;
 
@@ -1371,14 +1155,7 @@ module.exports = {
             pc,
             data,
             context,
-            (
-              err,
-              courseIssues,
-              _data,
-              html,
-              _fileData,
-              renderedElementNames,
-            ) => {
+            (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
               if (ERR(err, callback)) return;
               const cachedData = {
                 courseIssues,
@@ -1386,7 +1163,7 @@ module.exports = {
                 renderedElementNames,
               };
               callback(null, cachedData);
-            },
+            }
           );
         },
         (cachedData, cacheHit) => {
@@ -1395,7 +1172,7 @@ module.exports = {
           const { courseIssues, html, renderedElementNames } = cachedData;
           callback(null, courseIssues, html, renderedElementNames, cacheHit);
         },
-        callback, // error-handling function
+        callback // error-handling function
       );
     });
   },
@@ -1409,7 +1186,7 @@ module.exports = {
     course,
     course_instance,
     locals,
-    callback,
+    callback
   ) {
     debug(`render()`);
     const htmls = {
@@ -1443,12 +1220,9 @@ module.exports = {
                 htmls.questionHtml = html;
                 panelCount++;
                 if (cacheHit) cacheHitCount++;
-                allRenderedElementNames = _.union(
-                  allRenderedElementNames,
-                  renderedElementNames,
-                );
+                allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                 callback(null);
-              },
+              }
             );
           },
           (callback) => {
@@ -1464,30 +1238,24 @@ module.exports = {
                   submission,
                   course,
                   locals,
-                  (
-                    err,
-                    ret_courseIssues,
-                    html,
-                    renderedElementNames,
-                    cacheHit,
-                  ) => {
+                  (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
                     if (ERR(err, callback)) return;
                     courseIssues.push(...ret_courseIssues);
                     panelCount++;
                     if (cacheHit) cacheHitCount++;
                     allRenderedElementNames = _.union(
                       allRenderedElementNames,
-                      renderedElementNames,
+                      renderedElementNames
                     );
                     callback(null, html);
-                  },
+                  }
                 );
               },
               (err, submissionHtmls) => {
                 if (ERR(err, callback)) return;
                 htmls.submissionHtmls = submissionHtmls;
                 callback(null);
-              },
+              }
             );
           },
           (callback) => {
@@ -1506,12 +1274,9 @@ module.exports = {
                 htmls.answerHtml = html;
                 panelCount++;
                 if (cacheHit) cacheHitCount++;
-                allRenderedElementNames = _.union(
-                  allRenderedElementNames,
-                  renderedElementNames,
-                );
+                allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                 callback(null);
-              },
+              }
             );
           },
           (callback) => {
@@ -1556,51 +1321,40 @@ module.exports = {
 
               // Gather dependencies for all rendered elements
               allRenderedElementNames.forEach((elementName) => {
-                let resolvedElement = module.exports.resolveElement(
-                  elementName,
-                  context,
-                );
-                const elementDependencies = _.cloneDeep(
-                  resolvedElement.dependencies || {},
-                );
+                let resolvedElement = module.exports.resolveElement(elementName, context);
+                const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
 
                 // Transform non-global dependencies to be prefixed by the element name,
                 // since they'll be served from their element's directory
                 if (_.has(elementDependencies, 'elementStyles')) {
-                  elementDependencies.elementStyles =
-                    elementDependencies.elementStyles.map(
-                      (dep) => `${resolvedElement.name}/${dep}`,
-                    );
+                  elementDependencies.elementStyles = elementDependencies.elementStyles.map(
+                    (dep) => `${resolvedElement.name}/${dep}`
+                  );
                 }
                 if (_.has(elementDependencies, 'elementScripts')) {
-                  elementDependencies.elementScripts =
-                    elementDependencies.elementScripts.map(
-                      (dep) => `${resolvedElement.name}/${dep}`,
-                    );
+                  elementDependencies.elementScripts = elementDependencies.elementScripts.map(
+                    (dep) => `${resolvedElement.name}/${dep}`
+                  );
                 }
 
                 // Rename properties so we can track core and course
                 // element dependencies separately
                 if (resolvedElement.type === 'course') {
                   if (_.has(elementDependencies, 'elementStyles')) {
-                    elementDependencies.courseElementStyles =
-                      elementDependencies.elementStyles;
+                    elementDependencies.courseElementStyles = elementDependencies.elementStyles;
                     delete elementDependencies.elementStyles;
                   }
                   if (_.has(elementDependencies, 'elementScripts')) {
-                    elementDependencies.courseElementScripts =
-                      elementDependencies.elementScripts;
+                    elementDependencies.courseElementScripts = elementDependencies.elementScripts;
                     delete elementDependencies.elementScripts;
                   }
                 } else {
                   if (_.has(elementDependencies, 'elementStyles')) {
-                    elementDependencies.coreElementStyles =
-                      elementDependencies.elementStyles;
+                    elementDependencies.coreElementStyles = elementDependencies.elementStyles;
                     delete elementDependencies.elementStyles;
                   }
                   if (_.has(elementDependencies, 'elementScripts')) {
-                    elementDependencies.coreElementScripts =
-                      elementDependencies.elementScripts;
+                    elementDependencies.coreElementScripts = elementDependencies.elementScripts;
                     delete elementDependencies.elementScripts;
                   }
                 }
@@ -1627,7 +1381,7 @@ module.exports = {
                       }
                     } else {
                       const courseIssue = new Error(
-                        `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`,
+                        `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`
                       );
                       courseIssue.data = { elementDependencies };
                       courseIssue.fatal = true;
@@ -1638,31 +1392,23 @@ module.exports = {
 
                 /* Load any extensions if they exist */
                 if (_.has(extensions, elementName)) {
-                  for (const extensionName of Object.keys(
-                    extensions[elementName],
-                  )) {
-                    if (
-                      !_.has(
-                        extensions[elementName][extensionName],
-                        'dependencies',
-                      )
-                    ) {
+                  for (const extensionName of Object.keys(extensions[elementName])) {
+                    if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
                       continue;
                     }
 
                     const extension = _.cloneDeep(
-                      extensions[elementName][extensionName],
+                      extensions[elementName][extensionName]
                     ).dependencies;
                     if (_.has(extension, 'extensionStyles')) {
                       extension.extensionStyles = extension.extensionStyles.map(
-                        (dep) => `${elementName}/${extensionName}/${dep}`,
+                        (dep) => `${elementName}/${extensionName}/${dep}`
                       );
                     }
                     if (_.has(extension, 'extensionScripts')) {
-                      extension.extensionScripts =
-                        extension.extensionScripts.map(
-                          (dep) => `${elementName}/${extensionName}/${dep}`,
-                        );
+                      extension.extensionScripts = extension.extensionScripts.map(
+                        (dep) => `${elementName}/${extensionName}/${dep}`
+                      );
                     }
 
                     const dependencyTypes = [
@@ -1686,7 +1432,7 @@ module.exports = {
                           }
                         } else {
                           const courseIssue = new Error(
-                            `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`,
+                            `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`
                           );
                           courseIssue.data = { elementDependencies };
                           courseIssue.fatal = true;
@@ -1703,65 +1449,55 @@ module.exports = {
               const scriptUrls = [];
               const styleUrls = [];
               dependencies.coreStyles.forEach((file) =>
-                styleUrls.push(assets.assetPath(`stylesheets/${file}`)),
+                styleUrls.push(assets.assetPath(`stylesheets/${file}`))
               );
               dependencies.coreScripts.forEach((file) =>
-                coreScriptUrls.push(assets.assetPath(`javascripts/${file}`)),
+                coreScriptUrls.push(assets.assetPath(`javascripts/${file}`))
               );
               dependencies.nodeModulesStyles.forEach((file) =>
-                styleUrls.push(assets.nodeModulesAssetPath(file)),
+                styleUrls.push(assets.nodeModulesAssetPath(file))
               );
               dependencies.nodeModulesScripts.forEach((file) =>
-                coreScriptUrls.push(assets.nodeModulesAssetPath(file)),
+                coreScriptUrls.push(assets.nodeModulesAssetPath(file))
               );
               dependencies.clientFilesCourseStyles.forEach((file) =>
-                styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
+                styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
               );
               dependencies.clientFilesCourseScripts.forEach((file) =>
-                scriptUrls.push(
-                  `${locals.urlPrefix}/clientFilesCourse/${file}`,
-                ),
+                scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
               );
               dependencies.clientFilesQuestionStyles.forEach((file) =>
-                styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),
+                styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
               );
               dependencies.clientFilesQuestionScripts.forEach((file) =>
-                scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),
+                scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
               );
               dependencies.coreElementStyles.forEach((file) =>
-                styleUrls.push(`/pl/static/elements/${file}`),
+                styleUrls.push(`/pl/static/elements/${file}`)
               );
               dependencies.coreElementScripts.forEach((file) =>
-                scriptUrls.push(`/pl/static/elements/${file}`),
+                scriptUrls.push(`/pl/static/elements/${file}`)
               );
               dependencies.courseElementStyles.forEach((file) =>
-                styleUrls.push(`${locals.urlPrefix}/elements/${file}`),
+                styleUrls.push(`${locals.urlPrefix}/elements/${file}`)
               );
               dependencies.courseElementScripts.forEach((file) =>
-                scriptUrls.push(`${locals.urlPrefix}/elements/${file}`),
+                scriptUrls.push(`${locals.urlPrefix}/elements/${file}`)
               );
               dependencies.extensionStyles.forEach((file) =>
-                styleUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`),
+                styleUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`)
               );
               dependencies.extensionScripts.forEach((file) =>
-                scriptUrls.push(
-                  `${locals.urlPrefix}/elementExtensions/${file}`,
-                ),
+                scriptUrls.push(`${locals.urlPrefix}/elementExtensions/${file}`)
               );
 
               const headerHtmls = [
-                ...styleUrls.map(
-                  (url) => `<link href="${url}" rel="stylesheet" />`,
-                ),
+                ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                 // It's important that any library-style scripts come first
                 ...coreScriptUrls.map(
-                  (url) =>
-                    `<script type="text/javascript" src="${url}"></script>`,
+                  (url) => `<script type="text/javascript" src="${url}"></script>`
                 ),
-                ...scriptUrls.map(
-                  (url) =>
-                    `<script type="text/javascript" src="${url}"></script>`,
-                ),
+                ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
               ];
               htmls.extraHeadersHtml = headerHtmls.join('\n');
               callback(null);
@@ -1775,15 +1511,14 @@ module.exports = {
             if (ERR(err, callback)) return;
             callback(null, courseIssues, htmls);
           });
-        },
+        }
       );
     });
   },
 
   file: function (filename, variant, question, course, callback) {
     debug(`file()`);
-    if (variant.broken)
-      return callback(new Error('attemped to get a file for a broken variant'));
+    if (variant.broken) return callback(new Error('attemped to get a file for a broken variant'));
     module.exports.getContext(question, course, (err, context) => {
       if (err) {
         return callback(new Error(`Error generating options: ${err}`));
@@ -1819,7 +1554,7 @@ module.exports = {
                   const cachedData = { courseIssues, fileDataBase64 };
                   callback(null, cachedData);
                 });
-              },
+              }
             );
           });
         },
@@ -1830,15 +1565,14 @@ module.exports = {
           const fileData = Buffer.from(fileDataBase64, 'base64');
           callback(null, courseIssues, fileData);
         },
-        callback, // error-handling function
+        callback // error-handling function
       );
     });
   },
 
   parse: function (submission, variant, question, course, callback) {
     debug(`parse()`);
-    if (variant.broken)
-      return callback(new Error('attemped to parse broken variant'));
+    if (variant.broken) return callback(new Error('attemped to parse broken variant'));
     module.exports.getContext(question, course, (err, context) => {
       if (err) {
         return callback(new Error(`Error generating options: ${err}`));
@@ -1878,7 +1612,7 @@ module.exports = {
               };
               callback(null, courseIssues, ret_vals);
             });
-          },
+          }
         );
       });
     });
@@ -1886,10 +1620,8 @@ module.exports = {
 
   grade: function (submission, variant, question, course, callback) {
     debug(`grade()`);
-    if (variant.broken)
-      return callback(new Error('attemped to grade broken variant'));
-    if (submission.broken)
-      return callback(new Error('attemped to grade broken submission'));
+    if (variant.broken) return callback(new Error('attemped to grade broken variant'));
+    if (submission.broken) return callback(new Error('attemped to grade broken submission'));
     module.exports.getContext(question, course, (err, context) => {
       if (err) {
         return callback(new Error(`Error generating options: ${err}`));
@@ -1900,8 +1632,7 @@ module.exports = {
         correct_answers: variant.true_answer,
         submitted_answers: submission.submitted_answer,
         format_errors: submission.format_errors,
-        partial_scores:
-          submission.partial_scores == null ? {} : submission.partial_scores,
+        partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
         score: submission.score == null ? 0 : submission.score,
         feedback: submission.feedback == null ? {} : submission.feedback,
         variant_seed: parseInt(variant.variant_seed, 36),
@@ -1936,7 +1667,7 @@ module.exports = {
               };
               callback(null, courseIssues, ret_vals);
             });
-          },
+          }
         );
       });
     });
@@ -1944,8 +1675,7 @@ module.exports = {
 
   test: function (variant, question, course, test_type, callback) {
     debug(`test()`);
-    if (variant.broken)
-      return callback(new Error('attemped to test broken variant'));
+    if (variant.broken) return callback(new Error('attemped to test broken variant'));
     module.exports.getContext(question, course, (err, context) => {
       if (err) {
         return callback(new Error(`Error generating options: ${err}`));
@@ -1989,7 +1719,7 @@ module.exports = {
               };
               callback(null, courseIssues, ret_vals);
             });
-          },
+          }
         );
       });
     });
@@ -2027,9 +1757,7 @@ module.exports = {
 
     /* Load elements and any extensions */
     const elements = await module.exports.loadElementsForCourseAsync(course);
-    const extensions = await module.exports.loadExtensionsForCourseAsync(
-      course,
-    );
+    const extensions = await module.exports.loadExtensionsForCourseAsync(course);
 
     context.course_elements = elements;
     context.course_element_extensions = extensions;
@@ -2038,34 +1766,21 @@ module.exports = {
   },
 
   getContext: function (question, course, callback) {
-    return callbackify(module.exports.getContextAsync)(
-      question,
-      course,
-      (err, context) => {
-        if (ERR(err, callback)) return;
-        callback(null, context);
-      },
-    );
+    return callbackify(module.exports.getContextAsync)(question, course, (err, context) => {
+      if (ERR(err, callback)) return;
+      callback(null, context);
+    });
   },
 
   getCacheKey: function (course, data, context, callback) {
     courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
       if (ERR(err, callback)) return;
-      const dataHash = hash('sha1')
-        .update(JSON.stringify({ data, context }))
-        .digest('base64');
+      const dataHash = hash('sha1').update(JSON.stringify({ data, context })).digest('base64');
       callback(null, `${commitHash}-${dataHash}`);
     });
   },
 
-  getCachedDataOrCompute: function (
-    course,
-    data,
-    context,
-    computeFcn,
-    processFcn,
-    errorFcn,
-  ) {
+  getCachedDataOrCompute: function (course, data, context, computeFcn, processFcn, errorFcn) {
     // This function will compute the cachedData and cache it if
     // cacheKey is not null
     const doCompute = (cacheKey) => {

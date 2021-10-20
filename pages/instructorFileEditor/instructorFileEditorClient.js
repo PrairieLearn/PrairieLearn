@@ -4,17 +4,13 @@
 window.InstructorFileEditor = function (options) {
   this.element = $(`#${options.elementId}`);
   if (!this.element) {
-    throw new Error(
-      `Instructor file editor element ${options.elementId} was not found!`,
-    );
+    throw new Error(`Instructor file editor element ${options.elementId} was not found!`);
   }
 
   this.origHash = options.origHash;
   this.diskHash = options.diskHash;
   this.saveElement = $(`#${options.saveElementId}`);
-  this.inputContentsElement = this.element.find(
-    'input[name=file_edit_contents]',
-  );
+  this.inputContentsElement = this.element.find('input[name=file_edit_contents]');
   this.inputHashElement = this.element.find('input[name=file_edit_orig_hash]');
   this.editorElement = this.element.find('.editor');
   this.editor = ace.edit(this.editorElement.get(0), {
@@ -65,7 +61,7 @@ window.InstructorFileEditor = function (options) {
 
         // Allow the editor to resize itself, filling the whole container
         this.editor.resize();
-      }.bind(this),
+      }.bind(this)
     );
   }
 
@@ -120,7 +116,7 @@ window.InstructorFileEditor.prototype.b64DecodeUnicode = function (str) {
       .map((c) => {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       })
-      .join(''),
+      .join('')
   );
 };
 
@@ -131,7 +127,7 @@ window.InstructorFileEditor.prototype.b64EncodeUnicode = function (str) {
   return btoa(
     encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
       return String.fromCharCode('0x' + p1);
-    }),
+    })
   );
 };
 

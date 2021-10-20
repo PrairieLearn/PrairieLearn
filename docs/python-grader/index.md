@@ -78,9 +78,7 @@ Full example:
   </p>
 
   <p>Your code snippet should define the following variables:</p>
-  <pl-external-grader-variables
-    variables-category="names_from_user"
-  ></pl-external-grader-variables>
+  <pl-external-grader-variables variables-category="names_from_user"></pl-external-grader-variables>
   <pl-file-editor
     file_name="user_code.py"
     ace_mode="ace/mode/python"

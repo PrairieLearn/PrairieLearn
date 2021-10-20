@@ -94,37 +94,25 @@ router.get('/*', (req, res, next) => {
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
     return next(
-      error.make(
-        400,
-        `attempting to edit file inside example course: ${workingPath}`,
-        {
-          locals: res.locals,
-          body: req.body,
-        },
-      ),
+      error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
+        locals: res.locals,
+        body: req.body,
+      })
     );
   }
 
   // Do not allow users to edit files outside the course
-  const fullPath = path.join(
-    fileEdit.coursePath,
-    fileEdit.dirName,
-    fileEdit.fileName,
-  );
+  const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
   const relPath = path.relative(fileEdit.coursePath, fullPath);
   debug(
-    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`,
+    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
   if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
     return next(
-      error.make(
-        400,
-        `attempting to edit file outside course directory: ${workingPath}`,
-        {
-          locals: res.locals,
-          body: req.body,
-        },
-      ),
+      error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
+        locals: res.locals,
+        body: req.body,
+      })
     );
   }
 
@@ -141,9 +129,7 @@ router.get('/*', (req, res, next) => {
         debug('Read from disk');
         fs.readFile(fullPath, (err, contents) => {
           if (ERR(err, callback)) return;
-          fileEdit.diskContents = b64Util.b64EncodeUnicode(
-            contents.toString('utf8'),
-          );
+          fileEdit.diskContents = b64Util.b64EncodeUnicode(contents.toString('utf8'));
           fileEdit.diskHash = getHash(fileEdit.diskContents);
           callback(null, contents);
         });
@@ -163,7 +149,7 @@ router.get('/*', (req, res, next) => {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null); // should never get here
-          },
+          }
         );
       },
       (callback) => {
@@ -178,7 +164,7 @@ router.get('/*', (req, res, next) => {
               if (ERR(err, callback)) return;
               fileEdit.jobSequence = job_sequence;
               callback(null);
-            },
+            }
           );
         }
       },
@@ -190,28 +176,19 @@ router.get('/*', (req, res, next) => {
             if (ERR(err, callback)) return;
             const ansiUp = new AnsiUp();
             fileEdit.sync_errors = data.errors;
-            fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(
-              fileEdit.sync_errors,
-            );
+            fileEdit.sync_errors_ansified = ansiUp.ansi_to_html(fileEdit.sync_errors);
             fileEdit.sync_warnings = data.warnings;
-            fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(
-              fileEdit.sync_warnings,
-            );
+            fileEdit.sync_warnings_ansified = ansiUp.ansi_to_html(fileEdit.sync_warnings);
             callback(null);
-          },
+          }
         );
       },
     ],
     (err) => {
       if (ERR(err, next)) return;
-      if (
-        'jobSequence' in fileEdit &&
-        fileEdit.jobSequence.status == 'Running'
-      ) {
+      if ('jobSequence' in fileEdit && fileEdit.jobSequence.status == 'Running') {
         debug('Job sequence is still running - redirect to status page');
-        res.redirect(
-          `${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`,
-        );
+        res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
         return;
       }
 
@@ -243,7 +220,7 @@ router.get('/*', (req, res, next) => {
       debug('Render');
       res.locals.fileEdit = fileEdit;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 });
 
@@ -278,44 +255,29 @@ router.post('/*', (req, res, next) => {
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
     return next(
-      error.make(
-        400,
-        `attempting to edit file inside example course: ${workingPath}`,
-        {
-          locals: res.locals,
-          body: req.body,
-        },
-      ),
+      error.make(400, `attempting to edit file inside example course: ${workingPath}`, {
+        locals: res.locals,
+        body: req.body,
+      })
     );
   }
 
   // Do not allow users to edit files outside the course
-  const fullPath = path.join(
-    fileEdit.coursePath,
-    fileEdit.dirName,
-    fileEdit.fileName,
-  );
+  const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
   const relPath = path.relative(fileEdit.coursePath, fullPath);
   debug(
-    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`,
+    `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
   if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
     return next(
-      error.make(
-        400,
-        `attempting to edit file outside course directory: ${workingPath}`,
-        {
-          locals: res.locals,
-          body: req.body,
-        },
-      ),
+      error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
+        locals: res.locals,
+        body: req.body,
+      })
     );
   }
 
-  if (
-    req.body.__action == 'save_and_sync' ||
-    req.body.__action == 'pull_and_save_and_sync'
-  ) {
+  if (req.body.__action == 'save_and_sync' || req.body.__action == 'pull_and_save_and_sync') {
     debug('Save and sync');
 
     // The "Save and Sync" button is enabled only when changes have been made
@@ -330,8 +292,8 @@ router.post('/*', (req, res, next) => {
           {
             locals: res.locals,
             body: req.body,
-          },
-        ),
+          }
+        )
       );
     }
 
@@ -345,31 +307,30 @@ router.post('/*', (req, res, next) => {
       const rootPath = path.join(
         res.locals.course.path,
         'courseInstances',
-        res.locals.course_instance.short_name,
+        res.locals.course_instance.short_name
       );
-      fileEdit.commitMessage = `${path.basename(
+      fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-      )}: edit ${path.relative(rootPath, fullPath)}`;
+        fullPath
+      )}`;
     } else if (res.locals.navPage == 'assessment') {
       const rootPath = path.join(
         res.locals.course.path,
         'courseInstances',
         res.locals.course_instance.short_name,
         'assessments',
-        res.locals.assessment.tid,
+        res.locals.assessment.tid
       );
-      fileEdit.commitMessage = `${path.basename(
+      fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-      )}: edit ${path.relative(rootPath, fullPath)}`;
+        fullPath
+      )}`;
     } else if (res.locals.navPage == 'question') {
-      const rootPath = path.join(
-        res.locals.course.path,
-        'questions',
-        res.locals.question.qid,
-      );
-      fileEdit.commitMessage = `${path.basename(
+      const rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
+      fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
-      )}: edit ${path.relative(rootPath, fullPath)}`;
+        fullPath
+      )}`;
     } else {
       const rootPath = res.locals.course.path;
       fileEdit.commitMessage = `edit ${path.relative(rootPath, fullPath)}`;
@@ -400,14 +361,14 @@ router.post('/*', (req, res, next) => {
       (err) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
-      },
+      }
     );
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });
@@ -431,7 +392,7 @@ function readEdit(fileEdit, callback) {
           if (ERR(err, callback)) return;
           if (result.rows.length > 0) {
             debug(
-              `Found ${result.rows.length} saved drafts, the first of which has id ${result.rows[0].id}`,
+              `Found ${result.rows.length} saved drafts, the first of which has id ${result.rows[0].id}`
             );
             if (result.rows[0].age < 24) {
               fileEdit.editID = result.rows[0].id;
@@ -440,13 +401,9 @@ function readEdit(fileEdit, callback) {
               fileEdit.didSync = result.rows[0].did_sync;
               fileEdit.jobSequenceId = result.rows[0].job_sequence_id;
               fileEdit.fileID = result.rows[0].file_id;
-              debug(
-                `Draft: did_save=${fileEdit.didSave}, did_sync=${fileEdit.didSync}`,
-              );
+              debug(`Draft: did_save=${fileEdit.didSave}, did_sync=${fileEdit.didSync}`);
             } else {
-              debug(
-                `Rejected this draft, which had age ${result.rows[0].age} >= 24 hours`,
-              );
+              debug(`Rejected this draft, which had age ${result.rows[0].age} >= 24 hours`);
             }
           } else {
             debug(`Found no saved drafts`);
@@ -472,7 +429,7 @@ function readEdit(fileEdit, callback) {
             result.rows.forEach((row) => {
               if (row.file_id == fileEdit.fileID) {
                 debug(
-                  `Defer removal of file_id=${row.file_id} from file store until after reading contents`,
+                  `Defer removal of file_id=${row.file_id} from file store until after reading contents`
                 );
               } else {
                 debug(`Remove file_id=${row.file_id} from file store`);
@@ -513,7 +470,7 @@ function readEdit(fileEdit, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 
@@ -533,11 +490,9 @@ function updateJobSequenceId(fileEdit, job_sequence_id, callback) {
     },
     (err) => {
       if (ERR(err, callback)) return;
-      debug(
-        `Update file edit id=${fileEdit.editID}: job_sequence_id=${job_sequence_id}`,
-      );
+      debug(`Update file edit id=${fileEdit.editID}: job_sequence_id=${job_sequence_id}`);
       callback(null);
-    },
+    }
   );
 }
 
@@ -551,7 +506,7 @@ function updateDidSave(fileEdit, callback) {
       if (ERR(err, callback)) return;
       debug(`Update file edit id=${fileEdit.editID}: did_save=true`);
       callback(null);
-    },
+    }
   );
 }
 
@@ -565,7 +520,7 @@ function updateDidSync(fileEdit, callback) {
       if (ERR(err, callback)) return;
       debug(`Update file edit id=${fileEdit.editID}: did_sync=true`);
       callback(null);
-    },
+    }
   );
 }
 
@@ -618,7 +573,7 @@ function createEdit(fileEdit, callback) {
           file_id: fileEdit.fileID,
         };
         debug(
-          `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`,
+          `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`
         );
         sqldb.queryOneRow(sql.insert_file_edit, params, (err, result) => {
           if (ERR(err, callback)) return;
@@ -631,7 +586,7 @@ function createEdit(fileEdit, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 
@@ -644,7 +599,7 @@ function writeEdit(fileEdit, callback) {
       null,
       null,
       fileEdit.userID, // TODO: could distinguish between user_id and authn_user_id,
-      fileEdit.userID, //       although I don't think there's any need to do so
+      fileEdit.userID //       although I don't think there's any need to do so
     );
     debug(`writeEdit(): wrote file edit to file store with file_id=${fileID}`);
     return fileID;
@@ -734,8 +689,8 @@ function saveAndSync(fileEdit, locals, callback) {
             job.verbose(`Did not acquire lock ${lockName}`);
             job.fail(
               new Error(
-                `Another user is already syncing or modifying the course: ${options.courseDir}`,
-              ),
+                `Another user is already syncing or modifying the course: ${options.courseDir}`
+              )
             );
           } else {
             courseLock = lock;
@@ -847,26 +802,16 @@ function saveAndSync(fileEdit, locals, callback) {
           return;
         }
 
-        const fullPath = path.join(
-          fileEdit.coursePath,
-          fileEdit.dirName,
-          fileEdit.fileName,
-        );
+        const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
         fs.readFile(fullPath, 'utf8', (err, contents) => {
           if (err) {
             job.fail(err);
           } else {
             fileEdit.diskHash = getHash(b64Util.b64EncodeUnicode(contents));
             if (fileEdit.origHash != fileEdit.diskHash) {
-              job.fail(
-                new Error(
-                  `Another user made changes to the file you were editing.`,
-                ),
-              );
+              job.fail(new Error(`Another user made changes to the file you were editing.`));
             } else {
-              job.verbose(
-                'No changes were made to the file since you started editing.',
-              );
+              job.verbose('No changes were made to the file since you started editing.');
               job.succeed();
             }
           }
@@ -894,25 +839,16 @@ function saveAndSync(fileEdit, locals, callback) {
         }
 
         job.verbose('Trying to write file');
-        const fullPath = path.join(
-          fileEdit.coursePath,
-          fileEdit.dirName,
-          fileEdit.fileName,
-        );
-        fs.writeFile(
-          fullPath,
-          b64Util.b64DecodeUnicode(fileEdit.editContents),
-          'utf8',
-          (err) => {
-            if (err) {
-              job.fail(err);
-            } else {
-              debug(`Wrote file to ${fullPath}`);
-              job.verbose(`Wrote file to ${fullPath}`);
-              job.succeed();
-            }
-          },
-        );
+        const fullPath = path.join(fileEdit.coursePath, fileEdit.dirName, fileEdit.fileName);
+        fs.writeFile(fullPath, b64Util.b64DecodeUnicode(fileEdit.editContents), 'utf8', (err) => {
+          if (err) {
+            job.fail(err);
+          } else {
+            debug(`Wrote file to ${fullPath}`);
+            job.verbose(`Wrote file to ${fullPath}`);
+            job.succeed();
+          }
+        });
       });
     };
 
@@ -1044,9 +980,7 @@ function saveAndSync(fileEdit, locals, callback) {
         type: 'unlock',
         description: 'Unlock',
         job_sequence_id: job_sequence_id,
-        on_success: jobSequenceHasFailed
-          ? _finishWithFailure
-          : _updateCommitHash,
+        on_success: jobSequenceHasFailed ? _finishWithFailure : _updateCommitHash,
         on_error: _finishWithFailure,
         no_job_sequence_update: true,
       };
@@ -1100,48 +1034,41 @@ function saveAndSync(fileEdit, locals, callback) {
           _finishWithFailure();
           return;
         }
-        syncFromDisk.syncDiskToSql(
-          locals.course.path,
-          locals.course.id,
-          job,
-          (err, result) => {
-            if (err) {
-              job.fail(err);
-              return;
-            }
+        syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, (err, result) => {
+          if (err) {
+            job.fail(err);
+            return;
+          }
 
-            const checkJsonErrors = () => {
-              if (result.hadJsonErrors) {
-                job.fail(
-                  'One or more JSON files contained errors and were unable to be synced',
-                );
-              } else {
-                job.succeed();
-              }
-            };
-
-            if (config.chunksGenerator) {
-              callbackify(chunks.updateChunksForCourse)(
-                {
-                  coursePath: locals.course.path,
-                  courseId: locals.course.id,
-                  courseData: result.courseData,
-                  oldHash: startGitHash,
-                  newHash: endGitHash,
-                },
-                (err) => {
-                  if (err) {
-                    job.fail(err);
-                  } else {
-                    checkJsonErrors();
-                  }
-                },
-              );
+          const checkJsonErrors = () => {
+            if (result.hadJsonErrors) {
+              job.fail('One or more JSON files contained errors and were unable to be synced');
             } else {
-              checkJsonErrors();
+              job.succeed();
             }
-          },
-        );
+          };
+
+          if (config.chunksGenerator) {
+            callbackify(chunks.updateChunksForCourse)(
+              {
+                coursePath: locals.course.path,
+                courseId: locals.course.id,
+                courseData: result.courseData,
+                oldHash: startGitHash,
+                newHash: endGitHash,
+              },
+              (err) => {
+                if (err) {
+                  job.fail(err);
+                } else {
+                  checkJsonErrors();
+                }
+              }
+            );
+          } else {
+            checkJsonErrors();
+          }
+        });
       });
     };
 

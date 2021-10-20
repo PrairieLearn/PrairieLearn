@@ -49,11 +49,7 @@ module.exports.extractAndSaveCSRFToken = (context, $, parentSelector = '') => {
  * that is inside the data-content attribute of the parentSelector.
  * The token will also be persisted to `context.__csrf_token`.
  */
-module.exports.extractAndSaveCSRFTokenFromDataContent = (
-  context,
-  $,
-  parentSelector,
-) => {
+module.exports.extractAndSaveCSRFTokenFromDataContent = (context, $, parentSelector) => {
   const parent = $(parentSelector);
   assert.lengthOf(parent, 1);
   const inner$ = cheerio.load(parent[0].attribs['data-content']);

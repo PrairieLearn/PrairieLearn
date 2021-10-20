@@ -66,8 +66,7 @@ describe('Test student auto-enrollment', function () {
 
   describe('A student user with no access to course instance', function () {
     before('add course instance with no access rule', async function () {
-      const result = (await sqldb.queryAsync(sql.insert_course_instance, {}))
-        .rows[0];
+      const result = (await sqldb.queryAsync(sql.insert_course_instance, {})).rows[0];
       newAssessmentsUrl = baseUrl + `/course_instance/${result.id}/assessments`;
     });
 

@@ -7,17 +7,13 @@ var csrf = require('../../lib/csrf');
 var sqldb = require('../../prairielib/lib/sql-db');
 
 router.get('/:action?/:target(*)?', function (req, res, next) {
-  if (!config.hasShib)
-    return next(new Error('Shibboleth login is not enabled'));
+  if (!config.hasShib) return next(new Error('Shibboleth login is not enabled'));
   var authUid = null;
   var authName = null;
   var authUin = null;
-  if (req.headers['x-trust-auth-uid'])
-    authUid = req.headers['x-trust-auth-uid'];
-  if (req.headers['x-trust-auth-name'])
-    authName = req.headers['x-trust-auth-name'];
-  if (req.headers['x-trust-auth-uin'])
-    authUin = req.headers['x-trust-auth-uin'];
+  if (req.headers['x-trust-auth-uid']) authUid = req.headers['x-trust-auth-uid'];
+  if (req.headers['x-trust-auth-name']) authName = req.headers['x-trust-auth-name'];
+  if (req.headers['x-trust-auth-uin']) authUin = req.headers['x-trust-auth-uin'];
   if (!authUid) return next(new Error('No authUid'));
 
   // catch bad Shibboleth data
@@ -36,8 +32,7 @@ router.get('/:action?/:target(*)?', function (req, res, next) {
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
     });
-    if (req.params.action == 'redirect')
-      return res.redirect('/' + req.params.target);
+    if (req.params.action == 'redirect') return res.redirect('/' + req.params.target);
     var redirUrl = res.locals.homeUrl;
     if ('preAuthUrl' in req.cookies) {
       redirUrl = req.cookies.preAuthUrl;

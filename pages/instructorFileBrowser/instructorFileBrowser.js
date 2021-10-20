@@ -4,14 +4,8 @@ const router = express.Router();
 const error = require('../../prairielib/error');
 
 const path = require('path');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
-const {
-  FileDeleteEditor,
-  FileRenameEditor,
-  FileUploadEditor,
-} = require('../../lib/editors');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { FileDeleteEditor, FileRenameEditor, FileUploadEditor } = require('../../lib/editors');
 const logger = require('../../lib/logger');
 const fs = require('fs-extra');
 const async = require('async');
@@ -72,7 +66,7 @@ function getPaths(req, res, callback) {
     paths.rootPath = path.join(
       res.locals.course.path,
       'courseInstances',
-      res.locals.course_instance.short_name,
+      res.locals.course_instance.short_name
     );
     paths.invalidRootPaths = [path.join(paths.rootPath, 'assessments')];
     paths.cannotMove = [path.join(paths.rootPath, 'infoCourseInstance.json')];
@@ -85,7 +79,7 @@ function getPaths(req, res, callback) {
       'courseInstances',
       res.locals.course_instance.short_name,
       'assessments',
-      res.locals.assessment.tid,
+      res.locals.assessment.tid
     );
     paths.invalidRootPaths = [];
     paths.cannotMove = [path.join(paths.rootPath, 'infoAssessment.json')];
@@ -93,11 +87,7 @@ function getPaths(req, res, callback) {
     paths.serverDir = path.join(paths.rootPath, 'serverFilesAssessment');
     paths.urlPrefix = `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`;
   } else if (res.locals.navPage == 'question') {
-    paths.rootPath = path.join(
-      res.locals.course.path,
-      'questions',
-      res.locals.question.qid,
-    );
+    paths.rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
     paths.invalidRootPaths = [];
     paths.cannotMove = [path.join(paths.rootPath, 'info.json')];
     paths.clientDir = path.join(paths.rootPath, 'clientFilesQuestion');
@@ -110,20 +100,14 @@ function getPaths(req, res, callback) {
 
   if (req.params[0]) {
     try {
-      paths.workingPath = path.join(
-        res.locals.course.path,
-        decodePath(req.params[0]),
-      );
+      paths.workingPath = path.join(res.locals.course.path, decodePath(req.params[0]));
     } catch (err) {
       return callback(new Error(`Invalid path: ${req.params[0]}`));
     }
   } else {
     paths.workingPath = paths.rootPath;
   }
-  paths.workingPathRelativeToCourse = path.relative(
-    res.locals.course.path,
-    paths.workingPath,
-  );
+  paths.workingPathRelativeToCourse = path.relative(res.locals.course.path, paths.workingPath);
 
   if (paths.workingPath == paths.rootPath) {
     paths.specialDirs = [];
@@ -132,7 +116,7 @@ function getPaths(req, res, callback) {
         label: 'Client',
         path: paths.clientDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.clientDir,
+          paths.clientDir
         )}</code> and will be accessible from the student's webbrowser.`,
       });
     }
@@ -141,7 +125,7 @@ function getPaths(req, res, callback) {
         label: 'Server',
         path: paths.serverDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.serverDir,
+          paths.serverDir
         )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser.`,
       });
     }
@@ -150,7 +134,7 @@ function getPaths(req, res, callback) {
         label: 'Test',
         path: paths.testsDir,
         info: `This file will be placed in the subdirectory <code>${path.basename(
-          paths.testsDir,
+          paths.testsDir
         )}</code> and will be accessible only from the server. It will not be accessible from the student's webbrowser. This is appropriate for code to support <a href='https://prairielearn.readthedocs.io/en/latest/externalGrading/'>externally graded questions</a>.`,
       });
     }
@@ -168,7 +152,7 @@ function getPaths(req, res, callback) {
   }
 
   const found = paths.invalidRootPaths.find((invalidRootPath) =>
-    contains(invalidRootPath, paths.workingPath),
+    contains(invalidRootPath, paths.workingPath)
   );
   if (found) {
     let err = new Error('Invalid working directory');
@@ -200,9 +184,7 @@ function getPaths(req, res, callback) {
           name: path.basename(curPath),
           path: path.relative(res.locals.course.path, curPath),
           canView: contains(paths.rootPath, curPath),
-          encodedPath: encodePath(
-            path.relative(res.locals.course.path, curPath),
-          ),
+          encodedPath: encodePath(path.relative(res.locals.course.path, curPath)),
         });
       }
     });
@@ -226,32 +208,25 @@ function browseDirectory(file_browser, callback) {
           filenames.sort(),
           (filename, index, callback) => {
             if (isHidden(filename)) return callback(null);
-            const filepath = path.join(
-              file_browser.paths.workingPath,
-              filename,
-            );
+            const filepath = path.join(file_browser.paths.workingPath, filename);
             fs.lstat(filepath, (err, stats) => {
               if (ERR(err, callback)) return;
               if (stats.isFile()) {
                 const editable = canEditFile(filepath);
-                const movable =
-                  !file_browser.paths.cannotMove.includes(filepath);
+                const movable = !file_browser.paths.cannotMove.includes(filepath);
                 file_browser.files.push({
                   id: index,
                   name: filename,
                   encodedName: encodePath(filename),
                   path: path.relative(file_browser.paths.coursePath, filepath),
-                  encodedPath: encodePath(
-                    path.relative(file_browser.paths.coursePath, filepath),
-                  ),
+                  encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                   dir: file_browser.paths.workingPath,
                   canEdit:
                     editable &&
                     file_browser.has_course_permission_edit &&
                     !file_browser.example_course,
                   canUpload:
-                    file_browser.has_course_permission_edit &&
-                    !file_browser.example_course,
+                    file_browser.has_course_permission_edit && !file_browser.example_course,
                   canDownload: true, // we already know the user is a course Viewer (checked on GET)
                   canRename:
                     movable &&
@@ -261,8 +236,8 @@ function browseDirectory(file_browser, callback) {
                     movable &&
                     file_browser.has_course_permission_edit &&
                     !file_browser.example_course,
-                  canView: !file_browser.paths.invalidRootPaths.some(
-                    (invalidRootPath) => contains(invalidRootPath, filepath),
+                  canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
+                    contains(invalidRootPath, filepath)
                   ),
                 });
               } else if (stats.isDirectory()) {
@@ -271,11 +246,9 @@ function browseDirectory(file_browser, callback) {
                   name: filename,
                   encodedName: encodePath(filename),
                   path: path.relative(file_browser.paths.coursePath, filepath),
-                  encodedPath: encodePath(
-                    path.relative(file_browser.paths.coursePath, filepath),
-                  ),
-                  canView: !file_browser.paths.invalidRootPaths.some(
-                    (invalidRootPath) => contains(invalidRootPath, filepath),
+                  encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
+                  canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
+                    contains(invalidRootPath, filepath)
                   ),
                 });
               }
@@ -285,7 +258,7 @@ function browseDirectory(file_browser, callback) {
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
@@ -299,28 +272,24 @@ function browseDirectory(file_browser, callback) {
                 if (ERR(err, callback)) return;
                 const ansiUp = new AnsiUp();
                 file.sync_errors = data.errors;
-                file.sync_errors_ansified = ansiUp.ansi_to_html(
-                  file.sync_errors,
-                );
+                file.sync_errors_ansified = ansiUp.ansi_to_html(file.sync_errors);
                 file.sync_warnings = data.warnings;
-                file.sync_warnings_ansified = ansiUp.ansi_to_html(
-                  file.sync_warnings,
-                );
+                file.sync_warnings_ansified = ansiUp.ansi_to_html(file.sync_warnings);
                 callback(null);
-              },
+              }
             );
           },
           (err) => {
             if (ERR(err, callback)) return;
             callback(null);
-          },
+          }
         );
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 }
 
@@ -353,16 +322,14 @@ function browseFile(file_browser, callback) {
             } else {
               debug(`found a text file`);
               file_browser.isText = true;
-              file_browser.contents = hljs.highlightAuto(
-                contents.toString('utf8'),
-              ).value;
+              file_browser.contents = hljs.highlightAuto(contents.toString('utf8')).value;
               callback(null);
             }
           },
           (err) => {
             if (ERR(err, callback)) return;
             callback(null); // should never get here
-          },
+          }
         );
       },
     ],
@@ -376,32 +343,22 @@ function browseFile(file_browser, callback) {
         name: path.basename(file_browser.paths.workingPath),
         encodedName: encodePath(path.basename(file_browser.paths.workingPath)),
         path: path.relative(file_browser.paths.coursePath, filepath),
-        encodedPath: encodePath(
-          path.relative(file_browser.paths.coursePath, filepath),
-        ),
+        encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
         dir: path.dirname(file_browser.paths.workingPath),
         canEdit:
-          editable &&
-          file_browser.has_course_permission_edit &&
-          !file_browser.example_course,
-        canUpload:
-          file_browser.has_course_permission_edit &&
-          !file_browser.example_course,
+          editable && file_browser.has_course_permission_edit && !file_browser.example_course,
+        canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
         canDownload: true, // we already know the user is a course Viewer (checked on GET)
         canRename:
-          movable &&
-          file_browser.has_course_permission_edit &&
-          !file_browser.example_course,
+          movable && file_browser.has_course_permission_edit && !file_browser.example_course,
         canDelete:
-          movable &&
-          file_browser.has_course_permission_edit &&
-          !file_browser.example_course,
+          movable && file_browser.has_course_permission_edit && !file_browser.example_course,
         canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-          contains(invalidRootPath, filepath),
+          contains(invalidRootPath, filepath)
         ),
       };
       callback(null);
-    },
+    }
   );
 }
 
@@ -410,8 +367,7 @@ router.get('/*', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_view)
     return next(error.make(403, 'Access denied (must be a course Viewer)'));
   let file_browser = {
-    has_course_permission_edit:
-      res.locals.authz_data.has_course_permission_edit,
+    has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
     example_course: res.locals.course.example_course,
   };
   async.waterfall(
@@ -446,8 +402,8 @@ router.get('/*', function (req, res, next) {
         } else {
           callback(
             new Error(
-              `Invalid working path - ${file_browser.paths.workingPath} is neither a directory nor a file`,
-            ),
+              `Invalid working path - ${file_browser.paths.workingPath} is neither a directory nor a file`
+            )
           );
         }
       },
@@ -456,11 +412,9 @@ router.get('/*', function (req, res, next) {
       if (err) {
         if (err.code == 'ENOENT' && file_browser.paths.branch.length > 1) {
           res.redirect(
-            `${res.locals.urlPrefix}/${
-              res.locals.navPage
-            }/file_view/${encodePath(
-              file_browser.paths.branch.slice(-2)[0].path,
-            )}`,
+            `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
+              file_browser.paths.branch.slice(-2)[0].path
+            )}`
           );
           return;
         } else {
@@ -469,7 +423,7 @@ router.get('/*', function (req, res, next) {
       }
       res.locals.file_browser = file_browser;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 });
 
@@ -505,9 +459,7 @@ router.post('/*', function (req, res, next) {
         if (ERR(err, next)) return;
         editor.doEdit((err, job_sequence_id) => {
           if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-            res.redirect(
-              res.locals.urlPrefix + '/edit_error/' + job_sequence_id,
-            );
+            res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
           } else {
             res.redirect(req.originalUrl);
           }
@@ -520,35 +472,27 @@ router.post('/*', function (req, res, next) {
         oldPath = path.join(req.body.working_path, req.body.old_file_name);
       } catch (err) {
         return next(
-          new Error(
-            `Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`,
-          ),
+          new Error(`Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`)
         );
       }
       if (!req.body.new_file_name)
-        return next(
-          new Error(
-            `Invalid new file name (was falsey): ${req.body.new_file_name}`,
-          ),
-        );
+        return next(new Error(`Invalid new file name (was falsey): ${req.body.new_file_name}`));
       if (
         !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(
-          req.body.new_file_name,
+          req.body.new_file_name
         )
       )
         return next(
           new Error(
-            `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`,
-          ),
+            `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`
+          )
         );
       let newPath;
       try {
         newPath = path.join(req.body.working_path, req.body.new_file_name);
       } catch (err) {
         return next(
-          new Error(
-            `Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`,
-          ),
+          new Error(`Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`)
         );
       }
       if (oldPath == newPath) {
@@ -565,17 +509,13 @@ router.post('/*', function (req, res, next) {
           if (ERR(err, next)) return;
           editor.doEdit((err, job_sequence_id) => {
             if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-              res.redirect(
-                res.locals.urlPrefix + '/edit_error/' + job_sequence_id,
-              );
+              res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
             } else {
               if (req.body.was_viewing_file) {
                 res.redirect(
-                  `${res.locals.urlPrefix}/${
-                    res.locals.navPage
-                  }/file_view/${encodePath(
-                    path.relative(res.locals.course.path, newPath),
-                  )}`,
+                  `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
+                    path.relative(res.locals.course.path, newPath)
+                  )}`
                 );
               } else {
                 res.redirect(req.originalUrl);
@@ -600,9 +540,7 @@ router.post('/*', function (req, res, next) {
           filePath = path.join(req.body.working_path, req.file.originalname);
         } catch (err) {
           return next(
-            new Error(
-              `Invalid file path: ${req.body.working_path} / ${req.file.originalname}`,
-            ),
+            new Error(`Invalid file path: ${req.body.working_path} / ${req.file.originalname}`)
           );
         }
       }
@@ -619,9 +557,7 @@ router.post('/*', function (req, res, next) {
           if (ERR(err, next)) return;
           editor.doEdit((err, job_sequence_id) => {
             if (ERR(err, (e) => logger.error('Error in doEdit()', e))) {
-              res.redirect(
-                res.locals.urlPrefix + '/edit_error/' + job_sequence_id,
-              );
+              res.redirect(res.locals.urlPrefix + '/edit_error/' + job_sequence_id);
             } else {
               res.redirect(req.originalUrl);
             }

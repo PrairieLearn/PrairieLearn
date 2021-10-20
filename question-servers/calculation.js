@@ -51,9 +51,7 @@ module.exports = {
               [questionServerPath],
               function (server) {
                 if (server === undefined)
-                  return callback(
-                    'Unable to load "server.js" for qid: ' + question.qid,
-                  );
+                  return callback('Unable to load "server.js" for qid: ' + question.qid);
                 setTimeout(function () {
                   // use a setTimeout() to get out of requireJS error handling
                   return callback(null, server);
@@ -62,15 +60,15 @@ module.exports = {
               (err) => {
                 const e = error.makeWithData(
                   `Error loading server.js for QID ${question.qid}`,
-                  err,
+                  err
                 );
                 if (err.originalError != null) {
                   e.stack = err.originalError.stack + '\n\n' + err.stack;
                 }
                 return callback(e);
-              },
+              }
             );
-          },
+          }
         );
       });
     });
@@ -85,7 +83,7 @@ module.exports = {
     course,
     course_instance,
     locals,
-    callback,
+    callback
   ) {
     const htmls = {
       extraHeadersHtml: '',
@@ -142,19 +140,8 @@ module.exports = {
         var params = variant.params;
         var trueAnswer = variant.true_answer;
         var options = variant.options;
-        var questionDir = path.join(
-          coursePath,
-          'questions',
-          question.directory,
-        );
-        fileData = server.getFile(
-          filename,
-          vid,
-          params,
-          trueAnswer,
-          options,
-          questionDir,
-        );
+        var questionDir = path.join(coursePath, 'questions', question.directory);
+        fileData = server.getFile(filename, vid, params, trueAnswer, options, questionDir);
       } catch (err) {
         var data = {
           variant: variant,
@@ -191,18 +178,14 @@ module.exports = {
         var trueAnswer = variant.true_answer;
         var submittedAnswer = submission.submitted_answer;
         var options = variant.options;
-        var questionDir = path.join(
-          coursePath,
-          'questions',
-          question.directory,
-        );
+        var questionDir = path.join(coursePath, 'questions', question.directory);
         grading = server.gradeAnswer(
           vid,
           params,
           trueAnswer,
           submittedAnswer,
           options,
-          questionDir,
+          questionDir
         );
       } catch (err) {
         const data = {

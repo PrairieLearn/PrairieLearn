@@ -17,12 +17,8 @@ module.exports.sync = async function (courseData, courseId) {
       sync_errors: infofile.stringifyErrors(courseData.course),
       sync_warnings: infofile.stringifyWarnings(courseData.course),
     };
-    const res = await sqldb.queryZeroOrOneRowAsync(
-      sql.update_course_errors,
-      params,
-    );
-    if (res.rowCount !== 1)
-      throw new Error(`Unable to find course with ID ${courseId}`);
+    const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course_errors, params);
+    if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);
     return;
   }
 
@@ -38,7 +34,6 @@ module.exports.sync = async function (courseData, courseId) {
     sync_warnings: infofile.stringifyWarnings(courseData.course),
   };
   const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course, params);
-  if (res.rowCount !== 1)
-    throw new Error(`Unable to find course with ID ${courseId}`);
+  if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);
   courseInfo.timezone = res.rows[0].display_timezone;
 };

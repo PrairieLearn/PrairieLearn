@@ -50,18 +50,10 @@ module.exports = function (err, req, res, _next) {
     error_data: jsonStringifySafe(
       _.omit(_.get(err, ['data'], {}), ['sql', 'sqlParams', 'sqlError']),
       null,
-      '    ',
+      '    '
     ),
-    error_data_sqlError: jsonStringifySafe(
-      _.get(err, ['data', 'sqlError'], null),
-      null,
-      '    ',
-    ),
-    error_data_sqlParams: jsonStringifySafe(
-      _.get(err, ['data', 'sqlParams'], null),
-      null,
-      '    ',
-    ),
+    error_data_sqlError: jsonStringifySafe(_.get(err, ['data', 'sqlError'], null), null, '    '),
+    error_data_sqlParams: jsonStringifySafe(_.get(err, ['data', 'sqlParams'], null), null, '    '),
     error_data_sqlQuery: sqlQuery,
     id: errorId,
     referrer: referrer,

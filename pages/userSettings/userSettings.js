@@ -14,10 +14,7 @@ router.post('/', (req, res, next) => {
   if (req.body.__action === 'token_generate') {
     const name = req.body.token_name;
     const token = uuidv4();
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(token, 'utf8')
-      .digest('hex');
+    const tokenHash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
     const params = [
       res.locals.authn_user.user_id,
@@ -42,7 +39,7 @@ router.post('/', (req, res, next) => {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

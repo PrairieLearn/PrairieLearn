@@ -4,7 +4,7 @@ $(function () {
   if (!window.File || !window.FileReader || !window.FileList || !window.Blob) {
     alert(
       'Warning: Your browser does not fully support HTML5 file upload operations.' +
-        'Please use a more current browser or you may not be able to complete this question.',
+        'Please use a more current browser or you may not be able to complete this question.'
     );
   }
 });
@@ -52,12 +52,11 @@ window.PLFileUpload.prototype.initializeTemplate = function () {
           '<strong>' +
             file.name +
             '</strong>' +
-            ' did not match any accepted file for this question.',
+            ' did not match any accepted file for this question.'
         );
         return;
       }
-      const acceptedFilesIdx =
-        that.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
+      const acceptedFilesIdx = that.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
       const acceptedName = that.acceptedFiles[acceptedFilesIdx];
       var reader = new FileReader();
       reader.onload = function (e) {
@@ -66,10 +65,7 @@ window.PLFileUpload.prototype.initializeTemplate = function () {
         var commaSplitIdx = dataUrl.indexOf(',');
         if (commaSplitIdx == -1) {
           that.addWarningMessage(
-            '<strong>' +
-              acceptedName +
-              '</strong>' +
-              ' is empty, ignoring file.',
+            '<strong>' + acceptedName + '</strong>' + ' is empty, ignoring file.'
           );
           return;
         }
@@ -79,9 +75,7 @@ window.PLFileUpload.prototype.initializeTemplate = function () {
         that.saveSubmittedFile(acceptedName, base64FileData);
         that.renderFileList();
         // Show the preview for the newly-uploaded file
-        that.element
-          .find(`li[data-file="${acceptedName}"] .file-preview`)
-          .addClass('in');
+        that.element.find(`li[data-file="${acceptedName}"] .file-preview`).addClass('in');
       };
 
       reader.readAsDataURL(file);
@@ -164,15 +158,13 @@ window.PLFileUpload.prototype.renderFileList = function () {
     var isExpanded = _.includes(expandedFiles, fileName);
     var fileData = that.getSubmittedFileContents(fileName);
 
-    var $file = $(
-      '<li class="list-group-item" data-file="' + fileName + '"></li>',
-    );
+    var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
     var $fileStatusContainer = $(
       '<div class="file-status-container collapsed" data-toggle="collapse" data-target="#file-preview-' +
         uuid +
         '-' +
         index +
-        '"></div>',
+        '"></div>'
     );
     if (isExpanded) {
       $fileStatusContainer.removeClass('collapsed');
@@ -181,24 +173,20 @@ window.PLFileUpload.prototype.renderFileList = function () {
       $fileStatusContainer.addClass('has-preview');
     }
     $file.append($fileStatusContainer);
-    var $fileStatusContainerLeft = $(
-      '<div class="file-status-container-left"></div>',
-    );
+    var $fileStatusContainerLeft = $('<div class="file-status-container-left"></div>');
     $fileStatusContainer.append($fileStatusContainerLeft);
     if (fileData) {
       $fileStatusContainerLeft.append(
-        '<i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>',
+        '<i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>'
       );
     } else {
       $fileStatusContainerLeft.append(
-        '<i class="file-status-icon far fa-circle" aria-hidden="true"></i>',
+        '<i class="file-status-icon far fa-circle" aria-hidden="true"></i>'
       );
     }
     $fileStatusContainerLeft.append(fileName);
     if (!fileData) {
-      $fileStatusContainerLeft.append(
-        '<p class="file-status">not uploaded</p>',
-      );
+      $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
     } else {
       $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
     }
@@ -215,7 +203,7 @@ window.PLFileUpload.prototype.renderFileList = function () {
           uuid +
           '-' +
           index +
-          '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>',
+          '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>'
       );
       if (isExpanded) {
         $preview.addClass('in');
@@ -231,9 +219,7 @@ window.PLFileUpload.prototype.renderFileList = function () {
         var img = $('<img style="max-width: 100%"/>')
           .on('load', () => $preview.find('code').html(img))
           .on('error', () =>
-            $preview
-              .find('code')
-              .text('Content preview is not available for this type of file.'),
+            $preview.find('code').text('Content preview is not available for this type of file.')
           )
           .attr('src', 'data:application/octet-stream; base64, ' + fileData);
       }
@@ -241,7 +227,7 @@ window.PLFileUpload.prototype.renderFileList = function () {
       $fileStatusContainer.append(
         '<div class="file-status-container-right">' +
           download +
-          '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
+          '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>'
       );
     }
 
@@ -251,7 +237,7 @@ window.PLFileUpload.prototype.renderFileList = function () {
 
 window.PLFileUpload.prototype.addWarningMessage = function (message) {
   var $alert = $(
-    '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>',
+    '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
   );
   $alert.append(message);
   this.element.find('.messages').append($alert);
@@ -287,6 +273,6 @@ window.PLFileUpload.prototype.b64DecodeUnicode = function (str) {
       .map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
       })
-      .join(''),
+      .join('')
   );
 };

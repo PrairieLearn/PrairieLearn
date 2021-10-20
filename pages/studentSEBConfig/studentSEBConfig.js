@@ -18,9 +18,7 @@ const error = require('../../prairielib/lib/error');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var load_default_config = function (res, _req) {
-  var defobj = plist.parse(
-    fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'),
-  );
+  var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
 
   //var fullUrlPrefix = req.protocol + '://' + req.get('host');
   var fullUrlPrefix = config.SEBServerUrl;
@@ -33,8 +31,7 @@ var load_default_config = function (res, _req) {
     assessment_id: res.locals.assessment.id,
     user_id: res.locals.authz_data.user.user_id,
   };
-  defobj['browserUserAgent'] =
-    'prairielearn:' + csrf.generateToken(hashdata, config.secretKey);
+  defobj['browserUserAgent'] = 'prairielearn:' + csrf.generateToken(hashdata, config.secretKey);
 
   defobj['browserUserAgentWinDesktopMode'] = 1;
   defobj['browserUserAgentMac'] = 1;
@@ -95,13 +92,7 @@ router.get('/', function (req, res, next) {
   var data = csrf.getCheckedData(encodedData, config.secretKey);
 
   if (data === null) {
-    return next(
-      error.make(
-        403,
-        'Unrecognized config request, please try again',
-        res.locals,
-      ),
-    );
+    return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
   }
 
   var params = {
@@ -116,13 +107,7 @@ router.get('/', function (req, res, next) {
   sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function (err, result) {
     if (ERR(err, next)) return;
     if (result.rowCount == 0)
-      return next(
-        error.make(
-          403,
-          'Unrecognized config request, please try again',
-          res.locals,
-        ),
-      );
+      return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
 
     _.assign(res.locals, result.rows[0]);
     //console.log(res.locals);
@@ -143,12 +128,9 @@ router.get('/', function (req, res, next) {
 
     if ('allowedPrograms' in res.locals.authz_result.seb_config) {
       //console.log(res.locals.authz_result.seb_config);
-      _.each(
-        res.locals.authz_result.seb_config.allowedPrograms,
-        function (program) {
-          add_allowed_program(SEBconfig, program);
-        },
-      );
+      _.each(res.locals.authz_result.seb_config.allowedPrograms, function (program) {
+        add_allowed_program(SEBconfig, program);
+      });
     }
 
     // If password is defined, use that dressing
@@ -170,10 +152,7 @@ function dressPassword(obj, password, callback) {
     var SEBinner = result;
     var SEBencrypted = SEBinner; // jscryptor.Encrypt(SEBinner, password); // temporarily disabled, see commit 192dda72f
     var SEBheader = Buffer.from('pswd', 'utf8');
-    var SEBfile = Buffer.concat([
-      SEBheader,
-      Buffer.from(SEBencrypted, 'base64'),
-    ]);
+    var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBencrypted, 'base64')]);
     zlib.gzip(SEBfile, function (err, result) {
       if (ERR(err)) return;
       return callback(null, result);

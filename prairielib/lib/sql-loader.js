@@ -14,8 +14,7 @@ module.exports.load = function (filename) {
     var result = blockRE.exec(line);
     if (result) {
       blockName = result[1];
-      if (_.has(sql, blockName))
-        throw new Error(`${filename}: duplicate BLOCK name: ${blockName}`);
+      if (_.has(sql, blockName)) throw new Error(`${filename}: duplicate BLOCK name: ${blockName}`);
       sql[blockName] = line;
     } else if (blockName) {
       sql[blockName] += '\n' + line;

@@ -24,15 +24,11 @@ config.loadConfig = function (callback) {
   async.series(
     [
       (callback) => {
-        configLib.loadConfigForEnvironment(
-          configDir,
-          env,
-          (err, loadedConfig) => {
-            if (ERR(err, callback)) return;
-            _.assign(exportedConfig, loadedConfig);
-            callback(null);
-          },
-        );
+        configLib.loadConfigForEnvironment(configDir, env, (err, loadedConfig) => {
+          if (ERR(err, callback)) return;
+          _.assign(exportedConfig, loadedConfig);
+          callback(null);
+        });
       },
       (callback) => {
         // Try to grab AWS config from a file; assume Metadata Service will
@@ -43,7 +39,7 @@ config.loadConfig = function (callback) {
             // EC2 and that we can get all config info from the
             // metadata service
             logger.info(
-              'Missing aws-config.json; credentials should be supplied by EC2 Metadata Service',
+              'Missing aws-config.json; credentials should be supplied by EC2 Metadata Service'
             );
             MetadataService.request(
               '/latest/dynamic/instance-identity/document',
@@ -60,7 +56,7 @@ config.loadConfig = function (callback) {
                   return callback(err);
                 }
                 callback(null);
-              },
+              }
             );
           } else {
             // we do have the config file, it should provide all our
@@ -91,9 +87,7 @@ config.loadConfig = function (callback) {
         const ec2 = new AWS.EC2();
 
         const params = {
-          Filters: [
-            { Name: 'resource-id', Values: [exportedConfig.instanceId] },
-          ],
+          Filters: [{ Name: 'resource-id', Values: [exportedConfig.instanceId] }],
         };
         ec2.describeTags(params, function (err, data) {
           if (ERR(err, callback)) return;
@@ -131,11 +125,8 @@ config.loadConfig = function (callback) {
         autoscaling.describeAutoScalingInstances(params, function (err, data) {
           if (ERR(err, callback)) return;
           if (data.AutoScalingInstances.length == 1) {
-            exportedConfig.autoScalingGroupName =
-              data.AutoScalingInstances[0].AutoScalingGroupName;
-            logger.info(
-              `Running inside AutoScalingGroup: ${exportedConfig.autoScalingGroupName}`,
-            );
+            exportedConfig.autoScalingGroupName = data.AutoScalingInstances[0].AutoScalingGroupName;
+            logger.info(`Running inside AutoScalingGroup: ${exportedConfig.autoScalingGroupName}`);
           } else {
             logger.info('Not running inside an AutoScalingGroup');
           }
@@ -148,9 +139,7 @@ config.loadConfig = function (callback) {
           const groupName = exportedConfig.globalLogGroup;
           const streamName = exportedConfig.instanceId;
           logger.initCloudWatchLogging(groupName, streamName);
-          logger.info(
-            `CloudWatch logging enabled! Logging to ${groupName}/${streamName}`,
-          );
+          logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
         }
         callback(null);
       },
@@ -164,7 +153,7 @@ config.loadConfig = function (callback) {
     (err) => {
       if (ERR(err, callback)) return;
       callback(null);
-    },
+    }
   );
 };
 
@@ -186,15 +175,13 @@ function getQueueUrl(prefix, callback) {
     };
     sqs.getQueueUrl(params, (err, data) => {
       if (err) {
-        logger.error(
-          `Unable to load url for queue "${exportedConfig[queueNameKey]}"`,
-        );
+        logger.error(`Unable to load url for queue "${exportedConfig[queueNameKey]}"`);
         logger.error('getQueueUrl error:', err);
         process.exit(1);
       }
       exportedConfig[queueUrlKey] = data.QueueUrl;
       logger.info(
-        `Loaded url for queue "${exportedConfig[queueNameKey]}": ${exportedConfig[queueUrlKey]}`,
+        `Loaded url for queue "${exportedConfig[queueNameKey]}": ${exportedConfig[queueUrlKey]}`
       );
       callback(null);
     });

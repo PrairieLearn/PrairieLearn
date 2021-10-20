@@ -1,9 +1,7 @@
 function confirmOnUnload() {
   const form = $('form.question-form');
   const getForm = () =>
-    form
-      .find(':not([name="__variant_id"]):not([name="__csrf_token"])')
-      .serialize();
+    form.find(':not([name="__variant_id"]):not([name="__csrf_token"])').serialize();
 
   // Set form state on load and submit
   var initialForm = getForm();
@@ -41,11 +39,7 @@ function disableOnSubmit() {
         .find('.disable-on-submit')
         .each(function () {
           // Create disabled clone of submit button
-          $(this)
-            .clone(false)
-            .removeAttr('id')
-            .prop('disabled', true)
-            .insertBefore($(this));
+          $(this).clone(false).removeAttr('id').prop('disabled', true).insertBefore($(this));
 
           // Hide actual submit button
           $(this).hide();

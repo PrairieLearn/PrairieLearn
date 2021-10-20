@@ -4,9 +4,7 @@ const router = express.Router();
 const path = require('path');
 const async = require('async');
 const question = require('../../lib/question');
-const debug = require('debug')(
-  'prairielearn:' + path.basename(__filename, '.js'),
-);
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
 const sqlDb = require('../../prairielib/lib/sql-db');
 
@@ -29,7 +27,7 @@ router.get('/', (req, res, next) => {
                 error.make(404, 'Instance question not found.', {
                   locals: res.locals,
                   body: req.body,
-                }),
+                })
               );
             }
 
@@ -42,7 +40,7 @@ router.get('/', (req, res, next) => {
                 error.make(404, 'No gradable submissions found.', {
                   locals: res.locals,
                   body: req.body,
-                }),
+                })
               );
             }
 
@@ -51,26 +49,21 @@ router.get('/', (req, res, next) => {
             res.locals.submission = result.rows[0].submission;
             res.locals.score_perc = res.locals.submission.score * 100;
             callback(null);
-          },
+          }
         );
       },
       (callback) => {
         res.locals.overlayGradingInterface = true;
-        question.getAndRenderVariant(
-          res.locals.variant.id,
-          null,
-          res.locals,
-          function (err) {
-            if (ERR(err, next)) return;
-            callback(null);
-          },
-        );
+        question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
+          if (ERR(err, next)) return;
+          callback(null);
+        });
       },
     ],
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    },
+    }
   );
 
   debug('GET /');
@@ -109,31 +102,27 @@ router.post('/', function (req, res, next) {
           submission.true_answer,
         ];
 
-        sqlDb.callOneRow(
-          'grading_jobs_insert_internal',
-          params,
-          (err, result) => {
-            if (ERR(err, next)) return;
+        sqlDb.callOneRow('grading_jobs_insert_internal', params, (err, result) => {
+          if (ERR(err, next)) return;
 
-            /* If the submission was marked invalid during grading the grading job will
+          /* If the submission was marked invalid during grading the grading job will
                    be marked ungradable and we should bail here to prevent LTI updates. */
-            res.locals['grading_job'] = result.rows[0];
-            if (!res.locals['grading_job'].gradable)
-              return next(error.make(400, 'Invalid submission error'));
+          res.locals['grading_job'] = result.rows[0];
+          if (!res.locals['grading_job'].gradable)
+            return next(error.make(400, 'Invalid submission error'));
 
-            res.locals['submission_updated'] = true;
-            debug(
-              '_gradeVariantWithClient()',
-              'inserted',
-              'grading_job.id:',
-              res.locals['grading_job'].id,
-            );
-            res.redirect(
-              `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`,
-            );
-          },
-        );
-      },
+          res.locals['submission_updated'] = true;
+          debug(
+            '_gradeVariantWithClient()',
+            'inserted',
+            'grading_job.id:',
+            res.locals['grading_job'].id
+          );
+          res.redirect(
+            `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`
+          );
+        });
+      }
     );
   } else if (req.body.__action == 'update_manual_grade') {
     // TODO: Update grade in DB?
@@ -142,7 +131,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      }),
+      })
     );
   }
 });

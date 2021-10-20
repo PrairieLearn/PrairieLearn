@@ -293,8 +293,7 @@ To escape either math environment, consider using PrairieLearn's markdown tag an
 
 ```html
 <markdown>
-  What happens if we use a `$` to reference the spreadsheet cell location
-  `$A$1`?
+  What happens if we use a `$` to reference the spreadsheet cell location `$A$1`?
 </markdown>
 ```
 
@@ -303,8 +302,8 @@ adding the `tex2jax_ignore` class to an HTML element.
 
 ```html
 <div class="tex2jax_ignore">
-  Mary has $5 to spend. If each apple costs $2 dollars and a banana costs $1
-  dollar, then how many pieces of fruit can Mary get?
+  Mary has $5 to spend. If each apple costs $2 dollars and a banana costs $1 dollar, then how many
+  pieces of fruit can Mary get?
 </div>
 ```
 
@@ -361,8 +360,7 @@ Example:
 
 ```html
 <!-- This is an HTML comment. It will not be visible to students in the web page, but *will be included* in the rendered page source, so students may be able to see it by reading the HTML source. -->
-{{! This is a Mustache comment. It will NOT be shown in the rendered page
-source. }}
+{{! This is a Mustache comment. It will NOT be shown in the rendered page source. }}
 ```
 
 ## How can I make a block that can be re-used in many questions?

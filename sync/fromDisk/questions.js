@@ -30,16 +30,11 @@ function getParamsForQuestion(q) {
     topic: q.topic,
     grading_method: q.gradingMethod || 'Internal',
     single_variant: !!q.singleVariant,
-    external_grading_enabled:
-      q.externalGradingOptions && q.externalGradingOptions.enabled,
-    external_grading_image:
-      q.externalGradingOptions && q.externalGradingOptions.image,
-    external_grading_files:
-      q.externalGradingOptions && q.externalGradingOptions.serverFilesCourse,
-    external_grading_entrypoint:
-      q.externalGradingOptions && q.externalGradingOptions.entrypoint,
-    external_grading_timeout:
-      q.externalGradingOptions && q.externalGradingOptions.timeout,
+    external_grading_enabled: q.externalGradingOptions && q.externalGradingOptions.enabled,
+    external_grading_image: q.externalGradingOptions && q.externalGradingOptions.image,
+    external_grading_files: q.externalGradingOptions && q.externalGradingOptions.serverFilesCourse,
+    external_grading_entrypoint: q.externalGradingOptions && q.externalGradingOptions.entrypoint,
+    external_grading_timeout: q.externalGradingOptions && q.externalGradingOptions.timeout,
     external_grading_enable_networking:
       q.externalGradingOptions && q.externalGradingOptions.enableNetworking,
     external_grading_environment: q.externalGradingOptions?.environment ?? {},
@@ -48,12 +43,10 @@ function getParamsForQuestion(q) {
     workspace_port: q.workspaceOptions && q.workspaceOptions.port,
     workspace_args: q.workspaceOptions && q.workspaceOptions.args,
     workspace_home: q.workspaceOptions && q.workspaceOptions.home,
-    workspace_graded_files:
-      q.workspaceOptions && q.workspaceOptions.gradedFiles,
+    workspace_graded_files: q.workspaceOptions && q.workspaceOptions.gradedFiles,
     workspace_sync_ignore: q.workspaceOptions && q.workspaceOptions.syncIgnore,
     workspace_url_rewrite: q.workspaceOptions && q.workspaceOptions.rewriteUrl,
-    workspace_enable_networking:
-      q.workspaceOptions && q.workspaceOptions.enableNetworking,
+    workspace_enable_networking: q.workspaceOptions && q.workspaceOptions.enableNetworking,
     workspace_environment: q.workspaceOptions?.environment ?? {},
   };
 }
@@ -64,17 +57,15 @@ function getParamsForQuestion(q) {
  * @returns {Promise<{ [qid: string]: any }>}
  */
 module.exports.sync = async function (courseId, courseData) {
-  const questionParams = Object.entries(courseData.questions).map(
-    ([qid, question]) => {
-      return JSON.stringify([
-        qid,
-        question.uuid,
-        infofile.stringifyErrors(question),
-        infofile.stringifyWarnings(question),
-        getParamsForQuestion(question.data),
-      ]);
-    },
-  );
+  const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
+    return JSON.stringify([
+      qid,
+      question.uuid,
+      infofile.stringifyErrors(question),
+      infofile.stringifyWarnings(question),
+      getParamsForQuestion(question.data),
+    ]);
+  });
 
   const params = [questionParams, courseId];
 

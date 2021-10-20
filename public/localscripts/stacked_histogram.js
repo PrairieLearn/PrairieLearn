@@ -22,8 +22,7 @@ function stacked_histogram(selector, data, data2, bucketNames, options) {
   var x = d3.scaleOrdinal().domain(bucketNames).rangeBands([0, width]);
 
   var ymin = options.ymin == 'auto' ? _(data).min() : options.ymin;
-  var ymax =
-    options.ymax == 'auto' ? _(data).max() + _(data2).max() : options.ymax;
+  var ymax = options.ymax == 'auto' ? _(data).max() + _(data2).max() : options.ymax;
   var y = d3.scaleLinear().domain([ymin, ymax]).nice().range([height, 0]);
 
   var xTickFormat =
@@ -45,10 +44,7 @@ function stacked_histogram(selector, data, data2, bucketNames, options) {
     .attr('height', height + options.topMargin + options.bottomMargin)
     .attr('class', 'center-block statsPlot')
     .append('g')
-    .attr(
-      'transform',
-      'translate(' + options.leftMargin + ',' + options.topMargin + ')',
-    );
+    .attr('transform', 'translate(' + options.leftMargin + ',' + options.topMargin + ')');
 
   svg.append('g').attr('class', 'y grid').call(yGrid);
 
@@ -116,7 +112,5 @@ function stacked_histogram(selector, data, data2, bucketNames, options) {
 
   svg.append('line').attr({ x1: 0, y1: 0, x2: width, y2: 0, class: 'x axis' });
 
-  svg
-    .append('line')
-    .attr({ x1: width, y1: 0, x2: width, y2: height, class: 'y axis' });
+  svg.append('line').attr({ x1: width, y1: 0, x2: width, y2: height, class: 'y axis' });
 }

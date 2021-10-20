@@ -15,7 +15,7 @@ async function checkPermissions(users) {
   });
   assert.includeMembers(
     users.map((user) => user.uid),
-    result.rows.map((row) => row.uid),
+    result.rows.map((row) => row.uid)
   );
   users.forEach((user) => {
     const row = result.rows.find((row) => row.uid == user.uid);
@@ -117,7 +117,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsMultiInsertButton]',
+      'button[id=coursePermissionsMultiInsertButton]'
     );
     const form = {
       __action: 'course_permissions_insert_by_multi_user_uid',
@@ -142,7 +142,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsMultiInsertButton]',
+      'button[id=coursePermissionsMultiInsertButton]'
     );
     const form = {
       __action: 'course_permissions_insert_by_multi_user_uid',
@@ -169,7 +169,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsMultiInsertButton]',
+      'button[id=coursePermissionsMultiInsertButton]'
     );
     const form = {
       __action: 'course_permissions_insert_by_multi_user_uid',
@@ -196,7 +196,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-add-3]`,
+      `form[name=student-data-access-add-3]`
     );
     const form = {
       __action: 'course_instance_permissions_insert',
@@ -210,12 +210,7 @@ function runTest(context) {
       headers: headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(
-      users,
-      'staff03@illinois.edu',
-      'Viewer',
-      'Student Data Viewer',
-    );
+    updatePermissions(users, 'staff03@illinois.edu', 'Viewer', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
@@ -227,7 +222,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=course-content-access-form-3]`,
+      `form[name=course-content-access-form-3]`
     );
     const form = {
       __action: 'course_permissions_delete',
@@ -250,10 +245,7 @@ function runTest(context) {
     });
     assert.isTrue(response.ok);
     const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(
-      response.$(`form[name=course-content-access-form-${context.userId}]`),
-      0,
-    );
+    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
     const form = {
       __action: 'course_permissions_delete',
       __csrf_token: __csrf_token,
@@ -276,7 +268,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=course-content-access-form-4]`,
+      `form[name=course-content-access-form-4]`
     );
     const form = {
       __action: 'course_permissions_update_role',
@@ -300,10 +292,7 @@ function runTest(context) {
     });
     assert.isTrue(response.ok);
     const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(
-      response.$(`form[name=course-content-access-form-${context.userId}]`),
-      0,
-    );
+    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
     const form = {
       __action: 'course_permissions_update_role',
       __csrf_token: __csrf_token,
@@ -321,18 +310,14 @@ function runTest(context) {
 
   step('cannot delete self even when emulating another owner', async () => {
     const headers = {
-      cookie:
-        'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
     };
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
     });
     assert.isTrue(response.ok);
     const __csrf_token = response.$('span[id=test_csrf_token]').text();
-    assert.lengthOf(
-      response.$(`form[name=course-content-access-form-${context.userId}]`),
-      0,
-    );
+    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
     const form = {
       __action: 'course_permissions_delete',
       __csrf_token: __csrf_token,
@@ -347,37 +332,30 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step(
-    'cannot change course role of self even when emulating another owner',
-    async () => {
-      const headers = {
-        cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
-      };
-      let response = await helperClient.fetchCheerio(context.pageUrl, {
-        headers,
-      });
-      assert.isTrue(response.ok);
-      const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(
-        response.$(`form[name=course-content-access-form-${context.userId}]`),
-        0,
-      );
-      const form = {
-        __action: 'course_permissions_update_role',
-        __csrf_token: __csrf_token,
-        user_id: context.userId,
-        course_role: 'None',
-      };
-      response = await helperClient.fetchCheerio(context.pageUrl, {
-        method: 'POST',
-        form: form,
-        headers: headers,
-      });
-      assert.equal(response.status, 403);
-      await checkPermissions(users);
-    },
-  );
+  step('cannot change course role of self even when emulating another owner', async () => {
+    const headers = {
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
+    };
+    let response = await helperClient.fetchCheerio(context.pageUrl, {
+      headers,
+    });
+    assert.isTrue(response.ok);
+    const __csrf_token = response.$('span[id=test_csrf_token]').text();
+    assert.lengthOf(response.$(`form[name=course-content-access-form-${context.userId}]`), 0);
+    const form = {
+      __action: 'course_permissions_update_role',
+      __csrf_token: __csrf_token,
+      user_id: context.userId,
+      course_role: 'None',
+    };
+    response = await helperClient.fetchCheerio(context.pageUrl, {
+      method: 'POST',
+      form: form,
+      headers: headers,
+    });
+    assert.equal(response.status, 403);
+    await checkPermissions(users);
+  });
 
   step('can add user', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
@@ -387,7 +365,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]',
+      'button[id=coursePermissionsInsertButton]'
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uid',
@@ -412,7 +390,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-add-3]`,
+      `form[name=student-data-access-add-3]`
     );
     const form = {
       __action: 'course_instance_permissions_insert',
@@ -426,12 +404,7 @@ function runTest(context) {
       headers: headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(
-      users,
-      'staff03@illinois.edu',
-      'None',
-      'Student Data Viewer',
-    );
+    updatePermissions(users, 'staff03@illinois.edu', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
@@ -443,7 +416,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-change-3-1]`,
+      `form[name=student-data-access-change-3-1]`
     );
     const form = {
       __action: 'course_instance_permissions_update_role_or_delete',
@@ -458,12 +431,7 @@ function runTest(context) {
       headers: headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(
-      users,
-      'staff03@illinois.edu',
-      'None',
-      'Student Data Editor',
-    );
+    updatePermissions(users, 'staff03@illinois.edu', 'None', 'Student Data Editor');
     await checkPermissions(users);
   });
 
@@ -475,7 +443,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-add-5]`,
+      `form[name=student-data-access-add-5]`
     );
     const form = {
       __action: 'course_instance_permissions_insert',
@@ -489,12 +457,7 @@ function runTest(context) {
       headers: headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(
-      users,
-      'staff05@illinois.edu',
-      'None',
-      'Student Data Viewer',
-    );
+    updatePermissions(users, 'staff05@illinois.edu', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
@@ -506,7 +469,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-change-5-1]`,
+      `form[name=student-data-access-change-5-1]`
     );
     const form = {
       __action: 'course_instance_permissions_update_role_or_delete',
@@ -532,7 +495,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsRemoveStudentDataAccessButton]',
+      'button[id=coursePermissionsRemoveStudentDataAccessButton]'
     );
     const form = {
       __action: 'remove_all_student_data_access',
@@ -556,7 +519,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=student-data-access-add-5]`,
+      `form[name=student-data-access-add-5]`
     );
     const form = {
       __action: 'course_instance_permissions_insert',
@@ -570,12 +533,7 @@ function runTest(context) {
       headers: headers,
     });
     assert.isTrue(response.ok);
-    updatePermissions(
-      users,
-      'staff05@illinois.edu',
-      'None',
-      'Student Data Viewer',
-    );
+    updatePermissions(users, 'staff05@illinois.edu', 'None', 'Student Data Viewer');
     await checkPermissions(users);
   });
 
@@ -587,7 +545,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsDeleteNoAccessButton]',
+      'button[id=coursePermissionsDeleteNoAccessButton]'
     );
     const form = {
       __action: 'delete_no_access',
@@ -612,7 +570,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsDeleteNonOwnersButton]',
+      'button[id=coursePermissionsDeleteNonOwnersButton]'
     );
     const form = {
       __action: 'delete_non_owners',
@@ -636,7 +594,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFToken(
       context,
       response.$,
-      `form[name=course-content-access-form-4]`,
+      `form[name=course-content-access-form-4]`
     );
     const form = {
       __action: 'course_permissions_update_role',
@@ -656,8 +614,7 @@ function runTest(context) {
 
   step('cannot GET if not an owner', async () => {
     const headers = {
-      cookie:
-        'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
+      cookie: 'pl_test_user=test_instructor; pl_requested_uid=staff04@illinois.edu',
     };
     const response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,

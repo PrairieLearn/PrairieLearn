@@ -61,7 +61,7 @@ describe('queueReceiver', () => {
         expect(err).toBeNull();
         expect(sqs.receiveMessage.mock.calls[0][0].QueueUrl).toBe('helloworld');
         done();
-      },
+      }
     );
   });
 
@@ -78,7 +78,7 @@ describe('queueReceiver', () => {
         expect(err).toBeNull();
         expect(sqs.receiveMessage.mock.calls.length).toBe(2);
         done();
-      },
+      }
     );
   });
 
@@ -95,7 +95,7 @@ describe('queueReceiver', () => {
         expect(err).not.toBeNull();
         expect(sqs.deleteMessage.mock.calls.length).toBe(0);
         done();
-      },
+      }
     );
   });
 
@@ -115,7 +115,7 @@ describe('queueReceiver', () => {
         expect(err).not.toBeNull();
         expect(sqs.deleteMessage.mock.calls.length).toBe(0);
         done();
-      },
+      }
     );
   });
 
@@ -136,7 +136,7 @@ describe('queueReceiver', () => {
         const params = sqs.changeMessageVisibility.mock.calls[0][0];
         expect(params.VisibilityTimeout).toBeGreaterThan(10);
         done();
-      },
+      }
     );
   });
 
@@ -151,7 +151,7 @@ describe('queueReceiver', () => {
         expect(err).not.toBeNull();
         expect(sqs.deleteMessage.mock.calls.length).toBe(0);
         done();
-      },
+      }
     );
   });
 
@@ -165,14 +165,10 @@ describe('queueReceiver', () => {
       (err) => {
         expect(err).toBeNull();
         expect(sqs.deleteMessage.mock.calls.length).toBe(1);
-        expect(sqs.deleteMessage.mock.calls[0][0].QueueUrl).toBe(
-          'goodbyeworld',
-        );
-        expect(sqs.deleteMessage.mock.calls[0][0].ReceiptHandle).toBe(
-          sqs.receiptHandle,
-        );
+        expect(sqs.deleteMessage.mock.calls[0][0].QueueUrl).toBe('goodbyeworld');
+        expect(sqs.deleteMessage.mock.calls[0][0].ReceiptHandle).toBe(sqs.receiptHandle);
         done();
-      },
+      }
     );
   });
 });

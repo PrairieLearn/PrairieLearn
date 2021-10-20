@@ -36,15 +36,10 @@ describe('assessment instance group synchronization test', function () {
         assert.notEqual(result.rowCount, 0);
         assert.notEqual(result.rows[0].id, undefined);
         locals.assessment_id = result.rows[0].id;
-        locals.assessmentUrl =
-          locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id;
+        locals.assessmentUrl = locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id;
         locals.instructorAssessmentsUrlGroupTab =
-          locals.courseInstanceBaseUrl +
-          '/instructor/assessment/' +
-          result.rows[0].id +
-          '/groups';
-        locals.questionBaseUrl =
-          locals.courseInstanceBaseUrl + '/instance_question';
+          locals.courseInstanceBaseUrl + '/instructor/assessment/' + result.rows[0].id + '/groups';
+        locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
         locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
         callback(null);
       });
@@ -52,17 +47,14 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('2. GET to instructor assessments URL group tab for the first assessment', function () {
     it('should load successfully', function (callback) {
-      request(
-        locals.instructorAssessmentsUrlGroupTab,
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode != 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        },
-      );
+      request(locals.instructorAssessmentsUrlGroupTab, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode != 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -111,7 +103,7 @@ describe('assessment instance group synchronization test', function () {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           callback(null);
-        },
+        }
       );
     });
     it('should create the correct group configuration', function (callback) {
@@ -139,9 +131,7 @@ describe('assessment instance group synchronization test', function () {
       request(locals.assessmentUrl, function (error, response, body) {
         if (ERR(error, callback)) return;
         if (response.statusCode != 200) {
-          return callback(
-            new Error('bad status: ' + response.statusCode, { response, body }),
-          );
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
         }
         page = body;
         callback(null);
@@ -171,26 +161,20 @@ describe('assessment instance group synchronization test', function () {
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should have 1 assessment instance in db', function (callback) {
-      sqldb.query(
-        sql.select_all_assessment_instance,
-        [],
-        function (err, result) {
-          if (ERR(err, callback)) return;
-          assert.lengthOf(result.rows, 1);
-          locals.assessment_instance_id = result.rows[0].id;
-          locals.assessment_instance = result.rows[0];
-          locals.assessmentInstanceUrl =
-            locals.courseInstanceUrl +
-            '/assessment_instance/' +
-            locals.assessment_instance_id;
-          assert.equal(result.rows[0].group_id, 1);
-          callback(null);
-        },
-      );
+      sqldb.query(sql.select_all_assessment_instance, [], function (err, result) {
+        if (ERR(err, callback)) return;
+        assert.lengthOf(result.rows, 1);
+        locals.assessment_instance_id = result.rows[0].id;
+        locals.assessment_instance = result.rows[0];
+        locals.assessmentInstanceUrl =
+          locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
+        assert.equal(result.rows[0].group_id, 1);
+        callback(null);
+      });
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -209,9 +193,7 @@ describe('assessment instance group synchronization test', function () {
       request(locals.questionUrl, function (error, response, body) {
         if (ERR(error, callback)) return;
         if (response.statusCode != 200) {
-          return callback(
-            new Error('bad status: ' + response.statusCode + '\n' + body),
-          );
+          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
         callback(null);
@@ -274,13 +256,11 @@ describe('assessment instance group synchronization test', function () {
         function (error, response, body) {
           if (ERR(error, callback)) return;
           if (response.statusCode != 200) {
-            return callback(
-              new Error('bad status: ' + response.statusCode + '\n' + body),
-            );
+            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {
@@ -292,41 +272,27 @@ describe('assessment instance group synchronization test', function () {
       var params = {
         variant_id: locals.variant.id,
       };
-      sqldb.query(
-        sql.select_last_submission_for_variants,
-        params,
-        function (err, result) {
-          if (ERR(err, callback)) return;
-          locals.submission = result.rows[0];
-          callback(null);
-        },
-      );
+      sqldb.query(sql.select_last_submission_for_variants, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        locals.submission = result.rows[0];
+        callback(null);
+      });
     });
     it('should be graded with expected score', function () {
-      assert.equal(
-        locals.submission.score,
-        locals.expectedResult.submission_score,
-      );
+      assert.equal(locals.submission.score, locals.expectedResult.submission_score);
     });
     it('should be graded with expected correctness', function () {
-      assert.equal(
-        locals.submission.correct,
-        locals.expectedResult.submission_correct,
-      );
+      assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
     });
     it('should still have the assessment_instance', function (callback) {
       var params = {
         assessment_instance_id: locals.assessment_instance_id,
       };
-      sqldb.queryOneRow(
-        sql.select_assessment_instance,
-        params,
-        function (err, result) {
-          if (ERR(err, callback)) return;
-          locals.assessment_instance = result.rows[0];
-          callback(null);
-        },
-      );
+      sqldb.queryOneRow(sql.select_assessment_instance, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        locals.assessment_instance = result.rows[0];
+        callback(null);
+      });
     });
   });
   describe('7. check Score for another student', function () {
@@ -347,12 +313,12 @@ describe('assessment instance group synchronization test', function () {
               new Error('bad status: ' + response.statusCode, {
                 response,
                 body,
-              }),
+              })
             );
           }
           page = body;
           callback(null);
-        },
+        }
       );
     });
     it('should parse', function () {
@@ -365,17 +331,13 @@ describe('assessment instance group synchronization test', function () {
       assert.isString(locals.__csrf_token);
     });
     it('should still have the only assessment instance in db', function (callback) {
-      sqldb.query(
-        sql.select_all_assessment_instance,
-        [],
-        function (err, result) {
-          if (ERR(err, callback)) return;
-          assert.lengthOf(result.rows, 1);
-          assert.equal(result.rows[0].id, locals.assessment_instance_id);
-          locals.assessment_instance = result.rows[0];
-          callback(null);
-        },
-      );
+      sqldb.query(sql.select_all_assessment_instance, [], function (err, result) {
+        if (ERR(err, callback)) return;
+        assert.lengthOf(result.rows, 1);
+        assert.equal(result.rows[0].id, locals.assessment_instance_id);
+        locals.assessment_instance = result.rows[0];
+        callback(null);
+      });
     });
   });
 });
