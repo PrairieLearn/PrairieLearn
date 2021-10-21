@@ -265,6 +265,98 @@ describe('chunks', () => {
     });
   });
 
+  describe('coursePathForChunk', () => {
+    it('works for elements chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', { type: 'elements' }),
+        '/course/elements'
+      );
+    });
+
+    it('works for elementExtensions chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', { type: 'elementExtensions' }),
+        '/course/elementExtensions'
+      );
+    });
+
+    it('works for clientFilesCourse chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', { type: 'clientFilesCourse' }),
+        '/course/clientFilesCourse'
+      );
+    });
+
+    it('works for serverFilesCourse chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', { type: 'serverFilesCourse' }),
+        '/course/serverFilesCourse'
+      );
+    });
+
+    it('works for simple clientFilesCourseInstance chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', {
+          type: 'clientFilesCourseInstance',
+          courseInstanceName: 'foo',
+        }),
+        '/course/courseInstances/foo/clientFilesCourseInstance'
+      );
+    });
+
+    it('works for complex clientFilesCourseInstance chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', {
+          type: 'clientFilesCourseInstance',
+          courseInstanceName: 'foo/bar',
+        }),
+        '/course/courseInstances/foo/bar/clientFilesCourseInstance'
+      );
+    });
+
+    it('works for simple clientFilesAssessment chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', {
+          type: 'clientFilesAssessment',
+          courseInstanceName: 'foo',
+          assessmentName: 'bar',
+        }),
+        '/course/courseInstances/foo/assessments/bar/clientFilesAssessment'
+      );
+    });
+
+    it('works for complex clientFilesAssessment chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', {
+          type: 'clientFilesAssessment',
+          courseInstanceName: 'foo/bar',
+          assessmentName: 'bar/baz',
+        }),
+        '/course/courseInstances/foo/bar/assessments/bar/baz/clientFilesAssessment'
+      );
+    });
+
+    it('works for simple question chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', {
+          type: 'question',
+          questionName: 'foo',
+        }),
+        '/course/questions/foo'
+      );
+    });
+
+    it('works for complex question chunk', () => {
+      assert.equal(
+        chunksLib.coursePathForChunk('/course/', {
+          type: 'question',
+          questionName: 'foo/bar',
+        }),
+        '/course/questions/foo/bar'
+      );
+    });
+  });
+
   describe('deletes chunks that are no longer needed', function () {
     this.timeout(60000);
 
