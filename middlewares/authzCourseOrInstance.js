@@ -207,8 +207,9 @@ module.exports = function (req, res, next) {
             if (!res.locals.authz_data.authn_has_student_access) return callback(null);
 
             // Verify non-enrollment
-            if (res.locals.authz_data.authn_has_student_access_with_enrollment)
+            if (res.locals.authz_data.authn_has_student_access_with_enrollment) {
               return callback(null);
+            }
 
             // Enroll authenticated user in course instance
             const params = {

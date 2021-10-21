@@ -3,8 +3,9 @@
 
 window.PLRTE = function (uuid, options) {
   if (!options.modules) options.modules = {};
-  if (options.readOnly) options.modules.toolbar = false;
-  else
+  if (options.readOnly) {
+    options.modules.toolbar = false;
+  } else {
     options.modules.toolbar = [
       ['bold', 'italic', 'underline', 'strike'],
       ['blockquote', 'code-block', { script: 'sub' }, { script: 'super' }],
@@ -14,6 +15,7 @@ window.PLRTE = function (uuid, options) {
       [{ color: [] }, { background: [] }],
       ['clean'],
     ];
+  }
 
   let inputElement = $('#rte-input-' + uuid);
   let quill = new Quill('#rte-' + uuid, options);

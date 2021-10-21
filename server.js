@@ -366,11 +366,12 @@ module.exports.initExpress = function () {
   });
   app.use(function (req, res, next) {
     onFinished(res, function (err, res) {
-      if (ERR(err, () => {}))
+      if (ERR(err, () => {})) {
         logger.verbose('request on-response-finished error', {
           err,
           response_id: res.locals.response_id,
         });
+      }
       load.endJob('request', res.locals.response_id);
     });
     next();
@@ -402,11 +403,12 @@ module.exports.initExpress = function () {
   });
   app.use(function (req, res, next) {
     onFinished(res, function (err, res) {
-      if (ERR(err, () => {}))
+      if (ERR(err, () => {})) {
         logger.verbose('authed_request on-response-finished error', {
           err,
           response_id: res.locals.response_id,
         });
+      }
       load.endJob('authed_request', res.locals.response_id);
     });
     next();

@@ -16,8 +16,9 @@ const dockerUtil = require('../../lib/dockerUtil');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be course editor)'));
+  }
   const params = { course_id: res.locals.course.id };
   sqldb.query(sql.select_sync_job_sequences, params, function (err, result) {
     if (ERR(err, next)) return;
@@ -45,7 +46,9 @@ router.get('/', function (req, res, next) {
               if (err && err.code == 'RepositoryNotFoundException') {
                 image.imageSyncNeeded = true;
                 return callback(null);
-              } else if (ERR(err, callback)) return;
+              } else if (ERR(err, callback)) {
+                return;
+              }
               res.locals.ecrInfo = {};
               data.imageDetails.forEach((imageDetails) => {
                 if (imageDetails.imageTags) {
@@ -103,8 +106,9 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be course editor)'));
+  }
   if (req.body.__action == 'pull') {
     syncHelpers.pullAndUpdate(res.locals, function (err, job_sequence_id) {
       if (ERR(err, next)) return;

@@ -226,8 +226,9 @@ module.exports = {
 
 module.exports.getLastJobSequenceIdAsync = async () => {
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_last_job_sequence, []);
-  if (result.rowCount == 0)
+  if (result.rowCount == 0) {
     throw new Error('Could not find last job_sequence_id: did the job start?');
+  }
   const job_sequence_id = result.rows[0].id;
   return job_sequence_id;
 };

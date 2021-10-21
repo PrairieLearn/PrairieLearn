@@ -556,8 +556,9 @@ module.exports.courseDataHasErrors = function (courseData) {
       if (infofile.hasErrors(courseInstance.courseInstance)) return true;
       return Object.values(courseInstance.assessments).some(infofile.hasErrors);
     })
-  )
+  ) {
     return true;
+  }
   return false;
 };
 
@@ -573,8 +574,9 @@ module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
       if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
       return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
     })
-  )
+  ) {
     return true;
+  }
   return false;
 };
 

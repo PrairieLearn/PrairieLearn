@@ -168,10 +168,11 @@ router.post('/', function (req, res, next) {
             const params = [tokenData.user_id, ltiresult.course_instance_id];
             sqldb.call('users_is_instructor_in_course_instance', params, function (err, result) {
               if (ERR(err, next)) return;
-              if (result.rowCount == 0)
+              if (result.rowCount == 0) {
                 return next(
                   error.make(403, 'Access denied (could not determine if user is instructor)')
                 );
+              }
               if (result.rows[0].is_instructor) {
                 redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
                 res.redirect(redirUrl);
