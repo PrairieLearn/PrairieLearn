@@ -428,7 +428,7 @@ describe('chunks', () => {
       ];
 
       // Generate chunks for the example course
-      const jobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
+      let jobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
       await helperServer.waitForJobSequenceSuccessAsync(jobId);
 
       // Load and unpack chunks
@@ -441,15 +441,13 @@ describe('chunks', () => {
       assert.isOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
       assert.isOk(await fs.pathExists(path.join(courseDir, 'clientFilesCourse')));
 
-      // Remove directories from the course
+      // Remove subset of directories from the course
       await fs.remove(path.join(tempTestCourseDir.path, 'elements'));
       await fs.remove(path.join(tempTestCourseDir.path, 'elementExtensions'));
-      await fs.remove(path.join(tempTestCourseDir.path, 'serverFilesCourse'));
-      await fs.remove(path.join(tempTestCourseDir.path, 'clientFilesCourse'));
 
       // Regenerate chunks
-      const newJobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
-      await helperServer.waitForJobSequenceSuccessAsync(newJobId);
+      jobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
+      await helperServer.waitForJobSequenceSuccessAsync(jobId);
 
       // Reload the chunks
       await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
@@ -457,6 +455,23 @@ describe('chunks', () => {
       // Assert that the chunks have been removed from disk
       assert.isNotOk(await fs.pathExists(path.join(courseDir, 'elements')));
       assert.isNotOk(await fs.pathExists(path.join(courseDir, 'elementExtensions')));
+
+      // Also assert that the chunks for directories that do exist are still there
+      assert.isOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
+      assert.isOk(await fs.pathExists(path.join(courseDir, 'clientFilesCourse')));
+
+      // Remove remaining directories from the course
+      await fs.remove(path.join(tempTestCourseDir.path, 'serverFilesCourse'));
+      await fs.remove(path.join(tempTestCourseDir.path, 'clientFilesCourse'));
+
+      // Regenerate chunks
+      jobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
+      await helperServer.waitForJobSequenceSuccessAsync(jobId);
+
+      // Reload the chunks
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Assert that the remaining chunks have been removed from disk
       assert.isNotOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
       assert.isNotOk(await fs.pathExists(path.join(courseDir, 'clientFilesCourse')));
     });
