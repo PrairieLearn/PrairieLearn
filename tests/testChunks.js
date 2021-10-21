@@ -149,6 +149,9 @@ describe('chunks', () => {
 
     /** @type {tmp.DirectoryResult} */
     let tempTestCourseDir;
+    /** @type {tmp.DirectoryResult} */
+    let tempChunksDir;
+    let originalChunksConsumerDirectory = config.chunksConsumerDirectory;
     let courseId;
 
     before('set up testing server', async () => {
@@ -159,6 +162,14 @@ describe('chunks', () => {
         overwrite: true,
       });
 
+      // `testCourse` doesn't include an `elementExtensions` directory.
+      // We add one here for the sake of testing.
+      await fs.ensureDir(path.join(tempTestCourseDir.path, 'elementExtensions'));
+
+      // We need to override the chunks directory too.
+      tempChunksDir = await tmp.dir({ unsafeCleanup: true });
+
+      config.chunksConsumerDirectory = tempChunksDir.path;
       config.chunksConsumer = true;
 
       await util.promisify(helperServer.before(tempTestCourseDir.path).bind(this))();
@@ -171,18 +182,72 @@ describe('chunks', () => {
     });
 
     after('shut down testing server', async () => {
-      await tempTestCourseDir.cleanup();
+      try {
+        await tempTestCourseDir.cleanup();
+        await tempChunksDir.cleanup();
+      } catch (err) {
+        console.error(err);
+      }
       await util.promisify(helperServer.after.bind(this))();
 
       config.chunksConsumer = false;
+      config.chunksConsumerDirectory = originalChunksConsumerDirectory;
     });
 
     it('deletes chunks that are no longer needed', async () => {
       const course_ids = [courseId];
       const authn_user_id = 1;
 
+      /** @type {import('../lib/chunks').Chunk[]} */
+      const chunksToLoad = [
+        {
+          type: 'elements',
+        },
+        {
+          type: 'elementExtensions',
+        },
+        {
+          type: 'serverFilesCourse',
+        },
+        {
+          type: 'clientFilesCourse',
+        },
+      ];
+
       // Generate chunks for the example course
-      await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
+      const jobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
+      await helperServer.waitForJobSequenceSuccessAsync(jobId);
+
+      // Load and unpack chunks
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Assert that the unpacked chunks exist on disk
+      const courseDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
+      console.log('courseDir', courseDir);
+      console.log(await fs.readdir(courseDir));
+      assert.isOk(await fs.pathExists(path.join(courseDir, 'elements')));
+      assert.isOk(await fs.pathExists(path.join(courseDir, 'elementExtensions')));
+      assert.isOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
+      assert.isOk(await fs.pathExists(path.join(courseDir, 'clientFilesCourse')));
+
+      // Remove directories from the course
+      await fs.remove(path.join(tempTestCourseDir.path, 'elements'));
+      await fs.remove(path.join(tempTestCourseDir.path, 'elementExtensions'));
+      await fs.remove(path.join(tempTestCourseDir.path, 'serverFilesCourse'));
+      await fs.remove(path.join(tempTestCourseDir.path, 'clientFilesCourse'));
+
+      // Regenerate chunks
+      const newJobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
+      await helperServer.waitForJobSequenceSuccessAsync(newJobId);
+
+      // Reload the chunks
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Assert that the chunks have been removed from disk
+      assert.isNotOk(await fs.pathExists(path.join(courseDir, 'elements')));
+      assert.isNotOk(await fs.pathExists(path.join(courseDir, 'elementExtensions')));
+      assert.isNotOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
+      assert.isNotOk(await fs.pathExists(path.join(courseDir, 'clientFilesCourse')));
     });
   });
 });
