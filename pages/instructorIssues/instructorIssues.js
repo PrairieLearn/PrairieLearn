@@ -105,8 +105,9 @@ router.get('/', function (req, res, next) {
 
   sqldb.query(sql.issues_count, params, function (err, result) {
     if (ERR(err, next)) return;
-    if (result.rowCount != 2)
+    if (result.rowCount != 2) {
       return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
+    }
     res.locals.closedCount = result.rows[0].count;
     res.locals.openCount = result.rows[1].count;
 
@@ -115,8 +116,9 @@ router.get('/', function (req, res, next) {
       offset: 0,
       limit: PAGE_SIZE,
     };
-    if (_.isInteger(Number(req.query.page)))
+    if (_.isInteger(Number(req.query.page))) {
       params.offset = (Number(req.query.page) - 1) * PAGE_SIZE;
+    }
     _.assign(params, filters);
 
     sqldb.query(sql.select_issues, params, function (err, result) {
@@ -141,12 +143,13 @@ router.get('/', function (req, res, next) {
         row.relative_date = moment(row.formatted_date).from(row.now_date);
 
         if (row.assessment) {
-          if (!row.course_instance_id)
+          if (!row.course_instance_id) {
             return next(
               new Error(
                 `Issue id ${row.issue_id} is associated with an assessment but not a course instance`
               )
             );
+          }
 
           // Each issue is associated with a question variant. If an issue is also
           // associated with a course instance, then this question variant is from
@@ -204,8 +207,9 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course editor)'));
+  }
   if (req.body.__action == 'open') {
     let params = [
       req.body.issue_id,

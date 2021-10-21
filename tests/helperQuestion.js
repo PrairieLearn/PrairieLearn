@@ -94,8 +94,9 @@ module.exports = {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         elemList = locals.$('.question-form input[name="__variant_id"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -106,8 +107,9 @@ module.exports = {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return callback(null);
+        }
         var params = {
           variant_id: locals.variant_id,
         };
@@ -121,8 +123,9 @@ module.exports = {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         if (!locals.isStudentPage) return;
         assert.equal(locals.variant.instance_question_id, locals.question.id);
       });
@@ -130,8 +133,9 @@ module.exports = {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         if (locals.isStudentPage) return;
         assert.equal(locals.variant.question_id, locals.question.id);
       });
@@ -140,16 +144,18 @@ module.exports = {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         assert.equal(locals.variant.broken, false);
       });
       it('should have a CSRF token if has grade or save button', function () {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         elemList = locals.$('.question-form input[name="__csrf_token"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');

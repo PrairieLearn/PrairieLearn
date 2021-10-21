@@ -64,8 +64,9 @@ router.get('/', function (req, res, next) {
             sqldb.query(sql.get_group_info, params, function (err, result) {
               if (ERR(err, next)) return;
               res.locals.group_info = result.rows;
-              if (res.locals.group_info[0] == undefined)
+              if (res.locals.group_info[0] == undefined) {
                 return next(error.make(403, 'Not a group member', res.locals));
+              }
               res.locals.join_code =
                 res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -81,8 +82,9 @@ router.get('/', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Homework') return next();
-  if (!res.locals.authz_result.authorized_edit)
+  if (!res.locals.authz_result.authorized_edit) {
     return next(error.make(403, 'Not authorized', res.locals));
+  }
 
   if (req.body.__action == 'attach_file') {
     util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
