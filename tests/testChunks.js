@@ -144,6 +144,127 @@ describe('chunks', () => {
     });
   });
 
+  describe('chunkMetadataEqual', () => {
+    it('works for chunks of different types', () => {
+      assert.isNotOk(
+        chunksLib.chunkMetadataEqual({ type: 'elements' }, { type: 'clientFilesCourse' })
+      );
+    });
+
+    ['elements', 'elementExtensions', 'clientFilesCourse', 'serverFilesCourse'].forEach(
+      (/** @type {chunksLib.ChunkType} */ type) => {
+        it(`works for ${type} chunks`, () => {
+          assert.isOk(chunksLib.chunkMetadataEqual({ type }, { type }));
+        });
+      }
+    );
+
+    it('works for clientFilesCourseInstance chunks', () => {
+      assert.isOk(
+        chunksLib.chunkMetadataEqual(
+          {
+            type: 'clientFilesCourseInstance',
+            courseInstanceName: 'foo',
+          },
+          {
+            type: 'clientFilesCourseInstance',
+            courseInstanceName: 'foo',
+          }
+        )
+      );
+
+      assert.isNotOk(
+        chunksLib.chunkMetadataEqual(
+          {
+            type: 'clientFilesCourseInstance',
+            courseInstanceName: 'foo',
+          },
+          {
+            type: 'clientFilesCourseInstance',
+            courseInstanceName: 'bar',
+          }
+        )
+      );
+    });
+
+    it('works for clientFilesAssessment chunks', () => {
+      assert.isOk(
+        chunksLib.chunkMetadataEqual(
+          {
+            type: 'clientFilesAssessment',
+            courseInstanceName: 'foo',
+            assessmentName: 'foo',
+          },
+          {
+            type: 'clientFilesAssessment',
+            courseInstanceName: 'foo',
+            assessmentName: 'foo',
+          }
+        )
+      );
+
+      // Different courseInstanceName
+      assert.isNotOk(
+        chunksLib.chunkMetadataEqual(
+          {
+            type: 'clientFilesAssessment',
+            courseInstanceName: 'foo',
+            assessmentName: 'foo',
+          },
+          {
+            type: 'clientFilesAssessment',
+            courseInstanceName: 'bar',
+            assessmentName: 'foo',
+          }
+        )
+      );
+
+      // Different assessmentName
+      assert.isNotOk(
+        chunksLib.chunkMetadataEqual(
+          {
+            type: 'clientFilesAssessment',
+            courseInstanceName: 'foo',
+            assessmentName: 'foo',
+          },
+          {
+            type: 'clientFilesAssessment',
+            courseInstanceName: 'foo',
+            assessmentName: 'bar',
+          }
+        )
+      );
+    });
+
+    it('works for question chunks', () => {
+      assert.isOk(
+        chunksLib.chunkMetadataEqual(
+          {
+            type: 'question',
+            questionName: 'foo',
+          },
+          {
+            type: 'question',
+            questionName: 'foo',
+          }
+        )
+      );
+
+      assert.isNotOk(
+        chunksLib.chunkMetadataEqual(
+          {
+            type: 'question',
+            questionName: 'foo',
+          },
+          {
+            type: 'question',
+            questionName: 'bar',
+          }
+        )
+      );
+    });
+  });
+
   describe('deletes chunks that are no longer needed', function () {
     this.timeout(60000);
 
@@ -223,8 +344,6 @@ describe('chunks', () => {
 
       // Assert that the unpacked chunks exist on disk
       const courseDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
-      console.log('courseDir', courseDir);
-      console.log(await fs.readdir(courseDir));
       assert.isOk(await fs.pathExists(path.join(courseDir, 'elements')));
       assert.isOk(await fs.pathExists(path.join(courseDir, 'elementExtensions')));
       assert.isOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
