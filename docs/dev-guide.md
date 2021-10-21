@@ -98,7 +98,7 @@ debug('func()', 'param:', param);
 
 ## Debugging SQL and PL/pgSQL
 
-- Use the [`psql`](https://www.postgresql.org/docs/9.6/static/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
+- Use the [`psql`](https://www.postgresql.org/docs/11/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
 
 ```sh
 psql postgres
@@ -120,7 +120,7 @@ SELECT the_sql_function(arg1, arg2);
 
 ## HTML page generation
 
-- Use [Express](http://expressjs.com) as the web framework. As of 2016-09-27 we are using v4.
+- Use [Express](http://expressjs.com) as the web framework. As of 2021-10-21 we are using v4.17.
 
 - All pages are server-side rendered and we try and minimize the amount of client-side JavaScript. Client-side JS should use [jQuery](https://jquery.com) and related libraries. We prefer to use off-the-shelf jQuery plugins where possible.
 
@@ -189,7 +189,7 @@ module.exports = router;
 
 ## SQL usage
 
-- Use [PostgreSQL](https://www.postgresql.org) and feel free to use the latest features. As of 2017-08-05 we run version 9.6.
+- Use [PostgreSQL](https://www.postgresql.org) and feel free to use the latest features. As of 2021-10-21 we run version 11.12.
 
 - The [PostgreSQL manual](https://www.postgresql.org/docs/manuals/) is an excellent reference.
 
