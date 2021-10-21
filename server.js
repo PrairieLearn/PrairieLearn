@@ -364,6 +364,10 @@ module.exports.initExpress = function() {
         function(req, res, next) {res.locals.navPage = 'scrap_paper'; next();},
         require('./pages/instructorScrapPaper/instructorScrapPaper.js'),
     ]);
+    app.use('/pl/scan_artifacts', [
+        function(req, res, next) {res.locals.navPage = 'scan_artifacts'; next();},
+        require('./pages/instructorScanArtifacts/instructorScanArtifacts.js'),
+    ]);
 
     app.use('/pl/workspace/:workspace_id', [
         (req, res, next) => {res.locals.workspace_id = req.params.workspace_id; next();},

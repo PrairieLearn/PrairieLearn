@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+    <!--We need these to run front-end leverging Canvas to avoid adding bloatware to Linux dist image-->
+    <script src="<%= node_modules_asset_path('jsbarcode/dist/JsBarcode.all.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('pdfjs-dist/build/pdf.min.js') %>"></script>
+    <script>
+        const pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "<%= node_modules_asset_path('pdfjs-dist/build/pdf.worker.js') %>";
+
+        function decodeArtifacts() {
+            const file = document.querySelector('#pdfentryfile').files[0];
+            const data = getBase64(file);
+            console.log('filedata', data);
+        }
+
+        function getBase64(file) {
+            var reader = new FileReader();
+            reader.readAsBinaryString(file);
+            reader.onload = function () {
+                console.log(reader.result);
+                const loadingTask = pdfjsLib.getDocument({data: reader.result});
+                loadingTask.promise.then(function(pdf) {
+                console.log('PDF loaded');
+                
+                // Fetch the first page
+                var pageNumber = 1;
+                pdf.getPage(pageNumber).then(function(page) {
+                    console.log('Page loaded');
+                    
+                    var scale = 10;
+                    var viewport = page.getViewport({scale: scale});
+
+                    // Prepare canvas using PDF page dimensions
+                    var canvas = document.getElementById('anyCanvas');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    var context = canvas.getContext('2d');
+
+                    // Render PDF page into canvas context
+                    var renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+                    var renderTask = page.render(renderContext);
+                    renderTask.promise.then(function () {
+                        // const barcodeDetector = new BarcodeDetector();
+
+
+                        const barcodeDetector = new BarcodeDetector();
+                        // check compatibility
+                        if (barcodeDetector) {
+                            console.log('Barcode Detector supported!');
+                        } else {
+                            console.log('Barcode Detector is not supported by this browser.');
+                        }
+                        const dataUrl = canvas.toDataURL("image/jpeg");
+                        const img = document.createElement('img');
+                        img.src = dataUrl;
+
+                        img.decode().then(data => {
+                            barcodeDetector.detect(data)
+                                .then(barcodes => {
+                                    console.log(barcodes);
+                                    barcodes.forEach(barcode => console.log('BARCODE', barcode.rawData));
+                                })
+                                .catch(err => {
+                                    console.log('MAJOR ERROR', err);
+                                });
+                        })
+
+                        // img element test
+
+
+                        // canvas to image/bmp
+                        var imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+                        var imgToProcess = document.createElement('canvas');
+                        imgToProcess.width = canvas.width;
+                        imgToProcess.height = canvas.height;
+                        const theImage = imgToProcess.toDataURL("image/png");
+
+                        const anyhting = barcodeDetector.detect(theImage).then((data) => {
+                            console.log('anything data', data);
+                        })
+                        console.log('barcodes', anyhting);
+                        barcodeDetector.detect(theImage)
+                            .then(barcodes => {
+                                console.log(barcodes);
+                                barcodes.forEach(barcode => console.log('BARCODE', barcode.rawData));
+                            })
+                            .catch(err => {
+                                console.log('MAJOR ERROR', err);
+                            })
+
+                            var newImg = document.createElement('img'),
+                                url = URL.createObjectURL(blob);
+
+                            newImg.onload = function() {
+                                // no longer need to read the blob so it's revoked
+                                URL.revokeObjectURL(url);
+                            };
+
+                            newImg.src = url;
+                            document.body.appendChild(newImg);
+                        });
+
+
+
+                    console.log('Page rendered');
+                    });
+                });
+                }, function (reason) {
+                // PDF loading error
+                console.error(reason);
+            };
+            reader.onerror = function (error) {
+                console.log('Error: ', error);
+            };
+        }
+
+        window.onload = () => {
+            // decode pdf call (all code you need to call in order to scan barcodes in you pdfs
+            const input_file = document.getElementById('pdfentryfile');
+
+            // decode PDF()
+        }
+    </script>
+</head>
+<body>
+    <div>
+        <canvas id='anyCanvas'></canvas>
+    </div>
+    <div class="left">
+        <div class="left">
+            <input id="pdfentryfile" type="file" accept="application/pdf" size="40" style="float: left;">
+        </div>
+        <div class="right">
+            <input type="number" min="1" step="1" id="pageNr" style="display: none; width: 40px">
+            <br><br>
+            <button onclick="decodeArtifacts()" id="decode_btn" style="width: 120px;">Decode Artifacts</button>
+        </div>
+
+        <div class="resultHolder">
+            <label class="resultsTitle">Results will be shown below with <u>summary</u> at the end.</label>
+        </div>
+        <div id="holder">
+        </div>
+
+        <div id="summarydiv">
+            <label class="resultsTitle"> Summary: </label>
+            <br><br>
+            <table id="summary">
+                <tbody>
+
+                </tbody>
+            </table>
+            <br>
+            <hr>
+            <label>By this summary you may decide which parameters you need to exclude, to include or to adjust more
+                accurately, in order to boost the performance and improve the accuracy of the reader.</label>
+        </div>
+    </div>
+</body>
+</html>
