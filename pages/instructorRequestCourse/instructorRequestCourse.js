@@ -109,8 +109,9 @@ router.post('/', function (req, res, next) {
                         ERR(err, () => {
                           logger.error(err);
                         })
-                      )
+                      ) {
                         return;
+                      }
 
                       /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
                       opsbot.sendCourseRequestMessage(
