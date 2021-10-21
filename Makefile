@@ -29,7 +29,7 @@ test-grader-host:
 test-nocoverage: start-support
 	@mocha tests/index.js
 test-python:
-	@python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
+	@python3 question-servers/freeformPythonLib/prairielearn_test.py
 
 lint: lint-js lint-python
 lint-js:
