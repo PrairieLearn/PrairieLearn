@@ -18,21 +18,27 @@ WHERE
 -- BLOCK select_metadata_for_chunks
 SELECT
     chunks.*,
+    (chunks_arr->>'type')::enum_chunk_type AS type,
     q.qid AS question_name,
     a.tid AS assessment_name,
     ci.short_name AS course_instance_name
 FROM
-    JSON_ARRAY_ELEMENTS($chunks_arr::json) AS chunks_arr,
-    chunks
+    JSON_ARRAY_ELEMENTS($chunks_arr::json) AS chunks_arr
+    -- Note that we specifically use a LEFT JOIN here - this is what allows the
+    -- caller to differentiate between a chunk that exists and one that does not.
+    -- Chunks that don't exist will have a NULL id, but they'll still contain
+    -- other information like the course instnace/assessment/question name so that
+    -- we can clean up unused chunks from disk.
+    LEFT JOIN chunks ON (
+        chunks.course_id = ($course_id)::bigint
+        AND chunks.type = (chunks_arr->>'type')::enum_chunk_type
+        AND ((chunks_arr->>'courseInstanceId' IS NULL) OR (chunks.course_instance_id = (chunks_arr->>'courseInstanceId')::bigint))
+        AND ((chunks_arr->>'assessmentId' IS NULL) OR (chunks.assessment_id = (chunks_arr->>'assessmentId')::bigint))
+        AND ((chunks_arr->>'questionId' IS NULL) OR (chunks.question_id = (chunks_arr->>'questionId')::bigint))
+    )
     LEFT JOIN assessments AS a ON (a.id = chunks.assessment_id)
     LEFT JOIN course_instances AS ci ON (ci.id = chunks.course_instance_id OR ci.id = a.course_instance_id)
-    LEFT JOIN questions AS q ON (q.id = chunks.question_id)
-WHERE
-    chunks.course_id = ($course_id)::bigint
-    AND chunks.type = (chunks_arr->>'type')::enum_chunk_type
-    AND ((chunks_arr->>'courseInstanceId' IS NULL) OR (chunks.course_instance_id = (chunks_arr->>'courseInstanceId')::bigint))
-    AND ((chunks_arr->>'assessmentId' IS NULL) OR (chunks.assessment_id = (chunks_arr->>'assessmentId')::bigint))
-    AND ((chunks_arr->>'questionId' IS NULL) OR (chunks.question_id = (chunks_arr->>'questionId')::bigint));
+    LEFT JOIN questions AS q ON (q.id = chunks.question_id);
 
 -- BLOCK select_course_dir
 SELECT c.path

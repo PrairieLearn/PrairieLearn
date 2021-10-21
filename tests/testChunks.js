@@ -151,13 +151,27 @@ describe('chunks', () => {
       );
     });
 
-    ['elements', 'elementExtensions', 'clientFilesCourse', 'serverFilesCourse'].forEach(
-      (/** @type {chunksLib.ChunkType} */ type) => {
-        it(`works for ${type} chunks`, () => {
-          assert.isOk(chunksLib.chunkMetadataEqual({ type }, { type }));
-        });
-      }
-    );
+    it('works for elements chunks', () => {
+      assert.isOk(chunksLib.chunkMetadataEqual({ type: 'elements' }, { type: 'elements' }));
+    });
+
+    it('works for elementExtensions chunks', () => {
+      assert.isOk(
+        chunksLib.chunkMetadataEqual({ type: 'elementExtensions' }, { type: 'elementExtensions' })
+      );
+    });
+
+    it('works for clientFilesCourse chunks', () => {
+      assert.isOk(
+        chunksLib.chunkMetadataEqual({ type: 'clientFilesCourse' }, { type: 'clientFilesCourse' })
+      );
+    });
+
+    it('works for serverFilesCourse chunks', () => {
+      assert.isOk(
+        chunksLib.chunkMetadataEqual({ type: 'serverFilesCourse' }, { type: 'serverFilesCourse' })
+      );
+    });
 
     it('works for clientFilesCourseInstance chunks', () => {
       assert.isOk(
