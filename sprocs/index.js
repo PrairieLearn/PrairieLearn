@@ -189,6 +189,7 @@ module.exports = {
         'workspace_hosts_find_terminable.sql',
         'chunks_insert.sql',
         'group_users_insert.sql',
+        'chunks_delete.sql',
       ],
       function (filename, callback) {
         logger.verbose('Loading ' + filename);
