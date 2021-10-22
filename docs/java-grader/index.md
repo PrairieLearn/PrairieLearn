@@ -108,6 +108,26 @@ import org.prairielearn.autograder.AutograderInfo;
 
 To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order).
 
+### Changing compilation options
+
+By default the Java compiler will show all compilation warnings to the user, except for `serial` (missing `serialVersionUID` on serializable classes). If you would like to change the compilation warnings or other compilation settings, you may do so by setting the `JDK_JAVAC_OPTIONS` environment variable in `info.json`, as follows:
+
+```javascript
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-java",
+        "timeout": 10,
+        "entrypoint": "autograder.sh",
+        "environment": { "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3" }
+    }
+```
+
+The example above disables the `static` warning (use of static fields applied to object expressions) and limits the number of errors to 3. A more comprehensive list of options can be found in the [`javac` documentation page](https://docs.oracle.com/en/java/javase/11/tools/javac.html). Some options of interest may include:
+
+- `-Xlint:none` or `-nowarn` to disable all warnings;
+- `-Xdoclint` to enable warnings for javadoc comments;
+- `-source 10` to compile using the Java 10 language version.
+
 ### Libraries and instructor-provided classes
 
 Instructors may provide additional libraries and classes as part of the Java classpath. By default, all `*.jar` files in the subdirectory `tests/libs` of the question will be included in the classpath, as well as the `tests/libs` directory itself. So, classes that need to be included in the compilation and runtime of the application should either be saved into a `*.jar` file and saved in the `tests/libs` directory, or compiled into a `*.class` file inside the same directory (with appropriate subdirectories if packages are used).
