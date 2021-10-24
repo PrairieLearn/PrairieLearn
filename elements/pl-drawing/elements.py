@@ -1424,7 +1424,7 @@ class GraphLine(BaseElement):
             n_grads = len(grads)
             if n_end_points < 2 or n_end_points > 3:
                 raise Exception('pl-graph-line error: the attribute end-points expects a list of size 2 or 3.')
-            if n_grads != 0 and n_grads !=2:
+            if n_grads != 0 and n_grads != 2:
                 raise Exception('pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point.')
             if n_end_points > 2 and n_grads > 0:
                 raise Exception('pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both.')
