@@ -4,50 +4,7 @@
 	<meta charset="UTF-8">
 	<title></title>
     <!--We need these to run front-end leverging Canvas to avoid adding bloatware to Linux dist image-->
-    <script src="<%= node_modules_asset_path('jsbarcode/dist/JsBarcode.all.min.js') %>"></script>
-    <script src="<%= node_modules_asset_path('jspdf/dist/jspdf.umd.min.js') %>"></script>
     <script>
-        const doc = new jspdf.jsPDF({compress: false});
-
-        // ean-13 standard used; pdf and barcode page in mm 
-        const barcodeWidth = 37.29; 
-        const barcodeHeight = 25.93;
-        const pdfWidth = doc.internal.pageSize.getWidth(); // also in mm
-        const pdfHeight = doc.internal.pageSize.getHeight();
-
-        // pdf center (page width - image width) / 2;
-        const topPadding = 15;
-        const bottomPadding = 5;
-        const sideMargins = 15 * 2;
-        const centerWidth = (pdfWidth - barcodeWidth) / 2;
-        const stampPages = (label, fontSize, barcodeSeed, numPages) => {
-            doc.setFontSize(14);
-
-            for (let i = 0; i < numPages; i++) {
-                // first pdf page exists on 0
-                if (i > 0) { doc.addPage(); }
-
-                JsBarcode('#barcode', barcodeSeed, {format: 'EAN13'});
-                const barcodeImg = document.querySelector('#barcode');
-                
-                doc.text(label, pdfWidth / 2, 0 + topPadding, {align: 'center', maxWidth: pdfWidth - sideMargins});
-                doc.addImage(barcodeImg.src, centerWidth, (pdfHeight - barcodeHeight) - bottomPadding, barcodeWidth, barcodeHeight, null, 'SLOW');
-                barcodeSeed += 5555;
-            }
-        };
-    
-        window.onload = () => {
-            const label = 'University of British Columbia - CPSC 999 - Exam 3 - Question 4 - Proof of work sdf ads fasd f adsf asd f asdf sd s ';
-            stampPages(label, 14, 133211233112, 1);
-
-            // output pdf
-            const base64pdf = doc.output('datauri');
-
-            document.querySelector("#question-block-artifact-pdf").src = base64pdf;
-
-            doc.save();
-
-        }
     </script>
 </head>
 <body>
