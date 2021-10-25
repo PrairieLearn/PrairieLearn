@@ -46,7 +46,7 @@ pl_tmux_show_tips () {
 }
 
 TMUX_CONF=/PrairieLearn/.tmux.conf
-[[ -f $TMUX_CONF ]] && args=(-f $TMUX_CONF) || args=()
+[[ -f "$TMUX_CONF" ]] && args=(-f "$TMUX_CONF") || args=()
 
 pl_tmux_check_http () {
   curl -Is http://localhost:3000 >/dev/null 2>&1
@@ -58,8 +58,12 @@ pl_tmux_check_https () {
 
 pl_tmux_check_lin_host () {
   if grep -iqe 'linux' <(uname -a) && ! grep -iqe '172.17.0.1' /etc/hosts ; then
-    local OS_FLAG=$(docker info --format "{{.OperatingSystem}}" 2>/dev/null)
-    [[ $? -eq 0 ]] || return
+    local OS_FLAG
+    OS_FLAG=$(docker info --format "{{.OperatingSystem}}" 2>/dev/null || echo "NO_DOCKER_INFO")
+    if [[ "$OS_FLAG" == "NO_DOCKER_INFO" ]]; then
+      echo "Could not get info about OS from Docker. (Maybe not running in Docker.)"
+      return
+    fi
     OS_FLAG="${OS_FLAG,,}"
     if [[ "$OS_FLAG" == *linux* ]] || [[ "$OS_FLAG" != *mac* ]]; then
       echo "WARNING:"
@@ -102,13 +106,16 @@ if [ ${KILL_WORKSPACES_BEFORE:0} -eq 1 ]; then
   # kill any containers with a name like workspace-*
   CONTAINERS=$(docker ps -aq --filter "name=workspace-")
   if [[ ! -z "$CONTAINERS" ]] ; then
-    echo Killing existing workspace containers: $CONTAINERS
+    echo "Killing existing workspace containers: $CONTAINERS"
     docker kill $CONTAINERS
     docker rm $CONTAINERS
   fi
 fi
 
-cd /PrairieLearn
+cd /PrairieLearn || {
+  echo "WARNING: Could not cd into /PrairieLearn"
+  echo "  Probably not running in Docker. We hope you know what you're doing."
+}
 
 if [ ${INVOKE_YARN:0} -eq 1 ]; then
   yarn config set --home enableTelemetry 0
@@ -121,7 +128,7 @@ if [[ "$(tmux -V)" =~ [0-9][^[:space:]]* ]]; then
 fi
 
 BOTTOM_PANE_DEFAULT=40
-if [[ "$(printf "2.1\n${TMUX_VERSION:-1.8}\n" | sort -V | head -n 1)" == "2.1" ]]; then
+if [[ "$(printf "2.1\n%s\n" "${TMUX_VERSION:-1.8}" | sort -V | head -n 1)" == "2.1" ]]; then
   # tmux version >= 2.1
   tmux "${args[@]}" new-session \; \
     set -g mouse on \; \
@@ -153,7 +160,7 @@ fi
 if [[ "$OSTYPE" == *linux* && -w /PrairieLearn ]]; then
   PL_DIR_UID=$(stat -c '%u' /PrairieLearn)
   PL_DIR_GID=$(stat -c '%g' /PrairieLearn)
-  if [ ${PL_DIR_UID:0} -gt 0 -a ${CHOWN_GENERATED_FILES:0} -eq 1 ] ; then
+  if [ ${PL_DIR_UID:0} -gt 0 ] && [ ${CHOWN_GENERATED_FILES:0} -eq 1 ] ; then
     echo "Retaking ownership of files in /PrairieLearn to match local uid:gid ${PL_DIR_UID}:${PL_DIR_GID}..."
     chown -R "${PL_DIR_UID}:${PL_DIR_GID}" /PrairieLearn && echo "Done"
   fi
@@ -163,7 +170,7 @@ if [ ${KILL_WORKSPACES_AFTER:0} -eq 1 ]; then
   # Kill any lingering workspaces to clean up.
   CONTAINERS=$(docker ps -aq --filter "name=workspace-")
   if [[ ! -z "$CONTAINERS" ]] ; then
-    echo Killing remaining workspace containers: $CONTAINERS
+    echo "Killing remaining workspace containers: $CONTAINERS"
     docker kill $CONTAINERS
     docker rm $CONTAINERS
   fi
