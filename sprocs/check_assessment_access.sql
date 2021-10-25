@@ -9,6 +9,7 @@ CREATE FUNCTION
         IN date TIMESTAMP WITH TIME ZONE,
         IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
+        OUT exam_access_end timestamp with time zone, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
@@ -29,6 +30,7 @@ BEGIN
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
         caar.authorized,
+        caar.exam_access_end,
         aar.credit,
         CASE
             WHEN aar.credit > 0 AND aar.active THEN
@@ -56,6 +58,7 @@ BEGIN
         aar.id
     INTO
         authorized,
+        exam_access_end,
         credit,
         credit_date_string,
         time_limit_min,

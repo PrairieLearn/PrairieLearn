@@ -27,13 +27,12 @@ SELECT
     jsonb_set(to_jsonb(ai), '{formatted_date}',
         to_jsonb(format_date_full_compact(ai.date, COALESCE(ci.display_timezone, c.display_timezone)))) AS assessment_instance,
     CASE
-        WHEN ai.date_limit IS NULL THEN NULL
-        ELSE floor(extract(epoch from (date_limit - $req_date::timestamptz)) * 1000)
+        WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(extract(epoch from (LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz)) * 1000)
     END AS assessment_instance_remaining_ms,
     CASE
-        WHEN ai.date_limit IS NULL THEN NULL
-        ELSE floor(extract(epoch from (ai.date_limit - ai.date)) * 1000)
+        WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(extract(epoch from (LEAST(aai.exam_access_end, ai.date_limit) - ai.date)) * 1000)
     END AS assessment_instance_time_limit_ms,
+    (ai.date_limit IS NOT NULL AND ai.date_limit <= $req_date::timestamptz) AS assessment_instance_time_limit_expired,
     to_jsonb(u) AS instance_user,
     users_get_displayed_role(u.user_id, ci.id) AS instance_role,
     to_jsonb(g) AS instance_group,

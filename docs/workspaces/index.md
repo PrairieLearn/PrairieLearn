@@ -4,11 +4,11 @@ Workspaces allow students to work in persistent remote containers via in-browser
 
 ## Supported browsers
 
-* [x] Chrome is supported
-* [x] Firefox is supported
-* [x] Safari is supported
-* [x] Edge Chromium (version >= 79) is supported
-* [ ] Edge Legacy (version < 79) is untested
+- [x] Chrome is supported
+- [x] Firefox is supported
+- [x] Safari is supported
+- [x] Edge Chromium (version >= 79) is supported
+- [ ] Edge Legacy (version < 79) is untested
 
 ## Directory structure
 
@@ -54,17 +54,18 @@ questions
 
 The question's `info.json` should set the `singleVariant` and `workspaceOptions` properties:
 
-* `"singleVariant": true` will prevent student workspaces from resetting due to new variants being generated
-    * Note that new variants will still be generated in `Staff view`
-* `workspaceOptions` contains the following properties:
-    * `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
-    * `port`: port number used by the workspace app inside the Docker image
-    * `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
-    * `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container for grading. Files can be in subdirectories, but the files must be explicitly listed (e.g. listing `dir/file.txt` is okay, but specifying `dir` alone is not). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder.
-    * `args` (optional, default none): command line arguments to pass to the Docker image
-    * `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
-    * `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
-    * `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
+- `"singleVariant": true` will prevent student workspaces from resetting due to new variants being generated
+  - Note that new variants will still be generated in `Staff view`
+- `workspaceOptions` contains the following properties:
+  - `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
+  - `port`: port number used by the workspace app inside the Docker image
+  - `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
+  - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container for grading. Files can be in subdirectories, but the files must be explicitly listed (e.g. listing `dir/file.txt` is okay, but specifying `dir` alone is not). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder.
+  - `args` (optional, default none): command line arguments to pass to the Docker image
+  - `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
+  - `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
+  - `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
+  - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
 
 #### `info.json` for ungraded workspace
 
@@ -162,17 +163,17 @@ A minimal `question.html` for an externally graded workspace should look somethi
 
 ## Running locally (on Docker)
 
-* First, create an empty directory to use to share job data between containers.
+- First, create an empty directory to use to share job data between containers.
 
-    * This can live anywhere, but needs to be created first and referenced in the `docker run` command.
-    * This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
-    * **If you already created an external grader jobs directory, you can reuse the same one.**
+  - This can live anywhere, but needs to be created first and referenced in the `docker run` command.
+  - This command is copy-pastable for Windows PowerShell, MacOS, and Linux.
+  - **If you already created an external grader jobs directory, you can reuse the same one.**
 
 ```sh
 mkdir "$HOME/pl_ag_jobs"
 ```
 
-* Then, use one of the following `docker run` commands based on your platform.
+- Then, use one of the following `docker run` commands based on your platform.
 
 In MacOS, `cd` to your course directory and copy-paste the following command:
 
@@ -207,16 +208,16 @@ docker run -it --rm -p 3000:3000 `
   prairielearn/prairielearn
 ```
 
-* **Note** the following about `HOST_JOBS_DIR` in PowerShell:
+- **Note** the following about `HOST_JOBS_DIR` in PowerShell:
 
-    * Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `C:\Users\Tim\pl_ag_jobs`).
-    * Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `$HOME/pl_ag_jobs`).
+  - Use Unix-style paths (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `C:\Users\Tim\pl_ag_jobs`).
+  - Use the full path rather than `$HOME` (i.e., use `/c/Users/Tim/pl_ag_jobs`, not `$HOME/pl_ag_jobs`).
 
-* **Note** that `C:` must have shared access between Windows and Docker:
+- **Note** that `C:` must have shared access between Windows and Docker:
 
-    * Right-click the Docker "whale" icon in the taskbar
-    * Click "Settings"
-    * Ensure `C:` is checked
+  - Right-click the Docker "whale" icon in the taskbar
+  - Click "Settings"
+  - Ensure `C:` is checked
 
 If you are calling docker [from a WSL2 container](../installing/#running-prairielearn-from-a-wsl2-instance), you can use the following command:
 
@@ -231,7 +232,6 @@ docker run -it --rm -p 3000:3000 \
 ```
 
 Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2 instance, not on the host. This can mitigate issues with mode/permissions in external grader instances, as the jobs are created in a Linux environment that allows non-executable files.
-
 
 ## Developing with workspaces (in Docker)
 
@@ -248,18 +248,20 @@ For development it is helpful to run the above two commands in separate `tmux` w
 
 Set these variables in your `config.json`:
 
-* `workspaceJobsDirectory`
-* `workspaceMainZipsDirectory`
-* `workspaceHostZipsDirectory`
-
+- `workspaceJobsDirectory`
+- `workspaceMainZipsDirectory`
+- `workspaceHostZipsDirectory`
 
 ## Permissions in production
 
 When running a workspace container locally the user/group is the default setting for docker, which is typically root. In production, workspaces are run with user:group set to 1001:1001. If the workspace relies on root permissions (e.g., uses a port number below 1024) then it may work locally and fail in production. To test a workspace locally, run it like this:
+
 ```sh
 docker run -it --rm -p HOST_PORT:CLIENT_PORT --user 1001:1001 IMAGE_NAME
 ```
+
 For example, the [example JupyterLab workspace](https://www.prairielearn.org/pl/course/108/question/9045312/preview) using the [JupyterLab image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab) uses port 8080 and so can be run successfully like this:
+
 ```
 docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab
 ```
