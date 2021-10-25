@@ -27,8 +27,6 @@ router.get('/', (req, res, next) => {
     convert.setGMClass(true);
     convert(1);
 
-    return convert(1);
-
     // quagga.decodeSingle({
     //     src: './test.jpeg',
     //     numOfWorkers: 0, // 0 in node
