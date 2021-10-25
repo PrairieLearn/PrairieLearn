@@ -1,7 +1,6 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-// const quagga = require('quagga').default;
 const logger = require('../../lib/logger');
 const config = require('../../lib/config.js');
 
@@ -70,26 +69,6 @@ router.get('/', (req, res, next) => {
         .catch(err => {
             if (ERR(err, next)) return;
         });
-    // Works but needs to be configured to work with more PDFs
-    // quagga.decodeSingle({
-    //     src: './test.jpeg',
-    //     numOfWorkers: 0, // 0 in node
-    //     inputStream: {
-    //         size: 640, // pixel width
-    //         area: { // defines rectangle of the detection/localization area
-    //             top: '0%',    // top offset
-    //             right: '0%',  // right offset
-    //             left: '0%',   // left offset
-    //             bottom: '0%',  // bottom offset
-    //           },
-    //     },
-    //     locate: true,
-    // }, (data) => {
-    //     console.log(data);
-
-    //     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    // });
-
 });
 
 router.post('/', function(req, res, next) {
