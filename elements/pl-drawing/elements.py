@@ -1353,19 +1353,19 @@ class GraphLine(BaseElement):
 
         if 'end-gradients' in el.attrib:
             if curved_line:
-                raise Exception('You should either provide three points to make a curve or the gradient, but not both.')
+                raise Exception('pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both.')
             else:
-                curved_line = True
-                line = json.loads(pl.get_string_attrib(el, 'end-gradients'))
-                if len(line) != 2:
+                grads = json.loads(pl.get_string_attrib(el, 'end-gradients'))
+                if len(grads) != 2:
                     raise Exception('pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point.')
-                dy1 = line[0]
-                dy2 = line[1]
-                if abs(dy1 - dy2) < 1e-9:
+                grad1 = grads[0]
+                grad2 = grads[1]
+                if abs(grad1 - grad2) < 1e-9:
                     raise Exception('The provided gradients are not compatible to compute a quadratic curve between the given points.')
                 else:
-                    x3 = ((y2 - dy2 * x2) - (y1 - dy1 * x1)) / (dy1 - dy2)
-                    y3 = (y1 - dy1 * x1) + dy1 * x3
+                    x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
+                    y3 = (y1 - grad1 * x1) + grad1 * x3
+                    curved_line = True
 
         if 'draw-error-box' in el.attrib:
             obj_draw = el.attrib['draw-error-box'] == 'true'
@@ -1419,8 +1419,18 @@ class GraphLine(BaseElement):
         curved_line = False
         if 'end-points' in element.attrib:
             line = json.loads(pl.get_string_attrib(element, 'end-points'))
+            grads = json.loads(pl.get_string_attrib(element, 'end-gradients', '[]'))
             n_end_points = len(line)
+            n_grads = len(grads)
+            if n_end_points < 2 or n_end_points > 3:
+                raise Exception('pl-graph-line error: the attribute end-points expects a list of size 2 or 3.')
+            if n_grads != 0 and n_grads != 2:
+                raise Exception('pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point.')
+            if n_end_points > 2 and n_grads > 0:
+                raise Exception('pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both.')
             if n_end_points == 3:
+                curved_line = True
+            if n_end_points == 2 and len(grads) == 2:
                 curved_line = True
         if not curved_line:
             return 'pl-controlled-line'
