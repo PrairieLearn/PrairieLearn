@@ -120,7 +120,7 @@ SELECT the_sql_function(arg1, arg2);
 
 ## HTML page generation
 
-- Use [Express](http://expressjs.com) as the web framework. As of 2016-09-27 we are using v4.
+- Use [Express](http://expressjs.com) as the web framework. As of 2021-10-26 we are using v4.
 
 - All pages are server-side rendered and we try and minimize the amount of client-side JavaScript. Client-side JS should use [jQuery](https://jquery.com) and related libraries. We prefer to use off-the-shelf jQuery plugins where possible.
 
