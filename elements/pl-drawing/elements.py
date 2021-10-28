@@ -732,7 +732,8 @@ class ArcVector(BaseElement):
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
             'originY': 'center',
-            'selectable': drawing_defaults['selectable']
+            'selectable': drawing_defaults['selectable'],
+            'clockwiseDirection': clockwise_direction
         }
 
     def is_gradable():
