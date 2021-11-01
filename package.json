@@ -111,7 +111,7 @@
         "tablesorter": "^2.31.3",
         "tar": "^6.1.11",
         "three": "^0.132.2",
-        "tmp-promise": "^3.0.2",
+        "tmp-promise": "^3.0.3",
         "unified": "^9.2.1",
         "unist-util-visit": "^2.0.3",
         "unzipper": "^0.10.11",
