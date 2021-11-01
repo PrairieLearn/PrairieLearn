@@ -39,6 +39,9 @@ def grade_dag(order, depends_graph, group_belonging):
         for node2 in depends_graph[node]:
             graph.add_edge(node2, node)
 
+    if not nx.is_directed_acyclic_graph(graph):
+        raise Exception("Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.")
+
     top_sort_correctness = check_topological_sorting(order, graph)
     grouping_correctness = check_grouping(order, group_belonging)
 
