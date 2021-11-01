@@ -1,13 +1,15 @@
 from collections import Counter
 import networkx as nx
 
+
 def check_topological_sorting(order, graph):
     seen = set()
     for i, node in enumerate(order):
-        if node is None or not all([u in seen for (u,_) in graph.in_edges(node)]):
+        if node is None or not all([u in seen for (u, _) in graph.in_edges(node)]):
             return i
         seen.add(node)
     return len(order)
+
 
 def check_grouping(order, group_belonging):
     group_sizes = Counter(group_belonging.values())
@@ -29,6 +31,7 @@ def check_grouping(order, group_belonging):
             else:
                 return i
     return len(order), -1
+
 
 def grade_dag(order, depends_graph, group_belonging):
     graph = nx.DiGraph()
