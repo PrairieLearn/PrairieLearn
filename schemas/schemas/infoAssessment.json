@@ -114,6 +114,13 @@
             "description": "Minimum number of students in a group.",
             "type": "number"
         },
+        "groupRoles": {
+            "description": "Array of custom user roles in a group.",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/groupRole"
+            }
+        },
         "studentGroupCreate": {
             "description": "Whether students can create groups.",
             "type": "boolean",
@@ -136,6 +143,41 @@
         }
     },
     "definitions": {
+        "groupRole": {
+            "description": "A custom role for use in group assessments that allows control over certain permissions.",
+            "type": "object",
+            "properties": {
+                "name": {
+                    "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
+                    "type": "string"
+                },
+                "minimum": {
+                    "description": "The minimum number of users that should be in this role in a group.",
+                    "type": "number",
+                    "default": 1
+                },
+                "maximum": {
+                    "description": "The maximum number of users that should be in this role in a group.",
+                    "type": "number",
+                    "default": 1
+                },
+                "canAssignRolesAtStart": {
+                    "description": "Whether users with this role can assign other users' group roles before the assessment starts.",
+                    "type": "boolean",
+                    "default": false
+                },
+                "canAssignRolesDuringAssessment": {
+                    "description": "Whether users with this role can assign other users' group roles during an assessment.",
+                    "type": "boolean",
+                    "default": false
+                },
+                "canSubmitAssessment": {
+                    "description": "Whether users with this role can press the 'Save and Grade All' button in an exam.",
+                    "type": "boolean",
+                    "default": true
+                }
+            }
+        },
         "accessRule": {
             "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
             "type": "object",
@@ -324,6 +366,24 @@
                     "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
                     "type": "number",
                     "minimum": 0
+                },
+                "canSubmit": {
+                    "description": "A list of group role names matching those in groupRoles that can submit the question. Only necessary for group assessments.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true,
+                    "default": []
+                },
+                "canView": {
+                    "description": "A list of group role names matching those in groupRoles that can view the question. Only necessary for group assessments.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "uniqueItems": true,
+                    "default": []
                 }
             }
         },

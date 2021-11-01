@@ -10,6 +10,30 @@
     "studentGroupCreate": true,
     "studentGroupJoin": true,
     "studentGroupLeave": true,
+    "groupRoles": [
+        {
+            "name": "Manager",
+            "minimum": 1,
+            "maximum": 1,
+            "canAssignRolesAtStart": true,
+            "canAssignRolesDuringAssessment": true
+        },
+        {
+            "name": "Recorder",
+            "minimum": 1,
+            "maximum": 1
+        },
+        {
+            "name": "Reflector",
+            "minimum": 1,
+            "maximum": 1
+        },
+        {
+            "name": "Contributor",
+            "minimum": 0,
+            "maximum": 3
+        }
+    ],
     "allowAccess": [
         {
             "mode": "Public",
@@ -34,8 +58,20 @@
             "title": "Fundamental questions",
             "bestQuestions": 3,
             "questions": [
-                {"id": "demo/demoNewton-page1",          "points": 1, "maxPoints": 5},
-                {"id": "demo/demoNewton-page2",        "points": 1, "maxPoints": 5}
+                {
+                    "id": "demo/demoNewton-page1",
+                    "points": 1, 
+                    "maxPoints": 5, 
+                    "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+                    "canSubmit": ["Recorder"]
+                },
+                {
+                    "id": "demo/demoNewton-page2", 
+                    "points": 1, 
+                    "maxPoints": 5,
+                    "canView": ["Reflector"],
+                    "canSubmit": ["Reflector"]
+                }
             ]
         }
     ],
