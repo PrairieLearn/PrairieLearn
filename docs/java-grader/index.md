@@ -1,6 +1,6 @@
 # Java Autograder
 
-This file documents the default Java autograder included in the `prairielearn/grader-java` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default Java autograder included in the `prairielearn/grader-java` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
 
 ## Overview
 
@@ -27,41 +27,41 @@ class MyFirstJUnitJupiterTests {
 
 The autograder combines several classes to allow these tests to happen:
 
-* Student-provided class files. These are files submitted by the student (typically via `pl-file-upload` or `pl-file-editor` elements) containing the code to be tested.
+- Student-provided class files. These are files submitted by the student (typically via `pl-file-upload` or `pl-file-editor` elements) containing the code to be tested.
 
-* Test class files. These are provided by the question creator in the subdirectory `tests/junit` inside the question directory. There may be multiple test files, each with multiple test methods.
+- Test class files. These are provided by the question creator in the subdirectory `tests/junit` inside the question directory. There may be multiple test files, each with multiple test methods.
 
-* Library files and instructor-provided classes. These again are provided by the instructor, and can be set up per question or per course, as described below.
+- Library files and instructor-provided classes. These again are provided by the instructor, and can be set up per question or per course, as described below.
 
 ## Setting up
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings.  To use the specific Java autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-java"` and `"entrypoint"` should point to `"autograder.sh"`.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific Java autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-java"` and `"entrypoint"` should point to `"autograder.sh"`.
 
 A full `info.json` file should look something like:
 
-```javascript
+```json
 {
-    "uuid": "...",
-    "title": "...",
-    "topic": "...",
-    "tags": [...],
-    "type": "v3",
-    "singleVariant": true,
-    "gradingMethod": "External",
-    "externalGradingOptions": {
-        "enabled": true,
-        "image": "prairielearn/grader-java",
-        "timeout": 10,
-        "entrypoint": "autograder.sh",
-    }
+  "uuid": "...",
+  "title": "...",
+  "topic": "...",
+  "tags": ["..."],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-java",
+    "timeout": 10,
+    "entrypoint": "autograder.sh"
+  }
 }
 ```
 
 ### `question.html`
 
-As with other autograders, most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element. The question should also include, in the `pl-submission-panel`, a `pl-external-grading-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions.  An example question markup is given below:
+As with other autograders, most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element. The question should also include, in the `pl-submission-panel`, a `pl-external-grading-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -108,20 +108,54 @@ import org.prairielearn.autograder.AutograderInfo;
 
 To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order).
 
+### Changing compilation options
+
+By default the Java compiler will show all compilation warnings to the user, except for `serial` (missing `serialVersionUID` on serializable classes). If you would like to change the compilation warnings or other compilation settings, you may do so by setting the `JDK_JAVAC_OPTIONS` environment variable in `info.json`, as follows:
+
+```json
+{
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-java",
+    "timeout": 10,
+    "entrypoint": "autograder.sh",
+    "environment": { "JDK_JAVAC_OPTIONS": "-Xlint:-static -Xmaxerrs 3" }
+  }
+}
+```
+
+The example above disables the `static` warning (use of static fields applied to object expressions) and limits the number of errors to 3. A more comprehensive list of options can be found in the [`javac` documentation page](https://docs.oracle.com/en/java/javase/11/tools/javac.html). Some options of interest may include:
+
+- `-Xlint:none` or `-nowarn` to disable all warnings;
+- `-Xdoclint` to enable warnings for javadoc comments;
+- `-source 10` to compile using the Java 10 language version.
+
 ### Libraries and instructor-provided classes
 
 Instructors may provide additional libraries and classes as part of the Java classpath. By default, all `*.jar` files in the subdirectory `tests/libs` of the question will be included in the classpath, as well as the `tests/libs` directory itself. So, classes that need to be included in the compilation and runtime of the application should either be saved into a `*.jar` file and saved in the `tests/libs` directory, or compiled into a `*.class` file inside the same directory (with appropriate subdirectories if packages are used).
 
 Some questions may include libraries and base classes that are common across multiple questions. For such questions, it is possible to save these libraries and classes in the course's `serverFilesCourse/java/libs` directory, using the same conventions as above. If this option is used, however, the question's `info.json` file should indicate that this directory should be added to the grading container, as below:
 
-```javascript
-    "externalGradingOptions": {
-        "enabled": true,
-        "image": "prairielearn/grader-java",
-        "serverFilesCourse": ["java/libs/"],
-        "timeout": 10,
-        "entrypoint": "autograder.sh",
-    }
+```json
+{
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-java",
+    "serverFilesCourse": ["java/libs/"],
+    "timeout": 10,
+    "entrypoint": "autograder.sh"
+  }
+}
 ```
 
 The libraries required to run JUnit 5 tests are already included as part of the autograder container, and don't need to be included again.
+
+## Technical details
+
+### Sandbox environment and access to files
+
+The JUnit tests, as well as the student code, are executed in a sandboxed environment as a non-root user. The code has the ability to create, modify or delete any files within the sandbox user's home directory (`/home/sbuser`), but cannot access most other directories in the environment. This is set up to deter students from creating code that manipulates the autograder or the grading results, since these can only be updated by the autograder script.
+
+The user directory is initially empty. Any files and directories that are required for testing must be created by the JUnit test class itself.
+
+The [instructor provided library files](index.md#libraries-and-instructor-provided-classes) are copied to the testing environment as they are to a directory called `/grade/classpath`. To ensure they can be used in the Java library, this directory and its contents are readable by the sandbox user. Instructors are warned that any file that should not be viewed by the student (e.g., the source code of test files or some libraries) should not be included in the question's `tests/libs` directory or in the course's `serverFilesCourse/java/libs` directory, as such files could be visible by a well-crafted malicious student submission.
