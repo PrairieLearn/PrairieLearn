@@ -30,7 +30,7 @@ def check_grouping(order, group_belonging):
                     cur_group_size = None
             else:
                 return i
-    return len(order), -1
+    return len(order)
 
 
 def grade_dag(order, depends_graph, group_belonging):
