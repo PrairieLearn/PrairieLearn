@@ -10,6 +10,7 @@ var sqldb = require('../../prairielib/lib/sql-db');
 var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
+var fs = require('fs');
 
 router.get('/', function(req, res, next) {
     debug('GET');
@@ -59,7 +60,16 @@ router.get('/', function(req, res, next) {
                                 res.locals.start = true;
                             }
                         }
-                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        const instructionsFilename = path.join(__dirname, 'instructions.html');
+                        fs.readFile(instructionsFilename, (err, instructions_html) => {
+                            if (ERR(err, next)) return;
+
+                            res.locals.instructions_html = instructions_html;
+                        
+                            console.log('Refreshing page');
+                            console.log(res.locals);
+                            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        });
                     });
                 });
             } else {
@@ -83,7 +93,7 @@ router.post('/', function(req, res, next) {
     // New stuff!
     if (req.body.__action == 'claim_role') {
 
-        console.log('request body: ', req.body);
+        // console.log('request body: ', req.body);
 
         // Get all keys from req.body
         const roleKeys = Object.keys(req.body);
@@ -101,7 +111,7 @@ router.post('/', function(req, res, next) {
             roles[uid].push(role);
         }
 
-        console.log(roles);
+        // console.log(roles);
 
         // every group must have exactly one Manager, one Recorder, and one Reflector
         // every person is assigned to at least one role
@@ -151,10 +161,19 @@ router.post('/', function(req, res, next) {
                 res.locals.has_recorder = roleCounts['recorder'] === 1;
                 res.locals.has_reflector = roleCounts['reflector'] === 1;
                 res.locals.has_invalid_contributor = roleCounts['contributor'] > 0 && groupSize < 3;
-    
-                console.log('Refreshing page');
-                // console.log(res.locals);
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+                // fetch instructions html
+                // FIXME: fetch from actual assessment directory
+                const instructionsFilename = path.join(__dirname, 'instructions.html');
+                fs.readFile(instructionsFilename, (err, instructions_html) => {
+                    if (ERR(err, next)) return;
+
+                    res.locals.instructions_html = instructions_html;
+                
+                    console.log('Refreshing page');
+                    console.log(res.locals);
+                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                });
             });
 
         });
