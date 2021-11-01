@@ -125,7 +125,7 @@
         "yargs-parser": "^20.2.9"
     },
     "devDependencies": {
-        "@types/async": "^3.2.8",
+        "@types/async": "^3.2.9",
         "@types/chai": "^4.2.21",
         "@types/folder-hash": "^4.0.1",
         "@types/fs-extra": "^9.0.12",
