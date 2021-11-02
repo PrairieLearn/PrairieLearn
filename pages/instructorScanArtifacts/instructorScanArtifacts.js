@@ -54,7 +54,7 @@ router.get('/', (req, res, next) => {
                 readers: ["code_128_reader", "ean_reader"] // List of active readers
             },
             locator: {
-                patchSize: "x-large", // x-small, small, medium, large, x-large
+                patchSize: "x-small", // x-small, small, medium, large, x-large
             },
         }, (data) => {
             console.log(data);
