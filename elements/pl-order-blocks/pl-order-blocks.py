@@ -207,6 +207,7 @@ def render(element_html, data):
         if check_indentation:
             help_text += '<br><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area.'
 
+        uuid = pl.get_uuid()
         html_params = {
             'question': True,
             'answer_name': answer_name,
@@ -218,7 +219,8 @@ def render(element_html, data):
             'check_indentation': 'enableIndentation' if check_indentation is True else None,
             'help_text': help_text,
             'inline': 'inline' if inline_layout is True else None,
-            'max_indent': max_indent
+            'max_indent': max_indent,
+            'uuid': uuid
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
