@@ -31,11 +31,8 @@ window.PLOrderBlocks = function (uuid, options) {
       }
     }
 
-    var textfieldName = event.target.getAttribute('name');
-    if (textfieldName === null) {
-      return;
-    }
-    textfieldName = '#' + textfieldName + '-input';
+    var textfieldName = '#' + event.target.getAttribute('name');
+    +'-input';
     $(textfieldName).val(JSON.stringify(studentAnswers));
   }
 
