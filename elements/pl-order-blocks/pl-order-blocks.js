@@ -9,8 +9,7 @@ window.PLOrderBlocks = function (uuid, options) {
   let dropzoneElementId = '#order-blocks-dropzone-' + uuid;
 
   function setAnswer(event) {
-    // We only care about when this function is fired
-    // from an answer dropzone, aka dropzones with yellow backgrounds
+    // We only care about when this function is fired from an answer dropzone
     var domObjs = $(dropzoneElementId).children();
     var studentAnswers = [];
     for (var i = 0; i < domObjs.length; i++) {
