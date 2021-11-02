@@ -12,10 +12,13 @@ const pdfkit = require('pdfkit');
 const sharp = require('sharp');
 
 const createBarcodes = async () => {
+    // Barcodes should be error-detecting <8 char hexatridecimal produced by base36 encoding><4 char crc16 hash> 
+    // Sequential counter to produce 8 char base36 string should be base36 encode input
+    // Aprox lower and upper bound: 80000000000 - 999999999999; 80 billion to 100 billion
     const svgBarcodes = [];
     let barcode = 'hxh231k1j2231';
     for (let i = 0; i < 10; i++) {
-        // We have decided on the <8 char hexatridecimal produced by base36 encoding><4 char crc16 hash>
+        
         const result = await bitgener({
             data: barcode,
             type: 'code128',
