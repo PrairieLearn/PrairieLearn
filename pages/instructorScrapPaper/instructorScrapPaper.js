@@ -13,11 +13,12 @@ const sharp = require('sharp');
 
 const createBarcodes = async () => {
     const svgBarcodes = [];
-    let barcode = 123123123123;
+    let barcode = 'hxh231k1j2231';
     for (let i = 0; i < 10; i++) {
+        // We have decided on the <8 char hexatridecimal produced by base36 encoding><4 char crc16 hash>
         const result = await bitgener({
-            data: String(barcode),
-            type: 'ean13',
+            data: barcode,
+            type: 'code128',
             output: 'buffer',
             encoding: 'utf8',
             original1DSize: true,
@@ -25,20 +26,19 @@ const createBarcodes = async () => {
             color: '#000',
             bgColor: '#FFF',
             hri: {
-            show: true,
-            fontFamily: 'Futura',
-            marginTop: 5,
+                show: true,
+                fontFamily: 'Futura',
+                marginTop: 5,
             },
         });
 
         svgBarcodes.push(result.svg);
-        barcode+=1;
     }
     return svgBarcodes;
 };
 const convertImage = async (image) => {
     return sharp(image)
-        .png()
+        .png({quality: 100})  // TO DO: lookup defaults
         .toBuffer({resolveWithObject: true});
 };
 const toPdf = async (svgBarcodes) => {
