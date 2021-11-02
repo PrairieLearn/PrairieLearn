@@ -4,11 +4,13 @@
     <%- include('../partials/head'); %>
     <%- include('../partials/mathjax'); %>
     <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('js-crc/build/crc.min.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+
     <script src="<%= asset_path('javascripts/require.js') %>"></script>
     <script src="<%= asset_path('localscripts/question.js') %>"></script>
     <script src="<%= asset_path(`localscripts/question${effectiveQuestionType}.js`) %>"></script>
