@@ -5,7 +5,7 @@ import networkx as nx
 def check_topological_sorting(order, graph):
     seen = set()
     for i, node in enumerate(order):
-        if node is None or not all([u in seen for (u, _) in graph.in_edges(node)]):
+        if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
             return i
         seen.add(node)
     return len(order)
