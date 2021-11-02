@@ -31,7 +31,7 @@ window.PLOrderBlocks = function (uuid, options) {
       }
     }
 
-    textfieldName = event.target.getAttribute('name');
+    var textfieldName = event.target.getAttribute('name');
     if (textfieldName === null) {
       return;
     }
