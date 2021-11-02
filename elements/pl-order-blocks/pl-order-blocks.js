@@ -70,8 +70,6 @@ window.PLOrderBlocks = function (uuid, options) {
       connectWith: connectWith,
       placeholder: 'ui-state-highlight',
       create: function (event) {
-        // when the sortable is created, we need to put the two functions here
-        // to restore progress when the user refresh/submits an answer
         setAnswer(event);
       },
       sort: function (event, ui) {
