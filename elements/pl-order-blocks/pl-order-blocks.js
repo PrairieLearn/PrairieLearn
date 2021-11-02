@@ -22,12 +22,12 @@ window.PLOrderBlocks = function (uuid, options) {
           answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
         }
 
-        var answerJson = {
+        var answer = {
           inner_html: answerText,
           indent: answerIndent,
           uuid: uuid,
         };
-        studentAnswers.push(answerJson);
+        studentAnswers.push(answer);
       }
     }
 
