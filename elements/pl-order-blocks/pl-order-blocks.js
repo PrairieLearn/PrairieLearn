@@ -31,8 +31,7 @@ window.PLOrderBlocks = function (uuid, options) {
       }
     }
 
-    var textfieldName = '#' + event.target.getAttribute('name');
-    +'-input';
+    var textfieldName = '#' + event.target.getAttribute('name') + '-input';
     $(textfieldName).val(JSON.stringify(studentAnswers));
   }
 
