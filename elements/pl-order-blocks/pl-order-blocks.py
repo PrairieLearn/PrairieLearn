@@ -216,7 +216,7 @@ def render(element_html, data):
             'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
-            'check_indentation': "true" if check_indentation else "false",
+            'check_indentation': 'true' if check_indentation else 'false',
             'help_text': help_text,
             'inline': 'inline' if inline_layout is True else None,
             'max_indent': max_indent,
