@@ -4,20 +4,21 @@ window.PLOrderBlocks = function (uuid, options) {
   const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
   // drags and indents a block
   let maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
+  let enableIndentation = options.enableIndentation;
 
   let optionsElementId = '#order-blocks-options-' + uuid;
   let dropzoneElementId = '#order-blocks-dropzone-' + uuid;
 
   function setAnswer(event) {
-    var domObjs = $(dropzoneElementId).children();
+    var answerObjs = $(dropzoneElementId).children();
     var studentAnswers = [];
-    for (var i = 0; i < domObjs.length; i++) {
-      if (!$(domObjs[i]).hasClass('info-fixed')) {
-        var answerText = domObjs[i].getAttribute('string');
-        var uuid = domObjs[i].getAttribute('uuid');
+    for (var i = 0; i < answerObjs.length; i++) {
+      if (!$(answerObjs[i]).hasClass('info-fixed')) {
+        var answerText = answerObjs[i].getAttribute('string');
+        var uuid = answerObjs[i].getAttribute('uuid');
         var answerIndent = null;
-        if (domObjs[i].parentElement.classList.contains('enableIndentation')) {
-          answerIndent = parseInt($(domObjs[i]).css('marginLeft').replace('px', ''));
+        if (enableIndentation) {
+          answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));
           answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
         }
 
@@ -35,10 +36,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function calculateIndent(ui, parent) {
-    if (
-      !parent[0].classList.contains('dropzone') ||
-      !parent[0].classList.contains('enableIndentation')
-    ) {
+    if (!parent[0].classList.contains('dropzone') || !enableIndentation) {
       // don't indent on option panel or solution panel with indents explicitly disabled
       return 0;
     }
@@ -58,33 +56,31 @@ window.PLOrderBlocks = function (uuid, options) {
     return leftDiff;
   }
 
-  function initialize(elementId, connectWith) {
-    $(elementId).sortable({
-      items: 'li:not(.info-fixed)',
-      cancel: '.info',
-      connectWith: connectWith,
-      placeholder: 'ui-state-highlight',
-      create: function (event) {
-        setAnswer(event);
-      },
-      sort: function (event, ui) {
-        // update the location of the placeholder as the item is dragged
-        let placeholder = ui.placeholder;
-        let leftDiff = calculateIndent(ui, placeholder.parent());
-        placeholder[0].style.marginLeft = leftDiff + 'px';
-      },
-      stop: function (event, ui) {
-        // when the user stops interacting with the list
-        let leftDiff = calculateIndent(ui, ui.item.parent());
-        ui.item[0].style.marginLeft = leftDiff + 'px';
-        setAnswer(event);
-      },
-    });
+  let sortables = optionsElementId + ', ' + dropzoneElementId;
+  $(sortables).sortable({
+    items: 'li:not(.info-fixed)',
+    cancel: '.info',
+    connectWith: sortables,
+    placeholder: 'ui-state-highlight',
+    create: function (event) {
+      setAnswer(event);
+    },
+    sort: function (event, ui) {
+      // update the location of the placeholder as the item is dragged
+      let placeholder = ui.placeholder;
+      let leftDiff = calculateIndent(ui, placeholder.parent());
+      placeholder[0].style.marginLeft = leftDiff + 'px';
+    },
+    stop: function (event, ui) {
+      // when the user stops interacting with the list
+      let leftDiff = calculateIndent(ui, ui.item.parent());
+      ui.item[0].style.marginLeft = leftDiff + 'px';
+      setAnswer(event);
+    },
+  });
+
+  if (enableIndentation) {
+    $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
   }
-
-  initialize(optionsElementId, dropzoneElementId);
-  initialize(dropzoneElementId, optionsElementId);
-
-  $('.enableIndentation').sortable('option', 'grid', [TABWIDTH, 1]);
   $('[data-toggle="popover"]').popover();
 };
