@@ -36,7 +36,8 @@ def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]
 
 def grade_dag(order: list[str], depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[int]]) -> tuple[int, int]:
     """In order for a student submission to a DAG graded question to be deemed correct, the student
-    submission must be a topological sort of the
+    submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
+    as one another must all appear contiguously.
     :param order: the block ordering given by the student
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
