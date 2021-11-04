@@ -1,8 +1,9 @@
 from collections import Counter
+from typing import Mapping
 import networkx as nx  # type: ignore
 
 
-def check_topological_sorting(order, graph):
+def check_topological_sorting(order: list[int], graph: nx.DiGraph) -> int:
     seen = set()
     for i, node in enumerate(order):
         if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
@@ -11,7 +12,7 @@ def check_topological_sorting(order, graph):
     return len(order)
 
 
-def check_grouping(order, group_belonging):
+def check_grouping(order: list[int], group_belonging: Mapping[int,int]) -> int:
     group_sizes = Counter(group_belonging.values())
     cur_group = None
     cur_group_size = None
@@ -33,7 +34,15 @@ def check_grouping(order, group_belonging):
     return len(order)
 
 
-def grade_dag(order, depends_graph, group_belonging):
+def grade_dag(order: list[int], depends_graph: Mapping[int, list[int]], group_belonging: Mapping[int,int]) -> tuple[int, int]:
+    """In order for a student submission to a DAG graded question to be deemed correct, the student
+    submission must be a topological sort of the
+    :param order: the block ordering given by the student
+    :param depends_graph: The dependency graph between blocks specified in the question
+    :param group_belonging: which pl-block-group each block belongs to, specified in the question
+    :return: length of list that meets both correctness conditions, starting from the beginning,
+    index of first wrong (-1 if none wrong)
+    """
     graph = nx.DiGraph()
     for node in depends_graph:
         for node2 in depends_graph[node]:
