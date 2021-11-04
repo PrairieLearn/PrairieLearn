@@ -37,6 +37,7 @@ lint-js:
 	@prettier --check "**/*.{js,ts,md}"
 lint-python:
 	@python3 -m flake8 ./
+	@python3 -m mypy /PrairieLearn/elements/pl-order-blocks/dag_checker.py
 
 format: format-js
 format-js:

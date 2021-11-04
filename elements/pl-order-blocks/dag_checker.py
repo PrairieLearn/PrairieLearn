@@ -1,5 +1,5 @@
 from collections import Counter
-import networkx as nx
+import networkx as nx # type: ignore
 
 
 def check_topological_sorting(order, graph):
