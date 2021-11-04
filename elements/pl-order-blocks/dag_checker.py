@@ -12,7 +12,7 @@ def check_topological_sorting(order: list[str], graph: nx.DiGraph) -> int:
     return len(order)
 
 
-def check_grouping(order: list[str], group_belonging: Mapping[str,Optional[int]]) -> int:
+def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]]) -> int:
     group_sizes = Counter(group_belonging.values())
     cur_group = None
     cur_group_size = None
@@ -34,7 +34,7 @@ def check_grouping(order: list[str], group_belonging: Mapping[str,Optional[int]]
     return len(order)
 
 
-def grade_dag(order: list[str], depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str,Optional[int]]) -> tuple[int, int]:
+def grade_dag(order: list[str], depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[int]]) -> tuple[int, int]:
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the
     :param order: the block ordering given by the student
