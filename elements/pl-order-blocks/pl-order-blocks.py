@@ -207,6 +207,7 @@ def render(element_html, data):
         if check_indentation:
             help_text += '<br><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area.'
 
+        uuid = pl.get_uuid()
         html_params = {
             'question': True,
             'answer_name': answer_name,
@@ -215,10 +216,11 @@ def render(element_html, data):
             'solution-header': solution_header,
             'submission_dict': student_submission_dict_list,
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
-            'check_indentation': 'enableIndentation' if check_indentation is True else None,
+            'check_indentation': 'true' if check_indentation else 'false',
             'help_text': help_text,
             'inline': 'inline' if inline_layout is True else None,
-            'max_indent': max_indent
+            'max_indent': max_indent,
+            'uuid': uuid
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -285,7 +287,7 @@ def render(element_html, data):
         else:
             grading_mode = 'in the specified order'
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
-        check_indentation = ', with correct indentation' if check_indentation is True else None
+        indentation_message = ', with correct indentation' if check_indentation is True else None
 
         if answer_name in data['correct_answers']:
             question_solution = [{
@@ -297,7 +299,7 @@ def render(element_html, data):
                 'true_answer': True,
                 'question_solution': question_solution,
                 'grading_mode': grading_mode,
-                'check_indentation': check_indentation
+                'indentation_message': indentation_message
             }
             with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params)
