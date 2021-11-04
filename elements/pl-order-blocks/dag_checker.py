@@ -4,6 +4,11 @@ import networkx as nx  # type: ignore
 
 
 def check_topological_sorting(order: list[str], graph: nx.DiGraph) -> int:
+    """
+    :param order: candidate for topological sorting
+    :param graph: graph to check topological sorting over
+    :return: index of first element not topologically sorted, or length of list if sorted
+    """
     seen = set()
     for i, node in enumerate(order):
         if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
@@ -13,6 +18,12 @@ def check_topological_sorting(order: list[str], graph: nx.DiGraph) -> int:
 
 
 def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]]) -> int:
+    """
+    :param order: candidate solution
+    :param group_belonging: group that each block belongs to
+    :return: index of first element breaking condition that members of the same group must be
+    adjacent, or length of list if they all mee
+    """
     group_sizes = Counter(group_belonging.values())
     cur_group = None
     cur_group_size = None
