@@ -1,0 +1,31 @@
+{
+    "uuid": "2ac41a99-3e86-4c19-bb82-9e06e4b930bc",
+    "type": "Homework",
+    "title": "Learning with your peers",
+    "set": "GroupActivity",
+    "number": "1",
+    "comment": "this is a group activity, with minimum size of 1 and maximum size of 5, where students can self-assign to groups.",
+    "groupWork": true,
+    "groupMinSize": 1,
+    "groupMaxSize": 5,
+    "studentGroupCreate": true,
+    "studentGroupJoin": true,
+    "studentGroupLeave": true,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+      {
+        "title": " How Markov chains work?",
+        "questions": [
+            {"id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Intro","points": 1},
+            {"id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Gambler","points": 1},
+            {"id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-PageRank","points": 1}
+        ]
+      }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is a group assignment where students will share the same questions and grades. In this configuration, students can create their own groups, with minimum size of 1 and maximum size of 5 (we set minimum of 1 so that anyone can try this assessment on their own, since the assessment can be not started unless the minimum size is reached). PrairieLearn also provides an option were instructors pre-assign students to teams. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/07-GroupWork/__docs/docs.md>here</a>. <p>The source code that creates this assessment is available on <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/07-GroupWork/infoAssessment.json target=_blank>Github</a>.</p>"
+}
