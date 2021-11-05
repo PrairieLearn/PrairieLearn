@@ -37,9 +37,9 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
     - name: Run the Python linter
       run: docker exec test_container /PrairieLearn/docker/lint_python.sh
-    - name: Run JavaScript typechecker
+    - name: Run the JavaScript typechecker
       run: docker exec test_container /PrairieLearn/docker/typecheck_js.sh
-    - name: Run Python typechecker
+    - name: Run the Python typechecker
       run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
