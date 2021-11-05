@@ -13,33 +13,125 @@ const sharp = require('sharp');
 const jsCrc = require('js-crc');
 
 const generateBarcodes = async (numRows) => {
-    // Barcodes should be error-detecting <8 char hexatridecimal produced by base36 encoding><4 char crc16 hash> 
+    const barcodes = [];
+
+    // Barcodes should be error-detecting <8 char hexatridecimal produced by base36 encoding><4 char crc16 hash>
     // Sequential counter to produce 8 char base36 string should be base36 encode input
     // Approx lower and upper bound: 80000000000 - 999999999999; 80 billion to 100 billion
-    const params = {barcodes: []};
-    const barcodes = [];
-    if (numRows > 1000 || !numRows) {
+
+    if (!numRows || numRows > 1000) {
         throw new Error('Cannot produce more than 1000 or less than 1 barcoded sheets');
     }
-    // Create x barcode rows and return IDs
-    const idsQuery = await sqldb.queryAsync(sql.insert_x_null_barcodes, {num_rows: numRows});
 
-    // We are doing this here to avoid writing crc16 and base36 logic in Postgres
-    idsQuery.rows.forEach(row => {
-        const id = row.id;
-        const base36 = BigInt(id).toString(36);
-        const crc16 = jsCrc.crc16(base36);
-        const barcode = `${base36}${crc16}`;
-        barcodes.push({barcode}); // concat as string in chance integers combo
-        params.barcodes.push([id, barcode]);
-    });
+    // sqldb.beginTransaction((err, client, done) => {
+    //     if(err) {
+    //         console.log(err);
+    //     }
 
-    const idsUpdate = await sqldb.queryAsync(sql.update_null_barcodes, {num_rows: numRows});
+    //     async.series([
+    //         (callback) => {
+    //             sqldb.queryWithClient(client, sql.get_barcodes_count, {}, (err, result) => {
+    //                 if (err) {
+    //                     console.log('error 1', err);
+    //                 }
+
+    //                 // Do this in application layer to avoid writing crc16 and base36 logic in Postgres
+    //                 let numBarcodes = Number(result[1].rows[0].count);
+    //                 for (let i = 0; i < numBarcodes; i++) {
+    //                     numBarcodes+=1;
+    //                     const base36 = BigInt(numBarcodes).toString(36);
+    //                     const crc16 = jsCrc.crc16(base36);
+    //                     const barcode = `${base36}${crc16}`;
+    //                     barcodes.push({barcode}); // concat as string in chance integers combo
+    //                 }
+    //                 callback(barcodes);
+    //             });
+    //         },
+
+    //     ], (err) => {
+    //         sqldb.endTransaction(client, done, err, (err) => {
+    //             if (err) {
+    //                 console.log(err);
+    //             }
+    //             return barcodes;
+    //         });
+    //     });
+
+        const {client, done} = await sqldb.beginTransactionAsync();
+        try {
+            const queryCount = await sqldb.queryWithClientAsync(client, sql.get_barcodes_count, {});
+
+            // Want to create new barcodes based on sequential count in database
+            let numBarcodes = Number(queryCount[1].rows[0].count);
+            for (let i = 0; i < numRows; i++) {
+                numBarcodes+=1;
+                const base36 = BigInt(numBarcodes).toString(36);
+                const crc16 = jsCrc.crc16(base36);
+                const barcode = `${base36}${crc16}`;
+                barcodes.push(barcode); // concat as string in chance integers combo
+            }
+
+            const insert_barcodes = sql.insert_barcodes.replace('$barcodes', barcodes.map(barcode => {
+                return "('" + barcode + "')";
+            }).join(','));
+            const insertBarcodes = await sqldb.queryWithClientAsync(client, insert_barcodes, {});
+            if (insertBarcodes.rows.length !== numRows) {
+                throw Error('Wrong number of barcodes created. Aborting');
+            }
+        } catch (err) {
+            // rolls back if error
+            await sqldb.endTransactionAsync(client, done, err);
+        }
+        await sqldb.endTransactionAsync(client, done, null);
+
+        return barcodes;
 
 
-    console.log('development', barcodes);
-    return barcodes;
+        // const idsUpdate = await sqldb.queryAsync(sql.insert_barcodes, params.barcodes);
+    
+    // });
+
 };
+
+
+    // sqldb.beginTransaction((err, client, done) => {
+    //     if (err) {
+    //         console.log(err);
+    //     }
+
+    //     async.series([
+    //         (callback) => {
+    //             let result = sqldb.callWithClient(client, sql.lock_barcodes_exclusive, {}, (err, result) => {
+    //                 if (err) return;
+    //                 console.log(result);
+    //                 callback(result);
+    //             });
+    //         },
+    //     ], (err) => {
+    //         sqldb.endTransaction(client, done, err, (err) => {
+    //             if (ERR(err, callback)) return;
+    //             callback(null, submission_id);
+    //         });
+    //     });        
+        //     console.log('starting transaction');
+        // console.log('result 1', result);
+        // result = sqldb.callWithClientAsync(client, sql.get_barcodes_count, {});
+        // console.log('result 2', result);
+        // // Do this in application layer to avoid writing crc16 and base36 logic in Postgres
+        // result.rows.forEach(row => {
+        //     const id = row.id;
+        //     const base36 = BigInt(id).toString(36);
+        //     const crc16 = jsCrc.crc16(base36);
+        //     const barcode = `${base36}${crc16}`;
+        //     barcodes.push({barcode}); // concat as string in chance integers combo
+        //     params.barcodes.push([id, barcode]);
+        // });
+
+        // const idsUpdate = await sqldb.queryAsync(sql.insert_barcodes, params.barcodes);
+    //     console.log('development', barcodes);
+    //     return barcodes;
+    // });
+
 
 const createBarcodeSVGs = async (barcodes) => {
     const svgs = [];

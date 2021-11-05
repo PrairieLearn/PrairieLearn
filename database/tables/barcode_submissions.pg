@@ -1,0 +1,12 @@
+columns
+    barcode_id: bigint not null
+    id: bigint not null default nextval('barcode_submissions_id_seq'::regclass)
+    submission_id: bigint not null
+
+indexes
+    institution_authn_providers_pkey: PRIMARY KEY (id) USING btree (id)
+    institution_authn_providers_institution_id_authn_provider_i_key: UNIQUE (institution_id, authn_provider_id) USING btree (institution_id, authn_provider_id)
+
+foreign-key constraints
+    barcode_submissions_barcode_id_fkey: FOREIGN KEY (barcode_id) REFERENCES barcodes(id) ON UPDATE CASCADE ON DELETE CASCADE
+    barcode_submissions_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE

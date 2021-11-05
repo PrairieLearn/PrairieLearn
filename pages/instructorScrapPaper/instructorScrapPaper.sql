@@ -1,3 +1,7 @@
+-- BLOCK get_barcodes_count
+LOCK TABLE barcodes IN ACCESS EXCLUSIVE MODE;
+SELECT COUNT(id) FROM barcodes;
+
 -- BLOCK insert_x_null_barcodes
 INSERT INTO barcodes
   (barcode)
@@ -6,4 +10,8 @@ SELECT
 FROM generate_series(1, $num_rows)
 RETURNING id;
 
--- BLOCK update_null_barcodes
+-- BLOCK insert_barcodes
+INSERT INTO barcodes(barcode)
+VALUES
+    $barcodes
+RETURNING *;
