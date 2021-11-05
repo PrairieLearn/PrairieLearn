@@ -22,7 +22,7 @@ def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]
     :param order: candidate solution
     :param group_belonging: group that each block belongs to
     :return: index of first element breaking condition that members of the same group must be
-    adjacent, or length of list if they all mee
+    adjacent, or length of list if they all meet the condition
     """
     group_sizes = Counter(group_belonging.values())
     cur_group = None
