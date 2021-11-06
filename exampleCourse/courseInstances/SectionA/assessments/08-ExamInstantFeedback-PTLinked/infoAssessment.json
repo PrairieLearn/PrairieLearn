@@ -3,7 +3,7 @@
     "type": "Exam",
     "title": "Auto-graded randomized exam linked to PrairieTest",
     "set": "Exam",
-    "number": "2",
+    "number": "4",
     "allowAccess": [
       {
           "mode": "Exam",

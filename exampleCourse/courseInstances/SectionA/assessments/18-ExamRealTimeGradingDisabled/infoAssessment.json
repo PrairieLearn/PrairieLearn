@@ -1,7 +1,7 @@
 {
     "uuid": "1f73588f-129e-4c88-a859-b0fff8ef1b27",
     "type": "Exam",
-    "title": "Real-time grading disabled",
+    "title": "Exam with real-time grading disabled",
     "set": "Exam",
     "number": "2",
     "allowRealTimeGrading": false,
