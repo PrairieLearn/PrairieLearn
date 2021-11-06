@@ -1,7 +1,7 @@
 {
     "uuid": "7c4ccac6-1031-43ed-a673-feb64c2f8bbf",
-    "title": "Demo: Show a fixed plot and ask a checkbox question",
-    "topic": "Demo",
-    "tags": ["MC", "v3"],
+    "title": "Template pl-checkbox: Show a fixed plot and ask a checkbox question",
+    "topic": "Template",
+    "tags": ["v3"],
     "type": "v3"
 }
