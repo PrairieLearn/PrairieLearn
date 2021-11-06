@@ -1,27 +1,15 @@
 {
-    "uuid": "7A6CFC5A-75AF-49E8-BFBD-035E21EE4F8E",
+    "uuid": "6338DE4E-7E66-4B58-8CB4-1E126FB9AF9C",
     "type": "Homework",
-    "title": "PrairieLearn drawing element gallery",
-    "set": "Homework",
+    "title": "Question gallery for PL drawing elements",
+    "set": "Collection",
     "number": "5",
+    "comment": "you must add access rules below to make this assessment available to students",
     "allowAccess": [
-        {
-            "mode": "Public",
-            "credit": 120,
-            "startDate": "2014-04-07T00:00:01",
-            "endDate": "2014-07-10T23:59:59"
-        },
-        {
-            "mode": "Public",
-            "credit": 100,
-            "startDate": "2014-07-07T00:00:01",
-            "endDate": "2024-07-10T23:59:59"
-        }
     ],
     "zones": [
         {
             "questions": [
-                {"id": "element/drawingGallery",                  "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/simpleTutorial",             "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/gradeVector",                "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/liftingMechanism",           "points": 2, "maxPoints": 6},
@@ -35,7 +23,8 @@
                 {"id": "demo/drawing/vmDiagrams",                 "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/buttons",                    "points": 2, "maxPoints": 6},
                 {"id": "demo/drawing/customizedButtons",          "points": 2, "maxPoints": 6},
-                {"id": "demo/drawing/extensions",                 "points": 2, "maxPoints": 6}
+                {"id": "demo/drawing/extensions",                 "points": 2, "maxPoints": 6},
+                {"id": "element/drawingGallery",                  "points": 2, "maxPoints": 6}
             ]
         }
     ]

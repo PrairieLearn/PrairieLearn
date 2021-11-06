@@ -1,0 +1,77 @@
+{
+    "uuid": "69DE0FEC-92AB-4361-B654-5C56F795D1FD",
+    "type": "Homework",
+    "title": "Question templates",
+    "set": "Collection",
+    "number": "6",
+    "comment": "you must add access rules below to make this assessment available to students",
+    "allowAccess": [
+    ],
+    "zones": [
+      {
+          "title": "Multiple-choice questions",
+          "questions": [
+
+              {"id": "template/multipleChoiceSingleCorrect", "points": 1},
+              {"id": "template/multipleChoiceMultipleCorrect", "points": 1, "maxPoints": 2},
+              {"id": "template/multipleChoiceFromList", "points": 1, "maxPoints": 4},
+              {"id": "template/multipleChoiceNumeric", "points": 1, "maxPoints": 4},
+              {"id": "template/multipleChoiceTrueFalseFromList", "points": 1, "maxPoints": 2},
+              {"id": "template/multipleChoiceWithFigure", "points": 1, "maxPoints": 4},
+              {"id": "demo/randomMultipleChoice",         "points": 2, "maxPoints": 10}
+
+          ]
+      },
+      {
+          "title": "Checkbox questions",
+          "questions": [
+              {"id": "template/checkbox", "points": 1, "maxPoints": 2},
+              {"id": "demo/multiAnswerMC",                     "points": 2, "maxPoints": 10},
+              {"id": "demo/fixedCheckbox",                   "points": 2, "maxPoints": 10},
+                {"id": "demo/randomCheckbox",                  "points": 2, "maxPoints": 10}
+          ]
+      },
+        {
+            "title": "Numerical questions",
+            "questions": [
+                {"id": "template/numberInput", "points": 1, "maxPoints": 2},
+                {"id": "template/integerInput", "points": 1, "maxPoints": 2},
+                {"id": "template/numberInputGradingMethod", "points": 1, "maxPoints": 2},
+                {"id": "template/numberInputTips", "points": 1, "maxPoints": 2},
+                {"id": "template/integerInputWithDynamicFigure", "points": 1, "maxPoints": 4},
+                {"id": "demo/calculation",                     "points": 1, "maxPoints": 5},
+                {"id": "demo/randomPlot",                      "points": 1, "maxPoints": 3},
+                {"id": "demo/matrixAlgebra",                   "points": 2, "maxPoints": 10},
+                {"id": "demo/matrixComplexAlgebra",            "points": 2, "maxPoints": 10},
+                {"id": "demo/randomDataFrame",                 "points": 2, "maxPoints": 6},
+                {"id": "demo/overlayTriangle",                 "points": 2, "maxPoints": 4},
+                {"id": "demo/overlayDropdown",                 "points": 1, "maxPoints": 5}
+            ]
+        },
+        {
+            "title": "Symbolic and interactive questions",
+            "questions": [
+                {"id": "demo/randomSymbolic",                  "points": 2, "maxPoints": 10},
+                {"id": "demo/proofBlocks",                     "points": 1, "maxPoints": 5}
+            ]
+        },
+        {
+            "title": "More demo questions - find out how you can do some cool things",
+            "questions": [
+                {"id": "demo/markdownEditorLivePreview",       "points": 2},
+                {"id": "demo/addHTMLtable",                    "points": 2, "maxPoints": 4},
+                {"id": "demo/insertEmbeddedVideo",             "points": 2, "maxPoints": 4}
+            ]
+        },
+        {
+            "title": "Questions using additional customization (elements or grading function)",
+            "questions": [
+                {"id": "demo/custom/element",                  "points": 1, "maxPoints": 1},
+                {"id": "demo/custom/gradeFunction",            "points": 1, "maxPoints": 1},
+                {"id": "demo/custom/extension",                "points": 1, "maxPoints": 1},
+                {"id": "demo/custom/elementHiddenTag",         "points": 1, "maxPoints": 1},
+                {"id": "demo/custom/stylingScripts",           "points": 1, "maxPoints": 1}
+            ]
+        }
+    ]
+}

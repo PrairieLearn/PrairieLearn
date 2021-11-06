@@ -1,16 +1,11 @@
 {
     "uuid": "ca79f95c-a788-45dc-b888-cbdd8ff72aa4",
     "type": "Homework",
-    "title": "PrairieLearn demo questions for Workspaces",
-    "set": "Homework",
-    "number": "9",
+    "title": "Questions using workspaces",
+    "set": "Collection",
+    "number": "3",
+    "comment": "you must add access rules below to make this assessment available to students",
     "allowAccess": [
-        {
-            "mode": "Public",
-            "credit": 100,
-            "startDate": "2014-04-07T00:00:01",
-            "endDate": "2084-07-10T23:59:59"
-        }
     ],
     "zones": [
         {

@@ -1,11 +1,11 @@
 {
     "uuid": "13D012E5-9C66-4092-BA1A-0445919CB0C3",
     "type": "Homework",
-    "title": "Question examples from https://www.prairielearn.com",
+    "title": "Questions from the gallery at https://www.prairielearn.com",
     "set": "Collection",
     "number": "1",
+      "comment": "you must add access rules below to make this assessment available to students",
     "allowAccess": [
-
     ],
     "zones": [
         {

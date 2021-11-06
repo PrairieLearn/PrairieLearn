@@ -1,11 +1,13 @@
 {
     "uuid": "C19C0B7C-8728-49FE-8682-4E48E9694E3A",
     "type": "Homework",
-    "title": "Examples from workshop",
-    "set": "Homework",
-    "number": "8",
-    "allowAccess": [],
-    "comment": "This assessment was first created for the workshop offered in Summer 2020",
+    "title": "Workshop from Summer 2020",
+    "set": "Workshop",
+    "number": "1",
+    "allowAccess": [
+
+    ],
+    "comment": "This assessment was created for the workshop offered in Summer 2020",
     "zones": [
         {
             "title": "Lesson 1",
