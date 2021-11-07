@@ -1,0 +1,17 @@
+{
+    "uuid": "854E9FAF-7283-4501-99D8-B8C309AD7C9E",
+    "type": "Exam",
+    "title": "Exam including autograded and manually graded questions",
+    "set": "Exam",
+    "number": "4",
+    "allowAccess": [
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "demo/manualGrade/codeUpload",          "points": [10]},
+                {"id": "demo/markdownEditorLivePreview",       "points": [5]}
+            ]
+        }
+    ]
+}

@@ -18,9 +18,7 @@
               {"id": "template/multipleChoiceTrueFalseFromList", "points": 1, "maxPoints": 2},
               {"id": "template/multipleChoiceWithFigure", "points": 1, "maxPoints": 4},
               {"id": "template/checkbox", "points": 1, "maxPoints": 2},
-              {"id": "demo/fixedCheckbox",                   "points": 2, "maxPoints": 10},
               {"id": "demo/multiAnswerMC",                     "points": 2, "maxPoints": 10},
-              {"id": "demo/calculation",                     "points": 1, "maxPoints": 5},
               {"id": "template/integerInput", "points": 1, "maxPoints": 2},
               {"id": "template/numberInput", "points": 1, "maxPoints": 2},
               {"id": "demo/matrixAlgebra",                   "points": 2, "maxPoints": 10},
@@ -31,9 +29,7 @@
       {
           "title": "More question examples and tips",
           "questions": [
-              {"id": "demo/randomCheckbox",                  "points": 2, "maxPoints": 10},
               {"id": "template/numberInputGradingMethod", "points": 1, "maxPoints": 2},
-              {"id": "demo/randomPlot",                      "points": 1, "maxPoints": 3},
               {"id": "template/numberInputTips", "points": 1, "maxPoints": 2},
               {"id": "demo/randomDataFrame",                 "points": 2, "maxPoints": 6},
               {"id": "demo/overlayTriangle",                 "points": 2, "maxPoints": 4},

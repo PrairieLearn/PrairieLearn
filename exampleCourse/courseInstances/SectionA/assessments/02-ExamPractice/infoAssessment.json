@@ -49,5 +49,5 @@
             ]
         }
     ],
-    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of a practice exam, where students can generate many different instances of the same assessment for additional practice. </p> <p> You can read more about a general exam setup <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/01-ExamInstantFeedback/__docs/docs.md target=_blank>here</a>.</p><p>The source code that creates this assessment is available on <a href=https://github.com/PrairieLearn/pl-demo-course/tree/master/courseInstances/SectionA/assessments/02-ExamPractice/infoAssessment.json target=_blank>Github</a>.</p>"
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of a practice exam, where students can generate many different instances of the same assessment for additional practice. </p> <p> You can read more about a general exam setup <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/01-ExamInstantFeedback/__docs/docs.md target=_blank>here</a>.</p>"
 }

@@ -10,21 +10,21 @@
             "mode": "Public",
             "credit": 100,
             "startDate": "2021-01-01T00:00:01",
-            "endDate": "2021-11-15T23:59:59"
+            "endDate": "2023-11-15T23:59:59"
         },
         {
             "comment": "Set later end date for reduced credit",
             "mode": "Public",
             "credit": 50,
             "startDate": "2021-01-01T00:00:01",
-            "endDate": "2021-11-30T23:59:59"
+            "endDate": "2023-11-30T23:59:59"
         },
         {
             "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessement)",
             "mode": "Public",
             "credit": 0,
             "startDate": "2021-01-01T00:00:01",
-            "endDate": "2021-12-31T23:59:59"
+            "endDate": "2023-12-31T23:59:59"
         }
     ],
     "zones": [
@@ -50,5 +50,5 @@
             ]
         }
     ],
-    "text": "v </p><p><strong>Zone 1</strong> includes examples of lower level questions that involve nearly automatic responses. As such, we use the drilling for mastery configuration (PrairieLearn default for homework), where students can create unlimited question variants, each one with a single attempt. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/04-Homework/__docs/docs.md/#Drilling-basic-skills-using-unlimited-variants-with single-attempt target=_blank>here</a>.</p> <p><strong>Zone 2</strong> includes examples of more sophisticated questions that often involve more than one step to achieve the solution. These questions allow students to retry the same question variant more than once, before creating a new variant. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/04-Homework/__docs/docs.md/#Limiting-the-number-of-attempts-per-variant target=_blank>here</a>.</p><p><strong>Zone 3</strong> includes a coding question that involve multiple skills levels (lower to high) and several steps to obtain the solution. Students receive only one variant of the question and have unlimited attempts to complete it successfuly. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/04-Homework/__docs/docs.md/#Unlimited-retry-attempts-for-the-same-question-variant target=_blank>here</a>.</p><p>The source code that creates this assessment is available on <a href=https://github.com/PrairieLearn/pl-demo-course/tree/master/courseInstances/SectionA/assessments/04-Homework/infoAssessment.json target=_blank>Github</a>."
+    "text": "<p><strong>Comments about this assessment:</strong></p> </p><p><strong>Zone 1</strong> includes examples of lower level questions that involve nearly automatic responses. As such, we use the drilling for mastery configuration (PrairieLearn default for homework), where students can create unlimited question variants, each one with a single attempt. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/04-Homework/__docs/docs.md/#Drilling-basic-skills-using-unlimited-variants-with single-attempt target=_blank>here</a>.</p> <p><strong>Zone 2</strong> includes examples of more sophisticated questions that often involve more than one step to achieve the solution. These questions allow students to retry the same question variant more than once, before creating a new variant. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/04-Homework/__docs/docs.md/#Limiting-the-number-of-attempts-per-variant target=_blank>here</a>.</p><p><strong>Zone 3</strong> includes a coding question that involve multiple skills levels (lower to high) and several steps to obtain the solution. Students receive only one variant of the question and have unlimited attempts to complete it successfuly. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/04-Homework/__docs/docs.md/#Unlimited-retry-attempts-for-the-same-question-variant target=_blank>here</a>.</p>"
 }
