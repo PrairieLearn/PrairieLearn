@@ -155,7 +155,7 @@ const convertImage = async (image) => {
         .png({quality: 100})  // TO DO: lookup defaults
         .toBuffer({resolveWithObject: true});
 };
-const toPdf = async (svgs) => {
+const svgsToPdf = async (svgs) => {
     let doc = null;
 
     for (let i = 0; i < svgs.length; i++) {
@@ -175,24 +175,24 @@ const toPdf = async (svgs) => {
 
 router.get('/', (req, res, next) => {
     //test
-    generateBarcodes(5)
-        .then(barcodes => {
-            return createBarcodeSVGs(barcodes);
-        })
-        .then(barcodeSVGs => {
-            return toPdf(barcodeSVGs);
-        })
-        .then(pdf => {
-            pdf.pipe(res);
-            pdf.end();
-        })
-        .catch(err => {
-            if (ERR(err, next)) return;
-        });
+
 });
 
 router.post('/', function(req, res, next) {
-    // stub for post to start barcode creation
+    generateBarcodes(5)
+      .then(barcodes => {
+          return createBarcodeSVGs(barcodes);
+      })
+      .then(barcodeSVGs => {
+          return svgsToPdf(barcodeSVGs);
+      })
+      .then(pdf => {
+          pdf.pipe(res);
+          pdf.end();
+      })
+      .catch(err => {
+          if (ERR(err, next)) return;
+      });
 });
 
 module.exports = router;
