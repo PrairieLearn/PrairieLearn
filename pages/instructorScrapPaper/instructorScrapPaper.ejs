@@ -1,29 +1,41 @@
-<!doctype html>
-<html lang="en-US">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<meta charset="UTF-8">
+    <%- include('../partials/head'); %>
+    <link href="<%= asset_path('stylesheets/issues.css') %>" rel="stylesheet" />
 	<title></title>
 </head>
 <body>
-    <!--Select PDF Barcode Generation Options-->
-    <div>
-        <form>
-            <label for="label">Label:</label>
-            <input type="text" id="label" name="label"><br><br>
-            <label for="num_pages">Last name:</label>
-            <input type="text" id="num_pages" name="num_pages"><br><br>
-            <input type="submit" value="Submit">
-            <button>Generate Barcoded Scrap Paper</button>
-        </form>
-    </div>
+    <%- include('../partials/navbar', {navPage: 'news_item'}); %>
 
-    <!--PDF Generated in iframe for Download-->
-    <div class="question-block-artifact-container">
-        <iframe id="question-block-artifact-pdf" width="100%" height="800px" type="text/html" src=""></iframe>
-    </div>
+    <div id="content" class="container">
+
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Produce Barcoded Scrap Paper</div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="__action" value="make_scrap_paper">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+
+                    <label for="label">Label:</label>
+                    <input type="text" id="label" name="label"><br><br>
+                    <label for="num_pages">Quantity (Max 1000 pages per generation):</label>
+                    <input type="number" id="num_pages" name="num_pages" min="1" max="1000">
+                    <button>Generate Barcoded Scrap Paper</button>
+                </form>
+            </div><!-- card-body -->
+          </div>
+
+        <div>
+
+        </div>
     
-  <script>
-  </script>
-
+        <!--PDF Generated in iframe for Download-->
+        <div class="question-block-artifact-container">
+            <iframe id="question-block-artifact-pdf" width="100%" height="800px" type="text/html" style="display: none;" src=""></iframe>
+        </div>
+      </div>
 </body>
+    <!--Select PDF Barcode Generation Options-->
+
 </html>

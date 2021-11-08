@@ -484,6 +484,10 @@ module.exports.initExpress = function () {
     require('./pages/news_item/news_item.js'),
   ]);
   app.use('/pl/scrap_paper', [
+    function(req, res, next) {
+      res.locals.assessment_question_id = req.params.assessment_question_id;
+      next();
+    },
     require('./pages/instructorScrapPaper/instructorScrapPaper.js'),
   ]);
   app.use('/pl/scan_artifacts', [

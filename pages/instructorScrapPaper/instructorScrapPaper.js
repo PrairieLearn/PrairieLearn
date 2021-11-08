@@ -33,12 +33,11 @@ const generateBarcodes = async (numRows) => {
                 numBarcodes+=1;
                 const base36 = BigInt(numBarcodes).toString(36);
                 const crc16 = jsCrc.crc16(base36);
-                const barcode = `${base36}${crc16}`;
-                barcodes.push(barcode); // concat as string in chance integers combo
+                const barcode = `${base36}${crc16}`;  // concat as string in chance integer combo
+                barcodes.push(barcode);
             }
 
-            const insert_barcodes = sql.insert_barcodes.replace('$barcodes', barcodes.map(barcode => "('" + barcode + "')")
-                .join(','));
+            const insert_barcodes = sql.insert_barcodes.replace('$barcodes', barcodes.map(barcode => "('" + barcode + "')").join(','));
             const insertBarcodes = await sqldb.queryWithClientAsync(client, insert_barcodes, {});
             if (insertBarcodes.rows.length !== numRows) {
                 throw Error('Wrong number of barcodes created. Aborting');
@@ -100,25 +99,40 @@ const svgsToPdf = async (svgs) => {
 };
 
 router.get('/', (req, res, next) => {
-    if (ERR(err, next)) return;
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
 router.post('/', function(req, res, next) {
-    generateBarcodes(5)
+  if (req.body.__action == 'make_scrap_paper') {
+    const numPages = res.body.num_pages;
+
+    if (!numPages || numPages < 0 || numPages > 1000) {
+      throw Error('Cannot make less than 1 page or more than 1000 pages')
+    }
+
+    generateBarcodes(numPages)
       .then(barcodes => {
-          return createBarcodeSVGs(barcodes);
+        return createBarcodeSVGs(barcodes);
       })
       .then(barcodeSVGs => {
-          return svgsToPdf(barcodeSVGs);
+        return svgsToPdf(barcodeSVGs);
       })
       .then(pdf => {
-          pdf.pipe(res);
-          pdf.end();
+        pdf.pipe(res);
+        pdf.end();
       })
       .catch(err => {
-          if (ERR(err, next)) return;
+        if (ERR(err, next)) return;
       });
+  } else {
+    return next(
+      error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
+  }
+
 });
 
 module.exports = router;
