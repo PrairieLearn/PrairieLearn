@@ -23,40 +23,6 @@ const generateBarcodes = async (numRows) => {
         throw new Error('Cannot produce more than 1000 or less than 1 barcoded sheets');
     }
 
-    // sqldb.beginTransaction((err, client, done) => {
-    //     if(err) {
-    //         console.log(err);
-    //     }
-
-    //     async.series([
-    //         (callback) => {
-    //             sqldb.queryWithClient(client, sql.get_barcodes_count, {}, (err, result) => {
-    //                 if (err) {
-    //                     console.log('error 1', err);
-    //                 }
-
-    //                 // Do this in application layer to avoid writing crc16 and base36 logic in Postgres
-    //                 let numBarcodes = Number(result[1].rows[0].count);
-    //                 for (let i = 0; i < numBarcodes; i++) {
-    //                     numBarcodes+=1;
-    //                     const base36 = BigInt(numBarcodes).toString(36);
-    //                     const crc16 = jsCrc.crc16(base36);
-    //                     const barcode = `${base36}${crc16}`;
-    //                     barcodes.push({barcode}); // concat as string in chance integers combo
-    //                 }
-    //                 callback(barcodes);
-    //             });
-    //         },
-
-    //     ], (err) => {
-    //         sqldb.endTransaction(client, done, err, (err) => {
-    //             if (err) {
-    //                 console.log(err);
-    //             }
-    //             return barcodes;
-    //         });
-    //     });
-
         const client = await sqldb.beginTransactionAsync();
         try {
             const queryCount = await sqldb.queryWithClientAsync(client, sql.get_barcodes_count, {});
@@ -85,46 +51,6 @@ const generateBarcodes = async (numRows) => {
         await sqldb.endTransactionAsync(client, null);
         return barcodes;
 };
-
-
-    // sqldb.beginTransaction((err, client, done) => {
-    //     if (err) {
-    //         console.log(err);
-    //     }
-
-    //     async.series([
-    //         (callback) => {
-    //             let result = sqldb.callWithClient(client, sql.lock_barcodes_exclusive, {}, (err, result) => {
-    //                 if (err) return;
-    //                 console.log(result);
-    //                 callback(result);
-    //             });
-    //         },
-    //     ], (err) => {
-    //         sqldb.endTransaction(client, done, err, (err) => {
-    //             if (ERR(err, callback)) return;
-    //             callback(null, submission_id);
-    //         });
-    //     });        
-        //     console.log('starting transaction');
-        // console.log('result 1', result);
-        // result = sqldb.callWithClientAsync(client, sql.get_barcodes_count, {});
-        // console.log('result 2', result);
-        // // Do this in application layer to avoid writing crc16 and base36 logic in Postgres
-        // result.rows.forEach(row => {
-        //     const id = row.id;
-        //     const base36 = BigInt(id).toString(36);
-        //     const crc16 = jsCrc.crc16(base36);
-        //     const barcode = `${base36}${crc16}`;
-        //     barcodes.push({barcode}); // concat as string in chance integers combo
-        //     params.barcodes.push([id, barcode]);
-        // });
-
-        // const idsUpdate = await sqldb.queryAsync(sql.insert_barcodes, params.barcodes);
-    //     console.log('development', barcodes);
-    //     return barcodes;
-    // });
-
 
 const createBarcodeSVGs = async (barcodes) => {
     const svgs = [];
@@ -174,8 +100,8 @@ const svgsToPdf = async (svgs) => {
 };
 
 router.get('/', (req, res, next) => {
-    //test
-
+    if (ERR(err, next)) return;
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
 router.post('/', function(req, res, next) {
