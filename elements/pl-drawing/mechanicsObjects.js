@@ -2244,8 +2244,10 @@ mechanicsObjects.byType['pl-polygon'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-line'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
-    let obj = new fabric.Line([options.x1, options.y1, options.x2, options.y2], options);
-
+    let obj = new fabric.Line(
+      [options.x1, options.y1, options.x2, options.y2],
+      _.omit(options, 'left', 'top')
+    );
     obj.setControlVisible('bl', false);
     obj.setControlVisible('tl', false);
     obj.setControlVisible('br', false);
