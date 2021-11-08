@@ -3,6 +3,7 @@ LOCK TABLE barcodes IN ACCESS EXCLUSIVE MODE;
 SELECT COUNT(id) FROM barcodes;
 
 -- BLOCK insert_x_null_barcodes
+-- TO DO: REMOVE ME PROBABLY
 INSERT INTO barcodes
   (barcode)
 SELECT

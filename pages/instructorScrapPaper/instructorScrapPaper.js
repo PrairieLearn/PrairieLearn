@@ -57,7 +57,7 @@ const generateBarcodes = async (numRows) => {
     //         });
     //     });
 
-        const {client, done} = await sqldb.beginTransactionAsync();
+        const client = await sqldb.beginTransactionAsync();
         try {
             const queryCount = await sqldb.queryWithClientAsync(client, sql.get_barcodes_count, {});
 
@@ -79,10 +79,10 @@ const generateBarcodes = async (numRows) => {
             }
         } catch (err) {
             // rolls back if error
-            await sqldb.endTransactionAsync(client, done, err);
+            await sqldb.endTransactionAsync(client, err);
             throw err;
         }
-        await sqldb.endTransactionAsync(client, done, null);
+        await sqldb.endTransactionAsync(client, null);
         return barcodes;
 };
 
