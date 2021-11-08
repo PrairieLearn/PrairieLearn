@@ -40,10 +40,11 @@ module.exports = function (req, res, next) {
     // install a handler that will always be called, so we can
     // check whether we correctly logged the response
     res.on('close', () => {
-      if (!res.locals.response_logged)
+      if (!res.locals.response_logged) {
         logger.error('response was not logged', {
           response_id: res.locals.response_id,
         });
+      }
     });
   }
   next();

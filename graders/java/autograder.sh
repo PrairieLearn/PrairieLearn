@@ -3,7 +3,12 @@
 STUDENT_FILES=$(find /grade/student -iname '*.java')
 TEST_FILES=$(find /grade/tests/junit -iname '*.java')
 RESULTS_FILE="/grade/results/results.json"
-JAVA_COMPILATION_FLAGS="-Xlint -Xlint:-path -d /grade/classpath"
+
+# -Xlint and -Xlint:-serial are used before the current JDK options,
+# since they can be overwritten by the instructor. -Xlint:-path and -d
+# are passed after them, since they are needed for the functionality
+# of the autograder
+export JDK_JAVAC_OPTIONS="-Xlint -Xlint:-serial $JDK_JAVAC_OPTIONS -Xlint:-path -d /grade/classpath"
 
 exception() {
     jq -n --arg msg "$1" '{gradable: false, message: $msg}' > $RESULTS_FILE
@@ -19,7 +24,7 @@ cp -r /grade/serverFilesCourse/java/libs/*                   /grade/classpath 2>
 
 export CLASSPATH="/grade/classpath:$(ls /grade/classpath/*.jar -1 | tr '\n' ':')"
 
-STUDENT_COMPILE_OUT=$(javac $JAVA_COMPILATION_FLAGS $STUDENT_FILES 2>&1)
+STUDENT_COMPILE_OUT=$(javac $STUDENT_FILES 2>&1)
 if [ "$?" -ne 0 ] ; then
     echo "Compilation error"
     exception "Compilation errors, please fix and try again.
@@ -27,7 +32,7 @@ if [ "$?" -ne 0 ] ; then
 $STUDENT_COMPILE_OUT"
 fi
 
-TEST_COMPILE_OUT=$(javac $JAVA_COMPILATION_FLAGS $TEST_FILES 2>&1)
+TEST_COMPILE_OUT=$(javac $TEST_FILES 2>&1)
 if [ "$?" -ne 0 ] ; then
     echo "$TEST_COMPILE_OUT"
     exception "Error compiling test files. This typically means your class does not match the specified signature."

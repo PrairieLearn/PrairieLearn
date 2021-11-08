@@ -316,7 +316,7 @@ module.exports.initExpress = function () {
     express.static(path.join(__dirname, 'public'), {
       // In dev mode, assets are likely to change while the server is running,
       // so we'll prevent them from being cached.
-      maxAge: config.devMode ? '0' : '31557600',
+      maxAge: config.devMode ? 0 : '31536000s',
       immutable: true,
     })
   );
@@ -330,7 +330,7 @@ module.exports.initExpress = function () {
   app.use(
     '/cacheable_node_modules/:cachebuster',
     express.static(path.join(__dirname, 'node_modules'), {
-      maxAge: '31557600',
+      maxAge: '31536000s',
       immutable: true,
     })
   );
@@ -366,11 +366,12 @@ module.exports.initExpress = function () {
   });
   app.use(function (req, res, next) {
     onFinished(res, function (err, res) {
-      if (ERR(err, () => {}))
+      if (ERR(err, () => {})) {
         logger.verbose('request on-response-finished error', {
           err,
           response_id: res.locals.response_id,
         });
+      }
       load.endJob('request', res.locals.response_id);
     });
     next();
@@ -402,11 +403,12 @@ module.exports.initExpress = function () {
   });
   app.use(function (req, res, next) {
     onFinished(res, function (err, res) {
-      if (ERR(err, () => {}))
+      if (ERR(err, () => {})) {
         logger.verbose('authed_request on-response-finished error', {
           err,
           response_id: res.locals.response_id,
         });
+      }
       load.endJob('authed_request', res.locals.response_id);
     });
     next();
@@ -618,7 +620,42 @@ module.exports.initExpress = function () {
     },
   ]);
 
-  // Serve element statics
+  // Serve element statics. As with core PrairieLearn assets and files served
+  // from `node_modules`, we include a cachebuster in the URL. This allows
+  // files to be treated as immutable in production and cached aggressively.
+  app.use(
+    '/pl/static/cacheableElements/:cachebuster',
+    require('./pages/elementFiles/elementFiles')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/cacheableElements/:cachebuster',
+    require('./pages/elementFiles/elementFiles')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/cacheableElements/:cachebuster',
+    require('./pages/elementFiles/elementFiles')
+  );
+  app.use(
+    '/pl/course/:course_id/cacheableElements/:cachebuster',
+    require('./pages/elementFiles/elementFiles')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/cacheableElementExtensions/:cachebuster',
+    require('./pages/elementExtensionFiles/elementExtensionFiles')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/cacheableElementExtensions/:cachebuster',
+    require('./pages/elementExtensionFiles/elementExtensionFiles')
+  );
+  app.use(
+    '/pl/course/:course_id/cacheableElementExtensions/:cachebuster',
+    require('./pages/elementExtensionFiles/elementExtensionFiles')
+  );
+
+  // For backwards compatibility, we continue to serve the non-cached element
+  // files.
+  // TODO: if we can determine that these routes are no longer receiving
+  // traffic in the future, we can delete these.
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
   app.use(
     '/pl/course_instance/:course_instance_id/elements',
@@ -629,6 +666,18 @@ module.exports.initExpress = function () {
     require('./pages/elementFiles/elementFiles')
   );
   app.use('/pl/course/:course_id/elements', require('./pages/elementFiles/elementFiles'));
+  app.use(
+    '/pl/course_instance/:course_instance_id/elementExtensions',
+    require('./pages/elementExtensionFiles/elementExtensionFiles')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/elementExtensions',
+    require('./pages/elementExtensionFiles/elementExtensionFiles')
+  );
+  app.use(
+    '/pl/course/:course_id/elementExtensions',
+    require('./pages/elementExtensionFiles/elementExtensionFiles')
+  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1204,20 +1253,6 @@ module.exports.initExpress = function () {
       require('./pages/instructorJobSequence/instructorJobSequence')
     );
   }
-
-  // Serve extension statics
-  app.use(
-    '/pl/course_instance/:course_instance_id/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
-  );
-  app.use(
-    '/pl/course/:course_id/elementExtensions',
-    require('./pages/elementExtensionFiles/elementExtensionFiles')
-  );
 
   // clientFiles
   app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
