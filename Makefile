@@ -1,4 +1,4 @@
-PATH := node_modules/.bin/:$(PATH)
+export PATH := node_modules/.bin/:$(PATH)
 
 start: start-support
 	@node server.js
@@ -19,8 +19,13 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: start-support
+test-js: test-prairielearn test-prairielib test-grader-host
+test-prairielearn: start-support
 	@nyc --reporter=lcov mocha tests/index.js
+test-prairielib:
+	@jest prairielib/
+test-grader-host:
+	@jest grader_host/
 test-nocoverage: start-support
 	@mocha tests/index.js
 test-python:
@@ -29,8 +34,14 @@ test-python:
 lint: lint-js lint-python
 lint-js:
 	@eslint --ext js "**/*.js"
+	@prettier --check "**/*.{js,ts,md}"
 lint-python:
 	@python3 -m flake8 ./
+
+format: format-js
+format-js:
+	@eslint --ext js --fix "**/*.js"
+	@prettier --write "**/*.{js,ts,md}"
 
 typecheck:
 	@tsc

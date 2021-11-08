@@ -71,9 +71,8 @@ const generateBarcodes = async (numRows) => {
                 barcodes.push(barcode); // concat as string in chance integers combo
             }
 
-            const insert_barcodes = sql.insert_barcodes.replace('$barcodes', barcodes.map(barcode => {
-                return "('" + barcode + "')";
-            }).join(','));
+            const insert_barcodes = sql.insert_barcodes.replace('$barcodes', barcodes.map(barcode => "('" + barcode + "')")
+                .join(','));
             const insertBarcodes = await sqldb.queryWithClientAsync(client, insert_barcodes, {});
             if (insertBarcodes.rows.length !== numRows) {
                 throw Error('Wrong number of barcodes created. Aborting');
@@ -81,16 +80,10 @@ const generateBarcodes = async (numRows) => {
         } catch (err) {
             // rolls back if error
             await sqldb.endTransactionAsync(client, done, err);
+            throw err;
         }
         await sqldb.endTransactionAsync(client, done, null);
-
         return barcodes;
-
-
-        // const idsUpdate = await sqldb.queryAsync(sql.insert_barcodes, params.barcodes);
-    
-    // });
-
 };
 
 

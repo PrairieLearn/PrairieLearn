@@ -128,6 +128,7 @@ BEGIN
         external_grading_entrypoint = src.data->>'external_grading_entrypoint',
         external_grading_timeout = (src.data->>'external_grading_timeout')::integer,
         external_grading_enable_networking = (src.data->>'external_grading_enable_networking')::boolean,
+        external_grading_environment = (src.data->>'external_grading_environment')::jsonb,
         dependencies = (src.data->>'dependencies')::jsonb,
         workspace_image = src.data->>'workspace_image',
         workspace_port = (src.data->>'workspace_port')::integer,
@@ -137,6 +138,7 @@ BEGIN
         workspace_sync_ignore = jsonb_array_to_text_array(src.data->'workspace_sync_ignore'),
         workspace_url_rewrite = (src.data->>'workspace_url_rewrite')::boolean,
         workspace_enable_networking = (src.data->>'workspace_enable_networking')::boolean,
+        workspace_environment = (src.data->>'workspace_environment')::jsonb,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM

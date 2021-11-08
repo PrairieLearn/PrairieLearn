@@ -345,6 +345,7 @@ def grade(element_html, data):
     if (submitted_key is not None and submitted_key == correct_key):
         score = 1
 
+    feedback = None
     for option in data['params'][name]:
         if option['key'] == submitted_key:
             feedback = option.get('feedback', None)
