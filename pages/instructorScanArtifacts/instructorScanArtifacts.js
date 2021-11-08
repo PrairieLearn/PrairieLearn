@@ -13,6 +13,20 @@ const {fromPath} = require('pdf2pic');
 // const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
+    // api doesn't work with pdf pages
+    // convert({
+    //     srcData: fs.readFileSync('./test.pdf'),
+    //     srcFormat: 'PDF',
+    //     width: 100,
+    //     height: 100,
+    //     resize: 'crop',
+    //     background: 'white',
+    //     format: 'JPEG',
+    // })
+    // .then(buffer => {
+
+    // });
+
     imagemagick.identify('./test.pdf', (err, output) => {
         if (err) { console.log(err); }
         console.log(output);
@@ -20,9 +34,31 @@ router.get('/', (req, res, next) => {
     imagemagick.convert(['test.pdf[0]', '-flatten', '-quality', '100', '-resize', '150%', 'kittens-small.jpg'], (err, output) => {
         if (err) { console.log(err); }
         console.log('the output', output);
+        
+        quagga.decodeSingle({
+            src: fs.readFileSync('./kittens-small.jpg'),
+            numOfWorkers: 0,
+            inputStream: {
+                mime: "image/jpeg",
+                size: 800,
+                area: {
+                    top: "70%",
+                    right: "25%",
+                    left: "25%",
+                    bottom: "20%"
+                },
+            },
+            locate: true,
+        }, function(result) {
+            console.log("result", result);
+
+        });
+
+    });
+    console.log('FINALLY DONE');
 
 
-        const javascriptBarcodeReader = require('javascript-barcode-reader');
+        // const javascriptBarcodeReader = require('javascript-barcode-reader');
         // const jpeg = require('jpeg-js');
         // const jpegData = fs.readFileSync();
         // const clampedArrayImage = jpeg.decode(jpegData);
@@ -46,21 +82,7 @@ router.get('/', (req, res, next) => {
 
 
 
-        quagga.decodeSingle({
-            src: './kittens-small.jpg',
-            numOfWorkers: 0, // 0 in node
-            locate: true,
-            decoder: {
-                readers: ["code_128_reader", "ean_reader"] // List of active readers
-            },
-            locator: {
-                patchSize: "x-small", // x-small, small, medium, large, x-large
-            },
-        }, (data) => {
-            console.log(data);
-        });
-    });
-    console.log('FINALLY DONE');
+
 
     // const convert = fromPath('./test1.pdf', {
     //     format: 'png',
@@ -86,7 +108,6 @@ router.get('/', (req, res, next) => {
     //     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     // });
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
 router.post('/', function(req, res, next) {
