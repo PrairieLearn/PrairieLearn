@@ -81,7 +81,7 @@ const convertImage = async (image) => {
         .png({quality: 100})  // TO DO: lookup defaults
         .toBuffer({resolveWithObject: true});
 };
-const svgsToPdf = async (svgs) => {
+const svgsToPdf = async (title, svgs) => {
     let doc = null;
 
     for (let i = 0; i < svgs.length; i++) {
@@ -89,7 +89,8 @@ const svgsToPdf = async (svgs) => {
             doc = new pdfkit({size: 'A3'});
         } else {
             doc.addPage({size: 'A3'});
-        }
+        }                        // add 30 padding
+        doc.text(title, {width: doc.page.width - 30, align: 'center'})
 
         const {data, info} = await convertImage(svgs[i]);
 
@@ -106,9 +107,13 @@ router.get('/', (req, res, next) => {
 router.post('/', function(req, res, next) {
   if (req.body.__action == 'make_scrap_paper') {
     const numPages = req.body.num_pages;
+    const pageLabel = req.body.page_label;
 
     if (!numPages || numPages < 0 || numPages > 500) {
       throw Error('Must be more than 1 page but not more than 500 pages')
+    }
+    if (typeof pageLabel !== 'string' || pageLabel.length > 200) {
+      throw Error('Page label must be valid string less than 200 characters')
     }
 
     generateBarcodes(numPages)
@@ -116,7 +121,7 @@ router.post('/', function(req, res, next) {
         return createBarcodeSVGs(barcodes);
       })
       .then(barcodeSVGs => {
-        return svgsToPdf(barcodeSVGs);
+        return svgsToPdf(pageLabel, barcodeSVGs);
       })
       .then(pdf => {
         const chunks = [];

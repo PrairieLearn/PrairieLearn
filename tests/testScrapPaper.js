@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const assert = require('chai').assert;
-const request = require('request');
+const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
 const config = require('../lib/config');
@@ -17,21 +17,31 @@ const helperAttachFiles = require('./helperAttachFiles');
 describe('Scrap paper', function () {
   this.timeout(60000);
 
-  const siteUrl = 'http://localhost:' + config.serverPort;
-  const scrapPaperUrl = siteUrl + '/scrap_paper';
-  const scanPaperUrl = siteUrl + '/scan_paper'
+  const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
+  const scrapPaperUrl = baseUrl + '/scrap_paper';
+  const scanPaperUrl = baseUrl + '/scan_paper';
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   describe('Generate scrap paper', () => {
 
-    it('should contain placeholder values on load', () => {
-      const $scrapPaper = cheerio.load(scrapPaperUrl);
-      const numPages = $scrapPaper('#num_pages').attr('val');
-      const label = $scrapPaper('#label').attr('val');
-      assert.isNotNull(numPages);
-      assert.isNotNull(label);
+    let scrapPaperPage;
+    let $scrapPaper;
+
+    before('GET scrap_paper generation page', async () => {
+
+    });
+
+    it('should be able to load page and find payload values', async () => {
+      const req = await fetch(scrapPaperUrl);
+      assert.equal(req.status, 200);
+      scrapPaperPage = await req.text();
+      $scrapPaper = cheerio.load(scrapPaperPage);
+      const numPages = $scrapPaper('#num_pages');
+      const label = $scrapPaper('#page_label');
+      assert.length(numPages, 1);
+      assert.length(label, 1);
     });
   });
 });
