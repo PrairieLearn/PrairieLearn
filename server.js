@@ -487,7 +487,7 @@ module.exports.initExpress = function () {
     require('./pages/instructorScrapPaper/instructorScrapPaper.js'),
   ]);
   app.use('/pl/scan_artifacts', [
-    require('./pages/instructorScanArtifacts/instructorScanArtifacts.js'),
+    require('./pages/instructorScanPaper/instructorScanPaper.js'),
   ]);
   app.use('/pl/request_course', [
     function (req, res, next) {
