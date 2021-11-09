@@ -19,15 +19,19 @@ describe('Scrap paper', function () {
 
   const siteUrl = 'http://localhost:' + config.serverPort;
   const scrapPaperUrl = siteUrl + '/scrap_paper';
-  const scanPaperUrl = siteUrl + './scan_artifacts'
+  const scanPaperUrl = siteUrl + '/scan_paper'
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   describe('Generate scrap paper', () => {
 
-    it('should generate scrap paper', () => {
-
+    it('should contain placeholder values on load', () => {
+      const $scrapPaper = cheerio.load(scrapPaperUrl);
+      const numPages = $scrapPaper('#num_pages').attr('val');
+      const label = $scrapPaper('#label').attr('val');
+      assert.isNotNull(numPages);
+      assert.isNotNull(label);
     });
   });
 });
