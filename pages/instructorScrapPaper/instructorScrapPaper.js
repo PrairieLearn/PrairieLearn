@@ -89,8 +89,10 @@ const svgsToPdf = async (title, svgs) => {
             doc = new pdfkit({size: 'A3'});
         } else {
             doc.addPage({size: 'A3'});
-        }                        // add 30 padding
-        doc.text(title, {width: doc.page.width - 30, align: 'center'})
+        }
+
+        doc.fontSize(32);
+        doc.text(title, {align: 'center'})
 
         const {data, info} = await convertImage(svgs[i]);
 
@@ -112,8 +114,8 @@ router.post('/', function(req, res, next) {
     if (!numPages || numPages < 0 || numPages > 500) {
       throw Error('Must be more than 1 page but not more than 500 pages')
     }
-    if (typeof pageLabel !== 'string' || pageLabel.length > 200) {
-      throw Error('Page label must be valid string less than 200 characters')
+    if (typeof pageLabel !== 'string' || pageLabel.length > 45) {
+      throw Error('Page label must be valid string less than 45 characters')
     }
 
     generateBarcodes(numPages)
