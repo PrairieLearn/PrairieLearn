@@ -3,52 +3,53 @@ const express = require('express');
 const router = express.Router();
 const logger = require('../../lib/logger');
 const config = require('../../lib/config.js');
-
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
 const bitgener = require('bitgener');
 const pdfkit = require('pdfkit');
 const sharp = require('sharp');
 const jsCrc = require('js-crc');
+const {Writable} = require('stream');
 
-const generateBarcodes = async (numRows) => {
+const generateBarcodes = async (numBarcodes) => {
     const barcodes = [];
 
-    // Barcodes should be error-detecting <8 char hexatridecimal produced by base36 encoding><4 char crc16 hash>
-    // Sequential counter to produce 8 char base36 string should be base36 encode input
+    // Barcodes should be error-detecting <x char hexatridecimal produced by base36 encoding><4 char crc16 hash>
+    // Sequential counter to produce x char base36 string should be base36 encode input
     // Approx lower and upper bound: 80000000000 - 999999999999; 80 billion to 100 billion
 
-    if (!numRows || numRows > 1000) {
+    if (!numBarcodes || numBarcodes > 1000) {
         throw new Error('Cannot produce more than 1000 or less than 1 barcoded sheets');
     }
 
-        const client = await sqldb.beginTransactionAsync();
-        try {
-            const queryCount = await sqldb.queryWithClientAsync(client, sql.get_barcodes_count, {});
+    const client = await sqldb.beginTransactionAsync();
+    try {
+      const queryCount = await sqldb.queryWithClientAsync(client, sql.get_barcodes_count, {});
 
-            // Want to create new barcodes based on sequential count in database
-            let numBarcodes = Number(queryCount[1].rows[0].count);
-            for (let i = 0; i < numRows; i++) {
-                numBarcodes+=1;
-                const base36 = BigInt(numBarcodes).toString(36);
-                const crc16 = jsCrc.crc16(base36);
-                const barcode = `${base36}${crc16}`;  // concat as string in chance integer combo
-                barcodes.push(barcode);
-            }
+      // Want to create new barcodes based on sequential count in database
+      let barcodesCount = Number(queryCount[1].rows[0].count);
+      for (let i = 0; i < numBarcodes; i++) {
+          barcodesCount+=1;
+          const base36 = BigInt(barcodesCount).toString(36);
+          const crc16 = jsCrc.crc16(base36);
+          const barcode = `${base36}${crc16}`;  // concat as string in chance integer combo
+          barcodes.push(barcode);
+      }
 
-            const insert_barcodes = sql.insert_barcodes.replace('$barcodes', barcodes.map(barcode => "('" + barcode + "')").join(','));
-            const insertBarcodes = await sqldb.queryWithClientAsync(client, insert_barcodes, {});
-            if (insertBarcodes.rows.length !== numRows) {
-                throw Error('Wrong number of barcodes created. Aborting');
-            }
-        } catch (err) {
-            // rolls back if error
-            await sqldb.endTransactionAsync(client, err);
-            throw err;
-        }
-        await sqldb.endTransactionAsync(client, null);
-        return barcodes;
+      const insert_barcodes = sql.insert_barcodes.replace('$barcodes', barcodes.map(barcode => "('" + barcode + "')").join(','));
+      const insertedBarcodes = await sqldb.queryWithClientAsync(client, insert_barcodes, {});
+      if (insertedBarcodes.rows.length != numBarcodes) {
+          throw Error('Wrong number of barcodes created. Aborting');
+      }
+    } catch (err) {
+        // rolls back if error
+        await sqldb.endTransactionAsync(client, err);
+        throw err;
+    }
+    await sqldb.endTransactionAsync(client, null);
+    return barcodes;
 };
 
 const createBarcodeSVGs = async (barcodes) => {
@@ -104,10 +105,10 @@ router.get('/', (req, res, next) => {
 
 router.post('/', function(req, res, next) {
   if (req.body.__action == 'make_scrap_paper') {
-    const numPages = res.body.num_pages;
+    const numPages = req.body.num_pages;
 
-    if (!numPages || numPages < 0 || numPages > 1000) {
-      throw Error('Cannot make less than 1 page or more than 1000 pages')
+    if (!numPages || numPages < 0 || numPages > 500) {
+      throw Error('Must be more than 1 page but not more than 500 pages')
     }
 
     generateBarcodes(numPages)
@@ -118,8 +119,23 @@ router.post('/', function(req, res, next) {
         return svgsToPdf(barcodeSVGs);
       })
       .then(pdf => {
-        pdf.pipe(res);
-        pdf.end();
+        const chunks = [];
+        return new Promise((resolve, reject) => {
+          pdf.on('data', (chunk) => {
+            chunks.push(chunk);
+          });
+          pdf.on('end', () => {
+            resolve(Buffer.concat(chunks));
+          });
+          pdf.on('error', (error) => {
+            reject(error);
+          })
+          pdf.end();
+        });
+      })
+      .then(pdfBuffer => {
+        res.locals['pdf'] = pdfBuffer.toString('base64');
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch(err => {
         if (ERR(err, next)) return;
@@ -132,7 +148,6 @@ router.post('/', function(req, res, next) {
       })
     );
   }
-
 });
 
 module.exports = router;
