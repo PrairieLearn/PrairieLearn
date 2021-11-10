@@ -73,14 +73,14 @@ describe('local locks', function () {
           (async () => {
             assert.isTrue(lock._lock, 'lock was not locked');
             await lock.lockAsync();
-            if (current != i) {
+            if (current !== i) {
               assert.fail('running code in incorrect order!');
               reject();
             }
             current++;
             setTimeout(() => {
               lock.unlock();
-              if (i == num_runners) {
+              if (i === num_runners) {
                 assert.isFalse(lock._lock, 'lock was locked after all callers finished');
                 resolve();
               }
@@ -171,14 +171,14 @@ describe('local locks', function () {
           assert.isTrue(lock._lock, 'lock was not locked');
           lock.lock(true, (err) => {
             if (ERR(err, callback)) return;
-            if (current != i) {
+            if (current !== i) {
               assert.fail('running code in incorrect order!');
             }
             current++;
 
             setTimeout(() => {
               lock.unlock();
-              if (i == num_runners) {
+              if (i === num_runners) {
                 assert.isFalse(lock._lock, 'lock was locked after all callers finished');
                 callback(null);
               }

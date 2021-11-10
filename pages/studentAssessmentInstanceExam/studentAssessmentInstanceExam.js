@@ -17,17 +17,17 @@ router.post('/', function (req, res, next) {
     return next(error.make(403, 'Not authorized', res.locals));
   }
 
-  if (req.body.__action == 'attach_file') {
+  if (req.body.__action === 'attach_file') {
     util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'attach_text') {
+  } else if (req.body.__action === 'attach_text') {
     util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'delete_file') {
+  } else if (req.body.__action === 'delete_file') {
     util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
@@ -35,15 +35,15 @@ router.post('/', function (req, res, next) {
   } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
     const overrideGradeRate = false;
     var closeExam;
-    if (req.body.__action == 'grade') {
+    if (req.body.__action === 'grade') {
       if (!res.locals.assessment.allow_real_time_grading) {
         next(error.make(403, 'Real-time grading is not allowed for this assessment'));
         return;
       }
       closeExam = false;
-    } else if (req.body.__action == 'finish') {
+    } else if (req.body.__action === 'finish') {
       closeExam = true;
-    } else if (req.body.__action == 'timeLimitFinish') {
+    } else if (req.body.__action === 'timeLimitFinish') {
       // Only close if the timer expired due to time limit, not for access end
       if (!res.locals.assessment_instance_time_limit_expired) {
         return res.redirect(req.originalUrl);
@@ -64,7 +64,7 @@ router.post('/', function (req, res, next) {
       overrideGradeRate,
       function (err) {
         if (ERR(err, next)) return;
-        if (req.body.__action == 'timeLimitFinish') {
+        if (req.body.__action === 'timeLimitFinish') {
           res.redirect(req.originalUrl + '?timeLimitExpired=true');
         } else {
           res.redirect(req.originalUrl);
@@ -96,11 +96,11 @@ router.get('/', function (req, res, next) {
         if (ERR(err, next)) return;
         res.locals.assessment_text_templated = assessment_text_templated;
 
-        res.locals.showTimeLimitExpiredModal = req.query.timeLimitExpired == 'true';
+        res.locals.showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
         res.locals.savedAnswers = 0;
         res.locals.suspendedSavedAnswers = 0;
         res.locals.instance_questions.forEach((question) => {
-          if (question.status == 'saved') {
+          if (question.status === 'saved') {
             if (question.allow_grade_left_ms > 0) {
               res.locals.suspendedSavedAnswers++;
             } else {

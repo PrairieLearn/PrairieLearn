@@ -76,7 +76,7 @@ var add_allowed_program = function (SEBconfig, program) {
     arguments: [],
   };
 
-  if (program == 'excel') {
+  if (program === 'excel') {
     var progObj = _.clone(template_program);
     progObj['title'] = 'EXCEL';
     progObj['executable'] = 'excel.exe';
@@ -106,7 +106,7 @@ router.get('/', function (req, res, next) {
 
   sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function (err, result) {
     if (ERR(err, next)) return;
-    if (result.rowCount == 0) {
+    if (result.rowCount === 0) {
       return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
     }
 

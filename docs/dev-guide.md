@@ -961,3 +961,16 @@ To automatically fix lint and formatting errors, run `make format`.
 - The question flow is shown in the diagram below (also as a [PDF image](question-flow.pdf)).
 
 ![Question flow](question-flow.png)
+
+## JavaScript equality operator
+
+You should almost always use the `===` operator for comparisons; this is enforced with an ESLint rule.
+
+The only case where the `==` operator is frequently useful is for comparing entity IDs that may be coming from the client/database/etc. These may be either strings or numbers depending on where they're coming from or how they're fetched. To make it abundantly clear that ids are being compared, you should use the `idsEqual` utility:
+
+```js
+const { idsEqual } = require('./lib/id');
+
+console.log(idsEqual(12345, '12345'));
+// > true
+```
