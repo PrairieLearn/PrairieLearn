@@ -1,33 +1,25 @@
-const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const logger = require('../../lib/logger');
-const config = require('../../lib/config.js');
+
+// const logger = require('../../lib/logger');
+// const config = require('../../lib/config.js');
+// const {fromPath} = require('pdf2pic');
+// const ERR = require('async-stacktrace');
+
 const quagga = require('quagga').default;
 const imagemagick = require('imagemagick');
 const fs = require('fs');
-const {fromPath} = require('pdf2pic');
 
 // const sqldb = require('../../prairielib/lib/sql-db');
 // const sqlLoader = require('../../prairielib/lib/sql-loader');
 // const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
-    // api doesn't work with pdf pages
-    // convert({
-    //     srcData: fs.readFileSync('./test.pdf'),
-    //     srcFormat: 'PDF',
-    //     width: 100,
-    //     height: 100,
-    //     resize: 'crop',
-    //     background: 'white',
-    //     format: 'JPEG',
-    // })
-    // .then(buffer => {
 
-    // });
+  let file = req.body.file;
+  file = './test.pdf';
 
-    imagemagick.identify('./test.pdf', (err, output) => {
+    imagemagick.identify(file, (err, output) => {
         if (err) { console.log(err); }
         console.log(output);
     });
@@ -49,13 +41,14 @@ router.get('/', (req, res, next) => {
                 },
             },
             locate: true,
-        }, function(result) {
+        }, (result) => {
             console.log("result", result);
-
         });
-
     });
-    console.log('FINALLY DONE');
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    next();
+
 
 
         // const javascriptBarcodeReader = require('javascript-barcode-reader');
@@ -112,12 +105,15 @@ router.get('/', (req, res, next) => {
 
 router.post('/', function(req, res, next) {
 
-
+  console.log(req.body);
     // upper bound pdf size limit = 25mb
 
     // each page size conversion to 300kb
 
     // barcode reader fails (send back page image)
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    next();
 });
 
 module.exports = router;

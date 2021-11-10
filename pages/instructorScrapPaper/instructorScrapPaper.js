@@ -1,8 +1,9 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const logger = require('../../lib/logger');
-const config = require('../../lib/config.js');
+// const logger = require('../../lib/logger');
+// const config = require('../../lib/config.js');
+const error = require('../../prairielib/lib/error');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -11,7 +12,6 @@ const bitgener = require('bitgener');
 const pdfkit = require('pdfkit');
 const sharp = require('sharp');
 const jsCrc = require('js-crc');
-const {Writable} = require('stream');
 
 const generateBarcodes = async (numBarcodes) => {
     const barcodes = [];
@@ -104,6 +104,7 @@ const svgsToPdf = async (title, svgs) => {
 
 router.get('/', (req, res, next) => {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  next();
 });
 
 router.post('/', function(req, res, next) {
@@ -143,6 +144,7 @@ router.post('/', function(req, res, next) {
       .then(pdfBuffer => {
         res.locals['pdf'] = pdfBuffer.toString('base64');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        next();
       })
       .catch(err => {
         if (ERR(err, next)) return;
