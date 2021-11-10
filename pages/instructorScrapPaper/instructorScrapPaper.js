@@ -105,9 +105,8 @@ const svgsToPdf = async (title, svgs) => {
   return doc;
 };
 
-router.get('/', (req, res, next) => {
+router.get('/', (req, res) => {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  next();
 });
 
 router.post('/', function (req, res, next) {
@@ -147,7 +146,6 @@ router.post('/', function (req, res, next) {
       .then((pdfBuffer) => {
         res.locals['pdf'] = pdfBuffer.toString('base64');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        next();
       })
       .catch((err) => {
         if (ERR(err, next)) return;
