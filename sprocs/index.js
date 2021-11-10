@@ -186,9 +186,7 @@ module.exports._initWithLock = function (callback) {
       'workspace_hosts_recapture_draining.sql',
       'workspace_hosts_drain_extra.sql',
       'workspace_hosts_find_terminable.sql',
-      'chunks_insert.sql',
       'group_users_insert.sql',
-      'chunks_insert.sql',
     ],
     function (filename, callback) {
       logger.verbose('Loading ' + filename);
