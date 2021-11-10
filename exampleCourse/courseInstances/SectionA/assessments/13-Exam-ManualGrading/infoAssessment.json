@@ -9,7 +9,7 @@
             "comment": "students will have access to this timed exam, but will not be able to see their scores or questions once the exam is completed",
             "mode": "Public",
             "credit": 100,
-            "timeLimitMin": 1,
+            "timeLimitMin": 3,
             "startDate": "2021-01-01T00:00:01",
             "endDate": "2023-11-07T23:59:59",
             "showClosedAssessment": false,
@@ -66,6 +66,7 @@
           "title": "Manually graded questions",
           "questions": [
               {"id": "demo/manualGrade/codeUpload",          "points": [10]},
+              {"id": "demo/fileDownloadUpload",              "points": [10]},
               {"id": "demo/markdownEditorLivePreview",       "points": [5]}
           ]
       }
