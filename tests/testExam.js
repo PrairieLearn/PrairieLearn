@@ -231,12 +231,7 @@ const partialCreditTests = [
       score: 0,
       sub_points: 0,
     },
-    {
-      qid: 'partialCredit2',
-      action: 'check-closed',
-      score: 0,
-      sub_points: 0,
-    },
+    { qid: 'partialCredit2', action: 'check-closed', score: 0, sub_points: 0 },
   ],
 ];
 
@@ -414,7 +409,7 @@ describe('Exam assessment', function () {
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
-            key: variant.true_answer.key == 'a' ? 'b' : 'a',
+            key: variant.true_answer.key === 'a' ? 'b' : 'a',
           };
         };
       });
@@ -500,7 +495,7 @@ describe('Exam assessment', function () {
         };
         sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.rowCount == 0) {
+          if (result.rowCount === 0) {
             callback(null);
           } else {
             callback(new Error(`Found ${result.rowCount} variants`));
@@ -520,7 +515,7 @@ describe('Exam assessment', function () {
         };
         sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.rowCount == 1) {
+          if (result.rowCount === 1) {
             callback(null);
           } else {
             callback(new Error(`Found ${result.rowCount} variants`));
@@ -540,7 +535,7 @@ describe('Exam assessment', function () {
         };
         sqldb.query(sql.select_variants_for_qid, params, function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.rowCount == 2) {
+          if (result.rowCount === 2) {
             callback(null);
           } else {
             callback(new Error(`Found ${result.rowCount} variants`));
@@ -630,7 +625,7 @@ describe('Exam assessment', function () {
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
-            key: variant.true_answer.key == 'a' ? 'b' : 'a',
+            key: variant.true_answer.key === 'a' ? 'b' : 'a',
           };
         };
       });
@@ -1157,7 +1152,7 @@ describe('Exam assessment', function () {
         } answer number #${iQuestionTest + 1} for question ${questionTest.qid} with score ${questionTest.score}`, function () {
           describe('setting up the submission data', function () {
             it('should succeed', function () {
-              if (questionTest.action == 'check-closed') {
+              if (questionTest.action === 'check-closed') {
                 locals.shouldHaveButtons = [];
               } else {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -1167,9 +1162,9 @@ describe('Exam assessment', function () {
               locals.question.points += questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
               locals.expectedResult = {
-                submission_score: questionTest.action == 'save' ? null : questionTest.score / 100,
+                submission_score: questionTest.action === 'save' ? null : questionTest.score / 100,
                 submission_correct:
-                  questionTest.action == 'save' ? null : questionTest.score == 100,
+                  questionTest.action === 'save' ? null : questionTest.score === 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
@@ -1184,7 +1179,7 @@ describe('Exam assessment', function () {
               };
             });
           });
-          if (questionTest.action == 'store') {
+          if (questionTest.action === 'store') {
             helperQuestion.getInstanceQuestion(locals);
             describe('saving submission data', function () {
               it('should succeed', function () {
@@ -1192,7 +1187,7 @@ describe('Exam assessment', function () {
                 locals.question.questionSavedCsrfToken = locals.__csrf_token;
               });
             });
-          } else if (questionTest.action == 'save-stored-fail') {
+          } else if (questionTest.action === 'save-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'save';
@@ -1201,7 +1196,7 @@ describe('Exam assessment', function () {
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals);
-          } else if (questionTest.action == 'grade-stored-fail') {
+          } else if (questionTest.action === 'grade-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'grade';
@@ -1210,9 +1205,9 @@ describe('Exam assessment', function () {
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals);
-          } else if (questionTest.action == 'check-closed') {
+          } else if (questionTest.action === 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
-          } else if (questionTest.action == 'save' || questionTest.action == 'grade') {
+          } else if (questionTest.action === 'save' || questionTest.action === 'grade') {
             helperQuestion.getInstanceQuestion(locals);
             helperQuestion.postInstanceQuestion(locals);
             helperQuestion.checkQuestionScore(locals);

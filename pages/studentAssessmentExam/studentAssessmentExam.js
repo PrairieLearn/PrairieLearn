@@ -20,7 +20,7 @@ router.get('/', function (req, res, next) {
     };
     sqldb.query(sql.select_single_assessment_instance, params, function (err, result) {
       if (ERR(err, next)) return;
-      if (result.rowCount == 0) {
+      if (result.rowCount === 0) {
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       } else {
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
@@ -41,7 +41,7 @@ router.post('/', function (req, res, next) {
   // student data in the course instance (which has already been checked), exactly the
   // permission required to create an assessment for the effective user.
 
-  if (req.body.__action == 'new_instance') {
+  if (req.body.__action === 'new_instance') {
     assessment.makeAssessmentInstance(
       res.locals.assessment.id,
       res.locals.user.user_id,

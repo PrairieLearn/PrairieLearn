@@ -55,7 +55,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -117,7 +117,7 @@ describe('API', function () {
             return callback(error);
           }
           locals.postEndTime = Date.now();
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
@@ -149,7 +149,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 401) {
+        if (response.statusCode !== 401) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);
@@ -166,7 +166,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 401) {
+        if (response.statusCode !== 401) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);
@@ -183,7 +183,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -196,7 +196,7 @@ describe('API', function () {
     it('should contain E1', function () {
       const objectList = _.filter(
         locals.json,
-        (o) => o.assessment_name == 'exam1-automaticTestSuite'
+        (o) => o.assessment_name === 'exam1-automaticTestSuite'
       );
       assert.lengthOf(objectList, 1);
       locals.assessment_id = objectList[0].assessment_id;
@@ -218,7 +218,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -250,7 +250,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -287,7 +287,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -327,7 +327,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -360,7 +360,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -397,7 +397,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -408,12 +408,12 @@ describe('API', function () {
       locals.json = JSON.parse(page);
     });
     it('should have one entry for the dev user', function () {
-      const objectList = _.filter(locals.json, (o) => o.user_uid == 'dev@illinois.edu');
+      const objectList = _.filter(locals.json, (o) => o.user_uid === 'dev@illinois.edu');
       assert.lengthOf(objectList, 1);
       locals.devObject = objectList[0];
     });
     it('should contain Exam 1', function () {
-      const objectList = _.filter(locals.devObject.assessments, (o) => o.assessment_label == 'E1');
+      const objectList = _.filter(locals.devObject.assessments, (o) => o.assessment_label === 'E1');
       assert.lengthOf(objectList, 1);
       locals.gradebookEntry = objectList[0];
     });
@@ -438,7 +438,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -468,7 +468,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -497,7 +497,7 @@ describe('API', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;

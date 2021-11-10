@@ -23,11 +23,11 @@ router.post('/', function (req, res, next) {
   var signature = req.body.oauth_signature;
   delete parameters.oauth_signature;
 
-  if (parameters.lti_message_type != 'basic-lti-launch-request') {
+  if (parameters.lti_message_type !== 'basic-lti-launch-request') {
     return next(error.make(500, 'Unsupported lti_message_type'));
   }
 
-  if (parameters.lti_version != 'LTI-1p0') {
+  if (parameters.lti_version !== 'LTI-1p0') {
     return next(error.make(500, 'Unsupported lti_version'));
   }
 
@@ -47,7 +47,7 @@ router.post('/', function (req, res, next) {
     { consumer_key: parameters.oauth_consumer_key },
     function (err, result) {
       if (ERR(err, next)) return;
-      if (result.rowCount == 0) return next(error.make(500, 'Unknown consumer_key'));
+      if (result.rowCount === 0) return next(error.make(500, 'Unknown consumer_key'));
 
       var ltiresult = result.rows[0];
 
@@ -59,7 +59,7 @@ router.post('/', function (req, res, next) {
         null,
         { encodeSignature: false }
       );
-      if (genSignature != signature) {
+      if (genSignature !== signature) {
         return next(error.make(500, 'Invalid signature'));
       }
 
@@ -168,7 +168,7 @@ router.post('/', function (req, res, next) {
             const params = [tokenData.user_id, ltiresult.course_instance_id];
             sqldb.call('users_is_instructor_in_course_instance', params, function (err, result) {
               if (ERR(err, next)) return;
-              if (result.rowCount == 0) {
+              if (result.rowCount === 0) {
                 return next(
                   error.make(403, 'Access denied (could not determine if user is instructor)')
                 );

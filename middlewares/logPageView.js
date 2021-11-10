@@ -8,7 +8,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function (pageType) {
   return function (req, res, next) {
-    if (req.method != 'GET' || !res.locals.user || !res.locals.authn_user) {
+    if (req.method !== 'GET' || !res.locals.user || !res.locals.authn_user) {
       next();
       return;
     }

@@ -56,7 +56,7 @@ router.get('/', function (req, res, next) {
 });
 
 router.get('/:filename', function (req, res, next) {
-  if (req.params.filename == csvFilename(res.locals)) {
+  if (req.params.filename === csvFilename(res.locals)) {
     // There is no need to check if the user has permission to view student
     // data, because this file only has aggregate data.
 
@@ -128,7 +128,7 @@ router.get('/:filename', function (req, res, next) {
         res.send(csv);
       });
     });
-  } else if (req.params.filename == fileSubmissionsFilename(res.locals)) {
+  } else if (req.params.filename === fileSubmissionsFilename(res.locals)) {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
@@ -163,7 +163,7 @@ router.get('/:filename', function (req, res, next) {
 
 router.post('/', (req, res, next) => {
   debug(`Responding to post with action ${req.body.__action}`);
-  if (req.body.__action == 'add_assessment') {
+  if (req.body.__action === 'add_assessment') {
     debug(`Responding to action add_assessment`);
     const editor = new AssessmentAddEditor({
       locals: res.locals,
