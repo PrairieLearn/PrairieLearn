@@ -28,14 +28,14 @@ describe('Scrap paper', function () {
     let $scrapPaper;
 
     it('should be able to load page and find payload values', async () => {
-      const req = await fetch(scrapPaperUrl);
-      assert.equal(req.status, 200);
-      scrapPaperPage = await req.text();
+      const res = await fetch(scrapPaperUrl);
+      assert.equal(res.status, 200);
+      scrapPaperPage = await res.text();
       $scrapPaper = cheerio.load(scrapPaperPage);
       const numPages = $scrapPaper('#num_pages');
       const pageLabel = $scrapPaper('#page_label');
-      assert.length(numPages, 1);
-      assert.length(pageLabel, 1);
+      assert(numPages.length, 1);
+      assert(pageLabel.length, 1);
     });
   });
 });
