@@ -5,7 +5,6 @@ CREATE FUNCTION
         IN type text,
         IN assessment_instance_id bigint,
         IN instance_question_id bigint,
-        IN submission_id bigint,
         IN user_id bigint,
         IN authn_user_id bigint,
         IN storage_type enum_file_storage_type,
@@ -31,8 +30,8 @@ BEGIN
     -- insert the file
 
     INSERT INTO files
-           (display_filename, storage_filename, type, assessment_id, assessment_instance_id, submission_id, instance_question_id, user_id, created_by, storage_type)
-    VALUES (display_filename, storage_filename, type, assessment_id, assessment_instance_id, submission_id, instance_question_id, user_id, authn_user_id, storage_type)
+           (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, created_by, storage_type)
+    VALUES (display_filename, storage_filename, type, assessment_id, assessment_instance_id, instance_question_id, user_id, authn_user_id, storage_type)
     RETURNING id
     INTO file_id;
 
