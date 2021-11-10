@@ -483,12 +483,8 @@ module.exports.initExpress = function () {
     },
     require('./pages/news_item/news_item.js'),
   ]);
-  app.use('/pl/scrap_paper', [
-    require('./pages/instructorScrapPaper/instructorScrapPaper.js'),
-  ]);
-  app.use('/pl/scan_artifacts', [
-    require('./pages/instructorScanPaper/instructorScanPaper.js'),
-  ]);
+  app.use('/pl/scrap_paper', [require('./pages/instructorScrapPaper/instructorScrapPaper.js')]);
+  app.use('/pl/scan_artifacts', [require('./pages/instructorScanPaper/instructorScanPaper.js')]);
   app.use('/pl/request_course', [
     function (req, res, next) {
       res.locals.navPage = 'request_course';

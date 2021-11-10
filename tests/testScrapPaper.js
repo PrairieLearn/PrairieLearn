@@ -13,7 +13,6 @@ const helperServer = require('./helperServer');
 // const helperQuestion = require('./helperQuestion');
 // const helperAttachFiles = require('./helperAttachFiles');
 
-
 describe('Scrap paper', function () {
   this.timeout(60000);
 
@@ -25,7 +24,6 @@ describe('Scrap paper', function () {
   after('shut down testing server', helperServer.after);
 
   describe('Generate scrap paper', () => {
-
     let scrapPaperPage;
     let $scrapPaper;
 

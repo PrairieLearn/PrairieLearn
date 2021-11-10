@@ -14,12 +14,12 @@ const sqlLoader = require('../../../../prairielib/lib/sql-loader');
 const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
 
 const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: {
-        fieldSize: config.fileUploadMaxBytes,
-        fileSize: config.fileUploadMaxBytes,
-        parts: config.fileUploadMaxParts,
-    },
+  storage: multer.memoryStorage(),
+  limits: {
+    fieldSize: config.fileUploadMaxBytes,
+    fileSize: config.fileUploadMaxBytes,
+    parts: config.fileUploadMaxParts,
+  },
 });
 
 router.get('/:assessment_instance_id', (req, res, next) => {
@@ -65,28 +65,48 @@ router.get('/:assessment_instance_id/submissions', (req, res, next) => {
   });
 });
 
-router.put('/:assessment_instance_id/submission/:submission_id/file', upload.single('file'), (req, res, next) => {
-    const {assessment_instance_id, course_instance_id, submission_id} = req.params;
+router.put(
+  '/:assessment_instance_id/submission/:submission_id/file',
+  upload.single('file'),
+  (req, res, next) => {
+    const { assessment_instance_id, course_instance_id, submission_id } = req.params;
 
     // # TO DO - split out error to user through API if these errors are hit.
     if (!assessment_instance_id || !course_instance_id || !submission_id) {
-        ERR(Error('Required params for artifact upload: course_instance_id, assessment_instance_id, and submission_id'));
+      ERR(
+        Error(
+          'Required params for artifact upload: course_instance_id, assessment_instance_id, and submission_id'
+        )
+      );
     }
     if (!req.file) {
-        ERR(Error('Missing artifact file data'), next); return;
+      ERR(Error('Missing artifact file data'), next);
+      return;
     }
     if (!/([a-zA-Z0-9\s_\\.\-:])+(.pdf)$/.test(req.file.originalname)) {
-        ERR(Error('Valid pdf required.')); return;
+      ERR(Error('Valid pdf required.'));
+      return;
     }
 
-    fileStore.upload(req.file.originalname, req.file.buffer, 'artifact_upload', assessment_instance_id, course_instance_id, submission_id, res.locals.user.user_id, res.locals.authn_user.user_id)
-        .then(() => {
-            res.status(200).send('Artifact uploaded');
-        })
-        .catch(err => {
-            if (ERR(err, next)) return;
-        });
-});
+    fileStore
+      .upload(
+        req.file.originalname,
+        req.file.buffer,
+        'artifact_upload',
+        assessment_instance_id,
+        course_instance_id,
+        submission_id,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id
+      )
+      .then(() => {
+        res.status(200).send('Artifact uploaded');
+      })
+      .catch((err) => {
+        if (ERR(err, next)) return;
+      });
+  }
+);
 
 router.get('/:assessment_instance_id/log', (req, res, next) => {
   const params = [req.params.assessment_instance_id, true];
