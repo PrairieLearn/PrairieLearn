@@ -34,8 +34,6 @@ const qidsExampleCourse = [
   'demo/randomMultipleChoice',
   'demo/randomPlot',
   'demo/randomSymbolic',
-  'demo/studentFaces',
-  'demo/studentNames',
   'demo/proofBlocks',
   'element/checkbox',
   'element/code',
