@@ -38,13 +38,14 @@ FROM
     LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN questions AS q ON (q.id = v.question_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
-    LEFT JOIN LATERAL (
-        SELECT *
-        FROM files
-        WHERE submission_id = s.id AND type = 'artifact_upload'
-        ORDER BY id DESC
-        LIMIT 1
-    ) AS f ON TRUE
+    -- Removing for now. Reassessing if we want to go this route
+    -- LEFT JOIN LATERAL (
+    --     SELECT *
+    --     FROM files
+    --     WHERE submission_id = s.id AND type = 'artifact_upload'
+    --     ORDER BY id DESC
+    --     LIMIT 1
+    -- ) AS f ON TRUE
     LEFT JOIN LATERAL (
         SELECT *
         FROM grading_jobs
