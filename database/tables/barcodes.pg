@@ -1,0 +1,6 @@
+columns
+    barcode: text
+    id: bigint not null default nextval('barcodes_id_seq'::regclass)
+
+indexes
+    barcodes_pkey: PRIMARY KEY (id) USING btree (id)
