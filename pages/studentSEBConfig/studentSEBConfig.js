@@ -106,8 +106,9 @@ router.get('/', function (req, res, next) {
 
   sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function (err, result) {
     if (ERR(err, next)) return;
-    if (result.rowCount === 0)
+    if (result.rowCount === 0) {
       return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
+    }
 
     _.assign(res.locals, result.rows[0]);
     //console.log(res.locals);

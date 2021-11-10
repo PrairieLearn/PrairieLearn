@@ -16,8 +16,9 @@ function processSubmission(req, res, callback) {
     variant_id = req.body.__variant_id;
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
-    if (!req.body.postData)
+    if (!req.body.postData) {
       return callback(error.make(400, 'No postData', { locals: res.locals, body: req.body }));
+    }
     let postData;
     try {
       postData = JSON.parse(req.body.postData);

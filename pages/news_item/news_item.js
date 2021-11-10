@@ -18,8 +18,9 @@ router.get('/:news_item_id', function (req, res, next) {
   };
   sqldb.queryZeroOrOneRow(sql.select_news_item_for_read, params, function (err, result) {
     if (ERR(err, next)) return;
-    if (result.rowCount === 0)
+    if (result.rowCount === 0) {
       return next(new Error(`invalid news_item_id: ${req.params.news_item_id}`));
+    }
 
     res.locals.news_item = result.rows[0];
 
@@ -48,8 +49,9 @@ router.get('/:news_item_id/*', function (req, res, next) {
   };
   sqldb.queryZeroOrOneRow(sql.select_news_item, params, function (err, result) {
     if (ERR(err, next)) return;
-    if (result.rowCount === 0)
+    if (result.rowCount === 0) {
       return next(new Error(`invalid news_item_id: ${req.params.news_item_id}`));
+    }
 
     res.locals.news_item = result.rows[0];
     const news_item_dir = path.join(

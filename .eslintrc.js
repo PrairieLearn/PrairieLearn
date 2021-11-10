@@ -8,6 +8,7 @@ module.exports = {
     ecmaVersion: 12,
   },
   rules: {
+    curly: ['error', 'multi-line', 'consistent'],
     eqeqeq: ['error', 'smart'],
     'handle-callback-err': 'error',
     'no-unused-vars': [

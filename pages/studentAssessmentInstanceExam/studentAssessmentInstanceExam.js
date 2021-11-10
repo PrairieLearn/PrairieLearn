@@ -13,8 +13,9 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.post('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
-  if (!res.locals.authz_result.authorized_edit)
+  if (!res.locals.authz_result.authorized_edit) {
     return next(error.make(403, 'Not authorized', res.locals));
+  }
 
   if (req.body.__action === 'attach_file') {
     util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {

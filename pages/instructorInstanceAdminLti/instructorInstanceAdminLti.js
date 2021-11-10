@@ -10,8 +10,9 @@ var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
+  }
   var params = {
     course_instance_id: res.locals.course_instance.id,
   };
@@ -25,8 +26,9 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
+  }
   var params;
   if (req.body.__action === 'lti_new_cred') {
     params = {

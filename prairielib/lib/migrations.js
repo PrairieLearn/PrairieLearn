@@ -12,8 +12,6 @@ const error = require('../lib/error');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-module.exports = {};
-
 var migrationDir;
 var project;
 
@@ -25,7 +23,7 @@ module.exports.init = function (dir, proj, callback) {
     logger.verbose(`Acquired lock ${lockName}`);
     migrationDir = dir;
     project = proj;
-    this._initWithLock((err) => {
+    module.exports._initWithLock((err) => {
       namedLocks.releaseLock(lock, (lockErr) => {
         if (ERR(lockErr, callback)) return;
         if (ERR(err, callback)) return;

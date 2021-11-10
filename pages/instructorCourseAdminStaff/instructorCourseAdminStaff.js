@@ -15,8 +15,9 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_permission_own)
+  if (!res.locals.authz_data.has_course_permission_own) {
     return next(error.make(403, 'Access denied (must be course owner)'));
+  }
 
   sqldb.query(sql.select_course_users, { course_id: res.locals.course.id }, (err, result) => {
     if (ERR(err, next)) return;
@@ -26,8 +27,9 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_permission_own)
+  if (!res.locals.authz_data.has_course_permission_own) {
     return next(error.make(403, 'Access denied (must be course owner)'));
+  }
 
   if (req.body.__action === 'course_permissions_insert_by_multi_user_uid') {
     // Get set of unique, non-empty UIDs with no leading or trailing whitespaces

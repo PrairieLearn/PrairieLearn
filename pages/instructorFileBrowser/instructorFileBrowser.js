@@ -317,7 +317,9 @@ function browseFile(file_browser, callback) {
                   } else if (type.mime === 'application/pdf') {
                     file_browser.isPDF = true;
                   }
-                } else debug(`could not get file type`);
+                } else {
+                  debug(`could not get file type`);
+                }
               })(callback);
             } else {
               debug(`found a text file`);
@@ -364,8 +366,9 @@ function browseFile(file_browser, callback) {
 
 router.get('/*', function (req, res, next) {
   debug('GET /');
-  if (!res.locals.authz_data.has_course_permission_view)
+  if (!res.locals.authz_data.has_course_permission_view) {
     return next(error.make(403, 'Access denied (must be a course Viewer)'));
+  }
   let file_browser = {
     has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
     example_course: res.locals.course.example_course,
@@ -429,8 +432,9 @@ router.get('/*', function (req, res, next) {
 
 router.post('/*', function (req, res, next) {
   debug('POST /');
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
+  }
   getPaths(req, res, (err, paths) => {
     if (ERR(err, next)) return;
     const container = {
@@ -475,18 +479,20 @@ router.post('/*', function (req, res, next) {
           new Error(`Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`)
         );
       }
-      if (!req.body.new_file_name)
+      if (!req.body.new_file_name) {
         return next(new Error(`Invalid new file name (was falsey): ${req.body.new_file_name}`));
+      }
       if (
         !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(
           req.body.new_file_name
         )
-      )
+      ) {
         return next(
           new Error(
             `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`
           )
         );
+      }
       let newPath;
       try {
         newPath = path.join(req.body.working_path, req.body.new_file_name);

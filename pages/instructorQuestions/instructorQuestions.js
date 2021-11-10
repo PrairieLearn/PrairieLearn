@@ -23,7 +23,9 @@ router.get('/', function (req, res, next) {
           if (err) {
             if (err.code === 'ENOENT') {
               res.locals.needToSync = true;
-            } else return ERR(err, callback);
+            } else {
+              return ERR(err, callback);
+            }
           }
           callback(null);
         });
@@ -37,8 +39,9 @@ router.get('/', function (req, res, next) {
           const ci_ids = _.map(res.locals.authz_data.course_instances, (ci) => ci.id);
           res.locals.questions = _.map(result.rows, (row) => {
             if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-            if (row.sync_warnings)
+            if (row.sync_warnings) {
               row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+            }
             row.assessments = _.filter(row.assessments, (assessment) =>
               ci_ids.includes(assessment.course_instance_id)
             );

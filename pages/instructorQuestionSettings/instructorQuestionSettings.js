@@ -23,8 +23,9 @@ const { idsEqual } = require('../../lib/id');
 
 router.post('/', function (req, res, next) {
   if (req.body.__action === 'test_once') {
-    if (!res.locals.authz_data.has_course_permission_view)
+    if (!res.locals.authz_data.has_course_permission_view) {
       return next(error.make(403, 'Access denied (must be a course Viewer)'));
+    }
     const count = 1;
     const showDetails = true;
     const assessmentGroupWork = res.locals.assessment ? res.locals.assessment.group_work : false;
@@ -42,8 +43,9 @@ router.post('/', function (req, res, next) {
       }
     );
   } else if (req.body.__action === 'test_100') {
-    if (!res.locals.authz_data.has_course_permission_view)
+    if (!res.locals.authz_data.has_course_permission_view) {
       return next(error.make(403, 'Access denied (must be a course Viewer)'));
+    }
     if (res.locals.question.grading_method !== 'External') {
       const count = 100;
       const showDetails = false;
@@ -67,12 +69,13 @@ router.post('/', function (req, res, next) {
   } else if (req.body.__action === 'change_id') {
     debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
     if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
-    if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id))
+    if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`
         )
       );
+    }
     let qid_new;
     try {
       qid_new = path.normalize(req.body.id);
@@ -130,8 +133,9 @@ router.post('/', function (req, res, next) {
     } else {
       // In this case, we are sending a copy of this question to a different course
       debug(`send copy of question: to_course_id = ${req.body.to_course_id}`);
-      if (!res.locals.authz_data.has_course_permission_view)
+      if (!res.locals.authz_data.has_course_permission_view) {
         return next(error.make(403, 'Access denied (must be a course Viewer)'));
+      }
       let params = {
         from_course_id: res.locals.course.id,
         to_course_id: req.body.to_course_id,

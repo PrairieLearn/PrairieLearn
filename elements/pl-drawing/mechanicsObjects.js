@@ -1126,6 +1126,7 @@ mechanicsObjects.pulley = fabric.util.createClass(fabric.Object, {
     this.originX = 'center';
     this.originY = 'center';
     this.objectCaching = false;
+    this.color = this.fill;
 
     const update_visuals = () => {
       this.left = this.x1;
@@ -1195,6 +1196,7 @@ mechanicsObjects.pulley = fabric.util.createClass(fabric.Object, {
   _render: function (ctx) {
     /* Draw pulley circle */
     ctx.beginPath();
+    ctx.fillStyle = this.color;
     ctx.arc(0, 0, this.radius, 0, 2 * Math.PI);
     ctx.fill();
     ctx.stroke();
@@ -2759,7 +2761,7 @@ mechanicsObjects.byType['pl-pulley'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-arc-vector'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
-    if (options['clockwise-direction']) {
+    if (options['clockwiseDirection']) {
       options.drawStartArrow = false;
       options.drawEndArrow = true;
     } else {

@@ -20,7 +20,9 @@ router.get('/', function (req, res, next) {
           if (err) {
             if (err.code === 'ENOENT') {
               res.locals.needToSync = true;
-            } else return ERR(err, callback);
+            } else {
+              return ERR(err, callback);
+            }
           }
           callback(null);
         });
@@ -31,7 +33,9 @@ router.get('/', function (req, res, next) {
           if (err) {
             if (err.code === 'ENOENT') {
               res.locals.noInfo = true;
-            } else return ERR(err, callback);
+            } else {
+              return ERR(err, callback);
+            }
           }
           callback(null);
         });
@@ -45,10 +49,11 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_permission_edit || res.locals.course.example_course)
+  if (!res.locals.authz_data.has_course_permission_edit || res.locals.course.example_course) {
     return next(
       error.make(403, 'Access denied (must be course editor and must not be example course)')
     );
+  }
 
   debug(`Responding to post with action ${req.body.__action}`);
   if (req.body.__action === 'add_configuration') {

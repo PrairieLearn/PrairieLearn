@@ -11,15 +11,17 @@ const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('../../prairielib/lib/sql-db');
 
 function processSubmission(req, res, callback) {
-  if (!res.locals.authz_result.active)
+  if (!res.locals.authz_result.active) {
     return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
+  }
   let variant_id, submitted_answer;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
-    if (!req.body.postData)
+    if (!req.body.postData) {
       return callback(error.make(400, 'No postData', { locals: res.locals, body: req.body }));
+    }
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
@@ -85,8 +87,11 @@ function processSubmission(req, res, callback) {
 
 router.post('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Homework') return next();
-  if (!res.locals.authz_result.authorized_edit)
+
+  if (!res.locals.authz_result.authorized_edit) {
     return next(error.make(403, 'Not authorized', res.locals));
+  }
+
   if (req.body.__action === 'grade' || req.body.__action === 'save') {
     processSubmission(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;

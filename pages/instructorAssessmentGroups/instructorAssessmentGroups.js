@@ -63,14 +63,16 @@ function obtainInfo(req, res, next) {
 }
 router.get('/', function (req, res, next) {
   debug('GET /');
-  if (!res.locals.authz_data.has_course_instance_permission_view)
+  if (!res.locals.authz_data.has_course_instance_permission_view) {
     return next(error.make(403, 'Access denied (must be a student data viewer)'));
+  }
   obtainInfo(req, res, next);
 });
 
 router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_view)
+  if (!res.locals.authz_data.has_course_instance_permission_view) {
     return next(error.make(403, 'Access denied (must be a student data editor)'));
+  }
   if (req.body.__action === 'upload_assessment_groups') {
     groupUpdate.uploadInstanceGroups(
       res.locals.assessment.id,
