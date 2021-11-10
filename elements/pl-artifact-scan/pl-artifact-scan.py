@@ -10,19 +10,9 @@ REQUIRED_DEFAULT = True
 
 def prepare(element_html, data):
     lxml.html.fragment_fromstring(element_html)
-    # element = lxml.html.fragment_fromstring(element_html)
-    # pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=['blank', 'weight', 'sort'])
-    # answers_name = pl.get_string_attrib(element, 'answers-name')
-
-    # Get answer from pl-answer if implemented
-    # data['correct_answers'][answers_name] = get_solution(element, data)
-
-    # if data['correct_answers'][answers_name] is None:
-    #     raise Exception('Correct answer not defined for answers-name: %s' % answers_name)
 
 
 def render(element_html, data):
-    # element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
 
     if data['panel'] == 'question':
