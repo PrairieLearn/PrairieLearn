@@ -60,7 +60,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -82,7 +82,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -106,7 +106,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -130,7 +130,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -154,7 +154,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -178,7 +178,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -206,7 +206,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -215,8 +215,8 @@ describe('Instructor Assessment Downloads', function () {
     });
     it('should contain correct data', function () {
       let data = csvParse(page, { columns: true, cast: true });
-      assert(_.every(data, (entry) => entry['UID'] == 'dev@illinois.edu'));
-      assert(_.every(data, (entry) => entry['Assessment'] == 'Exam 1'));
+      assert(_.every(data, (entry) => entry['UID'] === 'dev@illinois.edu'));
+      assert(_.every(data, (entry) => entry['Assessment'] === 'Exam 1'));
       let questions = _.map(data, (entry) => entry['Question']).sort();
       let expectedQuestions = _.map(helperExam.questionsArray, (q) => q.qid);
       assert.deepEqual(questions, expectedQuestions);
@@ -233,7 +233,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -257,7 +257,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -283,7 +283,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -311,7 +311,7 @@ describe('Instructor Assessment Downloads', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;

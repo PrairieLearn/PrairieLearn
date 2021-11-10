@@ -98,7 +98,7 @@ function PLThreeJS(options) {
         async.eachSeries(
           this.objects,
           function (obj, callback) {
-            if (obj.type == 'stl') {
+            if (obj.type === 'stl') {
               var loader = new THREE.STLLoader();
               loader.load(
                 obj.file_url,
@@ -116,16 +116,16 @@ function PLThreeJS(options) {
                   mesh.receiveShadow = true;
                   mesh.position.fromArray(obj.position);
                   mesh.quaternion.fromArray(obj.quaternion);
-                  if (obj.frame == 'space') {
+                  if (obj.frame === 'space') {
                     this.spaceObjectGroup.add(mesh);
-                  } else if (obj.frame == 'body') {
+                  } else if (obj.frame === 'body') {
                     this.bodyObjectGroup.add(mesh);
                   }
                   // objects_to_drag.push(mesh);
                   callback(null);
                 }.bind(this)
               );
-            } else if (obj.type == 'txt') {
+            } else if (obj.type === 'txt') {
               var geometry = new THREE.TextGeometry(obj.text, {
                 font: this.font,
                 size: 0.25,
@@ -149,9 +149,9 @@ function PLThreeJS(options) {
               mesh.receiveShadow = true;
               mesh.position.fromArray(obj.position);
               mesh.quaternion.fromArray(obj.quaternion);
-              if (obj.frame == 'space') {
+              if (obj.frame === 'space') {
                 this.spaceObjectGroup.add(mesh);
-              } else if (obj.frame == 'body') {
+              } else if (obj.frame === 'body') {
                 this.bodyObjectGroup.add(mesh);
               }
               callback(null);
@@ -444,15 +444,15 @@ PLThreeJS.prototype.makeFrame = function () {
       transparent: true,
       opacity: 0.9,
     });
-    if (whichAxis == 'x' || whichAxis == 'X') {
+    if (whichAxis === 'x' || whichAxis === 'X') {
       geometry.rotateZ(Math.PI / 2);
       geometry.translate(0.5, 0, 0);
       material.color = new THREE.Color(0xff0000);
-    } else if (whichAxis == 'y' || whichAxis == 'Y') {
+    } else if (whichAxis === 'y' || whichAxis === 'Y') {
       geometry.rotateX(Math.PI);
       geometry.translate(0, 0.5, 0);
       material.color = new THREE.Color(0x00ff00);
-    } else if (whichAxis == 'z' || whichAxis == 'Z') {
+    } else if (whichAxis === 'z' || whichAxis === 'Z') {
       geometry.rotateX(-Math.PI / 2);
       geometry.translate(0, 0, 0.5);
       material.color = new THREE.Color(0x0000ff);
@@ -708,21 +708,21 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
 
   var matlabText = '';
   var pythonText = 'import numpy as np\n\n';
-  if (this.textPoseFormat == 'matrix') {
+  if (this.textPoseFormat === 'matrix') {
     // position
     matlabText += posToMatlab(this.bodyGroup.position) + '\n\n';
     pythonText += posToPython(this.bodyGroup.position) + '\n\n';
     // orientation
     matlabText += rotToMatlab(this.bodyGroup.matrix.elements);
     pythonText += rotToPython(this.bodyGroup.matrix.elements);
-  } else if (this.textPoseFormat == 'quaternion') {
+  } else if (this.textPoseFormat === 'quaternion') {
     // position
     matlabText += posToMatlab(this.bodyGroup.position) + '\n\n';
     pythonText += posToPython(this.bodyGroup.position) + '\n\n';
     // orientation
     matlabText += quatToMatlab(this.bodyGroup.quaternion.toArray());
     pythonText += quatToPython(this.bodyGroup.quaternion.toArray());
-  } else if (this.textPoseFormat == 'homogeneous') {
+  } else if (this.textPoseFormat === 'homogeneous') {
     // both position and orientation
     matlabText += homToMatlab(this.bodyGroup.matrix.elements);
     pythonText += homToPython(this.bodyGroup.matrix.elements);

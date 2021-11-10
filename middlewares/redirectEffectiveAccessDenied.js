@@ -1,3 +1,5 @@
+const { idsEqual } = require('../lib/id');
+
 module.exports = function (err, req, res, next) {
   // This middleware tries to handle the case where an instructor
   // starts emulating another effective user, but they are currently
@@ -6,7 +8,7 @@ module.exports = function (err, req, res, next) {
   // we try and detect this case and redirect to an accessible page.
 
   // we are only capturing 403 = Access Denied
-  if (err.status != 403) return next(err);
+  if (err.status !== 403) return next(err);
 
   // we only redirect if we tried to change emulation data (see middlewares/effectiveRequestChanged.js)
   if (!res.locals.pl_requested_data_changed) return next(err);
@@ -16,7 +18,7 @@ module.exports = function (err, req, res, next) {
   if (res.locals?.user?.user_id == null) return next(err);
 
   // we are only interested in cases where we are emulating a different user
-  if (res.locals.authn_user.user_id == res.locals.user.user_id) return next(err);
+  if (idsEqual(res.locals.authn_user.user_id, res.locals.user.user_id)) return next(err);
 
   // check that we have a plainUrlPrefix
   if (res.locals.plainUrlPrefix == null) return next(err);

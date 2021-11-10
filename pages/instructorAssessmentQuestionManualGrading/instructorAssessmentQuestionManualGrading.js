@@ -44,7 +44,7 @@ router.get('/', function (req, res, next) {
 
 router.post('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
-  if (req.body.__action == 'edit_question_points') {
+  if (req.body.__action === 'edit_question_points') {
     const params = [
       null, // assessment_id
       req.body.assessment_instance_id,
@@ -66,7 +66,7 @@ router.post('/', (req, res, next) => {
         res.redirect(req.originalUrl);
       });
     });
-  } else if (req.body.__action == 'edit_question_score_perc') {
+  } else if (req.body.__action === 'edit_question_score_perc') {
     const params = [
       null, // assessment_id
       req.body.assessment_instance_id,

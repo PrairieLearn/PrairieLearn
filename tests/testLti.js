@@ -44,7 +44,7 @@ describe('LTI', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 500) {
+        if (response.statusCode !== 500) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);
@@ -57,7 +57,7 @@ describe('LTI', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 500) {
+          if (response.statusCode !== 500) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           callback(null);
@@ -70,7 +70,7 @@ describe('LTI', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 400) {
+        if (response.statusCode !== 400) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);
@@ -84,7 +84,7 @@ describe('LTI', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 302) {
+          if (response.statusCode !== 302) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           callback(null);

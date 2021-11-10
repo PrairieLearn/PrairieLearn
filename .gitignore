@@ -3,6 +3,9 @@
 ## Custom scripts
 /start-custom.sh
 
+## s3rver S3 emulation data directory
+/s3rver
+
 ### https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
 docker-compose.override.yml
 

@@ -7,6 +7,7 @@ const path = require('path');
 
 const util = require('./util');
 const helperDb = require('../helperDb');
+const { idsEqual } = require('../../lib/id');
 
 const { assert } = chai;
 
@@ -215,7 +216,7 @@ describe('Question syncing', () => {
     const syncedTag = syncedTags.find((t) => t.name === newTag.name);
     const syncedQuestionTags = await util.dumpTable('question_tags');
     const syncedQuestionTag = syncedQuestionTags.find(
-      (qt) => qt.question_id === newSyncedQuestion.id && qt.tag_id === syncedTag.id
+      (qt) => idsEqual(qt.question_id, newSyncedQuestion.id) && idsEqual(qt.tag_id, syncedTag.id)
     );
     assert.ok(syncedQuestionTag);
   });

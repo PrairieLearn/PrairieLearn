@@ -58,7 +58,7 @@ module.exports = function (err, req, res, _next) {
     id: errorId,
     referrer: referrer,
   };
-  if (req.app.get('env') == 'development') {
+  if (req.app.get('env') === 'development') {
     // development error handler
     // will print stacktrace
     res.render(path.join(__dirname, 'error'), templateData);
