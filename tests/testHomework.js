@@ -233,7 +233,7 @@ describe('Homework assessment', function () {
       it('should have cleared data', function () {
         questionsArray.forEach(function (question) {
           for (var prop in question) {
-            if (prop != 'qid' && prop != 'type' && prop != 'maxPoints') {
+            if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
               delete question[prop];
             }
           }
@@ -258,7 +258,7 @@ describe('Homework assessment', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           res = response;
@@ -290,7 +290,7 @@ describe('Homework assessment', function () {
             return callback(error);
           }
           locals.postStartTime = Date.now();
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           res = response;
@@ -305,7 +305,7 @@ describe('Homework assessment', function () {
       it('should create one assessment_instance', function (callback) {
         sqldb.query(sql.select_assessment_instances, [], function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.rowCount != 1) {
+          if (result.rowCount !== 1) {
             return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
           }
           locals.assessment_instance = result.rows[0];
@@ -318,7 +318,7 @@ describe('Homework assessment', function () {
       it(`should create ${questionsArray.length} instance_questions`, function (callback) {
         sqldb.query(sql.select_instance_questions, [], function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.rowCount != questionsArray.length) {
+          if (result.rowCount !== questionsArray.length) {
             return callback(
               new Error(
                 `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
@@ -343,7 +343,7 @@ describe('Homework assessment', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           res = response;
@@ -930,7 +930,7 @@ describe('Homework assessment', function () {
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
-            key: variant.true_answer.key == 'a' ? 'b' : 'a',
+            key: variant.true_answer.key === 'a' ? 'b' : 'a',
           };
         };
       });
@@ -984,7 +984,7 @@ describe('Homework assessment', function () {
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
-            key: variant.true_answer.key == 'a' ? 'b' : 'a',
+            key: variant.true_answer.key === 'a' ? 'b' : 'a',
           };
         };
       });
@@ -1126,7 +1126,7 @@ describe('Homework assessment', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -1148,7 +1148,7 @@ describe('Homework assessment', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -1168,7 +1168,7 @@ describe('Homework assessment', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -1190,7 +1190,7 @@ describe('Homework assessment', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -1212,7 +1212,7 @@ describe('Homework assessment', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -1292,7 +1292,7 @@ describe('Homework assessment', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         res = response;
@@ -1338,7 +1338,7 @@ describe('Homework assessment', function () {
         } answer number #${iQuestionTest + 1} for question ${questionTest.qid} with score ${questionTest.score}`, function () {
           describe('setting up the submission data', function () {
             it('should succeed', function () {
-              if (questionTest.action == 'check-closed') {
+              if (questionTest.action === 'check-closed') {
                 locals.shouldHaveButtons = [];
               } else {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -1352,8 +1352,9 @@ describe('Homework assessment', function () {
                   ? questionTest.score
                   : questionTest.submission_score;
               locals.expectedResult = {
-                submission_score: questionTest.action == 'save' ? null : submission_score / 100,
-                submission_correct: questionTest.action == 'save' ? null : submission_score == 100,
+                submission_score: questionTest.action === 'save' ? null : submission_score / 100,
+                submission_correct:
+                  questionTest.action === 'save' ? null : submission_score === 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
@@ -1367,7 +1368,7 @@ describe('Homework assessment', function () {
               };
             });
           });
-          if (questionTest.action == 'store') {
+          if (questionTest.action === 'store') {
             helperQuestion.getInstanceQuestion(locals);
             describe('saving submission data', function () {
               it('should succeed', function () {
@@ -1375,7 +1376,7 @@ describe('Homework assessment', function () {
                 locals.question.questionSavedCsrfToken = locals.__csrf_token;
               });
             });
-          } else if (questionTest.action == 'save-stored-fail') {
+          } else if (questionTest.action === 'save-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'save';
@@ -1384,7 +1385,7 @@ describe('Homework assessment', function () {
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals);
-          } else if (questionTest.action == 'grade-stored-fail') {
+          } else if (questionTest.action === 'grade-stored-fail') {
             describe('restoring submission data', function () {
               it('should succeed', function () {
                 locals.postAction = 'grade';
@@ -1393,9 +1394,9 @@ describe('Homework assessment', function () {
               });
             });
             helperQuestion.postInstanceQuestionAndFail(locals);
-          } else if (questionTest.action == 'check-closed') {
+          } else if (questionTest.action === 'check-closed') {
             helperQuestion.getInstanceQuestion(locals);
-          } else if (questionTest.action == 'save' || questionTest.action == 'grade') {
+          } else if (questionTest.action === 'save' || questionTest.action === 'grade') {
             helperQuestion.getInstanceQuestion(locals);
             helperQuestion.postInstanceQuestion(locals);
             helperQuestion.checkQuestionScore(locals);

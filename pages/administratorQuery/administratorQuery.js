@@ -53,10 +53,10 @@ router.get(
       return next();
     }
 
-    if (req.query.format == 'json') {
+    if (req.query.format === 'json') {
       res.attachment(req.params.query + '.json');
       res.send(res.locals.result.rows);
-    } else if (req.query.format == 'csv') {
+    } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
       res.send(await csvMaker.resultToCsvAsync(res.locals.result));
     } else {

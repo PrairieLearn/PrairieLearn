@@ -29,19 +29,19 @@ router.get('/', (req, res, next) => {
 
 router.post('/', (req, res, next) => {
   if (!res.locals.is_administrator) return next(new Error('Insufficient permissions'));
-  if (req.body.__action == 'administrators_insert_by_user_uid') {
+  if (req.body.__action === 'administrators_insert_by_user_uid') {
     let params = [req.body.uid, res.locals.authn_user.user_id];
     sqlDb.call('administrators_insert_by_user_uid', params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'administrators_delete_by_user_id') {
+  } else if (req.body.__action === 'administrators_delete_by_user_id') {
     let params = [req.body.user_id, res.locals.authn_user.user_id];
     sqlDb.call('administrators_delete_by_user_id', params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'courses_insert') {
+  } else if (req.body.__action === 'courses_insert') {
     let params = [
       req.body.institution_id,
       req.body.short_name,
@@ -56,7 +56,7 @@ router.post('/', (req, res, next) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'courses_update_column') {
+  } else if (req.body.__action === 'courses_update_column') {
     let params = [
       req.body.course_id,
       req.body.column_name,
@@ -67,16 +67,16 @@ router.post('/', (req, res, next) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'courses_delete') {
+  } else if (req.body.__action === 'courses_delete') {
     let params = {
       course_id: req.body.course_id,
     };
     sqlDb.queryZeroOrOneRow(sql.select_course, params, (err, result) => {
       if (ERR(err, next)) return;
-      if (result.rowCount != 1) return next(new Error('course not found'));
+      if (result.rowCount !== 1) return next(new Error('course not found'));
 
       var short_name = result.rows[0].short_name;
-      if (req.body.confirm_short_name != short_name) {
+      if (req.body.confirm_short_name !== short_name) {
         return next(
           new Error(
             'deletion aborted: confirmation string "' +

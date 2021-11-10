@@ -53,7 +53,7 @@ router.get('/', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   debug('POST /');
-  if (req.body.__action == 'copy_course_instance') {
+  if (req.body.__action === 'copy_course_instance') {
     debug('Copy course instance');
     const editor = new CourseInstanceCopyEditor({
       locals: res.locals,
@@ -83,7 +83,7 @@ router.post('/', function (req, res, next) {
         }
       });
     });
-  } else if (req.body.__action == 'delete_course_instance') {
+  } else if (req.body.__action === 'delete_course_instance') {
     debug('Delete course instance');
     const editor = new CourseInstanceDeleteEditor({
       locals: res.locals,
@@ -98,7 +98,7 @@ router.post('/', function (req, res, next) {
         }
       });
     });
-  } else if (req.body.__action == 'change_id') {
+  } else if (req.body.__action === 'change_id') {
     debug(`Change short_name from ${res.locals.course_instance.short_name} to ${req.body.id}`);
     if (!req.body.id) return next(new Error(`Invalid CIID (was falsey): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
@@ -114,7 +114,7 @@ router.post('/', function (req, res, next) {
     } catch (err) {
       return next(new Error(`Invalid CIID (could not be normalized): ${req.body.id}`));
     }
-    if (res.locals.course_instance.short_name == ciid_new) {
+    if (res.locals.course_instance.short_name === ciid_new) {
       debug('The new ciid is the same as the old ciid - do nothing');
       res.redirect(req.originalUrl);
     } else {

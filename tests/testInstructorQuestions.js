@@ -11,6 +11,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
+const { idsEqual } = require('../lib/id');
 
 const locals = {};
 
@@ -58,7 +59,7 @@ describe('Instructor questions', function () {
     it('should contain questions', function (callback) {
       sqldb.query(sql.select_questions, [], function (err, result) {
         if (ERR(err, callback)) return;
-        if (result.rowCount == 0) {
+        if (result.rowCount === 0) {
           return callback(new Error('no questions in DB'));
         }
         locals.questions = result.rows;
@@ -97,7 +98,7 @@ describe('Instructor questions', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -113,25 +114,27 @@ describe('Instructor questions', function () {
       questionData.forEach((question) => assert.isObject(question));
     });
     it('should include addNumbers question', function () {
-      elemList = questionData.filter((question) => question.id == addNumbers.id);
+      elemList = questionData.filter((question) => idsEqual(question.id, addNumbers.id));
       assert.lengthOf(elemList, 1);
       assert.equal(addNumbers.qid, elemList[0].qid);
       assert.equal(addNumbers.title, elemList[0].title);
     });
     it('should include addVectors question', function () {
-      elemList = questionData.filter((question) => question.id == addVectors.id);
+      elemList = questionData.filter((question) => idsEqual(question.id, addVectors.id));
       assert.lengthOf(elemList, 1);
       assert.equal(addVectors.qid, elemList[0].qid);
       assert.equal(addVectors.title, elemList[0].title);
     });
     it('should include downloadFile question', function () {
-      elemList = questionData.filter((question) => question.id == downloadFile.id);
+      elemList = questionData.filter((question) => idsEqual(question.id, downloadFile.id));
       assert.lengthOf(elemList, 1);
       assert.equal(downloadFile.qid, elemList[0].qid);
       assert.equal(downloadFile.title, elemList[0].title);
     });
     it('should include differentiatePolynomial question', function () {
-      elemList = questionData.filter((question) => question.id == differentiatePolynomial.id);
+      elemList = questionData.filter((question) =>
+        idsEqual(question.id, differentiatePolynomial.id)
+      );
       assert.lengthOf(elemList, 1);
       assert.equal(differentiatePolynomial.qid, elemList[0].qid);
       assert.equal(differentiatePolynomial.title, elemList[0].title);
@@ -144,7 +147,7 @@ describe('Instructor questions', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -160,25 +163,27 @@ describe('Instructor questions', function () {
       questionData.forEach((question) => assert.isObject(question));
     });
     it('should include addNumbers question', function () {
-      elemList = questionData.filter((question) => question.id == addNumbers.id);
+      elemList = questionData.filter((question) => idsEqual(question.id, addNumbers.id));
       assert.lengthOf(elemList, 1);
       assert.equal(addNumbers.qid, elemList[0].qid);
       assert.equal(addNumbers.title, elemList[0].title);
     });
     it('should include addVectors question', function () {
-      elemList = questionData.filter((question) => question.id == addVectors.id);
+      elemList = questionData.filter((question) => idsEqual(question.id, addVectors.id));
       assert.lengthOf(elemList, 1);
       assert.equal(addVectors.qid, elemList[0].qid);
       assert.equal(addVectors.title, elemList[0].title);
     });
     it('should include downloadFile question', function () {
-      elemList = questionData.filter((question) => question.id == downloadFile.id);
+      elemList = questionData.filter((question) => idsEqual(question.id, downloadFile.id));
       assert.lengthOf(elemList, 1);
       assert.equal(downloadFile.qid, elemList[0].qid);
       assert.equal(downloadFile.title, elemList[0].title);
     });
     it('should include differentiatePolynomial question', function () {
-      elemList = questionData.filter((question) => question.id == differentiatePolynomial.id);
+      elemList = questionData.filter((question) =>
+        idsEqual(question.id, differentiatePolynomial.id)
+      );
       assert.lengthOf(elemList, 1);
       assert.equal(differentiatePolynomial.qid, elemList[0].qid);
       assert.equal(differentiatePolynomial.title, elemList[0].title);
@@ -345,7 +350,7 @@ describe('Instructor questions', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -367,7 +372,7 @@ describe('Instructor questions', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -387,7 +392,7 @@ describe('Instructor questions', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -409,7 +414,7 @@ describe('Instructor questions', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -431,7 +436,7 @@ describe('Instructor questions', function () {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;

@@ -49,7 +49,7 @@ describe('assessment instance group synchronization test', function () {
     it('should load successfully', function (callback) {
       request(locals.instructorAssessmentsUrlGroupTab, function (error, response, body) {
         if (ERR(error, callback)) return;
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -99,7 +99,7 @@ describe('assessment instance group synchronization test', function () {
         },
         function (err, response) {
           if (ERR(err, callback)) return;
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           callback(null);
@@ -130,7 +130,7 @@ describe('assessment instance group synchronization test', function () {
     it('should load assessment page successfully', function (callback) {
       request(locals.assessmentUrl, function (error, response, body) {
         if (ERR(error, callback)) return;
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode, { response, body }));
         }
         page = body;
@@ -156,7 +156,7 @@ describe('assessment instance group synchronization test', function () {
         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
         function (error, response, body) {
           if (ERR(error, callback)) return;
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode));
           }
           page = body;
@@ -192,7 +192,7 @@ describe('assessment instance group synchronization test', function () {
       locals.questionUrl = `${locals.siteUrl}${questionUrl}`;
       request(locals.questionUrl, function (error, response, body) {
         if (ERR(error, callback)) return;
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
         }
         page = body;
@@ -255,7 +255,7 @@ describe('assessment instance group synchronization test', function () {
         { url: locals.questionUrl, form: form, followAllRedirects: true },
         function (error, response, body) {
           if (ERR(error, callback)) return;
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
@@ -308,7 +308,7 @@ describe('assessment instance group synchronization test', function () {
         { url: locals.assessmentUrl, followAllRedirects: true },
         function (error, response, body) {
           if (ERR(error, callback)) return;
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(
               new Error('bad status: ' + response.statusCode, {
                 response,
