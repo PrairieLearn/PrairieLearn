@@ -18,8 +18,9 @@ ORDER BY
 -- BLOCK select_submissions
 SELECT
     s.*,
-    f.id AS file_id,
-    f.type AS file_type,
+    -- Removing for now. Reassessing if we want to go this route
+    -- f.id AS file_id,
+    -- f.type AS file_type,
     to_jsonb(gj) AS grading_job,
     -- These are separate for historical reasons
     gj.id AS grading_job_id,
