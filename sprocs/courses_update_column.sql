@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     courses_update_column(
         course_id bigint,
         column_name text,

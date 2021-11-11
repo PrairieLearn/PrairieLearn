@@ -1,6 +1,6 @@
 var logger = require('../lib/logger');
 
-const consoleTransport = logger.transports.find(transport => (transport.name === 'console'));
+const consoleTransport = logger.transports.find((transport) => transport.name === 'console');
 consoleTransport.level = 'warn';
 
 const helperDb = require('./helperDb');
@@ -26,8 +26,11 @@ require('./testInstructorAssessmentDownloads');
 require('./testHomework');
 require('./testExam');
 require('./testRealTimeGradingDisabled');
+require('./testShowClosedAssessment');
 require('./testShowClosedAssessmentScore');
+require('./testActiveAccessRestriction');
 require('./testGradeRate');
+require('./testBonusPoints');
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testCourseElementExtension');
@@ -53,3 +56,4 @@ require('./sync');
 require('./testGroupGenerateAndDelete');
 require('./testGroupStudent');
 require('./testGroupScoreAndSync');
+require('./permissions');

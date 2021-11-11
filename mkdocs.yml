@@ -32,7 +32,7 @@ pages:
   - 'Element for drawing': 'pl-drawing/index.md'
   - 'External grading': 'externalGrading.md'
   - 'Python autograder': 'python-grader/index.md'
-  - 'C autograder': 'c-grader/index.md'
+  - 'C/C++ autograder': 'c-grader/index.md'
   - 'Java autograder': 'java-grader/index.md'
   - 'Workspaces': 'workspaces/index.md'
   - 'Manual grading': 'manualGrading.md'
@@ -50,10 +50,6 @@ pages:
   - 'Code execution': 'codeExecution.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
-- Admin Guide:
-  - 'Adding new courses': 'admin/makeCourse.md'
-  - 'Getting deployment changelogs': 'admin/deployDiff.md'
-  - 'Autoscaling settings': 'admin/workspaceAutoscaling.md'
 - Deprecated Features:
   - 'Old v1/v2 question format': 'oldQuestion.md'
   - 'Old PrairieDraw graphics': 'PrairieDraw.md'

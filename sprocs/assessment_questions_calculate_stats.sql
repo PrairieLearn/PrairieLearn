@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_questions_calculate_stats (
         assessment_question_id_param bigint
     ) RETURNS VOID
@@ -15,7 +15,7 @@ relevant_assessment_instances AS (
         JOIN enrollments AS e ON ((e.user_id = ai.user_id OR e.user_id = gu.user_id) AND e.course_instance_id = a.course_instance_id)
     WHERE
         aq.id = assessment_question_id_param
-        AND e.role = 'Student'
+        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
 ),
 relevant_instance_questions AS (
     SELECT DISTINCT
