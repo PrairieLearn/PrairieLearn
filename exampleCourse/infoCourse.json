@@ -46,9 +46,6 @@
         {"name": "nwalter2", "color": "pink1", "description": "Question originally written by nwalter2"},
         {"name": "nnytko2", "color": "turquoise1", "description": "Question originally written by nnytko2"},
         {"name": "astec", "color": "orange2", "description": "Question originally written by andrewstec"},
-        {"name": "tpl101", "color": "gray1", "description": "Question originally written for the XC 101 example course"},
-        {"name": "v2", "color": "red1", "description": "v2 generation question"},
-        {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"},
         {"name": "pearl", "color": "yellow3", "description": "Question originally written by pearl"},
         {"name": "rstats", "color": "blue2", "description": "Question requires the use of R"}
     ]
