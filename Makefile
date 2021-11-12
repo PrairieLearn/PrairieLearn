@@ -30,6 +30,7 @@ test-nocoverage: start-support
 	@mocha tests/index.js
 test-python:
 	@python3 question-servers/freeformPythonLib/prairielearn_test.py
+	@python3 elements/pl-order-blocks/dag_checker_test.py
 
 lint: lint-js lint-python
 lint-js:
