@@ -362,10 +362,6 @@
 
   - Add warning to `pl-checkbox` if `partial-credit-method` is set but `partial-credit` is not enabled (Nathan Walters).
 
-  * Add ability to execute course/element code in Docker containers (Nathan Walters).
-
-  * Change "Save & Grade" button text and alignment (Dave Mussulman).
-
   - Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   - Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -429,10 +425,6 @@
   - Change enroll page interface to allow Bootstrap modal dialogues instead of popover tooltips with buttons on them; add more verbose description of what it means to add/remove a course. (Eric Huber)
 
   - Change file editor to simplify the use of drafts and to improve the user interface (Tim Bretl).
-
-  * Change code callers to include `serverFilesCourse` in the Python path when executing course element code (Nathan Walters).
-
-  * Fix load-reporting close during unit tests (Matt West).
 
   - Fix load-reporting close during unit tests (Matt West).
 
