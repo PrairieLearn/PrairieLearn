@@ -1828,7 +1828,7 @@ if (config.startServer) {
       },
       async () => {
         if (config.workersExecutionMode === 'container') {
-            await codeCallerDocker.init();
+          await codeCallerDocker.init();
         }
       },
       function (callback) {

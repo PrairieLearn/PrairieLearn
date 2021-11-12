@@ -86,7 +86,7 @@ function handleInput(line, caller) {
             functionMissing,
             needsFullRestart: false,
           });
-        },
+        }
       );
     });
   });

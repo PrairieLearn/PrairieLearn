@@ -12,7 +12,7 @@ const { execa, getImageTag, getImageName, loginToEcr, getEcrRegistryUrl } = requ
   console.log('Pulling image from ECR registry');
   const ecrImageName = `${ecrRegistryUrl}/${imageName}`;
   await execa('docker', ['pull', ecrImageName]);
-})().catch(e => {
+})().catch((e) => {
   console.error(e);
   process.exit(1);
 });

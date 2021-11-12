@@ -1,5 +1,8 @@
 node_modules
 
+# Code coverage reports
+coverage/
+
 # The `public/localscripts/calculationQuestion` directory unfortunately
 # contains a mixture of first-party and vendored third-party scripts. We want
 # to format our own scripts, but we should avoid formatting anything that was

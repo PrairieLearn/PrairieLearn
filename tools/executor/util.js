@@ -7,9 +7,9 @@ AWS.config.update({ region: AWS_REGION });
 
 /**
  * Wrapper around `execa` that logs commands as they're run.
- * 
- * @param {string} file 
- * @param {string[]} args 
+ *
+ * @param {string} file
+ * @param {string[]} args
  * @param {import('execa').Options} [options]
  */
 const execa = (file, args, options) => {
@@ -46,7 +46,9 @@ const loginToEcr = async () => {
 
   const ecrRegistryUrl = await getEcrRegistryUrl();
 
-  await execa('docker', ['login', '--username', user, '--password-stdin', ecrRegistryUrl], { input: password });
+  await execa('docker', ['login', '--username', user, '--password-stdin', ecrRegistryUrl], {
+    input: password,
+  });
 };
 
 module.exports = {
@@ -57,4 +59,3 @@ module.exports = {
   loginToEcr,
   getEcrRegistryUrl,
 };
-

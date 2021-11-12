@@ -2,9 +2,9 @@
 
 Central to PrairieLearn is the ability to securely execute arbitrary code. There are three primary contexts in which PrairieLearn must execute code:
 
-* **Question and element code**: This is code from a question's `server.py` or any PrairieLearn/course [elements](elements.md). This code must execute as quickly as possible, as it will be executed any time a question is rendered or graded and thus needs to render during a single HTTP request.
-* [**Externally-graded questions**](externalGrading.md): This is code submitted by a student and graded for them by course code. This code can take longer to execute and is queued to be executed on a distributed set of machines.
-* [**Workspaces**](workspaces/): This is an interactive environment in which a student can write and execute code, in contrast to the non-interactive batch execution by external graders. Workspaces can persist for many hours and so they are executed on a distributed set of machines (the _workspace hosts_, a distinct set from the _external grader hosts_).
+- **Question and element code**: This is code from a question's `server.py` or any PrairieLearn/course [elements](elements.md). This code must execute as quickly as possible, as it will be executed any time a question is rendered or graded and thus needs to render during a single HTTP request.
+- [**Externally-graded questions**](externalGrading.md): This is code submitted by a student and graded for them by course code. This code can take longer to execute and is queued to be executed on a distributed set of machines.
+- [**Workspaces**](workspaces/): This is an interactive environment in which a student can write and execute code, in contrast to the non-interactive batch execution by external graders. Workspaces can persist for many hours and so they are executed on a distributed set of machines (the _workspace hosts_, a distinct set from the _external grader hosts_).
 
 The [external grading docs](externalGrading.md) and [workspace docs](workspaces/) describe those execution modes in more detail. This document is primarily concerned with describing how question and element code is executed.
 
@@ -16,7 +16,7 @@ To solve this, we've borrowed Android's concept of a [zygote process](https://de
 
 ## The worker pool
 
-A single PrairieLearn server may be serving potentially hundreds or thousands of assessments at one time. To handle this, we actually run a pool of zygotes described above that we call the *worker pool*. The pool maintains `N` zygotes and distributes requests to execute Python code across them. Requests are queued and handled in a FIFO basis. The worker pool also handles detecting unhealthy zygotes and replacing them with new ones.
+A single PrairieLearn server may be serving potentially hundreds or thousands of assessments at one time. To handle this, we actually run a pool of zygotes described above that we call the _worker pool_. The pool maintains `N` zygotes and distributes requests to execute Python code across them. Requests are queued and handled in a FIFO basis. The worker pool also handles detecting unhealthy zygotes and replacing them with new ones.
 
 ## Execution modes
 
@@ -38,7 +38,7 @@ This is still how PrairieLearn functions by default for local development. The `
 
 The `container` execution mode is currently used when PrairieLearn is running in production. It uses Docker to provide a degree of isolation from both PrairieLearn and other courses.
 
-Instead of using a pool of zygotes as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script (the *executor*), which in turn runs a Python zygote. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the zygote as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we ocasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
+Instead of using a pool of zygotes as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script (the _executor_), which in turn runs a Python zygote. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the zygote as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we ocasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
 
 This mode also allows us to isolate one course from another so that course A cannot see content from course B, and vice versa. To achieve this, we take advantage of bind mounts. When creating a container, PrairieLearn also creates a special directory on the host, and then mounts that directory to `/course` in the container. To execute content for course A, PrairieLearn first bind mounts that course's directory to the container's host directory. This is transitive to the container, which will now see that course's content at `/course`. In the future, when a different course's code needs to be executed in that container, PrairieLearn will simply update the bind mount to point to the other course.
 
@@ -48,21 +48,21 @@ So far, this discussion has been pretty abstract. But what about all the actual 
 
 ### Code callers
 
-A *code caller* serves as an abstraction on top of the different execution modes above and hides the implementation details of exactly how code is executed. There are currently two different types of code callers, referred to here by the filenames of their implementations.
+A _code caller_ serves as an abstraction on top of the different execution modes above and hides the implementation details of exactly how code is executed. There are currently two different types of code callers, referred to here by the filenames of their implementations.
 
-* `lib/code-caller-docker` handles executing code inside of Docker containers, as required by the `container` execution mode.
-* `lib/code-caller-python` handles executing Python processes directly, as required by the `native` execution mode.
+- `lib/code-caller-docker` handles executing code inside of Docker containers, as required by the `container` execution mode.
+- `lib/code-caller-python` handles executing Python processes directly, as required by the `native` execution mode.
 
 The primary external interface of these callers is the `call()` function, which takes five arguments:
 
-* `type`: the type of code being executed (either `question`, `course-element`, or `core-element`).
-* `directory`: the directory containing the file whose code will be executed.
-  * For questions, this is an item in a course's `questions` directory.
-  * For course elements, this is an item in a course's `elements` directory.
-  * For core elements, this is an item in PrairieLearn's `elements` directory.
-* `file`: the name of the file whose code will be executed (e.g. `server.py`)
-* `fcn`: the name of the function in `file` that will be executed (e.g. `grade` or `render`).
-* `args`: an array of JSON-encodeable arguments to the function being called.
+- `type`: the type of code being executed (either `question`, `course-element`, or `core-element`).
+- `directory`: the directory containing the file whose code will be executed.
+  - For questions, this is an item in a course's `questions` directory.
+  - For course elements, this is an item in a course's `elements` directory.
+  - For core elements, this is an item in PrairieLearn's `elements` directory.
+- `file`: the name of the file whose code will be executed (e.g. `server.py`)
+- `fcn`: the name of the function in `file` that will be executed (e.g. `grade` or `render`).
+- `args`: an array of JSON-encodeable arguments to the function being called.
 
 The piece of code to execute is specified by (`type`, `directory`, `file`) instead of an absolute path because the location of each file on disk may change between each type of code caller; allowing the code caller to construct the path from that information keeps the code that uses a caller agnostic to the underlying caller being used.
 

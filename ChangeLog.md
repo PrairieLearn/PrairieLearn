@@ -365,6 +365,7 @@
   * Add ability to execute course/element code in Docker containers (Nathan Walters).
 
   * Change "Save & Grade" button text and alignment (Dave Mussulman).
+
   - Change "Save & Grade" button text and alignment (Dave Mussulman).
 
   - Change Ace editor to use source files from npm and upgrade to 1.4.1 from 1.2.8 (Nathan Walters).
@@ -432,6 +433,7 @@
   * Change code callers to include `serverFilesCourse` in the Python path when executing course element code (Nathan Walters).
 
   * Fix load-reporting close during unit tests (Matt West).
+
   - Fix load-reporting close during unit tests (Matt West).
 
   - Fix PL / scheduler linking stored procedure to allow linked exams and fix bugs (Dave Mussulman).

@@ -20,7 +20,7 @@ const { execa, getImageName, loginToEcr, getEcrRegistryUrl, getImageTag } = requ
   const ecrImageName = `${ecrRegistryUrl}/${imageName}`;
   await execa('docker', ['tag', imageName, ecrImageName]);
   await execa('docker', ['push', ecrImageName]);
-})().catch(e => {
+})().catch((e) => {
   console.error(e);
   process.exit(1);
 });
