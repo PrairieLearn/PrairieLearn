@@ -906,6 +906,12 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - There are three levels at which “open” status is tracked, as follows. If `open = false` for any object then it will block the creation of new objects below it. For example, to create a new submission the corresponding variant, instance_question, and assessment_instance must all be open.
 
+| Variable                   | Allow new `instance_questions` | Allow new `variants` | Allow new `submissions` |
+| -------------------------- | ------------------------------ | -------------------- | ----------------------- |
+| `assessment_instance.open` | ✓                              | ✓                    | ✓                       |
+| `instance_question.open`   |                                | ✓                    | ✓                       |
+| `variant.open`             |                                |                      | ✓                       |
+
 ## Errors in question handling
 
 - We distinguish between two different types of student errors:
