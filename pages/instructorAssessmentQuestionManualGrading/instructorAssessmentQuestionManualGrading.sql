@@ -15,12 +15,15 @@ WHERE
 SELECT DISTINCT ON (iq.id)
     iq.*,
     s.graded_at,
-    ai.id AS assessment_instance_id
+    ai.id AS assessment_instance_id,
+    u.uid,
+    u.name AS user_name
 FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     JOIN variants AS v ON (v.instance_question_id = iq.id)
     JOIN submissions s ON (s.variant_id = v.id)
+    JOIN users u ON (u.user_id = ai.user_id)
 WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id

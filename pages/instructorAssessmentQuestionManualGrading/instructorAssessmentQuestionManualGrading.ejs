@@ -29,6 +29,8 @@
             <thead>
               <tr>
                 <th>Student question</th>
+                <th>UID</th>
+                <th>Name</th>
                 <th class="text-center">
                   Awarded points
                 </th>
@@ -46,6 +48,12 @@
                 <td>
                   <%= question_title %>
                   (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">student view</a>)
+                </td>
+                <td>
+                  <%= instance_question.uid %>
+                </td>
+                <td>
+                  <%= instance_question.user_name %>
                 </td>
                 <td class="text-center">
                   <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: max_points}); %>
@@ -107,6 +115,8 @@
             <thead>
               <tr>
                 <th>Student question</th>
+                <th>UID</th>
+                <th>Name</th>
                 <th class="text-center">
                   Awarded points
                 </th>
@@ -124,6 +134,12 @@
                 <td>
                   <%= question_title %>
                   (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">student view</a>)
+                </td>
+                <td>
+                  <%= instance_question.uid %>
+                </td>
+                <td>
+                  <%= instance_question.user_name %>
                 </td>
                 <td class="text-center">
                   <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: max_points}); %>
