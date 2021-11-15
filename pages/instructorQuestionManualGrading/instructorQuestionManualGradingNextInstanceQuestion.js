@@ -6,13 +6,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const logger = require('../../lib/logger');
 const sqlDb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(
-  path.join(
-    __dirname,
-    '..',
-    'instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading.sql'
-  )
-);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
   const params = {
@@ -20,12 +14,11 @@ router.get('/', (req, res, next) => {
     assessment_id: res.locals.assessment.id,
   };
 
-  sqlDb.query(sql.select_instance_questions_manual_grading, params, function (err, result) {
+  sqlDb.queryZeroOrOneRow(sql.get_next_ungraded_instance_question, params, function (err, result) {
     if (ERR(err, next)) return;
-    let rows = result.rows.filter((iq) => !iq.graded_at);
 
     // If we have no more submissions, then redirect back to manual grading page
-    if (!rows[0]) {
+    if (!result.rows[0]) {
       logger.info(
         'ManualGradingNextInstanceQuestion: No more submissions, back to manual grading page.'
       );
@@ -38,7 +31,7 @@ router.get('/', (req, res, next) => {
     logger.info(
       'ManualGradingNextInstanceQuestion: Found next submission to grading, redirecting.'
     );
-    const instance_question_id = rows[0].id;
+    const instance_question_id = result.rows[0].id;
     res.redirect(
       `${res.locals.urlPrefix}/instance_question/${instance_question_id}/manual_grading`
     );
