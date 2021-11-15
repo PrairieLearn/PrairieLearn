@@ -14,7 +14,7 @@ const schemas = require('../schemas');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
 const { FunctionMissingError } = require('../lib/code-caller-shared');
-const workers = require('../lib/code-callers');
+const codeCallers = require('../lib/code-callers');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
@@ -40,7 +40,7 @@ module.exports = {
   },
 
   close: function (callback) {
-    workers.finish((err) => {
+    codeCallers.finish((err) => {
       if (ERR(err, callback)) return;
       callback(null);
     });
@@ -1013,7 +1013,7 @@ module.exports = {
         options: _.defaults({}, course.options, question.options),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(course.path, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'generate',
@@ -1022,7 +1022,7 @@ module.exports = {
           context,
           (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
             // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
+            codeCallers.returnPythonCaller(pc, (pcErr) => {
               if (ERR(pcErr, callback)) return;
               if (ERR(err, callback)) return;
               const ret_vals = {
@@ -1053,7 +1053,7 @@ module.exports = {
         options: _.get(variant, 'options', {}),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(course.path, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'prepare',
@@ -1062,7 +1062,7 @@ module.exports = {
           context,
           (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
             // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
+            codeCallers.returnPythonCaller(pc, (pcErr) => {
               if (ERR(pcErr, callback)) return;
               if (ERR(err, callback)) return;
               const ret_vals = {
@@ -1180,7 +1180,7 @@ module.exports = {
     const courseIssues = [];
     let panelCount = 0,
       cacheHitCount = 0;
-    workers.getPythonCaller(course.path, (err, pc) => {
+    codeCallers.getPythonCaller(course.path, (err, pc) => {
       if (ERR(err, callback)) return;
       async.series(
         [
@@ -1495,7 +1495,7 @@ module.exports = {
         ],
         (err) => {
           // don't immediately error here; we have to return the pythonCaller
-          workers.returnPythonCaller(pc, (pcErr) => {
+          codeCallers.returnPythonCaller(pc, (pcErr) => {
             if (ERR(pcErr, callback)) return;
             if (ERR(err, callback)) return;
             callback(null, courseIssues, htmls);
@@ -1527,7 +1527,7 @@ module.exports = {
         context,
         (callback) => {
           // function to compute the file data and return the cachedData
-          workers.getPythonCaller(course.path, (err, pc) => {
+          codeCallers.getPythonCaller(course.path, (err, pc) => {
             if (ERR(err, callback)) return;
             module.exports.processQuestion(
               'file',
@@ -1536,7 +1536,7 @@ module.exports = {
               context,
               (err, courseIssues, _data, _html, fileData) => {
                 // don't immediately error here; we have to return the pythonCaller
-                workers.returnPythonCaller(pc, (pcErr) => {
+                codeCallers.returnPythonCaller(pc, (pcErr) => {
                   if (ERR(pcErr, callback)) return;
                   if (ERR(err, callback)) return;
                   const fileDataBase64 = (fileData || '').toString('base64');
@@ -1578,7 +1578,7 @@ module.exports = {
         gradable: _.get(submission, 'gradable', true),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(course.path, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'parse',
@@ -1587,7 +1587,7 @@ module.exports = {
           context,
           (err, courseIssues, data, _html, _fileData) => {
             // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
+            codeCallers.returnPythonCaller(pc, (pcErr) => {
               if (ERR(pcErr, callback)) return;
               if (ERR(err, callback)) return;
               if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -1630,7 +1630,7 @@ module.exports = {
         gradable: submission.gradable,
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(course.path, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'grade',
@@ -1639,7 +1639,7 @@ module.exports = {
           context,
           (err, courseIssues, data, _html, _fileData) => {
             // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
+            codeCallers.returnPythonCaller(pc, (pcErr) => {
               if (ERR(pcErr, callback)) return;
               if (ERR(err, callback)) return;
               if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -1684,7 +1684,7 @@ module.exports = {
         test_type: test_type,
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(course.path, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'test',
@@ -1693,7 +1693,7 @@ module.exports = {
           context,
           (err, courseIssues, data, _html, _fileData) => {
             // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
+            codeCallers.returnPythonCaller(pc, (pcErr) => {
               if (ERR(pcErr, callback)) return;
               if (ERR(err, callback)) return;
               if (_.size(data.format_errors) > 0) data.gradable = false;
