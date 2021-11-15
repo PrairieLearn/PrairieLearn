@@ -13,12 +13,28 @@ const helperServer = require('./helperServer');
 // const helperQuestion = require('./helperQuestion');
 // const helperAttachFiles = require('./helperAttachFiles');
 
+const querystring = require('querystring');
+const imagemagick = require('imagemagick');
+const pdfParse = require('pdf-parse');
+const fsPromises = require('fs').promises;
+
+const maxPageLimit = 500;
+const base64Prefix = 'data:application/pdf;base64,';
+
+const getScrapPaperPayload = ($page, numPages, pageLabel) => {
+  return {
+    num_pages: numPages,
+    page_label: pageLabel,
+    __csrf_token: $page('form > input[name="__csrf_token"]').val(),
+    __action: $page('form > input[name="__action"]').val(),
+  };
+}
+
 describe('Scrap paper', function () {
   this.timeout(60000);
 
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
-  // const scanPaperUrl = baseUrl + '/scan_paper';
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
@@ -27,15 +43,106 @@ describe('Scrap paper', function () {
     let scrapPaperPage;
     let $scrapPaper;
 
-    it('should be able to load page and find payload values', async () => {
-      const res = await fetch(scrapPaperUrl);
-      assert.equal(res.status, 200);
-      scrapPaperPage = await res.text();
-      $scrapPaper = cheerio.load(scrapPaperPage);
-      const numPages = $scrapPaper('#num_pages');
-      const pageLabel = $scrapPaper('#page_label');
-      assert(numPages.length, 1);
-      assert(pageLabel.length, 1);
+    describe('GET', () => {
+      before('fetch page', async () => {
+        const res = await fetch(scrapPaperUrl);
+        assert.equal(res.status, 200);
+        $scrapPaper = cheerio.load(await res.text());
+      });
+
+      it('should not display a PDF document', () => {
+        const pdfContainer = $scrapPaper('.pdf-container');
+        assert.lengthOf(pdfContainer, 0);
+      });
+
+      it('should display PDF generation form', () => {
+        const numPages = $scrapPaper('#num_pages');
+        const pageLabel = $scrapPaper('#page_label');
+        assert.lengthOf(numPages, 1);
+        assert.lengthOf(pageLabel, 1);
+      });
+    });
+
+    describe('POST', () => {
+
+      before('POST "make_scrap_paper" payload', async () => {
+        const payload = getScrapPaperPayload($scrapPaper, maxPageLimit, 'TEST LABEL');
+        const res = await fetch(scrapPaperUrl, {
+          method: 'POST',
+          headers: {'Content-type': 'application/x-www-form-urlencoded'},
+          body: querystring.encode(payload),
+        });
+        assert.equal(res.status, 200);
+        $scrapPaper = cheerio.load(await res.text());
+      });
+      // will need to use PDF barcode reader here
+      it('should display barcodes in UPPERCASE on PDF document', () => {
+
+      });
+      // will need to use iamgemagick
+      it('should produce number of pages specified', async () => {
+        const data = $scrapPaper('iframe')[0].attribs.src.replace(base64Prefix, '');
+
+      // IMAGE MAGICK IDENTIFY() METHOD DOES NOT WORK WITH 500 PAGE PDF.
+        // const filepath = './output.pdf';
+        // const fileOut = await fsPromises.writeFile(filepath, data, 'base64');
+      //
+      //   1) Scrap paper
+      //   Generate scrap paper
+      //     POST
+      //       should produce number of pages specified:
+      // Error: Command failed: 
+      //  at ChildProcess.<anonymous> (node_modules/imagemagick/imagemagick.js:88:15)
+      //  at ChildProcess.emit (domain.js:475:12)
+      //  at maybeClose (internal/child_process.js:1058:16)
+      //  at Socket.<anonymous> (internal/child_process.js:443:11)
+      //  at Socket.emit (domain.js:475:12)
+      //  at Pipe.<anonymous> (net.js:686:12)
+      //  at Pipe.callbackTrampoline (internal/async_hooks.js:130:17)
+
+        // const output = await new Promise((resolve, reject) => {
+        //   imagemagick.identify(filepath, (err, output) => {
+        //     if (err) {
+        //       reject(err);
+        //     }
+        //     resolve(output);
+        //   });
+        // });
+
+        const buffer = Buffer.from(data, 'base64');
+        const pdf = await pdfParse(buffer)
+        assert.equal(pdf.numpages, maxPageLimit);
+      });
+      it('should produce number of barcodes that equal specified number of pages', () => {
+
+      });
+      it('should produce barcodes starting on number of rows found barcodes table', () => {
+
+      });
+      it('should checksum sha16 successfully against base64 barcode components', () => {
+
+      });
+      it('should produce barcodes formatted with spacing ie. (xxxx xxxx xxxx)', () => {
+
+      });
     });
   });
+});
+
+describe('Scan paper', function () {
+  this.timeout(60000);
+
+  // const scanPaperUrl = baseUrl + '/scan_paper';
+
+  describe('GET', () => {
+
+  });
+
+  describe('POST', () => {
+    it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {
+
+    });
+
+  });
+
 });
