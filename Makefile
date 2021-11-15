@@ -46,8 +46,12 @@ format-js:
 	@eslint --ext js --fix "**/*.js"
 	@prettier --write "**/*.{js,ts,md}"
 
-typecheck:
+typecheck: typecheck-js typecheck-python
+typecheck-js:
 	@tsc
+typecheck-python:
+	@pyright elements/pl-order-blocks/dag*.py  # TODO enable for all Python
+
 depcheck:
 	-depcheck --ignore-patterns=public/**
 	@echo WARNING:
