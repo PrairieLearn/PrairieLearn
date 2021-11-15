@@ -5,8 +5,13 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const sqlDb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(path.join(__dirname,"..", "instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading.sql"));
-
+const sql = sqlLoader.loadSqlEquiv(
+  path.join(
+    __dirname,
+    '..',
+    'instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading.sql'
+  )
+);
 
 router.get('/', (req, res, next) => {
   const params = {

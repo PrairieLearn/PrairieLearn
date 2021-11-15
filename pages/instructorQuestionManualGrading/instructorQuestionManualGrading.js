@@ -127,9 +127,8 @@ router.post('/', function (req, res, next) {
       }
     );
 
-  // } else if (req.body.__action === 'update_manual_grade') {
+    // } else if (req.body.__action === 'update_manual_grade') {
     // TODO: Update grade in DB?
-
   } else {
     return next(
       error.make(400, 'unknown __action', {
