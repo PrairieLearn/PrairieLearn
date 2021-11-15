@@ -18,7 +18,7 @@ async function checkPermissions(users) {
     result.rows.map((row) => row.uid)
   );
   users.forEach((user) => {
-    const row = result.rows.find((row) => row.uid == user.uid);
+    const row = result.rows.find((row) => row.uid === user.uid);
     if (!user.cr) {
       assert.isNotOk(row);
     } else {
@@ -30,7 +30,7 @@ async function checkPermissions(users) {
 }
 
 function updatePermissions(users, uid, cr, cir) {
-  var user = users.find((user) => user.uid == uid);
+  var user = users.find((user) => user.uid === uid);
   if (!user) {
     user = { uid: uid };
     users.push(user);

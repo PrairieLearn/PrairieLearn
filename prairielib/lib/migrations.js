@@ -51,7 +51,7 @@ module.exports._initWithLock = function (callback) {
         // Alter the migrations table if needed
         sqldb.query('SELECT project FROM migrations;', [], (err, _result) => {
           if (err) {
-            if (err.routine == 'errorMissingColumn') {
+            if (err.routine === 'errorMissingColumn') {
               logger.info('Altering migrations table');
               sqldb.query(sql.alter_migrations_table, [], (err, _result) => {
                 if (ERR(err, callback)) return;

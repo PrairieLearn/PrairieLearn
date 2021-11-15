@@ -149,7 +149,7 @@ router.post('/', function (req, res, next) {
   // not change student data. Statistics *should* be recalculated automatically,
   // e.g., every time this page is loaded, but until then we will let anyone who
   // can view the page post this action and trigger a recalculation.
-  if (req.body.__action == 'refresh_stats') {
+  if (req.body.__action === 'refresh_stats') {
     var params = [res.locals.assessment.id];
     sqldb.call('assessment_questions_calculate_stats_for_assessment', params, function (err) {
       if (ERR(err, next)) return;

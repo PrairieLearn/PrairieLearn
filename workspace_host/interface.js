@@ -113,11 +113,11 @@ app.post(
       res.status(500).send('Missing workspace_id');
     } else if (action == null) {
       res.status(500).send('Missing action');
-    } else if (action == 'init') {
+    } else if (action === 'init') {
       await initSequenceAsync(workspace_id, useInitialZip, res);
-    } else if (action == 'reset') {
+    } else if (action === 'reset') {
       resetSequence(workspace_id, res);
-    } else if (action == 'getGradedFiles') {
+    } else if (action === 'getGradedFiles') {
       gradeSequence(workspace_id, res);
     } else {
       res.status(500).send(`Action '${action}' undefined`);
@@ -228,7 +228,7 @@ async.series(
         // Handle new files
         logger.info(`Watching file add ${filename}`);
         var key = [filename, false];
-        if (key in update_queue && update_queue[key].action == 'skip') {
+        if (key in update_queue && update_queue[key].action === 'skip') {
           delete update_queue[key];
         } else {
           update_queue[key] = { action: 'update' };
@@ -238,7 +238,7 @@ async.series(
         // Handle new directory
         logger.info(`Watching directory add ${filename}`);
         var key = [filename, true];
-        if (key in update_queue && update_queue[key].action == 'skip') {
+        if (key in update_queue && update_queue[key].action === 'skip') {
           delete update_queue[key];
         } else {
           update_queue[key] = { action: 'update' };
@@ -248,7 +248,7 @@ async.series(
         // Handle file changes
         logger.info(`Watching file change ${filename}`);
         var key = [filename, false];
-        if (key in update_queue && update_queue[key].action == 'skip') {
+        if (key in update_queue && update_queue[key].action === 'skip') {
           delete update_queue[key];
         } else {
           update_queue[key] = { action: 'update' };
@@ -331,7 +331,7 @@ async.series(
         instance_id: workspace_server_settings.instance_id,
       });
       await async.eachSeries(result.rows, async (ws) => {
-        if (ws.state == 'launching') {
+        if (ws.state === 'launching') {
           /* We don't know what state the container is in, kill it and let the user
                    retry initializing it */
           await workspaceHelper.updateState(ws.id, 'stopped', 'Status unknown');
@@ -345,7 +345,7 @@ async.series(
           } catch (err) {
             debug(`Couldn't find container: ${err}`);
           }
-        } else if (ws.state == 'running') {
+        } else if (ws.state === 'running') {
           if (ws.launch_uuid) {
             await pushContainerContentsToS3(ws);
           } else {
@@ -376,7 +376,7 @@ async.series(
  * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
  */
 async function pushContainerContentsToS3(workspace) {
-  if (workspace.homedir_location != 'S3') {
+  if (workspace.homedir_location !== 'S3') {
     /* Nothing to do if we're not on S3 */
     return;
   }
@@ -407,7 +407,7 @@ async function pushAllRunningContainersToS3() {
     instance_id: workspace_server_settings.instance_id,
   });
   await async.eachSeries(result.rows, async (ws) => {
-    if (ws.state == 'running' && ws.homedir_location == 'S3') {
+    if (ws.state === 'running' && ws.homedir_location === 'S3') {
       logger.info(
         `Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`
       );
@@ -472,7 +472,7 @@ async function pruneRunawayContainers() {
   }
 
   await async.each(running_workspaces, async (container_info) => {
-    if (container_info.Names.length != 1) return;
+    if (container_info.Names.length !== 1) return;
     const name = container_info.Names[0].substring(1); /* Remove the preceding forward slash */
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     await dockerAttemptKillAndRemove(container_info.Id);
@@ -761,7 +761,7 @@ async function _autoUpdateJobManager() {
   for (const key in update_queue) {
     logger.info(`_autoUpdateJobManager: key=${key}`);
     const [path, isDirectory_str] = key.split(',');
-    const isDirectory = isDirectory_str == 'true';
+    const isDirectory = isDirectory_str === 'true';
     const { workspace_id, local_path } = await _getRunningWorkspaceByPathAsync(path);
     logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
     if (workspace_id == null) continue;
@@ -794,7 +794,7 @@ async function _autoUpdateJobManager() {
     }
 
     logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
-    if (update_queue[key].action == 'update') {
+    if (update_queue[key].action === 'update') {
       logger.info(`_autoUpdateJobManager: adding update job`);
       jobs.push((callback) => {
         logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
@@ -810,7 +810,7 @@ async function _autoUpdateJobManager() {
           callback(null); // always return success to keep going
         });
       });
-    } else if (update_queue[key].action == 'delete') {
+    } else if (update_queue[key].action === 'delete') {
       logger.info(`_autoUpdateJobManager: adding delete job`);
       jobs.push((callback) => {
         logger.info(`Removing file from S3: ${s3_path}`);
@@ -1080,7 +1080,7 @@ function _createContainer(workspace, callback) {
   let workspacePath; /* Where docker will see the jobs (host path outside docker container) */
   let workspaceJobPath; /* Where we are putting the job files relative to the server (/jobs inside docker container) */
 
-  if (workspace.homedir_location == 'S3') {
+  if (workspace.homedir_location === 'S3') {
     jobDirectory = config.workspaceJobsDirectory;
     const workspaceDir = process.env.HOST_JOBS_DIR
       ? path.join(process.env.HOST_JOBS_DIR, 'workspaces')
@@ -1088,7 +1088,7 @@ function _createContainer(workspace, callback) {
 
     workspacePath = path.join(workspaceDir, localName);
     workspaceJobPath = path.join(jobDirectory, localName);
-  } else if (workspace.homedir_location == 'FileSystem') {
+  } else if (workspace.homedir_location === 'FileSystem') {
     jobDirectory = config.workspaceHostHomeDirRoot;
     const workspaceDir = process.env.HOST_JOBS_DIR
       ? path.join(process.env.HOST_JOBS_DIR, 'workspaces')
@@ -1102,7 +1102,7 @@ function _createContainer(workspace, callback) {
 
   const containerPath = workspace.settings.workspace_home;
   let args = workspace.settings.workspace_args.trim();
-  if (args.length == 0) {
+  if (args.length === 0) {
     args = null;
   } else {
     args = args.split(' ');
@@ -1133,7 +1133,7 @@ function _createContainer(workspace, callback) {
   async.series(
     [
       async () => {
-        if (workspace.homedir_location == 'FileSystem') {
+        if (workspace.homedir_location === 'FileSystem') {
           try {
             await fsPromises.access(workspaceJobPath);
           } catch (err) {
@@ -1266,7 +1266,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 
     /* We only need to worry about the initial zip or syncing files if we're running on S3.
            Filesystem-backed workspaces can get away with no initial syncing steps. */
-    if (homedir_location == 'S3') {
+    if (homedir_location === 'S3') {
       try {
         if (useInitialZip) {
           debug(`init: bootstrapping workspace with initial.zip`);
@@ -1376,7 +1376,7 @@ function gradeSequence(workspace_id, res) {
         zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
 
         let homeDir;
-        if (workspace.homedir_location == 'S3') {
+        if (workspace.homedir_location === 'S3') {
           homeDir = path.join(config.workspaceJobsDirectory, workspace.local_name);
         } else {
           homeDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');

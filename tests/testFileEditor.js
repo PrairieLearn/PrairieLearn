@@ -331,7 +331,7 @@ function badGet(url) {
           return callback(error);
         }
         locals.postStartTime = Date.now();
-        if (response.statusCode != 400) {
+        if (response.statusCode !== 400) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);
@@ -361,7 +361,7 @@ function badPost(action, fileEditContents, url) {
             return callback(error);
           }
           locals.postEndTime = Date.now();
-          if (response.statusCode != 400) {
+          if (response.statusCode !== 400) {
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           callback(null);
@@ -511,7 +511,7 @@ function editPost(
             return callback(error);
           }
           locals.postEndTime = Date.now();
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
@@ -522,7 +522,7 @@ function editPost(
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    if (action == 'save_and_sync' || action == 'pull_and_save_and_sync') {
+    if (action === 'save_and_sync' || action === 'pull_and_save_and_sync') {
       verifyEdit(
         expectedToFindResults,
         expectedToFindChoice,
@@ -546,7 +546,7 @@ function findEditUrl(name, selector, url, expectedEditUrl) {
           return callback(error);
         }
         locals.postStartTime = Date.now();
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -695,7 +695,7 @@ function editGet(
           return callback(error);
         }
         locals.postStartTime = Date.now();
-        if (response.statusCode != 200) {
+        if (response.statusCode !== 200) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -904,7 +904,7 @@ function pullAndVerifyFileNotInDev(fileName) {
     it('should not exist', function (callback) {
       fs.access(path.join(courseDevDir, fileName), (err) => {
         if (err) {
-          if (err.code == 'ENOENT') callback(null);
+          if (err.code === 'ENOENT') callback(null);
           else callback(new Error(`got wrong error: ${err}`));
         } else {
           callback(new Error(`${fileName} should not exist, but does`));
@@ -985,7 +985,7 @@ function waitForJobSequence(locals, expectedResult) {
         sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
           if (ERR(err, callback)) return;
           locals.job_sequence_status = result.rows[0].status;
-          if (locals.job_sequence_status == 'Running') {
+          if (locals.job_sequence_status === 'Running') {
             setTimeout(checkComplete, 10);
           } else {
             callback(null);

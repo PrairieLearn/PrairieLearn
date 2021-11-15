@@ -78,7 +78,7 @@ router.get('/', function (req, res, next) {
 
 router.get('/:filename', function (req, res, next) {
   setFilenames(res.locals);
-  if (req.params.filename == res.locals.scoreStatsCsvFilename) {
+  if (req.params.filename === res.locals.scoreStatsCsvFilename) {
     let params = { assessment_id: res.locals.assessment.id };
     sqldb.queryOneRow(sql.assessment_stats, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -132,7 +132,7 @@ router.get('/:filename', function (req, res, next) {
         res.send(csv);
       });
     });
-  } else if (req.params.filename == res.locals.durationStatsCsvFilename) {
+  } else if (req.params.filename === res.locals.durationStatsCsvFilename) {
     let params = { assessment_id: res.locals.assessment.id };
     sqldb.queryOneRow(sql.assessment_duration_stats, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -178,7 +178,7 @@ router.get('/:filename', function (req, res, next) {
         res.send(csv);
       });
     });
-  } else if (req.params.filename == res.locals.statsByDateCsvFilename) {
+  } else if (req.params.filename === res.locals.statsByDateCsvFilename) {
     let params = { assessment_id: res.locals.assessment.id };
     sqldb.query(sql.assessment_score_histogram_by_date, params, function (err, result) {
       if (ERR(err, next)) return;

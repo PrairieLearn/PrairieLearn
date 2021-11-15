@@ -63,7 +63,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
       nzig = 3;
       dx = len / (nzig + 4);
     }
-    if (nzig % 2 == 0) {
+    if (nzig % 2 === 0) {
       nzig += 1;
       dx = len / (nzig + 4);
     }
@@ -865,7 +865,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     let spl = str.split('$');
 
     for (let i = 0; i < spl.length; i++) {
-      if (i % 2 == 0) {
+      if (i % 2 === 0) {
         /* Text */
         if (spl[i].length > 0) {
           /* Ignore empty strings */
@@ -961,7 +961,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.image = null;
     this.label = text;
 
-    if (text != '') {
+    if (text) {
       this.gen_text(this.label, options);
     }
 
@@ -987,7 +987,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
   initialize: function (options) {
     this.callSuper('initialize', options);
     this.spacing = options.spacing;
-    this.anchor_is_tail = options.anchor_is_tail == 'true';
+    this.anchor_is_tail = options.anchor_is_tail === 'true';
     this.w1 = options.w1;
     this.w2 = options.w2;
     this.width = options.range;
@@ -2244,8 +2244,10 @@ mechanicsObjects.byType['pl-polygon'] = class extends PLDrawingBaseElement {
 
 mechanicsObjects.byType['pl-line'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
-    let obj = new fabric.Line([options.x1, options.y1, options.x2, options.y2], options);
-
+    let obj = new fabric.Line(
+      [options.x1, options.y1, options.x2, options.y2],
+      _.omit(options, 'left', 'top')
+    );
     obj.setControlVisible('bl', false);
     obj.setControlVisible('tl', false);
     obj.setControlVisible('br', false);
@@ -2474,7 +2476,7 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
     for (let i = 0; i < options.label_list.length; i++) {
       var xL = options.left;
       var yL = options.top;
-      if (options.label_list[i]['axis'] == 'x') {
+      if (options.label_list[i]['axis'] === 'x') {
         xL += options.label_list[i]['pos'];
         yL += 10;
         if ('offsetx' in options.label_list[i]) {
@@ -2483,7 +2485,7 @@ mechanicsObjects.byType['pl-axes'] = class extends PLDrawingBaseElement {
         if ('offsety' in options.label_list[i]) {
           yL -= options.label_list[i]['offsety'];
         }
-      } else if (options.label_list[i]['axis'] == 'y') {
+      } else if (options.label_list[i]['axis'] === 'y') {
         yL -= options.label_list[i]['pos'];
         xL -= 20;
         if ('offsetx' in options.label_list[i]) {
@@ -2903,7 +2905,7 @@ mechanicsObjects.byType['pl-vector'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-paired-vector'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
     // pick matching colors for both arrows; these rotate throughout the page
-    if (typeof this.myIndex == 'undefined') {
+    if (typeof this.myIndex === 'undefined') {
       this.myIndex = 0;
     } else {
       this.myIndex += 1;
@@ -3182,7 +3184,7 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
     let anchor = opts['anchor_is_tail'];
 
     let file_name;
-    if (w1 == w2) {
+    if (w1 === w2) {
       file_name = 'DUD';
     } else if (w1 < w2 && anchor === 'true') {
       file_name = 'DTDA';
