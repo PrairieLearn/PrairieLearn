@@ -333,7 +333,7 @@ module.exports.ecrUpdate = function (locals, callback) {
           job_sequence_id,
         };
 
-        if (index == lastIndex) {
+        if (index === lastIndex) {
           jobOptions.last_in_sequence = true;
         }
 

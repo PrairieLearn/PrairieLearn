@@ -11,7 +11,7 @@ router.get('/', function (req, res) {
 });
 
 router.post('/', function (req, res) {
-  if (req.body.__action == 'assessmentPassword') {
+  if (req.body.__action === 'assessmentPassword') {
     var pl_pw_origUrl = req.cookies.pl_pw_origUrl;
     var maxAge = 1000 * 60 * 60 * 12; // 12 hours
 

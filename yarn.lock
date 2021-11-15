@@ -8020,6 +8020,11 @@ pupa@^2.0.1:
   dependencies:
     escape-goat "^2.0.0"
 
+pyright@^1.1.184:
+  version "1.1.184"
+  resolved "https://registry.yarnpkg.com/pyright/-/pyright-1.1.184.tgz#83ec29ca4f0fa5a8871b0d15dcf1fbecbe372686"
+  integrity sha512-SK/2cvIdj9hrkDasxVahK3Keo2fWgwN5phjwOyWGobW5KN1HLYWXQX335ls1FvC0ccWpGZfOBSmTWSu/JjpgFg==
+
 qrcode-svg@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/qrcode-svg/-/qrcode-svg-1.1.0.tgz#2087549843dc5d0a3f8e8aa046cd9bcf23708cc3"

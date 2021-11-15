@@ -103,7 +103,7 @@ describe('Access control', function () {
       if (error) {
         return callback(error);
       }
-      if (response.statusCode != 200) {
+      if (response.statusCode !== 200) {
         return callback(new Error('bad status: ' + response.statusCode));
       }
       page = body;
@@ -175,7 +175,7 @@ describe('Access control', function () {
       if (error) {
         return callback(error);
       }
-      if (response.statusCode != 200) {
+      if (response.statusCode !== 200) {
         return callback(new Error('bad status: ' + response.statusCode));
       }
       page = body;
@@ -217,7 +217,7 @@ describe('Access control', function () {
       if (error) {
         return callback(error);
       }
-      if (response.statusCode != expectedStatusCode) {
+      if (response.statusCode !== expectedStatusCode) {
         return callback(new Error('bad status: ' + response.statusCode));
       }
       page = body;
@@ -269,7 +269,7 @@ describe('Access control', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != expectedStatusCode) {
+        if (response.statusCode !== expectedStatusCode) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         page = body;
@@ -305,7 +305,7 @@ describe('Access control', function () {
       if (error) {
         return callback(error);
       }
-      if (response.statusCode != expectedStatusCode) {
+      if (response.statusCode !== expectedStatusCode) {
         return callback(new Error('bad status: ' + response.statusCode));
       }
       page = body;
@@ -332,7 +332,7 @@ describe('Access control', function () {
     it('should produce an addVectors instance_question in the DB', function (callback) {
       sqldb.query(sql.select_instance_question_addVectors, [], function (err, result) {
         if (ERR(err, callback)) return;
-        if (result.rowCount == 0) {
+        if (result.rowCount === 0) {
           return callback(new Error('did not find addVectors instance question in DB'));
         } else if (result.rowCount > 1) {
           return callback(
@@ -358,7 +358,7 @@ describe('Access control', function () {
       if (error) {
         return callback(error);
       }
-      if (response.statusCode != expectedStatusCode) {
+      if (response.statusCode !== expectedStatusCode) {
         return callback(new Error('bad status: ' + response.statusCode));
       }
       page = body;
@@ -427,7 +427,7 @@ describe('Access control', function () {
         if (error) {
           return callback(error);
         }
-        if (response.statusCode != expectedStatusCode) {
+        if (response.statusCode !== expectedStatusCode) {
           return callback(new Error('bad status: ' + response.statusCode));
         }
         callback(null);

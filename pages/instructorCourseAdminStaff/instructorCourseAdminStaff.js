@@ -7,6 +7,7 @@ const logger = require('../../lib/logger');
 const error = require('../../prairielib/lib/error');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const { idsEqual } = require('../../lib/id');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -30,7 +31,7 @@ router.post('/', (req, res, next) => {
     return next(error.make(403, 'Access denied (must be course owner)'));
   }
 
-  if (req.body.__action == 'course_permissions_insert_by_multi_user_uid') {
+  if (req.body.__action === 'course_permissions_insert_by_multi_user_uid') {
     // Get set of unique, non-empty UIDs with no leading or trailing whitespaces
     let uids = new Set(
       req.body.uid
@@ -40,7 +41,7 @@ router.post('/', (req, res, next) => {
     );
 
     // Verify there is at least one UID
-    if (uids.length == 0) return next(error.make(400, 'Empty list of UIDs'));
+    if (uids.length === 0) return next(error.make(400, 'Empty list of UIDs'));
 
     // Verify the requested course role is valid - we choose to disallow Owner
     // because we want to discourage the assignment of this role to many users
@@ -52,8 +53,8 @@ router.post('/', (req, res, next) => {
     // role is valid (should such a role have been requested)
     let course_instance = null;
     if (req.body.course_instance_id) {
-      course_instance = res.locals.authz_data.course_instances.find(
-        (ci) => ci.id == req.body.course_instance_id
+      course_instance = res.locals.authz_data.course_instances.find((ci) =>
+        idsEqual(ci.id, req.body.course_instance_id)
       );
       if (!course_instance) return next(error.make(400, `Invalid requested course instance role`));
     }
@@ -180,7 +181,7 @@ router.post('/', (req, res, next) => {
         res.redirect(req.originalUrl);
       }
     );
-  } else if (req.body.__action == 'course_permissions_insert_by_user_uid') {
+  } else if (req.body.__action === 'course_permissions_insert_by_user_uid') {
     let uid = req.body.uid.trim();
     if (!uid) return next(error.make(400, `Empty UID`));
 
@@ -189,13 +190,16 @@ router.post('/', (req, res, next) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'course_permissions_update_role') {
-    if (req.body.user_id == res.locals.user.user_id && !res.locals.authz_data.is_administrator) {
+  } else if (req.body.__action === 'course_permissions_update_role') {
+    if (
+      idsEqual(req.body.user_id, res.locals.user.user_id) &&
+      !res.locals.authz_data.is_administrator
+    ) {
       return next(error.make(403, 'Owners cannot change their own course content access'));
     }
 
     if (
-      req.body.user_id == res.locals.authn_user.user_id &&
+      idsEqual(req.body.user_id, res.locals.authn_user.user_id) &&
       !res.locals.authz_data.is_administrator
     ) {
       return next(
@@ -227,13 +231,16 @@ router.post('/', (req, res, next) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'course_permissions_delete') {
-    if (req.body.user_id == res.locals.user.user_id && !res.locals.authz_data.is_administrator) {
+  } else if (req.body.__action === 'course_permissions_delete') {
+    if (
+      idsEqual(req.body.user_id, res.locals.user.user_id) &&
+      !res.locals.authz_data.is_administrator
+    ) {
       return next(error.make(403, 'Owners cannot remove themselves from the course staff'));
     }
 
     if (
-      req.body.user_id == res.locals.authn_user.user_id &&
+      idsEqual(req.body.user_id, res.locals.authn_user.user_id) &&
       !res.locals.authz_data.is_administrator
     ) {
       return next(
@@ -253,7 +260,7 @@ router.post('/', (req, res, next) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'course_instance_permissions_update_role_or_delete') {
+  } else if (req.body.__action === 'course_instance_permissions_update_role_or_delete') {
     // Again, we could make some effort to verify that the user is still a
     // member of the course staff and that they still have student data access
     // in the given course instance. We choose not to do this for the same
@@ -261,7 +268,9 @@ router.post('/', (req, res, next) => {
 
     if (req.body.course_instance_id) {
       if (
-        !res.locals.authz_data.course_instances.find((ci) => ci.id == req.body.course_instance_id)
+        !res.locals.authz_data.course_instances.find((ci) =>
+          idsEqual(ci.id, req.body.course_instance_id)
+        )
       ) {
         return next(error.make(400, `Invalid requested course instance role`));
       }
@@ -295,14 +304,16 @@ router.post('/', (req, res, next) => {
         res.redirect(req.originalUrl);
       });
     }
-  } else if (req.body.__action == 'course_instance_permissions_insert') {
+  } else if (req.body.__action === 'course_instance_permissions_insert') {
     // Again, we could make some effort to verify that the user is still a
     // member of the course staff. We choose not to do this for the same
     // reason as above (see handler for course_permissions_update_role).
 
     if (req.body.course_instance_id) {
       if (
-        !res.locals.authz_data.course_instances.find((ci) => ci.id == req.body.course_instance_id)
+        !res.locals.authz_data.course_instances.find((ci) =>
+          idsEqual(ci.id, req.body.course_instance_id)
+        )
       ) {
         return next(error.make(400, `Invalid requested course instance role`));
       }
@@ -321,21 +332,21 @@ router.post('/', (req, res, next) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'delete_non_owners') {
+  } else if (req.body.__action === 'delete_non_owners') {
     debug('Delete non-owners');
     const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
     sqldb.call('course_permissions_delete_non_owners', params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'delete_no_access') {
+  } else if (req.body.__action === 'delete_no_access') {
     debug('Delete users with no access');
     const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
     sqldb.call('course_permissions_delete_users_without_access', params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'remove_all_student_data_access') {
+  } else if (req.body.__action === 'remove_all_student_data_access') {
     debug('Remove all student data access');
     const params = [res.locals.course.id, res.locals.authz_data.authn_user.user_id];
     sqldb.call('course_instance_permissions_delete_all', params, (err, _result) => {

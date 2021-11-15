@@ -5,6 +5,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const { idsEqual } = require('../../lib/id');
 
 const util = require('./util');
 const helperDb = require('../helperDb');
@@ -284,8 +285,8 @@ describe('Assessment syncing', () => {
     assessment.allowAccess.shift();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
-    const rulesForAssessment = syncedAssessmentAccessRules.filter(
-      (aar) => aar.assessment_id === originalSyncedAssessment.id
+    const rulesForAssessment = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, originalSyncedAssessment.id)
     );
     assert.lengthOf(rulesForAssessment, 1);
     assert.equal(rulesForAssessment[0].mode, 'Public');
@@ -307,8 +308,8 @@ describe('Assessment syncing', () => {
     const syncedAssessment = syncedAssessments.find((a) => a.tid === 'newexam');
 
     const assessmentAccessRules = await util.dumpTable('assessment_access_rules');
-    const assessmentAccessRule = assessmentAccessRules.find(
-      (aar) => aar.assessment_id === syncedAssessment.id
+    const assessmentAccessRule = assessmentAccessRules.find((aar) =>
+      idsEqual(aar.assessment_id, syncedAssessment.id)
     );
     const { uids } = assessmentAccessRule;
     assert.isArray(uids, 'uids should be an array');
