@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const logger = require('./lib/logger');
 const sqlDb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(
@@ -25,11 +26,18 @@ router.get('/', (req, res, next) => {
 
     // If we have no more submissions, then redirect back to manual grading page
     if (!rows[0]) {
+      logger.info(
+        'ManualGradingNextInstanceQuestion: No more submissions, back to manual grading page.'
+      );
       res.redirect(
         `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`
       );
       return;
     }
+
+    logger.info(
+      'ManualGradingNextInstanceQuestion: Found next submission to grading, redirecting.'
+    );
     const instance_question_id = rows[0].id;
     res.redirect(
       `${res.locals.urlPrefix}/instance_question/${instance_question_id}/manual_grading`
