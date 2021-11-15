@@ -14,9 +14,9 @@ const helperServer = require('./helperServer');
 // const helperAttachFiles = require('./helperAttachFiles');
 
 const querystring = require('querystring');
-const imagemagick = require('imagemagick');
+// const imagemagick = require('imagemagick');
 const pdfParse = require('pdf-parse');
-const fsPromises = require('fs').promises;
+// const fsPromises = require('fs').promises;
 
 const maxPageLimit = 500;
 const base64Prefix = 'data:application/pdf;base64,';
@@ -40,7 +40,6 @@ describe('Scrap paper', function () {
   after('shut down testing server', helperServer.after);
 
   describe('Generate scrap paper', () => {
-    let scrapPaperPage;
     let $scrapPaper;
 
     describe('GET', () => {
