@@ -7,7 +7,7 @@ const question = require('../../lib/question');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
 const sqlDb = require('../../prairielib/lib/sql-db');
-const logger = require('./lib/logger');
+const logger = require('../../lib/logger');
 
 // Other cases to figure out later: grading in progress, question is broken...
 router.get('/', (req, res, next) => {
