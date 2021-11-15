@@ -113,6 +113,9 @@
                 <th class="text-center" colspan="2">
                   Percentage score
                 </th>
+                <th class="text-center" colspan="1">
+                  Begin Grading
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -153,6 +156,9 @@
                     <i class="fa fa-edit" aria-hidden="true"></i>
                   </button>
                   <% } %>
+                </td>
+                <td class="text-center">
+                  <a class="btn btn-xs btn-secondary" href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/manual_grading"><i class="fa fa-arrow-right" aria-hidden="true"></i></a>
                 </td>
               </tr>
               <% }); %>
