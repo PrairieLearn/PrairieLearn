@@ -5,9 +5,9 @@ const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
 const config = require('../lib/config');
-// const sqldb = require('../prairielib/lib/sql-db');
-// const sqlLoader = require('../prairielib/lib/sql-loader');
-// const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 // const helperQuestion = require('./helperQuestion');
@@ -15,6 +15,7 @@ const helperServer = require('./helperServer');
 
 const querystring = require('querystring');
 // const imagemagick = require('imagemagick');
+const jsCrc = require('js-crc');
 const pdfParse = require('pdf-parse');
 // const fsPromises = require('fs').promises;
 
@@ -29,6 +30,14 @@ const getScrapPaperPayload = ($page, numPages, pageLabel) => {
     __action: $page('form > input[name="__action"]').val(),
   };
 }
+const getBarcodeSegments = (barcode) => {
+    const sha16 = barcode.substring(barcode.length - 4, barcode.length);
+    return {
+      fullBarcode: barcode,
+      sha16,
+      base64: barcode.replace(sha16, ''),
+    };
+};
 
 describe('Scrap paper', function () {
   this.timeout(60000);
@@ -41,6 +50,8 @@ describe('Scrap paper', function () {
 
   describe('Generate scrap paper', () => {
     let $scrapPaper;
+    let pdf;
+    let barcodeRows;
 
     describe('GET', () => {
       before('fetch page', async () => {
@@ -74,10 +85,6 @@ describe('Scrap paper', function () {
         assert.equal(res.status, 200);
         $scrapPaper = cheerio.load(await res.text());
       });
-      // will need to use PDF barcode reader here
-      it('should display barcodes in UPPERCASE on PDF document', () => {
-
-      });
       // will need to use iamgemagick
       it('should produce number of pages specified', async () => {
         const data = $scrapPaper('iframe')[0].attribs.src.replace(base64Prefix, '');
@@ -109,20 +116,28 @@ describe('Scrap paper', function () {
         // });
 
         const buffer = Buffer.from(data, 'base64');
-        const pdf = await pdfParse(buffer)
+        pdf = await pdfParse(buffer)
         assert.equal(pdf.numpages, maxPageLimit);
       });
-      it('should produce number of barcodes that equal specified number of pages', () => {
-
+      it('should produce number of barcodes that equal specified number of pages', async () => {
+        barcodeRows = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
+        assert.lengthOf(barcodeRows, pdf.numpages);
       });
-      it('should produce barcodes starting on number of rows found barcodes table', () => {
-
+      it('should display barcodes in UPPERCASE on PDF document and in database', () => {
+        // TO DO once pdf reader working with barcode scanner
       });
       it('should checksum sha16 successfully against base64 barcode components', () => {
-
+        barcodeRows.forEach((row) => {
+          const {fullBarcode, base64, sha16} = getBarcodeSegments(row.barcode);
+          const recomputedSha16 = jsCrc.crc16(base64);
+          assert.equal(recomputedSha16, sha16);
+        });
+      });
+      it('should produce barcodes starting on number of rows found barcodes table', () => {
+        // TO DO once other things are done and more time
       });
       it('should produce barcodes formatted with spacing ie. (xxxx xxxx xxxx)', () => {
-
+        // nice to have ? TO DO? 
       });
     });
   });

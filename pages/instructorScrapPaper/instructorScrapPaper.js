@@ -58,9 +58,8 @@ const generateBarcodes = async (numBarcodes) => {
 const createBarcodeSVGs = async (barcodes) => {
   const svgs = [];
   for (let i = 0; i < barcodes.length; i++) {
-    // TO DO: Substitute bitgener with library that supports label formatting with spaces 'sxcxc xvcxcv vvcxvs'
     const result = await bitgener({
-      data: barcodes[i],
+      data: barcodes[i].toUpperCase(),
       type: 'code128',
       output: 'buffer',
       encoding: 'utf8',
