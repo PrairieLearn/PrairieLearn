@@ -4,7 +4,7 @@ SELECT
     q.qid,
     q.title,
     q.id AS question_id,
-    -- admin_assessment_question_number(aq.id) as number,
+    admin_assessment_question_number(aq.id) as number,
     ag.number AS alternative_group_number,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
     (SELECT COUNT(DISTINCT iq.id)
