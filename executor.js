@@ -1,6 +1,7 @@
 // @ts-check
 const readline = require('readline');
-const { PythonCaller, FunctionMissingError } = require('./lib/code-caller-python');
+const { PythonCaller } = require('./lib/code-caller-python');
+const { FunctionMissingError } = require('./lib/code-caller-shared');
 
 /**
  * @typedef {Object} Request

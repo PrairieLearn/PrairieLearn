@@ -17,7 +17,7 @@ const syncFromDisk = require('../sync/syncFromDisk');
 const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
-const workers = require('../lib/workers');
+const codeCallers = require('../lib/code-callers');
 const tracing = require('../lib/tracing');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
@@ -99,8 +99,8 @@ module.exports = {
             callback(null);
           },
           function (callback) {
-            debug('before(): initialize workers');
-            workers.init();
+            debug('before(): initialize code callers');
+            codeCallers.init();
             callback(null);
           },
           function (callback) {
@@ -157,7 +157,7 @@ module.exports = {
       [
         function (callback) {
           debug('after(): finish workers');
-          workers.finish((err) => {
+          codeCallers.finish((err) => {
             if (ERR(err, callback)) return;
             callback(null);
           });

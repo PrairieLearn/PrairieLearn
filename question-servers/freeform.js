@@ -13,8 +13,8 @@ const { promisify, callbackify } = require('util');
 const schemas = require('../schemas');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
-const codeCaller = require('../lib/code-caller-python');
-const workers = require('../lib/workers');
+const { FunctionMissingError } = require('../lib/code-caller-shared');
+const workers = require('../lib/code-callers');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
@@ -40,7 +40,7 @@ module.exports = {
   },
 
   close: function (callback) {
-    codeCaller.waitForFinish((err) => {
+    workers.finish((err) => {
       if (ERR(err, callback)) return;
       callback(null);
     });
@@ -322,7 +322,7 @@ module.exports = {
       const type = `${resolvedElementType}-element`;
       const directory = resolvedElementName;
       pc.call(type, directory, pythonFile, fcn, pythonArgs, (err, ret, consoleLog) => {
-        if (err instanceof codeCaller.FunctionMissingError) {
+        if (err instanceof FunctionMissingError) {
           // function wasn't present in server
           return resolve([module.exports.defaultElementFunctionRet(fcn, dataCopy), '']);
         }
@@ -352,7 +352,7 @@ module.exports = {
       const type = `${resolvedElementType}-element`;
       const directory = resolvedElementName;
       pc.call(type, directory, pythonFile, fcn, pythonArgs, (err, ret, consoleLog) => {
-        if (err instanceof codeCaller.FunctionMissingError) {
+        if (err instanceof FunctionMissingError) {
           // function wasn't present in server
           debug(`elementFunction(): function not present`);
           return callback(null, module.exports.defaultElementFunctionRet(fcn, dataCopy), '');
@@ -409,7 +409,7 @@ module.exports = {
       const type = 'question';
       const directory = context.question.directory;
       pc.call(type, directory, pythonFile, pythonFunction, pythonArgs, (err, ret, consoleLog) => {
-        if (err instanceof codeCaller.FunctionMissingError) {
+        if (err instanceof FunctionMissingError) {
           // function wasn't present in server
           debug(`execPythonServer(): function not present`);
           return callback(null, module.exports.defaultServerRet(phase, data, html, context), '');

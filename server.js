@@ -46,7 +46,7 @@ const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
-const workers = require('./lib/workers');
+const codeCallers = require('./lib/code-callers');
 const codeCallerDocker = require('./lib/code-caller-docker');
 const assets = require('./lib/assets');
 
@@ -1832,7 +1832,7 @@ if (config.startServer) {
         }
       },
       function (callback) {
-        workers.init();
+        codeCallers.init();
         callback(null);
       },
       async () => {
