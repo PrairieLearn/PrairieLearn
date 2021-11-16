@@ -128,7 +128,7 @@ describe('Scrap paper', function () {
       });
       it('should checksum sha16 successfully against base64 barcode components', () => {
         barcodeRows.forEach((row) => {
-          const {fullBarcode, base64, sha16} = getBarcodeSegments(row.barcode);
+          const {base64, sha16} = getBarcodeSegments(row.barcode);
           const recomputedSha16 = jsCrc.crc16(base64);
           assert.equal(recomputedSha16, sha16);
         });
