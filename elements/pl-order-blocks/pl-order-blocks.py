@@ -80,7 +80,8 @@ def prepare(element_html, data):
         elif grading_method in ['ranking', 'ordered']:
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
         elif grading_method == 'dag':
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'tag', 'depends'])
+            # 'distractor-for' and 'distractor-type' are to help keep track of types of distractors for research purposes not publicly documented because we might change them later
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'tag', 'depends', 'distractor-for', 'distractor-type'])
 
         is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
         answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
