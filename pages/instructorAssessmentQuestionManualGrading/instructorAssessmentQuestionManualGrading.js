@@ -32,7 +32,11 @@ router.get('/', function (req, res, next) {
       assessment_id: res.locals.assessment.id,
       assessment_question_id: res.locals.assessment_question_id,
     };
-    sqlDb.query(sql.select_instance_questions_manual_grading, params, function (err, result) {
+
+    let query = res.locals.assessment.group_work
+      ? sql.select_instance_questions_manual_grading_groups
+      : sql.select_instance_questions_manual_grading;
+    sqlDb.query(query, params, function (err, result) {
       if (ERR(err, next)) return;
       res.locals.instance_questions_to_grade = result.rows.filter(isGradable);
       res.locals.instance_questions_graded = result.rows.filter((iq) => !isGradable(iq));

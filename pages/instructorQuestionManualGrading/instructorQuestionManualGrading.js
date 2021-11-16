@@ -7,6 +7,7 @@ const question = require('../../lib/question');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
 const sqlDb = require('../../prairielib/lib/sql-db');
+const logger = require('../../lib/logger');
 
 // Other cases to figure out later: grading in progress, question is broken...
 router.get('/', (req, res, next) => {
@@ -20,7 +21,6 @@ router.get('/', (req, res, next) => {
           params,
           (err, result) => {
             if (ERR(err, next)) return;
-
             // Instance question doesn't exist (redirect to config page)
             if (result.rowCount === 0) {
               return callback(
@@ -44,6 +44,10 @@ router.get('/', (req, res, next) => {
               );
             }
 
+            logger.info('QuestionManualGrading: Found Question To Grade in DB.', {
+              instance_question_id: res.locals.instance_question.id,
+              result_row: result.rows[0],
+            });
             res.locals.question = result.rows[0].question;
             res.locals.variant = result.rows[0].variant;
             res.locals.submission = result.rows[0].submission;
@@ -54,8 +58,20 @@ router.get('/', (req, res, next) => {
       },
       (callback) => {
         res.locals.overlayGradingInterface = true;
+        logger.info('QuestionManualGrading: About to render question for grading.', {
+          instance_question_id: res.locals.instance_question.id,
+          question: res.locals.question,
+          variant: res.locals.variant,
+          submission: res.locals.submission,
+        });
         question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
           if (ERR(err, next)) return;
+          logger.info('QuestionManualGrading: Question Rendered.', {
+            instance_question_id: res.locals.instance_question.id,
+            question: res.locals.question,
+            variant: res.locals.variant,
+            submission: res.locals.submission,
+          });
           callback(null);
         });
       },
@@ -126,7 +142,8 @@ router.post('/', function (req, res, next) {
         });
       }
     );
-  } else if (req.body.__action === 'update_manual_grade') {
+
+    // } else if (req.body.__action === 'update_manual_grade') {
     // TODO: Update grade in DB?
   } else {
     return next(
