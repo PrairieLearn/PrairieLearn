@@ -44,7 +44,7 @@ router.get('/', (req, res, next) => {
               );
             }
 
-            logger.info('QuestionManualGrading: Found Question To Grade in DB.');
+            logger.info('QuestionManualGrading: Found Question To Grade in DB.', {instance_question_id: res.locals.instance_question.id, result_row: result.rows[0]});
             res.locals.question = result.rows[0].question;
             res.locals.variant = result.rows[0].variant;
             res.locals.submission = result.rows[0].submission;
