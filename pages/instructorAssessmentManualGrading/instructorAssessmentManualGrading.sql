@@ -13,15 +13,20 @@ SELECT
          JOIN variants AS v ON (v.instance_question_id = iq.id)
          JOIN submissions AS s ON (s.variant_id = v.id)
      WHERE
-         iq.assessment_question_id = aq.id) AS num_submissions,
-    (SELECT COUNT(DISTINCT iq.id)
-     FROM
-         instance_questions AS iq
-         JOIN variants AS v ON (v.instance_question_id = iq.id)
-         JOIN submissions AS s ON (s.variant_id = v.id)
-     WHERE
          iq.assessment_question_id = aq.id
-         AND s.graded_at IS NULL) AS num_ungraded_submissions
+    ) AS num_submissions,
+    (SELECT COUNT(*) FROM
+        (SELECT DISTINCT ON (iq.id) iq.id, s.graded_at
+         FROM
+             instance_questions AS iq
+             JOIN variants AS v ON (v.instance_question_id = iq.id)
+             JOIN submissions AS s ON (s.variant_id = v.id)
+         WHERE
+             iq.assessment_question_id = aq.id
+         GROUP BY iq.id, s.date, s.graded_at
+         ORDER BY iq.id DESC, s.date DESC
+         ) AS submission_info
+     WHERE submission_info.graded_at IS NULL) AS num_ungraded_submissions
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
