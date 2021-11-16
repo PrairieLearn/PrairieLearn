@@ -60,13 +60,17 @@ router.get('/', (req, res, next) => {
         res.locals.overlayGradingInterface = true;
         logger.info('QuestionManualGrading: About to render question for grading.', {
           instance_question_id: res.locals.instance_question.id,
-          result_row: result.rows[0],
+          question: res.locals.question,
+          variant: res.locals.variant,
+          submission: res.locals.submission,
         });
         question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
           if (ERR(err, next)) return;
           logger.info('QuestionManualGrading: Question Rendered.', {
             instance_question_id: res.locals.instance_question.id,
-            result_row: result.rows[0],
+            question: res.locals.question,
+            variant: res.locals.variant,
+            submission: res.locals.submission,
           });
           callback(null);
         });
