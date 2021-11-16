@@ -7,12 +7,34 @@ BLANK_ANSWER = ''
 REQUIRED = 'required'
 REQUIRED_DEFAULT = True
 
+def crc16arc(msg):
+    '''
+    CRC-16/ARC
+    This algorithm has to match the 'js-crc' npm algorithm, which was assumed to be the same as this.
+    https://stackoverflow.com/questions/63167168/trying-to-find-the-input-for-crc16-ibm
+    '''
+    crc = 0
+    for b in msg:
+        crc ^= b
+        for _ in range(8):
+            crc = (crc >> 1) ^ 0xa001 if crc & 1 else crc >> 1
+    return crc
+
+def is_invalid_barcode(barcode):
+    barcode = barcode.lower()
+    sha16 = barcode[len(barcode)-4:len(barcode)]
+    base32 = barcode.replace(sha16, '')
+    recomputed_sha16 = hex(crc16arc(bytes(base32, encoding='utf-8')))
+    if sha16 in recomputed_sha16:
+        return False
+    else: 
+        return True
 
 def prepare(element_html, data):
     lxml.html.fragment_fromstring(element_html)
 
-
 def render(element_html, data):
+    # element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
 
     if data['panel'] == 'question':
@@ -44,10 +66,12 @@ def parse(element_html, data):
     del data['submitted_answers'][BARCODE]
 
     data['submitted_answers'][BARCODE] = submitted_barcode
+    
+    if isinstance(submitted_barcode, str) is not True:
+        data['format_errors'][BARCODE] = 'Barcode is not a valid string'
+        return
 
-    if submitted_barcode != '' and submitted_barcode.isnumeric() is False:
-        data['format_errors'][BARCODE] = 'Barcode "' + submitted_barcode + '" is not a valid number.'
-    elif len(submitted_barcode) != 13:
-        data['format_errors'][BARCODE] = 'Barcode must be 13 digits.'
+    if submitted_barcode != '' and is_invalid_barcode(submitted_barcode):
+        data['format_errors'][BARCODE] = 'Barcode "' + submitted_barcode + '" is invalid.'
     elif submitted_barcode is BLANK_ANSWER and required is True:
-        data['format_errors'][BARCODE] = 'Submitting your work is required for this question. Submit the barcode attached to your written work.'
+        data['format_errors'][BARCODE] = 'A barcode associated with your written work MUST be submitted for this question!'
