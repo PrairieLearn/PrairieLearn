@@ -1,9 +1,9 @@
 <script>
-    $(function(){
+    $(() => {
         $('#pl-artifact-scan-{{uuid}} [data-toggle="popover"]').popover({
             sanitize: false,
             container: 'body',
-            template: '<div class="popover pl-dropdown-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+            template: '<div class="popover pl-artifact-scan-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
     });
 </script>
@@ -22,7 +22,7 @@
         {{^parse-error}}
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
             <label for="_pl_artifact_barcode">Barcode</label>
-            <input type="text" id="barcode" name="_pl_artifact_barcode" value="{{barcode}}">
+            <input type="text" id="barcode" disabled name="_pl_artifact_barcode" value="{{barcode}}">
         {{/parse-error}}
 
         {{#parse-error}}

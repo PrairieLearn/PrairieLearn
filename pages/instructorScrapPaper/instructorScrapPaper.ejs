@@ -11,14 +11,14 @@
     <div id="content" class="container">
 
         <!--PDF Generated in iframe for Download-->
-        <div class="pdf-container">
-            <% if (typeof pdf !== 'undefined') { %>
+        <% if (typeof pdf !== 'undefined') { %>
+            <div class="pdf-container">
                 <iframe id="pdf-iframe" width="100%" height="600px" type="text/html" src="data:application/pdf;base64,<%= pdf %>"></iframe>
-            <% } %>
-        </div>
+            </div>
+        <% } %>
 
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Generate a Printable Barcoded Scrap Paper PDF</div>
+            <div class="card-header bg-primary text-white">Generate a PDF Document Containing Barcoded Scrap Paper</div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="__action" value="make_scrap_paper">
