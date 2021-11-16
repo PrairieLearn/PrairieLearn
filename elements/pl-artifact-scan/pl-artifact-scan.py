@@ -34,13 +34,16 @@ def prepare(element_html, data):
     lxml.html.fragment_fromstring(element_html)
 
 def render(element_html, data):
-    # element = lxml.html.fragment_fromstring(element_html)
+    element = lxml.html.fragment_fromstring(element_html)
+    submitted_barcode = data['submitted_answers'].get(BARCODE, '').strip()
+    required = pl.get_boolean_attrib(element, REQUIRED, REQUIRED_DEFAULT)
     uuid = pl.get_uuid()
-
+    
     if data['panel'] == 'question':
         html_params = {
             'question': True,
             'uuid': uuid,
+            'required': required
         }
     else:
         html_params = {
