@@ -27,7 +27,7 @@ router.get('/', (req, res, next) => {
                 error.make(404, 'Instance question not found.', {
                   locals: res.locals,
                   body: req.body,
-                })
+                }),
               );
             }
 
@@ -40,7 +40,7 @@ router.get('/', (req, res, next) => {
                 error.make(404, 'No gradable submissions found.', {
                   locals: res.locals,
                   body: req.body,
-                })
+                }),
               );
             }
 
@@ -53,7 +53,7 @@ router.get('/', (req, res, next) => {
             res.locals.submission = result.rows[0].submission;
             res.locals.score_perc = res.locals.submission.score * 100;
             callback(null);
-          }
+          },
         );
       },
       (callback) => {
@@ -79,7 +79,7 @@ router.get('/', (req, res, next) => {
     (err) => {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    },
   );
 
   debug('GET /');
@@ -134,13 +134,13 @@ router.post('/', function (req, res, next) {
             '_gradeVariantWithClient()',
             'inserted',
             'grading_job.id:',
-            res.locals['grading_job'].id
+            res.locals['grading_job'].id,
           );
           res.redirect(
-            `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`
+            `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`,
           );
         });
-      }
+      },
     );
 
     // } else if (req.body.__action === 'update_manual_grade') {
@@ -150,7 +150,7 @@ router.post('/', function (req, res, next) {
       error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
+      }),
     );
   }
 });
