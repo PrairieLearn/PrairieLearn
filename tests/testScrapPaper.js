@@ -39,7 +39,7 @@ const getBarcodeSegments = (barcode) => {
     };
 };
 
-describe('Scrap paper', function () {
+describe('Scrap paper view', function () {
   this.timeout(60000);
 
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
@@ -143,7 +143,13 @@ describe('Scrap paper', function () {
   });
 });
 
-describe('Scan paper', function () {
+describe('Pl-artifact-scan element', () => {
+  it('should be able to submit a valid barcode', () => {
+    
+  });
+});
+
+describe('Scan paper view', function () {
   this.timeout(60000);
 
   // const scanPaperUrl = baseUrl + '/scan_paper';
@@ -156,7 +162,6 @@ describe('Scan paper', function () {
     it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {
 
     });
-
+x
   });
-
 });
