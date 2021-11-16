@@ -12,5 +12,5 @@ WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id
 ORDER BY iq.id DESC, s.date DESC, s.id DESC) AS submission_info
-WHERE submission_info.graded_at is NULL
+WHERE submission_info.graded_at IS NULL
 LIMIT 1;
