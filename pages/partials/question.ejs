@@ -3,6 +3,9 @@
   <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
   <% } %>
 
+  <!--It would be nice to find a better home for this, as we only want it loading when a pl-artifact-scan element is loaded-->
+  <script src="<%= node_modules_asset_path('js-crc/build/crc.min.js') %>"></script>
+
   <% issues.forEach(function(issue, iIssue) { %>
   <div class="card mb-4">
     <div class="card-header bg-danger text-white">
@@ -108,11 +111,6 @@
         <%- questionHtml %>
       </div>
       <%- include('questionFooter'); %>
-      <% if (typeof submission != 'undefined' && typeof submission.artifact != 'undefined') { %>
-        <div class="question-block-artifact-container">
-          <iframe id="question-block-artifact-pdf" width="100%" type="text/html" src="data:application/pdf;base64,<%= submission.artifact  %>"></iframe>
-        </div>
-      <% } %>
     </div>
   </form>
   <% } %>
