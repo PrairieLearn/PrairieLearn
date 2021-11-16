@@ -17,7 +17,7 @@
 
     // listener
     barcode.keyup((e) => {
-        const sanitized = (barcode).val().toLowerCase().trim();
+        const sanitized = barcode.val().toLowerCase().trim();
         const sha16 = sanitized.substring(sanitized.length-4, sanitized.length);
         const base32 = sanitized.replace(sha16, '');
         if (crc16(base32) === sha16) {
