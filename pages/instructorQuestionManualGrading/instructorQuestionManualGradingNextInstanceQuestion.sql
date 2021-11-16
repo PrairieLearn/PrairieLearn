@@ -7,7 +7,7 @@ FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     JOIN variants AS v ON (v.instance_question_id = iq.id)
-    JOIN submissions s ON (s.variant_id = v.id)
+    JOIN submissions AS s ON (s.variant_id = v.id)
 WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id
