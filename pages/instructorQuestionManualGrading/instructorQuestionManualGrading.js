@@ -1,32 +1,30 @@
-const ERR = require("async-stacktrace");
-const express = require("express");
+const ERR = require('async-stacktrace');
+const express = require('express');
 const router = express.Router();
-const path = require("path");
-const async = require("async");
-const question = require("../../lib/question");
-const debug = require("debug")(
-  "prairielearn:" + path.basename(__filename, ".js")
-);
-const error = require("../../prairielib/lib/error");
-const sqlDb = require("../../prairielib/lib/sql-db");
-const logger = require("../../lib/logger");
+const path = require('path');
+const async = require('async');
+const question = require('../../lib/question');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const error = require('../../prairielib/lib/error');
+const sqlDb = require('../../prairielib/lib/sql-db');
+const logger = require('../../lib/logger');
 
 // Other cases to figure out later: grading in progress, question is broken...
-router.get("/", (req, res, next) => {
+router.get('/', (req, res, next) => {
   async.series(
     [
       // Should we move this block into question.js? getAndRenderVariantForGrading
       (callback) => {
         const params = [res.locals.instance_question.id];
         sqlDb.callZeroOrOneRow(
-          "instance_question_select_manual_grading_objects",
+          'instance_question_select_manual_grading_objects',
           params,
           (err, result) => {
             if (ERR(err, next)) return;
             // Instance question doesn't exist (redirect to config page)
             if (result.rowCount === 0) {
               return callback(
-                error.make(404, "Instance question not found.", {
+                error.make(404, 'Instance question not found.', {
                   locals: res.locals,
                   body: req.body,
                 })
@@ -39,20 +37,17 @@ router.get("/", (req, res, next) => {
              */
             if (!result.rows[0].variant || !result.rows[0].submission) {
               return callback(
-                error.make(404, "No gradable submissions found.", {
+                error.make(404, 'No gradable submissions found.', {
                   locals: res.locals,
                   body: req.body,
                 })
               );
             }
 
-            logger.info(
-              "QuestionManualGrading: Found Question To Grade in DB.",
-              {
-                instance_question_id: res.locals.instance_question.id,
-                result_row: result.rows[0],
-              }
-            );
+            logger.info('QuestionManualGrading: Found Question To Grade in DB.', {
+              instance_question_id: res.locals.instance_question.id,
+              result_row: result.rows[0],
+            });
             res.locals.question = result.rows[0].question;
             res.locals.variant = result.rows[0].variant;
             res.locals.submission = result.rows[0].submission;
@@ -63,56 +58,49 @@ router.get("/", (req, res, next) => {
       },
       (callback) => {
         res.locals.overlayGradingInterface = true;
-        logger.info(
-          "QuestionManualGrading: About to render question for grading.",
-          {
+        logger.info('QuestionManualGrading: About to render question for grading.', {
+          instance_question_id: res.locals.instance_question.id,
+          question: res.locals.question,
+          variant: res.locals.variant,
+          submission: res.locals.submission,
+        });
+        question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
+          if (ERR(err, next)) return;
+          logger.info('QuestionManualGrading: Question Rendered.', {
             instance_question_id: res.locals.instance_question.id,
             question: res.locals.question,
             variant: res.locals.variant,
             submission: res.locals.submission,
-          }
-        );
-        question.getAndRenderVariant(
-          res.locals.variant.id,
-          null,
-          res.locals,
-          function (err) {
-            if (ERR(err, next)) return;
-            logger.info("QuestionManualGrading: Question Rendered.", {
-              instance_question_id: res.locals.instance_question.id,
-              question: res.locals.question,
-              variant: res.locals.variant,
-              submission: res.locals.submission,
-            });
-            callback(null);
-          }
-        );
+          });
+          callback(null);
+        });
       },
     ],
     (err) => {
       if (ERR(err, next)) return;
-      res.render(__filename.replace(/\.js$/, ".ejs"), res.locals);
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
   );
 
-  debug("GET /");
+  debug('GET /');
 });
 
-router.post("/", function (req, res, next) {
-  if (req.body.__action == "add_manual_grade") {
+router.post('/', function (req, res, next) {
+  if (req.body.__action === 'add_manual_grade') {
     const note = req.body.submission_note;
     const score = req.body.submission_score;
     const params = [res.locals.instance_question.id];
 
     sqlDb.callZeroOrOneRow(
-      "instance_question_select_manual_grading_objects",
+      'instance_question_select_manual_grading_objects',
       params,
       (err, result) => {
         if (ERR(err, next)) return;
 
         const { question, variant, submission } = result.rows[0];
-        if (!question || !variant || !submission)
-          return next(error.make("500", "Manual grading dependencies missing"));
+        if (!question || !variant || !submission) {
+          return next(error.make('500', 'Manual grading dependencies missing'));
+        }
 
         Object.assign(res.locals, { question, variant, submission });
 
@@ -131,37 +119,35 @@ router.post("/", function (req, res, next) {
           submission.true_answer,
         ];
 
-        sqlDb.callOneRow(
-          "grading_jobs_insert_internal",
-          params,
-          (err, result) => {
-            if (ERR(err, next)) return;
+        sqlDb.callOneRow('grading_jobs_insert_internal', params, (err, result) => {
+          if (ERR(err, next)) return;
 
-            /* If the submission was marked invalid during grading the grading job will
+          /* If the submission was marked invalid during grading the grading job will
                    be marked ungradable and we should bail here to prevent LTI updates. */
-            res.locals["grading_job"] = result.rows[0];
-            if (!res.locals["grading_job"].gradable)
-              return next(error.make(400, "Invalid submission error"));
-
-            res.locals["submission_updated"] = true;
-            debug(
-              "_gradeVariantWithClient()",
-              "inserted",
-              "grading_job.id:",
-              res.locals["grading_job"].id
-            );
-            res.redirect(
-              `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`
-            );
+          res.locals['grading_job'] = result.rows[0];
+          if (!res.locals['grading_job'].gradable) {
+            return next(error.make(400, 'Invalid submission error'));
           }
-        );
+
+          res.locals['submission_updated'] = true;
+          debug(
+            '_gradeVariantWithClient()',
+            'inserted',
+            'grading_job.id:',
+            res.locals['grading_job'].id
+          );
+          res.redirect(
+            `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded`
+          );
+        });
       }
     );
+
     // } else if (req.body.__action === 'update_manual_grade') {
     // TODO: Update grade in DB?
   } else {
     return next(
-      error.make(400, "unknown __action", {
+      error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
       })
