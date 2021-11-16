@@ -29,14 +29,14 @@ const getScrapPaperPayload = ($page, numPages, pageLabel) => {
     __csrf_token: $page('form > input[name="__csrf_token"]').val(),
     __action: $page('form > input[name="__action"]').val(),
   };
-}
+};
 const getBarcodeSegments = (barcode) => {
-    const sha16 = barcode.substring(barcode.length - 4, barcode.length);
-    return {
-      fullBarcode: barcode,
-      sha16,
-      base64: barcode.replace(sha16, ''),
-    };
+  const sha16 = barcode.substring(barcode.length - 4, barcode.length);
+  return {
+    fullBarcode: barcode,
+    sha16,
+    base64: barcode.replace(sha16, ''),
+  };
 };
 
 describe('Scrap paper view', function () {
@@ -74,12 +74,11 @@ describe('Scrap paper view', function () {
     });
 
     describe('POST', () => {
-
       before('POST "make_scrap_paper" payload', async () => {
         const payload = getScrapPaperPayload($scrapPaper, maxPageLimit, 'TEST LABEL');
         const res = await fetch(scrapPaperUrl, {
           method: 'POST',
-          headers: {'Content-type': 'application/x-www-form-urlencoded'},
+          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
           body: querystring.encode(payload),
         });
         assert.equal(res.status, 200);
@@ -89,22 +88,22 @@ describe('Scrap paper view', function () {
       it('should produce number of pages specified', async () => {
         const data = $scrapPaper('iframe')[0].attribs.src.replace(base64Prefix, '');
 
-      // IMAGE MAGICK IDENTIFY() METHOD DOES NOT WORK WITH 500 PAGE PDF.
+        // IMAGE MAGICK IDENTIFY() METHOD DOES NOT WORK WITH 500 PAGE PDF.
         // const filepath = './output.pdf';
         // const fileOut = await fsPromises.writeFile(filepath, data, 'base64');
-      //
-      //   1) Scrap paper
-      //   Generate scrap paper
-      //     POST
-      //       should produce number of pages specified:
-      // Error: Command failed: 
-      //  at ChildProcess.<anonymous> (node_modules/imagemagick/imagemagick.js:88:15)
-      //  at ChildProcess.emit (domain.js:475:12)
-      //  at maybeClose (internal/child_process.js:1058:16)
-      //  at Socket.<anonymous> (internal/child_process.js:443:11)
-      //  at Socket.emit (domain.js:475:12)
-      //  at Pipe.<anonymous> (net.js:686:12)
-      //  at Pipe.callbackTrampoline (internal/async_hooks.js:130:17)
+        //
+        //   1) Scrap paper
+        //   Generate scrap paper
+        //     POST
+        //       should produce number of pages specified:
+        // Error: Command failed:
+        //  at ChildProcess.<anonymous> (node_modules/imagemagick/imagemagick.js:88:15)
+        //  at ChildProcess.emit (domain.js:475:12)
+        //  at maybeClose (internal/child_process.js:1058:16)
+        //  at Socket.<anonymous> (internal/child_process.js:443:11)
+        //  at Socket.emit (domain.js:475:12)
+        //  at Pipe.<anonymous> (net.js:686:12)
+        //  at Pipe.callbackTrampoline (internal/async_hooks.js:130:17)
 
         // const output = await new Promise((resolve, reject) => {
         //   imagemagick.identify(filepath, (err, output) => {
@@ -116,7 +115,7 @@ describe('Scrap paper view', function () {
         // });
 
         const buffer = Buffer.from(data, 'base64');
-        pdf = await pdfParse(buffer)
+        pdf = await pdfParse(buffer);
         assert.equal(pdf.numpages, maxPageLimit);
       });
       it('should produce number of barcodes that equal specified number of pages', async () => {
@@ -128,7 +127,7 @@ describe('Scrap paper view', function () {
       });
       it('should checksum sha16 successfully against base64 barcode components', () => {
         barcodeRows.forEach((row) => {
-          const {base64, sha16} = getBarcodeSegments(row.barcode);
+          const { base64, sha16 } = getBarcodeSegments(row.barcode);
           const recomputedSha16 = jsCrc.crc16(base64);
           assert.equal(recomputedSha16, sha16);
         });
@@ -137,16 +136,14 @@ describe('Scrap paper view', function () {
         // TO DO once other things are done and more time
       });
       it('should produce barcodes formatted with spacing ie. (xxxx xxxx xxxx)', () => {
-        // nice to have ? TO DO? 
+        // nice to have ? TO DO?
       });
     });
   });
 });
 
 describe('Pl-artifact-scan element', () => {
-  it('should be able to submit a valid barcode', () => {
-    
-  });
+  it('should be able to submit a valid barcode', () => {});
 });
 
 describe('Scan paper view', function () {
@@ -154,14 +151,10 @@ describe('Scan paper view', function () {
 
   // const scanPaperUrl = baseUrl + '/scan_paper';
 
-  describe('GET', () => {
-
-  });
+  describe('GET', () => {});
 
   describe('POST', () => {
-    it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {
-
-    });
-x
+    it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {});
+    x;
   });
 });
