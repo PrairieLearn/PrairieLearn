@@ -20,7 +20,8 @@ router.get('/', (req, res, next) => {
     // If we have no more submissions, then redirect back to manual grading page
     if (!result.rows[0]) {
       logger.info(
-        'ManualGradingNextInstanceQuestion: No more submissions, back to manual grading page.'
+        'ManualGradingNextInstanceQuestion: No more submissions, back to manual grading page.',
+        params
       );
       res.redirect(
         `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`
@@ -29,7 +30,8 @@ router.get('/', (req, res, next) => {
     }
 
     logger.info(
-      'ManualGradingNextInstanceQuestion: Found next submission to grading, redirecting.'
+      'ManualGradingNextInstanceQuestion: Found next submission to grading, redirecting.',
+      { instance_question_id: instance_question_id, result_row: result.rows[0] }
     );
     const instance_question_id = result.rows[0].id;
     res.redirect(

@@ -44,7 +44,10 @@ router.get('/', (req, res, next) => {
               );
             }
 
-            logger.info('QuestionManualGrading: Found Question To Grade in DB.', {instance_question_id: res.locals.instance_question.id, result_row: result.rows[0]});
+            logger.info('QuestionManualGrading: Found Question To Grade in DB.', {
+              instance_question_id: res.locals.instance_question.id,
+              result_row: result.rows[0],
+            });
             res.locals.question = result.rows[0].question;
             res.locals.variant = result.rows[0].variant;
             res.locals.submission = result.rows[0].submission;
@@ -55,10 +58,16 @@ router.get('/', (req, res, next) => {
       },
       (callback) => {
         res.locals.overlayGradingInterface = true;
-        logger.info('QuestionManualGrading: About to render question.');
+        logger.info('QuestionManualGrading: About to render question for grading.', {
+          instance_question_id: res.locals.instance_question.id,
+          result_row: result.rows[0],
+        });
         question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
           if (ERR(err, next)) return;
-          logger.info('QuestionManualGrading: Question Rendered.');
+          logger.info('QuestionManualGrading: Question Rendered.', {
+            instance_question_id: res.locals.instance_question.id,
+            result_row: result.rows[0],
+          });
           callback(null);
         });
       },
