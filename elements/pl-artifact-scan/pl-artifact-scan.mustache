@@ -5,14 +5,39 @@
             container: 'body',
             template: '<div class="popover pl-artifact-scan-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
+
+    // NOTE: Dependency `js-crc` should be loaded in EJS parent view for client-side validation to work
+    const barcode = $('#pl-artifact-barcode');
+    const showWarning = () => {
+        $('#pl-artifact-barcode-warning').css('display', 'inline-block');
+    };
+    const hideWarning = () => {
+        $('#pl-artifact-barcode-warning').css('display', 'none');
+    };
+
+    // listener
+    barcode.keyup((e) => {
+        const sanitized = (barcode).val().toLowerCase().trim();
+        const sha16 = sanitized.substring(sanitized.length-4, sanitized.length);
+        const base32 = sanitized.replace(sha16, '');
+        if (crc16(base32) === sha16) {
+            hideWarning();
+            $(barcode).val(() => {
+                return sanitized;
+            });
+        } else {
+            showWarning();
+        }
     });
+});
 </script>
 
 {{#question}}
     <!-- Will likely want to add button to add more barcodes that increment up-->
-    <div id="pl-artifact-scan-{{uuid}}" class="d-inline-block form-group form-inline">
+    <div id="pl-artifact-scan-{{uuid}}" class="d-inline-block form-group">
         <label for="_pl_artifact_barcode">Barcode</label>
-        <input type="text" id="pl-artifact-barcode" name="_pl_artifact_barcode">
+        <input type="text" id="pl-artifact-barcode" style="text-transform:uppercase" name="_pl_artifact_barcode">
+        <span id="pl-artifact-barcode-warning" class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
     </div>
 {{/question}}
 
