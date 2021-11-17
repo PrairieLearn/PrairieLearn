@@ -51,6 +51,7 @@ router.get('/', (req, res, next) => {
             res.locals.question = result.rows[0].question;
             res.locals.variant = result.rows[0].variant;
             res.locals.submission = result.rows[0].submission;
+            res.locals.max_points = result.rows[0].max_points;
             res.locals.score_perc = res.locals.submission.score * 100;
             callback(null);
           }
@@ -72,6 +73,7 @@ router.get('/', (req, res, next) => {
             variant: res.locals.variant,
             submission: res.locals.submission,
           });
+          // console.log(res.locals);
           callback(null);
         });
       },
@@ -88,8 +90,9 @@ router.get('/', (req, res, next) => {
 router.post('/', function (req, res, next) {
   if (req.body.__action === 'add_manual_grade') {
     const note = req.body.submission_note;
-    const score = req.body.submission_score;
+    const score = req.body.submission_score_percent;
     const params = [res.locals.instance_question.id];
+
 
     sqlDb.callZeroOrOneRow(
       'instance_question_select_manual_grading_objects',
