@@ -18,7 +18,6 @@ const generateBarcodes = async (numBarcodes) => {
 
   // Barcodes should be error-detecting <x char hexatridecimal produced by base36 encoding><4 char crc16 hash>
   // Sequential counter to produce x char base36 string should be base36 encode input
-  // Approx lower and upper bound: 80000000000 - 999999999999; 80 billion to 100 billion
 
   if (!numBarcodes || numBarcodes > 1000) {
     throw new Error('Cannot produce more than 1000 or less than 1 barcoded sheets');

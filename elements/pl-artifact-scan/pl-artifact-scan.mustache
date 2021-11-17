@@ -5,43 +5,51 @@
             container: 'body',
             template: '<div class="popover pl-artifact-scan-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
-
-    // NOTE: Dependency `js-crc` should be loaded in EJS parent view for client-side validation to work
-    const barcode = $('#pl-artifact-barcode');
-    const barcodeRequired = $('#pl-artifact-barcode-required');
-    const showRequired = () => {
-        $('#pl-artifact-barcode-required').css('display', 'inline-block');
-    };
-    const hideRequired = () => {
-        $('#pl-artifact-barcode-required').css('display', 'none');
-    };
-    const showWarning = () => {
-        $('#pl-artifact-barcode-invalid').css('display', 'inline-block');
-    };
-    const hideWarning = () => {
-        $('#pl-artifact-barcode-invalid').css('display', 'none');
-    };
-
-    // listener
-    barcode.keyup((e) => {
-        const sanitized = barcode.val().toLowerCase().trim();
-        const sha16 = sanitized.substring(sanitized.length-4, sanitized.length);
-        const base32 = sanitized.replace(sha16, '');
-        if (barcodeRequired && barcode.val().length == 0) {
-            showRequired();
-        } else {
-            hideRequired();
+</script>
+<script>
+    $(() => {
+        // NOTE: Dependency `js-crc` should be loaded in EJS parent view for client-side validation to work
+        const barcode = $('#pl-artifact-barcode');
+        const showBadge = (selector) => {
+            $(selector).css('display', 'inline-block');
         };
-        if (barcode.val().length == 0 || crc16(base32) === sha16) {
-            hideWarning();
-            $(barcode).val(() => {
-                return sanitized;
-            });
-        } else {
-            showWarning();
-        }
+        const hideBadge = (selector) => {
+            $(selector).css('display', 'none');
+        };
+        const toggleInvalidBarcode = (barcode, base36, sha16) => {
+            if (barcode.val().length == 0 || crc16(base36) === sha16) {
+                hideBadge('#pl-artifact-barcode-invalid');
+            } else {
+                showBadge('#pl-artifact-barcode-invalid');
+            }
+        };
+        const toggleBarcodeRequired = (barcode) => {
+            const barcodeRequired = $('#pl-artifact-barcode-required');
+            if (barcodeRequired && barcode.val().length == 0) {
+                showBadge('#pl-artifact-barcode-required');
+            } else {
+                hideBadge('#pl-artifact-barcode-required');
+            }
+        };
+        const toggleValidBarcode = (barcode, base36, sha16) => {
+            if (crc16(base36) === sha16) {
+                showBadge('#pl-artifact-barcode-valid');
+            } else {
+                hideBadge('#pl-artifact-barcode-valid');
+            }
+        };
+
+        // listener
+        barcode.keyup((e) => {
+            const sanitized = barcode.val().toLowerCase().trim();
+            const sha16 = sanitized.substring(sanitized.length-4, sanitized.length);
+            const base36 = sanitized.replace(sha16, '');
+
+            toggleBarcodeRequired(barcode);
+            toggleInvalidBarcode(barcode, base36, sha16);
+            toggleValidBarcode(barcode, base36, sha16);
+        });
     });
-});
 </script>
 
 {{#question}}
@@ -49,10 +57,14 @@
     <div id="pl-artifact-scan-{{uuid}}" class="d-inline-block form-group">
         <label for="_pl_artifact_barcode">Barcode</label>
         <input type="text" id="pl-artifact-barcode" style="text-transform:uppercase" name="_pl_artifact_barcode">
-        <span id="pl-artifact-barcode-invalid" class="badge text-danger badge-invalid" style="display: none;"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
-        {{#required}}
-            <span id="pl-artifact-barcode-required" class="badge text-info badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Barcode Required </span>
-        {{/required}}
+
+        <div class="pl-artifact-barcode-badge-container d-inline-block">
+            <span id="pl-artifact-barcode-invalid" class="badge text-danger" style="display: none;"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
+            <span id="pl-artifact-barcode-valid" class="badge text-success" style="display: none;"><i class="fa fa-check" aria-hidden="true"></i> Valid Barcode </span>
+            {{#required}}
+                <span id="pl-artifact-barcode-required" class="badge text-info"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Barcode Required </span>
+            {{/required}}
+        </div>
     </div>
 {{/question}}
 
