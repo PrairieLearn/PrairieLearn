@@ -92,7 +92,6 @@ router.post('/', function (req, res, next) {
     const score = req.body.submission_score_percent;
     const params = [res.locals.instance_question.id];
 
-
     sqlDb.callZeroOrOneRow(
       'instance_question_select_manual_grading_objects',
       params,
