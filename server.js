@@ -124,6 +124,10 @@ module.exports.initExpress = function () {
     round: 0,
   });
   app.post(
+    '/pl/scan_artifacts',
+    upload.single('file')
+  );
+  app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads',
     upload.single('file')
   );
@@ -483,6 +487,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/news_item/news_item.js'),
   ]);
+  
   app.use('/pl/scrap_paper', [require('./pages/instructorScrapPaper/instructorScrapPaper.js')]);
   app.use('/pl/scan_artifacts', [require('./pages/instructorScanPaper/instructorScanPaper.js')]);
   app.use('/pl/request_course', [
