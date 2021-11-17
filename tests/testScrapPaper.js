@@ -125,10 +125,10 @@ describe('Scrap paper view', function () {
       it('should display barcodes in UPPERCASE on PDF document and in database', () => {
         // TO DO once pdf reader working with barcode scanner
       });
-      it('should checksum sha16 successfully against base64 barcode components', () => {
+      it('should checksum sha16 successfully against base36 barcode components', () => {
         barcodeRows.forEach((row) => {
-          const { base64, sha16 } = getBarcodeSegments(row.barcode);
-          const recomputedSha16 = jsCrc.crc16(base64);
+          const { base36, sha16 } = getBarcodeSegments(row.barcode);
+          const recomputedSha16 = jsCrc.crc16(base36);
           assert.equal(recomputedSha16, sha16);
         });
       });
