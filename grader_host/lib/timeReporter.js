@@ -6,7 +6,7 @@ const config = require('./config').config;
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 function reportTime(sqlBlockName) {
-  return function(jobId, callback) {
+  return function (jobId, callback) {
     if (!config.useDatabase) {
       // Fall back to machine time if DB isn't enabled
       const time = new Date().toISOString();
