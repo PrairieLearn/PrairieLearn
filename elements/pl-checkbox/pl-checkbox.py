@@ -163,8 +163,8 @@ def render(element_html, data):
                 'checked': (answer['key'] in submitted_keys),
                 'html': answer['html'].strip(),
                 'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys,
-                'display_feedback': feedback and answer['feedback'] in feedback and feedback[0] is not None,
-                'feedback': feedback.pop(0) if feedback and answer['feedback'] in feedback else None
+                'display_feedback': feedback and answer['key'] in submitted_keys and feedback[0] is not None,
+                'feedback': feedback.pop(0) if feedback and answer['key'] in submitted_keys else None
             }
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (answer['key'] in correct_keys)
@@ -287,6 +287,7 @@ def render(element_html, data):
         parse_error = data['format_errors'].get(name, None)
         if parse_error is None:
             partial_score = data['partial_scores'].get(name, {'score': None})
+            feedback = partial_score.get('feedback', None)
             score = partial_score.get('score', None)
 
             answers = []
@@ -300,8 +301,8 @@ def render(element_html, data):
                 if answer_item['display_score_badge']:
                     answer_item['correct'] = (submitted_key in correct_keys)
                     answer_item['incorrect'] = (submitted_key not in correct_keys)
-                answer_item['display_feedback'] = submitted_answer['feedback']
-                answer_item['feedback'] = submitted_answer['feedback'] if submitted_answer['feedback'] else None
+                answer_item['display_feedback'] = feedback and feedback[0] is not None
+                answer_item['feedback'] = feedback.pop(0) if feedback else None
                 answers.append(answer_item)
 
             html_params = {
