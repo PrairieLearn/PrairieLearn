@@ -154,7 +154,8 @@ describe('Scan paper view', function () {
   describe('GET', () => {});
 
   describe('POST', () => {
-    it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {});
-    x;
+    it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {
+
+    });
   });
 });
