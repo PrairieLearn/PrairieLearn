@@ -157,10 +157,7 @@ router.post('/', function(req, res, next) {
                     }
                 }
                 
-                res.locals.has_manager = roleCounts['manager'] === 1;
-                res.locals.has_recorder = roleCounts['recorder'] === 1;
-                res.locals.has_reflector = roleCounts['reflector'] === 1;
-                res.locals.has_invalid_contributor = roleCounts['contributor'] > 0 && groupSize < 3;
+                res.locals.role_counts = roleCounts;
 
                 // fetch instructions html
                 // FIXME: fetch from actual assessment directory
