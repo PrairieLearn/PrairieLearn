@@ -73,7 +73,6 @@ router.get('/', (req, res, next) => {
             variant: res.locals.variant,
             submission: res.locals.submission,
           });
-          // console.log(res.locals);
           callback(null);
         });
       },
