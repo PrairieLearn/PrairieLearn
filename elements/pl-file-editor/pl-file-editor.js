@@ -46,7 +46,7 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  if (options.preview == 'markdown') {
+  if (options.preview === 'markdown') {
     let renderer = new showdown.Converter({
       literalMidWordUnderscores: true,
       literalMidWordAsterisks: true,
@@ -56,7 +56,7 @@ window.PLFileEditor = function (uuid, options) {
       this.updatePreview(renderer.makeHtml(this.editor.getValue()));
     });
     this.updatePreview(renderer.makeHtml(this.editor.getValue()));
-  } else if (options.preview == 'html') {
+  } else if (options.preview === 'html') {
     this.editor.session.on('change', () => {
       this.updatePreview(this.editor.getValue());
     });
@@ -78,7 +78,7 @@ window.PLFileEditor = function (uuid, options) {
 window.PLFileEditor.prototype.updatePreview = function (html_contents) {
   const default_preview_text = '<p>Begin typing above to preview</p>';
   let preview = this.element.find('.preview')[0];
-  if (html_contents.trim().length == 0) {
+  if (html_contents.trim().length === 0) {
     preview.innerHTML = default_preview_text;
   } else {
     let sanitized_contents = filterXSS(html_contents);

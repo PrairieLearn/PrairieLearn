@@ -21,7 +21,7 @@ start-s3rver:
 test: test-js test-python
 test-js: test-prairielearn test-prairielib test-grader-host
 test-prairielearn: start-support
-	@nyc --reporter=lcov mocha tests/index.js
+	@nyc --reporter=lcov mocha --full-trace tests/index.js
 test-prairielib:
 	@jest prairielib/
 test-grader-host:
@@ -29,7 +29,8 @@ test-grader-host:
 test-nocoverage: start-support
 	@mocha tests/index.js
 test-python:
-	@python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
+	@python3 question-servers/freeformPythonLib/prairielearn_test.py
+	@python3 elements/pl-order-blocks/dag_checker_test.py
 
 lint: lint-js lint-python
 lint-js:
@@ -43,8 +44,12 @@ format-js:
 	@eslint --ext js --fix "**/*.js"
 	@prettier --write "**/*.{js,ts,md}"
 
-typecheck:
+typecheck: typecheck-js typecheck-python
+typecheck-js:
 	@tsc
+typecheck-python:
+	@pyright elements/pl-order-blocks/dag*.py  # TODO enable for all Python
+
 depcheck:
 	-depcheck --ignore-patterns=public/**
 	@echo WARNING:

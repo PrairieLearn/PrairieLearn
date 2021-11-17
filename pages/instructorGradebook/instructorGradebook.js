@@ -67,7 +67,8 @@ router.get('/:filename', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
     return next(error.make(403, 'Access denied (must be a student data viewer)'));
   }
-  if (req.params.filename == csvFilename(res.locals)) {
+
+  if (req.params.filename === csvFilename(res.locals)) {
     var params = {
       course_id: res.locals.course.id,
       course_instance_id: res.locals.course_instance.id,
@@ -101,7 +102,8 @@ router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_edit) {
     return next(error.make(403, 'Access denied (must be a student data editor)'));
   }
-  if (req.body.__action == 'edit_total_score_perc') {
+
+  if (req.body.__action === 'edit_total_score_perc') {
     const course_instance_id = res.locals.course_instance.id;
     const assessment_instance_id = req.body.assessment_instance_id;
     course.checkBelongs(assessment_instance_id, course_instance_id, (err) => {
