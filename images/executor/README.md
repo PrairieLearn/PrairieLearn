@@ -16,7 +16,7 @@ To build and tag the image for local testing, run:
 
 To push the built image to the Docker and ECR registries, run:
 
-```
+```sh
 ./tools/executor/release.js
 ```
 
