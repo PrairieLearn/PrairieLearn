@@ -32,8 +32,8 @@ const decodeJpegs = async (jpegFiles) => {
       jpegFiles[i]['decoded'] = false;
       jpegFiles[i]['barcode'] = null;
     }
-    return jpegFiles;
   }
+  return jpegFiles;
 };
 
 const decodeJpeg = async (jpegFile) => {
