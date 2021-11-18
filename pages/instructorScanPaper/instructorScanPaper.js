@@ -3,15 +3,17 @@ const router = express.Router();
 
 // const logger = require('../../lib/logger');
 const config = require('../../lib/config.js');
+const path = require('path');
+const fs = require('fs').promises;
+const { v4: uuidv4 } = require('uuid');
+
 // const {fromPath} = require('pdf2pic');
 const ERR = require('async-stacktrace');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const quagga = require('quagga').default;
 const imagemagick = require('imagemagick');
-const fs = require('fs').promises;
 const pdfParse = require('pdf-parse');
-const { v4: uuidv4 } = require('uuid');
-const path = require('path');
 
 // const sqldb = require('../../prairielib/lib/sql-db');
 // const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -19,16 +21,30 @@ const path = require('path');
 
 const processingDir = './image_processing';
 
-const decodePdf = async (pdf) => {
-
+const decodeJpegs = async (jpegFiles) => {
+  for(let i = 0; i < jpegFiles.length; i++) {
+    const barcode = await decodeJpeg(jpegFiles[i]);
+    if (barcode) {
+      jpegFiles[i]['decoded'] = true;
+      jpegFiles[i]['barcode'] = barcode;
+      processed.push(jpegFiles[i]);
+    } else {
+      jpegFiles[i]['decoded'] = false;
+      jpegFiles[i]['barcode'] = null;
+    }
+    return jpegFiles;
+  }
 };
 
-const decodeSingle = async (jpgFilepath) => {
+const decodeJpeg = async (jpegFile) => {
   return new Promise((resolve, reject) => {
+    if (!jpegFile || !jpegFile.workingDir || !jpegFile.convertedFilename) {
+      throw Error('Missing jpeg file input for barcode decoding');
+    }
     try {
       quagga.decodeSingle(
         {
-          src: jpgFilepath,
+          src: path.join(jpegFile.workingDir, jpegFile.convertedFilename),
           numOfWorkers: 0,
           inputStream: {
             mime: 'image/jpeg',
@@ -55,8 +71,7 @@ const decodeSingle = async (jpgFilepath) => {
 
 const convertPdfPage = async (pageNum, pdfFilePath, workingDir) => {
   return new Promise((resolve, reject) => {
-    // page num count starts at 0
-    const convertedFilename = `${pageNum + 1}.jpg`;
+    const convertedFilename = `${pageNum}.jpg`;
     const convertedFilepath = path.join(workingDir, convertedFilename);
     imagemagick.convert(
       [pdfFilePath, '-flatten', '-quality', '100', '-resize', '150%', convertedFilepath],
@@ -81,13 +96,15 @@ const convertPdf = async (numPages, data, originalName) => {
 
   for (let i = 0; i < numPages; i++) {
     const start = new Date();
-    const pageNum = i;
+    const pageNum = i + 1;
     const convertedFilename = await convertPdfPage(pageNum, pdfPath, workingDir);
     const end = new Date();
     const secondsElapsed = (end - start) / 1000;
-    converted.push({pageNumber: pageNum + 1, secondsElapsed: secondsElapsed, convertedFilename, workingDir, originalName});
+    converted.push({pageNum, secondsElapsed, convertedFilename, workingDir, originalName});
   }
 
+  console.log('convertPdf() pdf time elasped', converted.reduce((prev, current) => {return {secondsElapsed: current.secondsElapsed + prev.secondsElapsed}}))
+  debug('convertPdf() pdf time elasped', converted.reduce((prev, current) => {return {secondsElapsed: current.secondsElapsed + prev.secondsElapsed}}));
   return converted;
 };
 
@@ -153,15 +170,16 @@ router.post('/', function (req, res, next) {
       .then((pdf) => {
         return convertPdf(pdf.numpages, req.file.buffer, req.file.originalname);
       })
-      .then((converted) => {
-        console.log(converted);
+      .then((jpegPages) => {
+        return decodeJpegs(jpegPages);
+      })
+      .then((decodedJpegs) => {
+        console.log('decoded jpegs', decodeJpegs);
       });
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     // upper bound pdf size limit = 25mb ././ must be configured in server.js and main config file -- upped to 25mb
-  
-    // each page size conversion to 300kb
-  
-    // barcode reader fails (send back page image)
+    
+    // barcode reader fails (send back page image so they can see which one failed)
   } else {
     return next(
       error.make(400, 'unknown __action', {
