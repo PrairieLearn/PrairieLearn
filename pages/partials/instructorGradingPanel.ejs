@@ -13,14 +13,14 @@
             <div class="form-group">
               <label for="submissionScore">Score:</label>
               <div class="input-group">
-                Points: <input type="number" style="margin:2px;" min="0" max="<%= max_points %>" class="form-control" id="submissionScorePoints" name="submission_score_points" value="<%= instance_question.points %>" aria-describedby="scoreHelpBlock"
+                Points: <input type="number" style="margin:2px;" min="0" max="<%= max_points %>" step="any" class="form-control" id="submissionScorePoints" name="submission_score_points" value="<%= instance_question.points %>" aria-describedby="scoreHelpBlock"
                   oninput="document.getElementById('submissionScorePercent').value = this.value / <%= max_points %> * 100;"
                 />
                 <span class="input-group-addon">/ <%= max_points %></span>
               </div>
 
               <div class="input-group">
-                Percent: <input type="number" style="margin:2px;" min="0" max="100" class="form-control" id="submissionScorePercent" name="submission_score_percent" value="<%= score_perc %>" aria-describedby="scoreHelpBlock"
+                Percent: <input type="number" style="margin:2px;" min="0" max="100" step="any" class="form-control" id="submissionScorePercent" name="submission_score_percent" value="<%= score_perc %>" aria-describedby="scoreHelpBlock"
                   oninput="document.getElementById('submissionScorePoints').value = this.value / 100 * <%= max_points %>;"
                 />
                 <span class="input-group-addon">%</span>
