@@ -182,6 +182,8 @@ router.post('/', function (req, res, next) {
       });
       // TO DO: 
 
+      // optimize barcode reader configuration to read JPEG documents
+
       // update pdf generation view to download pdf to avoid rendering large pdf  browser issues
 
       // reference submission in barcode row
