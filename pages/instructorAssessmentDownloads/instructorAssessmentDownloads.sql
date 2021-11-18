@@ -9,14 +9,14 @@ WITH filtered_assessment_instances AS (
         ai.number,ai.id AS assessment_instance_id,ai.open,
         CASE
             WHEN ai.open AND ai.date_limit IS NOT NULL
-                THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
+                THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
             WHEN ai.open THEN 'Open'
             ELSE 'Closed'
         END AS time_remaining,
         format_date_iso8601(ai.date, ci.display_timezone) AS date_formatted,
         format_interval(ai.duration) AS duration,
-        EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
-        EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,
+        DATE_PART('epoch', ai.duration) AS duration_secs,
+        DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
         g.name AS group_name,
         groups_uid_list(g.id) AS uid_list
     FROM
@@ -59,7 +59,7 @@ SELECT
     iq.highest_submission_score,
     iq.last_submission_score,
     iq.number_attempts,
-    extract(epoch FROM iq.duration) AS duration_seconds,
+    DATE_PART('epoch', iq.duration) AS duration_seconds,
     g.name AS group_name,
     groups_uid_list(g.id) AS uid_list
 FROM
