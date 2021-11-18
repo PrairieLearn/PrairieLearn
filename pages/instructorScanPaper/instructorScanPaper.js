@@ -180,6 +180,14 @@ router.post('/', function (req, res, next) {
       .catch((err) => {
         if (ERR(err, next)) return;
       });
+      // TO DO: 
+
+      // update pdf generation view to download pdf to avoid rendering large pdf  browser issues
+
+      // reference submission in barcode row
+
+      // upload file to s3 and then reintegrate/improve question view to render pdf
+
     // upper bound pdf size limit = 25mb ././ must be configured in server.js and main config file -- upped to 25mb
     
     // barcode reader fails (send back page image so they can see which one failed)
