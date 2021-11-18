@@ -10,63 +10,90 @@ const quagga = require('quagga').default;
 const imagemagick = require('imagemagick');
 const fs = require('fs').promises;
 const pdfParse = require('pdf-parse');
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
 // const sqldb = require('../../prairielib/lib/sql-db');
 // const sqlLoader = require('../../prairielib/lib/sql-loader');
 // const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const convertPage = async (pageNum, filename) => {
+const processingDir = './image_processing';
+
+const decodePdf = async (pdf) => {
+
+};
+
+const decodeSingle = async (jpgFilepath) => {
   return new Promise((resolve, reject) => {
-    // api should start page count at 0
+    try {
+      quagga.decodeSingle(
+        {
+          src: jpgFilepath,
+          numOfWorkers: 0,
+          inputStream: {
+            mime: 'image/jpeg',
+            size: 800,
+            area: {
+              top: '70%',
+              right: '25%',
+              left: '25%',
+              bottom: '20%',
+            },
+          },
+          locate: true,
+        },
+        (result) => {
+          console.log('decode result', result);
+          resolve(result);
+        }
+      );
+    } catch(err) {
+      reject(err);
+    }
+  });
+};
+
+const convertPdfPage = async (pageNum, pdfFilePath, workingDir) => {
+  return new Promise((resolve, reject) => {
+    // page num count starts at 0
+    const convertedFilename = `${pageNum + 1}.jpg`;
+    const convertedFilepath = path.join(workingDir, convertedFilename);
     imagemagick.convert(
-      [`${filename}.pdf[${pageNum}]`, '-flatten', '-quality', '100', '-resize', '150%', `${filename}${pageNum + 1}.jpg`],
-      (err, output) => {
+      [pdfFilePath, '-flatten', '-quality', '100', '-resize', '150%', convertedFilepath],
+      (err, stdout) => {
         if (err) {
-          console.log(err);
+          console.log(stdout);
           reject(err);
         }
-        console.log('the output', output);
-        resolve(output);
+        resolve(convertedFilename);
       }
     );
   });
 };
 
-const convertPages = async (numPages, data) => {
+const convertPdf = async (numPages, data, originalName) => {
   const converted = [];
-  await fs.writeFile(`./randomfile.pdf`, data)
+  const workingDir = path.join(processingDir, uuidv4());
+  const pdfPath = path.join(workingDir, originalName);
+
+  await fs.mkdir(workingDir, {recursive: true});
+  await fs.writeFile(pdfPath, data)
+
   for (let i = 0; i < numPages; i++) {
+    const start = new Date();
     const pageNum = i;
-    const pageJpeg = await convertPage(pageNum, `randomfile`);
-    converted.push(pageJpeg);
+    const convertedFilename = await convertPdfPage(pageNum, pdfPath, workingDir);
+    const end = new Date();
+    const secondsElapsed = (end - start) / 1000;
+    converted.push({pageNumber: pageNum + 1, secondsElapsed: secondsElapsed, convertedFilename, workingDir, originalName});
   }
+
   return converted;
 };
 
 router.get('/', (req, res, next) => {
 
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-
-  // quagga.decodeSingle(
-  //   {
-  //     src: fs.readFileSync('./kittens-small.jpg'),
-  //     numOfWorkers: 0,
-  //     inputStream: {
-  //       mime: 'image/jpeg',
-  //       size: 800,
-  //       area: {
-  //         top: '70%',
-  //         right: '25%',
-  //         left: '25%',
-  //         bottom: '20%',
-  //       },
-  //     },
-  //     locate: true,
-  //   },
-  //   (result) => {
-  //     console.log('result', result);
-  //   }
-  // );
 
 
   // const javascriptBarcodeReader = require('javascript-barcode-reader');
@@ -117,20 +144,32 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', function (req, res, next) {
-  console.log(req.file);
-  if (!req.file && !req.file.buffer) {
-    ERR(Error('Missing artifact file data'), next); return;
-  }
-  pdfParse(req.file.buffer)
-    .then((pdf) => {
-      return convertPages(pdf.numpages, req.file.buffer);
-    });
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  // upper bound pdf size limit = 25mb ././ must be configured in server.js and main config file -- upped to 25mb
-
-  // each page size conversion to 300kb
-
-  // barcode reader fails (send back page image)
+  if (req.body.__action == 'scan_scrap_paper') {
+    console.log(req.file);
+    if (!req.file && !req.file.buffer) {
+      ERR(Error('Missing artifact file data'), next); return;
+    }
+    pdfParse(req.file.buffer)
+      .then((pdf) => {
+        return convertPdf(pdf.numpages, req.file.buffer, req.file.originalname);
+      })
+      .then((converted) => {
+        console.log(converted);
+      });
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    // upper bound pdf size limit = 25mb ././ must be configured in server.js and main config file -- upped to 25mb
+  
+    // each page size conversion to 300kb
+  
+    // barcode reader fails (send back page image)
+  } else {
+    return next(
+      error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
+  };
 });
 
 module.exports = router;

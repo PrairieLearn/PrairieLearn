@@ -79,3 +79,7 @@ __pycache__/
 
 ## s3rver file store
 /s3rver
+
+## image pdf processing working dir
+/image_processing/
+
