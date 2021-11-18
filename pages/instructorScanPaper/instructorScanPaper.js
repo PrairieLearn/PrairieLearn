@@ -174,9 +174,12 @@ router.post('/', function (req, res, next) {
         return decodeJpegs(jpegPages);
       })
       .then((decodedJpegs) => {
-        console.log('decoded jpegs', decodeJpegs);
+        console.log('decoded jpegs', decodedJpegs);
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      })
+      .catch((err) => {
+        if (ERR(err, next)) return;
       });
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     // upper bound pdf size limit = 25mb ././ must be configured in server.js and main config file -- upped to 25mb
     
     // barcode reader fails (send back page image so they can see which one failed)
