@@ -18,7 +18,11 @@ const execa = (file, args, options) => {
     command += ` ${args.join(' ')}`;
   }
   console.log(`$ ${command}`);
-  return execaRaw(file, args, options);
+  return execaRaw(file, args, {
+    // Default to mirroring all output back to the user.
+    stdio: 'inherit',
+    ...options,
+  });
 };
 
 const getImageTag = async () => {

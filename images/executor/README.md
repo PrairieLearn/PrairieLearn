@@ -8,7 +8,13 @@ This image is built and pushed to the container registry as `prairielearn/execut
 
 There are scripts in the `/tools` directory that will aid with the building and releasing of this image. They will automatically determine the correct tag from the underlying Git repository. The scripts should be run from the root of the repository.
 
-To build and tag the image for local testing, run:
+To build and tag the image for local testing, first ensure that you've built an up-to-date `prairielearn/prairielearn` image, as the `priarielearn/executor` image uses that as its base. You can build a new version by running the following in the root of the repository:
+
+```sh
+docker build -t prairielearn/prairielearn:latest .
+```
+
+Then, run the following to build a new executor image:
 
 ```sh
 ./tools/executor/build.js
@@ -22,7 +28,7 @@ To push the built image to the Docker and ECR registries, run:
 
 ## In-dev testing
 
-Build the image using the above `build-executor.sh` script. Make note of the name of the resulting image; you'll need this image name momentarily.
+Build the image using the above instructions. Make note of the name of the resulting image; you'll need this image name momentarily.
 
 Start the container, using the version of the container that you noted above (the examples below use the Git hash `12345`). Note that we mount in the PrairieLearn `elements` directory so that the examples below can use PrairieLearn's elements:
 
