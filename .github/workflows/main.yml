@@ -23,6 +23,8 @@ jobs:
       run: echo $GITHUB_REF
     - name: Print last 20 commits
       run: git log -n 20
+    - name: Print the env
+      run: env
     - name: Build the plbase docker image if needed
       run: sh ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase
     - name: Build the grader-c docker image if needed
