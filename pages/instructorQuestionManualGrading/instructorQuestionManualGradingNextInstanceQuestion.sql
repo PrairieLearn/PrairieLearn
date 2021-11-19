@@ -22,6 +22,6 @@ WITH to_grade AS (
 )
 SELECT * FROM to_grade
 WHERE graded_at IS NULL
-ORDER BY is_next DESC
+ORDER BY is_next DESC -- choose next question if there is one, otherwise choose any question
 LIMIT 1;
 
