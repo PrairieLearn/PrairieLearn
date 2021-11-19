@@ -12,7 +12,7 @@ WHERE
 
 
 -- BLOCK select_instance_questions_manual_grading
-SELECT * from (
+SELECT * FROM (
 SELECT DISTINCT ON (iq.id)
     iq.*,
     s.graded_at,
@@ -30,5 +30,5 @@ WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id
 ORDER BY iq.id DESC, s.date DESC, s.id DESC
-) as to_grade
+) AS to_grade
 ORDER BY user_or_group_name;
