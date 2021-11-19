@@ -136,7 +136,7 @@ router.post('/', function (req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(
               `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded?instance_question=${res.locals.instance_question.id}`
-              );
+            );
           });
         });
       }
