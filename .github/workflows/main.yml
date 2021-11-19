@@ -25,6 +25,8 @@ jobs:
       run: git log -n 20
     - name: Print the env
       run: env
+    - run: git rev-parse HEAD^1
+    - run: git rev-parse HEAD~1
     - name: Build the plbase docker image if needed
       run: sh ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase
     - name: Build the grader-c docker image if needed
