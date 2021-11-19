@@ -93,54 +93,53 @@ function handleInput(line, caller) {
   });
 }
 
-(async () => {
-  // Our overall loop looks like this: read a line of input from stdin, spin
-  // off a python worker to handle it, and write the results back to stdout.
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false,
-  });
+// Our overall loop looks like this: read a line of input from stdin, spin
+// off a python worker to handle it, and write the results back to stdout.
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  terminal: false,
+});
 
-  let questionTimeoutMilliseconds;
-  try {
-    questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
-  } catch (e) {
-    questionTimeoutMilliseconds = 10000;
+let questionTimeoutMilliseconds;
+try {
+  questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
+} catch (e) {
+  questionTimeoutMilliseconds = 10000;
+}
+
+let pc = new PythonCaller({ dropPrivileges: true, questionTimeoutMilliseconds });
+pc.ensureChild();
+
+// Safety check: if we receive more input while handling another request,
+// discard it.
+let processingRequest = false;
+rl.on('line', (line) => {
+  if (processingRequest) {
+    // Someone else messed up - fail fast.
+    process.exit(1);
   }
 
-  let pc = new PythonCaller({ dropPrivileges: true, questionTimeoutMilliseconds });
-  pc.ensureChild();
+  processingRequest = true;
+  handleInput(line, pc)
+    .then((results) => {
+      const { needsFullRestart, ...rest } = results;
+      if (needsFullRestart) {
+        pc.done();
+        pc = new PythonCaller();
+        pc.ensureChild();
+      }
+      console.log(JSON.stringify(rest));
+      processingRequest = false;
+    })
+    .catch((err) => {
+      console.error(err);
+      processingRequest = false;
+    });
+});
 
-  // Safety check: if we receive more input while handling another request,
-  // discard it.
-  let processingRequest = false;
-  rl.on('line', (line) => {
-    if (processingRequest) {
-      // Someone else messed up, ignore this line
-      return;
-    }
-    processingRequest = true;
-    handleInput(line, pc)
-      .then((results) => {
-        const { needsFullRestart, ...rest } = results;
-        if (needsFullRestart) {
-          pc.done();
-          pc = new PythonCaller();
-          pc.ensureChild();
-        }
-        console.log(JSON.stringify(rest));
-        processingRequest = false;
-      })
-      .catch((err) => {
-        console.error(err);
-        processingRequest = false;
-      });
-  });
-
-  rl.on('close', () => {
-    // We can't get any more input; die immediately to allow our container
-    // to be removed.
-    process.exit(0);
-  });
-})();
+rl.on('close', () => {
+  // We can't get any more input; die immediately to allow our container
+  // to be removed.
+  process.exit(0);
+});
