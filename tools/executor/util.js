@@ -20,7 +20,8 @@ const execa = (file, args, options) => {
   console.log(`$ ${command}`);
   return execaRaw(file, args, {
     // Default to mirroring all output back to the user.
-    stdio: 'inherit',
+    stdout: 'inherit',
+    stderr: 'inherit',
     ...options,
   });
 };
