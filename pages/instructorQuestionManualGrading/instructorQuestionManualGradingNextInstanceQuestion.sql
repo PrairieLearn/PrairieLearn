@@ -20,7 +20,7 @@ WITH to_grade AS (
         ORDER BY iq.id DESC, s.date DESC, s.id DESC) AS submission_info
     WHERE submission_info.graded_at IS NULL OR submission_info.id = $prior_instance_question_id
 )
-SELECT * from to_grade
+SELECT * FROM to_grade
 WHERE graded_at IS NULL
 ORDER BY is_next DESC
 LIMIT 1;
