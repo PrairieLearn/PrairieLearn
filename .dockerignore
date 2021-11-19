@@ -7,7 +7,6 @@
 !.eslintrc.js
 !.prettierignore
 !.prettierrc.json
-!.yarnrc
 !tsconfig.json
 !admin_queries/
 !api/
