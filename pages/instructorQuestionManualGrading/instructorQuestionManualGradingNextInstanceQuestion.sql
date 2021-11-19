@@ -1,6 +1,6 @@
 -- BLOCK get_next_ungraded_instance_question
 WITH to_grade AS (
-    SELECT *, (lag(id) OVER (ORDER BY user_or_group_name DESC) IS NOT DISTINCT FROM $prior_instance_question_id) AS is_next
+    SELECT *, (lead(id) OVER (ORDER BY user_or_group_name DESC) IS NOT DISTINCT FROM $prior_instance_question_id) AS is_next
     FROM (
         SELECT DISTINCT ON (iq.id)
             iq.*,
