@@ -11,14 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Print SHA
-      run: echo $GITHUB_SHA
     - uses: actions/checkout@v2.3.4
       with:
-        # Checkout the PR HEAD commit instead of merge commit
-        ref: ${{ github.event.pull_request.head.sha }}
+        # # Checkout the PR HEAD commit instead of merge commit
+        # ref: ${{ github.event.pull_request.head.sha }}
         # We need the whole history so we can diff against `master` in `build-plbase-if-needed.sh`
         fetch-depth: 0
+    - name: Print SHA
+      run: echo $GITHUB_SHA
+    - name: Print GitHub Ref
+      run: echo $GITHUB_REF
+    - name: Print last 20 commits
+      run: git log -n 20
     - name: Build the plbase docker image if needed
       run: sh ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase
     - name: Build the grader-c docker image if needed
