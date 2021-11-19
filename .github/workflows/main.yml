@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Print SHA
+      run: echo $GITHUB_SHA
     - uses: actions/checkout@v2.3.4
       with:
         # Checkout the PR HEAD commit instead of merge commit
