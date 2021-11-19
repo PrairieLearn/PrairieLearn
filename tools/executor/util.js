@@ -27,6 +27,21 @@ const execa = (file, args, options) => {
 };
 
 const getImageTag = async () => {
+  if (
+    process.env.CI &&
+    process.env.GITHUB_EVENT_NAME === 'pull_request' &&
+    process.env.GITHUB_REF_NAME?.match(/^\d+\/merge$/)
+  ) {
+    // This is GitHub's automated merge commit on a pull request. However,
+    // this commit doesn't actually exist on this branch, which means that
+    // if we try to deploy this branch to a staging environment but tag the
+    // image with the head SHA, the version that's deployed wouldn't match
+    // the image tag. So, in this case, we actually take the *previous*
+    // commit, which should be the one made by a user that actually triggered
+    // this workflow run.
+    return (await execaRaw('git', ['rev-parse', 'HEAD~1'])).stdout;
+  }
+
   return (await execaRaw('git', ['rev-parse', 'HEAD'])).stdout;
 };
 
