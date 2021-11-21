@@ -264,7 +264,8 @@ class CGrader:
                 self.result['partial_scores'][field]['max_points'] += max_points
         return test
 
-    def run_check_suite(self, exec_file, args=None):
+    def run_check_suite(self, exec_file, args=None,
+                        use_suite_title=False, use_case_name=True, use_unit_test_id=True):
 
         if not args:
             args = []
@@ -279,15 +280,17 @@ class CGrader:
                                env={'CK_XML_LOG_FILE_NAME': log_file, 'TEMP': '/tmp'})
         print(out)
 
+        separator_1 = ': ' if use_suite_title and use_case_name else ''
+        separator_2 = ' - ' if use_unit_test_id and (use_suite_title or use_case_name) else ''
         try:
             tree = ET.parse(log_file)
             for suite in tree.getroot().findall('{*}suite'):
-                suite_title = suite.findtext('{*}title')
+                suite_title = suite.findtext('{*}title') if use_suite_title else ''
                 for test in suite.findall('{*}test'):
                     result = test.get('result')
-                    test_id = test.findtext('{*}id')
-                    test_description = test.findtext('{*}description')
-                    self.add_test_result(f'{test_description} ({suite_title}/{test_id})',
+                    test_id = test.findtext('{*}id') if use_unit_test_id else ''
+                    case_name = test.findtext('{*}description') if use_case_name else ''
+                    self.add_test_result(f'{suite_title}{separator_1}{case_name}{separator_2}{test_id}',
                                          points=result == 'success',
                                          output=test.findtext('{*}message'))
         except FileNotFoundError as e:
