@@ -125,7 +125,15 @@ module.exports.initExpress = function () {
   });
   app.post(
     '/pl/scan_artifacts',
-    upload.single('file')
+    // Exception for PDF uploads, which may be quite a bit bigger than other file uploads
+    multer({
+      storage: multer.memoryStorage(),
+      limits: {
+        fieldSize: 2.5e+7, // exception: 25MB, as we anticipate a large PDF file 
+        fileSize: 2.5e+7,
+        parts: config.fileUploadMaxParts,
+      },
+    }).single('file')
   );
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads',
