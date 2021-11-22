@@ -38,7 +38,15 @@ const decodeJpegs = async (jpegs) => {
   return jpegs;
 };
 
+/**
+ * Detects and extracts a barcode on a jpeg file
+ * @param {string} jpeg jpeg file object produced by convertPdf() containing meta data
+ * @returns {string} a code-128 formatted barcode or undefined
+ */
 const decodeJpeg = async (jpeg) => {
+  if (!jpeg || !jpeg.pageNum || !jpeg.jpegFilepath || !jpeg.workingDir) {
+    throw Error('Invalid jpeg file or missing metadata');
+  }
   const segmentFilepaths = await segmentJpeg(jpeg.pageNum, jpeg.jpegFilepath, jpeg.workingDir);
   for (let i = 0; i < segmentFilepaths.length; i++) {
     // break as soon as a segment has a barcode
@@ -49,6 +57,15 @@ const decodeJpeg = async (jpeg) => {
   }
 };
 
+/**
+ * Quagga fails to locate barcodes on the borders of full-sized pages because:
+ * (1.) barcode appears almost too small for x-small patchSize option to read unless super high resolution
+ * (2.) the locator fails to locate barcodes on edges/borders of a large image. It generally looks in the center.
+ * Hence, we segment a full jpeg and input segments so barcode appears in center of segment and barcode appears bigger
+ * relative to patch size.
+ * @param {string} filepath vertical slice of a jpeg full page
+ * @returns {string} a barcode string or undefined
+ */
 const decodeJpegSegment = async (filepath) => {
   return new Promise((resolve, reject) => {
     try {
@@ -132,6 +149,14 @@ const pdfPageToJpeg = async (pageNum, pdfFilePath, workingDir) => {
   });
 };
 
+/**
+ * Converts a pdf to a array of jpeg objects. Each array entry refers to a page of the pdf
+ * with supporting metadata for further barcode decoding operations.
+ * @param {number} numPages length of pdf object
+ * @param {buffer} data buffer of file upload
+ * @param {string} originalName original name of pdf file upload
+ * @returns 
+ */
 const convertPdf = async (numPages, data, originalName) => {
   const converted = [];
   const workingDir = path.join(processingDir, uuidv4());
@@ -144,9 +169,6 @@ const convertPdf = async (numPages, data, originalName) => {
     const start = new Date();
     const jpegFilename = await pdfPageToJpeg(i, pdfPath, workingDir);
     const jpegFilepath = path.join(workingDir, jpegFilename);
-    // could place here but this object is getting confusing
-    // const pageSegments = await pdfPageToJpegSegments(i, pdfPath, workingDir);
-    // console.log(pageSegments);
     const end = new Date();
     const secondsElapsed = (end - start) / 1000;
     converted.push({pageNum: i, secondsElapsed, jpegFilename, jpegFilepath, workingDir, originalName});
