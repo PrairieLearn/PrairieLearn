@@ -1,6 +1,11 @@
 .pl-symbolic-input-popover {
-    width: 500px;
-    max-width: 100%;
+    width: auto;
+    max-width: auto; /* Fixes display errors of the popup displayed on invalid input 
+                        processing when the LaTeX formula for the input exceeds 500px. 
+                        This is good because the browser will ordinarily cutoff the RHS 
+                        display at the window width.
+                     */
+    opacity: 0.80;  /* Gives some background context for oversized popup displays */
 }
 
 .pl-symbolic-input-input {

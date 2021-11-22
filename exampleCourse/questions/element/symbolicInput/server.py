@@ -17,6 +17,7 @@ def generate(data):
     symMathExample2 = 'log32(x^2) * zeta(5) + y'
     symMathExample3 = 'ln((max(1-t, x) + min(y+2, z) - lg(w^2)) / 2)'
     symMathExample4 = 'x * mod(cbrt_omega) / 137 + 1 - t^(3 / 2)'
+    symMathExample5 = '1 / 2 / sqrt2 * ((1 + sqrt2)**n + (1 - sqrt2)**n) / mibi + speed_of_light'
     prepareSymbolicAnswerFunc = lambda expr: pl.to_json(sympy.sympify(expr))
     x = sympy.var('x')
     data['correct_answers']['simplify_example'] = prepareSymbolicAnswerFunc('x^2+x+1')
@@ -24,3 +25,4 @@ def generate(data):
     data['correct_answers']['symbolic_math_example2'] = prepareSymbolicAnswerFunc(symMathExample2)
     data['correct_answers']['symbolic_math_example3'] = prepareSymbolicAnswerFunc(symMathExample3)
     data['correct_answers']['symbolic_math_example4'] = prepareSymbolicAnswerFunc(symMathExample4)
+    data['correct_answers']['symbolic_math_example5'] = prepareSymbolicAnswerFunc(symMathExample5)

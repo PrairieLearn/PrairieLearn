@@ -87,14 +87,7 @@ def render(element_html, data):
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    CONSTANTS_INSTANCE_LOOKUP[name] = phs._Constants()
-    extra_functions_string = pl.get_string_attrib(element, OPTION_ENABLE_EXTRA_FUNCTION_NAMES, EXTRA_FUNCTIONS_DEFAULT)
-    extra_functions = get_variables_list(extra_functions_string)
-    CONSTANTS_INSTANCE_LOOKUP[name] = CONSTANTS_INSTANCE_LOOKUP[name].add_new_operator_names(extra_functions)
-    custom_functions_by_group_string = pl.get_string_attrib(element, OPTION_ENABLE_CUSTOM_FUNCTION_GROUPS, CUSTOM_FUNCTION_GROUPS_DEFAULT)
-    CONSTANTS_INSTANCE_LOOKUP[name] = CONSTANTS_INSTANCE_LOOKUP[name].enable_extended_func_names(custom_functions_by_group_string)
-    custom_constants_by_group_string = pl.get_string_attrib(element, OPTION_ENABLE_SYMBOLIC_CONSTANTS, SYMBOLIC_CONSTANT_GROUPS_DEFAULT)
-    CONSTANTS_INSTANCE_LOOKUP[name] = CONSTANTS_INSTANCE_LOOKUP[name].enable_extended_symbolic_constants(name, custom_constants_by_group_string)
+    prepare_context(element_html, None, name)
     operators = CONSTANTS_INSTANCE_LOOKUP[name].get_supported_function_names()
     arithmetic_operators = ['( )', '+', '-', '**', '/', '^', '*']
     operators.extend(arithmetic_operators)
@@ -170,11 +163,17 @@ def render(element_html, data):
             a_sub = data['submitted_answers'][name]
             if isinstance(a_sub, str):
                 # this is for backward-compatibility
-                a_sub = phs.convert_string_to_sympy_with_context(a_sub, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
-                                                                 allow_complex=allow_complex, allow_hidden=allow_complex)
+                a_sub = phs.convert_string_to_sympy(a_sub, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
+                                                    allow_complex=allow_complex, allow_hidden=allow_complex)
             else:
-                a_sub = phs.json_to_sympy_with_context(a_sub, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
-            a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
+                a_sub = phs.json_to_sympy(a_sub, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
+            # The calls to a_sub.subs(...) and/or a_sub.replace(...) can fail in newer versions if a sub 
+            # corresponds to a particular subset of types, like sympy.core.mul.Mul, for example. 
+            # Therefore, we try to replace subexpressions and catch the exception if that is not possible:
+            try:
+                a_sub = a_sub.replace(sympy.I, sympy.Symbol(imaginary_unit), map=True)
+            except TypeError as terr:
+                pass 
             html_params['a_sub'] = sympy.latex(a_sub)
         elif name not in data['submitted_answers']:
             html_params['missing_input'] = True
@@ -234,11 +233,17 @@ def render(element_html, data):
                 a_tru = a_tru.replace('^', '**')
                 a_tru = a_tru.replace(u'\u2212', '-')
                 a_tru = a_tru.strip()
-                a_tru = phs.convert_string_to_sympy_with_context(a_tru, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
-                                                                 allow_complex=allow_complex, allow_hidden=allow_complex)
+                a_tru = phs.convert_string_to_sympy(a_tru, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
+                                                    allow_complex=allow_complex, allow_hidden=allow_complex)
             else:
-                a_tru = phs.json_to_sympy_with_context(a_tru, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
-            a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
+                a_tru = phs.json_to_sympy(a_tru, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
+            # The calls to a_tru.subs(...) and/or a_tru.replace(...) can fail in newer versions if a sub 
+            # corresponds to a particular subset of types, like sympy.core.mul.Mul, for example. 
+            # Therefore, we try to replace subexpressions and catch the exception if that is not possible:
+            try:
+                a_tru = a_tru.replace(sympy.I, sympy.Symbol(imaginary_unit), map=True)
+            except TypeError as terr:
+                pass
             html_params = {
                 'answer': True,
                 'label': label,
@@ -287,19 +292,25 @@ def parse(element_html, data):
         a_sub = a_sub.strip()
 
         # Convert safely to sympy
-        a_sub_parsed = phs.convert_string_to_sympy_with_context(a_sub, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
-                                                                allow_complex=allow_complex, allow_hidden=allow_complex)
+        a_sub_parsed = phs.convert_string_to_sympy(a_sub, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
+                                                   allow_complex=allow_complex, allow_hidden=allow_complex)
 
         # If complex numbers are not allowed, raise error if expression has the imaginary unit
         if (not allow_complex) and (a_sub_parsed.has(sympy.I)):
-            a_sub_parsed = a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
+            # The calls to a_sub_parsed.subs(...) and/or a_sub_parsed.replace(...) can fail in newer versions if a sub 
+            # corresponds to a particular subset of types, like sympy.core.mul.Mul, for example. 
+            # Therefore, we try to replace subexpressions and catch the exception if that is not possible:
+            try:
+                a_sub_parsed = a_sub_parsed.replace(sympy.I, sympy.Symbol(imaginary_unit), map=True)
+            except TypeError as terr:
+                pass 
             s = 'Your answer was simplified to this, which contains a complex number (denoted ${:s}$): $${:s}$$'.format(imaginary_unit, sympy.latex(a_sub_parsed))
             data['format_errors'][name] = s
             data['submitted_answers'][name] = None
             return
 
         # Store result as json.
-        a_sub_json = phs.sympy_to_json_with_context(a_sub_parsed, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
+        a_sub_json = phs.sympy_to_json(a_sub_parsed, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
     except phs.HasFloatError as err:
         s = 'Your answer contains the floating-point number ' + str(err.n) + '. '
         s += 'All numbers must be expressed as integers (or ratios of integers). '
@@ -360,7 +371,7 @@ def parse(element_html, data):
     # Make sure we can parse the json again
     try:
         # Convert safely to sympy
-        phs.json_to_sympy_with_context(a_sub_json, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
+        phs.json_to_sympy(a_sub_json, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
 
         # Finally, store the result
         data['submitted_answers'][name] = a_sub_json
@@ -392,18 +403,18 @@ def grade(element_html, data):
     # Parse true answer
     if isinstance(a_tru, str):
         # this is so instructors can specify the true answer simply as a string
-        a_tru = phs.convert_string_to_sympy_with_context(a_tru, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
-                                                         allow_complex=allow_complex, allow_hidden=allow_complex)
+        a_tru = phs.convert_string_to_sympy(a_tru, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
+                                            allow_complex=allow_complex, allow_hidden=allow_complex)
     else:
-        a_tru = phs.json_to_sympy_with_context(a_tru, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
+        a_tru = phs.json_to_sympy(a_tru, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
 
     # Parse submitted answer
     if isinstance(a_sub, str):
         # this is for backward-compatibility
-        a_sub = phs.convert_string_to_sympy_with_context(a_sub, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
+        a_sub = phs.convert_string_to_sympy(a_sub, variables, CONSTANTS_INSTANCE_LOOKUP[name], 
                                                          allow_complex=allow_complex, allow_hidden=allow_complex)
     else:
-        a_sub = phs.json_to_sympy_with_context(a_sub, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
+        a_sub = phs.json_to_sympy(a_sub, CONSTANTS_INSTANCE_LOOKUP[name], allow_complex=allow_complex)
 
     # Check equality
     correct = a_tru.equals(a_sub)

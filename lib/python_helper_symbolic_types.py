@@ -5,6 +5,62 @@ from sympy import Function, Symbol, Dummy, Number, NumberSymbol, MatrixSymbol
 from sympy import Rational, Float, Poly, UnevaluatedExpr
 from sympy.utilities.lambdify import implemented_function
 
+r""" SciPy mathematical constants, physical constants, and unit definitions:
+     SEE: https://docs.scipy.org/doc/scipy/reference/constants.html
+"""
+import scipy.constants as spconst
+
+class ScipyConstantValue:
+        
+    def __new__(self, spcValue, spcName):
+        super(ScipyConstantValue, self).__init__(self)
+        return self
+
+    def __init__(self, spcValue, spcName):
+        self.name = spcName
+        self.value = spcValue
+        super(ScipyConstantValue, self).__init__(self, spcName)
+        self.nargs = 0
+
+    def toSympy(self):
+        return str(self.name)
+
+    def setValue(self, spconstValue):
+        self.value = spconstValue
+
+    def setName(self, spconstName):
+        self.name = spconstName
+
+    def __str__(self):
+        if self.name is None:
+            raise ValueError
+        return str(self.name)
+
+    def _latex(self):
+        return str(self)
+
+    def __unicode__(self):
+        return str(self)
+
+    def __float__(self):
+        if self.value is None:
+            raise ValueError
+        return float(self.value)
+
+    def __int__(self):
+        if self.value is None:
+            raise ValueError
+        return int(self.value)
+
+    def _evalf(self):
+        if isinstance(self.value, int):
+            return int(self)
+        else:
+            return float(self)
+
+    def _eval_expand_func(self):
+        return self._evalf()
+
 class PLConstantValue(NumberSymbol):
 
     DEFAULT_NPREC = 2**12
@@ -34,13 +90,17 @@ class PLConstantValue(NumberSymbol):
         return self.unicode_symbol
 
     def _eval_expand_func(self, **hints):
+        if isinstance(self.sympy_impl, ScipyConstantValue):
+            return self.sympy_impl.toSympy()._eval_expand_func(function=isFunc)
         isFunc = False
         if isinstance(self.sympy_impl, Function):
             isFunc = True
         return self.sympy_impl._eval_expand_func(function=isFunc)
 
     def _eval_evalf(self, prec=DEFAULT_NPREC):
-        numericalConstApprox = self.evalf()._evalf(nprec)
+        #if isinstance(self.sympy_impl, ScipyConstantValue):
+        #    return self.sympy_impl.toSympy()
+        numericalConstApprox = self.sympy_impl._evalf()._evalf(nprec)
         return Float(numericalConstApprox, precision=prec)
 
     def evalf(self, prec=DEFAULT_NPREC):
@@ -48,21 +108,21 @@ class PLConstantValue(NumberSymbol):
 
     @property
     def sympy_impl(self):
+        if isinstance(self.sympy_impl, ScipyConstantValue):
+            return self.sympy_impl.toSympy()
         return self.sympy_impl
 
     def _prec(self):
         return DEFAULT_NPREC
 
-    def __mul__(self, other_obj):
-        return self.evalf() * other_obj
-
     def __add__(self, other_obj):
         return self.evalf() + other_obj
 
-r""" SciPy mathematical constants, physical constants, and unit definitions:
-     SEE: https://docs.scipy.org/doc/scipy/reference/constants.html
-"""
-#import scipy.constants as spconst
+    def __mul__(self, other_obj):
+        return self.evalf() * other_obj
+
+    def __sub__(self, other_obj):
+        return self.evalf() - other_obj
 
 class PLConstants:
 
@@ -183,190 +243,190 @@ class PLConstants:
 
     OPTION_NAMED_UNITS = "named-units"
     NAMED_UNITS_DICT = {
-        #'peta_si'  : {
-        #    'unicode_symbol' : u'P', 
-        #    'latex_symbol'   : r'\mathrm{P}',
-        #    'sympy_impl'     : 'spconst.peta', 
-        #    'docstr'         : 'SI unit - 10^15',
-        #},
-        #'tera_si'  : {
-        #    'unicode_symbol' : u'T', 
-        #    'latex_symbol'   : r'\mathrm{T}',
-        #    'sympy_impl'     : 'spconst.tera', 
-        #    'docstr'         : 'SI unit - 10^12',
-        #},
-        #'giga_si'  : {
-        #    'unicode_symbol' : u'G', 
-        #    'latex_symbol'   : r'\mathrm{G}',
-        #    'sympy_impl'     : 'spconst.giga', 
-        #    'docstr'         : 'SI unit - 10^9',
-        #},
-        #'mega_si'  : {
-        #    'unicode_symbol' : u'M', 
-        #    'latex_symbol'   : r'\mathrm{M}',
-        #    'sympy_impl'     : 'spconst.mega', 
-        #    'docstr'         : 'SI unit - 10^6',
-        #},
-        #'kilo_si'  : {
-        #    'unicode_symbol' : u'k', 
-        #    'latex_symbol'   : r'\mathrm{k}',
-        #    'sympy_impl'     : 'spconst.kilo', 
-        #    'docstr'         : 'SI unit - 10^3',
-        #},
-        #'deci_si'  : {
-        #    'unicode_symbol' : u'd', 
-        #    'latex_symbol'   : r'\mathrm{d}',
-        #    'sympy_impl'     : 'spconst.deci', 
-        #    'docstr'         : 'SI unit - 10^-1',
-        #},
-        #'centi_si' : {
-        #    'unicode_symbol' : u'c', 
-        #    'latex_symbol'   : r'\mathrm{c}',
-        #    'sympy_impl'     : 'spconst.centi', 
-        #    'docstr'         : 'SI unit - 10^-2',
-        #},
-        #'milli_si' : {
-        #    'unicode_symbol' : u'm', 
-        #    'latex_symbol'   : r'\mathrm{m}',
-        #    'sympy_impl'     : 'spconst.milli', 
-        #    'docstr'         : 'SI unit - 10^-3',
-        #},
-        #'micro_si' : {
-        #    'unicode_symbol' : u'μ', 
-        #    'latex_symbol'   : r'\mu',
-        #    'sympy_impl'     : 'spconst.micro', 
-        #    'docstr'         : 'SI unit - 10^-6',
-        #},
-        #'nano_si'  : {
-        #    'unicode_symbol' : u'n', 
-        #    'latex_symbol'   : r'\mathrm{n}',
-        #    'sympy_impl'     : 'spconst.nano', 
-        #    'docstr'         : 'SI unit - 10^-9',
-        #},
-        #'pico_si'  : {
-        #    'unicode_symbol' : u'p', 
-        #    'latex_symbol'   : r'\mathrm{p}',
-        #    'sympy_impl'     : 'spconst.pico', 
-        #    'docstr'         : 'SI unit - 10^-12',
-        #},
-        #'kibi'     : {
-        #    'unicode_symbol' : u'㎅', 
-        #    'latex_symbol'   : r'\mathrm{KiB}',
-        #    'sympy_impl'     : 'spconst.kibi', 
-        #    'docstr'         : 'Binary unit - 2^10',
-        #},
-        #'mibi'     : {
-        #    'unicode_symbol' : u'㎆', 
-        #    'latex_symbol'   : r'\mathrm{MiB}',
-        #    'sympy_impl'     : 'spconst.mebi', 
-        #    'docstr'         : 'Binary unit - 2^20',
-        #},
-        #'gibi'     : {
-        #    'unicode_symbol' : u'㎇', 
-        #    'latex_symbol'   : r'\mathrm{GiB}',
-        #    'sympy_impl'     : 'spconst.gibi', 
-        #    'docstr'         : 'Binary unit - 2^30',
-        #}, 
-        #'tebi'     : {
-        #    'unicode_symbol' : u'㎔', 
-        #    'latex_symbol'   : r'\mathrm{TiB}',
-        #    'sympy_impl'     : 'spconst.tebi', 
-        #    'docstr'         : 'Binary unit - 2^40',
-        #},
+        'peta_si'  : {
+            'unicode_symbol' : u'P', 
+            'latex_symbol'   : r'\mathrm{P}',
+            'sympy_impl'     : float(spconst.peta), 
+            'docstr'         : 'SI unit - 10^15',
+        },
+        'tera_si'  : {
+            'unicode_symbol' : u'T', 
+            'latex_symbol'   : r'\mathrm{T}',
+            'sympy_impl'     : float(spconst.tera), 
+            'docstr'         : 'SI unit - 10^12',
+        },
+        'giga_si'  : {
+            'unicode_symbol' : u'G', 
+            'latex_symbol'   : r'\mathrm{G}',
+            'sympy_impl'     : float(spconst.giga), 
+            'docstr'         : 'SI unit - 10^9',
+        },
+        'mega_si'  : {
+            'unicode_symbol' : u'M', 
+            'latex_symbol'   : r'\mathrm{M}',
+            'sympy_impl'     : float(spconst.mega), 
+            'docstr'         : 'SI unit - 10^6',
+        },
+        'kilo_si'  : {
+            'unicode_symbol' : u'k', 
+            'latex_symbol'   : r'\mathrm{k}',
+            'sympy_impl'     : float(spconst.kilo), 
+            'docstr'         : 'SI unit - 10^3',
+        },
+        'deci_si'  : {
+            'unicode_symbol' : u'd', 
+            'latex_symbol'   : r'\mathrm{d}',
+            'sympy_impl'     : float(spconst.deci), 
+            'docstr'         : 'SI unit - 10^-1',
+        },
+        'centi_si' : {
+            'unicode_symbol' : u'c', 
+            'latex_symbol'   : r'\mathrm{c}',
+            'sympy_impl'     : float(spconst.centi), 
+            'docstr'         : 'SI unit - 10^-2',
+        },
+        'milli_si' : {
+            'unicode_symbol' : u'm', 
+            'latex_symbol'   : r'\mathrm{m}',
+            'sympy_impl'     : float(spconst.milli), 
+            'docstr'         : 'SI unit - 10^-3',
+        },
+        'micro_si' : {
+            'unicode_symbol' : u'μ', 
+            'latex_symbol'   : r'\mu',
+            'sympy_impl'     : float(spconst.micro), 
+            'docstr'         : 'SI unit - 10^-6',
+        },
+        'nano_si'  : {
+            'unicode_symbol' : u'n', 
+            'latex_symbol'   : r'\mathrm{n}',
+            'sympy_impl'     : float(spconst.nano), 
+            'docstr'         : 'SI unit - 10^-9',
+        },
+        'pico_si'  : {
+            'unicode_symbol' : u'p', 
+            'latex_symbol'   : r'\mathrm{p}',
+            'sympy_impl'     : float(spconst.pico), 
+            'docstr'         : 'SI unit - 10^-12',
+        },
+        'kibi'     : {
+            'unicode_symbol' : u'㎅', 
+            'latex_symbol'   : r'\mathrm{KiB}',
+            'sympy_impl'     : float(spconst.kibi), 
+            'docstr'         : 'Binary unit - 2^10',
+        },
+        'mibi'     : {
+            'unicode_symbol' : u'㎆', 
+            'latex_symbol'   : r'\mathrm{MiB}',
+            'sympy_impl'     : ScipyConstantValue(spconst.mebi, 'mibi'), 
+            'docstr'         : 'Binary unit - 2^20',
+        },
+        'gibi'     : {
+            'unicode_symbol' : u'㎇', 
+            'latex_symbol'   : r'\mathrm{GiB}',
+            'sympy_impl'     : float(spconst.gibi), 
+            'docstr'         : 'Binary unit - 2^30',
+        }, 
+        'tebi'     : {
+            'unicode_symbol' : u'㎔', 
+            'latex_symbol'   : r'\mathrm{TiB}',
+            'sympy_impl'     : float(spconst.tebi), 
+            'docstr'         : 'Binary unit - 2^40',
+        },
     }
 
-    OPTION_NAMED_PHYSICAL_CONSTANTS = "named-physical-consts"
+    OPTION_NAMED_PHYSICAL_CONSTANTS = "named-physical-constants"
     NAMED_PHYSICAL_CONSTANTS_DICT = {
-        #'speed_of_light' : {
-        #    'unicode_symbol' : u'c',
-        #    'latex_symbol'   : r'\mathrm{c}',
-        #    'sympy_impl'     : 'spconst.speed_of_light', 
-        #    'docstr'         : 'The speed of light in a vacuum'
-        #},
-        #'planck_h'       : {
-        #    'unicode_symbol' : u'h',
-        #    'latex_symbol'   : r'\mathrm{h}',
-        #    'sympy_impl'     : 'spconst.Planck', 
-        #    'docstr'         : 'The Planck constant'
-        #},
-        #'newton_G'       : {
-        #    'unicode_symbol' : u'G',
-        #    'latex_symbol'   : r'\mathrm{G}',
-        #    'sympy_impl'     : 'spconst.gravitational_constant', 
-        #    'docstr'         : 'Newtonian constant of gravitation'
-        #},
-        #'acc_g'          : {
-        #    'unicode_symbol' : u'g',
-        #    'latex_symbol'   : r'\mathrm{g}',
-        #    'sympy_impl'     : 'spconst.g', 
-        #    'docstr'         : 'Standard acceleration of gravity'
-        #},
-        #'molgas_R'       : {
-        #    'unicode_symbol' : u'R-㏖',
-        #    'latex_symbol'   : r'\mathrm{R}',
-        #    'sympy_impl'     : 'spconst.gas_constant', 
-        #    'docstr'         : 'The molar gas constant'
-        #},
-        #'boltzmann_k'    : {
-        #    'unicode_symbol' : u'k',
-        #    'latex_symbol'   : r'\mathrm{k}',
-        #    'sympy_impl'     : 'spconst.Boltzmann', 
-        #    'docstr'         : 'The Boltzmann constant'
-        #},
-        #'liter'          : {
-        #    'unicode_symbol' : u'ℓ',
-        #    'latex_symbol'   : r'\ell',
-        #    'sympy_impl'     : 'spconst.liter', 
-        #    'docstr'         : 'One liter in cubic meters'
-        #},
-        #'speed_of_sound' : {
-        #    'unicode_symbol' : u'Mach',
-        #    'latex_symbol'   : r'\mathrm{Mach}',
-        #    'sympy_impl'     : 'spconst.speed_of_sound', 
-        #    'docstr'         : 'One Mach (approx., at 15 C, 1 atm) in meters per second'
-        #},
-        #'zero_celsius'   : {
-        #    'unicode_symbol' : u'0C',
-        #    'latex_symbol'   : r'\mathrm{0C}',
-        #    'sympy_impl'     : 'spconst.zero_Celsius', 
-        #    'docstr'         : 'Zero of Celsius scale in Kelvin'
-        #},
-        #'one_degree_F'   : {
-        #    'unicode_symbol' : u'℉',
-        #    'latex_symbol'   : r'^{\circ}\mathrm{F}',
-        #    'sympy_impl'     : 'spconst.degree_Fahrenheit', 
-        #    'docstr'         : 'One Fahrenheit (only differences) in Kelvins'
-        #},
-        #'eV'             : {
-        #    'unicode_symbol' : u'eV',
-        #    'latex_symbol'   : r'\mathrm{eV}',
-        #    'sympy_impl'     : 'spconst.electron_volt', 
-        #    'docstr'         : 'One electron volt in Joules'
-        #},
-        #'calorie'        : {
-        #    'unicode_symbol' : u'㎈',
-        #    'latex_symbol'   : r'\mathrm{cal}',
-        #    'sympy_impl'     : 'spconst.calorie', 
-        #    'docstr'         : 'One calorie (thermochemical) in Joules'
-        #},
-        #'Btu'            : {
-        #    'unicode_symbol' : u'Btu',
-        #    'latex_symbol'   : r'\mathrm{btu}',
-        #    'sympy_impl'     : 'spconst.Btu', 
-        #    'docstr'         : 'One British thermal unit (International Steam Table) in Joules'
-        #}, 
-        #'pound_force'    : {
-        #    'unicode_symbol' : u'lbf',
-        #    'latex_symbol'   : r'\mathrm{lbf}',
-        #    'sympy_impl'     : 'spconst.pound_force', 
-        #    'docstr'         : 'One pound force in newtons'
-        #},
-        #'kilogram_force' : {
-        #    'unicode_symbol' : u'kgf',
-        #    'latex_symbol'   : r'\mathrm{kgf}',
-        #    'sympy_impl'     : 'spconst.kilogram_force', 
-        #    'docstr'         : 'One kilogram force in newtons'
-        #},
+        'speed_of_light' : {
+            'unicode_symbol' : u'c',
+            'latex_symbol'   : r'\mathrm{c}',
+            'sympy_impl'     : ScipyConstantValue(spconst.speed_of_light, 'speed_of_light'), 
+            'docstr'         : 'The speed of light in a vacuum'
+        },
+        'planck_h'       : {
+            'unicode_symbol' : u'h',
+            'latex_symbol'   : r'\mathrm{h}',
+            'sympy_impl'     : float(spconst.Planck), 
+            'docstr'         : 'The Planck constant'
+        },
+        'newton_G'       : {
+            'unicode_symbol' : u'G',
+            'latex_symbol'   : r'\mathrm{G}',
+            'sympy_impl'     : float(spconst.gravitational_constant), 
+            'docstr'         : 'Newtonian constant of gravitation'
+        },
+        'acc_g'          : {
+            'unicode_symbol' : u'g',
+            'latex_symbol'   : r'\mathrm{g}',
+            'sympy_impl'     : float(spconst.g), 
+            'docstr'         : 'Standard acceleration of gravity'
+        },
+        'molgas_R'       : {
+            'unicode_symbol' : u'R-㏖',
+            'latex_symbol'   : r'\mathrm{R}',
+            'sympy_impl'     : float(spconst.gas_constant), 
+            'docstr'         : 'The molar gas constant'
+        },
+        'boltzmann_k'    : {
+            'unicode_symbol' : u'k',
+            'latex_symbol'   : r'\mathrm{k}',
+            'sympy_impl'     : float(spconst.Boltzmann), 
+            'docstr'         : 'The Boltzmann constant'
+        },
+        'liter'          : {
+            'unicode_symbol' : u'ℓ',
+            'latex_symbol'   : r'\ell',
+            'sympy_impl'     : float(spconst.liter), 
+            'docstr'         : 'One liter in cubic meters'
+        },
+        'speed_of_sound' : {
+            'unicode_symbol' : u'Mach',
+            'latex_symbol'   : r'\mathrm{Mach}',
+            'sympy_impl'     : float(spconst.speed_of_sound), 
+            'docstr'         : 'One Mach (approx., at 15 C, 1 atm) in meters per second'
+        },
+        'zero_celsius'   : {
+            'unicode_symbol' : u'0C',
+            'latex_symbol'   : r'\mathrm{0C}',
+            'sympy_impl'     : float(spconst.zero_Celsius), 
+            'docstr'         : 'Zero of Celsius scale in Kelvin'
+        },
+        'one_degree_F'   : {
+            'unicode_symbol' : u'℉',
+            'latex_symbol'   : r'^{\circ}\mathrm{F}',
+            'sympy_impl'     : float(spconst.degree_Fahrenheit), 
+            'docstr'         : 'One Fahrenheit (only differences) in Kelvins'
+        },
+        'eV'             : {
+            'unicode_symbol' : u'eV',
+            'latex_symbol'   : r'\mathrm{eV}',
+            'sympy_impl'     : float(spconst.electron_volt), 
+            'docstr'         : 'One electron volt in Joules'
+        },
+        'calorie'        : {
+            'unicode_symbol' : u'㎈',
+            'latex_symbol'   : r'\mathrm{cal}',
+            'sympy_impl'     : float(spconst.calorie), 
+            'docstr'         : 'One calorie (thermochemical) in Joules'
+        },
+        'Btu'            : {
+            'unicode_symbol' : u'Btu',
+            'latex_symbol'   : r'\mathrm{btu}',
+            'sympy_impl'     : float(spconst.Btu), 
+            'docstr'         : 'One British thermal unit (International Steam Table) in Joules'
+        }, 
+        'pound_force'    : {
+            'unicode_symbol' : u'lbf',
+            'latex_symbol'   : r'\mathrm{lbf}',
+            'sympy_impl'     : float(spconst.pound_force), 
+            'docstr'         : 'One pound force in newtons'
+        },
+        'kilogram_force' : {
+            'unicode_symbol' : u'kgf',
+            'latex_symbol'   : r'\mathrm{kgf}',
+            'sympy_impl'     : float(spconst.kilogram_force), 
+            'docstr'         : 'One kilogram force in newtons'
+        },
     }
  
     @staticmethod
@@ -399,15 +459,15 @@ def GetConstantVariablesByGroup(cvarGrpId=None):
     varsDict = dict([])
     allVarGroupsDict = { 
         PLConstants.OPTION_NAMED_CONSTANTS          : lambda: PLConstants.GetAllNamedConstants(),
-        #PLConstants.OPTION_NAMED_UNITS              : lambda: PLConstants.GetAllUnitConstants(),
-        #PLConstants.OPTION_NAMED_PHYSICAL_CONSTANTS : lambda: PLConstants.GetAllPhysicalConstants(),
+        PLConstants.OPTION_NAMED_UNITS              : lambda: PLConstants.GetAllUnitConstants(),
+        PLConstants.OPTION_NAMED_PHYSICAL_CONSTANTS : lambda: PLConstants.GetAllPhysicalConstants(),
     }   
     varGroupsToAdd = [ cvarGrpId ]
     if cvarGrpId is None:
         varGroupsToAdd = [ 
             PLConstants.OPTION_NAMED_CONSTANTS,
-            #PLConstants.OPTION_NAMED_UNITS,
-            #PLConstants.OPTION_NAMED_PHYSICAL_CONSTANTS
+            PLConstants.OPTION_NAMED_UNITS,
+            PLConstants.OPTION_NAMED_PHYSICAL_CONSTANTS
         ]   
     for varGrp in varGroupsToAdd:
         if varGrp not in allVarGroupsDict.keys():

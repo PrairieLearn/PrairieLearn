@@ -499,21 +499,26 @@ Fill in the blank field that allows for mathematical symbol input.
 
 **question.html**
 ```html
-     <!-- Enable the input: x + y + 1 -->
+     {{! Enable the input: x + y + 1 }}
      <pl-symbolic-input answers-name="symbolic_math_example1" variables="x, y" label="$z =$" />
      
-     <!-- Expect the input: log32(x**2) * zeta(5) + y -->
+     {{! Expect the input: log32(x**2) * zeta(5) + y }}
      <pl-symbolic-input answers-name="symbolic_math_example2" variables="x, y" 
           extra-functions="log32, zeta" label="$z =$" />
      
-     <!-- Expect the input: ln((max(1-t, x) + min(y+2, z) - lg(w**2)) / 2) -->
+     {{! Expect the input: ln((max(1-t, x) + min(y+2, z) - lg(w**2)) / 2) }}
      <pl-symbolic-input answers-name="symbolic_math_example3" variables="x, y, z, w, t" 
           enable-function-groups="calculus-extended, logarithmic, prog-extended" label="$z =$" />
 
-     <!-- Expect the input: x * abs(cbrt_omega) * tebi / 137 + 1 - t^(3 / 2) -->
+     {{! Expect the input: x * abs(cbrt_omega) * tebi / 137 + 1 - t^(3 / 2) }}
      <pl-symbolic-input answers-name="symbolic_math_example4" variables="x, t" 
           enable-function-groups="complex-variables" 
           enable-constant-groups="named-constants" label="$z =$" />
+
+     {{! Expect the input: 1 / 2 / sqrt2 * ((1 + sqrt2)**n + (1 - sqrt2)**n) / mibi }}
+     <pl-symbolic-input answers-name="symbolic_math_example5" allow-blank="true" variables="n" 
+          allow-complex="true" enable-constant-groups="named-constants, named-units, named-physical-constants" 
+          label="$P_n + c =$" />
 ```
 
 **server.py**
@@ -535,6 +540,7 @@ def generate(data):
   symMathExample2 = 'log32(x^2) * zeta(5) + y'
   symMathExample3 = 'ln((max(1-t, x) + min(y+2, z) - lg(w^2)) / 2)'
   symMathExample4 = 'x * abs(cbrt_omega) * tebi / 137 + 1 - t^(3 / 2)'
+  symMathExample5 = '1 / 2 / sqrt2 * ((1 + sqrt2)**n + (1 - sqrt2)**n) / mibi'
 
   prepareSymbolicAnswerFunc = lambda expr: pl.to_json(sympy.sympify(expr))
 
@@ -543,64 +549,65 @@ def generate(data):
   data['correct_answers']['symbolic_math_example2'] = prepareSymbolicAnswerFunc(symMathExample2)
   data['correct_answers']['symbolic_math_example3'] = prepareSymbolicAnswerFunc(symMathExample3)
   data['correct_answers']['symbolic_math_example4'] = prepareSymbolicAnswerFunc(symMathExample4)
+  data['correct_answers']['symbolic_math_example5'] = prepareSymbolicAnswerFunc(symMathExample5)
 ```
 
 #### Customizations
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`answers-name` | string | — | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`.
-`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
-`label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
-`display` | "block" or "inline" | "inline" | How to display the input field.
-`variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
-`extra-functions` | string | - | A comma-delimited list of extra function names that can be used in the symbolic expression. Note that an exception is raised if the list contains one or more names that coincide with existing reserved functions.
-`enable-function-groups` | string | - | A single-comma-delimited list of extra function group names that can be enabled at runtime. A list of valid function group names includes the following: `trig-base`, `trig-hyperbolic`, `complex-variables`, `logarithmic`, `prog-extended`, `calculus-extended`, or `all` to enable all of the groups (see descriptions below). 
-`enable-constant-groups` | string | - | A single-comma-delimited list of extra symbolic constant group names that can be optionally enabled at runtime. A list of valid constant groups includes the following: `named-constants`, `named-units`, `named-physical-constants`, or `all` to enable all of the groups (see descriptions below).
 `allow-complex` | boolean | false | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.
-`imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
+`answers-name` | string | — | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`.
 `allow-blank` | boolean | false |  Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).
 `blank-value` | string | 0 (zero) | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).
-`size` | integer | 35 | Size of the input box.
+`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
+`display` | "block" or "inline" | "inline" | How to display the input field.
+`enable-constant-groups` | string | - | A single-comma-delimited list of extra symbolic constant group names that can be optionally enabled at runtime. A list of valid constant groups includes the following: `named-constants`, `named-units`, `named-physical-constants`, or `all` to enable all of the groups (see descriptions below).
+`extra-functions` | string | - | A comma-delimited list of extra function names that can be used in the symbolic expression. Note that an exception is raised if the list contains one or more names that coincide with existing reserved functions.
+`enable-function-groups` | string | - | A single-comma-delimited list of extra function group names that can be enabled at runtime. A list of valid function group names includes the following: `trig-base`, `trig-hyperbolic`, `complex-variables`, `logarithmic`, `prog-extended`, `calculus-extended`, or `all` to enable all of the groups (see descriptions below). 
+`imaginary-unit-for-display` | string | `i` | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is *only* for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `show-help-text` | boolean | true | Show the question mark at the end of the input displaying required input parameters.
+`size` | integer | 35 | Size of the input box.
+`variables` | string | — | A comma-delimited list of symbols that can be used in the symbolic expression.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
 
 ##### Descriptions of ``enable-function-groups`` selections
 
 The `enable-function-groups` option allows the definition of additional pre-determined functions to be allowed in the student answer. Here are the groups that can be listed:
 
+* ``calculus-extended``: Support for definitions of function names and implementations
+                      that are common in problem sets for typical introductory courses in differential and integral calculus
+                      including ``cos``, ``sin``, ``tan``, ``sec``, ``cot``, ``csc``,
+                      ``acos``, ``asin``, ``atan``,
+                      ``asec``, ``acot``, ``acsc``,
+                      ``arccos``, ``arcsin``,
+                      ``arctan``, ``atan2``, ``cosh``,
+                      ``sinh``, ``tanh``, ``sech``, ``coth``, ``csch``,
+                      ``acosh``, ``asinh``, ``atanh``,
+                      ``asech``, ``acoth``, ``acsch``,
+                      ``ln``, and ``exp``.
+* ``complex-variables``: Support for definitions of standard functions used
+                       with complex variables including ``arg``, ``mod``,
+                       ``re``, ``im``, and ``conj``.
+* ``logarithmic``: Support for definitions of common variants on notation for a few
+                      logarithm type functions including ``log``, ``ln``, ``lg``, ``log2``,
+                      ``log10``, ``exp``.
+* ``prog-extended``: Support for definitions of functions that are otherwise common in
+                      discrete math and / or theory classes including
+                      ``max``, ``min``, ``ceil``, ``floor``,
+                      ``frac``, ``abs``, ``sgn``,
+                      ``gcd``, ``lcm``, and ``sqrt``.
 * ``trig-base``: Support for definitions of basic (non-hyperbolic) trigonometric functions
-                      including $cos$, $sin$, $tan$, $sec$, $cot$, $csc$,
+                      including ``cos``, ``sin``, ``tan``, ``sec``, ``cot``, ``csc``,
                       ``acos``, ``asin``, ``atan``,
                       ``asec``, ``acot``, ``acsc``,
                       ``arccos``, ``arcsin``,
                       ``arctan``, and ``atan2``.
 * ``trig-hyperbolic``: Support for definitions of hyperbolic trig functions and their inverses
-                      including $cosh$, $sinh$, $tanh$, ``sech``, $coth$, ``csch``,
+                      including ``cosh``, ``sinh``, ``tanh``, ``sech``, ``coth``, ``csch``,
                       ``acosh``, ``asinh``, ``atanh``,
                       ``asech``, ``acoth``, and ``acsch``.
-* ``complex-variables``: Support for definitions of standard functions used
-                       with complex variables including ``arg``, ``mod``,
-                       ``re``, ``im``, and ``conj``.
-* ``logarithmic``: Support for definitions of common variants on notation for a few
-                      logarithm type functions including $log$, $ln$, ``lg``, ``log2``,
-                      ``log10``, $exp$.
-* ``prog-extended``: Support for definitions of functions that are otherwise common in
-                      discrete math and / or theory classes including
-                      $max$, $min$, ``ceil``, ``floor``,
-                      ``frac``, ``abs``, ``sgn``,
-                      $gcd$, ``lcm``, and ``sqrt``.
-* ``calculus-extended``: Support for definitions of function names and implementations
-                      that are common in problem sets for typical introductory courses in differential and integral calculus
-                      including $cos$, $sin$, $tan$, $sec$, $cot$, $csc$,
-                      ``acos``, ``asin``, ``atan``,
-                      ``asec``, ``acot``, ``acsc``,
-                      ``arccos``, ``arcsin``,
-                      ``arctan``, ``atan2``, $cosh$,
-                      $sinh$, $tanh$, ``sech``, $coth$, ``csch``,
-                      ``acosh``, ``asinh``, ``atanh``,
-                      ``asech``, ``acoth``, ``acsch``,
-                      $ln$, and $exp$.
 
 ##### Descriptions of ``enable-constant-groups`` selections
 
@@ -616,13 +623,6 @@ by enabling these individual groups:
   ``sqrt2``, ``log2e``, ``log10e``, ``ln10``, and 
   ``cbrt_omega`` (primitive cube root of unity, the other of which is  
   available by complex conjugation). 
-* ``named-units`` (feature pending better ``scipy`` library support): 
-  Support for a subset of the common SI unit (as powers of ten) 
-  and binary unit (as powers of two) multipliers including 
-  ``peta_si``, ``tera_si``, ``giga_si``, ``mega_si``, 
-  ``kilo_si``, ``deci_si``, ``centi_si``, 
-  ``milli_si``, ``micro_si``, ``nano_si``, ``pico_si``, 
-  ``kibi``, ``mibi``, ``gibi``, and ``tebi``. 
 * ``named-physical-constants`` (feature pending better ``scipy`` library support): 
   Support for common physical constants that is a good start for 
   applications but by no means exhaustive including 
@@ -635,6 +635,13 @@ by enabling these individual groups:
   ``eV`` (one electron volt in Joules), ``colorie`` (one thermochemical calorie in Joules), 
   ``Btu`` (unit in Joules), ``pound_force`` (in Newtons), and 
   ``kilogram_force`` (in Newtons).
+* ``named-units`` (feature pending better ``scipy`` library support): 
+  Support for a subset of the common SI unit (as powers of ten) 
+  and binary unit (as powers of two) multipliers including 
+  ``peta_si``, ``tera_si``, ``giga_si``, ``mega_si``, 
+  ``kilo_si``, ``deci_si``, ``centi_si``, 
+  ``milli_si``, ``micro_si``, ``nano_si``, ``pico_si``, 
+  ``kibi``, ``mibi``, ``gibi``, and ``tebi``. 
 
 #### Details
 

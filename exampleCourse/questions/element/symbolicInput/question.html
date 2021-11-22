@@ -80,7 +80,8 @@
           <pl-question-panel>
                 <p><i>Enter the following response:</i> <code>x + y + 1</code></p>
           </pl-question-panel>
-          <pl-symbolic-input answers-name="symbolic_math_example1" variables="x, y" label="$z =$" />
+          <pl-symbolic-input answers-name="symbolic_math_example1" allow-blank="true" variables="x, y" 
+                             blank-value="x + y + 1" label="$z =$" />
      </div>
 </div>
 
@@ -95,8 +96,8 @@
           these two functions as specified.</p>
           <p><i>Enter the following response:</i> <code>log32(x^2) * zeta(5) + y</code></p>
        </pl-question-panel>
-       <pl-symbolic-input answers-name="symbolic_math_example2" variables="x, y" 
-               extra-functions="log32, zeta" label="$z =$" />
+       <pl-symbolic-input answers-name="symbolic_math_example2" allow-blank="true" variables="x, y" 
+               extra-functions="log32, zeta" blank-value="log32(x^2) * zeta(5) + y" label="$z =$" />
      </div>
 </div>
 
@@ -110,17 +111,17 @@
              The next listings document what named function definitions are included 
              by enabling these individual groups:
              <ul>
-                  <li><code>trig-base</code>: Support for definitions of basic (non-hyperbolic) trigonometric functions 
+                  <li><code>calculus-extended</code>: Support for definitions of function names and implementations 
+                      that are common in problem sets for typical introductory courses in differential and integral calculus
                       including $\cos$, $\sin$, $\tan$, $\sec$, $\cot$, $\csc$, 
                       $\operatorname{acos}$, $\operatorname{asin}$, $\operatorname{atan}$, 
                       $\operatorname{asec}$, $\operatorname{acot}$, $\operatorname{acsc}$, 
                       $\operatorname{arccos}$, $\operatorname{arcsin}$, 
-                      $\operatorname{arctan}$, and $\operatorname{atan2}$.
-                  </li>
-                  <li><code>trig-hyperbolic</code>: Support for definitions of hyperbolic trig functions and their inverses 
-                      including $\cosh$, $\sinh$, $\tanh$, $\operatorname{sech}$, $\coth$, $\operatorname{csch}$, 
+                      $\operatorname{arctan}$, $\operatorname{atan2}$, $\cosh$, 
+                      $\sinh$, $\tanh$, $\operatorname{sech}$, $\coth$, $\operatorname{csch}$, 
                       $\operatorname{acosh}$, $\operatorname{asinh}$, $\operatorname{atanh}$, 
-                      $\operatorname{asech}$, $\operatorname{acoth}$, and $\operatorname{acsch}$. 
+                      $\operatorname{asech}$, $\operatorname{acoth}$, $\operatorname{acsch}$, 
+                      $\ln$, and $\exp$. 
                   </li>
                   <li><code>complex-variables</code>: Support for definitions of standard functions used 
                        with complex variables including $\operatorname{arg}$, $\operatorname{mod}$, 
@@ -136,25 +137,25 @@
                       $\operatorname{frac}$, $\operatorname{abs}$, $\operatorname{sgn}$, 
                       $\gcd$, $\operatorname{lcm}$, and $\operatorname{sqrt}$. 
                   </li>
-                  <li><code>calculus-extended</code>: Support for definitions of function names and implementations 
-                      that are common in problem sets for typical introductory courses in differential and integral calculus
+                  <li><code>trig-base</code>: Support for definitions of basic (non-hyperbolic) trigonometric functions 
                       including $\cos$, $\sin$, $\tan$, $\sec$, $\cot$, $\csc$, 
                       $\operatorname{acos}$, $\operatorname{asin}$, $\operatorname{atan}$, 
                       $\operatorname{asec}$, $\operatorname{acot}$, $\operatorname{acsc}$, 
                       $\operatorname{arccos}$, $\operatorname{arcsin}$, 
-                      $\operatorname{arctan}$, $\operatorname{atan2}$, $\cosh$, 
-                      $\sinh$, $\tanh$, $\operatorname{sech}$, $\coth$, $\operatorname{csch}$, 
-                      $\operatorname{acosh}$, $\operatorname{asinh}$, $\operatorname{atanh}$, 
-                      $\operatorname{asech}$, $\operatorname{acoth}$, $\operatorname{acsch}$, 
-                      $\ln$, and $\exp$. 
+                      $\operatorname{arctan}$, and $\operatorname{atan2}$.
                   </li>
+                  <li><code>trig-hyperbolic</code>: Support for definitions of hyperbolic trig functions and their inverses 
+                      including $\cosh$, $\sinh$, $\tanh$, $\operatorname{sech}$, $\coth$, $\operatorname{csch}$, 
+                      $\operatorname{acosh}$, $\operatorname{asinh}$, $\operatorname{atanh}$, 
+                      $\operatorname{asech}$, $\operatorname{acoth}$, and $\operatorname{acsch}$. 
+                  </li> 
              </ul>
           </p>
            <p><i>Enter the following response:</i> <code>ln((max(1-t, x) + min(y+2, z) - lg(w^2)) / 2)</code></p>
        </pl-question-panel>
-       <pl-symbolic-input answers-name="symbolic_math_example3" variables="x, y, z, w, t" 
+       <pl-symbolic-input answers-name="symbolic_math_example3" allow-blank="true" variables="x, y, z, w, t" 
                enable-function-groups="calculus-extended, logarithmic, prog-extended" 
-               label="$z =$" />
+               blank-value="ln((max(1-t, x) + min(y+2, z) - lg(w^2)) / 2)" label="$z =$" />
      </div>
 </div>
             
@@ -177,13 +178,6 @@
                       $\mathtt{cbrt\_omega}$ (primitive cube root of unity, the other of which is 
                       available by complex conjugation). 
                   </li>
-                  <li><code>named-units</code>: Support for a subset of the common SI unit (as powers of ten) 
-                      and binary unit (as powers of two) multipliers including 
-                      $\mathtt{peta\_si}$, $\mathtt{tera\_si}$, $\mathtt{giga\_si}$, $\mathtt{mega\_si}$, 
-                      $\mathtt{kilo\_si}$, $\mathtt{deci\_si}$, $\mathtt{centi\_si}$, 
-                      $\mathtt{milli\_si}$, $\mathtt{micro\_si}$, $\mathtt{nano\_si}$, $\mathtt{pico\_si}$, 
-                      $\mathtt{kibi}$, $\mathtt{mibi}$, $\mathtt{gibi}$, and $\mathtt{tebi}$. 
-                  </li>
                   <li><code>named-physical-constants</code>: Support for common physical constants that is a good start for 
                       applications but by no means exhaustive including 
                       $\mathtt{speed\_of\_light}$ (in a vacuum), $\mathtt{planck\_h}$, 
@@ -196,14 +190,39 @@
                       $\mathtt{Btu}$ (unit in Joules), $\mathtt{pound_force}$ (in Newtons), and 
                       $\mathtt{kilogram\_force}$ (in Newtons). 
                   </li>
+                  <li><code>named-units</code>: Support for a subset of the common SI unit (as powers of ten) 
+                      and binary unit (as powers of two) multipliers including 
+                      $\mathtt{peta\_si}$, $\mathtt{tera\_si}$, $\mathtt{giga\_si}$, $\mathtt{mega\_si}$, 
+                      $\mathtt{kilo\_si}$, $\mathtt{deci\_si}$, $\mathtt{centi\_si}$, 
+                      $\mathtt{milli\_si}$, $\mathtt{micro\_si}$, $\mathtt{nano\_si}$, $\mathtt{pico\_si}$, 
+                      $\mathtt{kibi}$, $\mathtt{mibi}$, $\mathtt{gibi}$, and $\mathtt{tebi}$. 
+                  </li>
              </ul>
           </p>
-           <p><i>Enter the following response:</i> <code>x * mod(cbrt_omega) / 137 + 1 - t^(3 / 2)</code></p>
+          <p><i>Enter the following response:</i> <code>x * mod(cbrt_omega) / 137 + 1 - t^(3 / 2)</code></p>
           </pl-question-panel>
-          <pl-symbolic-input answers-name="symbolic_math_example4" variables="x, t" 
+          <pl-symbolic-input answers-name="symbolic_math_example4" allow-blank="true" variables="x, t" 
                allow-complex="true" enable-function-groups="complex-variables" 
                enable-constant-groups="named-constants" 
-               label="$z =$" />
+               blank-value="x * mod(cbrt_omega) / 137 + 1 - t^(3 / 2)" label="$z =$" />
      </div>
+</div>
+
+<div class="card my-2">
+     <div class="card-header">
+     Enabling non-default groups of symbolic constants and units:
+     </div>
+     <div class="card-body">
+       <pl-question-panel>
+          <p>What is a formula for the $n^{th}$ <i>Pell number</i>, $P_n + c$, where $c$ is the 
+             speed of light in a vacuum (format in mibi units)?</p>
+          <p><i>Enter the following response:</i> <code>1 / 2 / sqrt2 * ((1 + sqrt2)**n + (1 - sqrt2)**n) / mibi + speed_of_light</code></p>
+          </pl-question-panel>
+          <pl-symbolic-input answers-name="symbolic_math_example5" allow-blank="true" variables="n" 
+               allow-complex="true" enable-constant-groups="named-constants, named-units, named-physical-constants" 
+               blank-value="1 / 2 / sqrt2 * ((1 + sqrt2)**n + (1 - sqrt2)**n) / mibi" label="$P_n + c =$" />
+     </div>
+</div>
+
 </div>
 

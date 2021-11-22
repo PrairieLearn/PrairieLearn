@@ -4,6 +4,7 @@ import ast
 import sys
 import python_helper_symbolic_types as phst
 from sympy.utilities.lambdify import lambdify, implemented_function
+from sympy.parsing.sympy_parser import parse_expr 
 
 MAX_FUNCTION_NAME_LENGTH = phst.PLSymbolicFunctions.MAX_FUNCTION_NAME_LENGTH
 
@@ -14,6 +15,8 @@ class _Constants:
     def __init__(self):
         self.helpers = {
             '_Integer': sympy.Integer,
+            '_Float': sympy.Float,
+            '_ManagedProperties': sympy.Symbol
         }
         self.variables = {
             'pi': sympy.pi,
@@ -199,11 +202,75 @@ class CheckNumbers(ast.NodeTransformer):
         elif isinstance(node.n, complex):
             raise HasComplexError(node.col_offset, node.n)
         return node
+    def visit_Expression(self, node):
+        if not isinstance(node, phst.ScipyConstantValue):
+            return node 
+        if isinstance(node._evalf(), int):
+            return ast.Call(func=ast.Name(id='_Integer', ctx=ast.Load()), args=[node._evalf()], keywords=[])
+        elif isinstance(node._evalf(), float):
+            return ast.Call(func=ast.Name(id='_Float', ctx=ast.Load()), args=[node._evalf()], keywords=[])
+        return node
+
+class CheckScipyTypes(ast.NodeTransformer):
+    def visit_Mult(self, node):
+        lorchild = tuple([ childNode for childNode in ast.iter_child_nodes(node) ])
+        needsFix = True in [ isinstance(child, ManagedProperties) for child in lorchild ]
+        if not needsFix:
+            return node
+        childNodes  = [ child for child in lorchild ]
+        newNodeData = sympyOpType(*childNodes)
+        replNode    =  ast.Call(func=ast.Name(id='_ManagedProperties', ctx=ast.Load()), args=[node], keywords=[])
+        for child in childNodes:
+            child.parent = replNode
+        ast.fix_missing_locations(replNode)
+        return replNode
+
+# With the introduction of support for scipy-based units and constants, we wrote the 
+# implementation of these symbols using a subclass of sympy.Function. Without this 
+# wrapper, the constants (floating point valued ones, thereof) will get squashed 
+# down to floating point only values when running Python's `eval(compile(...), ...)` call 
+# in `evaluate(...)` below. What we wanted to have is to keep the named units and 
+# constants symbolic, thus printing their names in output expressions, up until the point 
+# where possible postprocessing of user input is done in the question/server files whereby 
+# we can access the numerical approximations to these values by an explicit typecase of the 
+# sympy expression using `__float__(self)`. On the otherhand, by handling these values 
+# internally as though they are function types, the desired behavior can be coaxed up until 
+# the point where binary operations with one or more of these operands are of this 
+# `class ScipyConstantValue(sympy.Function)` type, and we catch generated exceptions compiling the AST 
+# because, for example, it does not know the meaning of multiplying an unevaluated function 
+# by an Integer type. Running the next routine to "patch up" the AST expression representations 
+# fixes the corner cases that can arise in those 
+# use cases when the named units or constants are operands in conventional sympy expressions:
+class RedefineScipyOperands(ast.NodeTransformer): 
+    def visitBinOpTypeGeneric(self, node, sympyOpType):
+        lorchild = tuple([ childNode for childNode in ast.iter_child_nodes(node) ])
+        needsFix = True in [ isinstance(child, sympy.FunctionClass) for child in lorchild ]
+        if not needsFix:
+            return node
+        childNodes  = [ child for child in lorchild ]
+        newNodeData = eval(sympy.Expr(Lambda(x, sympyOpType(*x))(childNodes)))
+        replNode    = ast.parse(newNodeData, mode='eval')
+        for child in childNodes:
+            child.parent = replNode
+        ast.fix_missing_locations(replNode)
+        return replNode
+    def visit_Add(self, node):
+        return self.visitBinOpTypeGeneric(node, sympy.core.add.Add)
+    def visit_Sub(self, node):
+        subClassFunc =  lambda x, y: sympy.core.add.Add(x, sympy.core.mul.Mul(sympy.Integer(-1), y))
+        return self.visitBinOpTypeGeneric(node, subClassFunc)
+    def visit_Mult(self, node):
+        return self.visitBinOpTypeGeneric(node, sympy.core.mul.Mul)
+    def visit_Div(self, node):
+        return self.visitBinOpTypeGeneric(node, sympy.Rational)
+    def visit_Mod(self, node):
+        return self.visitBinOpTypeGeneric(node, sympy.core.Mod)
+    def visit_Pow(self, node):
+        return self.visitBinOpTypeGeneric(node, sympy.core.Pow)
 
 class CheckWhiteList(ast.NodeVisitor):
     def __init__(self, whitelist):
         self.whitelist = whitelist
-
     def visit(self, node):
         if True not in list(map(lambda wltype: not isinstance(node, wltype), self.whitelist)):
             node = get_parent_with_location(node)
@@ -287,6 +354,14 @@ def evaluate(expr, locals_for_eval={}, var_number_symbols={}):
     # Disallow float and complex, and replace int with sympy equivalent
     root = CheckNumbers().visit(root)
 
+    # Rename dominant metaclasses that are oddly nested within the sympy hierarchy of types 
+    # to the most simple expected type:
+    #root = CheckScipyTypes().visit(root)
+
+    # Add in symbolic compiler substs for BinOp types with otherwise undefined behavior 
+    # on certain scipy library operand types: 
+    root = RedefineScipyOperands().visit(root)
+
     # Clean up lineno and col_offset attributes
     ast.fix_missing_locations(root)
 
@@ -299,9 +374,12 @@ def evaluate(expr, locals_for_eval={}, var_number_symbols={}):
     globals = {
         '__builtins__' : {}
     }
-    return eval(compile(root, '<ast>', 'eval'), globals, locals)
+    compiledAST = compile(root, '<ast>', 'eval')
+    return eval(compiledAST, globals, locals)
 
-def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False, allow_complex=False):
+def convert_string_to_sympy(a, variables, const=None, allow_hidden=False, allow_complex=False):
+    if const is None:
+        const = _Constants()
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
     locals_for_eval = {
@@ -322,6 +400,11 @@ def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False
     if variables is not None:
         for variable in variables:
             vname = str(variable)
+            if vname in const.functions:
+                # The server does not store context of units and physical constants (which are Function types) 
+                # locally, only the variable names it encounters, so double check to make sure that `vname` is 
+                # indeed a new variable name that we need to handle here (otherwise, skip it):
+                continue
             if isinstance(variable, str):
                 vfunc = sympy.Function(variable)
                 locals_for_eval['variables'][vname] = sympy.Symbol(variable)
@@ -340,7 +423,7 @@ def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False
     if const.functions is not None:
         for func in const.functions:
             funcObj = const.functions[func]
-            if isinstance(funcObj, sympy.core.function.UndefinedFunction):
+            if isinstance(funcObj, sympy.core.function.UndefinedFunction) or isinstance(funcObj, sympy.FunctionClass):
                 funcsWithBodySubsts[func] = funcObj
             funcName = str(func)
             locals_for_eval['functions'][func] = const.functions[func]
@@ -348,16 +431,14 @@ def convert_string_to_sympy_with_context(a, variables, const, allow_hidden=False
     # Do the conversion
     return evaluate(a, locals_for_eval, const.variables)
 
-def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=False):
-    consts = _Constants()
-    return convert_string_to_sympy_with_context(a, variables, consts, allow_hidden=allow_hidden, allow_complex=allow_complex)
-
 def point_to_error(s, ind, w = MAX_FUNCTION_NAME_LENGTH):
     w_left = ind - max(0, ind-w)
     w_right = min(ind+w, len(s)) - ind
     return s[ind-w_left:ind+w_right] + '\n' + ' '*w_left + '^' + ' '*w_right
 
-def sympy_to_json_with_context(a, const, allow_complex=True):
+def sympy_to_json(a, const=None, allow_complex=True):
+    if const is None:
+        const = _Constants()
     # Get list of variables in the sympy expression
     variables = [v for v in a.free_symbols]
 
@@ -378,11 +459,9 @@ def sympy_to_json_with_context(a, const, allow_complex=True):
 
     return {'_type': 'sympy', '_value': str(a), '_variables': variables}
 
-def sympy_to_json(a, allow_complex=True):
-    consts = _Constants()
-    return sympy_to_json_with_context(a, consts, allow_complex = allow_complex)
-
-def json_to_sympy_with_context(a, const, allow_complex=True):
+def json_to_sympy(a, const=None, allow_complex=True):
+    if const is None:
+        const = _Constants()
     if not '_type' in a:
         raise ValueError('json must have key _type for conversion to sympy')
     if a['_type'] != 'sympy':
@@ -391,8 +470,9 @@ def json_to_sympy_with_context(a, const, allow_complex=True):
         raise ValueError('json must have key _value for conversion to sympy')
     if not '_variables' in a:
         a['_variables'] = None
-    return convert_string_to_sympy_with_context(a['_value'], a['_variables'], const, allow_hidden=True, allow_complex=allow_complex)
-
-def json_to_sympy(a, allow_complex=True):
-    consts = _Constants()
-    return json_to_sympy_with_context(a, consts, allow_complex=allow_complex)
+    import sys
+    try:
+        sys.stderr(str(a['_value']))
+    except Exception:
+        pass
+    return convert_string_to_sympy(a['_value'], a['_variables'], const, allow_hidden=True, allow_complex=allow_complex)
