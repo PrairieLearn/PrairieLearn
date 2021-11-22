@@ -19,7 +19,7 @@ const pdfParse = require('pdf-parse');
 // const sqlLoader = require('../../prairielib/lib/sql-loader');
 // const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const processingDir = './image_processing'; // TO DO: config file
+const processingDir = config.imageProcessingDir;
 const queue = [];
 const processing = false;
 
@@ -27,7 +27,7 @@ const decodeJpegs = async (jpegs) => {
   for(let i = 0; i < jpegs.length; i++) {
     const barcode = await decodeJpeg(jpegs[i]);
     if (barcode) {
-      jpegs[i]['barcode'] = barcode.codeResult;
+      jpegs[i]['barcode'] = barcode.codeResult.code;
     } else {
       jpegs[i]['barcode'] = null;
     }
@@ -41,7 +41,7 @@ const decodeJpegs = async (jpegs) => {
  * @returns {string} a code-128 formatted barcode or undefined if not found
  */
 const decodeJpeg = async (jpeg) => {
-  if (!jpeg || !jpeg.pageNum || !jpeg.jpegFilepath || !jpeg.workingDir) {
+  if (!jpeg || typeof jpeg.pageNum != 'number' || !jpeg.jpegFilepath || !jpeg.workingDir) {
     throw Error('Invalid jpeg file or missing metadata');
   }
   const segmentFilepaths = await segmentJpeg(jpeg.pageNum, jpeg.jpegFilepath, jpeg.workingDir);
@@ -243,8 +243,8 @@ router.post('/', function (req, res, next) {
       .then((jpegs) => {
         return decodeJpegs(jpegs);
       })
-      .then((decoderData) => {
-        console.log('docoderData', docoderData);
+      .then((decodedJpegs) => {
+        console.log('decodedJpegs', decodedJpegs);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch((err) => {
