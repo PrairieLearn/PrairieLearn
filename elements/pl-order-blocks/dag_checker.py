@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Mapping, Optional, Iterable, Any, Tuple
+from typing import Mapping, Optional, Iterable
 import networkx as nx  # type: ignore
 import itertools
 
