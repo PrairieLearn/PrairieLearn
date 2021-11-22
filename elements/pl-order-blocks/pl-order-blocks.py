@@ -6,7 +6,7 @@ import base64
 import os
 import json
 import math
-from dag_checker import grade_dag
+from dag_checker import grade_dag, lcs_partial_credit
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
@@ -49,13 +49,14 @@ def prepare(element_html, data):
                         'solution-placement', 'max-incorrect',
                         'min-incorrect', 'weight',
                         'inline', 'max-indent',
-                        'feedback']
+                        'feedback', 'partial-credit']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'first-wrong' if grading_method == 'ranking' else 'none')
 
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
@@ -64,6 +65,11 @@ def prepare(element_html, data):
     if (grading_method != 'dag' and feedback_type != 'none') or \
        (grading_method == 'dag' and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
+
+    if (grading_method == 'ranking' and partial_credit_type != 'first-wrong') or \
+       (grading_method == 'dag' and partial_credit_type not in ['none', 'lcs']) or \
+       (grading_method not in ['dag', 'ranking'] and partial_credit_type != 'none'):
+        raise Exception('partial credit type "' + partial_credit_type + '" is not available with the "' + grading_method + '" grading-method.')
 
     correct_answers = []
     incorrect_answers = []
@@ -115,6 +121,9 @@ def prepare(element_html, data):
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
+            if partial_credit_type != 'none':
+                raise Exception('Partial credit not yet supported in questions using block groups')
+
             group_counter += 1
             for grouped_tag in html_tags:
                 if html_tags.tag is lxml.etree.Comment:
@@ -365,6 +374,7 @@ def grade(element_html, data):
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'first-wrong' if grading_mode == 'ranking' else 'none')
 
     true_answer_list = data['correct_answers'][answer_name]
 
@@ -407,12 +417,20 @@ def grade(element_html, data):
         depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
         group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
-        correctness, first_wrong = grade_dag(order, depends_graph, group_belonging)
+        correctness = grade_dag(order, depends_graph, group_belonging)
+        first_wrong = -1 if correctness == len(order) else correctness
 
-        if correctness == len(depends_graph.keys()):
-            final_score = 1
-        elif correctness < len(depends_graph.keys()):
-            final_score = 0  # TODO figure out a partial credit scheme
+        true_answer_length = len(depends_graph.keys())
+        if partial_credit_type == 'none':
+            if correctness == true_answer_length:
+                final_score = 1
+            elif correctness < true_answer_length:
+                final_score = 0
+        elif partial_credit_type == 'lcs':
+            edit_distance = lcs_partial_credit(order, depends_graph)
+            final_score = max(0, float(true_answer_length - edit_distance) / true_answer_length)
+
+        if final_score < 1:
             if feedback_type == 'none':
                 feedback = ''
             elif feedback_type == 'first-wrong':
