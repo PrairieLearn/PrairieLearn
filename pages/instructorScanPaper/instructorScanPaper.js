@@ -28,7 +28,6 @@ const decodeJpegs = async (jpegs) => {
     const barcode = await decodeJpeg(jpegs[i]);
     if (barcode) {
       jpegs[i]['barcode'] = barcode.codeResult;
-      processed.push(jpegs[i]);
     } else {
       jpegs[i]['barcode'] = null;
     }
