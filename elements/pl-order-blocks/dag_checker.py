@@ -123,14 +123,12 @@ def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]])
         mvc_size = 0
     else:
         mvc_size = len(subgraph) - 1
-        found = False
         for i in range(1, len(subgraph) - 1):
             for subset in itertools.combinations(subgraph, i):
                 if is_vertex_cover(subgraph, subset):
                     mvc_size = len(subset)
-                    found = True
                     break
-            if found:
+            if mvc_size < len(subgraph) - 1:
                 break
 
     incorrect_blocks = distractors + mvc_size
