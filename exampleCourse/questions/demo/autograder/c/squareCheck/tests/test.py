@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 
-import sys, math, sympy
 import cgrader
 
 class DemoGrader(cgrader.CGrader):
