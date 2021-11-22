@@ -19,7 +19,7 @@ const pdfParse = require('pdf-parse');
 // const sqlLoader = require('../../prairielib/lib/sql-loader');
 // const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const processingDir = './image_processing';
+const processingDir = './image_processing'; // TO DO: config file
 const queue = [];
 const processing = false;
 
@@ -27,11 +27,9 @@ const decodeJpegs = async (jpegs) => {
   for(let i = 0; i < jpegs.length; i++) {
     const barcode = await decodeJpeg(jpegs[i]);
     if (barcode) {
-      jpegs[i]['decoded'] = true;
-      jpegs[i]['barcode'] = barcode;
+      jpegs[i]['barcode'] = barcode.codeResult;
       processed.push(jpegs[i]);
     } else {
-      jpegs[i]['decoded'] = false;
       jpegs[i]['barcode'] = null;
     }
   }
@@ -40,8 +38,8 @@ const decodeJpegs = async (jpegs) => {
 
 /**
  * Detects and extracts a barcode on a jpeg file
- * @param {string} jpeg jpeg file object produced by convertPdf() containing meta data
- * @returns {string} a code-128 formatted barcode or undefined
+ * @param {string} jpeg jpeg file object from arr produced by convertPdf()
+ * @returns {string} a code-128 formatted barcode or undefined if not found
  */
 const decodeJpeg = async (jpeg) => {
   if (!jpeg || !jpeg.pageNum || !jpeg.jpegFilepath || !jpeg.workingDir) {
@@ -49,7 +47,7 @@ const decodeJpeg = async (jpeg) => {
   }
   const segmentFilepaths = await segmentJpeg(jpeg.pageNum, jpeg.jpegFilepath, jpeg.workingDir);
   for (let i = 0; i < segmentFilepaths.length; i++) {
-    // break as soon as a segment has a barcode
+    // break to avoid additional scanning if found
     const barcode = await decodeJpegSegment(segmentFilepaths[i]);
     if (barcode) {
       return barcode;
@@ -96,29 +94,27 @@ const decodeJpegSegment = async (filepath) => {
   });
 };
 
-// make small images that can be ingested by barcode reader and associated with page
 /**
- * 
- * @param {*} pageNum the page number that the segmented files should be placed in
- * @param {*} jpegFilepath flepath referencing jpeg page
- * @param {*} workingDir working directory for image processing
- * @returns [string] contains filepaths referencing jpeg segments
+ * Splits jpeg image into vertical slices to work with Quagga barcode reader.
+ * @param {number} pageNum the page number that the segmented files should be placed in
+ * @param {string} jpegFilepath filepath referencing jpeg full page image
+ * @param {string} workingDir working directory where image processing occurs
+ * @returns {string} contains filepaths referencing jpeg segments
  */
 const segmentJpeg = async (pageNum, jpegFilepath, workingDir) => {
   const segmentsDir = path.join(workingDir, String(pageNum));
   const segmentsFilepath = path.join(segmentsDir, 'segment-%d.jpg');
 
   await fs.mkdir(segmentsDir, {recursive: true});
-  console.log(segmentsDir)
 
   const filenames = await new Promise((resolve, reject) => {
     imagemagick.convert(
       [jpegFilepath, '-crop', 'x500', '+repage', segmentsFilepath],
       (err, stdout) => {
         if (err) {
-          console.log(stdout);
           reject(err);
         }
+        debug('segmentJpeg() imagemagick stdout usually empty', stdout);
         resolve(fs.readdir(segmentsDir));
       }
     );
@@ -127,6 +123,8 @@ const segmentJpeg = async (pageNum, jpegFilepath, workingDir) => {
   const filepaths = filenames.map((filename) => {
     return path.join(segmentsDir, filename);
   });
+
+  debug('segmentJpeg() segmented jpeg into vertical slices', filepaths)
   return filepaths;
 };
 
@@ -151,11 +149,12 @@ const pdfPageToJpeg = async (pageNum, pdfFilePath, workingDir) => {
 
 /**
  * Converts a pdf to a array of jpeg objects. Each array entry refers to a page of the pdf
- * with supporting metadata for further barcode decoding operations.
+ * with supporting metadata for further barcode decoding operations. Requires a PDF decoder to get
+ * number of pages, as identifying metadata of large PDF crashes imagemagick
  * @param {number} numPages length of pdf object
  * @param {buffer} data buffer of file upload
  * @param {string} originalName original name of pdf file upload
- * @returns 
+ * @returns [object] jpeg type arr
  */
 const convertPdf = async (numPages, data, originalName) => {
   const converted = [];
@@ -237,6 +236,7 @@ router.post('/', function (req, res, next) {
     if (!req.file && !req.file.buffer) {
       ERR(Error('Missing artifact file data'), next); return;
     }
+
     pdfParse(req.file.buffer)
       .then((pdf) => {
         return convertPdf(pdf.numpages, req.file.buffer, req.file.originalname);
@@ -252,8 +252,6 @@ router.post('/', function (req, res, next) {
         if (ERR(err, next)) return;
       });
       // TO DO: 
-
-      // optimize barcode reader configuration to read barcode in jpegs
 
       // reference submission in barcode row
 
