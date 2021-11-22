@@ -19,7 +19,7 @@ const jsCrc = require('js-crc');
 const pdfParse = require('pdf-parse');
 // const fsPromises = require('fs').promises;
 
-const maxPageLimit = 500;
+const maxPageLimit = 1000;
 const base64Prefix = 'data:application/pdf;base64,';
 
 const getScrapPaperPayload = ($page, numPages, pageLabel) => {

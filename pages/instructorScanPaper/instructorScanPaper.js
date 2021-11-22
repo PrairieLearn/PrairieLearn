@@ -20,43 +20,53 @@ const pdfParse = require('pdf-parse');
 // const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const processingDir = './image_processing';
+const queue = [];
+const processing = false;
 
-const decodeJpegs = async (jpegFiles) => {
-  for(let i = 0; i < jpegFiles.length; i++) {
-    const barcode = await decodeJpeg(jpegFiles[i]);
+const decodeJpegs = async (jpegs) => {
+  for(let i = 0; i < jpegs.length; i++) {
+    const barcode = await decodeJpeg(jpegs[i]);
     if (barcode) {
-      jpegFiles[i]['decoded'] = true;
-      jpegFiles[i]['barcode'] = barcode;
-      processed.push(jpegFiles[i]);
+      jpegs[i]['decoded'] = true;
+      jpegs[i]['barcode'] = barcode;
+      processed.push(jpegs[i]);
     } else {
-      jpegFiles[i]['decoded'] = false;
-      jpegFiles[i]['barcode'] = null;
+      jpegs[i]['decoded'] = false;
+      jpegs[i]['barcode'] = null;
     }
   }
-  return jpegFiles;
+  return jpegs;
 };
 
-const decodeJpeg = async (jpegFile) => {
-  return new Promise((resolve, reject) => {
-    if (!jpegFile || !jpegFile.workingDir || !jpegFile.convertedFilename) {
-      throw Error('Missing jpeg file input for barcode decoding');
+const decodeJpeg = async (jpeg) => {
+  const segmentFilepaths = await segmentJpeg(jpeg.pageNum, jpeg.jpegFilepath, jpeg.workingDir);
+  for (let i = 0; i < segmentFilepaths.length; i++) {
+    // break as soon as a segment has a barcode
+    const barcode = await decodeJpegSegment(segmentFilepaths[i]);
+    if (barcode) {
+      return barcode;
     }
+  }
+};
+
+const decodeJpegSegment = async (filepath) => {
+  return new Promise((resolve, reject) => {
     try {
       quagga.decodeSingle(
         {
-          src: path.join(jpegFile.workingDir, jpegFile.convertedFilename),
+          src: filepath,
+          patchSize: 'medium',
           numOfWorkers: 0,
           inputStream: {
-            mime: 'image/jpeg',
-            size: 800,
-            area: {
-              top: '70%',
-              right: '25%',
-              left: '25%',
-              bottom: '20%',
-            },
+            size: 1920  // restrict input-size resolution to be 1920 in width (long-side)
           },
-          locate: true,
+          decoder: {
+            readers: ['code_128_reader'],
+          },
+          locator: {
+            halfSample: true
+          },
+          locate: true
         },
         (result) => {
           console.log('decode result', result);
@@ -69,12 +79,48 @@ const decodeJpeg = async (jpegFile) => {
   });
 };
 
-const convertPdfPage = async (pageNum, pdfFilePath, workingDir) => {
+// make small images that can be ingested by barcode reader and associated with page
+/**
+ * 
+ * @param {*} pageNum the page number that the segmented files should be placed in
+ * @param {*} jpegFilepath flepath referencing jpeg page
+ * @param {*} workingDir working directory for image processing
+ * @returns [string] contains filepaths referencing jpeg segments
+ */
+const segmentJpeg = async (pageNum, jpegFilepath, workingDir) => {
+  const segmentsDir = path.join(workingDir, String(pageNum));
+  const segmentsFilepath = path.join(segmentsDir, 'segment-%d.jpg');
+
+  await fs.mkdir(segmentsDir, {recursive: true});
+  console.log(segmentsDir)
+
+  const filenames = await new Promise((resolve, reject) => {
+    imagemagick.convert(
+      [jpegFilepath, '-crop', 'x500', '+repage', segmentsFilepath],
+      (err, stdout) => {
+        if (err) {
+          console.log(stdout);
+          reject(err);
+        }
+        resolve(fs.readdir(segmentsDir));
+      }
+    );
+  });
+
+  const filepaths = filenames.map((filename) => {
+    return path.join(segmentsDir, filename);
+  });
+  return filepaths;
+};
+
+const pdfPageToJpeg = async (pageNum, pdfFilePath, workingDir) => {
   return new Promise((resolve, reject) => {
     const convertedFilename = `${pageNum}.jpg`;
     const convertedFilepath = path.join(workingDir, convertedFilename);
+
     imagemagick.convert(
-      [pdfFilePath, '-flatten', '-quality', '100', '-resize', '150%', convertedFilepath],
+      // first arg: ie. name.pdf[0] , first page starts at 0
+      [`${pdfFilePath}[${pageNum}]`, '-flatten', '-quality', '100', '-resize', '150%', convertedFilepath],
       (err, stdout) => {
         if (err) {
           console.log(stdout);
@@ -96,11 +142,14 @@ const convertPdf = async (numPages, data, originalName) => {
 
   for (let i = 0; i < numPages; i++) {
     const start = new Date();
-    const pageNum = i + 1;
-    const convertedFilename = await convertPdfPage(pageNum, pdfPath, workingDir);
+    const jpegFilename = await pdfPageToJpeg(i, pdfPath, workingDir);
+    const jpegFilepath = path.join(workingDir, jpegFilename);
+    // could place here but this object is getting confusing
+    // const pageSegments = await pdfPageToJpegSegments(i, pdfPath, workingDir);
+    // console.log(pageSegments);
     const end = new Date();
     const secondsElapsed = (end - start) / 1000;
-    converted.push({pageNum, secondsElapsed, convertedFilename, workingDir, originalName});
+    converted.push({pageNum: i, secondsElapsed, jpegFilename, jpegFilepath, workingDir, originalName});
   }
 
   console.log('convertPdf() pdf time elasped', converted.reduce((prev, current) => {return {secondsElapsed: current.secondsElapsed + prev.secondsElapsed}}))
@@ -170,11 +219,11 @@ router.post('/', function (req, res, next) {
       .then((pdf) => {
         return convertPdf(pdf.numpages, req.file.buffer, req.file.originalname);
       })
-      .then((jpegPages) => {
-        return decodeJpegs(jpegPages);
+      .then((jpegs) => {
+        return decodeJpegs(jpegs);
       })
-      .then((decodedJpegs) => {
-        console.log('decoded jpegs', decodedJpegs);
+      .then((decoderData) => {
+        console.log('docoderData', docoderData);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch((err) => {
@@ -182,15 +231,15 @@ router.post('/', function (req, res, next) {
       });
       // TO DO: 
 
-      // optimize barcode reader configuration to read JPEG documents
-
-      // update pdf generation view to download pdf to avoid rendering large pdf  browser issues
+      // optimize barcode reader configuration to read barcode in jpegs
 
       // reference submission in barcode row
 
+      // detach process from request and display stdout in view
+
       // upload file to s3 and then reintegrate/improve question view to render pdf
 
-    // upper bound pdf size limit = 25mb ././ must be configured in server.js and main config file -- upped to 25mb
+      //implement makeshift queue, as https://github.com/serratus/quaggaJS/issues/135 issues when two decoding jobs running simaltaneously
     
     // barcode reader fails (send back page image so they can see which one failed)
   } else {

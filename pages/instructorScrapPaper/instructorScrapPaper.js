@@ -112,8 +112,8 @@ router.post('/', function (req, res, next) {
     const numPages = req.body.num_pages;
     const pageLabel = req.body.page_label;
 
-    if (!numPages || numPages < 0 || numPages > 500) {
-      throw Error('Must be more than 1 page but not more than 500 pages');
+    if (!numPages || numPages < 0 || numPages > 1000) {
+      throw Error('Must be more than 1 page but not more than 1000 pages');
     }
     if (typeof pageLabel !== 'string' || pageLabel.length > 45) {
       throw Error('Page label must be valid string less than 45 characters');
@@ -127,23 +127,9 @@ router.post('/', function (req, res, next) {
         return svgsToPdf(pageLabel, barcodeSVGs);
       })
       .then((pdf) => {
-        const chunks = [];
-        return new Promise((resolve, reject) => {
-          pdf.on('data', (chunk) => {
-            chunks.push(chunk);
-          });
-          pdf.on('end', () => {
-            resolve(Buffer.concat(chunks));
-          });
-          pdf.on('error', (error) => {
-            reject(error);
-          });
-          pdf.end();
-        });
-      })
-      .then((pdfBuffer) => {
-        res.locals['pdf'] = pdfBuffer.toString('base64');
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.header('Content-Disposition', `attachment; filename=Barcoded scrap paper - ${new Date().toISOString()}.pdf`);
+        pdf.pipe(res);
+        pdf.end();
       })
       .catch((err) => {
         if (ERR(err, next)) return;
