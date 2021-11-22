@@ -10,36 +10,36 @@ SELECT
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL AND ai.date_limit <= current_timestamp
             THEN 'Expired'
-        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(extract(epoch from (ai.date_limit - current_timestamp))) < 60
+        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(DATE_PART('epoch', (ai.date_limit - current_timestamp))) < 60
             THEN '< 1 min'
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / 60))::text || ' min'
+            THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open (no time limit)'
         ELSE 'Closed'
     END AS time_remaining,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, extract(epoch from (ai.date_limit - current_timestamp)))
+            THEN greatest(0, DATE_PART('epoch', (ai.date_limit - current_timestamp)))
         ELSE NULL
     END AS time_remaining_sec,
     CASE
-        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(extract(epoch from (ai.date_limit - ai.date))) < 60
+        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(DATE_PART('epoch', (ai.date_limit - ai.date))) < 60
             THEN '< 1 min'
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, floor(extract(epoch from (ai.date_limit - ai.date)) / 60))::text || ' min'
+            THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - ai.date)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open (no time limit)'
         ELSE 'Closed'
     END AS total_time,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, extract(epoch from (ai.date_limit - ai.date)))
+            THEN greatest(0, DATE_PART('epoch', (ai.date_limit - ai.date)))
         ELSE NULL
     END AS total_time_sec,
     ai.date,
     format_date_full_compact(ai.date, ci.display_timezone) AS date_formatted,
     format_interval(ai.duration) AS duration,
-    EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
-    EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,
+    DATE_PART('epoch', ai.duration) AS duration_secs,
+    DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
     (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score
 FROM
     assessments AS a
