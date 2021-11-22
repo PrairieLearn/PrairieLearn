@@ -1,5 +1,5 @@
 from collections import Counter
-from typing import Mapping, Optional, Iterable, Any
+from typing import Mapping, Optional, Iterable, Any, Tuple
 import networkx as nx  # type: ignore
 import itertools
 
@@ -122,16 +122,16 @@ def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]])
     if len(subgraph) == 0:
         mvc_size = 0
     else:
-        mvc: Any = None
-        for i in range(1, len(subgraph)):
+        mvc_size = len(subgraph) - 1
+        found = False
+        for i in range(1, len(subgraph) - 1):
             for subset in itertools.combinations(subgraph, i):
                 if is_vertex_cover(subgraph, subset):
-                    mvc = subset
+                    mvc_size = len(subset)
+                    found = True
                     break
-
-            if mvc is not None:
+            if found:
                 break
-        mvc_size = len(mvc)
 
     incorrect_blocks = distractors + mvc_size
     correct_blocks = len(order) - incorrect_blocks
