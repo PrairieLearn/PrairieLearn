@@ -5,6 +5,8 @@ const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
 const config = require('../lib/config');
+const barcodeScanner = require('../lib/barcodeScanner');
+const util = require('util');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -44,7 +46,9 @@ describe('Scrap paper view', function() {
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
 
-  before('set up testing server', helperServer.before());
+  before('set up testing server', async  () =>{
+    await util.promisify(helperServer.before().bind(this))()
+  });
   after('shut down testing server', helperServer.after);
 
   describe('Generate scrap paper', function() {
@@ -54,7 +58,6 @@ describe('Scrap paper view', function() {
     let barcodeRows;
 
     describe('GET', function() {
-      this.timeout(60000);
 
       before('fetch page', async () => {
         const res = await fetch(scrapPaperUrl);
@@ -71,9 +74,11 @@ describe('Scrap paper view', function() {
     });
 
     describe('POST', () => {
-      this.timeout(60000);
       const testLabel = 'TEST LABEL';
+      const testNumPages = 15; // has to be reasonably small for pdf to be converted/decoded quickly in test
+
       let pdf;
+      let pdfBuffer;
 
       it('should be able to download a pdf', async () => {
         const payload = getScrapPaperPayload($scrapPaper, pageLimit, testLabel);
@@ -86,10 +91,10 @@ describe('Scrap paper view', function() {
         const pdfBlob = await res.blob();
         assert.isDefined(pdfBlob);
 
-        const buffer = Buffer.from(await pdfBlob.arrayBuffer());
-        assert.isDefined(buffer);
+        pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
+        assert.isDefined(pdfBuffer);
 
-        pdf = await pdfParse(buffer);
+        pdf = await pdfParse(pdfBuffer);
         assert.isDefined(pdf);
 
 
@@ -138,8 +143,11 @@ describe('Scrap paper view', function() {
           assert.equal(recomputedSha16, sha16);
         });
       });
-      it('should produce barcodes starting on number of rows found barcodes table', () => {
-        // TO DO once other things are done and more time
+      it('barcodes should be scannable by barcode reader', async () => {
+        const pdf = await barcodeScanner.pdfParse(pdfBuffer);
+        const jpegs = await barcodeScanner.convertPdf(pdf.numpages, req.file.buffer, req.file.originalname);
+        const decodedJpegs = await barcodeScanner.decodeJpegs(jpegs);
+        assert.isDefined(decodedJpegs);
       });
       it('should produce barcodes formatted with spacing ie. (xxxx xxxx xxxx)', () => {
         // nice to have ? TO DO?
@@ -148,19 +156,19 @@ describe('Scrap paper view', function() {
   });
 });
 
-describe('Pl-artifact-scan element', () => {
-  it('should be able to submit a valid barcode', () => {});
-});
+// describe('Pl-artifact-scan element', () => {
+//   it('should be able to submit a valid barcode', () => {});
+// });
 
-describe('Scan paper view', function () {
+// describe('Scan paper view', function () {
 
-  // const scanPaperUrl = baseUrl + '/scan_paper';
+//   // const scanPaperUrl = baseUrl + '/scan_paper';
 
-  describe('GET', () => {});
+//   describe('GET', () => {});
 
-  describe('POST', () => {
-    it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {
+//   describe('POST', () => {
+//     it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {
 
-    });
-  });
-});
+//     });
+//   });
+// });
