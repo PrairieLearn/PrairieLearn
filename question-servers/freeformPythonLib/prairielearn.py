@@ -1,3 +1,4 @@
+from typing import Dict, Any, TypedDict, Literal
 import lxml.html
 import html
 import to_precision
@@ -15,6 +16,26 @@ import importlib
 import importlib.util
 import os
 import collections
+
+
+class QuestionData(TypedDict):
+    params: Dict[str, Any]
+    correct_answers: Dict[str, Any]
+    submitted_answers: Dict[str, Any]
+    format_errors: Dict[str, Any]
+    partial_scores: Dict[str, Any]
+    score: float
+    feedback: Dict[str, Any]
+    variant_seed: int
+    options: Dict[str, Any]
+    raw_submitted_answers: Dict[str, Any]
+    editable: bool
+    panel: Literal['question', 'submission', 'answer']
+    extensions: Dict[str, Any]
+
+
+class ElementTestData(QuestionData):
+    test_type: Literal['correct', 'incorrect', 'invalid']
 
 
 def to_json(v):

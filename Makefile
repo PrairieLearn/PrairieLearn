@@ -48,7 +48,7 @@ typecheck: typecheck-js typecheck-python
 typecheck-js:
 	@tsc
 typecheck-python:
-	@pyright elements/pl-order-blocks/dag*.py  # TODO enable for all Python
+	@pyright  # TODO enable for all Python
 
 depcheck:
 	-depcheck --ignore-patterns=public/**
