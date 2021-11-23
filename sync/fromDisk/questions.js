@@ -14,14 +14,14 @@ function getParamsForQuestion(q) {
   if (q.partialCredit != null) {
     partialCredit = q.partialCredit;
   } else {
-    if (q.type == 'v3') {
+    if (q.type === 'v3') {
       partialCredit = true;
     } else {
       partialCredit = false;
     }
   }
   return {
-    type: q.type == 'v3' ? 'Freeform' : q.type,
+    type: q.type === 'v3' ? 'Freeform' : q.type,
     title: q.title,
     partial_credit: partialCredit,
     template_directory: q.template,

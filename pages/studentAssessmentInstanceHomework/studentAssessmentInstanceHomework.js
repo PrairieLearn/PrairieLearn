@@ -64,7 +64,7 @@ router.get('/', function (req, res, next) {
             sqldb.query(sql.get_group_info, params, function (err, result) {
               if (ERR(err, next)) return;
               res.locals.group_info = result.rows;
-              if (res.locals.group_info[0] == undefined) {
+              if (result.rowCount === 0) {
                 return next(error.make(403, 'Not a group member', res.locals));
               }
               res.locals.join_code =
@@ -86,22 +86,22 @@ router.post('/', function (req, res, next) {
     return next(error.make(403, 'Not authorized', res.locals));
   }
 
-  if (req.body.__action == 'attach_file') {
+  if (req.body.__action === 'attach_file') {
     util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'attach_text') {
+  } else if (req.body.__action === 'attach_text') {
     util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'delete_file') {
+  } else if (req.body.__action === 'delete_file') {
     util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'leave_group') {
+  } else if (req.body.__action === 'leave_group') {
     if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
     const params = {
       assessment_instance_id: res.locals.assessment_instance.id,

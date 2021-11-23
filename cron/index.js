@@ -120,7 +120,7 @@ module.exports = {
 
     const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
     _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
-      if (intervalSec == 'daily') {
+      if (intervalSec === 'daily') {
         this.queueDailyJobs(jobsList);
       } else if (intervalSec > 0) {
         this.queueJobs(jobsList, intervalSec);
@@ -137,7 +137,7 @@ module.exports = {
         debug(`stop(): clearing timeout for ${interval}`);
         clearTimeout(timeout);
         delete jobTimeouts[interval];
-      } else if (timeout == 0) {
+      } else if (timeout === 0) {
         // job is currently running, request that it stop
         debug(`stop(): requesting stop for ${interval}`);
         jobTimeouts[interval] = -1;
@@ -145,7 +145,7 @@ module.exports = {
     });
 
     function check() {
-      if (_.size(jobTimeouts) == 0) {
+      if (_.isEmpty(jobTimeouts)) {
         debug(`stop(): all jobs stopped`);
         callback(null);
       } else {
@@ -164,7 +164,7 @@ module.exports = {
       jobTimeouts[intervalSec] = 0;
       that.runJobs(jobsList, () => {
         debug(`queueJobs(): ${intervalSec}: completed run`);
-        if (jobTimeouts[intervalSec] == -1) {
+        if (jobTimeouts[intervalSec] === -1) {
           // someone requested a stop
           debug(`queueJobs(): ${intervalSec}: stop requested`);
           delete jobTimeouts[intervalSec];
@@ -205,7 +205,7 @@ module.exports = {
       jobTimeouts['daily'] = 0;
       that.runJobs(jobsList, () => {
         debug(`queueDailyJobs(): completed run`);
-        if (jobTimeouts['daily'] == -1) {
+        if (jobTimeouts['daily'] === -1) {
           // someone requested a stop
           debug(`queueDailyJobs(): stop requested`);
           delete jobTimeouts['daily'];
@@ -309,7 +309,7 @@ module.exports = {
     var interval_secs;
     if (Number.isInteger(job.intervalSec)) {
       interval_secs = job.intervalSec;
-    } else if (job.intervalSec == 'daily') {
+    } else if (job.intervalSec === 'daily') {
       interval_secs = 12 * 60 * 60;
     } else {
       return callback(new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`));

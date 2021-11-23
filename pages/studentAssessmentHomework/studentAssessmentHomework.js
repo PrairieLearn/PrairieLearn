@@ -31,7 +31,7 @@ router.get('/', function (req, res, next) {
 
   sqldb.query(sql.find_single_assessment_instance, params, function (err, result) {
     if (ERR(err, next)) return;
-    if (result.rowCount == 0) {
+    if (result.rowCount === 0) {
       debug('no assessment instance');
 
       // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
@@ -92,14 +92,14 @@ router.get('/', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Homework') return next();
-  if (req.body.__action == 'new_instance') {
+  if (req.body.__action === 'new_instance') {
     var params = {
       assessment_id: res.locals.assessment.id,
       user_id: res.locals.user.user_id,
     };
     sqldb.query(sql.find_single_assessment_instance, params, function (err, result) {
       if (ERR(err, next)) return;
-      if (result.rowCount == 0) {
+      if (result.rowCount === 0) {
         const time_limit_min = null;
         assessment.makeAssessmentInstance(
           res.locals.assessment.id,
@@ -120,11 +120,11 @@ router.post('/', function (req, res, next) {
         res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
       }
     });
-  } else if (req.body.__action == 'join_group') {
+  } else if (req.body.__action === 'join_group') {
     try {
       const group_name = req.body.join_code.split('-')[0];
       const join_code = req.body.join_code.split('-')[1].toUpperCase();
-      if (join_code.length != 4) {
+      if (join_code.length !== 4) {
         throw 'invalid length of join code';
       }
       let params = [
@@ -166,7 +166,7 @@ router.post('/', function (req, res, next) {
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       });
     }
-  } else if (req.body.__action == 'create_group') {
+  } else if (req.body.__action === 'create_group') {
     const params = {
       assessment_id: res.locals.assessment.id,
       user_id: res.locals.user.user_id,
@@ -202,7 +202,7 @@ router.post('/', function (req, res, next) {
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       });
     }
-  } else if (req.body.__action == 'leave_group') {
+  } else if (req.body.__action === 'leave_group') {
     const params = {
       assessment_id: res.locals.assessment.id,
       user_id: res.locals.user.user_id,

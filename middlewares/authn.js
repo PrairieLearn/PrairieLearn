@@ -91,11 +91,11 @@ module.exports = function (req, res, next) {
     // We allow unit tests to override the user. Unit tests may also override the req_date
     // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
 
-    if (req.cookies.pl_test_user == 'test_student') {
+    if (req.cookies.pl_test_user === 'test_student') {
       authUid = 'student@illinois.edu';
       authName = 'Student User';
       authUin = '000000001';
-    } else if (req.cookies.pl_test_user == 'test_instructor') {
+    } else if (req.cookies.pl_test_user === 'test_instructor') {
       authUid = 'instructor@illinois.edu';
       authName = 'Instructor User';
       authUin = '100000000';
@@ -110,7 +110,7 @@ module.exports = function (req, res, next) {
       };
       sqldb.query(sql.select_user, params, (err, result) => {
         if (ERR(err, next)) return;
-        if (result.rowCount == 0) {
+        if (result.rowCount === 0) {
           return next(new Error('user not found with user_id ' + authnData.user_id));
         }
         res.locals.authn_user = result.rows[0].user;
@@ -156,7 +156,7 @@ module.exports = function (req, res, next) {
   };
   sqldb.query(sql.select_user, params, (err, result) => {
     if (ERR(err, next)) return;
-    if (result.rowCount == 0) {
+    if (result.rowCount === 0) {
       return next(new Error('user not found with user_id ' + authnData.user_id));
     }
     res.locals.authn_user = result.rows[0].user;
@@ -184,7 +184,7 @@ module.exports = function (req, res, next) {
 function checkAdministratorAccess(req, res) {
   const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
   const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
-  res.locals.access_as_administrator = accessType == 'active';
+  res.locals.access_as_administrator = accessType === 'active';
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;
 }

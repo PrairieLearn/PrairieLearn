@@ -18,7 +18,7 @@ router.get('/', function (req, res, next) {
       (callback) => {
         fs.access(res.locals.course.path, (err) => {
           if (err) {
-            if (err.code == 'ENOENT') {
+            if (err.code === 'ENOENT') {
               res.locals.needToSync = true;
             } else {
               return ERR(err, callback);
@@ -31,7 +31,7 @@ router.get('/', function (req, res, next) {
         if (res.locals.needToSync) return callback(null);
         fs.access(path.join(res.locals.course.path, 'infoCourse.json'), (err) => {
           if (err) {
-            if (err.code == 'ENOENT') {
+            if (err.code === 'ENOENT') {
               res.locals.noInfo = true;
             } else {
               return ERR(err, callback);
@@ -56,7 +56,7 @@ router.post('/', (req, res, next) => {
   }
 
   debug(`Responding to post with action ${req.body.__action}`);
-  if (req.body.__action == 'add_configuration') {
+  if (req.body.__action === 'add_configuration') {
     debug(`Responding to action add_configuration`);
     const editor = new CourseInfoEditor({
       locals: res.locals,

@@ -18,24 +18,24 @@ BEGIN
     FROM current_pages
     WHERE date > now() - interval '20 minutes';
 
-    SELECT count(*) / extract(epoch from current_interval)
+    SELECT count(*) / DATE_PART('epoch', current_interval)
     INTO page_views_per_second
     FROM page_view_logs
     WHERE date > now() - current_interval;
 
-    SELECT count(*) / extract(epoch from current_interval)
+    SELECT count(*) / DATE_PART('epoch', current_interval)
     INTO submissions_per_second
     FROM submissions
     WHERE date > now() - current_interval;
 
-    SELECT count(*) / extract(epoch from current_interval)
+    SELECT count(*) / DATE_PART('epoch', current_interval)
     INTO internal_grading_jobs_per_second
     FROM grading_jobs
     WHERE
         date > now() - current_interval
         AND grading_method = 'Internal';
 
-    SELECT count(*) / extract(epoch from current_interval)
+    SELECT count(*) / DATE_PART('epoch', current_interval)
     INTO external_grading_jobs_per_second
     FROM grading_jobs
     WHERE

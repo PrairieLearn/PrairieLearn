@@ -98,7 +98,7 @@ debug('func()', 'param:', param);
 
 ## Debugging SQL and PL/pgSQL
 
-- Use the [`psql`](https://www.postgresql.org/docs/9.6/static/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
+- Use the [`psql`](https://www.postgresql.org/docs/current/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
 
 ```sh
 psql postgres
@@ -120,7 +120,7 @@ SELECT the_sql_function(arg1, arg2);
 
 ## HTML page generation
 
-- Use [Express](http://expressjs.com) as the web framework. As of 2016-09-27 we are using v4.
+- Use [Express](http://expressjs.com) as the web framework.
 
 - All pages are server-side rendered and we try and minimize the amount of client-side JavaScript. Client-side JS should use [jQuery](https://jquery.com) and related libraries. We prefer to use off-the-shelf jQuery plugins where possible.
 
@@ -189,7 +189,7 @@ module.exports = router;
 
 ## SQL usage
 
-- Use [PostgreSQL](https://www.postgresql.org) and feel free to use the latest features. As of 2017-08-05 we run version 9.6.
+- Use [PostgreSQL](https://www.postgresql.org) and feel free to use the latest features.
 
 - The [PostgreSQL manual](https://www.postgresql.org/docs/manuals/) is an excellent reference.
 
@@ -961,3 +961,16 @@ To automatically fix lint and formatting errors, run `make format`.
 - The question flow is shown in the diagram below (also as a [PDF image](question-flow.pdf)).
 
 ![Question flow](question-flow.png)
+
+## JavaScript equality operator
+
+You should almost always use the `===` operator for comparisons; this is enforced with an ESLint rule.
+
+The only case where the `==` operator is frequently useful is for comparing entity IDs that may be coming from the client/database/etc. These may be either strings or numbers depending on where they're coming from or how they're fetched. To make it abundantly clear that ids are being compared, you should use the `idsEqual` utility:
+
+```js
+const { idsEqual } = require('./lib/id');
+
+console.log(idsEqual(12345, '12345'));
+// > true
+```

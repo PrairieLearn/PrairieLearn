@@ -28,7 +28,7 @@ var undefAllCourseCode = function (callback) {
 };
 
 module.exports = function (req, res, next) {
-  if (req.app.get('env') == 'development') {
+  if (req.app.get('env') === 'development') {
     undefAllCourseCode(function (err) {
       if (ERR(err, next)) return;
       next();
