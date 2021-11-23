@@ -18,6 +18,11 @@ import os
 import collections
 
 
+# TODO in the future it would be nice to have a way to use the `Final` type
+# around some of these values for the different functions so that the type
+# checker knows which functions are allowed to this may require subclassing
+# QuestionData, and constructing the `data` dictionary through class
+# constructors instead of the usual was
 class QuestionData(TypedDict):
     params: Dict[str, Any]
     correct_answers: Dict[str, Any]
