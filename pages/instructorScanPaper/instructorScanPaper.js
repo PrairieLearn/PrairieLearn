@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const {getDecodedBarcodes} = require('../../lib/barcodeScanner');
+const {decodeBarcodes} = require('../../lib/barcodeScanner');
 // const {fromPath} = require('pdf2pic');
 const ERR = require('async-stacktrace');
 const path = require('path');
