@@ -56,12 +56,12 @@ def prepare(element_html, data):
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
+
     partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'default')
     if grading_method != 'dag' and partial_credit_type != 'default':
         raise Exception('You may only specify different partial credit options in the DAG grading mode.')
     elif grading_method == 'dag':
         partial_credit_type = 'none' if partial_credit_type == 'default' else partial_credit_type
-
 
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
