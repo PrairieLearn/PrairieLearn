@@ -48,7 +48,7 @@ typecheck: typecheck-js typecheck-python
 typecheck-js:
 	@tsc
 typecheck-python:
-	@pyright  # TODO enable for all Python
+	@pyright -p pyrightconfig.json
 
 depcheck:
 	-depcheck --ignore-patterns=public/**
