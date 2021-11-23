@@ -1,6 +1,6 @@
 from typing import Dict, Any
 import prairielearn as pl
-import lxml.html  # type: ignore
+import lxml.html
 from lxml import etree
 import random
 import chevron
@@ -309,7 +309,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             return ''
     else:
-        raise Exception("Invalid panel type")
+        raise Exception('Invalid panel type')
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
@@ -323,7 +323,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         student_answer = data['raw_submitted_answers'][answer_raw_name]
 
     if student_answer is None:
-        student_answer = "[]"
+        student_answer = '[]'
 
     student_answer = json.loads(student_answer)
     if student_answer is None or student_answer == []:
