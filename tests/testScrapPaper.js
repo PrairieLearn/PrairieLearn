@@ -47,7 +47,7 @@ describe('Scrap paper view', function() {
   const scrapPaperUrl = baseUrl + '/scrap_paper';
 
   before('set up testing server', async  () =>{
-    await util.promisify(helperServer.before().bind(this))()
+    await util.promisify(helperServer.before().bind(this))();
   });
   after('shut down testing server', helperServer.after);
 
@@ -65,7 +65,7 @@ describe('Scrap paper view', function() {
         $scrapPaper = cheerio.load(await res.text());
       });
 
-      it('should display PDF generation form', () => {
+      it('view should display PDF generation form', () => {
         const numPages = $scrapPaper('#num_pages');
         const pageLabel = $scrapPaper('#page_label');
         assert.lengthOf(numPages, 1);
@@ -80,8 +80,8 @@ describe('Scrap paper view', function() {
       let pdf;
       let pdfBuffer;
 
-      it('should be able to download a pdf', async () => {
-        const payload = getScrapPaperPayload($scrapPaper, pageLimit, testLabel);
+      it('user should be able to download a pdf', async () => {
+        const payload = getScrapPaperPayload($scrapPaper, testNumPages, testLabel);
         const res = await fetch(scrapPaperUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },
@@ -126,17 +126,18 @@ describe('Scrap paper view', function() {
 
       });
       it('pdf should have requested number of pages', () => {
-        assert.equal(pdf.numpages, pageLimit);
+        assert.equal(pdf.numpages, testNumPages);
       });
       it('pdf should have a label for each page', () => {
+        // best we can do with this library. may want to use library that supports reading text per page
         const numLabels = pdf.text.match(new RegExp(testLabel, 'g')).length;
-        assert.equal(numLabels, pageLimit);
+        assert.equal(numLabels, testNumPages);
       });
       it('number of barcodes in pdf should match number of barcodes in database', async () => {
         barcodeRows = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
         assert.lengthOf(barcodeRows, pdf.numpages);
       });
-      it('should checksum sha16 successfully against base36 barcode components', () => {
+      it('database barcodes should checksum sha16 successfully against base36 barcode components', () => {
         barcodeRows.forEach((row) => {
           const { base36, sha16 } = getBarcodeSegments(row.barcode);
           const recomputedSha16 = jsCrc.crc16(base36);
@@ -144,10 +145,15 @@ describe('Scrap paper view', function() {
         });
       });
       it('barcodes should be scannable by barcode reader', async () => {
-        const pdf = await barcodeScanner.pdfParse(pdfBuffer);
-        const jpegs = await barcodeScanner.convertPdf(pdf.numpages, req.file.buffer, req.file.originalname);
+        const jpegs = await barcodeScanner.convertPdf(pdf.numpages, pdfBuffer, 'ANY NAME.pdf');
         const decodedJpegs = await barcodeScanner.decodeJpegs(jpegs);
         assert.isDefined(decodedJpegs);
+        decodedJpegs.forEach((jpeg) => {
+          assert.isNotNull(jpeg.barcode);
+        });
+      });
+      it('pdf barcodes should checksum sha16 successfully against base36 barcode components', () => {
+
       });
       it('should produce barcodes formatted with spacing ie. (xxxx xxxx xxxx)', () => {
         // nice to have ? TO DO?
