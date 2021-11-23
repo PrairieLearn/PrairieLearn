@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const barcodeScanner = require('../../lib/barcodeScanner');
+const {getDecodedBarcodes} = require('../../lib/barcodeScanner');
 // const {fromPath} = require('pdf2pic');
 const ERR = require('async-stacktrace');
 const path = require('path');
@@ -10,59 +10,12 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 // const sqldb = require('../../prairielib/lib/sql-db');
 // const sqlLoader = require('../../prairielib/lib/sql-loader');
 // const sql = sqlLoader.loadSqlEquiv(__filename);
-const pdfParse = require('pdf-parse');
-
 
 router.get('/', (req, res, next) => {
 
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 
 
-  // const javascriptBarcodeReader = require('javascript-barcode-reader');
-  // const jpeg = require('jpeg-js');
-  // const jpegData = fs.readFileSync();
-  // const clampedArrayImage = jpeg.decode(jpegData);
-
-  // javascriptBarcodeReader({
-  //   /* Image file Path || {data: Uint8ClampedArray, width, height} || HTML5 Canvas ImageData */
-  //   image: './kittens-small.jpg',
-  //   barcode: 'code-128',
-  //   // barcodeType: 'industrial',
-  //   options: {
-  //     useAdaptiveThreshold: true, // for images with sahded portions
-  //     // singlePass: true
-  //   },
-  // })
-  //   .then(code => {
-  //     console.log(code);
-  //   })
-  //   .catch(err => {
-  //     console.log(err);
-  //   });
-
-  // const convert = fromPath('./test1.pdf', {
-  //     format: 'png',
-  //     background: 'white',
-  //     saveFilename: 'test',
-  //     savePath: '.',
-  //   });
-  // convert.setGMClass(true);
-  // convert(1).then((resolve) => {
-  //     const baseOptions = {
-  //         format: 'jpeg',
-  //         saveFilename: 'test',
-  //         savePath: '.',
-  //         background: 'white',
-  //       };
-  //     const convert = fromPath('./test.1.png', baseOptions);
-  //     convert.setGMClass(true);
-  //     return convert(1);
-  // })
-  // .then((resolve) => {
-  //     console.log(resolve);
-
-  //     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  // });
 });
 
 router.post('/', function (req, res, next) {
@@ -72,13 +25,7 @@ router.post('/', function (req, res, next) {
       ERR(Error('Missing artifact file data'), next); return;
     }
 
-    pdfParse(req.file.buffer)
-      .then((pdf) => {
-        return barcodeScanner.convertPdf(pdf.numpages, req.file.buffer, req.file.originalname);
-      })
-      .then((jpegs) => {
-        return barcodeScanner.decodeJpegs(jpegs);
-      })
+    decodeBarcodes(req.file.buffer, req.file.originalname)
       .then((decodedJpegs) => {
         console.log('decodedJpegs', decodedJpegs);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -86,6 +33,7 @@ router.post('/', function (req, res, next) {
       .catch((err) => {
         if (ERR(err, next)) return;
       });
+
       // TO DO: 
 
       // reference submission in barcode row

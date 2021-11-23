@@ -4,8 +4,8 @@ const assert = require('chai').assert;
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
+const {decodeBarcodes} = require('../lib/barcodeScanner');
 const config = require('../lib/config');
-const barcodeScanner = require('../lib/barcodeScanner');
 const util = require('util');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
@@ -79,6 +79,7 @@ describe('Scrap paper view', function() {
 
       let pdf;
       let pdfBuffer;
+      let decodedJpegs;
 
       it('user should be able to download a pdf', async () => {
         const payload = getScrapPaperPayload($scrapPaper, testNumPages, testLabel);
@@ -145,15 +146,18 @@ describe('Scrap paper view', function() {
         });
       });
       it('barcodes should be scannable by barcode reader', async () => {
-        const jpegs = await barcodeScanner.convertPdf(pdf.numpages, pdfBuffer, 'ANY NAME.pdf');
-        const decodedJpegs = await barcodeScanner.decodeJpegs(jpegs);
+        decodedJpegs = await decodeBarcodes(pdfBuffer, 'Any original filename.pdf');
         assert.isDefined(decodedJpegs);
         decodedJpegs.forEach((jpeg) => {
           assert.isNotNull(jpeg.barcode);
         });
       });
       it('pdf barcodes should checksum sha16 successfully against base36 barcode components', () => {
-
+        decodedJpegs.forEach((jpeg) => {
+          const {base36, sha16} = getBarcodeSegments(jpeg.barcode);
+          const recomputedSha16 = jsCrc.crc16(base36);
+          assert.equal(recomputedSha16, sha16);
+        });
       });
       it('should produce barcodes formatted with spacing ie. (xxxx xxxx xxxx)', () => {
         // nice to have ? TO DO?
