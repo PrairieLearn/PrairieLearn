@@ -29,6 +29,7 @@ indexes
     submissions_pkey: PRIMARY KEY (id) USING btree (id)
     submissions_sid_key: UNIQUE (sid) USING btree (sid)
     submissions_date_idx: USING btree (date)
+    submissions_expr_idx: USING btree ((submitted_answer ->> '_pl_artifact_barcode'::text))
     submissions_variant_id_idx: USING btree (variant_id)
 
 foreign-key constraints
