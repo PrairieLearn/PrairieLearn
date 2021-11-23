@@ -56,11 +56,16 @@ def prepare(element_html, data):
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
-    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'first-wrong' if grading_method == 'ranking' else 'none')
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'default')
+    if grading_method != 'dag' and partial_credit_type != 'default':
+        raise Exception('You may only specify different partial credit options in the DAG grading mode.')
+    elif grading_method == 'dag':
+        partial_credit_type = 'none' if partial_credit_type == 'default' else partial_credit_type
+
 
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
-        raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
+        raise Exception('The grading-method attribute must be one of the following: ' + ', '.join(accepted_grading_method))
 
     if (grading_method != 'dag' and feedback_type != 'none') or \
        (grading_method == 'dag' and feedback_type not in ['none', 'first-wrong']):
@@ -374,7 +379,7 @@ def grade(element_html, data):
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'first-wrong' if grading_mode == 'ranking' else 'none')
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'none')
 
     true_answer_list = data['correct_answers'][answer_name]
 
@@ -411,8 +416,6 @@ def grade(element_html, data):
             correctness = 0
 
         final_score = float(correctness / len(true_answer_list))
-        if partial_credit_type == 'none' and final_score < 1:
-            final_score = 0
 
     elif grading_mode == 'dag':
         order = [ans['tag'] for ans in student_answer]
