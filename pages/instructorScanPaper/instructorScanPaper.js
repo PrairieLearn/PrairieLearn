@@ -20,7 +20,6 @@ router.get('/', (req, res, next) => {
 
 router.post('/', function (req, res, next) {
   if (req.body.__action == 'scan_scrap_paper') {
-    console.log(req.file);
     if (!req.file && !req.file.buffer) {
       ERR(Error('Missing artifact file data'), next); return;
     }
