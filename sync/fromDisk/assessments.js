@@ -210,6 +210,19 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     });
   });
 
+  const groupRoles = assessment.groupRoles || [];
+  assessmentParams.groupRoles = groupRoles.map((role) => {
+    return {
+      name: role.name,
+      minimum: role.minimum,
+      maximum: role.maximum,
+      can_assign_roles_at_start: role.canAssignRolesAtStart,
+      can_assign_roles_during_assessment: role.canAssignRolesDuringAssessment,
+    };
+  });
+
+  if (groupRoles.length) console.log(assessmentParams);
+
   // Needed when deleting unused alternative groups
   assessmentParams.lastAlternativeGroupNumber = alternativeGroupNumber;
 

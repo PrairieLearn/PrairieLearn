@@ -304,6 +304,15 @@ const FILE_UUID_REGEX =
  */
 
 /**
+ * @typedef {Object} GroupRole
+ * @property {string} name
+ * @property {number} minimum 
+ * @property {number} maximum
+ * @property {boolean} canAssignRolesAtStart 
+ * @property {boolean} canAssignRolesDuringAssessment 
+ */
+
+/**
  * @typedef {Object} Assessment
  * @property {string} uuid
  * @property {"Homework" | "Exam"} type
@@ -327,6 +336,7 @@ const FILE_UUID_REGEX =
  * @property {boolean} studentGroupCreate
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
+ * @property {GroupRole[]} groupRoles
  * @property {number} gradeRateMinutes
  */
 
