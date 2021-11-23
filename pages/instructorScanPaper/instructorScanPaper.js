@@ -10,6 +10,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 // const sqldb = require('../../prairielib/lib/sql-db');
 // const sqlLoader = require('../../prairielib/lib/sql-loader');
 // const sql = sqlLoader.loadSqlEquiv(__filename);
+const pdfParse = require('pdf-parse');
 
 
 router.get('/', (req, res, next) => {
@@ -71,7 +72,7 @@ router.post('/', function (req, res, next) {
       ERR(Error('Missing artifact file data'), next); return;
     }
 
-    barcodeScanner.pdfParse(req.file.buffer)
+    pdfParse(req.file.buffer)
       .then((pdf) => {
         return barcodeScanner.convertPdf(pdf.numpages, req.file.buffer, req.file.originalname);
       })
