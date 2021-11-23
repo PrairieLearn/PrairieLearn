@@ -17,9 +17,8 @@ const querystring = require('querystring');
 // const imagemagick = require('imagemagick');
 const jsCrc = require('js-crc');
 const pdfParse = require('pdf-parse');
-// const fsPromises = require('fs').promises;
 
-const maxPageLimit = 1000;
+const pageLimit = 1000;
 const base64Prefix = 'data:application/pdf;base64,';
 
 const getScrapPaperPayload = ($page, numPages, pageLabel) => {
@@ -31,38 +30,36 @@ const getScrapPaperPayload = ($page, numPages, pageLabel) => {
   };
 };
 const getBarcodeSegments = (barcode) => {
+  barcode = barcode.toLowerCase();
   const sha16 = barcode.substring(barcode.length - 4, barcode.length);
   return {
     fullBarcode: barcode,
     sha16,
-    base64: barcode.replace(sha16, ''),
+    base36: barcode.replace(sha16, ''),
   };
 };
 
-describe('Scrap paper view', function () {
+describe('Scrap paper view', function() {
   this.timeout(60000);
-
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  describe('Generate scrap paper', () => {
+  describe('Generate scrap paper', function() {
+
     let $scrapPaper;
     let pdf;
     let barcodeRows;
 
-    describe('GET', () => {
+    describe('GET', function() {
+      this.timeout(60000);
+
       before('fetch page', async () => {
         const res = await fetch(scrapPaperUrl);
         assert.equal(res.status, 200);
         $scrapPaper = cheerio.load(await res.text());
-      });
-
-      it('should not display a PDF document', () => {
-        const pdfContainer = $scrapPaper('.pdf-container');
-        assert.lengthOf(pdfContainer, 0);
       });
 
       it('should display PDF generation form', () => {
@@ -74,19 +71,27 @@ describe('Scrap paper view', function () {
     });
 
     describe('POST', () => {
-      before('POST "make_scrap_paper" payload', async () => {
-        const payload = getScrapPaperPayload($scrapPaper, maxPageLimit, 'TEST LABEL');
+      this.timeout(60000);
+      const testLabel = 'TEST LABEL';
+      let pdf;
+
+      it('should be able to download a pdf', async () => {
+        const payload = getScrapPaperPayload($scrapPaper, pageLimit, testLabel);
         const res = await fetch(scrapPaperUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },
           body: querystring.encode(payload),
         });
         assert.equal(res.status, 200);
-        $scrapPaper = cheerio.load(await res.text());
-      });
-      // will need to use iamgemagick
-      it('should produce number of pages specified', async () => {
-        const data = $scrapPaper('iframe')[0].attribs.src.replace(base64Prefix, '');
+        const pdfBlob = await res.blob();
+        assert.isDefined(pdfBlob);
+
+        const buffer = Buffer.from(await pdfBlob.arrayBuffer());
+        assert.isDefined(buffer);
+
+        pdf = await pdfParse(buffer);
+        assert.isDefined(pdf);
+
 
         // IMAGE MAGICK IDENTIFY() METHOD DOES NOT WORK WITH 500 PAGE PDF.
         // const filepath = './output.pdf';
@@ -114,16 +119,17 @@ describe('Scrap paper view', function () {
         //   });
         // });
 
-        const buffer = Buffer.from(data, 'base64');
-        pdf = await pdfParse(buffer);
-        assert.equal(pdf.numpages, maxPageLimit);
       });
-      it('should produce number of barcodes that equal specified number of pages', async () => {
+      it('pdf should have requested number of pages', () => {
+        assert.equal(pdf.numpages, pageLimit);
+      });
+      it('pdf should have a label for each page', () => {
+        const numLabels = pdf.text.match(new RegExp(testLabel, 'g')).length;
+        assert.equal(numLabels, pageLimit);
+      });
+      it('number of barcodes in pdf should match number of barcodes in database', async () => {
         barcodeRows = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
         assert.lengthOf(barcodeRows, pdf.numpages);
-      });
-      it('should display barcodes in UPPERCASE on PDF document and in database', () => {
-        // TO DO once pdf reader working with barcode scanner
       });
       it('should checksum sha16 successfully against base36 barcode components', () => {
         barcodeRows.forEach((row) => {
@@ -147,7 +153,6 @@ describe('Pl-artifact-scan element', () => {
 });
 
 describe('Scan paper view', function () {
-  this.timeout(60000);
 
   // const scanPaperUrl = baseUrl + '/scan_paper';
 

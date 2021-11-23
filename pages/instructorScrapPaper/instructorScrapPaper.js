@@ -13,15 +13,14 @@ const pdfkit = require('pdfkit');
 const sharp = require('sharp');
 const jsCrc = require('js-crc');
 
+const pageLimit = 1000;
+const charLimit = 45;
+
 const generateBarcodes = async (numBarcodes) => {
   const barcodes = [];
 
   // Barcodes should be error-detecting <x char hexatridecimal produced by base36 encoding><4 char crc16 hash>
   // Sequential counter to produce x char base36 string should be base36 encode input
-
-  if (!numBarcodes || numBarcodes > 1000) {
-    throw new Error('Cannot produce more than 1000 or less than 1 barcoded sheets');
-  }
 
   const client = await sqldb.beginTransactionAsync();
   try {
@@ -33,7 +32,7 @@ const generateBarcodes = async (numBarcodes) => {
       barcodesCount += 1;
       const base36 = BigInt(barcodesCount).toString(36);
       const crc16 = jsCrc.crc16(base36);
-      const barcode = `${base36}${crc16}`; // concat as string in chance integer combo
+      const barcode = `${base36}${crc16}`.toUpperCase(); // concat as string in chance integer combo
       barcodes.push(barcode);
     }
 
@@ -58,7 +57,7 @@ const createBarcodeSVGs = async (barcodes) => {
   const svgs = [];
   for (let i = 0; i < barcodes.length; i++) {
     const result = await bitgener({
-      data: barcodes[i].toUpperCase(),
+      data: barcodes[i],
       type: 'code128',
       output: 'buffer',
       encoding: 'utf8',
@@ -112,11 +111,11 @@ router.post('/', function (req, res, next) {
     const numPages = req.body.num_pages;
     const pageLabel = req.body.page_label;
 
-    if (!numPages || numPages < 0 || numPages > 1000) {
-      throw Error('Must be more than 1 page but not more than 1000 pages');
+    if (!numPages || numPages < 1 || numPages > pageLimit) {
+      throw Error(`Must be more than 1 page but not more than ${pageLimit} pages`);
     }
-    if (typeof pageLabel !== 'string' || pageLabel.length > 45) {
-      throw Error('Page label must be valid string less than 45 characters');
+    if (typeof pageLabel !== 'string' || pageLabel.length > charLimit) {
+      throw Error(`Page label must be valid string less than ${charLimit} characters`);
     }
 
     generateBarcodes(numPages)

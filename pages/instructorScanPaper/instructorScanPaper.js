@@ -260,7 +260,6 @@ router.post('/', function (req, res, next) {
 
       //implement makeshift queue, as https://github.com/serratus/quaggaJS/issues/135 issues when two decoding jobs running simaltaneously
     
-    // barcode reader fails (send back page image so they can see which one failed)
   } else {
     return next(
       error.make(400, 'unknown __action', {
