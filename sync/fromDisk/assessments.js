@@ -116,7 +116,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number }[]} */
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[] }[]} */
       let alternatives;
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
@@ -140,6 +140,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
+            canView: _.has(alternative, 'canView')
+              ? alternative.canView
+              : null,
+            canSubmit: _.has(alternative, 'canSubmit')
+              ? alternative.canSubmit
+              : null,
           };
         });
       } else if (_(question).has('id')) {
@@ -151,6 +157,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             gradeRateMinutes: questionGradeRateMinutes,
+            canView: question.canView || [],
+            canSubmit: question.canSubmit || [],
           },
         ];
       }
@@ -221,6 +229,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     };
   });
 
+  // FIXME: (renzo) remove this console.log
   if (groupRoles.length) console.log(assessmentParams);
 
   // Needed when deleting unused alternative groups
