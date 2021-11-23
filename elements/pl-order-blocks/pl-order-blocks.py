@@ -319,7 +319,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     answer_raw_name = answer_name + '-input'
     student_answer = None
 
-    if answer_raw_name in data['raw_submitted_answers'].keys():
+    if answer_raw_name in data['raw_submitted_answers']:
         student_answer = data['raw_submitted_answers'][answer_raw_name]
 
     if student_answer is None:
