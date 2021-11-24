@@ -14,8 +14,3 @@ indexes
 
 foreign-key constraints
     group_roles_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
-
-
-
-
-
