@@ -11,6 +11,7 @@ const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const querystring = require('querystring');
+const FormData = require('form-data');
 
 const {saveOrGrade} = require('./helperClient');
 const helperServer = require('./helperServer');
@@ -40,12 +41,12 @@ const getScrapPaperPayload = ($page, numPages, pageLabel) => {
   };
 };
 
-const getScanPaperPayload = ($page, numPages, pdfBuffer) => {
-  return {
-    pdf_artifact: pdfBuffer,
-    __csrf_token: $page('form > input[name="__csrf_token"]').val(),
-    __action: $page('form > input[name="__action"]').val(),
-  };
+const getScanPaperPayload = ($page, pdfBuffer) => {
+  const formData = new FormData();
+  formData.append('file', pdfBuffer, 'ANY FILENAME.pdf');
+  formData.append('__csrf_token', $page('form > input[name="__csrf_token"]').val());
+  formData.append('__action', $page('form > input[name="__action"]').val());
+  return formData;
 };
 
 const getBarcodeSegments = (barcode) => {
@@ -63,7 +64,10 @@ describe('Barcode generation, student submission, and scanning process', functio
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
   const scanPaperUrl = baseUrl + '/scan_artifacts';
+
+  // created in `Generate scrap paper` but also used in `Barcode submission ..` and `Scan scrap paper` test blocks in end-to-end test
   const validBarcodes = [];
+  let pdfBuffer;
 
   before('set up testing server', async  () =>{
     await util.promisify(helperServer.before().bind(this))();
@@ -73,8 +77,6 @@ describe('Barcode generation, student submission, and scanning process', functio
   describe('Generate scrap paper', function() {
 
     let $scrapPaper;
-    let pdf;
-    let pdfBuffer;
     let barcodeRows;
 
     describe('GET', function() {
@@ -185,7 +187,7 @@ describe('Barcode generation, student submission, and scanning process', functio
     });
   });
 
-  describe('Barcode submission on `pl-artifact-scan` element', () => {
+  describe('Barcode submission on `pl-artifact-scan` element (student submission)', () => {
     const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
     let hm1AutomaticTestSuiteUrl;
     let defaultUser;
@@ -248,12 +250,15 @@ describe('Barcode generation, student submission, and scanning process', functio
         assert.include(await grade.text(), 'Submitted answer\n          \n          4\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-danger">correct: 0%');
       }
     });
+    it('student/instructor roles should NOT see PDF version of written work before instructor uploads PDF barcoded proof of work', async () => {
+
+    });
   });
 
   describe('Scan scrap paper', () => {
-    describe('GET', function() {
-      let $scanPaper;
+    let $scanPaper;
 
+    describe('GET', function() {
       before('fetch page', async () => {
         const res = await fetch(scanPaperUrl);
         assert.equal(res.status, 200);
@@ -267,7 +272,27 @@ describe('Barcode generation, student submission, and scanning process', functio
     });
 
     describe('POST', function() {
-      
+      it('should be able to post pdf form', async () => {
+        const res = await fetch(scanPaperUrl, {
+          method: 'POST',
+          body: getScanPaperPayload($scanPaper, pdfBuffer)
+        });
+        assert.isTrue(res.ok);
+      });
+      it('barcodes should be found in submission rows', () => {
+
+      });
+      it('pdf page should be uploaded to S3 for each barcoded sheet', () => {
+
+      });
     });
   });
+
+
+  describe('Barcode submission on `pl-artifact-scan` element (student/instructor views pdf)', () => {
+    it('student/instructor roles should be able to view PDF after instructor uploads it to barcode pdf scanner', async () => {
+
+    });
+  });
+
 });
