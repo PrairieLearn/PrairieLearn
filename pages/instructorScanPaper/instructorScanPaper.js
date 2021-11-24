@@ -9,15 +9,12 @@ const ERR = require('async-stacktrace');
 // const path = require('path');
 // const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-// const sqldb = require('../../prairielib/lib/sql-db');
-// const sqlLoader = require('../../prairielib/lib/sql-loader');
-// const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/', (req, res, next) => {
-
+router.get('/', (req, res) => {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-
-
 });
 
 router.post('/', function (req, res, next) {
@@ -28,7 +25,19 @@ router.post('/', function (req, res, next) {
 
     decodeBarcodes(req.file.buffer, req.file.originalname)
       .then((decodedJpegs) => {
-        console.log('decodedJpegs', decodedJpegs);
+        const barcodes = [];
+        decodedJpegs.forEach((decodedJpeg) => {
+          if (decodedJpeg.barcode !== null) {
+            barcodes.push(decodedJpeg.barcode);
+          }
+        });
+        // 1. we got the barcodes and we are getting the submission objects that contain a barcode match.
+        return sqldb.queryAsync(sql.get_submissions_with_barcodes, {barcodes: barcodes.join('||')});
+      })
+      .then((submissionRows) => {
+        // for each submission
+        // do not want to throw errors if no data found. We want to export this data to a log that can be read by a faculty/TA
+        // It is not our issue if a barcode was left out of a submission because the element was not set to required
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch((err) => {

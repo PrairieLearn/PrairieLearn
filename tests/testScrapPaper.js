@@ -10,18 +10,26 @@ const util = require('util');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
+const querystring = require('querystring');
 
+const {saveOrGrade} = require('./helperClient');
 const helperServer = require('./helperServer');
 // const helperQuestion = require('./helperQuestion');
 // const helperAttachFiles = require('./helperAttachFiles');
 
-const querystring = require('querystring');
 // const imagemagick = require('imagemagick');
 const jsCrc = require('js-crc');
 const pdfParse = require('pdf-parse');
 
-const pageLimit = 1000;
-const base64Prefix = 'data:application/pdf;base64,';
+/**
+ * Set the active user within Prairie Learn's test environment.
+ * @param {object} user
+ */
+const setUser = (user) => {
+  config.authUid = user.authUid;
+  config.authName = user.authName;
+  config.authUin = user.authUin;
+};
 
 const getScrapPaperPayload = ($page, numPages, pageLabel) => {
   return {
@@ -31,6 +39,15 @@ const getScrapPaperPayload = ($page, numPages, pageLabel) => {
     __action: $page('form > input[name="__action"]').val(),
   };
 };
+
+const getScanPaperPayload = ($page, numPages, pdfBuffer) => {
+  return {
+    pdf_artifact: pdfBuffer,
+    __csrf_token: $page('form > input[name="__csrf_token"]').val(),
+    __action: $page('form > input[name="__action"]').val(),
+  };
+};
+
 const getBarcodeSegments = (barcode) => {
   barcode = barcode.toLowerCase();
   const sha16 = barcode.substring(barcode.length - 4, barcode.length);
@@ -41,10 +58,12 @@ const getBarcodeSegments = (barcode) => {
   };
 };
 
-describe('Scrap paper view', function() {
+describe('Barcode generation, student submission, and scanning process', function() {
   this.timeout(60000);
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
+  const scanPaperUrl = baseUrl + '/scan_artifacts';
+  const validBarcodes = [];
 
   before('set up testing server', async  () =>{
     await util.promisify(helperServer.before().bind(this))();
@@ -55,6 +74,7 @@ describe('Scrap paper view', function() {
 
     let $scrapPaper;
     let pdf;
+    let pdfBuffer;
     let barcodeRows;
 
     describe('GET', function() {
@@ -78,7 +98,6 @@ describe('Scrap paper view', function() {
       const testNumPages = 15; // has to be reasonably small for pdf to be converted/decoded quickly in test
 
       let pdf;
-      let pdfBuffer;
       let decodedJpegs;
 
       it('user should be able to download a pdf', async () => {
@@ -145,24 +164,115 @@ describe('Scrap paper view', function() {
           assert.equal(recomputedSha16, sha16);
         });
       });
-      it('barcodes should be scannable by barcode reader', async () => {
+      it('barcodes should ALL be scannable by barcode reader', async () => {
         decodedJpegs = await decodeBarcodes(pdfBuffer, 'Any original filename.pdf');
         assert.isDefined(decodedJpegs);
         decodedJpegs.forEach((jpeg) => {
           assert.isNotNull(jpeg.barcode);
         });
       });
-      it('pdf barcodes should checksum sha16 successfully against base36 barcode components', () => {
+      it('pdf barcodes should checksum sha16 successfully against base36 barcode component', () => {
         decodedJpegs.forEach((jpeg) => {
           const {base36, sha16} = getBarcodeSegments(jpeg.barcode);
           const recomputedSha16 = jsCrc.crc16(base36);
           assert.equal(recomputedSha16, sha16);
+          validBarcodes.push(jpeg.barcode);
         });
       });
       it('should produce barcodes formatted with spacing ie. (xxxx xxxx xxxx)', () => {
         // nice to have ? TO DO?
       });
     });
+  });
+
+  describe('Barcode submission on `pl-artifact-scan` element', () => {
+    const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
+    let hm1AutomaticTestSuiteUrl;
+    let defaultUser;
+
+    const getBarcodeSubmissionUrl = async () => {
+      const res = await fetch(hm1AutomaticTestSuiteUrl);
+      assert.equal(res.ok, true);
+
+      const hm1Body = await res.text();
+      assert.include(hm1Body, 'HW1.12. Barcode submission');
+
+      const $hm1Body = cheerio.load(hm1Body);
+      return baseUrl.replace('/pl', '') + $hm1Body('a:contains("HW1.12. Barcode submission")').attr('href');
+    };
+
+    const mockStudents = [
+      {authUid: 'student1', authName: 'Student User 1', authUin: '00000001'},
+      {authUid: 'student2', authName: 'Student User 2', authUin: '00000002'},
+    ];
+
+    before('create students', async () => {
+      defaultUser = {authUid: config.authUid, authName: config.authName, authUin: config.authUin}; // test suite default
+      for (const student of mockStudents) {
+          setUser(student);
+          await fetch(baseUrl);
+      }
+    });
+    before('get homework 1 url', async () => {
+      setUser(mockStudents[0]);
+      const courseInstanceBody = await (await fetch(studentCourseInstanceUrl)).text();
+      const $courseInstancePage = cheerio.load(courseInstanceBody);
+      hm1AutomaticTestSuiteUrl = baseUrl.replace('/pl', '') + $courseInstancePage('a:contains("Homework for automatic test suite")').attr('href');
+    });
+    after('restore default user', () => {
+      setUser(defaultUser);
+    });
+
+    it('students should NOT be able to submit invalid barcodes', async () => {
+      for (const student of mockStudents) {
+        setUser(student);
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
+        // front-end validation doesn't work here, but we try backend validation from pl-artifact-scan.py
+        const save = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: 9999999}, 'save');
+        assert.include(await save.text(), 'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-danger">invalid, not gradable</span>');
+
+        const grade = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: 9999999}, 'grade');
+        assert.include(await grade.text(), 'Submitted answer\n          \n          2\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-danger">invalid, not gradable</span>');
+      }
+    });
+    it('students should be able to "save" or "save & grade" valid barcodes', async () => {
+      for (const student of mockStudents) {
+        setUser(student);
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
+        const save = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: validBarcodes[0]}, 'save');
+        assert.include(await save.text(), 'Submitted answer\n          \n          3\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>');
+        const grade = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: validBarcodes[1]}, 'grade');
+
+        // This will have to fail until I can figure out what the proper behaviour for an element that does not cound as a grade is. How do we handle
+        // cases where an element is validated as correct on the back-end but does not have a score.
+        assert.include(await grade.text(), 'Submitted answer\n          \n          4\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-danger">correct: 0%');
+      }
+    });
+  });
+
+  describe('Scan scrap paper', () => {
+    describe('GET', function() {
+      let $scanPaper;
+
+      before('fetch page', async () => {
+        const res = await fetch(scanPaperUrl);
+        assert.equal(res.status, 200);
+        $scanPaper = cheerio.load(await res.text());
+      });
+
+      it('view should display PDF generation form', () => {
+      const pdfFileSubmission = $scanPaper('#pdf-artifact');
+        assert.lengthOf(pdfFileSubmission, 1);
+      });
+    });
+
+    describe('POST', function() {
+      
+    });
+  });
+
+  describe('end-to-end process', () => {
+
   });
 });
 
