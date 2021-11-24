@@ -4,3 +4,4 @@ columns
 
 indexes
     barcodes_pkey: PRIMARY KEY (id) USING btree (id)
+    barcodes_barcode_key: UNIQUE (barcode) USING btree (barcode)

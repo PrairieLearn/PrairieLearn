@@ -41,7 +41,7 @@ const generateBarcodes = async (numBarcodes) => {
       barcodes.map((barcode) => "('" + barcode + "')").join(',')
     );
     const insertedBarcodes = await sqldb.queryWithClientAsync(client, insert_barcodes, {});
-    if (insertedBarcodes.rows.length !== numBarcodes) {
+    if (insertedBarcodes.rows.length !== Number(numBarcodes)) {
       throw Error('Wrong number of barcodes created. Aborting');
     }
   } catch (err) {
