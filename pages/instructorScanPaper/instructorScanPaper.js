@@ -2,10 +2,12 @@ const express = require('express');
 const router = express.Router();
 
 const {decodeBarcodes} = require('../../lib/barcodeScanner');
+
 // const {fromPath} = require('pdf2pic');
+const error = require('../../prairielib/lib/error');
 const ERR = require('async-stacktrace');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+// const path = require('path');
+// const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 // const sqldb = require('../../prairielib/lib/sql-db');
 // const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -19,7 +21,7 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', function (req, res, next) {
-  if (req.body.__action == 'scan_scrap_paper') {
+  if (req.body.__action === 'scan_scrap_paper') {
     if (!req.file && !req.file.buffer) {
       ERR(Error('Missing artifact file data'), next); return;
     }

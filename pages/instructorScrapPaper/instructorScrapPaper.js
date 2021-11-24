@@ -41,7 +41,7 @@ const generateBarcodes = async (numBarcodes) => {
       barcodes.map((barcode) => "('" + barcode + "')").join(',')
     );
     const insertedBarcodes = await sqldb.queryWithClientAsync(client, insert_barcodes, {});
-    if (insertedBarcodes.rows.length != numBarcodes) {
+    if (insertedBarcodes.rows.length !== numBarcodes) {
       throw Error('Wrong number of barcodes created. Aborting');
     }
   } catch (err) {
@@ -107,15 +107,15 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', function (req, res, next) {
-  if (req.body.__action == 'make_scrap_paper') {
+  if (req.body.__action === 'make_scrap_paper') {
     const numPages = req.body.num_pages;
     const pageLabel = req.body.page_label;
 
     if (!numPages || numPages < 1 || numPages > pageLimit) {
-      throw Error(`Must be more than 1 page but not more than ${pageLimit} pages`);
+      ERR(Error(`Must be more than 1 page but not more than ${pageLimit} pages`), next); return;
     }
     if (typeof pageLabel !== 'string' || pageLabel.length > charLimit) {
-      throw Error(`Page label must be valid string less than ${charLimit} characters`);
+      ERR(Error(`Page label must be valid string less than ${charLimit} characters`), next); return;
     }
 
     generateBarcodes(numPages)
