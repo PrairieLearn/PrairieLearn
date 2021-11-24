@@ -270,25 +270,4 @@ describe('Barcode generation, student submission, and scanning process', functio
       
     });
   });
-
-  describe('end-to-end process', () => {
-
-  });
 });
-
-// describe('Pl-artifact-scan element', () => {
-//   it('should be able to submit a valid barcode', () => {});
-// });
-
-// describe('Scan paper view', function () {
-
-//   // const scanPaperUrl = baseUrl + '/scan_paper';
-
-//   describe('GET', () => {});
-
-//   describe('POST', () => {
-//     it('should display an error when size of PDF is above an upper bound limit of 25MB', () => {
-
-//     });
-//   });
-// });
