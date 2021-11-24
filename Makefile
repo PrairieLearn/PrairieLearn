@@ -48,7 +48,7 @@ typecheck: typecheck-js typecheck-python
 typecheck-js:
 	@tsc
 typecheck-python:
-	@pyright -p pyrightconfig.json
+	@pyright
 
 depcheck:
 	-depcheck --ignore-patterns=public/**
