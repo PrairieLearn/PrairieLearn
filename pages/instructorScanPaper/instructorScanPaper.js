@@ -26,15 +26,15 @@ const _uploadMatchedPages = async (decodedJpegs, submissions, userId) => {
   for(let i = 0; i < decodedJpegs.length; i++) {
     for(let j = 0; j < submissions.rows.length; j++) {
       const jpeg = decodedJpegs[i];
-      const submission = submissions[i];
+      const submission = submissions.rows[j];
       uploads.push(
         async () => fileStore.upload('exam_upload.pdf', await fs.readFile(jpeg.jpegFilepath), 'image/jpeg', submission.assessment_instance_id, submission.instance_question_id, userId, userId, 'S3'),
       )
     }
   }
 
-  console.log(submissions);
-  console.log(uploads);
+  const uploaded = await Promise.all(uploads);
+  console.log(uploaded);
 
 };
 
@@ -119,7 +119,7 @@ const _processPdfScan = async (pdfBuffer, originalName, userId) => {
     //    b. we need to combine the 
     // 3.
     
-    await _uploadMatchedPages(jpegsToUpload, submissions, userId);
+    const uploadedFiles = await _uploadMatchedPages(jpegsToUpload, submissions, userId);
 
     // 3. create report of what sheets could be read or not read by decoder.
     return;
@@ -149,6 +149,8 @@ router.post('/', function (req, res, next) {
         if (ERR(err, next)) return;
       });
       // TO DO:
+
+      // convert jpeg to pdf
 
       // detach process from request and display stdout in view
 
