@@ -22,20 +22,14 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  * @param {*} submissionId 
  */
 const _uploadMatchedPages = async (decodedJpegs, submissions, userId) => {
-  const uploads = [];
   for(let i = 0; i < decodedJpegs.length; i++) {
     for(let j = 0; j < submissions.rows.length; j++) {
       const jpeg = decodedJpegs[i];
       const submission = submissions.rows[j];
-      uploads.push(
-        async () => fileStore.upload('exam_upload.pdf', await fs.readFile(jpeg.jpegFilepath), 'image/jpeg', submission.assessment_instance_id, submission.instance_question_id, userId, userId, 'S3'),
-      )
+      // Promise.all memory limitations?
+      await fileStore.upload('scrap_paper_upload.pdf', await fs.readFile(jpeg.jpegFilepath), 'image/jpeg', submission.assessment_instance_id, submission.instance_question_id, userId, userId, 'S3');
     }
   }
-
-  const uploaded = await Promise.all(uploads);
-  console.log(uploaded);
-
 };
 
 const _updateBarcodesTable = async (submissions) => {
