@@ -34,10 +34,24 @@ router.post('/', function (req, res, next) {
         // 1. we got the barcodes and we are getting the submission objects that contain a barcode match.
         return sqldb.queryAsync(sql.get_submissions_with_barcodes, {barcodes: barcodes.join('||')});
       })
-      .then((submissionRows) => {
+      .then((selectQuery) => {
+        // if we found a match, we want this submission to be added to the barcodes table
+        const barcodeSubmissionArr = selectQuery.rows.map((row) => { return {barcode: row.submitted_answer._pl_artifact_barcode, submission_id: row.id} });
+        let barcodeSubmissionVals = '';
+
+        for (let i = 0; i < barcodeSubmissionArr.length; i++) {
+          barcodeSubmissionVals+= `(${barcodeSubmissionArr[i].submission_id}, '${barcodeSubmissionArr[i].barcode}'),`;
+          if (i === barcodeSubmissionArr.length -1) {
+            barcodeSubmissionVals = barcodeSubmissionVals.substring(0, barcodeSubmissionVals.length - 1);
+          }
+        }
+        return sqldb.queryAsync(sql.update_barcodes, {barcodeSubmissionVals});
         // for each submission
         // do not want to throw errors if no data found. We want to export this data to a log that can be read by a faculty/TA
         // It is not our issue if a barcode was left out of a submission because the element was not set to required
+      })
+      .then((updateQuery) => {
+        console.log(updateQuery);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch((err) => {
