@@ -141,10 +141,14 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
             canView: _.has(alternative, 'canView')
-              ? alternative.canView
-              : null,
+            ? alternative.canView
+            : _.has(question, 'canView')
+            ? question.canView
+            : null,
             canSubmit: _.has(alternative, 'canSubmit')
               ? alternative.canSubmit
+              : _.has(question, 'canSubmit')
+              ? question.canSubmit
               : null,
           };
         });
@@ -157,8 +161,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             gradeRateMinutes: questionGradeRateMinutes,
-            canView: question.canView || [],
-            canSubmit: question.canSubmit || [],
+            canView: question.canView || null,
+            canSubmit: question.canSubmit || null,
           },
         ];
       }
@@ -210,6 +214,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             grade_rate_minutes: alternative.gradeRateMinutes,
             question_id: questionId,
             number_in_alternative_group: alternativeIndex + 1,
+            can_view: alternative.canView,
+            can_submit: alternative.canSubmit,
           };
         }
       );
@@ -221,16 +227,13 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   const groupRoles = assessment.groupRoles || [];
   assessmentParams.groupRoles = groupRoles.map((role) => {
     return {
-      name: role.name,
+      role_name: role.name,
       minimum: role.minimum,
       maximum: role.maximum,
       can_assign_roles_at_start: role.canAssignRolesAtStart,
       can_assign_roles_during_assessment: role.canAssignRolesDuringAssessment,
     };
   });
-
-  // FIXME: (renzo) remove this console.log
-  if (groupRoles.length) console.log(assessmentParams);
 
   // Needed when deleting unused alternative groups
   assessmentParams.lastAlternativeGroupNumber = alternativeGroupNumber;

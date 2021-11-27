@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS group_roles (
     assessment_id BIGINT NOT NULL,
     minimum INT DEFAULT 0,
     maximum INT DEFAULT 4,
-    can_assign_roles_before BOOLEAN DEFAULT FALSE,
-    can_assign_roles_during BOOLEAN DEFAULT FALSE,
+    can_assign_roles_at_start BOOLEAN DEFAULT FALSE,
+    can_assign_roles_during_assessment BOOLEAN DEFAULT FALSE,
     can_submit_assessment BOOLEAN DEFAULT TRUE,
     CONSTRAINT group_roles_assessment_id_fkey
         FOREIGN KEY (assessment_id)

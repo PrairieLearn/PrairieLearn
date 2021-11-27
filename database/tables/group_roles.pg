@@ -4,8 +4,8 @@ columns
     assessment_id: bigint not null
     minimum: int default 0
     maximum: int default 4
-    can_assign_roles_before: boolean default false
-    can_assign_roles_during: boolean default false
+    can_assign_roles_at_start: boolean default false
+    can_assign_roles_during_assessment: boolean default false
     can_submit_assessment: boolean default true
 
 indexes
