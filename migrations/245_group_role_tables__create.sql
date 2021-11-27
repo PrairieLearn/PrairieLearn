@@ -1,6 +1,6 @@
 -- Create table and index for group roles
 CREATE TABLE IF NOT EXISTS group_roles (
-    id BIGINT PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     role_name TEXT NOT NULL,
     assessment_id BIGINT NOT NULL,
     minimum INT DEFAULT 0,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS group_roles (
             REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX group_roles_assessment_question_id_key ON group_roles (assessment_id);
+CREATE INDEX group_roles_assessment_question_id_key ON group_roles (assessment_id);
 
 -- Create relational table and associated indexes between roles and assessment questions
 CREATE TABLE IF NOT EXISTS assessment_question_role_permissions (

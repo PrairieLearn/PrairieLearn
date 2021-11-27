@@ -203,10 +203,10 @@ BEGIN
                 ) VALUES (
                     (group_role->>'role_name'),
                     new_assessment_id,
-                    (group_role->>'minimum'),
-                    (group_role->>'maximum'),
-                    (group_role->>'can_assign_roles_at_start'),
-                    (group_role->>'can_assign_roles_during_assessment')
+                    (group_role->>'minimum')::integer,
+                    (group_role->>'maximum')::integer,
+                    (group_role->>'can_assign_roles_at_start')::boolean,
+                    (group_role->>'can_assign_roles_during_assessment')::boolean
                 );
             END LOOP;
         ELSE
