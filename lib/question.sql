@@ -39,6 +39,7 @@ FROM
     JOIN questions AS q ON (q.id = v.question_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
     LEFT JOIN LATERAL (
+        -- Until we know how we want to model this and requirements, we just retrieve the last one in case multiple uploads per submission occur
         SELECT *
         FROM files
         WHERE submission_id = s.id AND type = 'artifact_upload'
