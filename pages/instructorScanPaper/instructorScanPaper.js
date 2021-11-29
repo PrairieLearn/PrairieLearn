@@ -114,13 +114,15 @@ const _processPdfScan = async (pdfBuffer, originalName, userId) => {
 
   // 1. we have at least one decoded barcoded and we want to associate the information in the `barcodes` table
   //    ISSUE: If a student has not submitted the barcode through the element, we will not find a match.
+  //    We need to set the expectation that they need to re-run the PDF upload if barcode submissions occur after upload date.
   if (submissions.rows.length > 0) {
     const updated = await _updateBarcodesTable(submissions);
     console.log('updated: ', updated);
 
     // 2. a. since we found some barcodes, we want those barcoded sheets uploaded to s3 so student/instructor can view them
+    // NOTE: at least right now, we are not uploading the failed ones. Should we? Future plans?
     const jpegsToUpload = decodedJpegs.filter((decodedJpeg) => updated.rows.indexOf(decodedJpeg.barcode));
-    //    b. we need to combine the 
+    //
     // 3.
 
     const uploadedFiles = await _uploadMatchedPages(jpegsToUpload, submissions, userId);

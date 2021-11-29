@@ -1,7 +1,7 @@
 export PATH := node_modules/.bin/:$(PATH)
 
 start: start-support
-	@node server.js
+	@node --inspect=0.0.0.0:9229 server.js
 start-nodemon: start-support
 	@nodemon -L server.js
 start-workspace-host: start-support kill-running-workspaces
@@ -27,7 +27,7 @@ test-prairielib:
 test-grader-host:
 	@jest grader_host/
 test-nocoverage: start-support
-	@mocha tests/index.js
+	@mocha --inspect=0.0.0.0:5858 --timeout=50000 tests/index.js 
 test-python:
 	@python3 question-servers/freeformPythonLib/prairielearn_test.py
 	@python3 elements/pl-order-blocks/dag_checker_test.py
