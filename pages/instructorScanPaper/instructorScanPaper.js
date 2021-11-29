@@ -16,20 +16,30 @@ const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 /**
- * Helper method to upload a pdf page and associate it with a
- * student submission, instance question, assessment instance.
- * @param {*} decodedJpeg 
- * @param {*} submissionId 
+ * Helper method to upload a pdf page to S3 via file-store API
+ * @param {Array<object>} decodedJpegs array jpeg file meta data object list
+ * @param {Array<object>} submissions contains assessment_instance_id, instance_question_id, submission_id meta data
+ * @return {Array[object]} debug metadata
  */
 const _uploadMatchedPages = async (decodedJpegs, submissions, userId) => {
+  const uploaded = [];
+  const failed = [];
   for(let i = 0; i < decodedJpegs.length; i++) {
     for(let j = 0; j < submissions.rows.length; j++) {
       const jpeg = decodedJpegs[i];
       const submission = submissions.rows[j];
       // Promise.all memory limitations?
-      await fileStore.upload('scrap_paper_upload.pdf', await fs.readFile(jpeg.jpegFilepath), 'image/jpeg', submission.assessment_instance_id, submission.instance_question_id, userId, userId, 'S3');
+      // TO DO: We only want to upload a file once and never again probably. So if an instructor submits a scan again, we don't want to upload it. 
+      // We can discuss this, but things have setup to query the last entry uploaded for a submission until we know what we want to do here. 
+      try {
+        await fileStore.upload('scrap_paper_upload.pdf', await fs.readFile(jpeg.jpegFilepath), 'artifact_upload', submission.assessment_instance_id, submission.instance_question_id, submission.submission_id, userId, userId, 'S3');
+        uploaded.push({jpeg: decodedJpegs[i], submission: submissions.rows[j]});
+      } catch (err) {
+        failed.push({jpeg: decodedJpegs[i], submission: submissions.rows[j], error: err});
+      }
     }
   }
+  return {uploaded, failed};
 };
 
 const _updateBarcodesTable = async (submissions) => {
@@ -112,7 +122,7 @@ const _processPdfScan = async (pdfBuffer, originalName, userId) => {
     const jpegsToUpload = decodedJpegs.filter((decodedJpeg) => updated.rows.indexOf(decodedJpeg.barcode));
     //    b. we need to combine the 
     // 3.
-    
+
     const uploadedFiles = await _uploadMatchedPages(jpegsToUpload, submissions, userId);
 
     // 3. create report of what sheets could be read or not read by decoder.
