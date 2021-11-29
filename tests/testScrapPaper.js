@@ -63,7 +63,7 @@ describe('Barcode generation, student submission, and scanning process', functio
   this.timeout(60000);
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
-  const scanPaperUrl = baseUrl + '/scan_artifacts';
+  const scanPaperUrl = baseUrl + '/scan_paper';
 
   // created in `Generate scrap paper` but also used in `Barcode submission ..` and `Scan scrap paper` test blocks in end-to-end test
   const validBarcodes = [];

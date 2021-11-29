@@ -497,7 +497,7 @@ module.exports.initExpress = function () {
   ]);
   
   app.use('/pl/scrap_paper', [require('./pages/instructorScrapPaper/instructorScrapPaper.js')]);
-  app.use('/pl/scan_artifacts', [require('./pages/instructorScanPaper/instructorScanPaper.js')]);
+  app.use('/pl/scan_paper', [require('./pages/instructorScanPaper/instructorScanPaper.js')]);
   app.use('/pl/request_course', [
     function (req, res, next) {
       res.locals.navPage = 'request_course';
