@@ -42,7 +42,7 @@ FROM
         -- Until we know how we want to model this and requirements, we just retrieve the last one in case multiple uploads per submission occur
         SELECT *
         FROM files
-        WHERE submission_id = s.id AND type = 'artifact_upload'
+        WHERE submission_id = s.id AND type = 'pdf_artifact_upload'
         ORDER BY id DESC
         LIMIT 1
     ) AS f ON TRUE

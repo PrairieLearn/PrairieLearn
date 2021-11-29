@@ -18,7 +18,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 /**
  * Helper method to upload a pdf page to S3 via file-store API
  * @param {Array<object>} decodedJpegs array jpeg file meta data object list
- * @param {Array<object>} submissions contains assessment_instance_id, instance_question_id, submission_id meta data
+ * @param {Array<object>} submissions contains assessment_instance_id, instance_question_id, submission id meta data
  * @return {Array[object]} debug metadata
  */
 const _uploadMatchedPages = async (decodedJpegs, submissions, userId) => {
@@ -32,7 +32,7 @@ const _uploadMatchedPages = async (decodedJpegs, submissions, userId) => {
       // TO DO: We only want to upload a file once and never again probably. So if an instructor submits a scan again, we don't want to upload it. 
       // We can discuss this, but things have setup to query the last entry uploaded for a submission until we know what we want to do here. 
       try {
-        await fileStore.upload('scrap_paper_upload.pdf', await fs.readFile(jpeg.jpegFilepath), 'artifact_upload', submission.assessment_instance_id, submission.instance_question_id, submission.submission_id, userId, userId, 'S3');
+        await fileStore.upload(`${decodedJpegs[i].barcode}-barcode-submission.pdf`, await fs.readFile(jpeg.pdfFilepath), 'pdf_artifact_upload', submission.assessment_instance_id, submission.instance_question_id, submission.id, userId, userId, 'S3');
         uploaded.push({jpeg: decodedJpegs[i], submission: submissions.rows[j]});
       } catch (err) {
         failed.push({jpeg: decodedJpegs[i], submission: submissions.rows[j], error: err});

@@ -24,6 +24,11 @@
   <div class="collapse <% if (submissionIdx == submissionCount) { %>show<% } %>" id="submission-<%= submission.id %>-body">
     <div class="card-body submission-body" >
       <%- submissionHtml %>
+      <% if (typeof submission != 'undefined' && typeof submission.pdf_artifact_upload != 'undefined') { %>
+        <div class="submission-body-pdf-artifact-container">
+          <iframe class="submission-body-pdf-artifact" width="100%" type="text/html" src="data:application/pdf;base64,<%= submission.pdf_artifact_upload %>"></iframe>
+        </div>
+      <% } %>
     </div>
   </div>
 
