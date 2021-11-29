@@ -1,12 +1,10 @@
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 
-const config = require('../lib/config');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const config = require('../../lib/config');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-
-module.exports = {};
 
 module.exports.run = callbackify(async () => {
   if (!config.runningInEc2) return;
@@ -110,6 +108,7 @@ const cloudwatch_definitions = {
     unit: 'Seconds',
   },
 };
+
 async function sendStatsToCloudwatch(stats) {
   const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
   const dimensions = [{ Name: 'By Server', Value: config.workspaceCloudWatchName }];

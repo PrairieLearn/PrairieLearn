@@ -6,8 +6,9 @@ const { v4: uuidv4 } = require('uuid');
 const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
 const { suppressTracing } = require('@opentelemetry/core');
 
-const logger = require('../lib/logger');
 const config = require('../lib/config');
+const { isEnterprise } = require('../lib/license');
+const logger = require('../lib/logger');
 
 const namedLocks = require('../lib/named-locks');
 var sqldb = require('../prairielib/lib/sql-db');
@@ -102,17 +103,21 @@ module.exports = {
           config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutWarnSec,
       },
       {
-        name: 'workspaceHostLoads',
-        module: require('./workspaceHostLoads'),
-        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
-      },
-      {
         name: 'workspaceHostTransitions',
         module: require('./workspaceHostTransitions'),
         intervalSec:
           config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
       },
     ];
+
+    if (isEnterprise()) {
+      module.exports.jobs.push({
+        name: 'workspaceHostLoads',
+        module: require('../ee/cron/workspaceHostLoads'),
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
+      });
+    }
+
     logger.verbose(
       'initializing cron',
       _.map(module.exports.jobs, (j) => _.pick(j, ['name', 'intervalSec']))
