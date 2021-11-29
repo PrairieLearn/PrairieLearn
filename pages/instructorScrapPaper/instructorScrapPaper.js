@@ -107,7 +107,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', function (req, res, next) {
-  if (req.body.__action === 'make_scrap_paper') {
+  if (req.body.__action === 'print_scrap_paper') {
     const numPages = req.body.num_pages;
     const pageLabel = req.body.page_label;
 
