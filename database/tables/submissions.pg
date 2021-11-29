@@ -37,4 +37,6 @@ foreign-key constraints
     submissions_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    barcodes: FOREIGN KEY (submission_id) REFERENCES submissions(id)
+    files: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
