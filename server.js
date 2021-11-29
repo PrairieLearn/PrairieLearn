@@ -124,7 +124,7 @@ module.exports.initExpress = function () {
     round: 0,
   });
   app.post(
-    '/pl/scan_artifacts',
+    '/pl/scan_paper',
     // Exception for PDF uploads, which may be quite a bit bigger than other file uploads
     multer({
       storage: multer.memoryStorage(),
