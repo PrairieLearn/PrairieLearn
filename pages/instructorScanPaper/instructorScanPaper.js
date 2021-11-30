@@ -19,23 +19,27 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  * Helper method to upload a pdf page to S3 via file-store API
  * @param {Array<object>} decodedJpegs array jpeg file meta data object list
  * @param {Array<object>} submissions contains assessment_instance_id, instance_question_id, submission id meta data
- * @return {Array[object]} debug metadata
+ * @return {Array<object>} debug metadata
  */
-const _uploadMatchedPages = async (decodedJpegs, submissions, userId) => {
+const _uploadPages = async (decodedPdfs, fileMetadata, userId) => {
   const uploaded = [];
   const failed = [];
-  for(let i = 0; i < decodedJpegs.length; i++) {
-    for(let j = 0; j < submissions.rows.length; j++) {
-      const jpeg = decodedJpegs[i];
-      const submission = submissions.rows[j];
-      // Promise.all memory limitations?
-      // TO DO: We only want to upload a file once and never again probably. So if an instructor submits a scan again, we don't want to upload it. 
-      // We can discuss this, but things have setup to query the last entry uploaded for a submission until we know what we want to do here. 
-      try {
-        await fileStore.upload(`${decodedJpegs[i].barcode}-barcode-submission.pdf`, await fs.readFile(jpeg.pdfFilepath), 'pdf_artifact_upload', submission.assessment_instance_id, submission.instance_question_id, submission.id, userId, userId, 'S3');
-        uploaded.push({jpeg: decodedJpegs[i], submission: submissions.rows[j]});
-      } catch (err) {
-        failed.push({jpeg: decodedJpegs[i], submission: submissions.rows[j], error: err});
+  const uploadedBarcodes = [];
+  for(let i = 0; i < decodedPdfs.length; i++) {
+    for(let j = 0; j < fileMetadata.rows.length; j++) {
+      if (fileMetadata.rows[j].barcode === decodedPdfs[i].barcode && uploadedBarcodes.indexOf(decodedPdfs[i].barcode)  === -1) {
+        // Promise.all memory limitations?
+        // TO DO: We only want to upload a file once and never again probably. So if an instructor submits a scan again, we don't want to upload it. 
+        // We can discuss this, but things have setup to query the last entry uploaded for a submission until we know what we want to do here. 
+
+        // TO DO: can optimize this to ensure we do not upload more than 1 page per barcode
+        try {
+          const fileId = await fileStore.upload(`${decodedPdfs[i].barcode}-barcode-submission.pdf`, await fs.readFile(decodedPdfs[i].pdfFilepath), 'pdf_artifact_upload', fileMetadata.rows[j].assessment_instance_id, fileMetadata.rows[j].instance_question_id, fileMetadata.rows[j].id, userId, userId, 'S3');
+          uploaded.push({fileId, barcode: decodedPdfs[i].barcode});
+          uploadedBarcodes.push(decodedPdfs[i].barcode);
+        } catch (err) {
+          failed.push({pdf: decodedPdfs[i], submission_id: fileMetadata.rows[j].submission_id, error: err});
+        }
       }
     }
   }
@@ -100,36 +104,39 @@ const _updateBarcodesTable = async (submissions) => {
  * @returns void
  */
 const _processPdfScan = async (pdfBuffer, originalName, userId) => {
-  const barcodes = [];
-  const decodedJpegs = await decodeBarcodes(pdfBuffer, originalName);
+  // 1. Get decoded pdf page meta data ie. barcode, filepath, etc.
+  let decodedPdfPages = await decodeBarcodes(pdfBuffer, originalName);
 
-  decodedJpegs.forEach((decodedJpeg) => {
-    if (decodedJpeg.barcode !== null) {
-      barcodes.push(decodedJpeg.barcode);
-    }
-  });
+  // 2. filter only the barcode pages that we could read
+  decodedPdfPages = decodedPdfPages.filter((decodedPdfPage) => decodedPdfPage.barcode);
+  const barcodes = decodedPdfPages.map((page) => page.barcode);
+
+  // 3. get submission meta data to upload assessment, iq details to filestore API
+  const query = sql.get_barcode_metadata.replace('$match', `s.submitted_answer->>'_pl_artifact_barcode' = '${barcodes.join("' OR s.submitted_answer->>'_pl_artifact_barcode' = '")}'`);
+  const fileMetadata = await sqldb.queryAsync(query, {});
 
   
-  const query = sql.get_submissions_with_barcodes.replace('$match', `s.submitted_answer->>'_pl_artifact_barcode' = '${barcodes.join("' OR s.submitted_answer->>'_pl_artifact_barcode' = '")}'`);
-  const submissions = await sqldb.queryAsync(query, {});
 
+  const uploadedFiles = await _uploadPages(decodedPdfPages, fileMetadata, userId);
+  
+
+  
   // 1. we have at least one decoded barcoded and we want to associate the information in the `barcodes` table
   //    ISSUE: If a student has not submitted the barcode through the element, we will not find a match.
-  //    We need to set the expectation that they need to re-run the PDF upload if barcode submissions occur after upload date.
-  if (submissions.rows.length > 0) {
-    const updated = await _updateBarcodesTable(submissions);
+  // //    We need to set the expectation that they need to re-run the PDF upload if barcode submissions occur after upload date.
+  // if (submissions.rows.length > 0) {
+  //   const updated = await _updateBarcodesTable(submissions);
 
-    // 2. a. since we found some barcodes, we want those barcoded sheets uploaded to s3 so student/instructor can view them
-    // NOTE: at least right now, we are not uploading the failed ones. Should we? Future plans?
-    const jpegsToUpload = decodedJpegs.filter((decodedJpeg) => updated.rows.indexOf(decodedJpeg.barcode));
-    //
-    // 3.
+  //   // 2. a. since we found some barcodes, we want those barcoded sheets uploaded to s3 so student/instructor can view them
+  //   // NOTE: at least right now, we are not uploading the failed ones. Should we? Future plans?
+  //   const jpegsToUpload = decodedJpegs.filter((decodedJpeg) => updated.rows.indexOf(decodedJpeg.barcode));
+  //   //
+  //   // 3.
 
-    const uploadedFiles = await _uploadMatchedPages(jpegsToUpload, submissions, userId);
 
     // 3. create report of what sheets could be read or not read by decoder.
-    return;
-  }
+    // return;
+  // }
 };
 
 router.get('/', (req, res) => {
@@ -155,11 +162,7 @@ router.post('/', function (req, res, next) {
       });
       // TO DO:
 
-      // convert jpeg to pdf
-
       // detach process from request and display stdout in view
-
-      // upload file to s3 and then reintegrate/improve question view to render pdf
 
       //implement makeshift queue, as https://github.com/serratus/quaggaJS/issues/135 issues when two decoding jobs running simaltaneously
 

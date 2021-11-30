@@ -1,6 +1,6 @@
--- BLOCK get_submissions_with_barcodes
+-- BLOCK get_barcode_metadata
 SELECT
-    s.*,
+    s.id AS submission_id,
     iq.assessment_instance_id AS assessment_instance_id,
     iq.id AS instance_question_id,
     s.submitted_answer->>'_pl_artifact_barcode' AS barcode
