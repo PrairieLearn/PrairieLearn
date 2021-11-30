@@ -1,7 +1,11 @@
 columns
-    barcode: text
+    barcode: text not null
     id: bigint not null default nextval('barcodes_id_seq'::regclass)
+    submission_id: bigint
 
 indexes
     barcodes_pkey: PRIMARY KEY (id) USING btree (id)
     barcodes_barcode_key: UNIQUE (barcode) USING btree (barcode)
+
+foreign-key constraints
+    barcodes_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id)
