@@ -26,3 +26,4 @@ PuLP==2.5.0
 text-unidecode==1.3
 statsmodels==0.12.2
 openpyxl==3.0.7
+pytest==6.2.5
