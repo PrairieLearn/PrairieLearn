@@ -29,8 +29,8 @@ test-grader-host:
 test-nocoverage: start-support
 	@mocha tests/index.js
 test-python:
-	@python3 -m pytest
-
+	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
+	
 lint: lint-js lint-python
 lint-js:
 	@eslint --ext js "**/*.js"

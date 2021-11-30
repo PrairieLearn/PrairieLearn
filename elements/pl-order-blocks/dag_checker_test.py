@@ -34,11 +34,9 @@ problem_2_expected = [
 ]
 
 
-class TestDAGChecker:
+def test_grade_dag():
+    for submission, expected in zip(problem_1_submissions, problem_1_expected):
+        assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
 
-    def test_grade_dag(self):
-        for submission, expected in zip(problem_1_submissions, problem_1_expected):
-            assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
-
-        for submission, expected in zip(problem_2_submissions, problem_2_expected):
-            assert grade_dag(submission, problem_2_dag, problem_2_groups) == expected
+    for submission, expected in zip(problem_2_submissions, problem_2_expected):
+        assert grade_dag(submission, problem_2_dag, problem_2_groups) == expected
