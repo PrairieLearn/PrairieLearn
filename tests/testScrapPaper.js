@@ -97,7 +97,7 @@ describe('Barcode generation, student submission, and scanning process', functio
 
     describe('POST', () => {
       const testLabel = 'TEST LABEL';
-      const testNumPages = 15; // has to be reasonably small for pdf to be converted/decoded quickly in test
+      const testNumPages = 5; // has to be reasonably small for pdf to be converted/decoded quickly in test
 
       let pdf;
       let decodedJpegs;
@@ -187,7 +187,7 @@ describe('Barcode generation, student submission, and scanning process', functio
     });
   });
 
-  describe('Barcode submission on `pl-artifact-scan` element (student submission)', () => {
+  describe('Barcode submission on `pl-artifact-scan` element (before pdf scan upload)', () => {
     const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
     let hm1AutomaticTestSuiteUrl;
     let defaultUser;
@@ -237,20 +237,31 @@ describe('Barcode generation, student submission, and scanning process', functio
         assert.include(await grade.text(), 'Submitted answer\n          \n          2\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-danger">invalid, not gradable</span>');
       }
     });
-    // it('students should be able to "save" or "save & grade" valid barcodes', async () => {
-    //   for (const student of mockStudents) {
-    //     setUser(student);
-    //     const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
-    //     const save = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: validBarcodes[0]}, 'save');
-    //     assert.include(await save.text(), 'Submitted answer\n          \n          3\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>');
-    //     const grade = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: validBarcodes[1]}, 'grade');
+    it('students should be able to "save" or "save & grade" valid barcodes', async () => {
+      for (const student of mockStudents) {
+        setUser(student);
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
+        const save = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: validBarcodes[0]}, 'save');
+        assert.include(await save.text(), 'Submitted answer\n          \n          3\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>');
+        // const grade = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: validBarcodes[1]}, 'grade');
 
-    //     // This will have to fail until I can figure out what the proper behaviour for an element that does not cound as a grade is. How do we handle
-    //     // cases where an element is validated as correct on the back-end but does not have a score.
-    //     assert.include(await grade.text(), 'Submitted answer\n          \n          4\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-danger">correct: 0%');
-    //   }
-    // });
-    it('student/instructor roles should NOT see PDF version of written work before instructor uploads PDF barcoded proof of work', async () => {
+        await saveOrGrade(hm1BarcodeSubmissionUrl, {_pl_artifact_barcode: validBarcodes[1]}, 'grade');
+
+        // This will have to fail until I can figure out what the proper behaviour for an element that does not count as a grade is. How do we handle
+        // cases where an element is validated as correct on the back-end but does not have a score.
+        // assert.include(await grade.text(), 'Submitted answer\n          \n          4\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-danger">correct: 0%');
+      }
+    });
+    it('students should NOT see PDF version of written work before instructor uploads PDF barcoded proof of work', async () => {
+      for (const student of mockStudents) {
+        setUser(student);
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
+        const hm1BarcodeSubmissionPage = await (await fetch(hm1BarcodeSubmissionUrl)).text();
+        console.log(hm1BarcodeSubmissionPage);
+        assert.notInclude(hm1BarcodeSubmissionPage, 'submission-body-pdf-artifact-container');
+        // const $hm1BarodeSubmissionPage = cheerio.load(hm1BarcodeSubmissionPage);
+
+      }
 
     });
   });
@@ -290,7 +301,7 @@ describe('Barcode generation, student submission, and scanning process', functio
   });
 
 
-  describe('Barcode submission on `pl-artifact-scan` element (student/instructor views pdf)', () => {
+  describe('Barcode submission on `pl-artifact-scan` element (after pdf scan upload)', () => {
     it('student/instructor roles should be able to view PDF after instructor uploads it to barcode pdf scanner', async () => {
 
     });

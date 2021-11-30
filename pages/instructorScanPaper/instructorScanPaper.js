@@ -91,11 +91,10 @@ const _updateBarcodesTable = async (submissions) => {
 }
 
 /**
- * A Pdf Scan is a collection of barcoded paper documents compiled into a 
- * barcoded paper collection of documents. It is expected that one barcode 
- * exists on each page in the PDF. If a barcode is readable by the decoder,
- * the page will be uploaded to S3 and stored with metadata information in 
- * `files` and `barcodes` table to later allow viewing of doc by student.
+ * A Pdf Scan is a collection of scanned barcoded single pieces of paper with
+ * student written work. It is expected that one barcode exists on each page in the PDF. 
+ * If a barcode is readable by the decoder, the page will be uploaded to S3 and stored with 
+ * metadata information in `files` and `barcodes` table to later allow viewing of doc by student.
  * @param {Buffer} pdfBuffer buffered application/pdf scanned document
  * @param {string} originalName uploaded filename
  * @returns void
@@ -130,7 +129,6 @@ const _processPdfScan = async (pdfBuffer, originalName, userId) => {
     // 3. create report of what sheets could be read or not read by decoder.
     return;
   }
-  console.log('no barcodes found in doc.', decodedJpegs);
 };
 
 router.get('/', (req, res) => {
