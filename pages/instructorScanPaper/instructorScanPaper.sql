@@ -8,7 +8,7 @@ FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-WHERE s.submitted_answer->>'_pl_artifact_barcode' = $barcodes;
+WHERE $match;
 
 -- BLOCK update_barcodes_with_submission
 DROP TABLE IF EXISTS barcode_submission_ids_temp;

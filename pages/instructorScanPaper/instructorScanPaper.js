@@ -109,14 +109,15 @@ const _processPdfScan = async (pdfBuffer, originalName, userId) => {
     }
   });
 
-  const submissions = await sqldb.queryAsync(sql.get_submissions_with_barcodes, {barcodes: barcodes.join('||')});
+  
+  const query = sql.get_submissions_with_barcodes.replace('$match', `s.submitted_answer->>'_pl_artifact_barcode' = '${barcodes.join("' OR s.submitted_answer->>'_pl_artifact_barcode' = '")}'`);
+  const submissions = await sqldb.queryAsync(query, {});
 
   // 1. we have at least one decoded barcoded and we want to associate the information in the `barcodes` table
   //    ISSUE: If a student has not submitted the barcode through the element, we will not find a match.
   //    We need to set the expectation that they need to re-run the PDF upload if barcode submissions occur after upload date.
   if (submissions.rows.length > 0) {
     const updated = await _updateBarcodesTable(submissions);
-    console.log('updated: ', updated);
 
     // 2. a. since we found some barcodes, we want those barcoded sheets uploaded to s3 so student/instructor can view them
     // NOTE: at least right now, we are not uploading the failed ones. Should we? Future plans?
