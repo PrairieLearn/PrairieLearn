@@ -258,11 +258,9 @@ describe('Barcode generation, student submission, and scanning process', functio
         const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
         const hm1BarcodeSubmissionPage = await (await fetch(hm1BarcodeSubmissionUrl)).text();
         console.log(hm1BarcodeSubmissionPage);
-        assert.notInclude(hm1BarcodeSubmissionPage, 'submission-body-pdf-artifact-container');
+        assert.notInclude(hm1BarcodeSubmissionPage, 'class="submission-body-pdf-artifact-container"');
         // const $hm1BarodeSubmissionPage = cheerio.load(hm1BarcodeSubmissionPage);
-
       }
-
     });
   });
 
@@ -290,13 +288,13 @@ describe('Barcode generation, student submission, and scanning process', functio
         });
         assert.isTrue(res.ok);
       });
-      it('barcodes should be found in submission rows', () => {
-
+      it('valid barcode submission from pl-artifact-scan (before pdf scan upload) references should be referenced in barcodes table ', async () => {
+        const numValidSubmissions = 2;
+        const submissions = (await sqldb.queryAsync(sql.get_barcodes_with_submissions, {})).rows;
+        assert.lengthOf(submissions, numValidSubmissions);
         // cannot test if we hangup request and perform this operation disjointed from user
       });
-      it('pdf page should be uploaded to S3 for each barcoded sheet', () => {
-        // cannot test if we hangup request and perform this operation disjointed from user
-      });
+      it('valid barcodes should match their ')
     });
   });
 
