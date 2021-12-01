@@ -3,11 +3,8 @@ const router = express.Router();
 
 const { processScrapPaperPdf } = require('../../lib/barcodeScanner');
 
-// const {fromPath} = require('pdf2pic');
 const error = require('../../prairielib/lib/error');
 const ERR = require('async-stacktrace');
-// const path = require('path');
-// const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 router.get('/', (req, res) => {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
