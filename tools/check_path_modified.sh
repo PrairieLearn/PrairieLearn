@@ -13,7 +13,17 @@ fi
 CHECK_PATH=$1
 ENV_VAR=$2
 
-if git diff --exit-code HEAD~1..HEAD -- ${CHECK_PATH}; then
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+
+# If this script is being run *on* the master branch, then we want to diff
+# with the previous commit on master. Otherwise, we diff with master itself.
+if [[ "$BRANCH" == "master" ]]; then
+  DIFF_SOURCE="HEAD^1"
+else
+  DIFF_SOURCE="remotes/origin/master"
+fi
+
+if git diff --exit-code $DIFF_SOURCE..HEAD -- ${CHECK_PATH}; then
     echo "${CHECK_PATH} files not modified"
 else
     echo "${CHECK_PATH} files modified"
