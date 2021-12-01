@@ -1,8 +1,6 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-// const logger = require('../../lib/logger');
-// const config = require('../../lib/config.js');
 const {generateBarcodes} = require('../../lib/barcodeGenerator');
 const error = require('../../prairielib/lib/error');
 
@@ -13,7 +11,7 @@ const sharp = require('sharp');
 const pageLimit = 1000;
 const charLimit = 45;
 
-const createBarcodeSVGs = async (barcodes) => {
+const convertBarcodeToSVG = async (barcodes) => {
   const svgs = [];
   for (let i = 0; i < barcodes.length; i++) {
     const result = await bitgener({
@@ -41,7 +39,7 @@ const convertImage = async (image) => {
     .png({ quality: 100 }) // TO DO: lookup defaults
     .toBuffer({ resolveWithObject: true });
 };
-const svgsToPdf = async (title, svgs) => {
+const createScrapPaperPdf = async (title, svgs) => {
   let doc = null;
 
   for (let i = 0; i < svgs.length; i++) {
@@ -82,10 +80,10 @@ router.post('/', function (req, res, next) {
 
     generateBarcodes(numPages)
       .then((barcodes) => {
-        return createBarcodeSVGs(barcodes);
+        return convertBarcodeToSVG(barcodes);
       })
       .then((barcodeSVGs) => {
-        return svgsToPdf(pageLabel, barcodeSVGs);
+        return createScrapPaperPdf(pageLabel, barcodeSVGs);
       })
       .then((pdf) => {
         res.header(
