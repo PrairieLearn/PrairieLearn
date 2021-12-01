@@ -279,7 +279,7 @@ class CGrader:
     
         out = self.run_command([exec_file] + args,
                                env={'CK_XML_LOG_FILE_NAME': log_file, 'TEMP': '/tmp'})
-        print(out)
+        print(out) # Printing so it shows in the grading job log
 
         separator_1 = ': ' if use_suite_title and use_case_name else ''
         separator_2 = ' - ' if use_unit_test_id and (use_suite_title or use_case_name) else ''
