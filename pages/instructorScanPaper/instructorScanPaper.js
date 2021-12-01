@@ -133,8 +133,7 @@ router.post('/', function (req, res, next) {
     }
 
     _processPdfScan(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id)
-      .then((filesUpdated) => {
-        console.log(filesUpdated);
+      .then(() => {
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch((err) => {
