@@ -120,8 +120,8 @@ self.compile_file('square.c', 'square', flags=['-Wall', '-O3']) # array
 For flags based on `pkg-config`, use `pkg_config_flags` with the library or libraries that should be queried.
 
 ```python
-self.compile_file('square.c', 'square', flags='check ncurses') # single string
-self.compile_file('square.c', 'square', flags=['check', 'ncurses']) # array
+self.compile_file('square.c', 'square', pkg_config_flags='check ncurses') # single string
+self.compile_file('square.c', 'square', pkg_config_flags=['check', 'ncurses']) # array
 ```
 
 It is also possible to test programs where the student only submits part of an application. To compile the C/C++ file submitted by the user with a `main` function implemented by the instructor, you can save a `main.c` (or `main.cpp`) file inside the `tests` folder and run:
