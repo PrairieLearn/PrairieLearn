@@ -320,7 +320,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
         barcodes.forEach((barcode) => {
           assert.isDefined(barcode.file_id);
-        })
+        });
         assert.lengthOf(barcodes, testNumPages);
         // cannot test if we hangup request and perform this operation disjointed from user
       });
