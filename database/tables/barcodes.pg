@@ -1,6 +1,7 @@
 columns
     barcode: text not null
     id: bigint not null default nextval('barcodes_id_seq'::regclass)
+    file_id: bigint
     submission_id: bigint
 
 indexes

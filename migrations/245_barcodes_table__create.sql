@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS barcodes (
     id BIGSERIAL PRIMARY KEY,
     barcode TEXT UNIQUE NOT NULL,
+    file_id BIGINT DEFAULT NULL REFERENCES files,
     submission_id BIGINT DEFAULT NULL REFERENCES submissions
 );

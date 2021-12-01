@@ -3,32 +3,34 @@ SELECT
     s.id AS submission_id,
     iq.assessment_instance_id AS assessment_instance_id,
     iq.id AS instance_question_id,
-    s.submitted_answer->>'_pl_artifact_barcode' AS barcode
+    s.submitted_answer->>'_pl_artifact_barcode' AS barcode,
+    f.id AS file_id
 FROM 
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
-    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-WHERE $match;
+    LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)  -- LEFT JOIN HERE SO INSTRUCTOR CAN USE THIS FEATURE TOO
+    LEFT JOIN files AS f ON (f.instance_question_id = iq.id)
+WHERE $match AND type = 'pdf_artifact_upload';
 
--- BLOCK update_barcodes_with_submission
-DROP TABLE IF EXISTS barcode_submission_ids_temp;
+-- BLOCK update_barcodes
+DROP TABLE IF EXISTS barcode_file_ids_temp;
 
-CREATE TEMP TABLE barcode_submission_ids_temp
-    (submission_id BIGINT NOT NULL PRIMARY KEY, barcode TEXT);
+CREATE TEMP TABLE barcode_file_ids_temp
+    (file_id BIGINT NOT NULL PRIMARY KEY, barcode TEXT);
 
 INSERT INTO
-    barcode_submission_ids_temp(submission_id, barcode)
+    barcode_file_ids_temp(file_id, barcode)
 VALUES
     $updateValues;
 
 UPDATE
     barcodes b
 SET
-    submission_id = bs_temp.submission_id
+    file_id = bf.file_id
 FROM
-    barcode_submission_ids_temp bs_temp
+    barcode_file_ids_temp bf
 WHERE
-    b.barcode = bs_temp.barcode
+    b.barcode = bf.barcode
 RETURNING b.barcode;
 
 -- BLOCK get_submission_iq_and_ai
