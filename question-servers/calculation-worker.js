@@ -12,7 +12,7 @@ const requireFrontend = require('../lib/require-frontend');
 /**
  * Attempts to load the server module that should be used for a particular
  * question.
- * 
+ *
  * @param {string} questionServerPath The path to the JavaScript question server
  * @param {string} coursePath The path to the course root directory
  * @returns {Promise<any>}
@@ -39,15 +39,12 @@ async function loadServer(questionServerPath, coursePath) {
         setTimeout(() => resolve(server), 0);
       },
       (err) => {
-        const e = error.makeWithData(
-          `Error loading ${path.basename(questionServerPath)}`,
-          err,
-        );
+        const e = error.makeWithData(`Error loading ${path.basename(questionServerPath)}`, err);
         if (err.originalError != null) {
           e.stack = err.originalError.stack + '\n\n' + err.stack;
         }
         reject(e);
-      },
+      }
     );
   });
 }
@@ -70,14 +67,7 @@ function getFile(server, coursePath, filename, variant, question) {
   const trueAnswer = variant.true_answer;
   const options = variant.options;
   const questionDir = path.join(coursePath, 'questions', question.directory);
-  const fileData = server.getFile(
-    filename,
-    vid,
-    params,
-    trueAnswer,
-    options,
-    questionDir,
-  );
+  const fileData = server.getFile(filename, vid, params, trueAnswer, options, questionDir);
 
   // If `getFile` returns a Buffer, we need to handle that specially, since
   // Buffers can't be losslessly round-tripped through `JSON.stringify` and
@@ -103,7 +93,7 @@ async function grade(server, coursePath, submission, variant, question) {
     trueAnswer,
     submittedAnswer,
     options,
-    questionDir,
+    questionDir
   );
 
   let score = grading.score;
@@ -126,8 +116,8 @@ async function grade(server, coursePath, submission, variant, question) {
 }
 
 /**
- * 
- * @param {import('readline').Interface} rl 
+ *
+ * @param {import('readline').Interface} rl
  * @returns {Promise<string | null>}
  */
 function getLineOnce(rl) {

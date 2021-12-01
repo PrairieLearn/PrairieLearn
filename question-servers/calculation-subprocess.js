@@ -39,11 +39,11 @@ module.exports = {
   /**
    * Launches a subprocess, executes the appropriate question function, and
    * parses the output.
-   * 
-   * @param {'generate' | 'getFile' | 'grade'} func 
-   * @param {string} coursePath 
-   * @param {any} question 
-   * @param {Record<string, any>} inputData 
+   *
+   * @param {'generate' | 'getFile' | 'grade'} func
+   * @param {string} coursePath
+   * @param {any} question
+   * @param {Record<string, any>} inputData
    *
    * @returns {Promise<{ data?: any, courseIssues?: Error[] }>}
    */
@@ -52,7 +52,7 @@ module.exports = {
       'server.js',
       question.directory,
       coursePath,
-      question,
+      question
     );
 
     const callData = {
@@ -153,7 +153,7 @@ module.exports = {
     course,
     course_instance,
     locals,
-    callback,
+    callback
   ) {
     // v2 questions don't render on the server - nothing to do here.
     const htmls = {
@@ -167,11 +167,17 @@ module.exports = {
 
   generate: function (question, course, variant_seed, callback) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    module.exports.prepareChunksIfNeeded(question, course).then(() => {
-      module.exports.executeInSubprocess('generate', coursePath, question, {
-        variant_seed,
-      }).then(({ data, courseIssues }) => callback(null, courseIssues, data)).catch((err) => callback(err));
-    }).catch((err) => callback(err));
+    module.exports
+      .prepareChunksIfNeeded(question, course)
+      .then(() => {
+        module.exports
+          .executeInSubprocess('generate', coursePath, question, {
+            variant_seed,
+          })
+          .then(({ data, courseIssues }) => callback(null, courseIssues, data))
+          .catch((err) => callback(err));
+      })
+      .catch((err) => callback(err));
   },
 
   prepare: function (question, course, variant, callback) {
@@ -186,17 +192,23 @@ module.exports = {
 
   getFile: function (filename, variant, question, course, callback) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    module.exports.prepareChunksIfNeeded(question, course).then(() => {
-      module.exports.executeInSubprocess('getFile', coursePath, question, {
-        filename,
-        variant,
-      }).then(({ data, courseIssues }) => {
-        // We need to "unwrap" buffers if needed
-        const isBuffer = data.type === 'buffer';
-        const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
-        callback(null, courseIssues, unwrappedData);
-      }).catch((err) => callback(err));
-    }).catch((err) => callback(err));
+    module.exports
+      .prepareChunksIfNeeded(question, course)
+      .then(() => {
+        module.exports
+          .executeInSubprocess('getFile', coursePath, question, {
+            filename,
+            variant,
+          })
+          .then(({ data, courseIssues }) => {
+            // We need to "unwrap" buffers if needed
+            const isBuffer = data.type === 'buffer';
+            const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
+            callback(null, courseIssues, unwrappedData);
+          })
+          .catch((err) => callback(err));
+      })
+      .catch((err) => callback(err));
   },
 
   parse: function (submission, variant, question, course, callback) {
@@ -214,11 +226,17 @@ module.exports = {
 
   grade: function (submission, variant, question, course, callback) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    module.exports.prepareChunksIfNeeded(question, course).then(() => {
-      module.exports.executeInSubprocess('grade', coursePath, question, {
-        submission,
-        variant,
-      }).then(({ data, courseIssues }) => callback(null, courseIssues, data)).catch((err) => callback(err));
-    }).catch((err) => callback(err));
+    module.exports
+      .prepareChunksIfNeeded(question, course)
+      .then(() => {
+        module.exports
+          .executeInSubprocess('grade', coursePath, question, {
+            submission,
+            variant,
+          })
+          .then(({ data, courseIssues }) => callback(null, courseIssues, data))
+          .catch((err) => callback(err));
+      })
+      .catch((err) => callback(err));
   },
 };
