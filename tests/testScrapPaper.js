@@ -35,6 +35,19 @@ const setUser = (user) => {
   config.authUin = user.authUin;
 };
 
+const getBarcodeSubmissionUrl = async (baseUrl, hm1AutomaticTestSuiteUrl) => {
+  const res = await fetch(hm1AutomaticTestSuiteUrl);
+  assert.equal(res.ok, true);
+
+  const hm1Body = await res.text();
+  assert.include(hm1Body, 'HW1.12. Barcode submission');
+
+  const $hm1Body = cheerio.load(hm1Body);
+  return (
+    baseUrl.replace('/pl', '') + $hm1Body('a:contains("HW1.12. Barcode submission")').attr('href')
+  );
+};
+
 const getScrapPaperPayload = ($page, numPages, pageLabel) => {
   return {
     num_pages: numPages,
@@ -67,10 +80,15 @@ describe('Barcode generation, student submission, and scanning process', functio
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
   const scanPaperUrl = baseUrl + '/scan_paper';
+  const mockStudents = [
+    { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
+    { authUid: 'student2', authName: 'Student User 2', authUin: '00000002' },
+  ];
 
   // created in `Generate scrap paper` but also used in `Barcode submission ..` and `Scan scrap paper` test blocks in end-to-end test
   const validBarcodes = [];
   let pdfBuffer;
+  let hm1AutomaticTestSuiteUrl;
 
   before('set up testing server', async () => {
     await util.promisify(helperServer.before().bind(this))();
@@ -182,27 +200,8 @@ describe('Barcode generation, student submission, and scanning process', functio
 
   describe('Barcode submission on `pl-artifact-scan` element (before pdf scan upload)', () => {
     const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
-    let hm1AutomaticTestSuiteUrl;
+
     let defaultUser;
-
-    const getBarcodeSubmissionUrl = async () => {
-      const res = await fetch(hm1AutomaticTestSuiteUrl);
-      assert.equal(res.ok, true);
-
-      const hm1Body = await res.text();
-      assert.include(hm1Body, 'HW1.12. Barcode submission');
-
-      const $hm1Body = cheerio.load(hm1Body);
-      return (
-        baseUrl.replace('/pl', '') +
-        $hm1Body('a:contains("HW1.12. Barcode submission")').attr('href')
-      );
-    };
-
-    const mockStudents = [
-      { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
-      { authUid: 'student2', authName: 'Student User 2', authUin: '00000002' },
-    ];
 
     before('create students', async () => {
       defaultUser = { authUid: config.authUid, authName: config.authName, authUin: config.authUin }; // test suite default
@@ -226,7 +225,10 @@ describe('Barcode generation, student submission, and scanning process', functio
     it('students should NOT be able to submit invalid barcodes', async () => {
       for (const student of mockStudents) {
         setUser(student);
-        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
+          baseUrl,
+          hm1AutomaticTestSuiteUrl
+        );
         // front-end validation doesn't work here, but we try backend validation from pl-artifact-scan.py
         const save = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
@@ -252,7 +254,10 @@ describe('Barcode generation, student submission, and scanning process', functio
     it('students should be able to "save" or "save & grade" valid barcodes', async () => {
       for (const student of mockStudents) {
         setUser(student);
-        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
+          baseUrl,
+          hm1AutomaticTestSuiteUrl
+        );
         const save = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
           { _pl_artifact_barcode: validBarcodes[0] },
@@ -278,7 +283,10 @@ describe('Barcode generation, student submission, and scanning process', functio
     it('students should NOT see PDF version of written work before instructor uploads PDF barcoded proof of work', async () => {
       for (const student of mockStudents) {
         setUser(student);
-        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl();
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
+          baseUrl,
+          hm1AutomaticTestSuiteUrl
+        );
         const hm1BarcodeSubmissionPage = await (await fetch(hm1BarcodeSubmissionUrl)).text();
         assert.notInclude(
           hm1BarcodeSubmissionPage,
@@ -318,12 +326,27 @@ describe('Barcode generation, student submission, and scanning process', functio
         assert.lengthOf(barcodes, testNumPages);
         // cannot test if we hangup request and perform this operation disjointed from user
       });
-      it('');
     });
   });
 
   describe('Barcode submission on `pl-artifact-scan` element (after pdf scan upload)', () => {
-    it('student roles should be able to view PDF after instructor uploads it to barcode pdf scanner', async () => {});
+    it('uploaded barcode submissions should result in pdf on view', async () => {
+      for (const student of mockStudents) {
+        setUser(student);
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
+          baseUrl,
+          hm1AutomaticTestSuiteUrl
+        );
+        const save = await saveOrGrade(
+          hm1BarcodeSubmissionUrl,
+          { _pl_artifact_barcode: validBarcodes[0] },
+          'save'
+        );
+        const $questionView = cheerio.load(await save.text());
+        const pdfs = $questionView('.submission-body-pdf-artifact');
+        console.log('test');
+      }
+    });
     it('pdfs should not appear on submissions where invalid or empty barcode entered', () => {});
   });
 });
