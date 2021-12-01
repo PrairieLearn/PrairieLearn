@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const {generateBarcodes} = require('../../lib/barcodeGenerator');
+const { generateBarcodes } = require('../../lib/barcodeGenerator');
 const error = require('../../prairielib/lib/error');
 
 const bitgener = require('bitgener');

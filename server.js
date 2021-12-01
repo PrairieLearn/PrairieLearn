@@ -129,8 +129,8 @@ module.exports.initExpress = function () {
     multer({
       storage: multer.memoryStorage(),
       limits: {
-        fieldSize: 2.5e+7, // exception: 25MB, as we anticipate a large PDF file 
-        fileSize: 2.5e+7,
+        fieldSize: 2.5e7, // exception: 25MB, as we anticipate a large PDF file
+        fileSize: 2.5e7,
         parts: config.fileUploadMaxParts,
       },
     }).single('file')
@@ -495,7 +495,7 @@ module.exports.initExpress = function () {
     },
     require('./pages/news_item/news_item.js'),
   ]);
-  
+
   app.use('/pl/scrap_paper', [require('./pages/instructorScrapPaper/instructorScrapPaper.js')]);
   app.use('/pl/scan_paper', [require('./pages/instructorScanPaper/instructorScanPaper.js')]);
   app.use('/pl/request_course', [

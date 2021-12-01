@@ -58,4 +58,3 @@ require('./testDatabase');
 // require('./testGroupScoreAndSync');
 // require('./permissions');
 require('./testScrapPaper');
-
