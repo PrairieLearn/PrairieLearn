@@ -258,7 +258,7 @@ class DemoGrader(cgrader.CGrader):
 
     def tests(self):
 
-        self.compile_file(student_code.c', 'main', add_c_file='/grade/tests/main.c',
+        self.compile_file('student_code.c', 'main', add_c_file='/grade/tests/main.c',
                           # The following must be included if compiling a Check test
                           pkg_config_flags='check')
         self.run_check_suite('./main')
