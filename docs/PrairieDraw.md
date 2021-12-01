@@ -1,4 +1,3 @@
-
 # PrairieDraw
 
 **WARNING**: This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](elements/#pl-drawing-element) element instead.
@@ -41,10 +40,11 @@ Returns a new Vector which is the receiver scaled to have modulus one.
 
 `rotate(angle, axis)`
 Returns a new Vector formed by rotating the receiver counterclockwise through `angle` (in radians), using the Vector `axis` as a center point. E.g.,
+
 ```javascript
-a = $V([10,5]);
-b = $V([5,5]);
-c = a.rotate(Math.PI / 2, b) // c = [5, 10]
+a = $V([10, 5]);
+b = $V([5, 5]);
+c = a.rotate(Math.PI / 2, b); // c = [5, 10]
 ```
 
 ## `PrairieDraw.js` library
@@ -82,21 +82,21 @@ Perform a combination of `scale`, `translate`, and `rotate` such that Vector poi
 
 ## Drawing object options
 
-Some drawing objects below have the optional `type` argument to specify a physical meaning for the line/arrow. When specified, a corresponding color is chosen for the object based on the TAM 2XX style guide [here](http://dynref.engr.illinois.edu/rvn.html#rvn-sc). 
+Some drawing objects below have the optional `type` argument to specify a physical meaning for the line/arrow. When specified, a corresponding color is chosen for the object based on the TAM 2XX style guide [here](http://dynref.engr.illinois.edu/rvn.html#rvn-sc).
 
-Type | Color 
- --- | --- 
-`grid` | `rgb(200,200,200)`
-`position` | `rgb(0,0,255)`
-`angle` | `rgb(0,100,180)`
-`velocity` | `rgb(0,200,0)`
-`angVel` | `rgb(100,180,0)`
-`acceleration` | `rgb(255,0,255)`
-`rotation` | `rgb(150,0,150)`
-`angAcc` | `rgb(100,0,180)`
-`angMom` | `rgb(255,0,0)`
-`force` | `rgb(210,105,30)`
-`moment` | `rbg(255,102,80)`
+| Type           | Color              |
+| -------------- | ------------------ |
+| `grid`         | `rgb(200,200,200)` |
+| `position`     | `rgb(0,0,255)`     |
+| `angle`        | `rgb(0,100,180)`   |
+| `velocity`     | `rgb(0,200,0)`     |
+| `angVel`       | `rgb(100,180,0)`   |
+| `acceleration` | `rgb(255,0,255)`   |
+| `rotation`     | `rgb(150,0,150)`   |
+| `angAcc`       | `rgb(100,0,180)`   |
+| `angMom`       | `rgb(255,0,0)`     |
+| `force`        | `rgb(210,105,30)`  |
+| `moment`       | `rbg(255,102,80)`  |
 
 The optional `filled` argument (default is false) is a boolean to specify if the shape should be shaded.
 
@@ -106,7 +106,7 @@ The optional `filled` argument (default is false) is a boolean to specify if the
 Draw a point at the coordinates given by `vector`.
 
 `line(start, end [, type])`
-Draw a line segment from Vector position `start` to `stop`. 
+Draw a line segment from Vector position `start` to `stop`.
 
 `polyline(points [, closed, filled])`
 Draw a series of line segments connecting the array of `points`. The optional arguments (defaulting to false) determine if the polyLine should be closed by a line connecting the first and last elements of `points`.
@@ -211,7 +211,7 @@ These files should be committed to the `git` repository and pushed to the live s
 
 ## Advanced: Running without Docker
 
-If you want to generate LaTeX label images without docker then you will need to install [Python](https://www.python.org),  [ImageMagick](http://www.imagemagick.org/), and [LaTeX](http://tug.org/texlive/) and then run:
+If you want to generate LaTeX label images without docker then you will need to install [Python](https://www.python.org), [ImageMagick](http://www.imagemagick.org/), and [LaTeX](http://tug.org/texlive/) and then run:
 
 ```sh
 cd <FULL-PATH>/PrairieLearn

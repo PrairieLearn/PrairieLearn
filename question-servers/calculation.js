@@ -76,12 +76,7 @@ function questionFunctionExperiment(name, control, candidate) {
     control: promisifyQuestionFunction('control', control),
     candidate: promisifyQuestionFunction('candidate', candidate),
     options: {
-      publish: ({
-        controlResult,
-        controlError,
-        candidateResult,
-        candidateError,
-      }) => {
+      publish: ({ controlResult, controlError, candidateResult, candidateError }) => {
         // Grab the current span from context - this is the span created with
         // `startActiveSpan` below.
         const span = trace.getSpan(context.active());
@@ -92,8 +87,7 @@ function questionFunctionExperiment(name, control, candidate) {
         // The candidate implementation does propagate some errors as course
         // issues, so we need to take those into account when checking if the
         // implementation resulted in an error.
-        const candidateHasError =
-          !!candidateError || !_.isEmpty(candidateResult?.[0]);
+        const candidateHasError = !!candidateError || !_.isEmpty(candidateResult?.[0]);
 
         // We don't want to assert that the errors themselves are equal, just
         // that either both errored or both did not error.
@@ -115,21 +109,13 @@ function questionFunctionExperiment(name, control, candidate) {
         // they're both not "empty" (empty object, null, undefined, etc.) since
         // for our purposes, all empty data is equal.
         const dataMismatched =
-          controlHasData &&
-          candidateHasData &&
-          !_.isEqual(controlData, candidateData);
+          controlHasData && candidateHasData && !_.isEqual(controlData, candidateData);
 
         if (errorsMismatched || dataMismatched) {
           span.setAttributes({
             'experiment.result': 'mismatched',
-            'experiment.control': observationPayload(
-              controlError,
-              controlResult,
-            ),
-            'experiment.candidate': observationPayload(
-              candidateError,
-              candidateResult,
-            ),
+            'experiment.control': observationPayload(controlError, controlResult),
+            'experiment.candidate': observationPayload(candidateError, candidateResult),
           });
           span.setStatus({
             code: SpanStatusCode.ERROR,
@@ -174,35 +160,35 @@ function questionFunctionExperiment(name, control, candidate) {
 module.exports.generate = questionFunctionExperiment(
   'calculation-question-generate',
   calculationInprocess.generate,
-  calculationSubprocess.generate,
+  calculationSubprocess.generate
 );
 
 module.exports.prepare = questionFunctionExperiment(
   'calculation-question-prepare',
   calculationInprocess.prepare,
-  calculationSubprocess.prepare,
+  calculationSubprocess.prepare
 );
 
 module.exports.render = questionFunctionExperiment(
   'calculation-question-render',
   calculationInprocess.render,
-  calculationSubprocess.render,
+  calculationSubprocess.render
 );
 
 module.exports.getFile = questionFunctionExperiment(
   'calculation-question-getFile',
   calculationInprocess.getFile,
-  calculationSubprocess.getFile,
+  calculationSubprocess.getFile
 );
 
 module.exports.parse = questionFunctionExperiment(
   'calculation-question-parse',
   calculationInprocess.parse,
-  calculationSubprocess.parse,
+  calculationSubprocess.parse
 );
 
 module.exports.grade = questionFunctionExperiment(
   'calculation-question-grade',
   calculationInprocess.grade,
-  calculationSubprocess.grade,
+  calculationSubprocess.grade
 );

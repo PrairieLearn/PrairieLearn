@@ -1,4 +1,4 @@
-PATH := node_modules/.bin/:$(PATH)
+export PATH := node_modules/.bin/:$(PATH)
 
 start: start-support
 	@node server.js
@@ -19,21 +19,37 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: start-support
-	@nyc --reporter=lcov mocha tests/index.js
+test-js: test-prairielearn test-prairielib test-grader-host
+test-prairielearn: start-support
+	@nyc --reporter=lcov mocha --full-trace tests/index.js
+test-prairielib:
+	@jest prairielib/
+test-grader-host:
+	@jest grader_host/
 test-nocoverage: start-support
 	@mocha tests/index.js
 test-python:
-	@python3 /PrairieLearn/question-servers/freeformPythonLib/prairielearn_test.py
+	@python3 question-servers/freeformPythonLib/prairielearn_test.py
+	@python3 elements/pl-order-blocks/dag_checker_test.py
 
 lint: lint-js lint-python
 lint-js:
 	@eslint --ext js "**/*.js"
+	@prettier --check "**/*.{js,ts,md}"
 lint-python:
 	@python3 -m flake8 ./
 
-typecheck:
+format: format-js
+format-js:
+	@eslint --ext js --fix "**/*.js"
+	@prettier --write "**/*.{js,ts,md}"
+
+typecheck: typecheck-js typecheck-python
+typecheck-js:
 	@tsc
+typecheck-python:
+	@pyright elements/pl-order-blocks/dag*.py  # TODO enable for all Python
+
 depcheck:
 	-depcheck --ignore-patterns=public/**
 	@echo WARNING:

@@ -13,8 +13,8 @@ if lsof -i :5000 > /dev/null ; then
     exit
 fi
 
-mkdir -p /s3rver
-node_modules/.bin/s3rver --directory /s3rver --port 5000 --configure-bucket workspaces --configure-bucket chunks --configure-bucket file-store > /dev/null &
+mkdir -p ./s3rver
+node_modules/.bin/s3rver --directory ./s3rver --port 5000 --configure-bucket workspaces --configure-bucket chunks --configure-bucket file-store > /dev/null &
 
 # wait for s3rver to start
 until lsof -i :5000 > /dev/null ; do sleep 1 ; done

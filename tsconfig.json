@@ -9,7 +9,7 @@
   // standard JavaScript with JSDoc comments.
   // Adding new code? Consider opting in to type checking!
   "include": [
-    "tests/sync/**/*",
+    "tests/**/*",
     "sync/**/*",
     "lib/**/*",
     "question-servers/**/*"

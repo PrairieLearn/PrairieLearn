@@ -26,7 +26,7 @@ function makeEntity() {
 /**
  * Checks that the entity present in the database matches the data
  * from the original entity in `infoCourse.json`.
- * 
+ *
  * @param {any} syncedEntity - The entity from the database.
  * @param {any} entity - The entity from `infoCourse.json`.
  */
@@ -39,7 +39,7 @@ function checkEntity(syncedEntity, entity) {
 
 function checkEntityOrder(entityName, syncedEntities, courseData) {
   courseData.course[entityName].forEach((entity, index) => {
-    assert.equal(syncedEntities.find(e => e.name === entity.name).number, index + 1);
+    assert.equal(syncedEntities.find((e) => e.name === entity.name).number, index + 1);
   });
 }
 
@@ -49,7 +49,7 @@ async function testAdd(entityName) {
   courseData.course[entityName].push(newEntity);
   await util.overwriteAndSyncCourseData(courseData, courseDir);
   const syncedEntities = await util.dumpTable(entityName);
-  const syncedEntity = syncedEntities.find(e => e.name === newEntity.name);
+  const syncedEntity = syncedEntities.find((e) => e.name === newEntity.name);
   checkEntity(syncedEntity, newEntity);
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
@@ -62,7 +62,7 @@ async function testRemove(entityName) {
   courseData.course[entityName].splice(0, 1);
   await util.overwriteAndSyncCourseData(courseData, courseDir);
   const syncedEntities = await util.dumpTable(entityName);
-  const syncedEntity = syncedEntities.find(e => e.name === oldEntity.name);
+  const syncedEntity = syncedEntities.find((e) => e.name === oldEntity.name);
   assert.isUndefined(syncedEntity);
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
@@ -77,8 +77,8 @@ async function testRename(entityName) {
   courseData.course[entityName][0].name = newName;
   await util.overwriteAndSyncCourseData(courseData, courseDir);
   const syncedEntities = await util.dumpTable(entityName);
-  assert.isUndefined(syncedEntities.find(e => e.name === oldName));
-  const syncedEntity = syncedEntities.find(as => as.name === newName);
+  assert.isUndefined(syncedEntities.find((e) => e.name === oldName));
+  const syncedEntity = syncedEntities.find((as) => as.name === newName);
   checkEntity(syncedEntity, oldEntity);
   checkEntityOrder(entityName, syncedEntities, courseData);
 }
@@ -93,10 +93,10 @@ async function testDuplicate(entityName) {
   courseData.course[entityName].push(newEntity2);
   await util.writeAndSyncCourseData(courseData);
   const syncedEntities = await util.dumpTable(entityName);
-  const syncedEntity = syncedEntities.find(as => as.name === newEntity1.name);
+  const syncedEntity = syncedEntities.find((as) => as.name === newEntity1.name);
   checkEntity(syncedEntity, newEntity2);
   const syncedCourses = await util.dumpTable('pl_courses');
-  const syncedCourse = syncedCourses.find(c => c.short_name === courseData.course.name);
+  const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
   assert.match(syncedCourse.sync_warnings, new RegExp(`Found duplicate ${entityName}`));
 }
 
