@@ -344,7 +344,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           'grade'
         );
         const $questionView = cheerio.load(await save.text());
-        const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.replace('base64HtmlPrefix', '');
+        const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.replace(base64HtmlPrefix, '');
         const submissionPdf = await pdfParse(Buffer.from(base64Pdf, 'base64'));
         assert.equal(submissionPdf.numpages, 1);
       }
@@ -361,7 +361,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           'grade'
         );
         const $questionView = cheerio.load(await save.text());
-        const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.repace('base64HtmlPrefix', '');
+        const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.repace(base64HtmlPrefix, '');
         const submissionPdf = await pdfParse(Buffer.from(base64Pdf, 'base64'));
         assert.equal(submissionPdf.numpages, 1);
     });
