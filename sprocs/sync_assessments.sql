@@ -191,7 +191,7 @@ BEGIN
                 student_authz_leave = EXCLUDED.student_authz_leave,
                 deleted_at = NULL;
 
-            -- TODO: insert group roles?
+            -- TODO: Insert group roles
             FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
                 INSERT INTO group_roles (
                     role_name,
@@ -203,10 +203,10 @@ BEGIN
                 ) VALUES (
                     (group_role->>'role_name'),
                     new_assessment_id,
-                    (group_role->>'minimum')::integer,
-                    (group_role->>'maximum')::integer,
-                    (group_role->>'can_assign_roles_at_start')::boolean,
-                    (group_role->>'can_assign_roles_during_assessment')::boolean
+                    (CASE WHEN (group_role->>'minimum')::integer = NULL THEN 0 ELSE (group_role->>'minimum')::integer END),
+                    (CASE WHEN (group_role->>'maximum')::integer = NULL THEN 4 ELSE (group_role->>'maximum')::integer END),
+                    (CASE WHEN (group_role->>'can_assign_roles_at_start') = 'undefined' THEN TRUE ELSE (group_role->>'can_assign_roles_at_start')::boolean END),
+                    (CASE WHEN (group_role->>'can_assign_roles_during_assessment') = 'undefined' THEN TRUE ELSE (group_role->>'can_assign_roles_during_assessment')::boolean END)
                 );
             END LOOP;
         ELSE
