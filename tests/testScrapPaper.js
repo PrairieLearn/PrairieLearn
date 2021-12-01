@@ -96,8 +96,8 @@ describe('Barcode generation, student submission, and scanning process', functio
     });
 
     describe('POST', () => {
-      const testLabel = 'TEST LABEL';
-      const testNumPages = 5; // has to be reasonably small for pdf to be converted/decoded quickly in test
+      const testLabel = 'ANY TEST LABEL';
+      const testNumPages = 3; // has to be reasonably small for pdf to be converted/decoded quickly in test
 
       let pdf;
       let decodedJpegs;
@@ -286,7 +286,7 @@ describe('Barcode generation, student submission, and scanning process', functio
       });
       it('file ids should exist for valid barcodes submitted in earlier `pl-artifact-scan` submissions', async () => {
         const numValidBarcodes = 2;
-        const barcodes = (await sqldb.queryAsync(sql.get_barcodes_with_submissions, {})).rows;
+        const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
         assert.include(barcodes)
         assert.lengthOf(barcodes, numValidBarcodes);
         // cannot test if we hangup request and perform this operation disjointed from user

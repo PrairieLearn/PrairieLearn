@@ -38,5 +38,4 @@ foreign-key constraints
 
 referenced by
     barcodes: FOREIGN KEY (submission_id) REFERENCES submissions(id)
-    files: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE SET NULL
     grading_jobs: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE

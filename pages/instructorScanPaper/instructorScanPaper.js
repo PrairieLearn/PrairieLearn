@@ -32,7 +32,7 @@ const _uploadPages = async (decodedPdfs, fileMetadata, userId) => {
         // We can discuss this, but things have setup to query the last entry uploaded for a submission until we know what we want to do here. 
 
         // TO DO: can optimize this to ensure we do not upload more than 1 page per barcode
-          const fileId = await fileStore.upload(`${decodedPdfs[i].barcode}-barcode-submission.pdf`, await fs.readFile(decodedPdfs[i].pdfFilepath), 'pdf_artifact_upload', fileMetadata.rows[j].assessment_instance_id, fileMetadata.rows[j].instance_question_id, fileMetadata.rows[j].id, userId, userId, 'S3');
+          const fileId = await fileStore.upload(`${decodedPdfs[i].barcode}-barcode-submission.pdf`, await fs.readFile(decodedPdfs[i].pdfFilepath), 'pdf_artifact_upload', fileMetadata.rows[j].assessment_instance_id, fileMetadata.rows[j].instance_question_id, userId, userId, 'S3');
           uploaded.push({fileId, barcode: decodedPdfs[i].barcode});
           uploadedBarcodes.push(decodedPdfs[i].barcode);
       }
@@ -98,6 +98,7 @@ const _updateBarcodesTable = async (uploadedFiles) => {
  * student written work. It is expected that one barcode exists on each page in the PDF. 
  * If a barcode is readable by the decoder, the page will be uploaded to S3 and stored with 
  * metadata information in `files` and `barcodes` table to later allow viewing of doc by student.
+ * If a student submits a barcode after file upload, it can still be displayed on front-end.
  * @param {Buffer} pdfBuffer buffered application/pdf scanned document
  * @param {string} originalName uploaded filename
  * @returns void
@@ -114,28 +115,8 @@ const _processPdfScan = async (pdfBuffer, originalName, userId) => {
   const query = sql.get_barcode_metadata.replace('$match', `s.submitted_answer->>'_pl_artifact_barcode' = '${barcodes.join("' OR s.submitted_answer->>'_pl_artifact_barcode' = '")}'`);
   const fileMetadata = await sqldb.queryAsync(query, {});
 
-  
-
   const uploadedFiles = await _uploadPages(decodedPdfPages, fileMetadata, userId);
   return _updateBarcodesTable(uploadedFiles);
-
-  
-  // 1. we have at least one decoded barcoded and we want to associate the information in the `barcodes` table
-  //    ISSUE: If a student has not submitted the barcode through the element, we will not find a match.
-  // //    We need to set the expectation that they need to re-run the PDF upload if barcode submissions occur after upload date.
-  // if (submissions.rows.length > 0) {
-  //   const updated = await _updateBarcodesTable(submissions);
-
-  //   // 2. a. since we found some barcodes, we want those barcoded sheets uploaded to s3 so student/instructor can view them
-  //   // NOTE: at least right now, we are not uploading the failed ones. Should we? Future plans?
-  //   const jpegsToUpload = decodedJpegs.filter((decodedJpeg) => updated.rows.indexOf(decodedJpeg.barcode));
-  //   //
-  //   // 3.
-
-
-    // 3. create report of what sheets could be read or not read by decoder.
-    // return;
-  // }
 };
 
 router.get('/', (req, res) => {
