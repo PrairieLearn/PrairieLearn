@@ -1,5 +1,7 @@
 #!/bin/bash
 
+-set ex
+
 # This script is designed to be run inside a GitHub Action job. It
 # checks whether the current commit has modified anything under the
 # given CHECK_PATH. If so, it sets the given ENV_VAR to "true".

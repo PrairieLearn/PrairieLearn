@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 if [ "$#" -ne 2 ]; then
   echo "USAGE: $0 build_directory tag_name" >& 2
