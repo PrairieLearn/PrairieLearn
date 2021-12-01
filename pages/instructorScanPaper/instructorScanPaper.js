@@ -23,7 +23,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  */
 const _uploadPages = async (decodedPdfs, fileMetadata, userId) => {
   const uploaded = [];
-  const failed = [];
   const uploadedBarcodes = [];
   for(let i = 0; i < decodedPdfs.length; i++) {
     for(let j = 0; j < fileMetadata.rows.length; j++) {
@@ -33,31 +32,33 @@ const _uploadPages = async (decodedPdfs, fileMetadata, userId) => {
         // We can discuss this, but things have setup to query the last entry uploaded for a submission until we know what we want to do here. 
 
         // TO DO: can optimize this to ensure we do not upload more than 1 page per barcode
-        try {
           const fileId = await fileStore.upload(`${decodedPdfs[i].barcode}-barcode-submission.pdf`, await fs.readFile(decodedPdfs[i].pdfFilepath), 'pdf_artifact_upload', fileMetadata.rows[j].assessment_instance_id, fileMetadata.rows[j].instance_question_id, fileMetadata.rows[j].id, userId, userId, 'S3');
           uploaded.push({fileId, barcode: decodedPdfs[i].barcode});
           uploadedBarcodes.push(decodedPdfs[i].barcode);
-        } catch (err) {
-          failed.push({pdf: decodedPdfs[i], submission_id: fileMetadata.rows[j].submission_id, error: err});
-        }
       }
     }
   }
-  return {uploaded, failed};
+  return uploaded;
 };
 
-const _updateBarcodesTable = async (submissions) => {
+const _updateBarcodesTable = async (uploadedFiles) => {
   // TO DO: This should probably be turned into a stored procedure
-  // if we found a match, we want this submission to be added to the barcodes table
-  const barcodeSubmissions = submissions.rows.map((row) => { return {barcode: row.submitted_answer._pl_artifact_barcode, submission_id: row.id} });
-  let updateValues = '';
+  if (uploadedFiles && uploadedFiles.length > 0) {
+    let updateValues = '';
 
-  for (let i = 0; i < barcodeSubmissions.length; i++) {
-    updateValues+= `(${barcodeSubmissions[i].submission_id}, '${barcodeSubmissions[i].barcode}'),`;
-    if (i === barcodeSubmissions.length -1) {
-      updateValues = updateValues.substring(0, updateValues.length - 1);
+    for (let i = 0; i < uploadedFiles.length; i++) {
+      updateValues+= `(${uploadedFiles[i].fileId}, '${uploadedFiles[i].barcode}'),`;
+      if (i === uploadedFiles.length -1) {
+        updateValues = updateValues.substring(0, updateValues.length - 1);
+      }
     }
+  
+    const query = sql.update_barcodes.replace('$updateValues', updateValues);
+    const updated = (await sqldb.queryAsync(query, {}))[3];
+    return updated;
   }
+
+
   // TO DO FIX: Does not work when I rely on queryAsync to substitute values. 
   // -- BLOCK update_barcodes_with_submission
 
@@ -89,9 +90,7 @@ const _updateBarcodesTable = async (submissions) => {
   // {
   //     "updateValues": "(1, '2D581')"
   // }
-  const query = sql.update_barcodes_with_submission.replace('$updateValues', updateValues);
-  const updated = (await sqldb.queryAsync(query, {}))[3];
-  return updated;
+
 }
 
 /**
@@ -118,7 +117,7 @@ const _processPdfScan = async (pdfBuffer, originalName, userId) => {
   
 
   const uploadedFiles = await _uploadPages(decodedPdfPages, fileMetadata, userId);
-  
+  return _updateBarcodesTable(uploadedFiles);
 
   
   // 1. we have at least one decoded barcoded and we want to associate the information in the `barcodes` table
@@ -153,8 +152,8 @@ router.post('/', function (req, res, next) {
     }
 
     _processPdfScan(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id)
-      .then((updateQuery) => {
-        console.log(updateQuery);
+      .then((filesUpdated) => {
+        console.log(filesUpdated);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
       .catch((err) => {
