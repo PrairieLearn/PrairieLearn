@@ -3,54 +3,15 @@ const express = require('express');
 const router = express.Router();
 // const logger = require('../../lib/logger');
 // const config = require('../../lib/config.js');
-const {createBarcode} = require('../../lib/barcodeUtil');
+const {generateBarcodes} = require('../../lib/barcodeGenerator');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const bitgener = require('bitgener');
 const pdfkit = require('pdfkit');
 const sharp = require('sharp');
-const jsCrc = require('js-crc');
 
 const pageLimit = 1000;
 const charLimit = 45;
-
-const generateBarcodes = async (numBarcodes) => {
-  const barcodes = [];
-
-  // Barcodes should be error-detecting <n char hexatridecimal produced by base36 encoding><4 char crc16 hash>
-  // Sequential counter to produce n char base36 string should be base36 encode input
-
-  const client = await sqldb.beginTransactionAsync();
-  try {
-    const queryCount = await sqldb.queryWithClientAsync(client, sql.get_barcodes_count, {});
-
-    // Want to create new barcodes based on sequential count in database
-    let barcodesCount = Number(queryCount[1].rows[0].count);
-    for (let i = 0; i < numBarcodes; i++) {
-      barcodesCount += 1;
-      const barcode = createBarcode(barcodesCount);
-      barcodes.push(barcode);
-    }
-
-    const insert_barcodes = sql.insert_barcodes.replace(
-      '$barcodes',
-      barcodes.map((barcode) => "('" + barcode + "')").join(',')
-    );
-    const insertedBarcodes = await sqldb.queryWithClientAsync(client, insert_barcodes, {});
-    if (insertedBarcodes.rows.length !== Number(numBarcodes)) {
-      throw Error('Wrong number of barcodes created. Aborting');
-    }
-  } catch (err) {
-    // rolls back if error
-    await sqldb.endTransactionAsync(client, err);
-    throw err;
-  }
-  await sqldb.endTransactionAsync(client, null);
-  return barcodes;
-};
 
 const createBarcodeSVGs = async (barcodes) => {
   const svgs = [];
