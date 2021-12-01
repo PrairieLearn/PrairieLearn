@@ -89,6 +89,8 @@ describe('Barcode generation, student submission, and scanning process', functio
   const validBarcodes = [];
   let pdfBuffer;
   let hm1AutomaticTestSuiteUrl;
+  let defaultUser;
+
 
   before('set up testing server', async () => {
     await util.promisify(helperServer.before().bind(this))();
@@ -200,8 +202,6 @@ describe('Barcode generation, student submission, and scanning process', functio
 
   describe('Barcode submission on `pl-artifact-scan` element (before pdf scan upload)', () => {
     const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
-
-    let defaultUser;
 
     before('create students', async () => {
       defaultUser = { authUid: config.authUid, authName: config.authName, authUin: config.authUin }; // test suite default
@@ -330,7 +330,8 @@ describe('Barcode generation, student submission, and scanning process', functio
   });
 
   describe('Barcode submission on `pl-artifact-scan` element (after pdf scan upload)', () => {
-    it('uploaded barcode submissions should result in pdf on view', async () => {
+    const base64HtmlPrefix = 'data:application/pdf;base64,';
+    it('student barcode submissions should result in pdf on view after pdf scan', async () => {
       for (const student of mockStudents) {
         setUser(student);
         const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
@@ -340,13 +341,29 @@ describe('Barcode generation, student submission, and scanning process', functio
         const save = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
           { _pl_artifact_barcode: validBarcodes[0] },
-          'save'
+          'grade'
         );
         const $questionView = cheerio.load(await save.text());
-        const pdfs = $questionView('.submission-body-pdf-artifact');
-        console.log('test');
+        const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.replace('base64HtmlPrefix', '');
+        const submissionPdf = await pdfParse(Buffer.from(base64Pdf, 'base64'));
+        assert.equal(submissionPdf.numpages, 1);
       }
     });
-    it('pdfs should not appear on submissions where invalid or empty barcode entered', () => {});
+    it('instructor barcode submissions should result in pdf on view after pdf scan', async () => {
+        setUser(defaultUser);
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
+          baseUrl,
+          hm1AutomaticTestSuiteUrl
+        );
+        const save = await saveOrGrade(
+          hm1BarcodeSubmissionUrl,
+          { _pl_artifact_barcode: validBarcodes[0] },
+          'grade'
+        );
+        const $questionView = cheerio.load(await save.text());
+        const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.repace('base64HtmlPrefix', '');
+        const submissionPdf = await pdfParse(Buffer.from(base64Pdf, 'base64'));
+        assert.equal(submissionPdf.numpages, 1);
+    });
   });
 });
