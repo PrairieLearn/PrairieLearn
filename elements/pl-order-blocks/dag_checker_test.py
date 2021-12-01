@@ -1,4 +1,3 @@
-import unittest
 from dag_checker import grade_dag
 
 problem_1_dag = {'1': [], '2': ['1'], '3': ['1'], '4': ['2', '3'], '5': ['1'], '6': ['2'], '7': ['4', '5', '6'], '8': [], '9': ['7', '8'], '10': ['9']}
@@ -35,15 +34,9 @@ problem_2_expected = [
 ]
 
 
-class TestDAGChecker(unittest.TestCase):
+def test_grade_dag():
+    for submission, expected in zip(problem_1_submissions, problem_1_expected):
+        assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
 
-    def test_grade_dag(self):
-        for submission, expected in zip(problem_1_submissions, problem_1_expected):
-            self.assertEqual(grade_dag(submission, problem_1_dag, problem_1_groups), expected)
-
-        for submission, expected in zip(problem_2_submissions, problem_2_expected):
-            self.assertEqual(grade_dag(submission, problem_2_dag, problem_2_groups), expected)
-
-
-if __name__ == '__main__':
-    unittest.main()
+    for submission, expected in zip(problem_2_submissions, problem_2_expected):
+        assert grade_dag(submission, problem_2_dag, problem_2_groups) == expected
