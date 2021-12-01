@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const {decodeBarcodes} = require('../../lib/barcodeScanner');
+const { decodeBarcodes } = require('../../lib/barcodeScanner');
 const fileStore = require('../../lib/file-store');
 const fs = require('fs').promises;
 
@@ -24,17 +24,29 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const _uploadPages = async (decodedPdfs, fileMetadata, userId) => {
   const uploaded = [];
   const uploadedBarcodes = [];
-  for(let i = 0; i < decodedPdfs.length; i++) {
-    for(let j = 0; j < fileMetadata.rows.length; j++) {
-      if (fileMetadata.rows[j].barcode === decodedPdfs[i].barcode && uploadedBarcodes.indexOf(decodedPdfs[i].barcode)  === -1) {
+  for (let i = 0; i < decodedPdfs.length; i++) {
+    for (let j = 0; j < fileMetadata.rows.length; j++) {
+      if (
+        fileMetadata.rows[j].barcode === decodedPdfs[i].barcode &&
+        uploadedBarcodes.indexOf(decodedPdfs[i].barcode) === -1
+      ) {
         // Promise.all memory limitations?
-        // TO DO: We only want to upload a file once and never again probably. So if an instructor submits a scan again, we don't want to upload it. 
-        // We can discuss this, but things have setup to query the last entry uploaded for a submission until we know what we want to do here. 
+        // TO DO: We only want to upload a file once and never again probably. So if an instructor submits a scan again, we don't want to upload it.
+        // We can discuss this, but things have setup to query the last entry uploaded for a submission until we know what we want to do here.
 
         // TO DO: can optimize this to ensure we do not upload more than 1 page per barcode
-          const fileId = await fileStore.upload(`${decodedPdfs[i].barcode}-barcode-submission.pdf`, await fs.readFile(decodedPdfs[i].pdfFilepath), 'pdf_artifact_upload', fileMetadata.rows[j].assessment_instance_id, fileMetadata.rows[j].instance_question_id, userId, userId, 'S3');
-          uploaded.push({fileId, barcode: decodedPdfs[i].barcode});
-          uploadedBarcodes.push(decodedPdfs[i].barcode);
+        const fileId = await fileStore.upload(
+          `${decodedPdfs[i].barcode}-barcode-submission.pdf`,
+          await fs.readFile(decodedPdfs[i].pdfFilepath),
+          'pdf_artifact_upload',
+          fileMetadata.rows[j].assessment_instance_id,
+          fileMetadata.rows[j].instance_question_id,
+          userId,
+          userId,
+          'S3'
+        );
+        uploaded.push({ fileId, barcode: decodedPdfs[i].barcode });
+        uploadedBarcodes.push(decodedPdfs[i].barcode);
       }
     }
   }
@@ -47,19 +59,18 @@ const _updateBarcodesTable = async (uploadedFiles) => {
     let updateValues = '';
 
     for (let i = 0; i < uploadedFiles.length; i++) {
-      updateValues+= `(${uploadedFiles[i].fileId}, '${uploadedFiles[i].barcode}'),`;
-      if (i === uploadedFiles.length -1) {
+      updateValues += `(${uploadedFiles[i].fileId}, '${uploadedFiles[i].barcode}'),`;
+      if (i === uploadedFiles.length - 1) {
         updateValues = updateValues.substring(0, updateValues.length - 1);
       }
     }
-  
+
     const query = sql.update_barcodes.replace('$updateValues', updateValues);
     const updated = (await sqldb.queryAsync(query, {}))[3];
     return updated;
   }
 
-
-  // TO DO FIX: Does not work when I rely on queryAsync to substitute values. 
+  // TO DO FIX: Does not work when I rely on queryAsync to substitute values.
   // -- BLOCK update_barcodes_with_submission
 
   // DROP TABLE IF EXISTS barcode_submission_ids_temp;
@@ -75,7 +86,6 @@ const _updateBarcodesTable = async (uploadedFiles) => {
   //     |
   //     + ERROR POSITION SHOWN ABOVE
 
-
   // UPDATE
   //     barcodes b
   // SET
@@ -90,13 +100,12 @@ const _updateBarcodesTable = async (uploadedFiles) => {
   // {
   //     "updateValues": "(1, '2D581')"
   // }
-
-}
+};
 
 /**
  * A Pdf Scan is a collection of scanned barcoded single pieces of paper with
- * student written work. It is expected that one barcode exists on each page in the PDF. 
- * If a barcode is readable by the decoder, the page will be uploaded to S3 and stored with 
+ * student written work. It is expected that one barcode exists on each page in the PDF.
+ * If a barcode is readable by the decoder, the page will be uploaded to S3 and stored with
  * metadata information in `files` and `barcodes` table to later allow viewing of doc by student.
  * If a student submits a barcode after file upload, it can still be displayed on front-end.
  * @param {Buffer} pdfBuffer buffered application/pdf scanned document
@@ -112,7 +121,12 @@ const _processPdfScan = async (pdfBuffer, originalName, userId) => {
   const barcodes = decodedPdfPages.map((page) => page.barcode);
 
   // 3. get submission meta data to upload assessment, iq details to filestore API
-  const query = sql.get_barcode_metadata.replace('$match', `s.submitted_answer->>'_pl_artifact_barcode' = '${barcodes.join("' OR s.submitted_answer->>'_pl_artifact_barcode' = '")}'`);
+  const query = sql.get_barcode_metadata.replace(
+    '$match',
+    `s.submitted_answer->>'_pl_artifact_barcode' = '${barcodes.join(
+      "' OR s.submitted_answer->>'_pl_artifact_barcode' = '"
+    )}'`
+  );
   const fileMetadata = await sqldb.queryAsync(query, {});
 
   const uploadedFiles = await _uploadPages(decodedPdfPages, fileMetadata, userId);
@@ -126,10 +140,12 @@ router.get('/', (req, res) => {
 router.post('/', function (req, res, next) {
   if (req.body.__action === 'scan_scrap_paper') {
     if (!req.file) {
-      ERR(Error('Missing barcoded pdf collection file data'), next); return;
+      ERR(Error('Missing barcoded pdf collection file data'), next);
+      return;
     }
-    if(!res.locals || !res.locals.authn_user || !res.locals.authn_user.user_id) {
-      ERR(Error('Authn_user required on file-store API'), next); return;
+    if (!res.locals || !res.locals.authn_user || !res.locals.authn_user.user_id) {
+      ERR(Error('Authn_user required on file-store API'), next);
+      return;
     }
 
     _processPdfScan(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id)
@@ -139,16 +155,16 @@ router.post('/', function (req, res, next) {
       .catch((err) => {
         if (ERR(err, next)) return;
       });
-      // TO DO:
+    // TO DO:
 
-      // detach process from request and display stdout in view
+    // detach process from request and display stdout in view
 
-      //implement makeshift queue, as https://github.com/serratus/quaggaJS/issues/135 issues when two decoding jobs running simaltaneously
+    //implement makeshift queue, as https://github.com/serratus/quaggaJS/issues/135 issues when two decoding jobs running simaltaneously
 
-      // discuss how we want to handle multiple submissions ie.
-      // 1. automatically add new element with javascript if option enabled,
-      // 2. store multiple submission referneces in barcodes table (probably need a barcode_submissions table)
-      // 3. decide if we need to do this now or can do it later with a migration to keep backwards compatibility.
+    // discuss how we want to handle multiple submissions ie.
+    // 1. automatically add new element with javascript if option enabled,
+    // 2. store multiple submission referneces in barcodes table (probably need a barcode_submissions table)
+    // 3. decide if we need to do this now or can do it later with a migration to keep backwards compatibility.
   } else {
     return next(
       error.make(400, 'unknown __action', {
@@ -156,7 +172,7 @@ router.post('/', function (req, res, next) {
         body: req.body,
       })
     );
-  };
+  }
 });
 
 module.exports = router;

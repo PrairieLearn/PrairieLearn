@@ -112,10 +112,12 @@ router.post('/', function (req, res, next) {
     const pageLabel = req.body.page_label;
 
     if (!numPages || numPages < 1 || numPages > pageLimit) {
-      ERR(Error(`Must be more than 1 page but not more than ${pageLimit} pages`), next); return;
+      ERR(Error(`Must be more than 1 page but not more than ${pageLimit} pages`), next);
+      return;
     }
     if (typeof pageLabel !== 'string' || pageLabel.length > charLimit) {
-      ERR(Error(`Page label must be valid string less than ${charLimit} characters`), next); return;
+      ERR(Error(`Page label must be valid string less than ${charLimit} characters`), next);
+      return;
     }
 
     generateBarcodes(numPages)
@@ -126,7 +128,10 @@ router.post('/', function (req, res, next) {
         return svgsToPdf(pageLabel, barcodeSVGs);
       })
       .then((pdf) => {
-        res.header('Content-Disposition', `attachment; filename=Barcoded scrap paper - ${new Date().toISOString()}.pdf`);
+        res.header(
+          'Content-Disposition',
+          `attachment; filename=Barcoded scrap paper - ${new Date().toISOString()}.pdf`
+        );
         pdf.pipe(res);
         pdf.end();
       })
