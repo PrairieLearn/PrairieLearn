@@ -131,3 +131,14 @@ FROM
     variants AS v
     JOIN workspaces AS w ON (v.workspace_id = w.id)
 WHERE v.id = $variant_id;
+
+-- BLOCK get_barcode_file_ids
+SELECT
+    b.barcode AS barcode,
+    f.id AS file_id
+FROM
+    barcodes AS b
+    JOIN files AS f ON (b.file_id = f.id)
+WHERE $match;
+
+
