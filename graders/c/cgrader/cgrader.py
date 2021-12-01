@@ -29,9 +29,8 @@ class CGrader:
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
-            envl = [f'{shlex.quote(k)}={shlex.quote(v)}' for k, v in env.items()] if env else []
             command = ['su', SB_USER, '-s', '/bin/bash', '-c',
-                       shlex.join(['PATH=' + self.path] + envl + command)]
+                       shlex.join(['PATH=' + self.path] + command)]
 
         try:
             proc = subprocess.Popen(command,
