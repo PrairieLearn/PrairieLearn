@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 // const logger = require('../../lib/logger');
 // const config = require('../../lib/config.js');
+const {createBarcode} = require('../../lib/barcodeUtil');
 const error = require('../../prairielib/lib/error');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -30,9 +31,7 @@ const generateBarcodes = async (numBarcodes) => {
     let barcodesCount = Number(queryCount[1].rows[0].count);
     for (let i = 0; i < numBarcodes; i++) {
       barcodesCount += 1;
-      const base36 = BigInt(barcodesCount).toString(36);
-      const crc16 = jsCrc.crc16(base36);
-      const barcode = `${base36}${crc16}`.toUpperCase(); // concat as string in chance integer combo
+      const barcode = createBarcode(barcodesCount);
       barcodes.push(barcode);
     }
 
