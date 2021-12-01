@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { decodeBarcodes } = require('../../lib/barcodeScanner');
+const { processScrapPaperPdf } = require('../../lib/barcodeScanner');
 const fileStore = require('../../lib/file-store');
 const fs = require('fs').promises;
 
@@ -102,37 +102,6 @@ const _updateBarcodesTable = async (uploadedFiles) => {
   // }
 };
 
-/**
- * A Pdf Scan is a collection of scanned barcoded single pieces of paper with
- * student written work. It is expected that one barcode exists on each page in the PDF.
- * If a barcode is readable by the decoder, the page will be uploaded to S3 and stored with
- * metadata information in `files` and `barcodes` table to later allow viewing of doc by student.
- * If a student submits a barcode after file upload, it can still be displayed on front-end.
- * @param {Buffer} pdfBuffer buffered application/pdf scanned document
- * @param {string} originalName uploaded filename
- * @returns void
- */
-const _processPdfScan = async (pdfBuffer, originalName, userId) => {
-  // 1. Get decoded pdf page meta data ie. barcode, filepath, etc.
-  let decodedPdfPages = await decodeBarcodes(pdfBuffer, originalName);
-
-  // 2. filter only the barcode pages that we could read
-  decodedPdfPages = decodedPdfPages.filter((decodedPdfPage) => decodedPdfPage.barcode);
-  const barcodes = decodedPdfPages.map((page) => page.barcode);
-
-  // 3. get submission meta data to upload assessment, iq details to filestore API
-  const query = sql.get_barcode_metadata.replace(
-    '$match',
-    `s.submitted_answer->>'_pl_artifact_barcode' = '${barcodes.join(
-      "' OR s.submitted_answer->>'_pl_artifact_barcode' = '"
-    )}'`
-  );
-  const fileMetadata = await sqldb.queryAsync(query, {});
-
-  const uploadedFiles = await _uploadPages(decodedPdfPages, fileMetadata, userId);
-  return _updateBarcodesTable(uploadedFiles);
-};
-
 router.get('/', (req, res) => {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
@@ -148,7 +117,7 @@ router.post('/', function (req, res, next) {
       return;
     }
 
-    _processPdfScan(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id)
+    processScrapPaperPdf(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id)
       .then(() => {
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
