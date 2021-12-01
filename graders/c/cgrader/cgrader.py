@@ -86,7 +86,8 @@ class CGrader:
             if isinstance(pkg_config_flags, str):
                 pkg_config_flags = shlex.split(pkg_config_flags)
             out_flags = self.run_command(['pkg-config', '--cflags', '--libs'] + pkg_config_flags)
-            if out_flags: flags.extend(shlex.split(out_flags))
+            if out_flags:
+                flags.extend(shlex.split(out_flags))
 
         out = ''
         std_obj_files = []
@@ -284,10 +285,6 @@ class CGrader:
         separator_1 = ': ' if use_suite_title and use_case_name else ''
         separator_2 = ' - ' if use_unit_test_id and (use_suite_title or use_case_name) else ''
         try:
-            with open(log_file) as f:
-                print('DEBUG: LOG FILE')
-                print(f.read())
-
             tree = ET.parse(log_file)
             for suite in tree.getroot().findall('{*}suite'):
                 suite_title = suite.findtext('{*}title') if use_suite_title else ''
