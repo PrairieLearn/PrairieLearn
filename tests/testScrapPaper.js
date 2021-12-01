@@ -5,6 +5,7 @@ const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
 const { decodeBarcodes } = require('../lib/barcodeScanner');
+const { getBarcodeSegments } = require('../lib/barcodeGenerator');
 const config = require('../lib/config');
 const util = require('util');
 const sqldb = require('../prairielib/lib/sql-db');
@@ -18,7 +19,6 @@ const helperServer = require('./helperServer');
 // const helperQuestion = require('./helperQuestion');
 // const helperAttachFiles = require('./helperAttachFiles');
 
-// const imagemagick = require('imagemagick');
 const jsCrc = require('js-crc');
 const pdfParse = require('pdf-parse');
 
@@ -35,6 +35,12 @@ const setUser = (user) => {
   config.authUin = user.authUin;
 };
 
+/**
+ * Gets an instance question URL for the current user
+ * @param {string} baseUrl 
+ * @param {string} hm1AutomaticTestSuiteUrl 
+ * @returns {string}
+ */
 const getBarcodeSubmissionUrl = async (baseUrl, hm1AutomaticTestSuiteUrl) => {
   const res = await fetch(hm1AutomaticTestSuiteUrl);
   assert.equal(res.ok, true);
@@ -63,16 +69,6 @@ const getScanPaperPayload = ($page, pdfBuffer) => {
   formData.append('__csrf_token', $page('form > input[name="__csrf_token"]').val());
   formData.append('__action', $page('form > input[name="__action"]').val());
   return formData;
-};
-
-const getBarcodeSegments = (barcode) => {
-  barcode = barcode.toLowerCase();
-  const sha16 = barcode.substring(barcode.length - 4, barcode.length);
-  return {
-    fullBarcode: barcode,
-    sha16,
-    base36: barcode.replace(sha16, ''),
-  };
 };
 
 describe('Barcode generation, student submission, and scanning process', function () {
