@@ -19,8 +19,8 @@ const charLimit = 45;
 const generateBarcodes = async (numBarcodes) => {
   const barcodes = [];
 
-  // Barcodes should be error-detecting <x char hexatridecimal produced by base36 encoding><4 char crc16 hash>
-  // Sequential counter to produce x char base36 string should be base36 encode input
+  // Barcodes should be error-detecting <n char hexatridecimal produced by base36 encoding><4 char crc16 hash>
+  // Sequential counter to produce n char base36 string should be base36 encode input
 
   const client = await sqldb.beginTransactionAsync();
   try {
