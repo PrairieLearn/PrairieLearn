@@ -9,4 +9,3 @@ indexes
 
 foreign-key constraints
     barcodes_file_id_fkey: FOREIGN KEY (file_id) REFERENCES files(id)
-    barcodes_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id)
