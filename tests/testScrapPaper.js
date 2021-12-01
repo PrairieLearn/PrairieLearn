@@ -37,8 +37,8 @@ const setUser = (user) => {
 
 /**
  * Gets an instance question URL for the current user
- * @param {string} baseUrl 
- * @param {string} hm1AutomaticTestSuiteUrl 
+ * @param {string} baseUrl
+ * @param {string} hm1AutomaticTestSuiteUrl
  * @returns {string}
  */
 const getBarcodeSubmissionUrl = async (baseUrl, hm1AutomaticTestSuiteUrl) => {
@@ -318,6 +318,9 @@ describe('Barcode generation, student submission, and scanning process', functio
       });
       it('file ids should exist for valid barcodes submitted in earlier `pl-artifact-scan` submissions', async () => {
         const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
+        barcodes.forEach((barcode) => {
+          assert.isDefined(barcode.file_id);
+        })
         assert.lengthOf(barcodes, testNumPages);
         // cannot test if we hangup request and perform this operation disjointed from user
       });
