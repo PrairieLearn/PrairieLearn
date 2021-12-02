@@ -336,12 +336,12 @@ describe('Barcode generation, student submission, and scanning process', functio
           baseUrl,
           hm1AutomaticTestSuiteUrl
         );
-        const save = await saveOrGrade(
+        const grade = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
           { _pl_artifact_barcode: validBarcodes[0] },
           'grade'
         );
-        const $questionView = cheerio.load(await save.text());
+        const $questionView = cheerio.load(await grade.text());
         const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.replace(
           base64HtmlPrefix,
           ''
@@ -356,12 +356,12 @@ describe('Barcode generation, student submission, and scanning process', functio
         baseUrl,
         hm1AutomaticTestSuiteUrl
       );
-      const save = await saveOrGrade(
+      const grade = await saveOrGrade(
         hm1BarcodeSubmissionUrl,
         { _pl_artifact_barcode: validBarcodes[0] },
         'grade'
       );
-      const $questionView = cheerio.load(await save.text());
+      const $questionView = cheerio.load(await grade.text());
       const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.replace(
         base64HtmlPrefix,
         ''
