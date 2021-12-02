@@ -2,9 +2,11 @@
 // const _ = require('lodash');
 const assert = require('chai').assert;
 const fetch = require('node-fetch');
+const fs = require('fs').promises;
+const path = require('path');
 const cheerio = require('cheerio');
 
-const { decodeBarcodes } = require('../lib/barcodeScanner');
+const { decodeBarcodes, loadPdf } = require('../lib/barcodeScanner');
 const { getBarcodeSegments } = require('../lib/barcodeGenerator');
 const config = require('../lib/config');
 const util = require('util');
@@ -20,7 +22,6 @@ const helperServer = require('./helperServer');
 // const helperAttachFiles = require('./helperAttachFiles');
 
 const jsCrc = require('js-crc');
-const pdfParse = require('pdf-parse');
 
 const testLabel = 'ANY TEST LABEL';
 const testNumPages = 3; // has to be reasonably small for pdf to be converted/decoded quickly in test
@@ -129,7 +130,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
         assert.isDefined(pdfBuffer);
 
-        pdf = await pdfParse(pdfBuffer);
+        pdf = await loadPdf(pdfBuffer);
         assert.isDefined(pdf);
 
         // IMAGE MAGICK IDENTIFY() METHOD DOES NOT WORK WITH 500 PAGE PDF.
@@ -159,16 +160,21 @@ describe('Barcode generation, student submission, and scanning process', functio
         // });
       });
       it('pdf should have requested number of pages', () => {
-        assert.equal(pdf.numpages, testNumPages);
+        assert.equal(pdf.numPages, testNumPages);
       });
-      it('pdf should have a label for each page', () => {
+      it('pdf should have a label for each page', async () => {
         // best we can do with this library. may want to use library that supports reading text per page
-        const numLabels = pdf.text.match(new RegExp(testLabel, 'g')).length;
-        assert.equal(numLabels, testNumPages);
+        for (let i = 0; i < pdf.numPages; i++) {
+          const page = await pdf.getPage(i + 1);
+          const content = await page.getTextContent();
+          const text = content.items.map((i) => i.str).join(' ');
+          assert.include(text, testLabel);
+        }
+        assert.equal(pdf.numPages, testNumPages);
       });
       it('number of barcodes in pdf should match number of barcodes in database', async () => {
         barcodeRows = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
-        assert.lengthOf(barcodeRows, pdf.numpages);
+        assert.lengthOf(barcodeRows, pdf.numPages);
       });
       it('database barcodes should checksum sha16 successfully against base36 barcode components', () => {
         barcodeRows.forEach((row) => {
@@ -346,8 +352,9 @@ describe('Barcode generation, student submission, and scanning process', functio
           base64HtmlPrefix,
           ''
         );
-        const submissionPdf = await pdfParse(Buffer.from(base64Pdf, 'base64'));
-        assert.equal(submissionPdf.numpages, 1);
+        
+        const submissionPdf = await loadPdf(Buffer.from(base64Pdf, 'base64'));
+        assert.equal(submissionPdf.numPages, 1);
       }
     });
     it('instructor barcode submissions should result in pdf on view after pdf scan', async () => {
@@ -366,8 +373,8 @@ describe('Barcode generation, student submission, and scanning process', functio
         base64HtmlPrefix,
         ''
       );
-      const submissionPdf = await pdfParse(Buffer.from(base64Pdf, 'base64'));
-      assert.equal(submissionPdf.numpages, 1);
+      const submissionPdf = await loadPdf(Buffer.from(base64Pdf, 'base64'));
+      assert.equal(submissionPdf.numPages, 1);
     });
   });
 });

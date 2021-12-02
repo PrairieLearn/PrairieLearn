@@ -1530,6 +1530,11 @@
   resolved "https://registry.yarnpkg.com/@vue/shared/-/shared-3.1.5.tgz#74ee3aad995d0a3996a6bb9533d4d280514ede03"
   integrity sha512-oJ4F3TnvpXaQwZJNF3ZK+kLPHKarDmJjJ6jyzVNDKH9md1dptjC7lWR//jrGuLdek/U6iltWxqAnYOu8gCiOvA==
 
+"@xmldom/xmldom@^0.7.5":
+  version "0.7.5"
+  resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.7.5.tgz#09fa51e356d07d0be200642b0e4f91d8e6dd408d"
+  integrity sha512-V3BIhmY36fXZ1OtVcI9W+FxQqxVLsPKcNjWigIaa81dLC9IolJl5Mt4Cvhmr0flUnjSpTdrbMTSbXqYqV5dT6A==
+
 abab@^2.0.0, abab@^2.0.3, abab@^2.0.5:
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/abab/-/abab-2.0.5.tgz#c0b678fb32d60fc1219c784d6a826fe385aeb79a"
@@ -7604,11 +7609,6 @@ node-bitmap@0.0.1:
   resolved "https://registry.yarnpkg.com/node-bitmap/-/node-bitmap-0.0.1.tgz#180eac7003e0c707618ef31368f62f84b2a69091"
   integrity sha1-GA6scAPgxwdhjvMTaPYvhLKmkJE=
 
-node-ensure@^0.0.0:
-  version "0.0.0"
-  resolved "https://registry.yarnpkg.com/node-ensure/-/node-ensure-0.0.0.tgz#ecae764150de99861ec5c810fd5d096b183932a7"
-  integrity sha1-7K52QVDemYYexcgQ/V0Jaxg5Mqc=
-
 node-fetch@^2.3.0, node-fetch@^2.6.1:
   version "2.6.1"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
@@ -8204,13 +8204,12 @@ pause@0.0.1:
   resolved "https://registry.yarnpkg.com/pause/-/pause-0.0.1.tgz#1d408b3fdb76923b9543d96fb4c9dfd535d9cb5d"
   integrity sha1-HUCLP9t2kjuVQ9lvtMnf1TXZy10=
 
-pdf-parse@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/pdf-parse/-/pdf-parse-1.1.1.tgz#745e07408679548b3995ff896fd38e96e19d14a7"
-  integrity sha512-v6ZJ/efsBpGrGGknjtq9J/oC8tZWq0KWL5vQrk2GlzLEQPUDB1ex+13Rmidl1neNN358Jn9EHZw5y07FFtaC7A==
+pdf2json@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/pdf2json/-/pdf2json-2.0.0.tgz#6112b70456c57ecd78bc57f4eecfe423aef6b2d0"
+  integrity sha512-+FZy7GSvLOLc+zksg0SoMvXqIqcku5lBlEPuYJJkhMWB2x6yfthzEhhSbZc20UheClMPagH/+NXnMRbvQMQR1w==
   dependencies:
-    debug "^3.1.0"
-    node-ensure "^0.0.0"
+    "@xmldom/xmldom" "^0.7.5"
 
 pdf2pic@^2.1.4:
   version "2.1.4"
@@ -8219,6 +8218,11 @@ pdf2pic@^2.1.4:
   dependencies:
     fs-extra "^9.1.0"
     gm "^1.23.1"
+
+pdfjs-dist@^2.10.377:
+  version "2.10.377"
+  resolved "https://registry.yarnpkg.com/pdfjs-dist/-/pdfjs-dist-2.10.377.tgz#feadc9f31bf1790795994e54b18930974cf4970a"
+  integrity sha512-i0jRShtvgfsVQUNCoFYH4SVhPO3U0yhtiFLfZ0RR0B+68N+Vnwq+8B3cjWjLEwWGh8wg1XQ/sYMYKUlHn/Qpsw==
 
 pdfkit@^0.13.0:
   version "0.13.0"
