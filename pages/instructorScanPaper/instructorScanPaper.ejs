@@ -1,39 +1,33 @@
-<!doctype html>
-<html lang="en-US">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<meta charset="UTF-8">
+    <%- include('../partials/head'); %>
+    <link href="<%= asset_path('stylesheets/issues.css') %>" rel="stylesheet" />
 	<title></title>
 </head>
 <body>
-    <div class="left">
-        <form method="POST" name="scan-scrap-paper" method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="__action" value="scan_scrap_paper">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            
-            <label for="pdf-artifact">Choose CSV file</label>
-            <input id="pdf-artifact" name="file" type="file" accept="application/pdf">
-            <button>Submit</button>
-        </form>
+    <%- include('../partials/navbar', {navPage: 'news_item'}); %>
 
-        <div class="resultHolder">
-            <label class="resultsTitle">Results will be shown below with <u>summary</u> at the end.</label>
-        </div>
-        <div id="holder">
-        </div>
-
-        <div id="summarydiv">
-            <label class="resultsTitle"> Summary: </label>
-            <br><br>
-            <table id="summary">
-                <tbody>
-
-                </tbody>
-            </table>
-            <br>
-            <hr>
-            <label>By this summary you may decide which parameters you need to exclude, to include or to adjust more
-                accurately, in order to boost the performance and improve the accuracy of the reader.</label>
-        </div>
-    </div>
+    <div id="content" class="container">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Generate a PDF Document Containing Barcoded Scrap Paper</div>
+            <div class="card-body">
+                <form method="POST" name="scan-scrap-paper" method="POST" enctype="multipart/form-data">
+                    <div class="col-lg-9 col-sm-12">
+                        <input type="hidden" name="__action" value="scan_scrap_paper">
+                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                        
+                        <div class="col-lg-9 col-sm-12">
+                        <label for="pdf-artifact">Choose CSV file</label>
+                        <input id="pdf-artifact" name="file" type="file" accept="application/pdf">
+                        </div>
+                        <div class="col-lg-9 col-sm-12">
+                            <button>Submit</button>
+                            </div>
+                    </div>
+                </form>
+            </div>
+          </div>
 </body>
+
 </html>

@@ -9,14 +9,6 @@
     <%- include('../partials/navbar', {navPage: 'news_item'}); %>
 
     <div id="content" class="container">
-
-        <!--PDF Generated in iframe for Download-->
-        <% if (typeof pdf !== 'undefined') { %>
-            <div class="pdf-container">
-                <iframe id="pdf-iframe" width="100%" height="600px" type="text/html" src="data:application/pdf;base64,<%= pdf %>"></iframe>
-            </div>
-        <% } %>
-
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">Generate a PDF Document Containing Barcoded Scrap Paper</div>
             <div class="card-body">
