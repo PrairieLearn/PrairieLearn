@@ -350,7 +350,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           base64HtmlPrefix,
           ''
         );
-        
+
         const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'));
         assert.equal(submissionPdf.numPages, 1);
       }
