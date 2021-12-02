@@ -2,8 +2,6 @@
 // const _ = require('lodash');
 const assert = require('chai').assert;
 const fetch = require('node-fetch');
-const fs = require('fs').promises;
-const path = require('path');
 const cheerio = require('cheerio');
 
 const { decodeBarcodes, loadPdf } = require('../lib/barcodeScanner');
