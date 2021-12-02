@@ -4,7 +4,7 @@ const assert = require('chai').assert;
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
-const { decodeBarcodes, loadPdf } = require('../lib/barcodeScanner');
+const { decodeBarcodes, readPdf } = require('../lib/barcodeScanner');
 const { getBarcodeSegments } = require('../lib/barcodeGenerator');
 const config = require('../lib/config');
 const util = require('util');
@@ -128,7 +128,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
         assert.isDefined(pdfBuffer);
 
-        pdf = await loadPdf(pdfBuffer);
+        pdf = await readPdf(pdfBuffer);
         assert.isDefined(pdf);
 
         // IMAGE MAGICK IDENTIFY() METHOD DOES NOT WORK WITH 500 PAGE PDF.
@@ -351,7 +351,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           ''
         );
         
-        const submissionPdf = await loadPdf(Buffer.from(base64Pdf, 'base64'));
+        const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'));
         assert.equal(submissionPdf.numPages, 1);
       }
     });
@@ -371,7 +371,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         base64HtmlPrefix,
         ''
       );
-      const submissionPdf = await loadPdf(Buffer.from(base64Pdf, 'base64'));
+      const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'));
       assert.equal(submissionPdf.numPages, 1);
     });
   });
