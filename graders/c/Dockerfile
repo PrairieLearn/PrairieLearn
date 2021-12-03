@@ -9,6 +9,10 @@ RUN apt install -y python3.8 gcc make python3-pip valgrind check pkg-config && a
 
 RUN ln -sf /usr/bin/python3.8 /usr/bin/python3
 
+# Needed for arm64 version
+RUN apt install -y python3.8-dev libjpeg9-dev
+RUN pip3 install Cython==0.29.24
+
 COPY requirements.txt /requirements.txt
 RUN pip3 install --no-cache-dir -r /requirements.txt
 
