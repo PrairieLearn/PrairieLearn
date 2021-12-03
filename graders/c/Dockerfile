@@ -4,13 +4,13 @@ LABEL maintainer="jonatan@cs.ubc.ca"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt update
-RUN apt install -y python3.8 gcc make python3-pip valgrind check pkg-config && apt clean
+RUN apt-get update
+RUN apt-get install -y python3.8 gcc make python3-pip valgrind check pkg-config && apt clean
 
 RUN ln -sf /usr/bin/python3.8 /usr/bin/python3
 
 # Needed for arm64 version
-RUN apt install -y python3.8-dev libjpeg9-dev
+RUN apt-get install -y python3.8-dev libjpeg9-dev
 RUN pip3 install Cython==0.29.24
 
 COPY requirements.txt /requirements.txt
