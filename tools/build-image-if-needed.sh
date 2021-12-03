@@ -16,4 +16,5 @@ if git diff --exit-code remotes/origin/master...HEAD -- ${BUILD_DIRECTORY}; then
 else
   echo "${BUILD_DIRECTORY} files modified; ${TAG_NAME} requires a rebuild"
   docker build ${BUILD_DIRECTORY} -t ${TAG_NAME}
+  docker buildx build --platform linux/arm64 ${BUILD_DIRECTORY} -t ${TAG_NAME}
 fi
