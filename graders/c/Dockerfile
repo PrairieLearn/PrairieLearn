@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM --platform=$BUILDPLATFORM ubuntu:18.04
 
 LABEL maintainer="jonatan@cs.ubc.ca"
 
