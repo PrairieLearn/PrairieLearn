@@ -4,7 +4,6 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const { processScrapPaperPdf } = require('../../lib/barcodeScanner');
-const config = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
 
 const error = require('../../prairielib/lib/error');
@@ -26,7 +25,7 @@ router.post('/', function (req, res, next) {
     }
 
     debug('update()');
-    var options = {
+    const options = {
       course_id: res.locals.course ? res.locals.course.id : null,
       type: 'loadFromDisk',
       description: 'Load data from local disk',
@@ -42,7 +41,7 @@ router.post('/', function (req, res, next) {
         last_in_sequence: true,
       };
 
-      serverJobs.createJob(jobOptions, function (err, job) {
+      serverJobs.createJob(jobOptions, (err, job) => {
         if (ERR(err, next)) return;
         debug('successfully created job', { job_sequence_id });
 
@@ -56,7 +55,10 @@ router.post('/', function (req, res, next) {
         })
         .catch((err) => {
           job.fail(
-            err.message
+            `
+            ${err.message}
+            ${err.stack}
+            `
           );
           if (ERR(err, next)) return;
         });
