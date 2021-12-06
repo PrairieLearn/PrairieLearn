@@ -1,9 +1,9 @@
 {
-    "uuid": "1e1a7e46-1511-49b8-8869-744276a309a0",
-    "title": "Autograder demo: Square function in C (Standard Output Override)",
+    "uuid": "b0793f85-be3b-45ad-b210-7c1c20fba420",
+    "title": "Autograder demo: Square function in C (Check Framework)",
     "topic": "Autograder",
     "tags": [
-        "jonatan", "demo", "autograder", "c"
+      "jonatan", "demo", "autograder", "c", "check"
     ],
     "type": "v3",
     "singleVariant": true,
