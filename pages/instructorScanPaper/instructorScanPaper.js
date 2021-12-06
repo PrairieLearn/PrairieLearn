@@ -35,7 +35,7 @@ router. post('/', function (req, res, next) {
   
       const jobOptions = {
         course_id: res.locals.course ? res.locals.course.id : null,
-        type: 'decode_pdf_papers',
+        type: 'decode_pdf_collection',
         description: 'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
         job_sequence_id: job_sequence_id,
         last_in_sequence: true,
@@ -49,8 +49,7 @@ router. post('/', function (req, res, next) {
         processScrapPaperPdf(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id, job)
         .then(() => {
           job.succeed();
-          res.locals.queued = true;
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       })
         .catch((err) => {
           job.fail(
@@ -61,6 +60,7 @@ router. post('/', function (req, res, next) {
           );
           if (ERR(err, next)) return;
         });
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
       });
     });
 
