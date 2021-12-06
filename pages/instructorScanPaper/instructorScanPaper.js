@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
-router.post('/', function (req, res, next) {
+router. post('/', function (req, res, next) {
   if (req.body.__action === 'scan_scrap_paper') {
     if (!req.file) {
       ERR(Error('Missing barcoded pdf collection file data'), next);
@@ -45,14 +45,13 @@ router.post('/', function (req, res, next) {
         if (ERR(err, next)) return;
         debug('successfully created job', { job_sequence_id });
 
-        res.locals.queued = true;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-
         // ACTUAL JOB STARTS
         processScrapPaperPdf(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id, job)
         .then(() => {
           job.succeed();
-        })
+          res.locals.queued = true;
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      })
         .catch((err) => {
           job.fail(
             `
