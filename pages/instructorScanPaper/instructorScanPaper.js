@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const { processScrapPaperPdf } = require('../../lib/barcodeScanner');
+const config = require('../../lib/config');
+const serverJobs = require('../../lib/server-jobs');
 
 const error = require('../../prairielib/lib/error');
 const ERR = require('async-stacktrace');
@@ -21,13 +25,44 @@ router.post('/', function (req, res, next) {
       return;
     }
 
-    processScrapPaperPdf(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id)
-      .then(() => {
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      })
-      .catch((err) => {
+    debug('update()');
+    var options = {
+      course_id: res.locals.course ? res.locals.course.id : null,
+      type: 'loadFromDisk',
+      description: 'Load data from local disk',
+    };
+    serverJobs.createJobSequence(options, function (err, job_sequence_id) {
+      if (ERR(err, next)) return;
+  
+      const jobOptions = {
+        course_id: res.locals.course ? res.locals.course.id : null,
+        type: 'decode_pdf_papers',
+        description: 'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
+        job_sequence_id: job_sequence_id,
+        last_in_sequence: true,
+      };
+
+      serverJobs.createJob(jobOptions, function (err, job) {
         if (ERR(err, next)) return;
+        debug('successfully created job', { job_sequence_id });
+
+        res.locals.queued = true;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+        // ACTUAL JOB STARTS
+        processScrapPaperPdf(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id, job)
+        .then(() => {
+          job.succeed();
+        })
+        .catch((err) => {
+          job.fail(
+            err.message
+          );
+          if (ERR(err, next)) return;
+        });
       });
+    });
+
     // TO DO:
 
     // detach process from request and display stdout in view

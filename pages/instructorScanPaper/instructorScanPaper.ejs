@@ -9,6 +9,11 @@
     <%- include('../partials/navbar', {navPage: 'news_item'}); %>
 
     <div id="content" class="container">
+        <div class="col-lg-9 col-sm-12 alert alert-warning" role="alert">
+            <% if (typeof queued !== 'undefined' && queued === true) { %>
+                <span>Queued PDF for decoding.</span>
+            <% } %>
+        </div>
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">Generate a PDF Document Containing Barcoded Scrap Paper</div>
             <div class="card-body">
@@ -24,14 +29,11 @@
                         <div class="col-lg-9 col-sm-12">
                             <button>Submit</button>
                         </div>
+
                     </div>
                 </form>
             </div>
-
-            <!-- <% if (typeof queued !== 'undefined' && queued === true) { %>
-                <span>Queued pdf for processing.</span>
-                <% } %> -->
-          </div>
+        </div>
 </body>
 
 </html>
