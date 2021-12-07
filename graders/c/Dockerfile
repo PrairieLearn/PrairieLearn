@@ -5,13 +5,15 @@ LABEL maintainer="jonatan@cs.ubc.ca"
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update
-RUN apt-get install -y python3.8 gcc make python3-pip valgrind check pkg-config python3-matplotlib && apt clean
+RUN apt-get install -y python3.8 gcc make python3-pip valgrind check pkg-config && apt clean
 
 RUN ln -sf /usr/bin/python3.8 /usr/bin/python3
 
+RUN pip3 install -U pip==21.3.1
+
 # Needed for arm64 version
-RUN apt-get install -y python3.8-dev libjpeg9-dev
-RUN pip3 install Cython==0.29.24
+# RUN apt-get install -y python3.8-dev libjpeg9-dev
+# RUN pip3 install Cython==0.29.24
 
 COPY requirements.txt /requirements.txt
 RUN pip3 install --no-cache-dir -r /requirements.txt
