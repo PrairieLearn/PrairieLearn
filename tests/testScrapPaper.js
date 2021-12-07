@@ -285,7 +285,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         const hm1BarcodeSubmissionPage = await (await fetch(hm1BarcodeSubmissionUrl)).text();
         assert.notInclude(
           hm1BarcodeSubmissionPage,
-          'class="submission-body-pdf-artifact-container"'
+          'class="submission-body-pdf-barcode-scan-container"'
         );
         // const $hm1BarodeSubmissionPage = cheerio.load(hm1BarcodeSubmissionPage);
       }
@@ -344,7 +344,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           'grade'
         );
         const $questionView = cheerio.load(await grade.text());
-        const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.replace(
+        const base64Pdf = $questionView('.submission-body-pdf-barcode-scan')[0].attribs.src.replace(
           base64HtmlPrefix,
           ''
         );
@@ -365,7 +365,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         'grade'
       );
       const $questionView = cheerio.load(await grade.text());
-      const base64Pdf = $questionView('.submission-body-pdf-artifact')[0].attribs.src.replace(
+      const base64Pdf = $questionView('.submission-body-pdf-barcode-scan')[0].attribs.src.replace(
         base64HtmlPrefix,
         ''
       );
