@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS assessment_question_role_permissions (
     group_role_id BIGINT NOT NULL,
     can_view BOOLEAN,
     can_submit BOOLEAN,
+    PRIMARY KEY (assessment_question_id, group_role_id),
     CONSTRAINT assessment_question_role_permissions_assessment_question_id_fkey
         FOREIGN KEY (assessment_question_id)
             REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE,

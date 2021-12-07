@@ -14,7 +14,10 @@ DECLARE
     group_role JSONB;
     group_role_id bigint;
     role_name JSONB;
+    valid_group_role record;
+    group_role_name text;
     role_name_can_view text;
+    role_name_can_submit text;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -373,26 +376,54 @@ BEGIN
 
                     -- TODO: for each role name in `can_view` and `can_submit`, insert appropriate entry in `assessment_question_role_permissions`
                     IF (valid_assessment.data->>'group_work')::boolean THEN
-                        IF (assessment_question->>'can_view') IS NOT NULL THEN
-                            FOR role_name_can_view IN SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view') LOOP
-                                -- Get group role ID
-                                SELECT group_roles.id INTO group_role_id FROM group_roles WHERE group_roles.role_name = role_name_can_view::text;
+                        -- Create temporary tables for roles that can view the question
+                        DROP TABLE IF EXISTS roles_can_view;
+                        CREATE TEMPORARY TABLE roles_can_view (
+                            assessment_question_id BIGINT,
+                            group_role_id BIGINT,
+                            can_view BOOLEAN
+                        ) ON COMMIT DROP;
 
-                                -- IF group_role_id IS NOT NULL THEN
-                                INSERT INTO assessment_question_role_permissions (
-                                    assessment_question_id,
-                                    group_role_id,
-                                    can_view,
-                                    can_submit
-                                ) VALUES (
-                                    new_assessment_id,
-                                    group_role_id,
-                                    TRUE,
-                                    TRUE
-                                );
-                                -- END IF;
-                            END LOOP;
-                        END IF;
+                        -- Create temporary tables for roles that can submit the question
+                        DROP TABLE IF EXISTS roles_can_submit;
+                        CREATE TEMPORARY TABLE roles_can_submit (
+                            assessment_question_id BIGINT,
+                            group_role_id BIGINT,
+                            can_submit BOOLEAN
+                        ) ON COMMIT DROP;
+
+                        -- Iterate over all group roles in assessment
+                        FOR valid_group_role IN (
+                            SELECT gr.id, gr.role_name 
+                            FROM group_roles as gr
+                            WHERE gr.assessment_id = new_assessment_id
+                        ) LOOP
+                            -- Insert entry for whether role can view question
+                            INSERT INTO roles_can_view (
+                                assessment_question_id,
+                                group_role_id,
+                                can_view
+                            ) VALUES (
+                                new_assessment_question_id,
+                                valid_group_role.id,
+                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view')))
+                            );
+                            
+                            -- Insert entry for whether role can submit question
+                            INSERT INTO roles_can_submit (
+                                assessment_question_id,
+                                group_role_id,
+                                can_submit
+                            ) VALUES (
+                                new_assessment_question_id,
+                                valid_group_role.id,
+                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
+                            );
+                        END LOOP;
+
+                        -- Consolidate all temp table results
+                        INSERT INTO assessment_question_role_permissions
+                        SELECT * FROM roles_can_view NATURAL LEFT JOIN roles_can_submit;
                     END IF;
                 END LOOP;
             END LOOP;
