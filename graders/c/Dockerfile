@@ -11,10 +11,6 @@ RUN ln -sf /usr/bin/python3.8 /usr/bin/python3
 
 RUN pip3 install -U pip==21.3.1
 
-# Needed for arm64 version
-# RUN apt-get install -y python3.8-dev libjpeg9-dev
-# RUN pip3 install Cython==0.29.24
-
 COPY requirements.txt /requirements.txt
 RUN pip3 install --no-cache-dir -r /requirements.txt
 
