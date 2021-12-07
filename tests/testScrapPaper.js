@@ -303,7 +303,7 @@ describe('Barcode generation, student submission, and scanning process', functio
       });
 
       it('view should display PDF generation form', () => {
-        const pdfFileSubmission = $scanPaper('#pdf-artifact');
+        const pdfFileSubmission = $scanPaper('#pdf-collection');
         assert.lengthOf(pdfFileSubmission, 1);
       });
     });
