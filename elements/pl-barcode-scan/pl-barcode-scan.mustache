@@ -1,9 +1,9 @@
 <script>
     $(() => {
-        $('#pl-artifact-scan-{{uuid}} [data-toggle="popover"]').popover({
+        $('#pl-barcode-scan-{{uuid}} [data-toggle="popover"]').popover({
             sanitize: false,
             container: 'body',
-            template: '<div class="popover pl-artifact-scan-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+            template: '<div class="popover pl-barcode-scan-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
 </script>
 <script>
@@ -54,7 +54,7 @@
 
 {{#question}}
     <!-- Will likely want to add button to add more barcodes that increment up-->
-    <div id="pl-artifact-scan-{{uuid}}" class="d-inline-block form-group">
+    <div id="pl-barcode-scan-{{uuid}}" class="d-inline-block form-group">
         <label for="_pl_artifact_barcode">Barcode</label>
         <input type="text" id="pl-artifact-barcode" style="text-transform:uppercase" name="_pl_artifact_barcode">
 

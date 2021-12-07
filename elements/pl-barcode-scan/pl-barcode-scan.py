@@ -56,7 +56,7 @@ def render(element_html, data):
             'barcode': data['submitted_answers'].get(BARCODE)
         }
 
-    with open('pl-artifact-scan.mustache', 'r', encoding='utf-8') as f:
+    with open('pl-barcode-scan.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
     return html
 

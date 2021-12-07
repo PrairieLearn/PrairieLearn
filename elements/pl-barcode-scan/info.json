@@ -1,0 +1,8 @@
+{
+    "controller": "pl-barcode-scan.py",
+    "dependencies": {
+        "elementStyles": [
+            "pl-barcode-scan.css"
+        ]
+    }
+}

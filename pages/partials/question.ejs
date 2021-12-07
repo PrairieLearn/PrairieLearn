@@ -3,7 +3,7 @@
   <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
   <% } %>
 
-  <!--It would be nice to find a better home for this, as we only want it loading when a pl-artifact-scan element is loaded-->
+  <!--It would be nice to find a better home for this, as we only want it loading when a pl-barcode-scan element is loaded-->
   <script src="<%= node_modules_asset_path('js-crc/build/crc.min.js') %>"></script>
 
   <% issues.forEach(function(issue, iIssue) { %>

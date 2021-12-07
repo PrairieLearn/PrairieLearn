@@ -195,7 +195,7 @@ describe('Barcode generation, student submission, and scanning process', functio
     });
   });
 
-  describe('Barcode submission on `pl-artifact-scan` element (before pdf scan upload)', () => {
+  describe('Barcode submission on `pl-barcode-scan` element (before pdf scan upload)', () => {
     const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
 
     before('create students', async () => {
@@ -224,7 +224,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           baseUrl,
           hm1AutomaticTestSuiteUrl
         );
-        // front-end validation doesn't work here, but we try backend validation from pl-artifact-scan.py
+        // front-end validation doesn't work here, but we try backend validation from pl-barcode-scan.py
         const save = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
           { _pl_artifact_barcode: 9999999 },
@@ -319,7 +319,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         // TO DO: integrate socket io reader to wait for operation to finish
         await new Promise(resolve => setTimeout(resolve, 20000));
       });
-      it('file ids should exist for valid barcodes submitted in earlier `pl-artifact-scan` submissions', async () => {
+      it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
         const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
         barcodes.forEach((barcode) => {
           assert.isDefined(barcode.file_id);
@@ -329,7 +329,7 @@ describe('Barcode generation, student submission, and scanning process', functio
     });
   });
 
-  describe('Barcode submission on `pl-artifact-scan` element (after pdf scan upload)', () => {
+  describe('Barcode submission on `pl-barcode-scan` element (after pdf scan upload)', () => {
     const base64HtmlPrefix = 'data:application/pdf;base64,';
     it('student barcode submissions should result in pdf on view after pdf scan', async () => {
       for (const student of mockStudents) {

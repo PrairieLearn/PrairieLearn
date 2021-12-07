@@ -1,8 +1,0 @@
-{
-    "controller": "pl-artifact-scan.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl-artifact-scan.css"
-        ]
-    }
-}
