@@ -9,7 +9,7 @@
 <script>
     $(() => {
         // NOTE: Dependency `js-crc` should be loaded in EJS parent view for client-side validation to work
-        const barcode = $('#pl-artifact-barcode');
+        const barcode = $('#pl-barcode-scan');
         const showBadge = (selector) => {
             $(selector).css('display', 'inline-block');
         };
@@ -18,24 +18,24 @@
         };
         const toggleInvalidBarcode = (barcode, base36, sha16) => {
             if (barcode.val().length == 0 || crc16(base36) === sha16) {
-                hideBadge('#pl-artifact-barcode-invalid');
+                hideBadge('#pl-barcode-scan-invalid');
             } else {
-                showBadge('#pl-artifact-barcode-invalid');
+                showBadge('#pl-barcode-scan-invalid');
             }
         };
         const toggleBarcodeRequired = (barcode) => {
-            const barcodeRequired = $('#pl-artifact-barcode-required');
+            const barcodeRequired = $('#pl-barcode-scan-required');
             if (barcodeRequired && barcode.val().length == 0) {
-                showBadge('#pl-artifact-barcode-required');
+                showBadge('#pl-barcode-scan-required');
             } else {
-                hideBadge('#pl-artifact-barcode-required');
+                hideBadge('#pl-barcode-scan-required');
             }
         };
         const toggleValidBarcode = (barcode, base36, sha16) => {
             if (crc16(base36) === sha16) {
-                showBadge('#pl-artifact-barcode-valid');
+                showBadge('#pl-barcode-scan-valid');
             } else {
-                hideBadge('#pl-artifact-barcode-valid');
+                hideBadge('#pl-barcode-scan-valid');
             }
         };
 
@@ -56,13 +56,13 @@
     <!-- Will likely want to add button to add more barcodes that increment up-->
     <div id="pl-barcode-scan-{{uuid}}" class="d-inline-block form-group">
         <label for="_pl_artifact_barcode">Barcode</label>
-        <input type="text" id="pl-artifact-barcode" style="text-transform:uppercase" name="_pl_artifact_barcode">
+        <input type="text" id="pl-barcode-scan" style="text-transform:uppercase" name="_pl_artifact_barcode">
 
-        <div class="pl-artifact-barcode-badge-container d-inline-block">
-            <span id="pl-artifact-barcode-invalid" class="badge text-danger" style="display: none;"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
-            <span id="pl-artifact-barcode-valid" class="badge text-success" style="display: none;"><i class="fa fa-check" aria-hidden="true"></i> Valid Barcode </span>
+        <div class="pl-barcode-scan-badge-container d-inline-block">
+            <span id="pl-barcode-scan-invalid" class="badge text-danger" style="display: none;"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
+            <span id="pl-barcode-scan-valid" class="badge text-success" style="display: none;"><i class="fa fa-check" aria-hidden="true"></i> Valid Barcode </span>
             {{#required}}
-                <span id="pl-artifact-barcode-required" class="badge text-info"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Barcode Required </span>
+                <span id="pl-barcode-scan-required" class="badge text-info"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Barcode Required </span>
             {{/required}}
         </div>
     </div>
