@@ -22,7 +22,7 @@ const helperServer = require('./helperServer');
 const jsCrc = require('js-crc');
 
 const testLabel = 'ANY TEST LABEL';
-const testNumPages = 3; // has to be reasonably small for pdf to be converted/decoded quickly in test
+const testNumPages = 2; // has to be reasonably small for pdf to be converted/decoded quickly in test
 
 /**
  * Set the active user within Prairie Learn's test environment.
@@ -128,7 +128,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
         assert.isDefined(pdfBuffer);
 
-        pdf = await readPdf(pdfBuffer);
+        pdf = await readPdf(pdfBuffer, 'ANY FILENAME.pdf');
         assert.isDefined(pdf);
 
         // IMAGE MAGICK IDENTIFY() METHOD DOES NOT WORK WITH 500 PAGE PDF.
@@ -319,6 +319,9 @@ describe('Barcode generation, student submission, and scanning process', functio
           body: getScanPaperPayload($scanPaper, pdfBuffer),
         });
         assert.isTrue(res.ok);
+        // HACK for following tests to pass as we decoupled the request so we don't know when operation finishes
+        // TO DO: integrate socket io reader to wait for operation to finish
+        await new Promise(resolve => setTimeout(resolve, 40000));
       });
       it('file ids should exist for valid barcodes submitted in earlier `pl-artifact-scan` submissions', async () => {
         const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
@@ -326,7 +329,6 @@ describe('Barcode generation, student submission, and scanning process', functio
           assert.isDefined(barcode.file_id);
         });
         assert.lengthOf(barcodes, testNumPages);
-        // cannot test if we hangup request and perform this operation disjointed from user
       });
     });
   });
@@ -351,7 +353,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           ''
         );
 
-        const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'));
+        const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'), 'ANY FILENAME.pdf');
         assert.equal(submissionPdf.numPages, 1);
       }
     });
@@ -371,7 +373,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         base64HtmlPrefix,
         ''
       );
-      const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'));
+      const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'), 'ANY FILENAME.pdf');
       assert.equal(submissionPdf.numPages, 1);
     });
   });
