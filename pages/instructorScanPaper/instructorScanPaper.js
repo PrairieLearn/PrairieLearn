@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
-router. post('/', function (req, res, next) {
+router.post('/', function (req, res, next) {
   if (req.body.__action === 'scan_scrap_paper') {
     if (!req.file) {
       ERR(Error('Missing barcoded pdf collection file data'), next);
@@ -32,11 +32,12 @@ router. post('/', function (req, res, next) {
     };
     serverJobs.createJobSequence(options, function (err, job_sequence_id) {
       if (ERR(err, next)) return;
-  
+
       const jobOptions = {
         course_id: res.locals.course ? res.locals.course.id : null,
         type: 'decode_pdf_collection',
-        description: 'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
+        description:
+          'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
         job_sequence_id: job_sequence_id,
         last_in_sequence: true,
       };
@@ -46,20 +47,25 @@ router. post('/', function (req, res, next) {
         debug('successfully created job', { job_sequence_id });
 
         // ACTUAL JOB STARTS
-        processScrapPaperPdf(req.file.buffer, req.file.originalname, res.locals.authn_user.user_id, job)
-        .then(() => {
-          job.succeed();
-          // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      })
-        .catch((err) => {
-          job.fail(
-            `
+        processScrapPaperPdf(
+          req.file.buffer,
+          req.file.originalname,
+          res.locals.authn_user.user_id,
+          job
+        )
+          .then(() => {
+            job.succeed();
+            // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          })
+          .catch((err) => {
+            job.fail(
+              `
             ${err.message}
             ${err.stack}
             `
-          );
-          if (ERR(err, next)) return;
-        });
+            );
+            if (ERR(err, next)) return;
+          });
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
       });
     });

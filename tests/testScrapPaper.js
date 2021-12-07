@@ -317,7 +317,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         assert.isTrue(res.ok);
         // HACK for following tests to pass as we decoupled the request so we don't know when operation finishes
         // TO DO: integrate socket io reader to wait for operation to finish
-        await new Promise(resolve => setTimeout(resolve, 20000));
+        await new Promise((resolve) => setTimeout(resolve, 20000));
       });
       it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
         const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
