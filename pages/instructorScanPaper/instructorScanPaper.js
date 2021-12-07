@@ -55,6 +55,8 @@ router.post('/', function (req, res, next) {
         )
           .then(() => {
             job.succeed();
+            console.log('succeeded');
+            // next();
             // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           })
           .catch((err) => {
@@ -64,6 +66,7 @@ router.post('/', function (req, res, next) {
             ${err.stack}
             `
             );
+            console.log('failed');
             if (ERR(err, next)) return;
           });
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
