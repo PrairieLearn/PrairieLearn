@@ -319,7 +319,6 @@ describe('Barcode generation, student submission, and scanning process', functio
         // TO DO: integrate socket io reader to wait for operation to finish
         await new Promise((resolve) => setTimeout(resolve, 18000));
         after('shut down testing server', helperServer.after);
-
       });
       //   it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
       //     const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
