@@ -10,7 +10,7 @@ const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const querystring = require('querystring');
-const FormData = require('form-data');
+// const FormData = require('form-data');
 
 const { saveOrGrade } = require('./helperClient');
 const helperServer = require('./helperServer');
