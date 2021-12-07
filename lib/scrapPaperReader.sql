@@ -10,7 +10,7 @@ FROM
     JOIN variants AS v ON (v.id = s.variant_id)
     LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)  -- LEFT JOIN HERE SO INSTRUCTOR CAN USE THIS FEATURE TOO
     LEFT JOIN files AS f ON (f.instance_question_id = iq.id)
-WHERE $match AND type = 'pdf_artifact_upload';
+WHERE $match AND type = 'pdf_barcode_scan';
 
 -- BLOCK update_barcodes
 DROP TABLE IF EXISTS barcode_file_ids_temp;
