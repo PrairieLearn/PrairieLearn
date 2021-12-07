@@ -157,7 +157,7 @@ module.exports = {
       [
         function (callback) {
           debug('after(): finish workers');
-          console.log('line 160')
+          console.log('line 160');
           workers.finish((err) => {
             if (ERR(err, callback)) return;
             callback(null);
@@ -165,7 +165,7 @@ module.exports = {
         },
         function (callback) {
           debug('after(): close freeform server');
-          console.log('line 168')
+          console.log('line 168');
           freeformServer.close(function (err) {
             if (ERR(err, callback)) return;
             callback(null);
@@ -173,13 +173,13 @@ module.exports = {
         },
         function (callback) {
           debug('after(): close load estimators');
-          console.log('line 176')
+          console.log('line 176');
           load.close();
           callback(null);
         },
         function (callback) {
           debug('after(): stop server');
-          console.log('line 182')
+          console.log('line 182');
           server.stopServer(function (err) {
             if (ERR(err, callback)) return;
             callback(null);
@@ -187,7 +187,7 @@ module.exports = {
         },
         function (callback) {
           debug('after(): stop cron');
-          console.log('line 190')
+          console.log('line 190');
           cron.stop(function (err) {
             if (ERR(err, callback)) return;
             callback(null);
@@ -195,7 +195,7 @@ module.exports = {
         },
         function (callback) {
           debug('after(): close socket server');
-          console.log('line 198')
+          console.log('line 198');
           socketServer.close(function (err) {
             if (ERR(err, callback)) return;
             callback(null);
@@ -203,7 +203,7 @@ module.exports = {
         },
         function (callback) {
           debug('after(): close cache');
-          console.log('line 206')
+          console.log('line 206');
           cache.close(function (err) {
             if (ERR(err, callback)) return;
             callback(null);
@@ -211,13 +211,13 @@ module.exports = {
         },
         function (callback) {
           debug('after(): close local cache');
-          console.log('line 214')
+          console.log('line 214');
           localCache.close();
           callback(null);
         },
         function (callback) {
           debug('after(): finish DB');
-          console.log('line 220')
+          console.log('line 220');
           helperDb.after.call(that, function (err) {
             if (ERR(err, callback)) return;
             callback(null);
