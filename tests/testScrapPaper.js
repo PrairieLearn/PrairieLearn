@@ -85,7 +85,10 @@ describe('Barcode generation, student submission, and scanning process', functio
   before('set up testing server', async () => {
     await util.promisify(helperServer.before().bind(this))();
   });
-  after('shut down testing server', helperServer.after);
+  after('shut down testing server', async () => {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await util.promisify(helperServer.after().bind(this))();
+  });
 
   describe('Generate scrap paper', function () {
     let $scrapPaper;
