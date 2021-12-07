@@ -1,1 +1,1 @@
-CREATE INDEX ON submissions((submitted_answer->>'_pl_artifact_barcode'));
+CREATE INDEX ON submissions((submitted_answer->>'_pdf_barcode_scan'));

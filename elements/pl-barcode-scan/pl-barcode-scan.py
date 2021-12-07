@@ -2,7 +2,7 @@ import prairielearn as pl
 import lxml.html
 import chevron
 
-BARCODE = '_pl_artifact_barcode'
+BARCODE = '_pdf_barcode_scan'
 BLANK_ANSWER = ''
 REQUIRED = 'required'
 REQUIRED_DEFAULT = True

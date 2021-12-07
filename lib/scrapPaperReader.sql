@@ -3,7 +3,7 @@ SELECT
     s.id AS submission_id,
     iq.assessment_instance_id AS assessment_instance_id,
     iq.id AS instance_question_id,
-    s.submitted_answer->>'_pl_artifact_barcode' AS barcode,
+    s.submitted_answer->>'_pdf_barcode_scan' AS barcode,
     f.id AS file_id
 FROM 
     submissions AS s
