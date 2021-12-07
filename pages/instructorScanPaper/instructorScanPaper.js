@@ -66,6 +66,12 @@ router.post('/', function (req, res, next) {
             ${err.stack}
             `
             );
+            console.log(
+              `
+              ${err.message}
+              ${err.stack}
+              `
+            );
             console.log('failed');
             if (ERR(err, next)) return;
           });
