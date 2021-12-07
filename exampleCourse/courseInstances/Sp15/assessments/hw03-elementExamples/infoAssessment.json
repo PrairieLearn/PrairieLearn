@@ -52,7 +52,7 @@
                 {"id": "element/figure",                   "points": 2, "maxPoints": 10},
                 {"id": "element/orderBlocks",              "points": 2, "maxPoints": 10},
                 {"id": "element/matching",                 "points": 2, "maxPoints": 10},
-                {"id": "element/artifactScan",             "points": 2, "maxPoints": 10},
+                {"id": "element/barcodeScan",              "points": 2, "maxPoints": 10},
                 {"id": "element/xssSafe",                  "points": 2}
             ]
         }
