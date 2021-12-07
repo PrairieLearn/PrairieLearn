@@ -12,6 +12,9 @@ DECLARE
     mismatched_uuid_tids TEXT;
     valid_assessment record;
     group_role JSONB;
+    group_role_id bigint;
+    role_name JSONB;
+    role_name_can_view text;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -191,7 +194,7 @@ BEGIN
                 student_authz_leave = EXCLUDED.student_authz_leave,
                 deleted_at = NULL;
 
-            -- TODO: Insert group roles
+            -- Insert all group roles
             FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
                 INSERT INTO group_roles (
                     role_name,
@@ -369,7 +372,28 @@ BEGIN
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
                     -- TODO: for each role name in `can_view` and `can_submit`, insert appropriate entry in `assessment_question_role_permissions`
-                    -- RAISE NOTICE 'can_view: %', (assessment_question->>'can_view');
+                    IF (valid_assessment.data->>'group_work')::boolean THEN
+                        IF (assessment_question->>'can_view') IS NOT NULL THEN
+                            FOR role_name_can_view IN SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view') LOOP
+                                -- Get group role ID
+                                SELECT group_roles.id INTO group_role_id FROM group_roles WHERE group_roles.role_name = role_name_can_view::text;
+
+                                -- IF group_role_id IS NOT NULL THEN
+                                INSERT INTO assessment_question_role_permissions (
+                                    assessment_question_id,
+                                    group_role_id,
+                                    can_view,
+                                    can_submit
+                                ) VALUES (
+                                    new_assessment_id,
+                                    group_role_id,
+                                    TRUE,
+                                    TRUE
+                                );
+                                -- END IF;
+                            END LOOP;
+                        END IF;
+                    END IF;
                 END LOOP;
             END LOOP;
             zone_index := zone_index + 1;
