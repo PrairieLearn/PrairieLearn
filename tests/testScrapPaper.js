@@ -67,7 +67,7 @@ const getScanPaperPayload = ($page, pdfBuffer) => {
 };
 
 describe('Barcode generation, student submission, and scanning process', function () {
-  this.timeout(60000);
+  this.timeout(70000);
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
   const scanPaperUrl = baseUrl + '/scan_paper';
