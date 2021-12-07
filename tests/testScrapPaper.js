@@ -10,7 +10,7 @@ const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const querystring = require('querystring');
-// const FormData = require('form-data');
+const FormData = require('form-data');
 
 const { saveOrGrade } = require('./helperClient');
 const helperServer = require('./helperServer');
@@ -58,13 +58,13 @@ const getScrapPaperPayload = ($page, numPages, pageLabel) => {
   };
 };
 
-// const getScanPaperPayload = ($page, pdfBuffer) => {
-//   const formData = new FormData();
-//   formData.append('file', pdfBuffer, 'ANY FILENAME.pdf');
-//   formData.append('__csrf_token', $page('form > div > input[name="__csrf_token"]').val());
-//   formData.append('__action', $page('form > div > input[name="__action"]').val());
-//   return formData;
-// };
+const getScanPaperPayload = ($page, pdfBuffer) => {
+  const formData = new FormData();
+  formData.append('file', pdfBuffer, 'ANY FILENAME.pdf');
+  formData.append('__csrf_token', $page('form > div > input[name="__csrf_token"]').val());
+  formData.append('__action', $page('form > div > input[name="__action"]').val());
+  return formData;
+};
 
 describe('Barcode generation, student submission, and scanning process', function () {
   this.timeout(75000);
@@ -308,17 +308,17 @@ describe('Barcode generation, student submission, and scanning process', functio
       });
     });
 
-    // describe('POST', function () {
-    //   it('should be able to post pdf form', async () => {
-    //     const res = await fetch(scanPaperUrl, {
-    //       method: 'POST',
-    //       body: getScanPaperPayload($scanPaper, pdfBuffer),
-    //     });
-    //     assert.isTrue(res.ok);
-    //     // HACK for following tests to pass as we decoupled the request so we don't know when operation finishes
-    //     // TO DO: integrate socket io reader to wait for operation to finish
-    //     await new Promise((resolve) => setTimeout(resolve, 18000));
-    //   });
+    describe('POST', function () {
+      it('should be able to post pdf form', async () => {
+        const res = await fetch(scanPaperUrl, {
+          method: 'POST',
+          body: getScanPaperPayload($scanPaper, pdfBuffer),
+        });
+        assert.isTrue(res.ok);
+        // HACK for following tests to pass as we decoupled the request so we don't know when operation finishes
+        // TO DO: integrate socket io reader to wait for operation to finish
+        // await new Promise((resolve) => setTimeout(resolve, 18000));
+      });
     //   it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
     //     const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
     //     barcodes.forEach((barcode) => {
@@ -326,7 +326,7 @@ describe('Barcode generation, student submission, and scanning process', functio
     //     });
     //     assert.lengthOf(barcodes, testNumPages);
     //   });
-    // });
+    });
   });
 
   // describe('Barcode submission on `pl-barcode-scan` element (after pdf scan upload)', () => {
