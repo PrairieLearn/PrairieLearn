@@ -58,13 +58,13 @@ const getScrapPaperPayload = ($page, numPages, pageLabel) => {
   };
 };
 
-const getScanPaperPayload = ($page, pdfBuffer) => {
-  const formData = new FormData();
-  formData.append('file', pdfBuffer, 'ANY FILENAME.pdf');
-  formData.append('__csrf_token', $page('form > div > input[name="__csrf_token"]').val());
-  formData.append('__action', $page('form > div > input[name="__action"]').val());
-  return formData;
-};
+// const getScanPaperPayload = ($page, pdfBuffer) => {
+//   const formData = new FormData();
+//   formData.append('file', pdfBuffer, 'ANY FILENAME.pdf');
+//   formData.append('__csrf_token', $page('form > div > input[name="__csrf_token"]').val());
+//   formData.append('__action', $page('form > div > input[name="__action"]').val());
+//   return formData;
+// };
 
 describe('Barcode generation, student submission, and scanning process', function () {
   this.timeout(75000);
