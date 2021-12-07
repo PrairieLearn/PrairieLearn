@@ -29,9 +29,11 @@ test-grader-host:
 test-nocoverage: start-support
 	@mocha --timeout=50000 tests/index.js 
 test-python:
-	@python3 question-servers/freeformPythonLib/prairielearn_test.py
-	@python3 elements/pl-order-blocks/dag_checker_test.py
-
+# `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
+# pytest uses to discover tests, but it isn't actually a test file itself. We
+# explicitly exclude it here.
+	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
+	
 lint: lint-js lint-python
 lint-js:
 	@eslint --ext js "**/*.js"

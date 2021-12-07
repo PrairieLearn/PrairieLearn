@@ -1214,6 +1214,7 @@ module.exports.initExpress = function () {
     [
       function (req, res, next) {
         res.locals.assessment_question_id = req.params.assessment_question_id;
+        res.locals.prior_instance_question_id = req.query.instance_question;
         next();
       },
       require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
