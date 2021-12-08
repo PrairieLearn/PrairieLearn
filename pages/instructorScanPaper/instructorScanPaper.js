@@ -59,16 +59,6 @@ router.post('/', function (req, res, next) {
         .catch((err) => {
           if (ERR(err, next)) return;
         });
-
-      // ACTUAL JOB STARTS
-      processScrapPaperPdf(
-        req.file.buffer,
-        req.file.originalname,
-        res.locals.authn_user.user_id,
-        job
-      ).catch((err) => {
-        if (ERR(err, next)) return;
-      });
     });
 
     // TO DO:
