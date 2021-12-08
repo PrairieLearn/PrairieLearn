@@ -27,9 +27,10 @@ router.post('/', function (req, res, next) {
     debug('update()');
     const options = {
       course_id: res.locals.course ? res.locals.course.id : null,
-      type: 'loadFromDisk',
+      type: 'load_from_disk',
       description: 'Load data from local disk',
     };
+    
     serverJobs.createJobSequence(options, function (err, job_sequence_id) {
       if (ERR(err, next)) return;
 
@@ -45,40 +46,39 @@ router.post('/', function (req, res, next) {
       serverJobs.createJob(jobOptions, (err, job) => {
         if (ERR(err, next)) return;
         debug('successfully created job', { job_sequence_id });
+        job.succeed();
 
-        // ACTUAL JOB STARTS
-        processScrapPaperPdf(
-          req.file.buffer,
-          req.file.originalname,
-          res.locals.authn_user.user_id,
-          job
-        )
-          .then(() => {
-            try {
-              job.succeed();
-            } catch (err) {
-              console.log('try catch', err);
-            }
-            console.log('succeeded');
-            // next();
-            // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          })
-          .catch((err) => {
-            job.fail(
-              `
-            ${err.message}
-            ${err.stack}
-            `
-            );
-            console.log(
-              `
-              ${err.message}
-              ${err.stack}
-              `
-            );
-            console.log('failed');
-            if (ERR(err, next)) return;
-          });
+        // // ACTUAL JOB STARTS
+        // processScrapPaperPdf(
+        //   req.file.buffer,
+        //   req.file.originalname,
+        //   res.locals.authn_user.user_id,
+        //   job
+        // )
+        //   .then(() => {
+        //     try {
+        //       job.succeed();
+        //     } catch (err) {
+        //       console.log('try catch', err);
+        //     }
+        //     console.log('succeeded');
+        //   })
+        //   .catch((err) => {
+        //     job.fail(
+        //       `
+        //     ${err.message}
+        //     ${err.stack}
+        //     `
+        //     );
+        //     console.log(
+        //       `
+        //       ${err.message}
+        //       ${err.stack}
+        //       `
+        //     );
+        //     console.log('failed');
+        //     if (ERR(err, next)) return;
+        //   });
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
       });
     });
