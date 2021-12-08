@@ -8,6 +8,8 @@ const pageLimit = 1000;
 const charLimit = 45;
 
 router.get('/', (req, res) => {
+  res.locals['pageLimit'] = pageLimit;
+  res.locals['charLimit'] = charLimit;
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
