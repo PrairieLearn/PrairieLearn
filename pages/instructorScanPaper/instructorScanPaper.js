@@ -43,34 +43,31 @@ router.post('/', function (req, res, next) {
         last_in_sequence: false,
       };
 
-      serverJobs.createJob(jobOptions, (err, job) => {
-        if (ERR(err, next)) return;
-        debug('successfully created job', { job_sequence_id });
+      serverJobs
+        .createJobAsync(jobOptions)
+        .then((job) => {
+          debug('successfully created job', { job_sequence_id });
 
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-
-        // ACTUAL JOB STARTS
-        processScrapPaperPdf(
-          req.file.buffer,
-          req.file.originalname,
-          res.locals.authn_user.user_id,
-          job
-        ).catch((err) => {
-          job.fail(
-            `
-            ${err.message}
-            ${err.stack}
-            `
+          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+          return processScrapPaperPdf(
+            req.file.buffer,
+            req.file.originalname,
+            res.locals.authn_user.user_id,
+            job
           );
-          console.log(
-            `
-              ${err.message}
-              ${err.stack}
-              `
-          );
-          console.log('failed');
+        })
+        .catch((err) => {
           if (ERR(err, next)) return;
         });
+
+      // ACTUAL JOB STARTS
+      processScrapPaperPdf(
+        req.file.buffer,
+        req.file.originalname,
+        res.locals.authn_user.user_id,
+        job
+      ).catch((err) => {
+        if (ERR(err, next)) return;
       });
     });
 
