@@ -10,22 +10,23 @@
 
     <div id="content" class="container">
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Generate a PDF Document Containing Barcoded Scrap Paper</div>
+            <div class="card-header bg-primary text-white">Scan a PDF Collection of Barcoded Scrap Paper Documents</div>
+
             <div class="card-body">
+                <span>Each page of the PDF collection that you are uploading should contain a barcode. The PDF should not be greater than 25MB. High-resolution, but compressed images, are recommended for each page of the PDF upload.</span>
+            </div>
+            <div class="card-body">
+
                 <form method="POST" name="scan-scrap-paper" method="POST" enctype="multipart/form-data">
-                    <div class="col-lg-9 col-sm-12">
                         <input type="hidden" name="__action" value="scan_scrap_paper">
                         <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                         
-                        <div class="col-lg-9 col-sm-12">
                         <label for="pdf-collection">Choose PDF file</label>
                         <input id="pdf-collection" name="file" type="file" accept="application/pdf">
-                        </div>
-                        <div class="col-lg-9 col-sm-12">
-                            <button>Submit</button>
-                        </div>
+                        <button>Submit</button>
                     </div>
                 </form>
+            </div>
             </div>
         </div>
 </body>
