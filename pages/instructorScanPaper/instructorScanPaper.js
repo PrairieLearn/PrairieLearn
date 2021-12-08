@@ -24,15 +24,15 @@ router.post('/', function (req, res, next) {
       return;
     }
 
-    
     const options = {
       course_id: res.locals.course ? res.locals.course.id : null,
       type: 'decoding_pdf_barcoded_collection',
       description: 'Load data from local disk',
     };
-    let jobSequenceId = null
+    let jobSequenceId = null;
 
-    serverJobs.createJobSequenceAsync(options)
+    serverJobs
+      .createJobSequenceAsync(options)
       .then((jsId) => {
         jobSequenceId = jsId;
 
