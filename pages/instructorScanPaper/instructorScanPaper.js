@@ -24,42 +24,43 @@ router.post('/', function (req, res, next) {
       return;
     }
 
-    debug('update()');
+    
     const options = {
       course_id: res.locals.course ? res.locals.course.id : null,
-      type: 'load_from_disk',
+      type: 'decoding_pdf_barcoded_collection',
       description: 'Load data from local disk',
     };
+    let jobSequenceId = null
 
-    serverJobs.createJobSequence(options, function (err, job_sequence_id) {
-      if (ERR(err, next)) return;
+    serverJobs.createJobSequenceAsync(options)
+      .then((jsId) => {
+        jobSequenceId = jsId;
 
-      const jobOptions = {
-        course_id: res.locals.course ? res.locals.course.id : null,
-        type: 'decode_pdf_collection',
-        description:
-          'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
-        job_sequence_id: job_sequence_id,
-        last_in_sequence: false,
-      };
+        const jobOptions = {
+          course_id: res.locals.course ? res.locals.course.id : null,
+          type: 'decode_pdf_collection',
+          description:
+            'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
+          job_sequence_id: jobSequenceId,
+          last_in_sequence: false,
+        };
 
-      serverJobs
-        .createJobAsync(jobOptions)
-        .then((job) => {
-          debug('successfully created job', { job_sequence_id });
+        return serverJobs.createJobAsync(jobOptions);
+      })
+      .then((job) => {
+        debug('successfully created job', { jobSequenceId });
 
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-          return processScrapPaperPdf(
-            req.file.buffer,
-            req.file.originalname,
-            res.locals.authn_user.user_id,
-            job
-          );
-        })
-        .catch((err) => {
-          if (ERR(err, next)) return;
-        });
-    });
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+        return processScrapPaperPdf(
+          req.file.buffer,
+          req.file.originalname,
+          res.locals.authn_user.user_id,
+          job
+        );
+      })
+      .catch((err) => {
+        if (ERR(err, next)) return;
+      });
 
     // TO DO:
 
