@@ -30,7 +30,7 @@ router.post('/', function (req, res, next) {
       type: 'load_from_disk',
       description: 'Load data from local disk',
     };
-    
+
     serverJobs.createJobSequence(options, function (err, job_sequence_id) {
       if (ERR(err, next)) return;
 
