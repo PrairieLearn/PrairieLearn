@@ -131,11 +131,7 @@ module.exports = {
 
   stop(callback) {
     debug(`stop()`);
-    console.log('job timeouts', jobTimeouts);
-
     _.forEach(jobTimeouts, (timeout, interval) => {
-      console.log('timeout', timeout);
-      console.log('interval', interval);
       if (!_.isInteger(timeout)) {
         // current pending timeout, which can be canceled
         debug(`stop(): clearing timeout for ${interval}`);
@@ -143,7 +139,7 @@ module.exports = {
         delete jobTimeouts[interval];
       } else if (timeout === 0) {
         // job is currently running, request that it stop
-        console.log(`stop(): requesting stop for ${interval}`);
+        debug(`stop(): requesting stop for ${interval}`);
         jobTimeouts[interval] = -1;
       }
     });
