@@ -54,7 +54,11 @@ router.post('/', function (req, res, next) {
           job
         )
           .then(() => {
-            job.succeed();
+            try {
+              job.succeed();
+            } catch (err) {
+              console.log('try catch', err);
+            }
             console.log('succeeded');
             // next();
             // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
