@@ -189,6 +189,8 @@ module.exports = {
           debug('after(): stop cron');
           console.log('line 190');
           cron.stop(function (err) {
+            console.log(err);
+            console.log('made it to the cron');
             if (ERR(err, callback)) return;
             callback(null);
           });
