@@ -55,23 +55,22 @@ router.post('/', function (req, res, next) {
           req.file.originalname,
           res.locals.authn_user.user_id,
           job
-        )
-          .catch((err) => {
-            job.fail(
-              `
+        ).catch((err) => {
+          job.fail(
+            `
             ${err.message}
             ${err.stack}
             `
-            );
-            console.log(
-              `
+          );
+          console.log(
+            `
               ${err.message}
               ${err.stack}
               `
-            );
-            console.log('failed');
-            if (ERR(err, next)) return;
-          });
+          );
+          console.log('failed');
+          if (ERR(err, next)) return;
+        });
       });
     });
 

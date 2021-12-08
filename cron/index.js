@@ -143,7 +143,7 @@ module.exports = {
         delete jobTimeouts[interval];
       } else if (timeout === 0) {
         // job is currently running, request that it stop
-        debug(`stop(): requesting stop for ${interval}`);
+        console.log(`stop(): requesting stop for ${interval}`);
         jobTimeouts[interval] = -1;
       }
     });
