@@ -131,7 +131,11 @@ module.exports = {
 
   stop(callback) {
     debug(`stop()`);
+    console.log('job timeouts', jobTimeouts);
+
     _.forEach(jobTimeouts, (timeout, interval) => {
+      console.log('timeout', timeout);
+      console.log('interval', interval);
       if (!_.isInteger(timeout)) {
         // current pending timeout, which can be canceled
         debug(`stop(): clearing timeout for ${interval}`);
