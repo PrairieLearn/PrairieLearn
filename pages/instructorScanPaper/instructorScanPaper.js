@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-// const { processScrapPaperPdf } = require('../../lib/scrapPaperReader');
+const { processScrapPaperPdf } = require('../../lib/scrapPaperReader');
 const serverJobs = require('../../lib/server-jobs');
 
 const error = require('../../prairielib/lib/error');
@@ -40,46 +40,38 @@ router.post('/', function (req, res, next) {
         description:
           'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
         job_sequence_id: job_sequence_id,
-        last_in_sequence: true,
+        last_in_sequence: false,
       };
 
       serverJobs.createJob(jobOptions, (err, job) => {
         if (ERR(err, next)) return;
         debug('successfully created job', { job_sequence_id });
-        job.succeed();
 
-        // // ACTUAL JOB STARTS
-        // processScrapPaperPdf(
-        //   req.file.buffer,
-        //   req.file.originalname,
-        //   res.locals.authn_user.user_id,
-        //   job
-        // )
-        //   .then(() => {
-        //     try {
-        //       job.succeed();
-        //     } catch (err) {
-        //       console.log('try catch', err);
-        //     }
-        //     console.log('succeeded');
-        //   })
-        //   .catch((err) => {
-        //     job.fail(
-        //       `
-        //     ${err.message}
-        //     ${err.stack}
-        //     `
-        //     );
-        //     console.log(
-        //       `
-        //       ${err.message}
-        //       ${err.stack}
-        //       `
-        //     );
-        //     console.log('failed');
-        //     if (ERR(err, next)) return;
-        //   });
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+
+        // ACTUAL JOB STARTS
+        processScrapPaperPdf(
+          req.file.buffer,
+          req.file.originalname,
+          res.locals.authn_user.user_id,
+          job
+        )
+          .catch((err) => {
+            job.fail(
+              `
+            ${err.message}
+            ${err.stack}
+            `
+            );
+            console.log(
+              `
+              ${err.message}
+              ${err.stack}
+              `
+            );
+            console.log('failed');
+            if (ERR(err, next)) return;
+          });
       });
     });
 
