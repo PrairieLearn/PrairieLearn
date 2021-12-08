@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const { processScrapPaperPdf } = require('../../lib/scrapPaperReader');
+// const { processScrapPaperPdf } = require('../../lib/scrapPaperReader');
 const serverJobs = require('../../lib/server-jobs');
 
 const error = require('../../prairielib/lib/error');
