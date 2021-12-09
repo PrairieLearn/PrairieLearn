@@ -64,7 +64,7 @@ if [[ "${arch}" != "aarch64" ]]; then # R is not yet supported on ARM64.
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
 
     echo "installing R packages..."
-    echo "set SKIP_R_PACKAGS=yes to skip this step"
+    echo "set SKIP_R_PACKAGES=yes to skip this step"
     if [[ "${SKIP_R_PACKAGES}" != "yes" ]] ; then
         Rscript /r-requirements.R
     fi
