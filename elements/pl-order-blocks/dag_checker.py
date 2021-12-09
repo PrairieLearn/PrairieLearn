@@ -131,7 +131,6 @@ def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]])
             if mvc_size < len(subgraph) - 1:
                 break
 
-    incorrect_blocks = distractors + mvc_size
-    correct_blocks = len(order) - incorrect_blocks
-    edit_distance = incorrect_blocks + (len(depends_graph.keys()) - correct_blocks)
-    return edit_distance
+    deletions_needed = distractors + mvc_size
+    insertions_needed = len(depends_graph.keys()) - (len(order) - deletions_needed)
+    return deletions_needed + insertions_needed
