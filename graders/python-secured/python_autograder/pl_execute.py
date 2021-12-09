@@ -3,12 +3,18 @@ import os
 import os.path as path
 import json
 import numpy as np
+from numpy.core.fromnumeric import var
 import numpy.random
 import random
 import io
 import pl_helpers
 from types import ModuleType, FunctionType
 from copy import deepcopy
+import shlex
+import subprocess
+import prairielearn as pl
+import pickle
+
 
 class UserCodeFailed(Exception):
     def __init__(self, err, *args):
@@ -52,6 +58,7 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     base_dir = os.environ.get("MERGE_DIR")
     job_dir = os.environ.get("JOB_DIR")
     filenames_dir = os.environ.get("FILENAMES_DIR")
+    student_codefile_contents = ''
 
     with open(path.join(filenames_dir, 'data.json'), encoding='utf-8') as f:
         data = json.load(f)
@@ -109,19 +116,20 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     # Make copies of variables that go to the user so we do not clobber them
     ref_code = {}
     for i, j in setup_code.items():
-        if (not (i=='__builtins__' or isinstance(j, ModuleType))) and \
-          (i in names_for_user):
+        if (not (i == '__builtins__' or isinstance(j, ModuleType))) and \
+                (i in names_for_user):
             ref_code[i] = j
     ref_code = deepcopy(ref_code)
 
     # Add any other variables to reference namespace and do not copy
-    for i,j in setup_code.items():
-        if not (i=='__builtins__' or isinstance(j, ModuleType) or
+    for i, j in setup_code.items():
+        if not (i == '__builtins__' or isinstance(j, ModuleType) or
                 i in names_for_user):
             ref_code[i] = j
+
     set_random_seed(seed)
-    exec(str_ref, ref_code)
     # ref_code contains the correct answers
+    exec(str_ref, ref_code)
 
     if include_plt:
         for i, j in ref_code.items():
@@ -129,31 +137,87 @@ def execute_code(fname_ref, fname_student, include_plt=False,
                 if j.__dict__['__name__'] == "matplotlib.pyplot":
                     j.close('all')
 
-    # make only the variables listed in names_for_user available to student
+    # pickle the variables listed in names_for_user and save to a file
+    variables_to_pickle = {}
+    for i, j in setup_code.items():
+        if (not (i == '__builtins__' or isinstance(j, ModuleType))) and (i in names_for_user):
+            variables_to_pickle[i] = j
+
+    pickle_file = path.join(filenames_dir, 'user_input_variables.pkl')
+    with open(pickle_file, 'wb') as f:
+        pickle.dump(variables_to_pickle, f)
+
+    # load the pickled names_for_user variables
+    student_codefile_contents += f'''
+# Setup code
+import pickle
+pickleFile = open('{pickle_file}', 'rb')
+setup_variables = pickle.load(pickleFile)
+pickleFile.close()
+
+for key, value in setup_variables.items():
+    globals()[key] = value
+'''
+    student_codefile_contents += '\n# Repeated Setup code\n' + repeated_setup_name + '\n'
+
+    exec(repeated_setup_name, setup_code)
+
+    student_codefile_contents += '\n# Student Code\n' + str_student
+
     names_from_user = []
     for variable in data['params']['names_from_user']:
         names_from_user.append(variable['name'])
 
-    exec(repeated_setup_name, setup_code)
+    # Add JSON serialization and output
+    json_code = [f'"{name}": pl.to_json({name})' for name in names_from_user]
+    serialization_code = f'''
+\n# Serialization Code
+import sys, json
+sys.path.append("/grade/run/")
+import prairielearn as pl
+import os
+json_contents = {{ {','.join(json_code)} }}
+student_output_file = '{path.join(filenames_dir, 'student_output.json')}'
+if os.path.exists(student_output_file):
+    os.remove(student_output_file)
+with open(student_output_file, 'w', encoding='utf-8') as f:
+    json.dump(json_contents, f)
+'''
 
-    student_code = {}
-    for i,j in setup_code.items():
-        if (not (i=='__builtins__' or isinstance(j, ModuleType))) and (i in names_for_user):
-            student_code[i] = j
-    student_code = deepcopy(student_code)
-
-    ## Execute student code
-    previous_stdout = sys.stdout
-    if console_output_fname:
-        sys.stdout = open(console_output_fname, 'w', encoding='utf-8')
+    student_codefile_contents += serialization_code
 
     set_random_seed(seed)
 
+    # write student code
+    unprivileged_user = 'ag'
+    student_code_path = path.join(filenames_dir, 'student_code.py')
+
+    print('-- start --\n' + student_codefile_contents + '\n -- end --')
+    with open(student_code_path, 'w', encoding='utf-8') as f:
+        f.write(student_codefile_contents)
+    command = ['su', unprivileged_user, '-s', '/bin/bash', '-c',
+               shlex.join(['python3', student_code_path])]
+
+    # execute student code
+    timeout = 60
+    err = None
     try:
-        exec(str_student, student_code)
-        err = None
+        proc = subprocess.Popen(command,
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+
+        # Capture and print output
+        output = proc.communicate(timeout=timeout)[0]
+        print(output)
     except Exception:
         err = sys.exc_info()
+
+    # Read serialized output and parse student_result
+    student_output_file = path.join(filenames_dir, 'student_output.json')
+    with open(student_output_file) as f:
+        raw_contents = json.load(f)
+        student_result = {key: pl.from_json(value) for key, value in raw_contents.items()}
 
     # Now that user code has been run, replace deleted files in case we are to run the tests again.
     with open(path.join(filenames_dir, 'data.json'), 'w', encoding='utf-8') as f:
@@ -173,25 +237,19 @@ def execute_code(fname_ref, fname_student, include_plt=False,
     if err is not None:
         raise UserCodeFailed(err)
 
-    # Redirect stdout back to normal
-    sys.stdout.flush()
-    sys.stdout = previous_stdout
-
     ref_result = {}
-    for i,j in ref_code.items():
+    for i, j in ref_code.items():
         if not (i.startswith('_') or isinstance(j, ModuleType)):
             ref_result[i] = j
 
-    student_result = {}
-    for name in names_from_user:
-        student_result[name] = student_code.get(name, None)
-
     plot_value = None
+
     if include_plt:
-        for key in list(student_code):
-            if isinstance(student_code[key], ModuleType):
-                if student_code[key].__dict__['__name__'] == "matplotlib.pyplot":
-                    plot_value = student_code[key]
+        # TODO
+        # for key in list(student_code):
+        #     if isinstance(student_code[key], ModuleType):
+        #         if student_code[key].__dict__['__name__'] == "matplotlib.pyplot":
+        #             plot_value = student_code[key]
         if not plot_value:
             import matplotlib
             matplotlib.use('Agg')

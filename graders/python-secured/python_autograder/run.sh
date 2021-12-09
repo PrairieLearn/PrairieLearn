@@ -67,7 +67,7 @@ echo -n "$SECRET_NAME" > $FILENAMES_DIR/output-fname.txt
 chmod +r $FILENAMES_DIR/output-fname.txt
 
 # run the autograder as a limited user called ag
-su -c "python3 $MERGE_DIR/pl_main.py" ag
+python3 $MERGE_DIR/pl_main.py
 
 # remove any "fake" results.json files if they exist
 rm -f $MERGE_DIR/results.json
