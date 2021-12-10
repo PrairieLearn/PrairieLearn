@@ -19,8 +19,7 @@ import collections
 
 
 # TODO: This type definition should not yet be seen as authoritative, it may
-# need to be modified, and possibly split into multiple type definitions, as
-# we expand type checking to cover more of the element code.
+# need to be modified as we expand type checking to cover more of the element code.
 # The fields below containing 'Any' in the types are ones which are used
 # in different ways by different question elements. Ideally we would have
 # QuestionData be a generic type so that question elements could declare types
