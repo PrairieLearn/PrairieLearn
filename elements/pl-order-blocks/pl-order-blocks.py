@@ -316,13 +316,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     answer_raw_name = answer_name + '-input'
-    student_answer = None
-
-    if answer_raw_name in data['raw_submitted_answers']:
-        student_answer = data['raw_submitted_answers'][answer_raw_name]
-
-    if student_answer is None:
-        student_answer = '[]'
+    student_answer = data['raw_submitted_answers'].get(answer_raw_name, '[]')
 
     student_answer = json.loads(student_answer)
     if student_answer is None or student_answer == []:
