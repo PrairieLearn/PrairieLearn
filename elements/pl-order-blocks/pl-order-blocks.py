@@ -236,7 +236,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         student_submission = ''
         score = None
         feedback = None
-        print(data)
         if answer_name in data['submitted_answers']:
             student_submission = [{
                 'inner_html': attempt['inner_html'],
