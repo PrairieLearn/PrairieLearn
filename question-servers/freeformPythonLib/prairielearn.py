@@ -23,9 +23,9 @@ import collections
 # we expand type checking to cover more of the element code.
 # The fields below containing 'Any' in the types are ones which are used
 # in different ways by different question elements. Ideally we would have
-# QuestionData be a generic type so that question elements coudl declare types
-# for their answer data, etc. but TypedDicts with Generics are not yet
-# supported: https://bugs.python.org/issue44863
+# QuestionData be a generic type so that question elements could declare types
+# for their answer data, feedback data, etc., but TypedDicts with Generics are
+# not yet supported: https://bugs.python.org/issue44863
 class QuestionData(TypedDict):
     format_errors: Dict[str, str]
     score: float
