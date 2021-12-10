@@ -1,4 +1,4 @@
-from typing import Dict, Any, TypedDict, Optional
+from typing import Dict, Any
 import prairielearn as pl
 import lxml.html
 from lxml import etree

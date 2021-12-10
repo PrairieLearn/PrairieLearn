@@ -1,4 +1,4 @@
-from typing import Dict, Any, Generic, TypedDict, Literal, TypeVar
+from typing import Dict, Any, TypedDict, Literal
 import lxml.html
 import html
 import to_precision
