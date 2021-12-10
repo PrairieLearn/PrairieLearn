@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, TypedDict, Optional
 import prairielearn as pl
 import lxml.html
 from lxml import etree
@@ -236,7 +236,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         student_submission = ''
         score = None
         feedback = None
-
+        print(data)
         if answer_name in data['submitted_answers']:
             student_submission = [{
                 'inner_html': attempt['inner_html'],

@@ -1,4 +1,4 @@
-from typing import Dict, Any, TypedDict, Literal
+from typing import Dict, Any, Generic, TypedDict, Literal, TypeVar
 import lxml.html
 import html
 import to_precision
@@ -18,25 +18,28 @@ import os
 import collections
 
 
-# TODO in the future it would be nice to have a way to use the `Final` type
-# around some of these values for the different functions so that the type
-# checker knows which functions are allowed to modify which values.
-# This may require subclassing QuestionData, and constructing the `data`
-# dictionary through class constructors instead of the usual was
+# TODO: This type definition should not yet be seen as authoritative, it may
+# need to be modified, and possibly split into multiple type definitions, as
+# we expand type checking to cover more of the element code.
+# The fields below containing 'Any' in the types are ones which are used
+# in different ways by different question elements. Ideally we would have
+# QuestionData be a generic type so that question elements coudl declare types
+# for their answer data, etc. but TypedDicts with Generics are not yet
+# supported: https://bugs.python.org/issue44863
 class QuestionData(TypedDict):
-    params: Dict[str, Any]
-    correct_answers: Dict[str, Any]
-    submitted_answers: Dict[str, Any]
-    format_errors: Dict[str, Any]
-    partial_scores: Dict[str, Any]
+    format_errors: Dict[str, str]
     score: float
-    feedback: Dict[str, Any]
+    feedback: Dict[str, str]
     variant_seed: int
-    options: Dict[str, Any]
-    raw_submitted_answers: Dict[str, Any]
+    options: Dict[str, str]
     editable: bool
     panel: Literal['question', 'submission', 'answer']
+    partial_scores: Dict[str, Dict[str, Any]]
     extensions: Dict[str, Any]
+    params: Dict[str, list[Any]]
+    correct_answers: Dict[str, list[Any]]
+    raw_submitted_answers: Dict[str, str]
+    submitted_answers: Dict[str, list[Any]]
 
 
 class ElementTestData(QuestionData):
