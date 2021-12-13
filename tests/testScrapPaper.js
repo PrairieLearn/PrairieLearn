@@ -178,7 +178,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         });
       });
       it('barcodes should ALL be scannable by barcode reader', async () => {
-        decodedJpegs = await decodeBarcodes(pdfBuffer, 'Any original filename.pdf', console);
+        decodedJpegs = await decodeBarcodes(pdfBuffer, `${config.imageProcessingDir}/test`, 'Any original filename.pdf', console);
         assert.isDefined(decodedJpegs);
         decodedJpegs.forEach((jpeg) => {
           assert.isNotNull(jpeg.barcode);
