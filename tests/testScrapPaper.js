@@ -315,63 +315,69 @@ describe('Barcode generation, student submission, and scanning process', functio
           body: getScanPaperPayload($scanPaper, pdfBuffer),
         });
         assert.isTrue(res.ok);
+      });
+      it('should be able to post pdf form and have it queued without Quagga crashing', async () => {
+        const res = await fetch(scanPaperUrl, {
+          method: 'POST',
+          body: getScanPaperPayload($scanPaper, pdfBuffer),
+        });
+        assert.isTrue(res.ok);
         // HACK for following tests to pass as we decoupled the request so we don't know when operation finishes
         // TO DO: integrate socket io reader to wait for operation to finish
-        await new Promise((resolve) => setTimeout(resolve, 18000));
-        // after('shut down testing server', helperServer.after);
+        await new Promise((resolve) => setTimeout(resolve, 28000));
       });
-      //   it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
-      //     const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
-      //     barcodes.forEach((barcode) => {
-      //       assert.isDefined(barcode.file_id);
-      //     });
-      //     assert.lengthOf(barcodes, testNumPages);
-      //   });
+      it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
+        const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
+        barcodes.forEach((barcode) => {
+          assert.isDefined(barcode.file_id);
+        });
+        assert.lengthOf(barcodes, testNumPages);
+      });
     });
   });
 
-  // describe('Barcode submission on `pl-barcode-scan` element (after pdf scan upload)', () => {
-  //   const base64HtmlPrefix = 'data:application/pdf;base64,';
-  //   it('student barcode submissions should result in pdf on view after pdf scan', async () => {
-  //     for (const student of mockStudents) {
-  //       setUser(student);
-  //       const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
-  //         baseUrl,
-  //         hm1AutomaticTestSuiteUrl
-  //       );
-  //       const grade = await saveOrGrade(
-  //         hm1BarcodeSubmissionUrl,
-  //         { _pdf_barcode_scan: validBarcodes[0] },
-  //         'grade'
-  //       );
-  //       const $questionView = cheerio.load(await grade.text());
-  //       const base64Pdf = $questionView('.submission-body-pdf-barcode-scan')[0].attribs.src.replace(
-  //         base64HtmlPrefix,
-  //         ''
-  //       );
+  describe('Barcode submission on `pl-barcode-scan` element (after pdf scan upload)', () => {
+    const base64HtmlPrefix = 'data:application/pdf;base64,';
+    it('student barcode submissions should result in pdf on view after pdf scan', async () => {
+      for (const student of mockStudents) {
+        setUser(student);
+        const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
+          baseUrl,
+          hm1AutomaticTestSuiteUrl
+        );
+        const grade = await saveOrGrade(
+          hm1BarcodeSubmissionUrl,
+          { _pdf_barcode_scan: validBarcodes[0] },
+          'grade'
+        );
+        const $questionView = cheerio.load(await grade.text());
+        const base64Pdf = $questionView('.submission-body-pdf-barcode-scan')[0].attribs.src.replace(
+          base64HtmlPrefix,
+          ''
+        );
 
-  //       const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'), 'ANY FILENAME.pdf');
-  //       assert.equal(submissionPdf.numPages, 1);
-  //     }
-  //   });
-  //   it('instructor barcode submissions should result in pdf on view after pdf scan', async () => {
-  //     setUser(defaultUser);
-  //     const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
-  //       baseUrl,
-  //       hm1AutomaticTestSuiteUrl
-  //     );
-  //     const grade = await saveOrGrade(
-  //       hm1BarcodeSubmissionUrl,
-  //       { _pdf_barcode_scan: validBarcodes[0] },
-  //       'grade'
-  //     );
-  //     const $questionView = cheerio.load(await grade.text());
-  //     const base64Pdf = $questionView('.submission-body-pdf-barcode-scan')[0].attribs.src.replace(
-  //       base64HtmlPrefix,
-  //       ''
-  //     );
-  //     const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'), 'ANY FILENAME.pdf');
-  //     assert.equal(submissionPdf.numPages, 1);
-  //   });
-  // });
+        const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'), 'ANY FILENAME.pdf');
+        assert.equal(submissionPdf.numPages, 1);
+      }
+    });
+    it('instructor barcode submissions should result in pdf on view after pdf scan', async () => {
+      setUser(defaultUser);
+      const hm1BarcodeSubmissionUrl = await getBarcodeSubmissionUrl(
+        baseUrl,
+        hm1AutomaticTestSuiteUrl
+      );
+      const grade = await saveOrGrade(
+        hm1BarcodeSubmissionUrl,
+        { _pdf_barcode_scan: validBarcodes[0] },
+        'grade'
+      );
+      const $questionView = cheerio.load(await grade.text());
+      const base64Pdf = $questionView('.submission-body-pdf-barcode-scan')[0].attribs.src.replace(
+        base64HtmlPrefix,
+        ''
+      );
+      const submissionPdf = await readPdf(Buffer.from(base64Pdf, 'base64'), 'ANY FILENAME.pdf');
+      assert.equal(submissionPdf.numPages, 1);
+    });
+  });
 });
