@@ -13,11 +13,11 @@ before('drop the template database, just in case', helperDb.dropTemplate);
 after('drop the template database', helperDb.dropTemplate);
 
 require('./testDatabase');
-// require('./testAdministrator');
-// require('./testAdministratorQueries');
-// require('./testFileEditor');
-// require('./testCourseEditor');
-// require('./testGetHomepage');
+require('./testAdministrator');
+require('./testAdministratorQueries');
+require('./testFileEditor');
+require('./testCourseEditor');
+require('./testGetHomepage');
 require('./testExampleCourseQuestions');
 require('./testTestCourseQuestions');
 require('./testInstructorQuestions');
