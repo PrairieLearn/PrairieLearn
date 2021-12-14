@@ -1,7 +1,6 @@
 const fetch = require('node-fetch');
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
-const querystring = require('querystring');
 
 module.exports = {};
 
@@ -59,7 +58,7 @@ module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileDa
       '__action=' + action,
       '__csrf_token=' + token,
       fileData ? uploadSuffix + '=' + encodeURIComponent(JSON.stringify(fileData)) : '',
-      querystring.encode(payload),
+      new URLSearchParams(payload).toString(payload),
     ].join('&'),
   });
 };
