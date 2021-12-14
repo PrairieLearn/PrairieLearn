@@ -274,7 +274,6 @@ describe('Barcode generation, student submission, and scanning process', functio
           'grade'
         );
 
-        // NEED HELP HERE: This will have to fail until I can figure out what the proper behaviour for an element that does not count as a grade is. How do we handl
         // This will have to fail until I can figure out what the proper behaviour for an element that does not count as a grade is. How do we handle
         // cases where an element is validated as correct on the back-end but does not have a score.
         // assert.include(await grade.text(), 'Submitted answer\n          \n          4\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-danger">correct: 0%');
@@ -292,6 +291,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           hm1BarcodeSubmissionPage,
           'class="submission-body-pdf-barcode-scan-container"'
         );
+        // const $hm1BarodeSubmissionPage = cheerio.load(hm1BarcodeSubmissionPage);
       }
     });
   });
