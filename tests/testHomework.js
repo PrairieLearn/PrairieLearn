@@ -3,7 +3,6 @@ const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
-
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
@@ -27,6 +26,7 @@ const questionsArray = [
   { qid: 'partialCredit5_v2_partial', type: 'Calculation', maxPoints: 12 },
   { qid: 'partialCredit6_no_partial', type: 'Freeform', maxPoints: 8 },
   { qid: 'brokenGrading', type: 'Freeform', maxPoints: 4 },
+  { qid: 'barcodeSubmission', type: 'Freeform', maxPoints: 0 },
 ];
 
 const questions = _.keyBy(questionsArray, 'qid');
