@@ -76,7 +76,7 @@ describe('Barcode generation, student submission, and scanning process', functio
   ];
 
   // created in `Generate scrap paper` but also used in `Barcode submission ..` and `Scan scrap paper` test blocks in end-to-end test
-  let barcodeRows;
+  const validBarcodes = [];
   let pdfBuffer;
   let hm1AutomaticTestSuiteUrl;
   let defaultUser;
@@ -88,6 +88,7 @@ describe('Barcode generation, student submission, and scanning process', functio
 
   describe('Generate scrap paper', function () {
     let $scrapPaper;
+    let barcodeRows;
 
     describe('GET', function () {
       before('fetch page', async () => {
@@ -192,6 +193,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           const { base36, sha16 } = getBarcodeSegments(jpeg.barcode);
           const recomputedSha16 = jsCrc.crc16(base36);
           assert.equal(recomputedSha16, sha16);
+          validBarcodes.push(jpeg.barcode);
         });
       });
     });
@@ -257,21 +259,23 @@ describe('Barcode generation, student submission, and scanning process', functio
         );
         const save = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
-          { _pdf_barcode_scan: barcodeRows[0].barcode },
+          { _pdf_barcode_scan: validBarcodes[0] },
           'save'
         );
         assert.include(
           await save.text(),
           'Submitted answer\n          \n          3\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>'
         );
+        // const grade = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pdf_barcode_scan: validBarcodes[1]}, 'grade');
 
         await saveOrGrade(
           hm1BarcodeSubmissionUrl,
-          { _pdf_barcode_scan: barcodeRows[1].barcode },
+          { _pdf_barcode_scan: validBarcodes[1] },
           'grade'
         );
 
-        // NEED HELP HERE: This will have to fail until I can figure out what the proper behaviour for an element that does not count as a grade is. How do we handle
+        // NEED HELP HERE: This will have to fail until I can figure out what the proper behaviour for an element that does not count as a grade is. How do we handl
+        // This will have to fail until I can figure out what the proper behaviour for an element that does not count as a grade is. How do we handle
         // cases where an element is validated as correct on the back-end but does not have a score.
         // assert.include(await grade.text(), 'Submitted answer\n          \n          4\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-danger">correct: 0%');
       }
@@ -324,7 +328,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         assert.isTrue(res.ok);
         // HACK for following tests to pass as we decoupled the request so we don't know when operation finishes
         // TO DO: integrate socket io reader to wait for operation to finish before proceeding
-        await new Promise((resolve) => setTimeout(resolve, 30000));
+        await new Promise((resolve) => setTimeout(resolve, 28000));
       });
       it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
         const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
@@ -347,7 +351,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         );
         const grade = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
-          { _pdf_barcode_scan: barcodeRows[0].barcode },
+          { _pdf_barcode_scan: validBarcodes[0] },
           'grade'
         );
         const $questionView = cheerio.load(await grade.text());
@@ -368,7 +372,7 @@ describe('Barcode generation, student submission, and scanning process', functio
       );
       const grade = await saveOrGrade(
         hm1BarcodeSubmissionUrl,
-        { _pdf_barcode_scan: barcodeRows[0].barcode },
+        { _pdf_barcode_scan: validBarcodes[0] },
         'grade'
       );
       const $questionView = cheerio.load(await grade.text());
