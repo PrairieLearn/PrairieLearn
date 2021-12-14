@@ -32,13 +32,3 @@ FROM
 WHERE
     b.barcode = bf.barcode
 RETURNING b.barcode;
-
--- BLOCK get_submission_iq_and_ai
-SELECT 
-    iq.assessment_instance_id AS assessment_instance_id,
-    iq.id AS instance_question_id
-FROM
-    submissions AS s
-    JOIN variants AS v ON (v.id = s.variant_id)
-    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-WHERE s.id = $submissionId;
