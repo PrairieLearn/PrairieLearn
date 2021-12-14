@@ -1,0 +1,11 @@
+columns
+    barcode: text not null
+    file_id: bigint
+    id: bigint not null default nextval('barcodes_id_seq'::regclass)
+
+indexes
+    barcodes_pkey: PRIMARY KEY (id) USING btree (id)
+    barcodes_barcode_key: UNIQUE (barcode) USING btree (barcode)
+
+foreign-key constraints
+    barcodes_file_id_fkey: FOREIGN KEY (file_id) REFERENCES files(id)
