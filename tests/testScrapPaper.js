@@ -76,7 +76,7 @@ describe('Barcode generation, student submission, and scanning process', functio
   ];
 
   // created in `Generate scrap paper` but also used in `Barcode submission ..` and `Scan scrap paper` test blocks in end-to-end test
-  const validBarcodes = [];
+  let barcodeRows;
   let pdfBuffer;
   let hm1AutomaticTestSuiteUrl;
   let defaultUser;
@@ -88,7 +88,6 @@ describe('Barcode generation, student submission, and scanning process', functio
 
   describe('Generate scrap paper', function () {
     let $scrapPaper;
-    let barcodeRows;
 
     describe('GET', function () {
       before('fetch page', async () => {
@@ -193,7 +192,6 @@ describe('Barcode generation, student submission, and scanning process', functio
           const { base36, sha16 } = getBarcodeSegments(jpeg.barcode);
           const recomputedSha16 = jsCrc.crc16(base36);
           assert.equal(recomputedSha16, sha16);
-          validBarcodes.push(jpeg.barcode);
         });
       });
     });
@@ -266,7 +264,6 @@ describe('Barcode generation, student submission, and scanning process', functio
           await save.text(),
           'Submitted answer\n          \n          3\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-info">saved, not graded</span>'
         );
-        // const grade = await saveOrGrade(hm1BarcodeSubmissionUrl, {_pdf_barcode_scan: validBarcodes[1]}, 'grade');
 
         await saveOrGrade(
           hm1BarcodeSubmissionUrl,
@@ -274,7 +271,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           'grade'
         );
 
-        // This will have to fail until I can figure out what the proper behaviour for an element that does not count as a grade is. How do we handle
+        // NEED HELP HERE: This will have to fail until I can figure out what the proper behaviour for an element that does not count as a grade is. How do we handle
         // cases where an element is validated as correct on the back-end but does not have a score.
         // assert.include(await grade.text(), 'Submitted answer\n          \n          4\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-danger">correct: 0%');
       }
@@ -291,7 +288,6 @@ describe('Barcode generation, student submission, and scanning process', functio
           hm1BarcodeSubmissionPage,
           'class="submission-body-pdf-barcode-scan-container"'
         );
-        // const $hm1BarodeSubmissionPage = cheerio.load(hm1BarcodeSubmissionPage);
       }
     });
   });
