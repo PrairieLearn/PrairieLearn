@@ -31,6 +31,39 @@ module.exports.fetchCheerio = async (url, options = {}) => {
 };
 
 /**
+ * Acts as 'save' or 'save and grade' button click on student instance question page.
+ * @param {string} instanceQuestionUrl the instance question url the student is answering the question on.
+ * @param {object} payload json data structure type formed on the basis of the question
+ * @param {string} 'save' or 'grade' enums
+ * @param {array<object>}  (optional) ie. [{name: 'fib.py', 'contents': Buffer.from(fibFileContents).toString('base64')}]
+ */
+module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileData) => {
+  const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
+  const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
+  const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
+  const uploadSuffix = $instanceQuestionPage('input[name^=_file_upload]').attr('name');
+
+  // handles case where __variant_id should exist inside postData on only some instance questions submissions
+  if (payload && payload.postData) {
+    payload.postData = JSON.parse(payload.postData);
+    payload.postData.variant.id = variantId;
+    payload.postData = JSON.stringify(payload.postData);
+  }
+
+  return fetch(instanceQuestionUrl, {
+    method: 'POST',
+    headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+    body: [
+      '__variant_id=' + variantId,
+      '__action=' + action,
+      '__csrf_token=' + token,
+      fileData ? uploadSuffix + '=' + encodeURIComponent(JSON.stringify(fileData)) : '',
+      new URLSearchParams(payload).toString(payload),
+    ].join('&'),
+  });
+};
+
+/**
  * Utility function that extracts a CSRF token from a `__csrf_token` input
  * that is a descendent of the `parentSelector`, if one is specified.
  * The token will also be persisted to `context.__csrf_token`.
