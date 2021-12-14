@@ -124,6 +124,18 @@ module.exports.initExpress = function () {
     round: 0,
   });
   app.post(
+    '/pl/scan_paper',
+    // Exception for PDF uploads, which may be quite a bit bigger than other file uploads
+    multer({
+      storage: multer.memoryStorage(),
+      limits: {
+        fieldSize: 2.5e7, // exception: 25MB, as we anticipate a large PDF file
+        fileSize: 2.5e7,
+        parts: config.fileUploadMaxParts,
+      },
+    }).single('file')
+  );
+  app.post(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/uploads',
     upload.single('file')
   );
@@ -483,6 +495,9 @@ module.exports.initExpress = function () {
     },
     require('./pages/news_item/news_item.js'),
   ]);
+
+  app.use('/pl/scrap_paper', [require('./pages/instructorScrapPaper/instructorScrapPaper.js')]);
+  // app.use('/pl/scan_paper', [require('./pages/instructorScanPaper/instructorScanPaper.js')]);
   app.use('/pl/request_course', [
     function (req, res, next) {
       res.locals.navPage = 'request_course';
