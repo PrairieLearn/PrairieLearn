@@ -9,7 +9,7 @@ const util = require('util');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-const FormData = require('form-data');
+// const FormData = require('form-data');
 
 const { saveOrGrade } = require('./helperClient');
 const helperServer = require('./helperServer');
@@ -258,7 +258,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         );
         const save = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
-          { _pdf_barcode_scan: barcodeRows[0] },
+          { _pdf_barcode_scan: barcodeRows[1].barcode },
           'save'
         );
         assert.include(
@@ -269,7 +269,7 @@ describe('Barcode generation, student submission, and scanning process', functio
 
         await saveOrGrade(
           hm1BarcodeSubmissionUrl,
-          { _pdf_barcode_scan: barcodeRows[1] },
+          { _pdf_barcode_scan: barcodeRows[1].barcode },
           'grade'
         );
 
