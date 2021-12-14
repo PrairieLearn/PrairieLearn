@@ -9,7 +9,6 @@ const util = require('util');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-const querystring = require('querystring');
 const FormData = require('form-data');
 
 const { saveOrGrade } = require('./helperClient');
@@ -115,7 +114,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         const res = await fetch(scrapPaperUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-          body: querystring.encode(payload),
+          body: new URLSearchParams(payload).toString(),
         });
         assert.equal(res.status, 200);
         const pdfBlob = await res.blob();
@@ -328,7 +327,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         });
         assert.isTrue(res.ok);
         // HACK for following tests to pass as we decoupled the request so we don't know when operation finishes
-        // TO DO: integrate socket io reader to wait for operation to finish
+        // TO DO: integrate socket io reader to wait for operation to finish before proceeding
         await new Promise((resolve) => setTimeout(resolve, 28000));
       });
       it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
