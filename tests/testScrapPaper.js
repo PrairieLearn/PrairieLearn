@@ -257,7 +257,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         );
         const save = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
-          { _pdf_barcode_scan: validBarcodes[0] },
+          { _pdf_barcode_scan: barcodeRows[0].barcode },
           'save'
         );
         assert.include(
@@ -267,7 +267,7 @@ describe('Barcode generation, student submission, and scanning process', functio
 
         await saveOrGrade(
           hm1BarcodeSubmissionUrl,
-          { _pdf_barcode_scan: validBarcodes[1] },
+          { _pdf_barcode_scan: barcodeRows[1].barcode },
           'grade'
         );
 
@@ -347,7 +347,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         );
         const grade = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
-          { _pdf_barcode_scan: validBarcodes[0] },
+          { _pdf_barcode_scan: barcodeRows[0].barcode },
           'grade'
         );
         const $questionView = cheerio.load(await grade.text());
@@ -368,7 +368,7 @@ describe('Barcode generation, student submission, and scanning process', functio
       );
       const grade = await saveOrGrade(
         hm1BarcodeSubmissionUrl,
-        { _pdf_barcode_scan: validBarcodes[0] },
+        { _pdf_barcode_scan: barcodeRows[0].barcode },
         'grade'
       );
       const $questionView = cheerio.load(await grade.text());
