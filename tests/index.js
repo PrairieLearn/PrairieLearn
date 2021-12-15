@@ -31,6 +31,7 @@ require('./testShowClosedAssessmentScore');
 require('./testActiveAccessRestriction');
 require('./testGradeRate');
 require('./testBonusPoints');
+require('./testScrapPaper');
 // somewhere below
 require('./testAccess');
 require('./testAccessAsStudent');
@@ -47,7 +48,6 @@ require('./testSproc-check_assessment_access');
 require('./testSproc-users_select_or_insert');
 require('./testJsonLoad');
 require('./testSchemas');
-require('./testScrapPaper');
 require('./testMarkdown');
 require('./testRedirects');
 require('./testIssues');
