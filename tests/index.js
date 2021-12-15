@@ -35,7 +35,7 @@ require('./testBonusPoints');
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testCourseElementExtension');
-// require('./testApi');
+require('./testApi');
 require('./testLti');
 // require('./testCron');
 require('./testNewsItems');
