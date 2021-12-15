@@ -36,7 +36,7 @@ require('./testAccess');
 require('./testAccessAsStudent');
 require('./testCourseElementExtension');
 // require('./testApi');
-// require('./testLti');
+require('./testLti');
 // require('./testCron');
 // require('./testNewsItems');
 // require('./testZoneGradingHomework');
