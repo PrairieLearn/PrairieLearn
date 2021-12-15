@@ -31,7 +31,7 @@ require('./testShowClosedAssessmentScore');
 require('./testActiveAccessRestriction');
 require('./testGradeRate');
 require('./testBonusPoints');
-require('./testScrapPaper'); // must go before testCron; view commits before and after #541987f
+require('./testScrapPaper'); // must go before testCron.js or breakage only in CI/CD pipeline; view commits before and after #541987f
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testCourseElementExtension');
