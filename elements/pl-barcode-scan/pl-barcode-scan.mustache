@@ -73,12 +73,12 @@
 
         {{^parse-error}}
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
-            <input type="text" id="barcode" disabled name="_pdf_barcode_scan" value="{{barcode}}">
+            <input type="text" id="barcode" style="text-transform:uppercase" disabled name="_pdf_barcode_scan" value="{{barcode}}">
         {{/parse-error}}
 
         {{#parse-error}}
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
-            <input type="text" disabled value="{{barcode}}">
+            <input type="text" disabled style="text-transform:uppercase" value="{{barcode}}">
             <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
         {{/parse-error}}
     </div>
