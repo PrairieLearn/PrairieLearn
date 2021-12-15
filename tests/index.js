@@ -38,8 +38,8 @@ require('./testCourseElementExtension');
 // require('./testApi');
 require('./testLti');
 // require('./testCron');
-// require('./testNewsItems');
-// require('./testZoneGradingHomework');
+require('./testNewsItems');
+require('./testZoneGradingHomework');
 // somewhere above
 require('./testZoneGradingExam');
 require('./testSproc-check_course_instance_access');
