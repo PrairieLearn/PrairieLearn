@@ -37,7 +37,7 @@ require('./testAccessAsStudent');
 require('./testCourseElementExtension');
 require('./testApi');
 require('./testLti');
-// require('./testCron');
+require('./testCron');
 require('./testNewsItems');
 require('./testZoneGradingHomework');
 // somewhere above
