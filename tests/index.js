@@ -32,9 +32,9 @@ require('./testActiveAccessRestriction');
 require('./testGradeRate');
 require('./testBonusPoints');
 // somewhere below
-// require('./testAccess');
-// require('./testAccessAsStudent');
-// require('./testCourseElementExtension');
+require('./testAccess');
+require('./testAccessAsStudent');
+require('./testCourseElementExtension');
 // require('./testApi');
 // require('./testLti');
 // require('./testCron');
