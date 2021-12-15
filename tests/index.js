@@ -31,8 +31,7 @@ require('./testShowClosedAssessmentScore');
 require('./testActiveAccessRestriction');
 require('./testGradeRate');
 require('./testBonusPoints');
-require('./testScrapPaper');
-// somewhere below
+require('./testScrapPaper'); // must go before testCron; view commits before and after #541987f
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testCourseElementExtension');
@@ -41,7 +40,6 @@ require('./testLti');
 require('./testCron');
 require('./testNewsItems');
 require('./testZoneGradingHomework');
-// somewhere above
 require('./testZoneGradingExam');
 require('./testSproc-check_course_instance_access');
 require('./testSproc-check_assessment_access');
