@@ -64,12 +64,8 @@ router.post('/', function (req, res, next) {
 
     // TO DO:
 
-    // detach process from request and display stdout in view
-
-    //implement makeshift queue, as https://github.com/serratus/quaggaJS/issues/135 issues when two decoding jobs running simaltaneously
-
-    // discuss how we want to handle multiple submissions ie.
-    // 1. automatically add new element with javascript if option enabled,
+    // discuss how/if we want to handle multiple barcodes on same submission ie.
+    // 1. we could use javascript to automatically add additional barcode submission element if an option is included in ,
     // 2. store multiple submission referneces in barcodes table (probably need a barcode_submissions table)
     // 3. decide if we need to do this now or can do it later with a migration to keep backwards compatibility.
   } else {
