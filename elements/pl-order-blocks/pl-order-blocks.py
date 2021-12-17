@@ -61,7 +61,7 @@ def prepare(element_html, data):
     if grading_method != 'dag' and partial_credit_type != 'default':
         raise Exception('You may only specify different partial credit options in the DAG grading mode.')
     elif grading_method == 'dag':
-        partial_credit_type = 'none' if partial_credit_type == 'default' else partial_credit_type
+        partial_credit_type = 'lcs' if partial_credit_type == 'default' else partial_credit_type
 
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
@@ -379,7 +379,7 @@ def grade(element_html, data):
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'none')
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'lcs')
 
     true_answer_list = data['correct_answers'][answer_name]
 
