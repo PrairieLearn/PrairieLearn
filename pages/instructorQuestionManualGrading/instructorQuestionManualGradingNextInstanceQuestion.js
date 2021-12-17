@@ -12,6 +12,7 @@ router.get('/', (req, res, next) => {
   const params = {
     assessment_question_id: res.locals.assessment_question_id,
     assessment_id: res.locals.assessment.id,
+    prior_instance_question_id: res.locals.prior_instance_question_id,
   };
 
   sqlDb.queryZeroOrOneRow(sql.get_next_ungraded_instance_question, params, function (err, result) {
