@@ -701,16 +701,15 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                     raise ValueError(f'The numerator could not be interpreted as a decimal{ or_complex }number.')
                 if a_parse_r is None or not np.isfinite(a_parse_r):
                     raise ValueError(f'The denominator could not be interpreted as a decimal{ or_complex }number.')
-                if a_parse_r == 0:
-                    raise ValueError('The denominator is zero.')
 
-                a_frac = a_parse_l / a_parse_r
+                with np.errstate(divide='raise'):
+                    a_frac = a_parse_l / a_parse_r
                 if not np.isfinite(a_frac):
                     raise ValueError('The submitted answer is not a finite number.')
 
                 value = a_frac
                 data['submitted_answers'] = to_json(value)
-            except ZeroDivisionError:
+            except FloatingPointError: # Caused by numpy division
                 data['format_errors'] = 'Your expression resulted in a division by zero.'
             except Exception as error:
                 data['format_errors'] = f'Invalid format: {str(error)}'
