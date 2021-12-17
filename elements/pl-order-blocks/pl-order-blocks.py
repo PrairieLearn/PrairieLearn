@@ -127,7 +127,7 @@ def prepare(element_html, data):
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
             if partial_credit_type != 'none':
-                raise Exception('Partial credit not yet supported in questions using block groups')
+                raise Exception('Partial credit not yet supported in questions using block groups.')
 
             group_counter += 1
             for grouped_tag in html_tags:
@@ -483,7 +483,11 @@ def test(element_html, data):
     elif data['test_type'] == 'incorrect':
         answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
         answer.pop(0)
-        score = float(len(answer)) / (len(answer) + 1) if grading_mode == 'unordered' else 0
+        score = 0
+        if grading_mode == 'unordered':
+            score = float(len(answer)) / (len(answer) + 1)
+        elif grading_mode == 'dag':
+            score = float(len(answer) - 1) / (len(answer) + 1)
         first_wrong = 0 if grading_mode == 'dag' else -1
         feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1) if grading_mode == 'dag' and feedback_type == 'first-wrong' else ''
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)

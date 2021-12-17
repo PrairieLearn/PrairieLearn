@@ -47,10 +47,11 @@ def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]
 
 
 def dag_to_nx(depends_graph: Mapping[str, list[str]]) -> nx.DiGraph:
-    """Convert input graph format from HTML into NetworkX object to utilize their algorithms."""
+    """Convert input graph format into NetworkX object to utilize their algorithms."""
     graph = nx.DiGraph()
     for node in depends_graph:
         for node2 in depends_graph[node]:
+            # the depends graph lists the *incoming* edges of a node
             graph.add_edge(node2, node)
     return graph
 
@@ -106,29 +107,31 @@ def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]])
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
 
     seen = set()
-    subgraph = nx.DiGraph()
+    problematic_subgraph = nx.DiGraph()
     distractors = 0
     for node in order:
+        # in the parse function of pl-order-blocks, lines that aren't in any
+        # correct answer are denoted by None in the answer list
         if node is None:
             distractors += 1
             continue
 
         for node2 in seen:
             if trans_clos.has_edge(node, node2):
-                subgraph.add_edge(node, node2)
+                problematic_subgraph.add_edge(node, node2)
 
         seen.add(node)
 
-    if len(subgraph) == 0:
+    if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
     else:
-        mvc_size = len(subgraph) - 1
-        for i in range(1, len(subgraph) - 1):
-            for subset in itertools.combinations(subgraph, i):
-                if is_vertex_cover(subgraph, subset):
+        mvc_size = len(problematic_subgraph) - 1
+        for i in range(1, len(problematic_subgraph) - 1):
+            for subset in itertools.combinations(problematic_subgraph, i):
+                if is_vertex_cover(problematic_subgraph, subset):
                     mvc_size = len(subset)
                     break
-            if mvc_size < len(subgraph) - 1:
+            if mvc_size < len(problematic_subgraph) - 1:
                 break
 
     deletions_needed = distractors + mvc_size
