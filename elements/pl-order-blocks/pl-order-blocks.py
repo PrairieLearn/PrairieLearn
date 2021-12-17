@@ -71,9 +71,7 @@ def prepare(element_html, data):
        (grading_method == 'dag' and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
 
-    if (grading_method == 'ranking' and partial_credit_type != 'first-wrong') or \
-       (grading_method == 'dag' and partial_credit_type not in ['none', 'lcs']) or \
-       (grading_method not in ['dag', 'ranking'] and partial_credit_type != 'none'):
+    if grading_method == 'dag' and partial_credit_type not in ['none', 'lcs']:
         raise Exception('partial credit type "' + partial_credit_type + '" is not available with the "' + grading_method + '" grading-method.')
 
     correct_answers = []
@@ -463,6 +461,7 @@ def test(element_html, data):
     answer_name_field = answer_name + '-input'
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'lcs')
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -484,10 +483,8 @@ def test(element_html, data):
         answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
         answer.pop(0)
         score = 0
-        if grading_mode == 'unordered':
-            score = float(len(answer)) / (len(answer) + 1)
-        elif grading_mode == 'dag':
-            score = float(len(answer) - 1) / (len(answer) + 1)
+        if grading_mode == 'unordered' or (grading_mode == 'dag' and partial_credit_type == 'lcs'):
+            score = round(float(len(answer)) / (len(answer) + 1), 2)
         first_wrong = 0 if grading_mode == 'dag' else -1
         feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1) if grading_mode == 'dag' and feedback_type == 'first-wrong' else ''
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
