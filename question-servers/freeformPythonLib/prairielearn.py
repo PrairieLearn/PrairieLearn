@@ -709,7 +709,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
 
                 value = a_frac
                 data['submitted_answers'] = to_json(value)
-            except FloatingPointError: # Caused by numpy division
+            except FloatingPointError:  # Caused by numpy division
                 data['format_errors'] = 'Your expression resulted in a division by zero.'
             except Exception as error:
                 data['format_errors'] = f'Invalid format: {str(error)}'
