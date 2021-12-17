@@ -40,9 +40,9 @@ problem_2_expected = [
 
 
 def test_grade_dag():
-    for submission, expected in zip(problem_1_submissions, problem_1_expected):
+    for submission, expected, expected_ed in zip(problem_1_submissions, problem_1_expected, problem_1_expected_ed):
         assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
-        assert lcs_partial_credit(submission, problem_1_dag) == problem_1_expected_ed
+        assert lcs_partial_credit(submission, problem_1_dag) == expected_ed
 
     for submission, expected in zip(problem_2_submissions, problem_2_expected):
         assert grade_dag(submission, problem_2_dag, problem_2_groups) == expected
