@@ -701,6 +701,8 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                     raise ValueError(f'The numerator could not be interpreted as a decimal{ or_complex }number.')
                 if a_parse_r is None or not np.isfinite(a_parse_r):
                     raise ValueError(f'The denominator could not be interpreted as a decimal{ or_complex }number.')
+                if a_parse_r == 0:
+                    raise ValueError(f'The denominator is zero.')
 
                 a_frac = a_parse_l / a_parse_r
                 if not np.isfinite(a_frac):
