@@ -176,7 +176,7 @@ router.post('/', function (req, res, next) {
     //alpha and numeric characters only
     let invalidGroupName = true;
     const letters = /^[0-9a-zA-Z]+$/;
-    if (req.body.groupName.match(letters)) {
+    if (req.body.groupName.length <= 10 && req.body.groupName.match(letters)) {
       invalidGroupName = false;
       //try to create a group
       sqldb.query(sql.create_group, params, function (err, _result) {
