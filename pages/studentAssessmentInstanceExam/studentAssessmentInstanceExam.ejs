@@ -215,7 +215,7 @@
                 <% } %>
               </td>
 
-              <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
+              <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question, max_points: instance_question.max_points}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
                 <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
                 <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>

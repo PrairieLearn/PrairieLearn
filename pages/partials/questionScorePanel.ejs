@@ -9,7 +9,7 @@
           <% } else { %>
             <td>Submission status:</td>
           <% } %>
-          <td><%- include('../partials/examQuestionScore', {instance_question}); %></td>
+          <td><%- include('../partials/examQuestionScore', {instance_question, max_points: assessment_question.max_points}); %></td>
         </tr>
         <% if (assessment.allow_real_time_grading) { %>
           <tr>
