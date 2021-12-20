@@ -88,6 +88,8 @@ def prepare(element_html, data):
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1)
 
         tag = pl.get_string_attrib(html_tags, 'tag', None)
+        if grading_method == 'ranking':
+            tag = str(index)
         depends = pl.get_string_attrib(html_tags, 'depends', '')
         depends = depends.strip().split(',') if depends else []
 
@@ -98,7 +100,7 @@ def prepare(element_html, data):
                             'indent': answer_indent,
                             'ranking': ranking,
                             'index': index,
-                            'tag': tag,      # only used with DAG grader
+                            'tag': tag,          # set by HTML with DAG grader, set internally for ranking grader
                             'depends': depends,  # only used with DAG grader
                             'group': group       # only used with DAG grader
                             }
@@ -329,7 +331,19 @@ def parse(element_html, data):
     if grading_mode == 'ranking':
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
-            answer['ranking'] = search['ranking'] if search is not None else -1  # wrong answers have no ranking
+            answer['ranking'] = search['ranking'] if search is not None else None
+            answer['tag'] = search['tag'] if search is not None else None
+        # true_answer = [answer['ranking'] for answer in correct_answers]
+        # depends_graph = {}
+        # cur_rank_depends = None
+        # prev_rank = None
+        # for i, ranking in enumerate(true_answer):
+        #     if prev_rank != None and ranking != prev_rank:
+        #         cur_rank_depends = [str(prev_rank)]
+        #     depends_graph[str(i)] = cur_rank_depends
+        #     prev_rank = ranking
+
+
     elif grading_mode == 'dag':
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
@@ -391,17 +405,36 @@ def grade(element_html, data):
     elif grading_mode == 'ranking':
         ranking = filter_multiple_from_array(data['submitted_answers'][answer_name], ['ranking'])
         ranking = list(map(lambda x: x['ranking'], ranking))
-        correctness = 1 + ranking.count(0)
-        partial_credit = 0
-        if len(ranking) != 0 and len(ranking) == len(true_answer_list):
-            ranking = list(filter(lambda x: x != 0, ranking))
-            for x in range(0, len(ranking) - 1):
-                if int(ranking[x]) == int(ranking[x + 1]) or int(ranking[x]) + 1 == int(ranking[x + 1]):
-                    correctness += 1
-        else:
-            correctness = 0
-        correctness = max(correctness, partial_credit)
-        final_score = float(correctness / len(true_answer_list))
+
+        order = [ans['tag'] for ans in student_answer]
+        true_answer = [answer['ranking'] for answer in true_answer_list]
+
+        # TODO mangle the ORDER based on which ones have incorrect indentation
+        # TODO make the code totally duplicate the DAG code except the for loop to construct the DAG
+        depends_graph = {}
+        cur_rank_depends = None
+        prev_rank = None
+        for i, ranking in enumerate(true_answer):
+            if prev_rank != None and ranking != prev_rank:
+                cur_rank_depends = [str(prev_rank)]
+            depends_graph[str(i)] = cur_rank_depends
+            prev_rank = ranking
+
+        correctness, first_wrong = grade_dag(order, depends_graph, {})
+
+        if correctness == len(depends_graph.keys()):
+            final_score = 1
+        elif correctness < len(depends_graph.keys()):
+            final_score = 0  # TODO figure out a partial credit scheme
+            if feedback_type == 'none':
+                feedback = ''
+            elif feedback_type == 'first-wrong':
+                if first_wrong == -1:
+                    feedback = DAG_FIRST_WRONG_FEEDBACK['incomplete']
+                else:
+                    feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(str(first_wrong + 1))
+
+
     elif grading_mode == 'dag':
         order = [ans['tag'] for ans in student_answer]
         depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
