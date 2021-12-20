@@ -5,6 +5,11 @@
         <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
             <blockquote style="color: red">Submission updated</blockquote>
         <% } %>
+        <a class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/assessment_question/<%= instance_question.assessment_question_id %>/manual_grading">
+          <i class="fas fa-arrow-left"></i>
+          Back to Question
+        </a>
+
         <form name="instance_question-manual-grade-update-form" method="POST">
             <input type="hidden" name="__action" value="add_manual_grade">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
