@@ -57,7 +57,7 @@ const getBarcodeSubmissionUrl = async (baseUrl, hm1AutomaticTestSuiteUrl) => {
 // };
 
 describe('Barcode generation, student submission, and scanning process', function () {
-  this.timeout(75000);
+  this.timeout(30000);
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
   const scrapPaperUrl = baseUrl + '/scrap_paper';
   // const scanPaperUrl = baseUrl + '/scan_paper';
