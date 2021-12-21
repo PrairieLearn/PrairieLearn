@@ -333,17 +333,6 @@ def parse(element_html, data):
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
             answer['ranking'] = search['ranking'] if search is not None else None
             answer['tag'] = search['tag'] if search is not None else None
-        # true_answer = [answer['ranking'] for answer in correct_answers]
-        # depends_graph = {}
-        # cur_rank_depends = None
-        # prev_rank = None
-        # for i, ranking in enumerate(true_answer):
-        #     if prev_rank != None and ranking != prev_rank:
-        #         cur_rank_depends = [str(prev_rank)]
-        #     depends_graph[str(i)] = cur_rank_depends
-        #     prev_rank = ranking
-
-
     elif grading_mode == 'dag':
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
