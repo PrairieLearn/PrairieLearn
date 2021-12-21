@@ -16,15 +16,15 @@
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                     <div class="row">
                         <div class="col-lg-9 col-sm-12">
-                            <label for="page_label">Page Label:</label>
-                            <input type="text" id="page_label" name="page_label" maxLength="<%= charLimit %>">
-                        </div>
-                        <div class="col-lg-9 col-sm-12">
-                            <label for="num_pages">Number of Pages:</label>
-                            <input type="number" id="num_pages" name="num_pages" min="1" max="<%= pageLimit %>" value="1">
-                        </div>
-                        <div class="col-lg-9 col-sm-12">
-                            <button>Generate Barcoded Scrap Paper</button>
+                            <div class="form-group">
+                                <label class="form-check-label" for="page_label">Page Label</label>
+                                <input class="form-control" type="text" id="page_label" name="page_label" maxLength="<%= charLimit %>">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-check-label"     for="num_pages">Number of Pages</label>
+                                <input class="form-control" type="number" id="num_pages" name="num_pages" min="1" max="<%= pageLimit %>" value="1">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Generate Barcoded Scrap Paper</button>
                         </div>
                     </div>
                 </form>
