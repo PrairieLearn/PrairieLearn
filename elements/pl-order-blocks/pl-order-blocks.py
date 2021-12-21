@@ -371,7 +371,6 @@ def grade(element_html, data):
 
     true_answer_list = data['correct_answers'][answer_name]
 
-    indent_score = 0
     final_score = 0
     feedback = ''
     first_wrong = -1
