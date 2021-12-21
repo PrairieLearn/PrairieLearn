@@ -411,12 +411,17 @@ def grade(element_html, data):
 
         # TODO mangle the ORDER based on which ones have incorrect indentation
         # TODO make the code totally duplicate the DAG code except the for loop to construct the DAG
+        lines_of_rank = {}
+        for i, ranking in enumerate(true_answer):
+            if not ranking in lines_of_rank:
+                lines_of_rank[ranking] = []
+            lines_of_rank[ranking].append(str(i))
         depends_graph = {}
-        cur_rank_depends = None
+        cur_rank_depends = []
         prev_rank = None
         for i, ranking in enumerate(true_answer):
             if prev_rank != None and ranking != prev_rank:
-                cur_rank_depends = [str(prev_rank)]
+                cur_rank_depends = lines_of_rank[prev_rank]
             depends_graph[str(i)] = cur_rank_depends
             prev_rank = ranking
 
