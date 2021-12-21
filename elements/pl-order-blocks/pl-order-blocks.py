@@ -24,13 +24,13 @@ WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 0
 TAB_SIZE_PX = 50
 
-DAG_FIRST_WRONG_FEEDBACK = {
+FIRST_WRONG_FEEDBACK = {
     'incomplete': 'Your answer is correct so far, but it is incomplete.',
     'wrong-at-block': r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
         The problem is most likely one of the following:
         <ul><li> This block is not a part of the correct solution </li>
-        <li> This block is not adequately supported by previous block </li>
-        <li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
+        <li> This block needs to come after a block that did not appear before it. </li>""",
+    'block-group-feedback': r"""<li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
 }
 
 
@@ -61,8 +61,8 @@ def prepare(element_html, data):
     if grading_method not in accepted_grading_method:
         raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
 
-    if (grading_method != 'dag' and feedback_type != 'none') or \
-       (grading_method == 'dag' and feedback_type not in ['none', 'first-wrong']):
+    if (grading_method not in ['dag', 'ranking'] and feedback_type != 'none') or \
+       (grading_method in ['dag', 'ranking'] and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
 
     correct_answers = []
@@ -435,9 +435,12 @@ def grade(element_html, data):
                 feedback = ''
             elif feedback_type == 'first-wrong':
                 if first_wrong == -1:
-                    feedback = DAG_FIRST_WRONG_FEEDBACK['incomplete']
+                    feedback = FIRST_WRONG_FEEDBACK['incomplete']
                 else:
-                    feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(str(first_wrong + 1))
+                    feedback = FIRST_WRONG_FEEDBACK['wrong-at-block'].format(str(first_wrong + 1))
+                    has_block_groups = group_belonging != {} and set(group_belonging.values()) != {None}
+                    if has_block_groups:
+                        feedback += FIRST_WRONG_FEEDBACK['block-group-feedback']
 
     data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight, 'first_wrong': first_wrong}
 
@@ -471,7 +474,7 @@ def test(element_html, data):
         answer.pop(0)
         score = float(len(answer)) / (len(answer) + 1) if grading_mode == 'unordered' else 0
         first_wrong = 0 if grading_mode in ['dag', 'ranking'] else -1
-        feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1) if grading_mode in ['dag', 'ranking'] and feedback_type == 'first-wrong' else ''
+        feedback = FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1) if grading_mode in ['dag', 'ranking'] and feedback_type == 'first-wrong' else ''
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': score, 'weight': weight, 'feedback': feedback, 'first_wrong': first_wrong}
 
