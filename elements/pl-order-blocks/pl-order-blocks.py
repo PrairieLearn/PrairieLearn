@@ -412,6 +412,7 @@ def grade(element_html, data):
                 if not ranking in lines_of_rank:
                     lines_of_rank[ranking] = []
                 lines_of_rank[ranking].append(str(i))
+
             cur_rank_depends = []
             prev_rank = None
             for i, ranking in enumerate(true_answer):
@@ -419,6 +420,7 @@ def grade(element_html, data):
                     cur_rank_depends = lines_of_rank[prev_rank]
                 depends_graph[str(i)] = cur_rank_depends
                 prev_rank = ranking
+
         elif grading_mode == 'dag':
             depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
             group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
