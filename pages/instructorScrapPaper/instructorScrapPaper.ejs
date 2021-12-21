@@ -14,7 +14,6 @@
                 <form method="POST">
                     <input type="hidden" name="__action" value="print_scrap_paper">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-
                     <div class="row">
                         <div class="col-lg-9 col-sm-12">
                             <label for="page_label">Page Label:</label>
@@ -24,14 +23,14 @@
                             <label for="num_pages">Number of Pages:</label>
                             <input type="number" id="num_pages" name="num_pages" min="1" max="<%= pageLimit %>" value="1">
                         </div>
-
                         <div class="col-lg-9 col-sm-12">
                             <button>Generate Barcoded Scrap Paper</button>
                         </div>
                     </div>
                 </form>
             </div>
-          </div>
+        </div>
+    </div>
 </body>
 
 </html>
