@@ -8,9 +8,7 @@
 <% } else if (instance_question.status == 'grading') { %>
     <span class="badge badge-default">grading</span>
 <% } else { %>
-    <% if (Math.floor(instance_question.highest_submission_score * 100) != Math.floor((instance_question.points / max_points) * 100)) { %>
-        <% instance_question.highest_submission_score = (instance_question.points / max_points) %>
-    <% } if (instance_question.highest_submission_score >= 1) { %>
+    <% if (instance_question.highest_submission_score >= 1) { %>
         <span class="badge badge-success"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
     <% } else if (instance_question.highest_submission_score <= 0) { %>
         <span class="badge badge-danger"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
