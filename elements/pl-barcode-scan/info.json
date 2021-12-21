@@ -1,8 +1,14 @@
 {
     "controller": "pl-barcode-scan.py",
     "dependencies": {
-        "elementStyles": [
-            "pl-barcode-scan.css"
-        ]
+      "nodeModulesScripts": [
+        "js-crc/build/crc.min.js"
+      ],
+      "elementScripts": [
+        "pl-barcode-scan.js"
+      ],
+      "elementStyles": [
+        "pl-barcode-scan.css"
+      ]
     }
 }

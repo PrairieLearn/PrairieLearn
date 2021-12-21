@@ -18,7 +18,7 @@
             $(selector).css('display', 'none');
         };
         const toggleInvalidBarcode = (barcode, base36, sha16) => {
-            if (barcode.val().length == 0 || crc16(base36) === sha16) {
+            if (barcode.val().length == 0 || window.crc16(base36) === sha16) {
                 hideBadge('#pl-barcode-scan-invalid');
             } else {
                 showBadge('#pl-barcode-scan-invalid');
@@ -33,7 +33,7 @@
             }
         };
         const toggleValidBarcode = (barcode, base36, sha16) => {
-            if (crc16(base36) === sha16) {
+            if (window.crc16(base36) === sha16) {
                 showBadge('#pl-barcode-scan-valid');
             } else {
                 hideBadge('#pl-barcode-scan-valid');
