@@ -48,15 +48,6 @@ const getBarcodeSubmissionUrl = async (baseUrl, hm1AutomaticTestSuiteUrl) => {
   );
 };
 
-const getScrapPaperPayload = ($page, numPages, pageLabel) => {
-  return {
-    num_pages: numPages,
-    page_label: pageLabel,
-    __csrf_token: $page('form > input[name="__csrf_token"]').val(),
-    __action: $page('form > input[name="__action"]').val(),
-  };
-};
-
 // const getScanPaperPayload = ($page, pdfBuffer) => {
 //   const formData = new FormData();
 //   formData.append('file', pdfBuffer, 'ANY FILENAME.pdf');
@@ -109,10 +100,15 @@ describe('Barcode generation, student submission, and scanning process', functio
       // let decodedJpegs;
 
       it('user should be able to download a pdf', async () => {
-        const payload = getScrapPaperPayload($scrapPaper, testNumPages, testLabel);
+        const payload = {
+          num_pages: testNumPages,
+          page_label: testLabel,
+          __csrf_token: $scrapPaper('form > input[name="__csrf_token"]').val(),
+          __action: $scrapPaper('form > input[name="__action"]').val(),
+        };
         const res = await fetch(scrapPaperUrl, {
           method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams(payload).toString(),
         });
         assert.equal(res.status, 200);
