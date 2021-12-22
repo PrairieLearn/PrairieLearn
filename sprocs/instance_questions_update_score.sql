@@ -31,14 +31,13 @@ DECLARE
     new_score double precision;
     new_correct boolean;
     current_partial_score jsonb;
-    new_highest_score double precision;
-    real_time_grading boolean;
+
 BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid), q.qid, s.partial_scores, iq.highest_submission_score,a.allow_real_time_grading
-    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group, found_qid, current_partial_score, new_highest_score, real_time_grading
+    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid), q.qid, s.partial_scores
+    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group, found_qid, current_partial_score
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -157,9 +156,6 @@ BEGIN
     -- do the score update of the instance_question, log it, and update the assessment_instance, if we have a new_score
 
     IF new_score IS NOT NULL THEN
-        IF NOT real_time_grading THEN
-            new_highest_score := new_score;
-        END IF;
         UPDATE instance_questions AS iq
         SET
             points = new_points,
@@ -168,7 +164,7 @@ BEGIN
             score_perc_in_grading = 0,
             status = 'complete',
             modified_at = now(),
-            highest_submission_score = new_highest_score
+            highest_submission_score = new_score
         WHERE iq.id = instance_question_id;
 
         INSERT INTO question_score_logs
