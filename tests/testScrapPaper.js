@@ -59,7 +59,7 @@ const getBarcodeSubmissionUrl = async (baseUrl, hm1AutomaticTestSuiteUrl) => {
 describe('Barcode generation, student submission, and scanning process', function () {
   this.timeout(30000);
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
-  const scrapPaperUrl = baseUrl + '/scrap_paper';
+  const scrapPaperUrl = baseUrl + '/course_instance/1/instructor/scrap_paper';
   // const scanPaperUrl = baseUrl + '/scan_paper';
   const mockStudents = [
     { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
