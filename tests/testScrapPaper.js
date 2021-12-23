@@ -231,7 +231,7 @@ describe('Barcode generation, student submission, and scanning process', functio
         );
         assert.include(
           await save.text(),
-          'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-danger">invalid, not gradable</span>'
+          'invalid, not gradable'
         );
 
         const grade = await saveOrGrade(
