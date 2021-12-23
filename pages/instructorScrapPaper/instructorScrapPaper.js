@@ -14,17 +14,18 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', function (req, res, next) {
+  if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   if (req.body.__action === 'print_scrap_paper') {
     const numPages = req.body.num_pages;
     const pageLabel = req.body.page_label;
 
     if (!numPages || numPages < 1 || numPages > pageLimit) {
-      ERR(Error(`Must be more than 1 page but not more than ${pageLimit} pages`), next);
-      return;
+      return next(error.make(400, `Must be more than 1 page but not more than ${pageLimit} pages`));
     }
     if (typeof pageLabel !== 'string' || pageLabel.length > charLimit) {
-      ERR(Error(`Page label must be valid string less than ${charLimit} characters`), next);
-      return;
+      return next(
+        error.make(400, `Page label must be valid string less than ${charLimit} characters`)
+      );
     }
 
     createBarcodedPdf(numPages, pageLabel)
