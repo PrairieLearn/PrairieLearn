@@ -577,11 +577,10 @@ module.exports.initExpress = function () {
     require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
   ]);
 
-  app.use('/pl/course_instance/:course_instance_id/instructor/scrap_paper',  
-  [
+  app.use('/pl/course_instance/:course_instance_id/instructor/scrap_paper', [
     require('./pages/instructorScrapPaper/instructorScrapPaper.js'),
   ]);
-  // app.use('/pl/course_instance/:course_instance_id/instructor/scan_paper',  
+  // app.use('/pl/course_instance/:course_instance_id/instructor/scan_paper',
   // [
   //   require('./pages/instructorScrapPaper/instructorScanPaper.js'),
   // ]);
