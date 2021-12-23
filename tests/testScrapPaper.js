@@ -164,11 +164,11 @@ describe('Barcode generation, student submission, and scanning process', functio
         barcodeRows = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
         assert.lengthOf(barcodeRows, pdf.numPages);
       });
-      it('database barcodes should checksum sha16 successfully against base36 barcode components', () => {
+      it('database barcodes should checksum successfully against base36 barcode components', () => {
         barcodeRows.forEach((row) => {
-          const { base36, sha16 } = getBarcodeSegments(row.barcode);
-          const recomputedSha16 = jsCrc.crc16(base36);
-          assert.equal(recomputedSha16, sha16);
+          const { base36, checksum } = getBarcodeSegments(row.barcode);
+          const recomputed_checksum = jsCrc.crc16(base36);
+          assert.equal(recomputed_checksum, checksum);
         });
       });
       // it('barcodes should ALL be scannable by barcode reader', async () => {
@@ -183,11 +183,11 @@ describe('Barcode generation, student submission, and scanning process', functio
       //     assert.isNotNull(jpeg.barcode);
       //   });
       // });
-      // it('pdf barcodes should checksum sha16 successfully against base36 barcode component', () => {
+      // it('pdf barcodes should checksum successfully against base36 barcode component', () => {
       //   decodedJpegs.forEach((jpeg) => {
-      //     const { base36, sha16 } = getBarcodeSegments(jpeg.barcode);
-      //     const recomputedSha16 = jsCrc.crc16(base36);
-      //     assert.equal(recomputedSha16, sha16);
+      //     const { base36, checksum } = getBarcodeSegments(jpeg.barcode);
+      //     const recomputedChecksum = jsCrc.crc16(base36);
+      //     assert.equal(recomputedChecksum, checksum);
       //     validBarcodes.push(jpeg.barcode);
       //   });
       // });
