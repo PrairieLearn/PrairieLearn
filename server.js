@@ -580,10 +580,11 @@ module.exports.initExpress = function () {
   app.use('/pl/course_instance/:course_instance_id/instructor/scrap_paper', [
     require('./pages/instructorScrapPaper/instructorScrapPaper.js'),
   ]);
-  // app.use('/pl/course_instance/:course_instance_id/instructor/scan_paper',
-  // [
-  //   require('./pages/instructorScrapPaper/instructorScanPaper.js'),
-  // ]);
+  app.use('/pl/course_instance/:course_instance_id/instructor/scan_paper',
+  [
+    require('./pages/instructorScanPaper/instructorScanPaper.js'),
+  ]);
+
   // All course instance instructor pages require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id/instructor', [
     require('./middlewares/authzAuthnHasCoursePreviewOrInstanceView'),
