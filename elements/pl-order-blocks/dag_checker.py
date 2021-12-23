@@ -84,7 +84,7 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable):
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]]) -> int:
+def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[int]]) -> int:
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
     The naive solution would be to enumerate all topological sorts, then get the edit distance to each of them,
@@ -122,18 +122,32 @@ def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]])
 
         seen.add(node)
 
+    for i in range(len(order)):
+        for j in range(i + 2, len(order)):
+            node1, node2 = order[i], order[j]
+            if group_belonging[node1] is None or group_belonging[node1] != group_belonging[node2]:
+                continue
+            if not all([group_belonging[x] == group_belonging[node1] for x in order[i:j+1]]):
+                for node in order[i:j+1]:
+                    problematic_subgraph.add_node(node)
+
+    print("subgraph size: ", problematic_subgraph.number_of_nodes())
+
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
     else:
         mvc_size = len(problematic_subgraph) - 1
         for i in range(1, len(problematic_subgraph) - 1):
             for subset in itertools.combinations(problematic_subgraph, i):
-                if is_vertex_cover(problematic_subgraph, subset):
+                new_order = [x for x in order if x in subset]
+                new_group_belonging = {key: group_belonging[key] for key in new_order}
+                if is_vertex_cover(problematic_subgraph, subset) and len(new_order) == check_grouping(new_order, new_group_belonging):
                     mvc_size = len(subset)
                     break
             if mvc_size < len(problematic_subgraph) - 1:
                 break
 
     deletions_needed = distractors + mvc_size
+    print(deletions_needed)
     insertions_needed = len(depends_graph.keys()) - (len(order) - deletions_needed)
     return deletions_needed + insertions_needed

@@ -124,8 +124,6 @@ def prepare(element_html, data):
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
-            if partial_credit_type != 'none':
-                raise Exception('Partial credit not yet supported in questions using block groups.')
 
             group_counter += 1
             for grouped_tag in html_tags:
@@ -430,7 +428,7 @@ def grade(element_html, data):
             elif correctness < true_answer_length:
                 final_score = 0
         elif partial_credit_type == 'lcs':
-            edit_distance = lcs_partial_credit(order, depends_graph)
+            edit_distance = lcs_partial_credit(order, depends_graph, group_belonging)
             final_score = max(0, float(true_answer_length - edit_distance) / true_answer_length)
 
         if final_score < 1:
