@@ -33,10 +33,6 @@ def is_invalid_barcode(barcode):
         return True
 
 
-def prepare(element_html, data):
-    lxml.html.fragment_fromstring(element_html)
-
-
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required = pl.get_boolean_attrib(element, REQUIRED, REQUIRED_DEFAULT)
