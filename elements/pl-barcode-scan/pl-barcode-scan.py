@@ -24,17 +24,13 @@ def crc16arc(msg):
 
 def is_invalid_barcode(barcode):
     barcode = barcode.lower()
-    sha16 = barcode[len(barcode) - 4:len(barcode)]
-    base32 = barcode.replace(sha16, '')
-    recomputed_sha16 = hex(crc16arc(bytes(base32, encoding='utf-8')))
-    if sha16 in recomputed_sha16:
+    checksum = barcode[len(barcode) - 4:len(barcode)]
+    base36 = barcode.replace(checksum, '')
+    recomputed_checksum = hex(crc16arc(bytes(base36, encoding='utf-8')))
+    if checksum in recomputed_checksum:
         return False
     else:
         return True
-
-
-def prepare(element_html, data):
-    lxml.html.fragment_fromstring(element_html)
 
 
 def render(element_html, data):

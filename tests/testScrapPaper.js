@@ -48,15 +48,6 @@ const getBarcodeSubmissionUrl = async (baseUrl, hm1AutomaticTestSuiteUrl) => {
   );
 };
 
-const getScrapPaperPayload = ($page, numPages, pageLabel) => {
-  return {
-    num_pages: numPages,
-    page_label: pageLabel,
-    __csrf_token: $page('form > input[name="__csrf_token"]').val(),
-    __action: $page('form > input[name="__action"]').val(),
-  };
-};
-
 const getScanPaperPayload = ($page, pdfBuffer) => {
   const formData = new FormData();
   formData.append('file', pdfBuffer, 'ANY FILENAME.pdf');
@@ -66,10 +57,10 @@ const getScanPaperPayload = ($page, pdfBuffer) => {
 };
 
 describe('Barcode generation, student submission, and scanning process', function () {
-  this.timeout(75000);
+  this.timeout(30000);
   const baseUrl = 'http://localhost:' + config.serverPort + '/pl';
-  const scrapPaperUrl = baseUrl + '/scrap_paper';
-  const scanPaperUrl = baseUrl + '/scan_paper';
+  const scrapPaperUrl = baseUrl + '/course_instance/1/instructor/scrap_paper';
+  const scanPaperUrl = baseUrl + '/course_instance/1/instructor/scan_paper';
   const mockStudents = [
     { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
     { authUid: 'student2', authName: 'Student User 2', authUin: '00000002' },
@@ -110,10 +101,15 @@ describe('Barcode generation, student submission, and scanning process', functio
       let decodedJpegs;
 
       it('user should be able to download a pdf', async () => {
-        const payload = getScrapPaperPayload($scrapPaper, testNumPages, testLabel);
+        const payload = {
+          num_pages: testNumPages,
+          page_label: testLabel,
+          __csrf_token: $scrapPaper('form > input[name="__csrf_token"]').val(),
+          __action: $scrapPaper('form > input[name="__action"]').val(),
+        };
         const res = await fetch(scrapPaperUrl, {
           method: 'POST',
-          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams(payload).toString(),
         });
         assert.equal(res.status, 200);
@@ -169,11 +165,11 @@ describe('Barcode generation, student submission, and scanning process', functio
         barcodeRows = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
         assert.lengthOf(barcodeRows, pdf.numPages);
       });
-      it('database barcodes should checksum sha16 successfully against base36 barcode components', () => {
+      it('database barcodes should checksum successfully against base36 barcode components', () => {
         barcodeRows.forEach((row) => {
-          const { base36, sha16 } = getBarcodeSegments(row.barcode);
-          const recomputedSha16 = jsCrc.crc16(base36);
-          assert.equal(recomputedSha16, sha16);
+          const { base36, checksum } = getBarcodeSegments(row.barcode);
+          const recomputed_checksum = jsCrc.crc16(base36);
+          assert.equal(recomputed_checksum, checksum);
         });
       });
       it('barcodes should ALL be scannable by barcode reader', async () => {
@@ -188,11 +184,11 @@ describe('Barcode generation, student submission, and scanning process', functio
           assert.isNotNull(jpeg.barcode);
         });
       });
-      it('pdf barcodes should checksum sha16 successfully against base36 barcode component', () => {
+      it('pdf barcodes should checksum successfully against base36 barcode component', () => {
         decodedJpegs.forEach((jpeg) => {
-          const { base36, sha16 } = getBarcodeSegments(jpeg.barcode);
-          const recomputedSha16 = jsCrc.crc16(base36);
-          assert.equal(recomputedSha16, sha16);
+          const { base36, checksum } = getBarcodeSegments(jpeg.barcode);
+          const recomputedChecksum = jsCrc.crc16(base36);
+          assert.equal(recomputedChecksum, checksum);
           validBarcodes.push(jpeg.barcode);
         });
       });
@@ -234,10 +230,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           { _pdf_barcode_scan: 9999999 },
           'save'
         );
-        assert.include(
-          await save.text(),
-          'Submitted answer\n          \n        </span>\n        <span>\n    \n        \n            <span class="badge badge-danger">invalid, not gradable</span>'
-        );
+        assert.include(await save.text(), 'invalid, not gradable');
 
         const grade = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
