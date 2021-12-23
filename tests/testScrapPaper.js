@@ -229,10 +229,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           { _pdf_barcode_scan: 9999999 },
           'save'
         );
-        assert.include(
-          await save.text(),
-          'invalid, not gradable'
-        );
+        assert.include(await save.text(), 'invalid, not gradable');
 
         const grade = await saveOrGrade(
           hm1BarcodeSubmissionUrl,
