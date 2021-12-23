@@ -3,8 +3,9 @@
         $('#pl-barcode-scan-{{uuid}} [data-toggle="popover"]').popover({
             sanitize: false,
             container: 'body',
-            template: '<div class="popover pl-barcode-scan-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+            template: '<div class="popover pl-barcode-scan-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
+    });
 </script>
 <script>
     $(() => {
@@ -16,8 +17,8 @@
         const hideBadge = (selector) => {
             $(selector).css('display', 'none');
         };
-        const toggleInvalidBarcode = (barcode, base36, sha16) => {
-            if (barcode.val().length == 0 || crc16(base36) === sha16) {
+        const toggleInvalidBarcode = (barcode, base36, checksum) => {
+            if (barcode.val().length == 0 || window.crc16(base36) === checksum) {
                 hideBadge('#pl-barcode-scan-invalid');
             } else {
                 showBadge('#pl-barcode-scan-invalid');
@@ -31,8 +32,8 @@
                 hideBadge('#pl-barcode-scan-required');
             }
         };
-        const toggleValidBarcode = (barcode, base36, sha16) => {
-            if (crc16(base36) === sha16) {
+        const toggleValidBarcode = (barcode, base36, checksum) => {
+            if (window.crc16(base36) === checksum) {
                 showBadge('#pl-barcode-scan-valid');
             } else {
                 hideBadge('#pl-barcode-scan-valid');
@@ -42,12 +43,12 @@
         // listener
         barcode.keyup((e) => {
             const sanitized = barcode.val().toLowerCase().trim();
-            const sha16 = sanitized.substring(sanitized.length-4, sanitized.length);
-            const base36 = sanitized.replace(sha16, '');
+            const checksum = sanitized.substring(sanitized.length-4, sanitized.length);
+            const base36 = sanitized.replace(checksum, '');
 
             toggleBarcodeRequired(barcode);
-            toggleInvalidBarcode(barcode, base36, sha16);
-            toggleValidBarcode(barcode, base36, sha16);
+            toggleInvalidBarcode(barcode, base36, checksum);
+            toggleValidBarcode(barcode, base36, checksum);
         });
     });
 </script>

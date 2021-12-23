@@ -27,6 +27,7 @@
     <% if (!devMode && authz_data.has_course_permission_edit) { %>
         <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "syncs") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course_admin/syncs">Sync</a></li>
     <% } %>
+    
 
     <% if (locals.course_instance) { %>
 
@@ -36,6 +37,9 @@
             <a class="nav-link <% if (navPage == "instance_admin" && !(typeof navSubPage !== 'undefined' && (navSubPage == "assessments" || navSubPage == "gradebook"))) { %>active<% } %>" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/instance_admin" role="button">
                 <%= course_instance.short_name %>
             </a>
+            <% if (authz_data.has_course_permission_edit) { %>
+                <li class="nav-item <% if (navPage == "course_admin" && typeof navSubPage !== 'undefined' && navSubPage == "scrap_paper") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/scrap_paper">Scrap paper</a></li>
+            <% } %>
             <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
                 <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuInstanceAdminLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 </a>
