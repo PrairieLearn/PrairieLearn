@@ -14,6 +14,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', function (req, res, next) {
+  if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   if (req.body.__action === 'scan_scrap_paper') {
     if (!req.file) {
       ERR(Error('Missing barcoded pdf collection file data'), next);
