@@ -27,7 +27,7 @@ test-prairielib:
 test-grader-host:
 	@jest grader_host/
 test-nocoverage: start-support
-	@mocha --timeout=50000 tests/index.js 
+	@mocha tests/index.js
 test-python:
 # `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
 # pytest uses to discover tests, but it isn't actually a test file itself. We
