@@ -17,12 +17,10 @@ router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   if (req.body.__action === 'scan_scrap_paper') {
     if (!req.file) {
-      ERR(Error('Missing barcoded pdf collection file data'), next);
-      return;
+      return next(error.make(400, 'Missing barcoded pdf collection file data'));
     }
     if (!res.locals || !res.locals.authn_user || !res.locals.authn_user.user_id) {
-      ERR(Error('Authn_user required on file-store API'), next);
-      return;
+      return next(error.make(400, 'Authn_user required on file-store API'));
     }
 
     const options = {
