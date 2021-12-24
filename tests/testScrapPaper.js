@@ -311,7 +311,6 @@ describe('Barcode generation, student submission, and scanning process', functio
           method: 'POST',
           body: getScanPaperPayload($scanPaper, pdfBuffer),
         });
-        console.log(res);
         assert.isTrue(res.ok);
       });
       it('should be able to post pdf form and have it queued without Quagga crashing', async () => {
