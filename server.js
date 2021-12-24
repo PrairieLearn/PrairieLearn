@@ -580,8 +580,7 @@ module.exports.initExpress = function () {
   app.use('/pl/course_instance/:course_instance_id/instructor/scrap_paper', [
     require('./pages/instructorScrapPaper/instructorScrapPaper.js'),
   ]);
-  app.use('/pl/course_instance/:course_instance_id/instructor/scan_paper',
-  [
+  app.use('/pl/course_instance/:course_instance_id/instructor/scan_paper', [
     require('./pages/instructorScanPaper/instructorScanPaper.js'),
   ]);
 
