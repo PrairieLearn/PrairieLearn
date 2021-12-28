@@ -462,7 +462,7 @@ def test(element_html, data):
             data['raw_submitted_answers'][name] = correct_keys
         else:
             pass  # no raw_submitted_answer if no correct keys
-        feedback = [option['feedback'] for option in data['params'][name] if option['key'] in correct_keys]
+        feedback = [option.get('feedback', None) for option in data['params'][name] if option['key'] in correct_keys]
         data['partial_scores'][name] = {'score': 1, 'weight': weight, 'feedback': feedback}
     elif result == 'incorrect':
         while True:
