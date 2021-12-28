@@ -150,6 +150,8 @@ def render(element_html, data):
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
+    # Pointer used to index feedback
+    ptr = 0
 
     if data['panel'] == 'question':
         partial_score = data['partial_scores'].get(name, {'score': None})
@@ -163,9 +165,11 @@ def render(element_html, data):
                 'checked': (answer['key'] in submitted_keys),
                 'html': answer['html'].strip(),
                 'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys,
-                'display_feedback': feedback and answer['key'] in submitted_keys and feedback[0] is not None,
-                'feedback': feedback.pop(0) if feedback and answer['key'] in submitted_keys else None
+                'display_feedback': feedback and answer['key'] in submitted_keys and feedback[ptr] is not None,
+                'feedback': feedback[ptr] if feedback and answer['key'] in submitted_keys else None
             }
+            if feedback and answer['key'] in submitted_keys:
+                ptr += 1
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (answer['key'] in correct_keys)
                 answer_html['incorrect'] = (answer['key'] not in correct_keys)
@@ -289,6 +293,8 @@ def render(element_html, data):
             partial_score = data['partial_scores'].get(name, {'score': None})
             feedback = partial_score.get('feedback', None)
             score = partial_score.get('score', None)
+            # Pointer used to index feedback
+            ptr = 0
 
             answers = []
             for submitted_key in submitted_keys:
@@ -301,8 +307,10 @@ def render(element_html, data):
                 if answer_item['display_score_badge']:
                     answer_item['correct'] = (submitted_key in correct_keys)
                     answer_item['incorrect'] = (submitted_key not in correct_keys)
-                answer_item['display_feedback'] = feedback and feedback[0] is not None
-                answer_item['feedback'] = feedback.pop(0) if feedback else None
+                answer_item['display_feedback'] = feedback and feedback[ptr] is not None
+                answer_item['feedback'] = feedback[ptr] if feedback else None
+                if feedback:
+                    ptr += 1
                 answers.append(answer_item)
 
             html_params = {
