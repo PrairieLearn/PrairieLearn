@@ -408,7 +408,7 @@ def grade(element_html, data):
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
-    feedback = [option['feedback'] for option in data['params'][name] if option['key'] in submitted_keys]
+    feedback = [option.get('feedback', None) for option in data['params'][name] if option['key'] in submitted_keys]
 
     submittedSet = set(submitted_keys)
     correctSet = set(correct_keys)
