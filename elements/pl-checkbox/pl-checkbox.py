@@ -491,7 +491,7 @@ def test(element_html, data):
                 raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
         else:
             score = 0
-        feedback = [option['feedback'] for option in data['params'][name] if option['key'] in ans]
+        feedback = [option.get('feedback', None) for option in data['params'][name] if option['key'] in ans]
         data['raw_submitted_answers'][name] = ans
         data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
     elif result == 'invalid':
