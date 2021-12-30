@@ -163,7 +163,7 @@ def render(element_html, data):
                 'checked': (answer['key'] in submitted_keys),
                 'html': answer['html'].strip(),
                 'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys,
-                'display_feedback': answer['key'] in submitted_keys and feedback.get(answer['key'], None) is not None,
+                'display_feedback': answer['key'] in submitted_keys and feedback and feedback.get(answer['key'], None) is not None,
                 'feedback': feedback.get(answer['key'], None) if feedback else None
             }
             if answer_html['display_score_badge']:
@@ -301,7 +301,7 @@ def render(element_html, data):
                 if answer_item['display_score_badge']:
                     answer_item['correct'] = (submitted_key in correct_keys)
                     answer_item['incorrect'] = (submitted_key not in correct_keys)
-                answer_item['display_feedback'] = feedback.get(submitted_key, None) is not None
+                answer_item['display_feedback'] = feedback and feedback.get(submitted_key, None) is not None
                 answer_item['feedback'] = feedback.get(submitted_key, None) if feedback else None
                 answers.append(answer_item)
 
