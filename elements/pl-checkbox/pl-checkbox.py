@@ -150,8 +150,6 @@ def render(element_html, data):
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
-    # Pointer used to index feedback
-    ptr = 0
 
     if data['panel'] == 'question':
         partial_score = data['partial_scores'].get(name, {'score': None})
@@ -165,11 +163,9 @@ def render(element_html, data):
                 'checked': (answer['key'] in submitted_keys),
                 'html': answer['html'].strip(),
                 'display_score_badge': score is not None and show_answer_feedback and answer['key'] in submitted_keys,
-                'display_feedback': feedback and answer['key'] in submitted_keys and feedback[ptr] is not None,
-                'feedback': feedback[ptr] if feedback and answer['key'] in submitted_keys else None
+                'display_feedback': answer['key'] in submitted_keys and feedback.get(answer['key'], None) is not None,
+                'feedback': feedback.get(answer['key'], None) if feedback else None
             }
-            if feedback and answer['key'] in submitted_keys:
-                ptr += 1
             if answer_html['display_score_badge']:
                 answer_html['correct'] = (answer['key'] in correct_keys)
                 answer_html['incorrect'] = (answer['key'] not in correct_keys)
@@ -293,8 +289,6 @@ def render(element_html, data):
             partial_score = data['partial_scores'].get(name, {'score': None})
             feedback = partial_score.get('feedback', None)
             score = partial_score.get('score', None)
-            # Pointer used to index feedback
-            ptr = 0
 
             answers = []
             for submitted_key in submitted_keys:
@@ -307,10 +301,8 @@ def render(element_html, data):
                 if answer_item['display_score_badge']:
                     answer_item['correct'] = (submitted_key in correct_keys)
                     answer_item['incorrect'] = (submitted_key not in correct_keys)
-                answer_item['display_feedback'] = feedback and feedback[ptr] is not None
-                answer_item['feedback'] = feedback[ptr] if feedback else None
-                if feedback:
-                    ptr += 1
+                answer_item['display_feedback'] = feedback.get(submitted_key, None) is not None
+                answer_item['feedback'] = feedback.get(submitted_key, None) if feedback else None
                 answers.append(answer_item)
 
             html_params = {
@@ -416,7 +408,7 @@ def grade(element_html, data):
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
-    feedback = [option.get('feedback', None) for option in data['params'][name] if option['key'] in submitted_keys]
+    feedback = {option['key'] : option.get('feedback', None) for option in data['params'][name]}
 
     submittedSet = set(submitted_keys)
     correctSet = set(correct_keys)
@@ -470,7 +462,7 @@ def test(element_html, data):
             data['raw_submitted_answers'][name] = correct_keys
         else:
             pass  # no raw_submitted_answer if no correct keys
-        feedback = [option.get('feedback', None) for option in data['params'][name] if option['key'] in correct_keys]
+        feedback = {option['key'] : option.get('feedback', None) for option in data['params'][name]}
         data['partial_scores'][name] = {'score': 1, 'weight': weight, 'feedback': feedback}
     elif result == 'incorrect':
         while True:
@@ -499,7 +491,7 @@ def test(element_html, data):
                 raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
         else:
             score = 0
-        feedback = [option.get('feedback', None) for option in data['params'][name] if option['key'] in ans]
+        feedback = {option['key'] : option.get('feedback', None) for option in data['params'][name]}
         data['raw_submitted_answers'][name] = ans
         data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
     elif result == 'invalid':
