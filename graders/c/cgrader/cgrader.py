@@ -284,7 +284,8 @@ class CGrader:
         separator_1 = ': ' if use_suite_title and use_case_name else ''
         separator_2 = ' - ' if use_unit_test_id and (use_suite_title or use_case_name) else ''
         try:
-            tree = ET.parse(log_file)
+            with open(log_file, 'r', errors='backslashreplace') as log:
+                tree = ET.parse(log)
             for suite in tree.getroot().findall('{*}suite'):
                 suite_title = suite.findtext('{*}title') if use_suite_title else ''
                 for test in suite.findall('{*}test'):
