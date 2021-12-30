@@ -12,7 +12,7 @@ var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
-  if (res.locals.authn_provider_name == 'LTI') {
+  if (res.locals.authn_provider_name === 'LTI') {
     return next(error.make(400, 'Enrollment unavailable, managed via LTI'));
   }
   var params = {
@@ -27,10 +27,10 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  if (res.locals.authn_provider_name == 'LTI') {
+  if (res.locals.authn_provider_name === 'LTI') {
     return next(error.make(400, 'Enrollment unavailable, managed via LTI'));
   }
-  if (req.body.__action == 'enroll') {
+  if (req.body.__action === 'enroll') {
     var params = {
       course_instance_id: req.body.course_instance_id,
       user_id: res.locals.authn_user.user_id,
@@ -41,7 +41,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'unenroll') {
+  } else if (req.body.__action === 'unenroll') {
     let params = {
       course_instance_id: req.body.course_instance_id,
       user_id: res.locals.authn_user.user_id,

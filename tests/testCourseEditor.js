@@ -557,7 +557,7 @@ function waitForJobSequence(locals, expectedResult) {
         sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
           if (ERR(err, callback)) return;
           locals.job_sequence_status = result.rows[0].status;
-          if (locals.job_sequence_status == 'Running') {
+          if (locals.job_sequence_status === 'Running') {
             setTimeout(checkComplete, 10);
           } else {
             callback(null);

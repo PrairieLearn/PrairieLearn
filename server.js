@@ -52,7 +52,7 @@ const assets = require('./lib/assets');
 process.on('warning', (e) => console.warn(e)); // eslint-disable-line no-console
 
 // If there is only one argument, legacy it into the config option
-if (argv['_'].length == 1) {
+if (argv['_'].length === 1) {
   argv['config'] = argv['_'][0];
   argv['_'] = [];
 }
@@ -79,7 +79,7 @@ module.exports.initExpress = function () {
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
-  config.devMode = app.get('env') == 'development';
+  config.devMode = app.get('env') === 'development';
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -1199,6 +1199,7 @@ module.exports.initExpress = function () {
     [
       function (req, res, next) {
         res.locals.assessment_question_id = req.params.assessment_question_id;
+        res.locals.prior_instance_question_id = req.query.instance_question;
         next();
       },
       require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),

@@ -9,7 +9,7 @@ describe('editor library', () => {
   });
 
   it('gets details for course instance info file', () => {
-    const details = /** @type {import('../lib/editor').CourseInstanceInfo} */ (
+    const details = /** @type {import('../lib/editorUtil').CourseInstanceInfo} */ (
       editor.getDetailsForFile('courseInstances/testinstance/infoCourseInstance.json')
     );
     assert.equal(details.type, 'courseInstance');
@@ -17,7 +17,7 @@ describe('editor library', () => {
   });
 
   it('gets details for question info', () => {
-    const details = /** @type {import('../lib/editor').QuestionInfo} */ (
+    const details = /** @type {import('../lib/editorUtil').QuestionInfo} */ (
       editor.getDetailsForFile('questions/testquestion/info.json')
     );
     assert.equal(details.type, 'question');
@@ -25,7 +25,7 @@ describe('editor library', () => {
   });
 
   it('gets details for assessment info file', () => {
-    const details = /** @type {import('../lib/editor').AssessmentInfo} */ (
+    const details = /** @type {import('../lib/editorUtil').AssessmentInfo} */ (
       editor.getDetailsForFile(
         'courseInstances/testinstance/assessments/testassessment/infoAssessment.json'
       )

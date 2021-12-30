@@ -369,6 +369,7 @@ module.exports.rollbackWithClientAsync = async function (client) {
   // From https://node-postgres.com/features/transactions
   try {
     await client.query('ROLLBACK');
+    client.release();
   } catch (err) {
     // If there was a problem rolling back the query, something is
     // seriously messed up. Return the error to the release() function to

@@ -29,7 +29,7 @@ process.on('SIGTERM', () => {
   globalLogger.info('caught SIGTERM, draining jobs to exit...');
   processTerminating = true;
   (function tryToExit() {
-    if (load.getCurrentJobs() == 0) process.exit(0);
+    if (load.getCurrentJobs() === 0) process.exit(0);
     setTimeout(tryToExit, 1000);
   })();
 });
@@ -496,7 +496,7 @@ function runJob(info, callback) {
           } else {
             logger.info(`Container exited with exit code ${data.State.ExitCode}`);
           }
-          results.succeeded = !results.timedOut && data.State.ExitCode == 0;
+          results.succeeded = !results.timedOut && data.State.ExitCode === 0;
           callback(null, container);
         });
       },

@@ -1,5 +1,7 @@
+from typing import Dict, Any
 import prairielearn as pl
 import lxml.html
+from lxml import etree
 import random
 import chevron
 import base64
@@ -34,11 +36,11 @@ DAG_FIRST_WRONG_FEEDBACK = {
 }
 
 
-def filter_multiple_from_array(data, keys):
+def filter_multiple_from_array(data: list[Dict[str, Any]], keys: list[str]) -> list[Dict[str, Any]]:
     return [{key: item[key] for key in keys} for item in data]
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -59,7 +61,7 @@ def prepare(element_html, data):
 
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
-        raise Exception('The grading-method attribute must be one of the following: ' + accepted_grading_method)
+        raise Exception('The grading-method attribute must be one of the following: ' + ', '.join(accepted_grading_method))
 
     if (grading_method != 'dag' and feedback_type != 'none') or \
        (grading_method == 'dag' and feedback_type not in ['none', 'first-wrong']):
@@ -80,7 +82,7 @@ def prepare(element_html, data):
         elif grading_method in ['ranking', 'ordered']:
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
         elif grading_method == 'dag':
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'tag', 'depends'])
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'tag', 'depends', 'comment'])
 
         is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
         answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
@@ -110,14 +112,14 @@ def prepare(element_html, data):
     index = 0
     group_counter = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
-        if html_tags.tag is lxml.etree.Comment:
+        if html_tags.tag is etree.Comment:
             continue
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
             group_counter += 1
             for grouped_tag in html_tags:
-                if html_tags.tag is lxml.etree.Comment:
+                if html_tags.tag is etree.Comment:
                     continue
                 else:
                     prepare_tag(grouped_tag, index, group_counter)
@@ -161,7 +163,7 @@ def prepare(element_html, data):
     data['correct_answers'][answer_name] = correct_answers
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -234,7 +236,6 @@ def render(element_html, data):
         student_submission = ''
         score = None
         feedback = None
-
         if answer_name in data['submitted_answers']:
             student_submission = [{
                 'inner_html': attempt['inner_html'],
@@ -306,17 +307,16 @@ def render(element_html, data):
             return html
         else:
             return ''
+    else:
+        raise Exception('Invalid panel type')
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     answer_raw_name = answer_name + '-input'
-    student_answer = None
-
-    if answer_raw_name in data['raw_submitted_answers']:
-        student_answer = data['raw_submitted_answers'][answer_raw_name]
+    student_answer = data['raw_submitted_answers'].get(answer_raw_name, '[]')
 
     student_answer = json.loads(student_answer)
     if student_answer is None or student_answer == []:
@@ -356,7 +356,7 @@ def parse(element_html, data):
         del data['submitted_answers'][answer_raw_name]
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -433,7 +433,7 @@ def grade(element_html, data):
     data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight, 'first_wrong': first_wrong}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
     answer_name = pl.get_string_attrib(element, 'answers-name')
