@@ -1,6 +1,6 @@
-from collections import Counter
 from typing import Mapping, Optional, Iterable
-import networkx as nx  # type: ignore
+from collections import Counter
+import networkx as nx
 import itertools
 
 
