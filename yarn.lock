@@ -1401,7 +1401,16 @@
   dependencies:
     "@types/pg" "*"
 
-"@types/pg@*", "@types/pg@8.6.1", "@types/pg@^8.6.1":
+"@types/pg@*", "@types/pg@^8.6.3":
+  version "8.6.3"
+  resolved "https://registry.yarnpkg.com/@types/pg/-/pg-8.6.3.tgz#eacfd5954752dd64d93d71d639e8c5b1f3bd3f22"
+  integrity sha512-P0RrXJcw1hPS+KF0nBCC3FEEdZBfRsHbYtAzbY2QTc0gC4jFQvjQxIKXs0X/NgPhPI4DbAzdeW7WMCjaWjT7Pg==
+  dependencies:
+    "@types/node" "*"
+    pg-protocol "*"
+    pg-types "^2.2.0"
+
+"@types/pg@8.6.1":
   version "8.6.1"
   resolved "https://registry.yarnpkg.com/@types/pg/-/pg-8.6.1.tgz#099450b8dc977e8197a44f5229cedef95c8747f9"
   integrity sha512-1Kc4oAGzAl7uqUStZCDvaLFqZrW9qWSjXOmBfdgyBP5La7Us6Mg4GBvRlSoaZMhQF/zSj1C8CtKMBkoiT8eL8w==
