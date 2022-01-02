@@ -1,4 +1,5 @@
 node_modules
+coverage/
 
 # The `public/localscripts/calculationQuestion` directory unfortunately
 # contains a mixture of first-party and vendored third-party scripts. We want
