@@ -8443,10 +8443,10 @@ s3-streamlogger@^1.7.0:
     git-branch "~0.3.0"
     strftime "~0.8.2"
 
-s3rver@^3.7.0:
-  version "3.7.0"
-  resolved "https://registry.yarnpkg.com/s3rver/-/s3rver-3.7.0.tgz#e0aed000d0c196d5eb9164623c696830d525e705"
-  integrity sha512-Y/omIxk13qeNmoitsRxbFD/ME9dlcbrais7biuKtdQX43WSufc8P2A482j3BpkjrkoA1F57oBq4skMgeljKzcg==
+s3rver@^3.7.1:
+  version "3.7.1"
+  resolved "https://registry.yarnpkg.com/s3rver/-/s3rver-3.7.1.tgz#aa4ef573969f944d4fdfb0ddf28ccd7e980f9673"
+  integrity sha512-H9KIX6n8NqcfoE4ziFNbQASBQfjcNJgb+3wbT9L5iotEqfOncFO1c38cfJSFSo7xXTu1zM9HA6t2u9xKNlYRaA==
   dependencies:
     "@koa/router" "^9.0.0"
     busboy "^0.3.1"
