@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill,he */
+/* global Quill,he, MathJax */
 
 window.PLRTE = function (uuid, options) {
   if (!options.modules) options.modules = {};
@@ -8,7 +8,7 @@ window.PLRTE = function (uuid, options) {
   } else {
     options.modules.toolbar = [
       ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block', { script: 'sub' }, { script: 'super' }],
+      ['blockquote', 'code-block', { script: 'sub' }, { script: 'super' }, 'formula'],
       [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
       [{ size: ['small', false, 'large'] }],
       [{ header: [1, 2, 3, false] }],
@@ -34,3 +34,36 @@ window.PLRTE = function (uuid, options) {
     );
   });
 };
+
+// Override default implementation of 'formula'
+
+var Embed = Quill.imports.parchment.Embed;
+
+class MathFormula extends Embed  {
+  static create(value) {
+    const node = super.create(value);    
+    if (typeof value === 'string') {
+      let html = MathJax.tex2chtml(value);
+      let formatted = html.innerHTML
+      node.innerHTML = "&#65279;" + formatted +"&#65279;";
+      MathJax.typeset();
+      node.setAttribute('data-value', value);
+      node.contentEditable = 'false';
+    }
+    return node;
+  }
+
+  static value(domNode) {
+    return domNode.getAttribute('data-value');
+  }
+
+  html() {
+    const { formula } = this.value();
+    return `<span>${formula}</span>`;
+  }
+}
+MathFormula.blotName = 'formula';
+MathFormula.className = 'ql-formula';
+MathFormula.tagName = 'SPAN';
+
+Quill.register('formats/formula', MathFormula, true);
