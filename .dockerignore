@@ -8,6 +8,7 @@
 !.prettierignore
 !.prettierrc.json
 !tsconfig.json
+!pyrightconfig.json
 !admin_queries/
 !api/
 !cron/
