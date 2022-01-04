@@ -1013,7 +1013,7 @@ module.exports = {
         options: _.defaults({}, course.options, question.options),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'generate',
@@ -1053,7 +1053,7 @@ module.exports = {
         options: _.get(variant, 'options', {}),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'prepare',
@@ -1180,99 +1180,100 @@ module.exports = {
     const courseIssues = [];
     let panelCount = 0,
       cacheHitCount = 0;
-    codeCallers.getPythonCaller(course.path, (err, pc) => {
-      if (ERR(err, callback)) return;
-      async.series(
-        [
-          // FIXME: support 'header'
-          (callback) => {
-            if (!renderSelection.question) return callback(null);
-            module.exports.renderPanel(
-              'question',
-              pc,
-              variant,
-              question,
-              submission,
-              course,
-              locals,
-              (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                if (ERR(err, callback)) return;
-                courseIssues.push(...ret_courseIssues);
-                htmls.questionHtml = html;
-                panelCount++;
-                if (cacheHit) cacheHitCount++;
-                allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                callback(null);
-              }
-            );
-          },
-          (callback) => {
-            if (!renderSelection.submissions) return callback(null);
-            async.mapSeries(
-              submissions,
-              (submission, callback) => {
-                module.exports.renderPanel(
-                  'submission',
-                  pc,
-                  variant,
-                  question,
-                  submission,
-                  course,
-                  locals,
-                  (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                    if (ERR(err, callback)) return;
-                    courseIssues.push(...ret_courseIssues);
-                    panelCount++;
-                    if (cacheHit) cacheHitCount++;
-                    allRenderedElementNames = _.union(
-                      allRenderedElementNames,
-                      renderedElementNames
-                    );
-                    callback(null, html);
-                  }
-                );
-              },
-              (err, submissionHtmls) => {
-                if (ERR(err, callback)) return;
-                htmls.submissionHtmls = submissionHtmls;
-                callback(null);
-              }
-            );
-          },
-          (callback) => {
-            if (!renderSelection.answer) return callback(null);
-            module.exports.renderPanel(
-              'answer',
-              pc,
-              variant,
-              question,
-              submission,
-              course,
-              locals,
-              (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                if (ERR(err, callback)) return;
-                courseIssues.push(...ret_courseIssues);
-                htmls.answerHtml = html;
-                panelCount++;
-                if (cacheHit) cacheHitCount++;
-                allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                callback(null);
-              }
-            );
-          },
-          (callback) => {
-            // The logPageView middleware knows to write this to the DB
-            // when we log the page view - sorry for mutable object hell
-            locals.panel_render_count = panelCount;
-            locals.panel_render_cache_hit_count = cacheHitCount;
-            callback(null);
-          },
-          (callback) => {
-            module.exports.getContext(question, course, (err, context) => {
-              if (err) {
-                return callback(new Error(`Error generating options: ${err}`));
-              }
 
+    module.exports.getContext(question, course, (err, context) => {
+      if (err) {
+        return callback(new Error(`Error generating options: ${err}`));
+      }
+
+      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
+        if (ERR(err, callback)) return;
+        async.series(
+          [
+            // FIXME: support 'header'
+            (callback) => {
+              if (!renderSelection.question) return callback(null);
+              module.exports.renderPanel(
+                'question',
+                pc,
+                variant,
+                question,
+                submission,
+                course,
+                locals,
+                (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
+                  if (ERR(err, callback)) return;
+                  courseIssues.push(...ret_courseIssues);
+                  htmls.questionHtml = html;
+                  panelCount++;
+                  if (cacheHit) cacheHitCount++;
+                  allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+                  callback(null);
+                }
+              );
+            },
+            (callback) => {
+              if (!renderSelection.submissions) return callback(null);
+              async.mapSeries(
+                submissions,
+                (submission, callback) => {
+                  module.exports.renderPanel(
+                    'submission',
+                    pc,
+                    variant,
+                    question,
+                    submission,
+                    course,
+                    locals,
+                    (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
+                      if (ERR(err, callback)) return;
+                      courseIssues.push(...ret_courseIssues);
+                      panelCount++;
+                      if (cacheHit) cacheHitCount++;
+                      allRenderedElementNames = _.union(
+                        allRenderedElementNames,
+                        renderedElementNames
+                      );
+                      callback(null, html);
+                    }
+                  );
+                },
+                (err, submissionHtmls) => {
+                  if (ERR(err, callback)) return;
+                  htmls.submissionHtmls = submissionHtmls;
+                  callback(null);
+                }
+              );
+            },
+            (callback) => {
+              if (!renderSelection.answer) return callback(null);
+              module.exports.renderPanel(
+                'answer',
+                pc,
+                variant,
+                question,
+                submission,
+                course,
+                locals,
+                (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
+                  if (ERR(err, callback)) return;
+                  courseIssues.push(...ret_courseIssues);
+                  htmls.answerHtml = html;
+                  panelCount++;
+                  if (cacheHit) cacheHitCount++;
+                  allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+                  callback(null);
+                }
+              );
+            },
+            (callback) => {
+              // The logPageView middleware knows to write this to the DB
+              // when we log the page view - sorry for mutable object hell
+              locals.panel_render_count = panelCount;
+              locals.panel_render_cache_hit_count = cacheHitCount;
+              callback(null);
+            },
+            (callback) => {
               const extensions = context.course_element_extensions;
               const dependencies = {
                 coreStyles: [],
@@ -1490,18 +1491,18 @@ module.exports = {
               ];
               htmls.extraHeadersHtml = headerHtmls.join('\n');
               callback(null);
+            },
+          ],
+          (err) => {
+            // don't immediately error here; we have to return the pythonCaller
+            codeCallers.returnPythonCaller(pc, (pcErr) => {
+              if (ERR(pcErr, callback)) return;
+              if (ERR(err, callback)) return;
+              callback(null, courseIssues, htmls);
             });
-          },
-        ],
-        (err) => {
-          // don't immediately error here; we have to return the pythonCaller
-          codeCallers.returnPythonCaller(pc, (pcErr) => {
-            if (ERR(pcErr, callback)) return;
-            if (ERR(err, callback)) return;
-            callback(null, courseIssues, htmls);
-          });
-        }
-      );
+          }
+        );
+      });
     });
   },
 
@@ -1527,7 +1528,7 @@ module.exports = {
         context,
         (callback) => {
           // function to compute the file data and return the cachedData
-          codeCallers.getPythonCaller(course.path, (err, pc) => {
+          codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
             if (ERR(err, callback)) return;
             module.exports.processQuestion(
               'file',
@@ -1578,7 +1579,7 @@ module.exports = {
         gradable: _.get(submission, 'gradable', true),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'parse',
@@ -1630,7 +1631,7 @@ module.exports = {
         gradable: submission.gradable,
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'grade',
@@ -1684,7 +1685,7 @@ module.exports = {
         test_type: test_type,
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(course.path, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'test',
