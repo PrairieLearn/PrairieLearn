@@ -45,10 +45,12 @@ jobs:
       run: sh ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio
     - name: Build the workspace-xtermjs docker image if needed
       run: sh ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs
-    - name: Build the testing docker image
-      run: docker build -t pltest .
+    - name: Build the prairielearn docker image
+      # IMPORTANT: this image must be named `prairielearn/prairielearn` for the
+      # `prairielearn/executor` image to build correctly.
+      run: docker build -t prairielearn/prairielearn .
     - name: Start the container
-      run: docker run -td --name=test_container pltest /bin/bash
+      run: docker run -td --name=test_container prairielearn/prairielearn /bin/bash
     - name: Run the JavaScript linter
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
     - name: Run the Python linter
