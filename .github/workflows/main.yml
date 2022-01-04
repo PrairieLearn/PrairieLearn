@@ -16,6 +16,13 @@ jobs:
         # We need the whole history so we can diff against `master` to determine
         # what images need to be built.
         fetch-depth: 0
+
+    - run: git rev-parse HEAD
+    - run: git rev-parse HEAD~1
+    - run: git rev-parse HEAD~2
+    - run: git rev-parse HEAD^1
+    - run: git rev-parse HEAD^2
+    - run: git log -n 10
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1 # https://github.com/marketplace/actions/docker-setup-qemu
     - name: Set up Docker Buildx
