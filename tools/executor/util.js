@@ -36,10 +36,10 @@ const getImageTag = async () => {
     // this commit doesn't actually exist on this branch, which means that
     // if we try to deploy this branch to a staging environment but tag the
     // image with the head SHA, the version that's deployed wouldn't match
-    // the image tag. So, in this case, we actually take the *previous*
-    // commit, which should be the one made by a user that actually triggered
-    // this workflow run.
-    return (await execaRaw('git', ['rev-parse', 'HEAD~1'])).stdout;
+    // the image tag. So, in this case, we use `HEAD^2` to get the the SHA
+    // of the second parent of  the merge commit, which should be the commit
+    // made by a user that actually triggered this workflow run.
+    return (await execaRaw('git', ['rev-parse', 'HEAD^2'])).stdout;
   }
 
   return (await execaRaw('git', ['rev-parse', 'HEAD'])).stdout;
