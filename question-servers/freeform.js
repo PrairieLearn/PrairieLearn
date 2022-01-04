@@ -1013,7 +1013,7 @@ module.exports = {
         options: _.defaults({}, course.options, question.options),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir_host, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'generate',
@@ -1053,7 +1053,7 @@ module.exports = {
         options: _.get(variant, 'options', {}),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir_host, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'prepare',
@@ -1186,7 +1186,7 @@ module.exports = {
         return callback(new Error(`Error generating options: ${err}`));
       }
 
-      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir_host, (err, pc) => {
         if (ERR(err, callback)) return;
         async.series(
           [
@@ -1528,7 +1528,7 @@ module.exports = {
         context,
         (callback) => {
           // function to compute the file data and return the cachedData
-          codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
+          codeCallers.getPythonCaller(context.course_dir_host, (err, pc) => {
             if (ERR(err, callback)) return;
             module.exports.processQuestion(
               'file',
@@ -1579,7 +1579,7 @@ module.exports = {
         gradable: _.get(submission, 'gradable', true),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir_host, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'parse',
@@ -1631,7 +1631,7 @@ module.exports = {
         gradable: submission.gradable,
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir_host, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'grade',
@@ -1685,7 +1685,7 @@ module.exports = {
         test_type: test_type,
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      codeCallers.getPythonCaller(context.course_dir, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir_host, (err, pc) => {
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'test',
