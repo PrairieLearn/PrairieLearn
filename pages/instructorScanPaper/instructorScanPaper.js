@@ -61,13 +61,6 @@ router.post('/', function (req, res, next) {
       .catch((err) => {
         if (ERR(err, next)) return;
       });
-
-    // TO DO:
-
-    // discuss how/if we want to handle multiple barcodes on same submission ie.
-    // 1. we could use javascript to automatically add additional barcode submission element if an option is included in ,
-    // 2. store multiple submission referneces in barcodes table (probably need a barcode_submissions table)
-    // 3. decide if we need to do this now or can do it later with a migration to keep backwards compatibility.
   } else {
     return next(
       error.make(400, 'unknown __action', {
