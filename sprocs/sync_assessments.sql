@@ -18,6 +18,7 @@ DECLARE
     group_role_name text;
     role_name_can_view text;
     role_name_can_submit text;
+    permission record;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -198,6 +199,7 @@ BEGIN
                 deleted_at = NULL;
 
             -- Insert all group roles
+            -- FIXME: use ON CONFLICT () DO UPDATE to prevent duplicate entries
             FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
                 INSERT INTO group_roles (
                     role_name,
@@ -213,7 +215,14 @@ BEGIN
                     CASE WHEN group_role ? 'maximum' THEN (group_role->>'maximum')::integer ELSE (valid_assessment.data->>'group_min_size')::integer END,
                     CASE WHEN group_role ? 'can_assign_roles_at_start' THEN (group_role->>'can_assign_roles_at_start')::boolean ELSE FALSE END,
                     CASE WHEN group_role ? 'can_assign_roles_during_assessment' THEN (group_role->>'can_assign_roles_during_assessment')::boolean ELSE FALSE END
-                );
+                ) ON CONFLICT (role_name, assessment_id)
+                DO UPDATE
+                SET
+                    role_name = EXCLUDED.role_name,
+                    minimum = EXCLUDED.minimum,
+                    maximum = EXCLUDED.maximum,
+                    can_assign_roles_at_start = EXCLUDED.can_assign_roles_at_start,
+                    can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment;
             END LOOP;
         ELSE
             UPDATE group_configs
@@ -374,7 +383,6 @@ BEGIN
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
-                    -- TODO: for each role name in `can_view` and `can_submit`, insert appropriate entry in `assessment_question_role_permissions`
                     IF (valid_assessment.data->>'group_work')::boolean THEN
                         -- Create temporary tables for roles that can view the question
                         DROP TABLE IF EXISTS roles_can_view;
@@ -422,8 +430,37 @@ BEGIN
                         END LOOP;
 
                         -- Consolidate all temp table results
-                        INSERT INTO assessment_question_role_permissions
+                        -- FIXME: how do we prevent duplicate additions? can we do an ON CONFLICT check?
+                        DROP TABLE IF EXISTS temp_role_permissions;
+                        CREATE TEMPORARY TABLE temp_role_permissions (
+                            assessment_question_id BIGINT,
+                            group_role_id BIGINT,
+                            can_submit BOOLEAN,
+                            can_view BOOLEAN
+                        ) ON COMMIT DROP;
+
+                        INSERT INTO temp_role_permissions
                         SELECT * FROM roles_can_view NATURAL LEFT JOIN roles_can_submit;
+
+                        FOR permission in SELECT * FROM temp_role_permissions LOOP
+                            INSERT INTO assessment_question_role_permissions (
+                                assessment_question_id,
+                                group_role_id,
+                                can_submit,
+                                can_view
+                            ) VALUES (
+                                permission.assessment_question_id,
+                                permission.group_role_id,
+                                permission.can_submit,
+                                permission.can_view
+                            ) ON CONFLICT (assessment_question_id) 
+                            DO UPDATE
+                            SET
+                                assessment_question_id = EXCLUDED.assessment_question_id,
+                                group_role_id = EXCLUDED.group_role_id,
+                                can_submit = EXCLUDED.can_submit,
+                                can_view = EXCLUDED.can_view;
+                        END LOOP;
                     END IF;
                 END LOOP;
             END LOOP;
