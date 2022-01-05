@@ -21,7 +21,7 @@ router.post('/', function (req, res, next) {
       return next(error.make(400, 'Missing PDF file'));
     }
     if (!res.locals || !res.locals.authn_user || !res.locals.authn_user.user_id) {
-      return next(error.make(400, 'Authn_user required on file-store API'));
+      return next(error.make(400, 'File-store requires "authn_user" to save data'));
     }
 
     const options = {
