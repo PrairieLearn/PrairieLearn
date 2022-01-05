@@ -126,11 +126,12 @@ module.exports.initExpress = function () {
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/scan_paper',
     // Exception for PDF uploads, which may be quite a bit bigger than other file uploads
+    // Raw pdf does not persists. Segmented into jpeg pages downstream
     multer({
       storage: multer.memoryStorage(),
       limits: {
-        fieldSize: 2.5e7, // exception: 25MB, as we anticipate a large PDF file
-        fileSize: 2.5e7,
+        fieldSize: 5e7,
+        fileSize: 5e7,
         parts: config.fileUploadMaxParts,
       },
     }).single('file')
