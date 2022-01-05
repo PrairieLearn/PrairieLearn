@@ -9,7 +9,8 @@ const serverJobs = require('../../lib/server-jobs');
 const error = require('../../prairielib/lib/error');
 const ERR = require('async-stacktrace');
 
-router.get('/', (req, res) => {
+router.get('/', (req, res, next) => {
+  if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
