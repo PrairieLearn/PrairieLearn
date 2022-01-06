@@ -1,6 +1,6 @@
 from collections import Counter
 from typing import Mapping, Optional
-import networkx as nx  # type: ignore
+import networkx as nx
 
 
 def check_topological_sorting(order: list[str], graph: nx.DiGraph) -> int:
