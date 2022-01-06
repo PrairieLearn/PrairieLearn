@@ -9,7 +9,7 @@
     "type": "v3",
     "singleVariant": true,
     "workspaceOptions": {
-        "image": "codercom/code-server:3.4.1",
+        "image": "prairielearn/workspace-vscode",
         "port": 8080,
         "args": "--auth none",
         "home": "/home/coder",
