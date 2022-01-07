@@ -498,7 +498,17 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         if grading_mode == 'unordered' or (grading_mode in ['dag', 'ranking'] and partial_credit_type == 'lcs'):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
         first_wrong = 0 if grading_mode in ['dag', 'ranking'] else -1
-        feedback = FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1) if grading_mode == 'dag' and feedback_type == 'first-wrong' else ''
+
+        if grading_mode == 'dag' and feedback_type == 'first-wrong':
+            feedback = FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1)
+            group_belonging = {ans['tag']: ans['group'] for ans in data['correct_answers'][answer_name]}
+            has_block_groups = group_belonging != {} and set(group_belonging.values()) != {None}
+            if has_block_groups:
+                feedback += FIRST_WRONG_FEEDBACK['block-group']
+            feedback += '</ul>'
+        else:
+            feedback = ''
+
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': score, 'weight': weight, 'feedback': feedback, 'first_wrong': first_wrong}
 
