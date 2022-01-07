@@ -395,14 +395,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return
 
     if check_indentation:
-        student_answer_indent = [ans['indent'] for ans in student_answer]
-        true_answer_indent = [ans['indent'] for ans in true_answer_list]
-        for i, indent in enumerate(student_answer_indent):
-            if true_answer_indent[i] != '-1' and int(indent) != true_answer_indent[i]:
-                if 'tag' in student_answer[i]:
-                    student_answer[i]['tag'] = None
+        indentations = {ans['uuid']: ans['indent'] for ans in true_answer_list}
+        for ans in student_answer:
+            if ans['indent'] != indentations[ans['uuid']]:
+                if 'tag' in ans:
+                    ans['tag'] = None
                 else:
-                    student_answer[i]['inner_html'] = None
+                    ans['inner_html'] = None
 
     if grading_mode == 'unordered':
         true_answer_list = filter_multiple_from_array(true_answer_list, ['uuid', 'indent', 'inner_html'])
@@ -499,7 +498,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         score = 0
         if grading_mode == 'unordered' or (grading_mode in ['dag', 'ranking'] and partial_credit_type == 'lcs'):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
-        first_wrong = 0 if grading_mode == 'dag' else -1
+        first_wrong = 0 if grading_mode in ['dag', 'ranking'] else -1
         feedback = FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1) if grading_mode == 'dag' and feedback_type == 'first-wrong' else ''
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': score, 'weight': weight, 'feedback': feedback, 'first_wrong': first_wrong}
