@@ -8,7 +8,6 @@ import base64
 import os
 import json
 import math
-import itertools
 from dag_checker import grade_dag, lcs_partial_credit
 
 PL_ANSWER_CORRECT_DEFAULT = True
