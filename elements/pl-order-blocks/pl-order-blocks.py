@@ -8,6 +8,7 @@ import base64
 import os
 import json
 import math
+import itertools
 from dag_checker import grade_dag, lcs_partial_credit
 
 PL_ANSWER_CORRECT_DEFAULT = True
@@ -422,11 +423,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if grading_mode == 'ranking':
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x['ranking']))
             true_answer = [answer['ranking'] for answer in true_answer_list]
-            lines_of_rank = {}
-            for i, ranking in enumerate(true_answer):
-                if ranking not in lines_of_rank:
-                    lines_of_rank[ranking] = []
-                lines_of_rank[ranking].append(str(i))
+            lines_of_rank = {rank: [str(i) for i, x in enumerate(true_answer) if x == rank] for rank in set(true_answer)}
 
             cur_rank_depends = []
             prev_rank = None
