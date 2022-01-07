@@ -1,4 +1,4 @@
-<!-- <pl-question-panel>
+<pl-question-panel>
 <p>
 This question illustrates different use cases for the
 <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element"><code>pl-order-blocks</code></a>.
@@ -62,7 +62,7 @@ This question illustrates different use cases for the
  This examples uses <code>grading-method="ranking"</code> to control how the correct solution is ordered
   and <code>indent</code> attribute in <code>pl-answer</code> to define expected code indentation.
 </p>
-</pl-question-panel> -->
+</pl-question-panel>
 
 
 <pl-order-blocks answers-name="python-ordered" grading-method="ranking" indentation="true">
@@ -70,15 +70,15 @@ This question illustrates different use cases for the
   <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
   <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
   <pl-answer correct="true" ranking="3" indent="1">sum += first</pl-answer>
-  <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
   <pl-answer correct="true" ranking="3" indent="1">sum += second</pl-answer>
+  <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
   <pl-answer correct="false">sum + first</pl-answer>
   <pl-answer correct="false">sum + second</pl-answer>
   <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
 
 </pl-order-blocks>
 
-<!-- <hr>
+<hr>
 
 <pl-question-panel>
 <p>
@@ -99,4 +99,4 @@ to display the input area above the output area.</p>
   <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
   <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
   <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
-</pl-order-blocks> -->
+</pl-order-blocks>

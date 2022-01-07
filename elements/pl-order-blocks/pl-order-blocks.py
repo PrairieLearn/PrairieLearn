@@ -397,7 +397,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if check_indentation:
         indentations = {ans['uuid']: ans['indent'] for ans in true_answer_list}
         for ans in student_answer:
-            if ans['indent'] != indentations.get(ans['uuid']):
+            if ans['indent'] != indentations[ans['uuid']]:
                 if 'tag' in ans:
                     ans['tag'] = None
                 else:
