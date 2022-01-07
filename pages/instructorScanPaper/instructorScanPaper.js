@@ -7,14 +7,13 @@ const { processScrapPaperPdf } = require('../../lib/scrapPaperReader');
 const serverJobs = require('../../lib/server-jobs');
 
 const error = require('../../prairielib/lib/error');
-const ERR = require('async-stacktrace');
 
 router.get('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
-router.post('/', function (req, res, next) {
+router.post('/', async (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   if (req.body.__action === 'scan_scrap_paper') {
     if (!req.file) {
@@ -29,38 +28,26 @@ router.post('/', function (req, res, next) {
       type: 'decoding_pdf_barcoded_collection',
       description: 'Load data from local disk',
     };
-    let jobSequenceId = null;
+    const jobSequenceId = await serverJobs.createJobSequenceAsync(options);
+    debug('successfully created job', { jobSequenceId });
 
-    serverJobs
-      .createJobSequenceAsync(options)
-      .then((jsId) => {
-        jobSequenceId = jsId;
+    const jobOptions = {
+      course_id: res.locals.course ? res.locals.course.id : null,
+      type: 'decode_pdf_collection',
+      description:
+        'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
+      job_sequence_id: jobSequenceId,
+      last_in_sequence: false,
+    };
 
-        const jobOptions = {
-          course_id: res.locals.course ? res.locals.course.id : null,
-          type: 'decode_pdf_collection',
-          description:
-            'Decodes each barcode on each page in the pdf collection used as scrap paper by students.',
-          job_sequence_id: jobSequenceId,
-          last_in_sequence: false,
-        };
-
-        return serverJobs.createJobAsync(jobOptions);
-      })
-      .then((job) => {
-        debug('successfully created job', { jobSequenceId });
-
-        res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-        return processScrapPaperPdf(
-          req.file.buffer,
-          req.file.originalname,
-          res.locals.authn_user.user_id,
-          job
-        );
-      })
-      .catch((err) => {
-        if (ERR(err, next)) return;
-      });
+    const job = await serverJobs.createJobAsync(jobOptions);
+    res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    return processScrapPaperPdf(
+      req.file.buffer,
+      req.file.originalname,
+      res.locals.authn_user.user_id,
+      job
+    );
   } else {
     return next(
       error.make(400, 'unknown __action', {

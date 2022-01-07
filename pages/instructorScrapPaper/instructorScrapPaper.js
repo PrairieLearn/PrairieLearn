@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
-router.post('/', function (req, res, next) {
+router.post('/', async (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   if (req.body.__action === 'print_scrap_paper') {
     const numPages = req.body.num_pages;
@@ -28,18 +28,14 @@ router.post('/', function (req, res, next) {
       );
     }
 
-    createBarcodedPdf(numPages, pageLabel)
-      .then((pdf) => {
-        res.header(
-          'Content-Disposition',
-          `attachment; filename=Barcoded scrap paper - ${new Date().toISOString()}.pdf`
-        );
-        pdf.pipe(res);
-        pdf.end();
-      })
-      .catch((err) => {
-        if (ERR(err, next)) return;
-      });
+    const pdf = await createBarcodedPdf(numPages, pageLabel);
+
+    res.header(
+      'Content-Disposition',
+      `attachment; filename=Barcoded scrap paper - ${new Date().toISOString()}.pdf`
+    );
+    pdf.pipe(res);
+    pdf.end();
   } else {
     return next(
       error.make(400, 'unknown __action', {
