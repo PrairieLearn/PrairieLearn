@@ -463,7 +463,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                         feedback += FIRST_WRONG_FEEDBACK['indentation']
                     if has_block_groups:
                         feedback += FIRST_WRONG_FEEDBACK['block-group']
-                    feedback += "</ul>"
+                    feedback += '</ul>'
 
     data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight, 'first_wrong': first_wrong}
 
