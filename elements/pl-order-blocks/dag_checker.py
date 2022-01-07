@@ -127,10 +127,9 @@ def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]],
             node1, node2 = order[i], order[j]
             if group_belonging[node1] is None or group_belonging[node1] != group_belonging[node2]:
                 continue
-            if not all([group_belonging[x] == group_belonging[node1] for x in order[i:j+1]]):
-                for node in order[i:j+1]:
+            if not all([group_belonging[x] == group_belonging[node1] for x in order[i:j + 1]]):
+                for node in order[i:j + 1]:
                     problematic_subgraph.add_node(node)
-
 
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
