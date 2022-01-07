@@ -125,13 +125,13 @@ def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]])
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
     else:
-        mvc_size = len(problematic_subgraph) - 1
-        for i in range(1, len(problematic_subgraph) - 1):
+        mvc_size = problematic_subgraph.number_of_nodes() - 1
+        for i in range(1, problematic_subgraph.number_of_nodes() - 1):
             for subset in itertools.combinations(problematic_subgraph, i):
                 if is_vertex_cover(problematic_subgraph, subset):
                     mvc_size = len(subset)
                     break
-            if mvc_size < len(problematic_subgraph) - 1:
+            if mvc_size < problematic_subgraph.number_of_nodes() - 1:
                 break
 
     deletions_needed = distractors + mvc_size
