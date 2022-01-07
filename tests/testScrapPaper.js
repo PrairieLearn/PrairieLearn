@@ -175,7 +175,7 @@ describe('Barcode generation, student submission, and scanning process', functio
       it('barcodes should ALL be scannable by barcode reader', async () => {
         decodedJpegs = await decodeBarcodes(
           pdfBuffer,
-          `${config.imageProcessingDir}/test`,
+          `/tmp/test`,
           'Any original filename.pdf',
           console
         );
