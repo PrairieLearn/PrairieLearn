@@ -8,7 +8,7 @@ import base64
 import os
 import json
 import math
-from dag_checker import grade_dag
+from dag_checker import grade_dag, lcs_partial_credit
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
@@ -51,13 +51,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                         'solution-placement', 'max-incorrect',
                         'min-incorrect', 'weight',
                         'inline', 'max-indent',
-                        'feedback']
+                        'feedback', 'partial-credit']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
+
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'default')
+    if grading_method != 'dag' and partial_credit_type != 'default':
+        raise Exception('You may only specify different partial credit options in the DAG grading mode.')
+    elif grading_method == 'dag':
+        partial_credit_type = 'lcs' if partial_credit_type == 'default' else partial_credit_type
 
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
@@ -66,6 +72,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if (grading_method != 'dag' and feedback_type != 'none') or \
        (grading_method == 'dag' and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
+
+    if grading_method == 'dag' and partial_credit_type not in ['none', 'lcs']:
+        raise Exception('partial credit type "' + partial_credit_type + '" is not available with the "' + grading_method + '" grading-method.')
 
     correct_answers = []
     incorrect_answers = []
@@ -117,6 +126,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
+            if partial_credit_type != 'none':
+                raise Exception('Partial credit not yet supported in questions using block groups.')
+
             group_counter += 1
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
@@ -365,6 +377,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
     answer_weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'lcs')
 
     true_answer_list = data['correct_answers'][answer_name]
 
@@ -391,28 +404,36 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     elif grading_mode == 'ranking':
         ranking = filter_multiple_from_array(data['submitted_answers'][answer_name], ['ranking'])
         ranking = list(map(lambda x: x['ranking'], ranking))
-        correctness = 1 + ranking.count(0)
+        num_initial_correct = 1 + ranking.count(0)
         partial_credit = 0
         if len(ranking) != 0 and len(ranking) == len(true_answer_list):
             ranking = list(filter(lambda x: x != 0, ranking))
             for x in range(0, len(ranking) - 1):
                 if int(ranking[x]) == int(ranking[x + 1]) or int(ranking[x]) + 1 == int(ranking[x + 1]):
-                    correctness += 1
+                    num_initial_correct += 1
         else:
-            correctness = 0
-        correctness = max(correctness, partial_credit)
-        final_score = float(correctness / len(true_answer_list))
+            num_initial_correct = 0
+        num_initial_correct = max(num_initial_correct, partial_credit)
+        final_score = float(num_initial_correct / len(true_answer_list))
     elif grading_mode == 'dag':
         order = [ans['tag'] for ans in student_answer]
         depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
         group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
-        correctness, first_wrong = grade_dag(order, depends_graph, group_belonging)
+        num_initial_correct = grade_dag(order, depends_graph, group_belonging)
+        first_wrong = -1 if num_initial_correct == len(order) else num_initial_correct
 
-        if correctness == len(depends_graph.keys()):
-            final_score = 1
-        elif correctness < len(depends_graph.keys()):
-            final_score = 0  # TODO figure out a partial credit scheme
+        true_answer_length = len(depends_graph.keys())
+        if partial_credit_type == 'none':
+            if num_initial_correct == true_answer_length:
+                final_score = 1
+            elif num_initial_correct < true_answer_length:
+                final_score = 0
+        elif partial_credit_type == 'lcs':
+            edit_distance = lcs_partial_credit(order, depends_graph)
+            final_score = max(0, float(true_answer_length - edit_distance) / true_answer_length)
+
+        if final_score < 1:
             if feedback_type == 'none':
                 feedback = ''
             elif feedback_type == 'first-wrong':
@@ -440,6 +461,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     answer_name_field = answer_name + '-input'
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
+    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'lcs')
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -460,7 +482,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif data['test_type'] == 'incorrect':
         answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
         answer.pop(0)
-        score = float(len(answer)) / (len(answer) + 1) if grading_mode == 'unordered' else 0
+        score = 0
+        if grading_mode == 'unordered' or (grading_mode == 'dag' and partial_credit_type == 'lcs'):
+            score = round(float(len(answer)) / (len(answer) + 1), 2)
         first_wrong = 0 if grading_mode == 'dag' else -1
         feedback = DAG_FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1) if grading_mode == 'dag' and feedback_type == 'first-wrong' else ''
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
