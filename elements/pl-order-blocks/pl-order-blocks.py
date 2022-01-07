@@ -404,30 +404,30 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     elif grading_mode == 'ranking':
         ranking = filter_multiple_from_array(data['submitted_answers'][answer_name], ['ranking'])
         ranking = list(map(lambda x: x['ranking'], ranking))
-        correctness = 1 + ranking.count(0)
+        num_initial_correct = 1 + ranking.count(0)
         partial_credit = 0
         if len(ranking) != 0 and len(ranking) == len(true_answer_list):
             ranking = list(filter(lambda x: x != 0, ranking))
             for x in range(0, len(ranking) - 1):
                 if int(ranking[x]) == int(ranking[x + 1]) or int(ranking[x]) + 1 == int(ranking[x + 1]):
-                    correctness += 1
+                    num_initial_correct += 1
         else:
-            correctness = 0
-        correctness = max(correctness, partial_credit)
-        final_score = float(correctness / len(true_answer_list))
+            num_initial_correct = 0
+        num_initial_correct = max(num_initial_correct, partial_credit)
+        final_score = float(num_initial_correct / len(true_answer_list))
     elif grading_mode == 'dag':
         order = [ans['tag'] for ans in student_answer]
         depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
         group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
-        correctness = grade_dag(order, depends_graph, group_belonging)
-        first_wrong = -1 if correctness == len(order) else correctness
+        num_initial_correct = grade_dag(order, depends_graph, group_belonging)
+        first_wrong = -1 if num_initial_correct == len(order) else num_initial_correct
 
         true_answer_length = len(depends_graph.keys())
         if partial_credit_type == 'none':
-            if correctness == true_answer_length:
+            if num_initial_correct == true_answer_length:
                 final_score = 1
-            elif correctness < true_answer_length:
+            elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type == 'lcs':
             edit_distance = lcs_partial_credit(order, depends_graph)
