@@ -27,7 +27,7 @@ def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]
     """
     group_sizes = Counter(group_belonging.values())
     cur_group = None
-    cur_group_size = None
+    cur_group_size = 0
     for i, node in enumerate(order):
         group_id = group_belonging.get(node)
         if group_id is not None and cur_group is None:
@@ -40,7 +40,7 @@ def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]
                 cur_group_size += 1
                 if cur_group_size == group_sizes[cur_group]:
                     cur_group = None
-                    cur_group_size = None
+                    cur_group_size = 0
             else:
                 return i
     return len(order)
