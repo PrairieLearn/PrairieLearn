@@ -177,7 +177,7 @@ describe('Barcode generation, student submission, and scanning process', functio
           pdfBuffer,
           `/tmp/test`,
           'Any original filename.pdf',
-          console
+          {info: () => {}}
         );
         assert.isDefined(decodedJpegs);
         decodedJpegs.forEach((jpeg) => {
