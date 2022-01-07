@@ -1,5 +1,7 @@
+from typing import Dict, Any
 import prairielearn as pl
 import lxml.html
+from lxml import etree
 import random
 import chevron
 import base64
@@ -34,11 +36,11 @@ DAG_FIRST_WRONG_FEEDBACK = {
 }
 
 
-def filter_multiple_from_array(data, keys):
+def filter_multiple_from_array(data: list[Dict[str, Any]], keys: list[str]) -> list[Dict[str, Any]]:
     return [{key: item[key] for key in keys} for item in data]
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -119,7 +121,7 @@ def prepare(element_html, data):
     index = 0
     group_counter = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
-        if html_tags.tag is lxml.etree.Comment:
+        if html_tags.tag is etree.Comment:
             continue
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
@@ -127,7 +129,7 @@ def prepare(element_html, data):
 
             group_counter += 1
             for grouped_tag in html_tags:
-                if html_tags.tag is lxml.etree.Comment:
+                if html_tags.tag is etree.Comment:
                     continue
                 else:
                     prepare_tag(grouped_tag, index, group_counter)
@@ -171,7 +173,7 @@ def prepare(element_html, data):
     data['correct_answers'][answer_name] = correct_answers
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -244,7 +246,6 @@ def render(element_html, data):
         student_submission = ''
         score = None
         feedback = None
-
         if answer_name in data['submitted_answers']:
             student_submission = [{
                 'inner_html': attempt['inner_html'],
@@ -316,17 +317,16 @@ def render(element_html, data):
             return html
         else:
             return ''
+    else:
+        raise Exception('Invalid panel type')
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     answer_raw_name = answer_name + '-input'
-    student_answer = None
-
-    if answer_raw_name in data['raw_submitted_answers']:
-        student_answer = data['raw_submitted_answers'][answer_raw_name]
+    student_answer = data['raw_submitted_answers'].get(answer_raw_name, '[]')
 
     student_answer = json.loads(student_answer)
     if student_answer is None or student_answer == []:
@@ -366,7 +366,7 @@ def parse(element_html, data):
         del data['submitted_answers'][answer_raw_name]
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -402,30 +402,30 @@ def grade(element_html, data):
     elif grading_mode == 'ranking':
         ranking = filter_multiple_from_array(data['submitted_answers'][answer_name], ['ranking'])
         ranking = list(map(lambda x: x['ranking'], ranking))
-        correctness = 1 + ranking.count(0)
+        num_initial_correct = 1 + ranking.count(0)
         partial_credit = 0
         if len(ranking) != 0 and len(ranking) == len(true_answer_list):
             ranking = list(filter(lambda x: x != 0, ranking))
             for x in range(0, len(ranking) - 1):
                 if int(ranking[x]) == int(ranking[x + 1]) or int(ranking[x]) + 1 == int(ranking[x + 1]):
-                    correctness += 1
+                    num_initial_correct += 1
         else:
-            correctness = 0
-        correctness = max(correctness, partial_credit)
-        final_score = float(correctness / len(true_answer_list))
+            num_initial_correct = 0
+        num_initial_correct = max(num_initial_correct, partial_credit)
+        final_score = float(num_initial_correct / len(true_answer_list))
     elif grading_mode == 'dag':
         order = [ans['tag'] for ans in student_answer]
         depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
         group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
-        correctness = grade_dag(order, depends_graph, group_belonging)
-        first_wrong = -1 if correctness == len(order) else correctness
+        num_initial_correct = grade_dag(order, depends_graph, group_belonging)
+        first_wrong = -1 if num_initial_correct == len(order) else num_initial_correct
 
         true_answer_length = len(depends_graph.keys())
         if partial_credit_type == 'none':
-            if correctness == true_answer_length:
+            if num_initial_correct == true_answer_length:
                 final_score = 1
-            elif correctness < true_answer_length:
+            elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type == 'lcs':
             edit_distance = lcs_partial_credit(order, depends_graph, group_belonging)
@@ -452,7 +452,7 @@ def grade(element_html, data):
     data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight, 'first_wrong': first_wrong}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
     answer_name = pl.get_string_attrib(element, 'answers-name')

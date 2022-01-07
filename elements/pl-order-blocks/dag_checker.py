@@ -1,6 +1,6 @@
-from collections import Counter
 from typing import Mapping, Optional, Iterable
-import networkx as nx  # type: ignore
+from collections import Counter
+import networkx as nx
 import itertools
 
 
@@ -27,7 +27,7 @@ def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]
     """
     group_sizes = Counter(group_belonging.values())
     cur_group = None
-    cur_group_size = None
+    cur_group_size = 0
     for i, node in enumerate(order):
         group_id = group_belonging.get(node)
         if group_id is not None and cur_group is None:
@@ -40,7 +40,7 @@ def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]
                 cur_group_size += 1
                 if cur_group_size == group_sizes[cur_group]:
                     cur_group = None
-                    cur_group_size = None
+                    cur_group_size = 0
             else:
                 return i
     return len(order)
@@ -131,23 +131,21 @@ def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]],
                 for node in order[i:j+1]:
                     problematic_subgraph.add_node(node)
 
-    print("subgraph size: ", problematic_subgraph.number_of_nodes())
 
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
     else:
-        mvc_size = len(problematic_subgraph) - 1
-        for i in range(1, len(problematic_subgraph) - 1):
+        mvc_size = problematic_subgraph.number_of_nodes() - 1
+        for i in range(1, problematic_subgraph.number_of_nodes() - 1):
             for subset in itertools.combinations(problematic_subgraph, i):
                 new_order = [x for x in order if x in subset]
                 new_group_belonging = {key: group_belonging[key] for key in new_order}
                 if is_vertex_cover(problematic_subgraph, subset) and len(new_order) == check_grouping(new_order, new_group_belonging):
                     mvc_size = len(subset)
                     break
-            if mvc_size < len(problematic_subgraph) - 1:
+            if mvc_size < problematic_subgraph.number_of_nodes() - 1:
                 break
 
     deletions_needed = distractors + mvc_size
-    print(deletions_needed)
     insertions_needed = len(depends_graph.keys()) - (len(order) - deletions_needed)
     return deletions_needed + insertions_needed
