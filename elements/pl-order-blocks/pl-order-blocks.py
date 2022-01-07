@@ -31,8 +31,9 @@ FIRST_WRONG_FEEDBACK = {
     'wrong-at-block': r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
         The problem is most likely one of the following:
         <ul><li> This block is not a part of the correct solution </li>
-        <li> This block needs to come after a block that did not appear before it. </li>""",
-    'block-group-feedback': r"""<li> You have attempted to start a new section of the answer without finishing the previous section </li></ul>"""
+        <li>This block needs to come after a block that did not appear before it </li>""",
+    'indentation': r"""<li>This line is indented incorrectly </li>""",
+    'block-group': r"""<li> You have attempted to start a new section of the answer without finishing the previous section </li>"""
 }
 
 
@@ -419,17 +420,18 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         group_belonging = {}
 
         if grading_mode == 'ranking':
+            true_answer_list = sorted(true_answer_list, key=lambda x: int(x['ranking']))
             true_answer = [answer['ranking'] for answer in true_answer_list]
             lines_of_rank = {}
             for i, ranking in enumerate(true_answer):
-                if not ranking in lines_of_rank:
+                if ranking not in lines_of_rank:
                     lines_of_rank[ranking] = []
                 lines_of_rank[ranking].append(str(i))
 
             cur_rank_depends = []
             prev_rank = None
             for i, ranking in enumerate(true_answer):
-                if prev_rank != None and ranking != prev_rank:
+                if prev_rank is not None and ranking != prev_rank:
                     cur_rank_depends = lines_of_rank[prev_rank]
                 depends_graph[str(i)] = cur_rank_depends
                 prev_rank = ranking
@@ -460,8 +462,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 else:
                     feedback = FIRST_WRONG_FEEDBACK['wrong-at-block'].format(str(first_wrong + 1))
                     has_block_groups = group_belonging != {} and set(group_belonging.values()) != {None}
+                    if check_indentation:
+                        feedback += FIRST_WRONG_FEEDBACK['indentation']
                     if has_block_groups:
-                        feedback += FIRST_WRONG_FEEDBACK['block-group-feedback']
+                        feedback += FIRST_WRONG_FEEDBACK['block-group']
+                    feedback += "</ul>"
 
     data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight, 'first_wrong': first_wrong}
 
