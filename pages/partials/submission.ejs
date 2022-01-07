@@ -25,8 +25,8 @@
     <div class="card-body submission-body" >
       <%- submissionHtml %>
       <% if (typeof submission != 'undefined' && typeof submission.pdf_barcode_scan != 'undefined') { %>
-        <div class="submission-body-pdf-barcode-scan-container">
-          <iframe class="submission-body-pdf-barcode-scan" width="100%" type="text/html" src="data:application/pdf;base64,<%= submission.pdf_barcode_scan %>"></iframe>
+        <div>
+          <iframe width="100%" type="text/html" src="data:application/pdf;base64,<%= submission.pdf_barcode_scan %>"></iframe>
         </div>
       <% } %>
     </div>
