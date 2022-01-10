@@ -44,7 +44,6 @@ class MathFormula extends Embed {
     const node = super.create(value);
     if (typeof value === 'string') {
       this.waitUntilLoaded(node, value);
-
     }
     return node;
   }
@@ -52,12 +51,11 @@ class MathFormula extends Embed {
   static waitUntilLoaded(node, value) {
     if (document.readyState !== 'complete') {
       window.setTimeout(this.waitUntilLoaded, 200, node, value);
-    }
-    else {
+    } else {
       let html = MathJax.tex2chtml(value);
-      let formatted = html.innerHTML
-      node.innerHTML = "&#65279;" + formatted + "&#65279;" + " ";
-      MathJax.typeset()
+      let formatted = html.innerHTML;
+      node.innerHTML = '&#65279;' + formatted + '&#65279;' + ' ';
+      MathJax.typeset();
       node.contentEditable = 'false';
       node.setAttribute('data-value', value);
       return node;
