@@ -43,14 +43,25 @@ class MathFormula extends Embed  {
   static create(value) {
     const node = super.create(value);    
     if (typeof value === 'string') {
-      let html = MathJax.tex2chtml(value);
-      let formatted = html.innerHTML
-      node.innerHTML = "&#65279;" + formatted +"&#65279;";
-      MathJax.typeset();
-      node.setAttribute('data-value', value);
-      node.contentEditable = 'false';
+      this.waitUntilLoaded(node, value);
+      
     }
     return node;
+  }
+
+  static waitUntilLoaded(node, value) {
+    if(document.readyState !== 'complete'){
+      window.setTimeout(this.waitUntilLoaded, 200, node, value);
+    }
+    else{
+      let html = MathJax.tex2chtml(value);
+      let formatted = html.innerHTML
+      node.innerHTML = "&#65279;" + formatted + "&#65279;" + " ";
+      MathJax.typeset()
+      node.contentEditable = 'false';
+      node.setAttribute('data-value', value);
+      return node;
+    }
   }
 
   static value(domNode) {
