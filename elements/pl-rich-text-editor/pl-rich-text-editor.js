@@ -39,21 +39,21 @@ window.PLRTE = function (uuid, options) {
 
 var Embed = Quill.imports.parchment.Embed;
 
-class MathFormula extends Embed  {
+class MathFormula extends Embed {
   static create(value) {
-    const node = super.create(value);    
+    const node = super.create(value);
     if (typeof value === 'string') {
       this.waitUntilLoaded(node, value);
-      
+
     }
     return node;
   }
 
   static waitUntilLoaded(node, value) {
-    if(document.readyState !== 'complete'){
+    if (document.readyState !== 'complete') {
       window.setTimeout(this.waitUntilLoaded, 200, node, value);
     }
-    else{
+    else {
       let html = MathJax.tex2chtml(value);
       let formatted = html.innerHTML
       node.innerHTML = "&#65279;" + formatted + "&#65279;" + " ";
