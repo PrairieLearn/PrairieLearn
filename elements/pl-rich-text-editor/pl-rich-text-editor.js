@@ -59,11 +59,10 @@ class MathFormula extends Embed {
       node.contentEditable = 'false';
       node.setAttribute('data-value', value);
     } else {
-      var n = node;
       window.addEventListener(
         'load',
         function () {
-          MathFormula.updateNode(n, value);
+          MathFormula.updateNode(node, value);
         },
         false
       );
@@ -72,11 +71,6 @@ class MathFormula extends Embed {
 
   static value(domNode) {
     return domNode.getAttribute('data-value');
-  }
-
-  html() {
-    const { formula } = this.value();
-    return `<span>${formula}</span>`;
   }
 }
 MathFormula.blotName = 'formula';
