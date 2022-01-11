@@ -29,7 +29,7 @@ router.get('/', (req, res, next) => {
             if (ERR(err, next)) return;
 
             // Instance question doesn't exist (redirect to config page)
-            if (result.rowCount == 0) {
+            if (result.rowCount === 0) {
               return callback(
                 error.make(404, 'Instance question not found.', {
                   locals: res.locals,
@@ -111,7 +111,7 @@ router.post('/', function (req, res, next) {
     gradingJobId,
   ];
 
-  if (req.body.__action == 'add_manual_grade') {
+  if (req.body.__action === 'add_manual_grade') {
     if (typeof note !== 'string') {
       return ERR(new Error('submissionNote must be valid string', next));
     }
@@ -134,9 +134,9 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'abort_manual_grading') {
+  } else if (req.body.__action === 'abort_manual_grading') {
     res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading`);
-  } else if (req.body.__action == 'resolve_manual_grading_conflict') {
+  } else if (req.body.__action === 'resolve_manual_grading_conflict') {
     // MUST NOT grade submission 'conflictDataSource', as already current grade reflected in student and instructor views
     if (req.body.conflictDataSource === 'submission') {
       sqlDb.queryOneRow(sql.remove_grading_job_conflict, { id: gradingJobId }, (err) => {
