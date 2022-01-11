@@ -354,9 +354,9 @@ const FILE_UUID_REGEX =
  * @property {Record<string, string | null>} environment
  */
 
- /**
-  * @typedef {"Internal" | "External" | "Manual"} GradingMethod
-  */
+/**
+ * @typedef {"Internal" | "External" | "Manual"} GradingMethod
+ */
 
 /**
  * @typedef {Object} Question

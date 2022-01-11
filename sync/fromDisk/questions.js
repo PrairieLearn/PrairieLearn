@@ -6,17 +6,17 @@ const perf = require('../performance')('question');
 
 /**
  * Based upon the passed question and a grading type,
- *  returns a boolean if the question has the given grading method type 
+ *  returns a boolean if the question has the given grading method type
  * @param {import('../course-db').Question} q
  * @param {import('../course-db').GradingMethod} gradingMethodType
  * @returns {boolean}
  */
- function hasGradingMethod(q, gradingMethodType) {
-    const { gradingMethod, gradingMethods } = q;
-    if (gradingMethods) {
-        return (Array.isArray(gradingMethods) && gradingMethods.indexOf(gradingMethodType) > -1);
-    }
-    return gradingMethod === gradingMethodType;
+function hasGradingMethod(q, gradingMethodType) {
+  const { gradingMethod, gradingMethods } = q;
+  if (gradingMethods) {
+    return Array.isArray(gradingMethods) && gradingMethods.indexOf(gradingMethodType) > -1;
+  }
+  return gradingMethod === gradingMethodType;
 }
 
 /**
@@ -25,13 +25,14 @@ const perf = require('../performance')('question');
  * @returns {boolean}
  */
 function hasInternalGrading(q) {
-    const { gradingMethod, gradingMethods } = q;
-    if (gradingMethods) {
-        return (Array.isArray(gradingMethods) && !gradingMethods.length) || hasGradingMethod(q, 'Internal');
-    }
-    return !gradingMethod || hasGradingMethod(q, 'Internal');
+  const { gradingMethod, gradingMethods } = q;
+  if (gradingMethods) {
+    return (
+      (Array.isArray(gradingMethods) && !gradingMethods.length) || hasGradingMethod(q, 'Internal')
+    );
+  }
+  return !gradingMethod || hasGradingMethod(q, 'Internal');
 }
-
 
 /**
  * @param {import('../course-db').Question} q

@@ -28,7 +28,6 @@ const externalGraderResults = require('../lib/externalGraderResults');
 const externalGradingSocket = require('../lib/externalGradingSocket');
 const assessment = require('../lib/assessment');
 
-
 config.startServer = false;
 config.serverPort = 3007;
 const server = require('../server');
@@ -111,10 +110,10 @@ module.exports = {
             workers.init();
             callback(null);
           },
-                          async () => {
-                               logger.verbose('Starting server...');
-                                _server = await server.startServerAsync();
-                          },
+          async () => {
+            logger.verbose('Starting server...');
+            _server = await server.startServerAsync();
+          },
           function (callback) {
             debug('before(): initialize socket server');
             socketServer.init(_server, function (err) {
@@ -143,25 +142,25 @@ module.exports = {
               callback(null);
             });
           },
-          function(callback) {
-            externalGrader.init(assessment, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
+          function (callback) {
+            externalGrader.init(assessment, function (err) {
+              if (ERR(err, callback)) return;
+              callback(null);
             });
-        },
-        function(callback) {
+          },
+          function (callback) {
             if (!config.externalGradingEnableResults) return callback(null);
             externalGraderResults.init((err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
+              if (ERR(err, callback)) return;
+              callback(null);
             });
-        },
-        function(callback) {
-            externalGradingSocket.init(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
+          },
+          function (callback) {
+            externalGradingSocket.init(function (err) {
+              if (ERR(err, callback)) return;
+              callback(null);
             });
-        },
+          },
         ],
         function (err) {
           debug('before(): completed');
