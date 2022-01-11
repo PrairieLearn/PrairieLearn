@@ -43,22 +43,30 @@ class MathFormula extends Embed {
   static create(value) {
     const node = super.create(value);
     if (typeof value === 'string') {
-      this.waitUntilLoaded(node, value);
+      this.updateNode(node, value);
     }
     return node;
   }
 
-  static waitUntilLoaded(node, value) {
-    if (document.readyState !== 'complete') {
-      window.setTimeout(this.waitUntilLoaded, 200, node, value);
-    } else {
+  static updateNode(node, value) {
+    // Wait for the page to be fully loaded. Mathjax will not work unless the page is fully loaded.
+    if (document.readyState === 'complete') {
       let html = MathJax.tex2chtml(value);
       let formatted = html.innerHTML;
-      node.innerHTML = '&#65279;' + formatted + '&#65279;' + ' ';
+      // Without trailing whitespace, cursor will not appear at end of text if LaTeX is at end
+      node.innerHTML = formatted + '&#8201;';
       MathJax.typeset();
       node.contentEditable = 'false';
       node.setAttribute('data-value', value);
-      return node;
+    } else {
+      var n = node;
+      window.addEventListener(
+        'load',
+        function () {
+          MathFormula.updateNode(n, value);
+        },
+        false
+      );
     }
   }
 
