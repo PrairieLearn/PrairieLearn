@@ -10,7 +10,7 @@
     "gradingMethod": "External",
     "externalGradingOptions": {
         "enabled": true,
-        "image": "jonatanschroeder/cgrader",
+        "image": "prairielearn/grader-c",
         "timeout": 1000,
         "entrypoint": "python3 /grade/tests/test.py"
     }

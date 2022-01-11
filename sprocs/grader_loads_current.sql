@@ -51,12 +51,12 @@ BEGIN
     -- get information from the DB about jobs that still need to be graded
 
     SELECT
-        coalesce(max(extract(epoch FROM now() - gj.date)), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_requested_at)) FILTER (WHERE gj.grading_submitted_at IS NULL), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_submitted_at)) FILTER (WHERE gj.grading_received_at IS NULL), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_received_at)) FILTER (WHERE gj.grading_started_at IS NULL), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_started_at)) FILTER (WHERE gj.grading_finished_at IS NULL), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_finished_at)) FILTER (WHERE gj.graded_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.date)), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_requested_at)) FILTER (WHERE gj.grading_submitted_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_submitted_at)) FILTER (WHERE gj.grading_received_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_received_at)) FILTER (WHERE gj.grading_started_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_started_at)) FILTER (WHERE gj.grading_finished_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_finished_at)) FILTER (WHERE gj.graded_at IS NULL), 0),
         -- number of jobs in-flight in different phases
         count(*),
         count(*) FILTER (WHERE gj.grading_submitted_at IS NULL AND gj.grading_requested_at IS NOT NULL),

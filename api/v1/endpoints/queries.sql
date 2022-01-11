@@ -53,12 +53,12 @@ WITH object_data AS (
         ai.open,
         CASE
             WHEN ai.open AND ai.date_limit IS NOT NULL
-                THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
+                THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
             WHEN ai.open THEN 'Open'
             ELSE 'Closed'
         END AS time_remaining,
         format_date_iso8601(ai.date, ci.display_timezone) AS start_date,
-        EXTRACT(EPOCH FROM ai.duration) AS duration_seconds,
+        DATE_PART('epoch', ai.duration) AS duration_seconds,
         (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score
     FROM
         assessments AS a
@@ -158,7 +158,7 @@ WITH object_data AS (
         iq.highest_submission_score,
         iq.last_submission_score,
         iq.number_attempts,
-        extract(epoch FROM iq.duration) AS duration_seconds
+        DATE_PART('epoch', iq.duration) AS duration_seconds
     FROM
         assessment_instances AS ai
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
