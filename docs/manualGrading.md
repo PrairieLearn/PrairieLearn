@@ -2,6 +2,7 @@
 
 Prairie Learn supports two manual grading features: an interactive UI and a CSV grade upload feature.
 
+<<<<<<< HEAD
 The manual grading feature allows an instructor or TA to submit a grade after a student has made a submission on a question. This question must be configured for manual grading. Once a question is configured for manual grading, students will only be able to make a submission with the "Save" button on the question view. Answers are saved, but no automatic grading occurs.
 
 ## Save Button
@@ -13,6 +14,14 @@ It is recommended to also mark manually-graded questions as `"singleVariant": tr
 ## Configuring a Question for Manual Grading
 
 Both, the interactive UI and legacy CSV upload, manual grading features can be configured by adding the "Manual" grading method to a question configuration:
+
+=======
+
+## Configuring a question for manual grading
+
+The [`info.json` file](question.md#question-infojson) in the question should set `"gradingMethod": "Manual"`, like this:
+
+> > > > > > > origin/master
 
 ```json
 {
@@ -27,7 +36,16 @@ Both, the interactive UI and legacy CSV upload, manual grading features can be c
 
 Manual grading users must have "Student data access" viewer permissions to be able to manually grade a submission. A course "Editor" or "Owner" will have to add the manual grading users, with the appropriate permissions, in the 'Staff' area of the course configuration page.
 
-## Manual Grading (UI Interactive)
+To show manual feedback the `question.html` file should contain an element to display the feedback next to student submissions. A basic template for this is:
+
+```html
+<pl-submission-panel>
+  {{#feedback.manual}}
+  <p>Feedback from course staff:</p>
+  <markdown>{{{feedback.manual}}}</markdown>
+  {{/feedback.manual}}
+</pl-submission-panel>
+```
 
 The manual grading view re-uses the student question view that displays student submissions with their grading results. The manaul grading view also adds a grading panel to make submitting the grade `score` and `feedback` easy. The score and feedback is added to the latest submission displayed on the manual grading view. The feedback must be a valid string and the score must be a number divisible by 5 and out of 100 percent.
 
@@ -70,6 +88,7 @@ Any [elements](elements/) can be used in the [`question.html`](question.md#quest
 ### Downloading Student Answers
 
 After students have completed the assessment, download the submitted answers by going to the assessment page, then the "Downloads" tab, and selecting the `<assessment>_submissions_for_manual_grading.csv` file. This looks like:
+
 ```csv
 uid,uin,username,name,role,qid,old_score_perc,old_feedback,submission_id,params,true_answer,submitted_answer,old_partial_scores,partial_scores,score_perc,feedback
 mwest@illinois.edu,1,,,,explainMax,0,,42983,{},{},{"ans": "returns the maximum value in the array"},,,,
@@ -81,7 +100,22 @@ This CSV file has three blank columns at the end, ready for the percentage score
 
 If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the "Downloads" tab. The scores and feedback should still be entered into the CSV file.
 
-### Uploading Scores and Feedback
+### Workspaces
+
+To include files copied out of the workspace into the `<assessment>_files_for_manual_grading.zip`, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`
+
+```json
+"workspaceOptions": {
+        "gradedFiles": [
+            "starter_code.h",
+            "starter_code.c"
+        ],
+        ...
+}
+...
+```
+
+## Uploading the scores and feedback
 
 After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Uploads" tab, and selecting "Upload new question scores". If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
 
@@ -92,16 +126,20 @@ If you prefer to use points rather than a percentage score, rename the `score_pe
 You also have the option to set partial scores. These can be based on individual elements of the question (typically based on the `answers-name` attribute of the element), or any other setting you wish to use. Partial scores must be represented using a JSON object, with keys corresponding to individual elements. Each element key should be mapped to an object, and should ideally contain values for `score` (with a value between 0 and 1) and `weight` (which defaults to 1 if not present). For example, to assign grades to a question with elements `answer1` and `answer2`, use:
 
 ```json
-{"answer1": {"score": 0.7, "weight": 2, "feedback": "Almost there!"}, "answer2": {"score": 1, "weight": 1, "feedback": "Great job!"}}
+{
+  "answer1": { "score": 0.7, "weight": 2, "feedback": "Almost there!" },
+  "answer2": { "score": 1, "weight": 1, "feedback": "Great job!" }
+}
 ```
 
 If the `partial_scores` column contains a valid value, and there is no value in `score_perc` or `points`, the score will be computed based on the weighted average of the partial scores. For example, the score above will be computed as 80% (the weighted average between 70% with weight 2, and 100% with weight 1).
 
-*WARNING*: note that some elements such as drawings or matrix elements may rely on elaborate partial score values with specific structures and objects. When updating partial scores, make sure you follow the same structure as the original partial scores to avoid any problems. Changing these values could lead to errors on rendering the question pages for these elements.
+_WARNING_: note that some elements such as drawings or matrix elements may rely on elaborate partial score values with specific structures and objects. When updating partial scores, make sure you follow the same structure as the original partial scores to avoid any problems. Changing these values could lead to errors on rendering the question pages for these elements.
 
 ## Displaying Manual Grading Feedback
 
 To show manual feedback the `question.html` file should contain an element to display the feedback next to student submissions. A basic template for this is:
+
 ```html
 <pl-submission-panel>
   {{#feedback.manual}}

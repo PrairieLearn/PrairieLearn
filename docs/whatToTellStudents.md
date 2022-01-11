@@ -1,4 +1,3 @@
-
 # What To Tell Students
 
 Students who are using PrairieLearn for the first time often have questions about its little quirks. This page collects examples and best practices for what to tell students, in order to minimize confusion.
@@ -6,7 +5,6 @@ Students who are using PrairieLearn for the first time often have questions abou
 ## Grading of Homework-type assessments
 
 See the [Assessment page](assessment.md) for a description of how grading works. See below for an example (a piazza post from AE353, Spring 2017) of how this process might be explained to students.
-
 
 ### An example note to students about how grading works
 

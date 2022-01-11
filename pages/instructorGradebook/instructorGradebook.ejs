@@ -213,7 +213,8 @@
                     data-sortable="true"
                     data-class="text-nowrap"
                     data-formatter="gradeFormatter"
-                    data-sort-order="desc"><%- include('../partials/assessment', {assessment: assessment}); %></th>
+                    data-sort-order="desc"
+                    data-search-formatter="false"><%- include('../partials/assessment', {assessment: assessment}); %></th>
                 <% }); %>
               </tr>
             </thead>
