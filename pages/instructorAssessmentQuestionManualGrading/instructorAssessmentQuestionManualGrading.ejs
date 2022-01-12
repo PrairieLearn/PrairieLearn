@@ -29,6 +29,12 @@
             <thead>
               <tr>
                 <th>Student question</th>
+                <% if (assessment.group_work) { %>
+                <th>Group Name</th>
+                <% } else { %>
+                <th>UID</th>
+                <th>Name</th>
+                <% } %>
                 <th class="text-center">
                   Awarded points
                 </th>
@@ -47,6 +53,10 @@
                   <%= question_title %>
                   (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">student view</a>)
                 </td>
+                <% if (!assessment.group_work) { %>
+                <td><%= instance_question.uid %></td>
+                <% } %>
+                <td><%= instance_question.user_or_group_name %></td>
                 <td class="text-center">
                   <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: max_points}); %>
                   <% if (authz_data.has_course_instance_permission_edit) { %>
@@ -107,11 +117,20 @@
             <thead>
               <tr>
                 <th>Student question</th>
+                <% if (assessment.group_work) { %>
+                <th>Group Name</th>
+                <% } else { %>
+                <th>UID</th>
+                <th>Name</th>
+                <% } %>
                 <th class="text-center">
                   Awarded points
                 </th>
                 <th class="text-center" colspan="2">
                   Percentage score
+                </th>
+                <th class="text-center" colspan="1">
+                  Begin Grading
                 </th>
               </tr>
             </thead>
@@ -122,6 +141,10 @@
                   <%= question_title %>
                   (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">student view</a>)
                 </td>
+                <% if (!assessment.group_work) { %>
+                <td><%= instance_question.uid %></td>
+                <% } %>
+                <td><%= instance_question.user_or_group_name %></td>
                 <td class="text-center">
                   <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: max_points}); %>
                   <% if (authz_data.has_course_instance_permission_edit) { %>
@@ -153,6 +176,9 @@
                     <i class="fa fa-edit" aria-hidden="true"></i>
                   </button>
                   <% } %>
+                </td>
+                <td class="text-center">
+                  <a class="btn btn-xs btn-secondary" href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/manual_grading"><i class="fa fa-arrow-right" aria-hidden="true"></i></a>
                 </td>
               </tr>
               <% }); %>

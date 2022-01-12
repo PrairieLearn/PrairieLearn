@@ -1,37 +1,36 @@
-
 # Assessments
 
 **NOTE:** Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the header so that the local PrairieLearn server reloads the changes.
 
 ## Overview
 
-Each assessment is a single directory in the `assessments` folder or any subfolder.  Assessments may be nested in subdirectories of the `assessments` folder.  The assessment directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
+Each assessment is a single directory in the `assessments` folder or any subfolder. Assessments may be nested in subdirectories of the `assessments` folder. The assessment directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
 
 ```json
 {
-    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-    "type": "Exam",
-    "title": "Coordinates and Vectors",
-    "set": "Quiz",
-    "unit": "Linear algebra review",
-    "number": "2",
-    "allowAccess": [],
-    "zones": [],
-    "comment": "You can add comments to JSON files using this property."
+  "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
+  "type": "Exam",
+  "title": "Coordinates and Vectors",
+  "set": "Quiz",
+  "unit": "Linear algebra review",
+  "number": "2",
+  "allowAccess": [],
+  "zones": [],
+  "comment": "You can add comments to JSON files using this property."
 }
 ```
 
 The assessment ID is the full path relative to `assessments`.
 
-* [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
+- [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoAssessment.json)
 
 ## Assessment naming
 
 Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the assessment has a `number`. Additionally, each assessment has a `title`. Depending on the context, assessments are referred to by either a _short name_ or a _long name_. The format of these is:
 
-* Short name = `Set Number` (e.g., `Quiz 2` in the above example).
+- Short name = `Set Number` (e.g., `Quiz 2` in the above example).
 
-* Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
+- Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
 
 You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets).
 
@@ -47,10 +46,10 @@ For more information about assessment units, see [Course configuration](course.m
 
 Each assessment has a `type`, as listed below. A randomized assessment is one where each student gets a different set of questions in a randomized order, while a non-randomized assessment shows all students the same list of questions in the same order. Broadly speaking, randomized assessments are designed for exams and non-randomized assessments are designed for homeworks.
 
-Type        | Randomized | Description
----         | ---        | ---
-`Homework`  | No         | A gamified assessment that rewards repeated correct answers to questions.
-`Exam`      | Yes        | An exam where students can grade their answers at any time, and retry questions for reduced points.
+| Type       | Randomized | Description                                                                                         |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| `Homework` | No         | A gamified assessment that rewards repeated correct answers to questions.                           |
+| `Exam`     | Yes        | An exam where students can grade their answers at any time, and retry questions for reduced points. |
 
 ## Changing question-order randomization
 
@@ -91,19 +90,19 @@ An assessment is broken down in to a list of zones, like this:
 ],
 ```
 
-* Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
+- Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
 
-* Within each zone the question order is randomized for `Exam` assessments.
+- Within each zone the question order is randomized for `Exam` assessments.
 
-* An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
+- An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
 
-* If a zone has `maxPoints`, then, of the points that are awarded for answering questions in this zone, at most `maxPoints` will count toward the total points.
+- If a zone has `maxPoints`, then, of the points that are awarded for answering questions in this zone, at most `maxPoints` will count toward the total points.
 
-* If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
+- If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
 
 ## Assessment and question instances and resetting assessments
 
-PrairieLearn distinguishes between *assessments* and *assessment instances*. An *assessment* is determined by the code in an `assessments` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to generate the random set of questions and question variants for each student, and it is this selection that is the *assessment instance* for the student. There is only one copy of each assessment, but every student has their own assessment instance. The rules for updating assessment instances differ between `Homework` and `Exam` assessments.
+PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the code in an `assessments` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to generate the random set of questions and question variants for each student, and it is this selection that is the _assessment instance_ for the student. There is only one copy of each assessment, but every student has their own assessment instance. The rules for updating assessment instances differ between `Homework` and `Exam` assessments.
 
 **`Exam` assessment updates:** Exam assessment instances are generated when the student starts the exam, and they are never automatically deleted, regenerated, or updated, even when the original assessment is changed in some way. This is a safety mechanism to avoid having students' assessments changed during an exam. However, if you want to force the regeneration of assessment instances then you can do so with the "reset" button on instructor view of the assessment. While writing an assessment you might need to do this many times. Once an assessment is live, you should of course be very careful about doing this (basically, don't do it on a production server once an assessment is underway).
 
@@ -130,32 +129,34 @@ The choice of using `maxBonusPoints` or a `credit` value above 100 is based on i
 
 ## Multiple-instance versus single-instance assessments
 
-By default all assessments are *single instance*, meaning that each student has exactly one instance of the assessment that they can complete, and once they have completed that assessment instance then they cannot do the assessment again. This is the expected behavior for homeworks, quizzes, exams, etc.
+By default all assessments are _single instance_, meaning that each student has exactly one instance of the assessment that they can complete, and once they have completed that assessment instance then they cannot do the assessment again. This is the expected behavior for homeworks, quizzes, exams, etc.
 
-For practice exams it is often desirable to make a *multiple instance* assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
+For practice exams it is often desirable to make a _multiple instance_ assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
 
 ## Enabling group work for collaborative assessments
 
 By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
-Information about the group configuration can be set in the `infoAssessment.json` file. For example: 
+Information about the group configuration can be set in the `infoAssessment.json` file. For example:
+
 ```json
 {
-        "groupWork": true,
-        "groupMaxSize": 6,
-        "groupMinSize": 2,
-        "studentGroupCreate": true,
-        "studentGroupJoin": true,
-        "studentGroupLeave": true,
+  "groupWork": true,
+  "groupMaxSize": 6,
+  "groupMinSize": 2,
+  "studentGroupCreate": true,
+  "studentGroupJoin": true,
+  "studentGroupLeave": true
 }
 ```
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`groupWork` | boolean | false | Enable the group work for the assessment.
-`groupMaxSize` | integer | - | The maximum size of a group (default: no minimum).
-`groupMinSize` | integer | - | The minimum size of a group (default: no maximum).
-`studentGroupCreate` | boolean | false | Allow students to create groups.
-`studentGroupJoin` | boolean | false | Allow students to join other groups by join code.
-`studentGroupLeave` | boolean | false | Allow students to leave groups.
+
+| Attribute            | Type    | Default | Description                                        |
+| -------------------- | ------- | ------- | -------------------------------------------------- |
+| `groupWork`          | boolean | false   | Enable the group work for the assessment.          |
+| `groupMaxSize`       | integer | -       | The maximum size of a group (default: no minimum). |
+| `groupMinSize`       | integer | -       | The minimum size of a group (default: no maximum). |
+| `studentGroupCreate` | boolean | false   | Allow students to create groups.                   |
+| `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
+| `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
 
 Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
 
@@ -166,6 +167,7 @@ Please notice: changing an assessment from group -> individual or vice versa aft
 Underneath the "Groups" tab in an assessment, instructors have three ways of assigning students to different groups:
 
 1. Uploading a CSV file in the following format:
+
 ```
 groupName,UID
 groupA,one@example.com
@@ -232,7 +234,7 @@ This file attachment functionality does not provide a way for students to attach
 
 PrairieLearn is designed to give students immediate feedback on their work. However, if you wish to more closely replicate a paper exam experience, you can prevent students from grading their work as they go (what we call "real-time grading").
 
-*Note that students generally expect and benefit from having immediate feedback, so this setting should only be enabled if you have a specific reason for it.*
+_Note that students generally expect and benefit from having immediate feedback, so this setting should only be enabled if you have a specific reason for it._
 
 To disable real-time grading for an assessment, add `"allowRealTimeGrading": false` to the assessment's `infoAssessment.json` file. This will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden. Note that real-time grading can only be disabled for `Exam` assessments, as immediate feedback is a core part of the `Homework` experience.
 
@@ -250,12 +252,12 @@ Here is the assessment page for an open exam with real-time grading disabled:
 
 Compared to the normal assessment, there are a number of differences:
 
-* A warning explaining that real-time grading has been disabled is shown
-* Total points is listed as a number, not as an "X/Y" score
-* The percentage bar is not displayed
-* The "Best submission" column is renamed to "Submission status"
-* The "Available points" column has been removed
-* The "Awarded points" column has been renamed to "Points" and only shows the max points
+- A warning explaining that real-time grading has been disabled is shown
+- Total points is listed as a number, not as an "X/Y" score
+- The percentage bar is not displayed
+- The "Best submission" column is renamed to "Submission status"
+- The "Available points" column has been removed
+- The "Awarded points" column has been renamed to "Points" and only shows the max points
 
 Here is the assessment page for a closed exam with real-time grading disabled:
 
@@ -271,9 +273,9 @@ For assessments with type "Exam", each student will only be presented with a sin
 
 For assessments with type "Homework", students will be presented with an unlimited number of attempts for each question. By default, every new attempt corresponds to a different variant of the question, unless:
 
-* the question is set to [`"singleVariant": true` in the question configuration file](question.md#the-singleVariant-option-for-non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
+- the question is set to [`"singleVariant": true` in the question configuration file](question.md#the-singleVariant-option-for-non-randomized-questions). In this case, students will get unlimited attempts for the same variant.
 
-* the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
+- the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
 ```json
 "zones": [
@@ -312,8 +314,8 @@ The `gradeRateMinutes` value can be set for each specific question in the assess
 
 By default, `Exam` assessments require students to certify their identity and pledge an honor code before starting the assessment:
 
-* I certify that I am `name` and I am allowed to take this assessment.
-* I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.
+- I certify that I am `name` and I am allowed to take this assessment.
+- I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.
 
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
 

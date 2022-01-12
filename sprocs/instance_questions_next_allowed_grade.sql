@@ -27,7 +27,7 @@ BEGIN
         allow_grade_left_ms := 0;
         allow_grade_interval := 'now';
     ELSE
-        allow_grade_left_ms := GREATEST(0, floor(extract(epoch from (allow_grade_date - CURRENT_TIMESTAMP)) * 1000));
+        allow_grade_left_ms := GREATEST(0, floor(DATE_PART('epoch', (allow_grade_date - CURRENT_TIMESTAMP)) * 1000));
         
         WITH parts AS (
             SELECT

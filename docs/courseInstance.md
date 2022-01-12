@@ -1,11 +1,10 @@
-
 # Course instance configuration
 
 **NOTE:** Any time you edit or add an `infoCourseInstance.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added.  A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
+A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
 ```text
 exampleCourse
@@ -31,9 +30,9 @@ exampleCourse
             `-- ...                   # files only accessible from the server
 ```
 
-* See an [example course instances directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in PrairieLearn
+- See an [example course instances directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in PrairieLearn
 
-* See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` and `serverFilesCourseInstance` directories.
+- See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` and `serverFilesCourseInstance` directories.
 
 ## `infoCourseInstance.json`
 
@@ -41,21 +40,21 @@ This file specifies basic information about the course instance:
 
 ```json
 {
-    "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
-    "shortName": "Sp15",
-    "longName": "Spring 2015",
-    "allowAccess": [
-        {
-            "startDate": "2015-01-19T00:00:01",
-            "endDate": "2015-05-13T23:59:59"
-        }
-    ]
+  "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
+  "shortName": "Sp15",
+  "longName": "Spring 2015",
+  "allowAccess": [
+    {
+      "startDate": "2015-01-19T00:00:01",
+      "endDate": "2015-05-13T23:59:59"
+    }
+  ]
 }
 ```
 
-* Example [infoCourseInstance.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/infoCourseInstance.json)
+- Example [infoCourseInstance.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/infoCourseInstance.json)
 
-* [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourseInstance.json)
+- [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoCourseInstance.json)
 
 ## Course instance `allowAccess`
 
@@ -72,14 +71,13 @@ The course instance `allowAccess` rules determine who can access the course inst
     ]
 ```
 
-
 ## Timezone
 
 The default timezone for course instances is the timezone of the course. This can be changed with the `timezone` property in `infoCourseInstance.json`. For example:
 
 ```json
 {
-    "timezone": "America/New_York"
+  "timezone": "America/New_York"
 }
 ```
 
@@ -97,11 +95,11 @@ Some instructors may wish to hide their course from the list of available course
 
 ```json
 {
-    "hideInEnrollPage": true
+  "hideInEnrollPage": true
 }
 ```
 
-Note that *this is not a security setting*. Students may still enroll in the course instance if they get access to the URL, either through friends or by [Forced Browing Attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by UIDs, Institution, or through LTI support.
+Note that _this is not a security setting_. Students may still enroll in the course instance if they get access to the URL, either through friends or by [Forced Browsing Attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by UIDs, Institution, or through LTI support.
 
 ## LTI support
 
@@ -115,7 +113,7 @@ PrairieLearn LTI support enables a new authentication source (that creates the u
 
 To point an LMS to use PrairieLearn LTI, you must first create a private LTI credential inside PrairieLearn. These credentials are then configured inside the LMS to connect to PrairieLearn.
 
-To create or manage LTI credentials for a course instance, instructors can visit the __Admin / LTI__ page in the course instance.
+To create or manage LTI credentials for a course instance, instructors can visit the **Admin / LTI** page in the course instance.
 
 An LTI credential consists of 3 parts:
 
@@ -133,7 +131,7 @@ It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"
 
 LTI supports the concept of "deep linking", such that an assignment link inside the originating LMS can be followed directly into a specific assessment in PrairieLearn. For score reporting back to the LMS, PrairieLearn requires this linking. If a student follows an LTI link from the LMS that has not been configured yet in PrairieLearn, they will receive an error message.
 
-The first time an instructor (in the LMS context) follows a newly created LTI PrairieLearn link, they will be delivered to the __Admin / LTI__ page. The LTI link targets section of the page will be populated with the new link information, and the PL course instance's assessments will be listed as a drop down. These can also be edited at any time from the __Admin / LTI__ page.
+The first time an instructor (in the LMS context) follows a newly created LTI PrairieLearn link, they will be delivered to the **Admin / LTI** page. The LTI link targets section of the page will be populated with the new link information, and the PL course instance's assessments will be listed as a drop down. These can also be edited at any time from the **Admin / LTI** page.
 
 A course can use the same LTI credential to create multiple links to PrairieLearn, but each link must be configured in PL to an assessment. Multiple links can be created to the same assessment.
 

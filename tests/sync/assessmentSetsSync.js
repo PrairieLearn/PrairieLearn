@@ -1,4 +1,3 @@
-
 const chai = require('chai');
 const util = require('./util');
 const helperDb = require('../helperDb');
@@ -8,7 +7,7 @@ const { assert } = chai;
 /**
  * Checks that the assessment set present in the database matches the data
  * from the original assessment set in `infoCourse.json`.
- * 
+ *
  * @param {any} syncedAssessmentSet - The assessment set from the database
  * @param {any} assessmentSet - The assessment set from `infoCourse.json`.
  */
@@ -22,7 +21,7 @@ function checkAssessmentSet(syncedAssessmentSet, assessmentSet) {
 
 /**
  * Makes a new assessment.
- * 
+ *
  * @returns {import('./util').AssessmentSet}
  */
 function makeAssessmentSet() {
@@ -46,7 +45,9 @@ describe('Assessment set syncing', () => {
     courseData.course.assessmentSets.push(newAssessmentSet);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
-    const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === newAssessmentSet.name);
+    const syncedAssessmentSet = syncedAssessmentSets.find(
+      (as) => as.name === newAssessmentSet.name
+    );
     checkAssessmentSet(syncedAssessmentSet, newAssessmentSet);
   });
 
@@ -59,7 +60,9 @@ describe('Assessment set syncing', () => {
     courseData.course.assessmentSets.splice(0, 1);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
-    const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === oldAssessmentSet.name);
+    const syncedAssessmentSet = syncedAssessmentSets.find(
+      (as) => as.name === oldAssessmentSet.name
+    );
     assert.isUndefined(syncedAssessmentSet);
   });
 
@@ -74,8 +77,8 @@ describe('Assessment set syncing', () => {
     courseData.course.assessmentSets[0].name = newName;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const dbAssessmentSets = await util.dumpTable('assessment_sets');
-    assert.isUndefined(dbAssessmentSets.find(as => as.name === oldName));
-    const dbAssessmentSet = dbAssessmentSets.find(as => as.name = newName);
+    assert.isUndefined(dbAssessmentSets.find((as) => as.name === oldName));
+    const dbAssessmentSet = dbAssessmentSets.find((as) => (as.name = newName));
     checkAssessmentSet(dbAssessmentSet, courseData.course.assessmentSets[0]);
   });
 
@@ -97,10 +100,12 @@ describe('Assessment set syncing', () => {
     courseData.course.assessmentSets.push(newAssessmentSet2);
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
-    const syncedAssessmentSet = syncedAssessmentSets.find(as => as.name === newAssessmentSet1.name);
+    const syncedAssessmentSet = syncedAssessmentSets.find(
+      (as) => as.name === newAssessmentSet1.name
+    );
     checkAssessmentSet(syncedAssessmentSet, newAssessmentSet2);
     const syncedCourses = await util.dumpTable('pl_courses');
-    const syncedCourse = syncedCourses.find(c => c.short_name === courseData.course.name);
+    const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
     assert.match(syncedCourse.sync_warnings, /Found duplicates in 'assessmentSets'/);
   });
 });

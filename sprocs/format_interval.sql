@@ -1,10 +1,10 @@
 CREATE FUNCTION format_interval(d interval) RETURNS text AS $$
     WITH parts AS (
         SELECT
-            div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60 * 24)     AS days,
-            mod(div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60), 24) AS hours,
-            mod(div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60), 60)      AS mins,
-            mod(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60)               AS secs
+            div(CAST(floor(DATE_PART('epoch', d)) AS integer), 60 * 60 * 24)     AS days,
+            mod(div(CAST(floor(DATE_PART('epoch', d)) AS integer), 60 * 60), 24) AS hours,
+            mod(div(CAST(floor(DATE_PART('epoch', d)) AS integer), 60), 60)      AS mins,
+            mod(CAST(floor(DATE_PART('epoch', d)) AS integer), 60)               AS secs
     )
     SELECT
         CASE
