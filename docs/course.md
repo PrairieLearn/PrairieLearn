@@ -144,25 +144,44 @@ The following list of standardized assessments sets is automatically included in
 You can add more assessment sets by listing them in the `infoCourse.json` file as follows. Note that HW and Q don't need to be listed because they are automatically available as standardized sets (see above).
 
 ```json
-    "assessmentSets": [
-        {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
-        {"abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"}
-    ],
+{
+  "assessmentSets": [
+    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
+    { "abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1" }
+  ]
+}
 ```
 
 The assessment set order in `infoCourse.json` is the order in which the assessments will be shown within PrairieLearn (for both instructors and students). If you want to change the order of standardized assessment sets then you can re-list them in whatever order you like. For example, to put Exams and Quizzes first, you could use:
 
 ```json
-    "assessmentSets": [
-        {'abbreviation': 'E', 'name': 'Exam', 'heading': 'Exams', 'color': 'brown1'},
-        {'abbreviation': 'Q', 'name': 'Quiz', 'heading': 'Quizzes', 'color': 'red1'},
-        {'abbreviation': 'PE', 'name': 'Practice Exam', 'heading': 'Practice Exams', 'color': 'yellow1'},
-        {'abbreviation': 'PQ', 'name': 'Practice Quiz', 'heading': 'Practice Quizzes', 'color': 'pink1'},
-        {'abbreviation': 'HW', 'name': 'Homework', 'heading': 'Homeworks', 'color': 'green1'},
-        {'abbreviation': 'P', 'name': 'Prep', 'heading': 'Question Preparation', 'color': 'gray1'},
-        {'abbreviation': 'MP', 'name': 'Machine Problem', 'heading': 'Machine Problems', 'color': 'turquoise1'},
-        {'abbreviation': 'WS', 'name': 'Worksheet', 'heading': 'Worksheets', 'color': 'purple1'}
-    ],
+{
+  "assessmentSets": [
+    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1" },
+    { "abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1" },
+    {
+      "abbreviation": "PE",
+      "name": "Practice Exam",
+      "heading": "Practice Exams",
+      "color": "yellow1"
+    },
+    {
+      "abbreviation": "PQ",
+      "name": "Practice Quiz",
+      "heading": "Practice Quizzes",
+      "color": "pink1"
+    },
+    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
+    { "abbreviation": "P", "name": "Prep", "heading": "Question Preparation", "color": "gray1" },
+    {
+      "abbreviation": "MP",
+      "name": "Machine Problem",
+      "heading": "Machine Problems",
+      "color": "turquoise1"
+    },
+    { "abbreviation": "WS", "name": "Worksheet", "heading": "Worksheets", "color": "purple1" }
+  ]
+}
 ```
 
 ## Units
@@ -172,13 +191,15 @@ Each assessment in the course belongs to a _unit_ defined in `infoCourse.json`. 
 Units are optional and do not affect any behavior by default. Setting the `infoCourse.json` property `"groupBy"` to `"Unit"` (instead of the default `"Set"`) will cause assessments to be grouped together by unit on the student assessments overview page. The order that they are defined in will be the order that they display in, top-down, to students. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
 
 ```json
-"assessmentUnits": [
-    {"name": "intro", "heading": "Unit 1: Introduction to XC 101"},
-    {"name": "physics", "heading": "Unit 2: Physics"},
-    {"name": "math", "heading": "Unit 3: Math"},
-    {"name": "fun", "heading": "Unit 4: Extras for fun"}
-],
-"groupBy": "Unit",
+{
+  "assessmentUnits": [
+    { "name": "intro", "heading": "Unit 1: Introduction to XC 101" },
+    { "name": "physics", "heading": "Unit 2: Physics" },
+    { "name": "math", "heading": "Unit 3: Math" },
+    { "name": "fun", "heading": "Unit 4: Extras for fun" }
+  ],
+  "groupBy": "Unit"
+}
 ```
 
 The above configuration can result in the following view for students:
@@ -205,10 +226,16 @@ Each question in the course has a topic from the list specified in the `infoCour
 For example, topics could be listed like:
 
 ```json
-    "topics": [
-        {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D."},
-        {"name": "Center of mass", "color": "green3", "description": "Calculating the center of mass for irregular bodies and systems."}
-    ],
+{
+  "topics": [
+    { "name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D." },
+    {
+      "name": "Center of mass",
+      "color": "green3",
+      "description": "Calculating the center of mass for irregular bodies and systems."
+    }
+  ]
+}
 ```
 
 ## Tags
@@ -259,10 +286,20 @@ The following list of standardized tags is automatically included in every cours
 You can add more tags to your course by listing them in the `infoCourse.json` file. For example:
 
 ```json
-    "tags": [
-        {"name": "TAM212", "color": "red1", "description": "This question was originally written for TAM 212."},
-        {"name": "mwest", "color": "gray1", "description": "This question was written by Matthew West (mwest@illinois.edu)."}
-    ]
+{
+  "tags": [
+    {
+      "name": "TAM212",
+      "color": "red1",
+      "description": "This question was originally written for TAM 212."
+    },
+    {
+      "name": "mwest",
+      "color": "gray1",
+      "description": "This question was written by Matthew West (mwest@illinois.edu)."
+    }
+  ]
+}
 ```
 
 The tag order in `infoCourse.json` is the order in which the tags will be listed within PrairieLearn. If you want to change the order of your tags or standardized tags then you can re-list them in whatever order you like.
