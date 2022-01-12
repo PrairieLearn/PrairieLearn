@@ -62,7 +62,12 @@ This file specifies basic information about the course:
       "heading": "Homeworks",
       "color": "green1"
     },
-    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1" }
+    {
+      "abbreviation": "E",
+      "name": "Exam",
+      "heading": "Exams",
+      "color": "red1"
+    }
   ],
   "assessmentUnits": [
     {
@@ -146,8 +151,18 @@ You can add more assessment sets by listing them in the `infoCourse.json` file a
 ```json
 {
   "assessmentSets": [
-    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
-    { "abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1" }
+    {
+      "abbreviation": "HW",
+      "name": "Homework",
+      "heading": "Homeworks",
+      "color": "green1"
+    },
+    {
+      "abbreviation": "Q",
+      "name": "Quiz",
+      "heading": "Quizzes",
+      "color": "red1"
+    }
   ]
 }
 ```
@@ -157,8 +172,18 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
 ```json
 {
   "assessmentSets": [
-    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1" },
-    { "abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1" },
+    {
+      "abbreviation": "E",
+      "name": "Exam",
+      "heading": "Exams",
+      "color": "brown1"
+    },
+    {
+      "abbreviation": "Q",
+      "name": "Quiz",
+      "heading": "Quizzes",
+      "color": "red1"
+    },
     {
       "abbreviation": "PE",
       "name": "Practice Exam",
@@ -171,15 +196,30 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
       "heading": "Practice Quizzes",
       "color": "pink1"
     },
-    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
-    { "abbreviation": "P", "name": "Prep", "heading": "Question Preparation", "color": "gray1" },
+    {
+      "abbreviation": "HW",
+      "name": "Homework",
+      "heading": "Homeworks",
+      "color": "green1"
+    },
+    {
+      "abbreviation": "P",
+      "name": "Prep",
+      "heading": "Question Preparation",
+      "color": "gray1"
+    },
     {
       "abbreviation": "MP",
       "name": "Machine Problem",
       "heading": "Machine Problems",
       "color": "turquoise1"
     },
-    { "abbreviation": "WS", "name": "Worksheet", "heading": "Worksheets", "color": "purple1" }
+    {
+      "abbreviation": "WS",
+      "name": "Worksheet",
+      "heading": "Worksheets",
+      "color": "purple1"
+    }
   ]
 }
 ```
@@ -193,10 +233,22 @@ Units are optional and do not affect any behavior by default. Setting the `infoC
 ```json
 {
   "assessmentUnits": [
-    { "name": "intro", "heading": "Unit 1: Introduction to XC 101" },
-    { "name": "physics", "heading": "Unit 2: Physics" },
-    { "name": "math", "heading": "Unit 3: Math" },
-    { "name": "fun", "heading": "Unit 4: Extras for fun" }
+    {
+      "name": "intro",
+      "heading": "Unit 1: Introduction to XC 101"
+    },
+    {
+      "name": "physics",
+      "heading": "Unit 2: Physics"
+    },
+    {
+      "name": "math",
+      "heading": "Unit 3: Math"
+    },
+    {
+      "name": "fun",
+      "heading": "Unit 4: Extras for fun"
+    }
   ],
   "groupBy": "Unit"
 }
@@ -228,7 +280,11 @@ For example, topics could be listed like:
 ```json
 {
   "topics": [
-    { "name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D." },
+    {
+      "name": "Vectors",
+      "color": "blue3",
+      "description": "Vector algebra in 3D."
+    },
     {
       "name": "Center of mass",
       "color": "green3",
