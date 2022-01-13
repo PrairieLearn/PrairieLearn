@@ -53,8 +53,8 @@ For the first iteration of shareable courses, syncing to acquire updates will be
 
 For local development, there are two scenarios:
 
-* The person running PrairieLearn locally does not have the necessary permissions to clone the shareable course repository, or they do but have not previously cloned it. In that case, an attempt to access an external question from a shareable course will provide a clear error page explaining why the question cannot be viewed there and offering instructions on how to clone and add the course.
-* The person running PrairieLearn locally has cloned the shareable course repository. In this case, they can add the course to their local Docker container. Then, questions from that shareable course can be accessed exactly like they would be in a production environment.
+- The person running PrairieLearn locally does not have the necessary permissions to clone the shareable course repository, or they do but have not previously cloned it. In that case, an attempt to access an external question from a shareable course will provide a clear error page explaining why the question cannot be viewed there and offering instructions on how to clone and add the course.
+- The person running PrairieLearn locally has cloned the shareable course repository. In this case, they can add the course to their local Docker container. Then, questions from that shareable course can be accessed exactly like they would be in a production environment.
 
 In the future, one could build a feature that allows an authorized user to export a copy of a shareable course for use with local development.
 
@@ -62,21 +62,21 @@ In the future, one could build a feature that allows an authorized user to expor
 
 The following guarantees should exist:
 
-* There is no ambiguity between whether a question belongs to a course or an external shareable course.
-* Syncing a new version of a shareable course should not break any existing assessments that reference questions from it.
-* There should never be an assessment on a production instance that references a question that does not exist.
+- There is no ambiguity between whether a question belongs to a course or an external shareable course.
+- Syncing a new version of a shareable course should not break any existing assessments that reference questions from it.
+- There should never be an assessment on a production instance that references a question that does not exist.
 
 The following facts and behaviors ensure those guarantees:
 
-* A leading `@` in a question ID in an assessment definition will unambiguously differentiate shareable course questions from course-local questions.
+- A leading `@` in a question ID in an assessment definition will unambiguously differentiate shareable course questions from course-local questions.
 
-* Once a course has been designated as shareable, it must remain shareable. That is, once a course with `"shareable": true` is synced to an instance of PrairieLearn, attempting to sync the same course with `"shareable": false` will be a sync error.
+- Once a course has been designated as shareable, it must remain shareable. That is, once a course with `"shareable": true` is synced to an instance of PrairieLearn, attempting to sync the same course with `"shareable": false` will be a sync error.
 
-* Once a question in a shareable course has been synced to an instance of PrairieLearn, attempting to perform a sync where the question would be renamed or deleted will be a sync error. *(Is there any special consideration necessary for local development?)*
+- Once a question in a shareable course has been synced to an instance of PrairieLearn, attempting to perform a sync where the question would be renamed or deleted will be a sync error. _(Is there any special consideration necessary for local development?)_
 
-* To allow question renaming, we could add a concept of _question aliases_, which are alternative QIDs specified in the `info.json` file. In this case it would be allowed to rename a question, so long as the old name was simultaneously added as an alias. The in-browser editor could automate this by adding an alias for the old name whenever renaming a question.
+- To allow question renaming, we could add a concept of _question aliases_, which are alternative QIDs specified in the `info.json` file. In this case it would be allowed to rename a question, so long as the old name was simultaneously added as an alias. The in-browser editor could automate this by adding an alias for the old name whenever renaming a question.
 
-* When a course is synced, all questions that are referenced by its assessments will be checked. If a referenced shareable course is not available on that instance, or a question within a referenced shareable course does not exist, the sync will error. *(Note that this restriction is relaxed in local installations of PrairieLearn, where a user may not have the necessary permissions to clone the shareable course repository.)*
+- When a course is synced, all questions that are referenced by its assessments will be checked. If a referenced shareable course is not available on that instance, or a question within a referenced shareable course does not exist, the sync will error. _(Note that this restriction is relaxed in local installations of PrairieLearn, where a user may not have the necessary permissions to clone the shareable course repository.)_
 
 ## Access control
 
@@ -124,13 +124,14 @@ To ensure safety guarantees, once a question in a shareable course exists, it ca
 Deprecated questions could render a warning in instructor views of the question, on a question's row in an assessment overview, or in other useful locations across PrairieLearn.
 
 # Unresolved questions and concerns
+
 ## Shareable course IDs
 
 Shareable course IDs are how questions from shareable courses are referenced in assessments. Ideally, these IDs should have the following properties:
 
-* Static (do not change over time)
-* Consistent across instances of PrairieLearn
-* Human-readable
+- Static (do not change over time)
+- Consistent across instances of PrairieLearn
+- Human-readable
 
 Because they must be human readable, a shareable course's UUID is unsuitable as the user-facing course ID. The `name` value in `infoCourse.json` could be repurposed for this, but it should have additional restrictions (no spaces) and has a different semantic meaning. A new `id` value could be introduced that has no meaning in standard courses.
 

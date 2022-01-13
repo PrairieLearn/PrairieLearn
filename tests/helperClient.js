@@ -13,21 +13,21 @@ module.exports = {};
  *  options.headers = {cookie: 'pl_access_as_administrator=active'};
  */
 module.exports.fetchCheerio = async (url, options = {}) => {
-    if (options.form) {
-        options.body = JSON.stringify(options.form);
-        options.headers = {
-            'Content-Type': 'application/json',
-            ...options.headers,
-        };
-        delete options.form;
-    }
-    const response = await fetch(url, options);
-    const text = await response.text();
-    response.$ = cheerio.load(text);
-    // response.text() can only be called once, which we already did.
-    // patch this so consumers can use it as normal.
-    response.text = () => text;
-    return response;
+  if (options.form) {
+    options.body = JSON.stringify(options.form);
+    options.headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+    delete options.form;
+  }
+  const response = await fetch(url, options);
+  const text = await response.text();
+  response.$ = cheerio.load(text);
+  // response.text() can only be called once, which we already did.
+  // patch this so consumers can use it as normal.
+  response.text = () => text;
+  return response;
 };
 
 /**
@@ -36,12 +36,12 @@ module.exports.fetchCheerio = async (url, options = {}) => {
  * The token will also be persisted to `context.__csrf_token`.
  */
 module.exports.extractAndSaveCSRFToken = (context, $, parentSelector = '') => {
-    const csrfTokenInput = $(`${parentSelector} input[name="__csrf_token"]`);
-    assert.lengthOf(csrfTokenInput, 1);
-    const csrfToken = csrfTokenInput.val();
-    assert.isString(csrfToken);
-    context.__csrf_token = csrfToken;
-    return csrfToken;
+  const csrfTokenInput = $(`${parentSelector} input[name="__csrf_token"]`);
+  assert.lengthOf(csrfTokenInput, 1);
+  const csrfToken = csrfTokenInput.val();
+  assert.isString(csrfToken);
+  context.__csrf_token = csrfToken;
+  return csrfToken;
 };
 
 /**
@@ -50,15 +50,15 @@ module.exports.extractAndSaveCSRFToken = (context, $, parentSelector = '') => {
  * The token will also be persisted to `context.__csrf_token`.
  */
 module.exports.extractAndSaveCSRFTokenFromDataContent = (context, $, parentSelector) => {
-    const parent = $(parentSelector);
-    assert.lengthOf(parent, 1);
-    const inner$ = cheerio.load(parent[0].attribs['data-content']);
-    const csrfTokenInput = inner$('input[name="__csrf_token"]');
-    assert.lengthOf(csrfTokenInput, 1);
-    const csrfToken = csrfTokenInput.val();
-    assert.isString(csrfToken);
-    context.__csrf_token = csrfToken;
-    return csrfToken;
+  const parent = $(parentSelector);
+  assert.lengthOf(parent, 1);
+  const inner$ = cheerio.load(parent[0].attribs['data-content']);
+  const csrfTokenInput = inner$('input[name="__csrf_token"]');
+  assert.lengthOf(csrfTokenInput, 1);
+  const csrfToken = csrfTokenInput.val();
+  assert.isString(csrfToken);
+  context.__csrf_token = csrfToken;
+  return csrfToken;
 };
 
 /**
@@ -67,10 +67,10 @@ module.exports.extractAndSaveCSRFTokenFromDataContent = (context, $, parentSelec
  * The token will also be persisted to `context.__variant_id`.
  */
 module.exports.extractAndSaveVariantId = (context, $, parentSelector = '') => {
-    const variantIdInput = $(`${parentSelector} input[name="__variant_id"]`);
-    assert.lengthOf(variantIdInput, 1);
-    const variantId = variantIdInput.val();
-    assert.isString(variantId);
-    context.__variant_id = variantId;
-    return variantId;
+  const variantIdInput = $(`${parentSelector} input[name="__variant_id"]`);
+  assert.lengthOf(variantIdInput, 1);
+  const variantId = variantIdInput.val();
+  assert.isString(variantId);
+  context.__variant_id = variantId;
+  return variantId;
 };

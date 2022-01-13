@@ -1,5 +1,7 @@
+set -ex
+
 # update base system
-apt-get update && apt-get upgrade
+apt-get update && apt-get upgrade -y
 
 # bring back the missing manpages
 apt-get install -y man-db

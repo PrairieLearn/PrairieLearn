@@ -235,6 +235,7 @@
         </table>
 
         <div class="card-footer">
+          <% if (assessment_instance.open && authz_result.active) { %>
           <% if (assessment.allow_real_time_grading) { %>
             <form name="grade-form" method="POST" class="form-inline">
               <input type="hidden" name="__action" value="grade">
@@ -270,6 +271,7 @@
                 <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal" <% if (!authz_result.authorized_edit) { %> disabled<% } %>>Finish assessment</button>
               </li>
             </ul>
+          <% } %>
           <% } %>
           <% if (!authz_result.authorized_edit) { %>
             <div class="alert alert-warning mt-4" role="alert">
