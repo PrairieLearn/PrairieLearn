@@ -129,7 +129,7 @@ Each assessment belongs to an _assessment set_. Each assessment set must have th
 | `heading`      | Title that is listed above all the assessments in the set. Should be the plural version of the `name`.                                                                                                                               |
 | `color`        | The color scheme for this assessment (see below for choices).                                                                                                                                                                        |
 
-## Standardized assessment sets
+### Standardized assessment sets
 
 The following list of standardized assessments sets is automatically included in every course. You do not need to include these in your JSON file, but you can add extra assessment sets if needed (see below).
 
@@ -144,7 +144,7 @@ The following list of standardized assessments sets is automatically included in
 | `P`          | Prep            | Temporary assessments used while writing new questions. |
 | `WS`         | Worksheet       | Guided activity, often completed in groups.             |
 
-## Adding your own assessment sets
+### Adding your own assessment sets
 
 You can add more assessment sets by listing them in the `infoCourse.json` file as follows. Note that HW and Q don't need to be listed because they are automatically available as standardized sets (see above).
 
@@ -224,7 +224,7 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
 }
 ```
 
-## Units
+## Assessment units
 
 Each assessment in the course belongs to a _unit_ defined in `infoCourse.json`. Units should be thought of as a unit of instruction, or in PrairieLearn terms, a collection of assessments related to one another, but not necessarily of the same type. This means you can have a unit with two homeworks, one lab, and one exam, for example.
 
@@ -304,7 +304,7 @@ Each question can have zero, one, or many tags associated with it. The propertie
 | `color`       | The color scheme for this tag (see below for choices).                                                                                                                                                                                        |
 | `description` | An explanation of what the tag means, for human referance.                                                                                                                                                                                    |
 
-## Standardized tag names
+### Standardized tag names
 
 The following list of standardized tags is automatically included in every course. You do not need to include these in your JSON file, but you can add extra tags (see below).
 
@@ -337,7 +337,7 @@ The following list of standardized tags is automatically included in every cours
 | `<email>`    | The email of the person who wrote the question, E.g., `mwest@illinois.edu`. Multiple emails can be tagged when several people had significant input. |
 | `<semester>` | The semester when the question was written. E.g., `Sp15`, `Su16`, `Fa16`.                                                                            |
 
-## Adding your own tags
+### Adding your own tags
 
 You can add more tags to your course by listing them in the `infoCourse.json` file. For example:
 
