@@ -14,9 +14,9 @@ DECLARE
     missing_assessment_unit_names text;
 BEGIN
     -- We will use the used_assessment_unit_names variable to track all
-    -- the valid assessment sets (either existing or new).
+    -- the valid assessment units (either existing or new).
 
-    -- First insert all the explicit assessment sets, if we can. Keep
+    -- First insert all the explicit assessment units, if we can. Keep
     -- a list of assessment IDs that we've used.
     IF valid_course_info THEN
         WITH new_assessment_units AS (

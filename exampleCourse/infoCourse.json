@@ -11,7 +11,7 @@
         {"name": "templates", "heading": "Assessment and question templates"},
         {"name": "grading", "heading": "Grading methods"},
         {"name": "autograding", "heading": "Code autograders"},
-        {"name": "workshop", "heading": "PL workshop assessments"},
+        {"name": "workshop", "heading": "Workshop assessments"},
         {"name": "workspaces", "heading": "Workspaces"},
         {"name": "groups", "heading": "Group work"},
         {"name": "access", "heading": "Access rules"}

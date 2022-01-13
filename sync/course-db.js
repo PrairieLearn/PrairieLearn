@@ -230,7 +230,7 @@ const FILE_UUID_REGEX =
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
  * @property {AssessmentUnit[]} assessmentUnits
- * @property {string} groupBy
+ * @property {"Set" | "Unit"} groupBy
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
