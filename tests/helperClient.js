@@ -1,6 +1,8 @@
 const fetch = require('node-fetch');
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
+const config = require('../lib/config');
+const querystring = require('querystring');
 
 module.exports = {};
 
@@ -73,4 +75,58 @@ module.exports.extractAndSaveVariantId = (context, $, parentSelector = '') => {
   assert.isString(variantId);
   context.__variant_id = variantId;
   return variantId;
+};
+
+/**
+ * Set the active user within Prairie Learn's test environment.
+ * @param {object} user
+ */
+module.exports.setUser = (user) => {
+  config.authUid = user.authUid;
+  config.authName = user.authName;
+  config.authUin = user.authUin;
+};
+
+/**
+ * Get instance question id from URL params.
+ * @param {string} url
+ * @returns string
+ */
+module.exports.parseInstanceQuestionId = (url) => {
+  const iqId = parseInt(url.match(/instance_question\/(\d+)/)[1]);
+  assert.isNumber(iqId);
+  return iqId;
+};
+
+/**
+ * Acts as 'save' or 'save and grade' button click on student instance question page.
+ * @param {string} instanceQuestionUrl the instance question url the student is answering the question on.
+ * @param {object} payload json data structure type formed on the basis of the question
+ * @param {string} 'save' or 'grade' enums
+ * @param {array<object>}  (optional) ie. [{name: 'fib.py', 'contents': Buffer.from(fibFileContents).toString('base64')}]
+ */
+module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileData) => {
+  const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
+  const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
+  const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
+  const uploadSuffix = $instanceQuestionPage('input[name^=_file_upload]').attr('name');
+
+  // handles case where __variant_id should exist inside postData on only some instance questions submissions
+  if (payload && payload.postData) {
+    payload.postData = JSON.parse(payload.postData);
+    payload.postData.variant.id = variantId;
+    payload.postData = JSON.stringify(payload.postData);
+  }
+
+  return fetch(instanceQuestionUrl, {
+    method: 'POST',
+    headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+    body: [
+      '__variant_id=' + variantId,
+      '__action=' + action,
+      '__csrf_token=' + token,
+      fileData ? uploadSuffix + '=' + encodeURIComponent(JSON.stringify(fileData)) : '',
+      querystring.encode(payload),
+    ].join('&'),
+  });
 };
