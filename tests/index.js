@@ -1,6 +1,6 @@
 var logger = require('../lib/logger');
 
-const consoleTransport = logger.transports.find(transport => (transport.name === 'console'));
+const consoleTransport = logger.transports.find((transport) => transport.name === 'console');
 consoleTransport.level = 'warn';
 
 const helperDb = require('./helperDb');
@@ -57,3 +57,4 @@ require('./sync');
 require('./testGroupGenerateAndDelete');
 require('./testGroupStudent');
 require('./testGroupScoreAndSync');
+require('./permissions');

@@ -2,12 +2,14 @@ CREATE FUNCTION
     check_assessment_access (
         IN assessment_id bigint,
         IN authz_mode enum_mode,
-        IN role enum_role,
+        IN course_role enum_course_role,
+        IN course_instance_role enum_course_instance_role,
         IN user_id bigint,
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
+        OUT exam_access_end timestamp with time zone, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
@@ -28,6 +30,7 @@ BEGIN
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
         caar.authorized,
+        caar.exam_access_end,
         aar.credit,
         CASE
             WHEN aar.credit > 0 AND aar.active THEN
@@ -44,7 +47,7 @@ BEGIN
         -- Use 31 instead of 30 to force rounding (time_limit_min is in minutes).
         CASE WHEN aar.time_limit_min IS NULL THEN NULL
              WHEN aar.mode = 'Exam' THEN NULL
-             ELSE LEAST(aar.time_limit_min, EXTRACT(EPOCH FROM aar.end_date - now() - INTERVAL '31 seconds') / 60)::integer
+             ELSE LEAST(aar.time_limit_min, DATE_PART('epoch', aar.end_date - now() - INTERVAL '31 seconds') / 60)::integer
         END AS time_limit_min,
         aar.password,
         aar.mode,
@@ -55,6 +58,7 @@ BEGIN
         aar.id
     INTO
         authorized,
+        exam_access_end,
         credit,
         credit_date_string,
         time_limit_min,
@@ -67,11 +71,12 @@ BEGIN
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
-        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
+        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
             check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.date, TRUE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized
+        AND ((aar.role > 'Student') IS NOT TRUE)
     ORDER BY
         aar.credit DESC NULLS LAST,
         aar.number
@@ -101,14 +106,15 @@ BEGIN
             next_active_credit
         FROM
             assessment_access_rules AS aar
-            JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
-            check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
+            JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
+                check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
         WHERE
             aar.assessment_id = check_assessment_access.assessment_id
             AND aar.start_date IS NOT NULL
             AND aar.active
             AND aar.start_date > check_assessment_access.date
             AND caar.authorized
+            AND ((aar.role > 'Student') IS NOT TRUE)
         ORDER BY
             aar.start_date,
             aar.credit DESC NULLS LAST,
@@ -128,11 +134,11 @@ BEGIN
         next_active_time = format_date_full_compact(next_active_start_date, display_timezone);
     END IF;
 
-    -- Override if we are an Instructor
-    IF role >= 'Instructor' THEN
+    -- Override if we are course staff
+    IF (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') THEN
         authorized = TRUE;
         credit = 100;
-        credit_date_string = '100% (Instructor override)';
+        credit_date_string = '100% (Staff override)';
         active_access_rule_id = NULL;
         time_limit_min = NULL;
         password = NULL;
@@ -143,7 +149,7 @@ BEGIN
         active = TRUE;
     END IF;
 
-    -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
+    -- List of all access rules that will grant access to this user/mode at some date (past or future),
     -- computed by ignoring the date argument.
     SELECT
         coalesce(jsonb_agg(jsonb_build_object(
@@ -158,11 +164,14 @@ BEGIN
         access_rules
     FROM
         assessment_access_rules AS aar
-        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
+        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
-        AND aar.active
-        AND caar.authorized;
+        AND ((aar.role > 'Student') IS NOT TRUE)
+        AND (
+            (aar.active AND caar.authorized)
+            OR (course_role >= 'Previewer' OR course_instance_role >= 'Student Data Viewer') -- Override for instructors
+        );
 END;
 $$ LANGUAGE plpgsql VOLATILE;

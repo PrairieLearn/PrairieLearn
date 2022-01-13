@@ -162,7 +162,8 @@
                     "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                 },
                 "role": {
-                    "description": "The minimum user role required for access.",
+                    "description": "DEPRECATED -- do not use.",
+                    "deprecated": true,
                     "enum": [
                         "Student",
                         "TA",

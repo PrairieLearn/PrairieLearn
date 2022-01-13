@@ -52,6 +52,17 @@
                   });
               },
           });
+
+          $(document).keydown(event => {
+              if ((event.ctrlKey || event.metaKey) &&
+                  String.fromCharCode(event.which).toLowerCase() == 'f') {
+                  if ($('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length)
+                      $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').focus();
+                  else
+                      $('input.bootstrap-table-filter-control-qid').focus();
+                  event.preventDefault();
+              }
+          });
       });
 
       function topicList() {
@@ -117,7 +128,7 @@
       }
 
       function genericFilterSearch(search, value) {
-          return $('<div>').html(value).find('.formatter-data').text().includes(search);
+          return $('<div>').html(value).find('.formatter-data').text().toUpperCase().includes(search.toUpperCase());
       }
 
       function badgeFilterSearch(search, value) {
@@ -127,7 +138,7 @@
           return !!values;
       }
       
-      //<% locals.course_instances.forEach(course_instance => { %>
+      //<% (authz_data.course_instances || []).forEach(course_instance => { %>
       function assessments<%= course_instance.id %>List() {
           return assessmentsByCourseInstanceList(<%= course_instance.id %>);
       }
@@ -143,6 +154,7 @@
           position: sticky;
           left: 0;
           background: white;
+          background-clip: padding-box;
           box-shadow: inset -1px 0 #dee2e6;
       }
       .table-hover tbody tr:hover td.sticky-column {
@@ -152,7 +164,8 @@
       .fixed-table-toolbar {
           padding: 0 1em 0 1em;
       }
-      div.pagination, div.pagination-detail {
+      .fixed-table-toolbar div.pagination,
+      .fixed-table-toolbar div.pagination-detail {
           margin: 0 1em 0 0 !important;
       }
     </style>
@@ -181,13 +194,14 @@
                data-show-columns-toggle-all="true"
                data-show-button-text="true"
                data-pagination="true"
-               data-pagination-v-align="top"
+               data-pagination-v-align="both"
+               data-pagination-h-align="left"
                data-pagination-detail-h-align="right"
                data-page-list="[10,20,50,100,200,500,unlimited]"
                data-page-size="50"
                data-smart-display="false"
                data-show-extended-pagination="true"
-               data-toolbar=".fixed-table-pagination"
+               data-toolbar=".fixed-table-pagination:nth(0)"
                data-sticky-header="true">
           <thead>
             <tr>
@@ -232,7 +246,7 @@
                   data-filter-custom-search="badgeFilterSearch"
                   data-visible="<%= has_legacy_questions %>"
                   data-switchable="true">Version</th>
-              <% locals.course_instances.forEach(course_instance => { %>
+              <% (authz_data.course_instances || []).forEach(course_instance => { %>
               <th data-field="assessments_<%= course_instance.id %>"
                   data-class="align-middle text-nowrap"
                   data-formatter="assessments<%= course_instance.id %>Formatter"

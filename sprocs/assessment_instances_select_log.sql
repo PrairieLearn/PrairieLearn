@@ -39,6 +39,7 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
+                    NULL::BIGINT AS log_id,
                     NULL::JSONB AS data
                 FROM
                     assessment_instances AS ai
@@ -61,6 +62,7 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     NULL::INTEGER AS submission_id,
+                    v.id AS log_id,
                     jsonb_build_object(
                         'variant_seed', v.variant_seed,
                         'params', v.params,
@@ -91,6 +93,7 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     s.id AS submission_id,
+                    s.id AS log_id,
                     jsonb_build_object(
                       'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                       'correct', s.correct
@@ -120,6 +123,7 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     gj.id AS submission_id,
+                    gj.id AS log_id,
                     to_jsonb(gj.*) AS data
                 FROM
                     grading_jobs AS gj
@@ -149,6 +153,7 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     gj.id AS submission_id,
+                    gj.id AS log_id,
                     jsonb_build_object(
                         'correct', gj.correct,
                         'score', gj.score,
@@ -184,6 +189,7 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     gj.id AS submission_id,
+                    gj.id AS log_id,
                     jsonb_build_object(
                         'correct', gj.correct,
                         'score', gj.score,
@@ -219,6 +225,7 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     NULL::INTEGER AS submission_id,
+                    qsl.id AS log_id,
                     jsonb_build_object(
                         'points', qsl.points,
                         'max_points', qsl.max_points,
@@ -252,6 +259,7 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
+                    asl.id AS log_id,
                     jsonb_build_object(
                         'points', asl.points,
                         'max_points', asl.max_points,
@@ -278,6 +286,7 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
+                    asl.id AS log_id,
                     CASE
                     WHEN asl.open THEN jsonb_build_object(
                          'date_limit',
@@ -319,6 +328,7 @@ BEGIN
                     v.id AS variant_id,
                     v.number AS variant_number,
                     NULL::INTEGER AS submission_id,
+                    pvl.id AS log_id,
                     NULL::JSONB AS data
                 FROM
                     page_view_logs AS pvl
@@ -347,6 +357,7 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
+                    pvl.id AS log_id,
                     NULL::JSONB AS data
                 FROM
                     page_view_logs AS pvl
@@ -372,6 +383,7 @@ BEGIN
                     NULL::INTEGER AS variant_id,
                     NULL::INTEGER AS variant_number,
                     NULL::INTEGER AS submission_id,
+                    gl.id AS log_id,
                     jsonb_build_object('user', gu.uid) AS data
                 FROM
                     assessment_instances AS ai
@@ -381,7 +393,7 @@ BEGIN
                 WHERE
                     ai.id = ai_id
             )
-            ORDER BY date, event_order, question_id
+            ORDER BY date, event_order, log_id, question_id
         ),
         question_data AS (
             SELECT
