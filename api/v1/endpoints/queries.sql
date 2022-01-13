@@ -53,7 +53,7 @@ WITH object_data AS (
         ai.open,
         gi.id AS group_id,
         gi.name AS group_name,
-        gi.uid_list AS group_uid_list,
+        gi.uid_list AS group_uids,
         CASE
             WHEN ai.open AND ai.date_limit IS NOT NULL
                 THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
