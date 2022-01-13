@@ -90,7 +90,7 @@ module.exports.setUser = (user) => {
 /**
  * Get instance question id from URL params.
  * @param {string} url
- * @returns string
+ * @returns number
  */
 module.exports.parseInstanceQuestionId = (url) => {
   const iqId = parseInt(url.match(/instance_question\/(\d+)/)[1]);

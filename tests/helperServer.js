@@ -24,7 +24,6 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const externalGrader = require('../lib/externalGrader');
-const externalGraderResults = require('../lib/externalGraderResults');
 const externalGradingSocket = require('../lib/externalGradingSocket');
 const assessment = require('../lib/assessment');
 
@@ -144,13 +143,6 @@ module.exports = {
           },
           function (callback) {
             externalGrader.init(assessment, function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
-          },
-          function (callback) {
-            if (!config.externalGradingEnableResults) return callback(null);
-            externalGraderResults.init((err) => {
               if (ERR(err, callback)) return;
               callback(null);
             });
