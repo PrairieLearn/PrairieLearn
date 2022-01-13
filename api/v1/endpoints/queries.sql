@@ -65,7 +65,9 @@ WITH object_data AS (
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN group_info($assessment_id) AS gi ON (gi.id = ai.group_id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = gi.id)
+        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
     WHERE
         ci.id = $course_instance_id
         AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
