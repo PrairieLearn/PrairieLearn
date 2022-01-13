@@ -200,30 +200,10 @@ describe('Grading method(s)', function () {
               );
           }
         );
-        //manual-grading-col-split branch WILL FIX TEST BELOW
-        // it('should NOT be possible to submit a grade action to "Manual" type question', async () => {
-        //   gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
-        //     { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
-        //   ]);
-        //   assert.equal(gradeRes.status, 500);
-        //   questionsPage = await gradeRes.text();
-        //   assert.include(
-        //     questionsPage,
-        //     'Questions configured for ONLY manual grading cannot be automatically graded. Disable grade button.'
-        //   );
-        // });
         it('should NOT result in any grading jobs', async () => {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        //manual-grading-col-split branch WILL FIX TEST BELOW
-        // it('should result in 0 "pastsubmission-block" components being rendered', async () => {
-        //   const hm1Body = await loadHomeworkPage(mockStudents[0]);
-        //   $hm1Body = cheerio.load(hm1Body);
-        //   questionsPage = await (await fetch(iqUrl)).text();
-        //   $questionsPage = cheerio.load(questionsPage);
-        //   assert.lengthOf($questionsPage('.pastsubmission-block'), 0);
-        // });
         it('should NOT be given submission grade in "pastsubmission-block"', async () => {
           assert.notInclude(
             questionsPage,
@@ -257,12 +237,6 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        //manual-grading-col-split WILL FIX TEST BELOW
-        // it('should result in 1 "pastsubmission-block" component being rendered', async () => {
-        //   questionsPage = await gradeRes.text();
-        //   $questionsPage = cheerio.load(questionsPage);
-        //   assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
-        // });
         it('should NOT be given submission grade in "pastsubmission-block"', async () => {
           assert.notInclude(
             questionsPage,
@@ -362,98 +336,4 @@ describe('Grading method(s)', function () {
       });
     });
   });
-
-  //manual-grading-col-split branch WILL INTRODUCE LOGIC FOR GRADING TYPES ARRAY CONFIGURATION
-  // describe('`gradingMethods` configuration (replaces `gradingMethod` implementation)', () => {
-  //   describe('Internal, External, Manual combination', () => {
-  //     describe('"save" action', () => {
-  //       before('load page and post internal + external submission', async () => {
-  //         const hm1Body = await loadHomeworkPage(mockStudents[0]);
-  //         $hm1Body = cheerio.load(hm1Body);
-  //         iqUrl =
-  //           siteUrl +
-  //           $hm1Body(
-  //             'a:contains("HW9.4. Internal, External, Manual: Addition internal, code upload external, code upload manual grade")'
-  //           ).attr('href');
-
-  //         // open page to produce variant because we want to get the correct answer
-  //         await fetch(iqUrl);
-  //         // get variant params
-  //         iqId = parseInstanceQuestionId(iqUrl);
-  //         const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
-
-  //         gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save');
-  //         assert.equal(gradeRes.status, 200);
-
-  //         questionsPage = await gradeRes.text();
-  //         $questionsPage = cheerio.load(questionsPage);
-  //       });
-  //       it('should NOT result in any grading jobs', async () => {
-  //         const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-  //         assert.lengthOf(grading_jobs, 0);
-  //       });
-  //       it('should result in 1 "pastsubmission-block" component being rendered', () => {
-  //         assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
-  //       });
-  //       it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-  //         assert.notInclude(
-  //           questionsPage,
-  //           'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-  //         );
-  //       });
-  //       it('should NOT result in "grading-block" component being rendered', () => {
-  //         assert.lengthOf($questionsPage('.grading-block'), 0);
-  //       });
-  //     });
-  //     describe('"grade" action', () => {
-  //       before('load page and post internal + external submission', async () => {
-  //         const hm1Body = await loadHomeworkPage(mockStudents[1]);
-  //         $hm1Body = cheerio.load(hm1Body);
-  //         iqUrl =
-  //           siteUrl +
-  //           $hm1Body(
-  //             'a:contains("HW9.4. Internal, External, Manual: Addition internal, code upload external, code upload manual grade")'
-  //           ).attr('href');
-
-  //         // open page to produce variant because we want to get the correct answer
-  //         await fetch(iqUrl);
-  //         // get variant params
-  //         iqId = parseInstanceQuestionId(iqUrl);
-  //         const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
-
-  //         gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'grade', [
-  //           { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
-  //         ]);
-  //         assert.equal(gradeRes.status, 200);
-
-  //         questionsPage = await gradeRes.text();
-  //         $questionsPage = cheerio.load(questionsPage);
-
-  //         // TO DO: enable once question.js views are upgraded to support many grading jobs per submission block.
-  //         // await waitForExternalGrader($questionsPage, questionsPage);
-
-  //         // reload QuestionsPage since socket io cannot update without DOM
-  //         // questionsPage = await (await fetch(iqUrl)).text();
-  //         // $questionsPage =  cheerio.load(questionsPage);
-  //       });
-  //       // TO DO: can't do this test until views are upgraded to allow external grading on Internal + External grading configured questions
-  //       // it('should result in 3 grading jobs', async () => {
-  //       //     const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, {iqId})).rows;
-  //       //     assert.lengthOf(grading_jobs, 3);
-  //       // });
-  //       it('should result in 1 "pastsubmission-block" component being rendered', () => {
-  //         assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
-  //       });
-  //       it('should be given submission grade in "pastsubmission-block"', async () => {
-  //         assert.include(
-  //           questionsPage,
-  //           'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-  //         );
-  //       });
-  //       it('should result in 1 "grading-block" component being rendered', () => {
-  //         assert.lengthOf($questionsPage('.grading-block'), 1);
-  //       });
-  //     });
-  //   });
-  // });
 });
