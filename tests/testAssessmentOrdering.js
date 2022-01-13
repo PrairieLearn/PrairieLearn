@@ -36,7 +36,7 @@ describe('Course with assessments grouped by unit vs set', function () {
   }
 
   function testHeadingOrder(response, assessmentHeadings) {
-    const headings = response.$('table th.pl-assessment-group-heading');
+    const headings = response.$('table th[data-testid="assessment-group-heading"]');
     assert.lengthOf(
       headings,
       assessmentHeadings.length,
@@ -53,7 +53,7 @@ describe('Course with assessments grouped by unit vs set', function () {
 
   function extractAssessmentSetBadgeText(response) {
     const badgeText = [];
-    response.$('table .pl-assessment-set-badge').each((i, badge) => {
+    response.$('table [data-testid="assessment-set-badge"]').each((i, badge) => {
       badgeText.push(response.$(badge).text().trim());
     });
     return badgeText;
