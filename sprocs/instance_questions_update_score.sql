@@ -31,7 +31,6 @@ DECLARE
     new_score double precision;
     new_correct boolean;
     current_partial_score jsonb;
-
 BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
