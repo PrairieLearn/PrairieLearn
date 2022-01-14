@@ -33,8 +33,6 @@ const server = require('../server');
 const logger = require('./dummyLogger');
 const helperDb = require('./helperDb');
 
-let _server;
-
 const courseDirDefault = path.join(__dirname, '..', 'testCourse');
 
 module.exports = {
@@ -45,6 +43,7 @@ module.exports = {
     return function (callback) {
       debug('before()');
       var that = this;
+      let httpServer;
       async.series(
         [
           async () => {
@@ -110,11 +109,11 @@ module.exports = {
           },
           async () => {
             logger.verbose('Starting server...');
-            _server = await server.startServerAsync();
+            httpServer = await server.startServerAsync();
           },
           function (callback) {
             debug('before(): initialize socket server');
-            socketServer.init(_server, function (err) {
+            socketServer.init(httpServer, function (err) {
               if (ERR(err, callback)) return;
               callback(null);
             });
