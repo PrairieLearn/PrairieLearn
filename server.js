@@ -34,7 +34,6 @@ const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
-const assessment = require('./lib/assessment');
 const sqldb = require('./prairielib/lib/sql-db');
 const migrations = require('./prairielib/lib/migrations');
 const sprocs = require('./sprocs');
