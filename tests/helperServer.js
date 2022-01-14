@@ -108,7 +108,7 @@ module.exports = {
             callback(null);
           },
           async () => {
-            logger.verbose('Starting server...');
+            debug('before(): start server');
             httpServer = await server.startServerAsync();
           },
           function (callback) {
