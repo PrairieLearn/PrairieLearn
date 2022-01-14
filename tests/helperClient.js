@@ -2,7 +2,6 @@ const fetch = require('node-fetch');
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
 const config = require('../lib/config');
-const querystring = require('querystring');
 
 module.exports = {};
 
@@ -78,8 +77,16 @@ module.exports.extractAndSaveVariantId = (context, $, parentSelector = '') => {
 };
 
 /**
- * Set the active user within Prairie Learn's test environment.
- * @param {object} user
+ * @typedef {Object} User
+ * @property {string} authUid
+ * @property {string} authName
+ * @property {string} authUin
+ */
+
+/**
+ * Set the current user in the config.
+ *
+ * @param {User} user
  */
 module.exports.setUser = (user) => {
   config.authUid = user.authUid;
@@ -89,6 +96,7 @@ module.exports.setUser = (user) => {
 
 /**
  * Get instance question id from URL params.
+ *
  * @param {string} url
  * @returns number
  */
@@ -100,16 +108,17 @@ module.exports.parseInstanceQuestionId = (url) => {
 
 /**
  * Acts as 'save' or 'save and grade' button click on student instance question page.
- * @param {string} instanceQuestionUrl the instance question url the student is answering the question on.
- * @param {object} payload json data structure type formed on the basis of the question
- * @param {string} 'save' or 'grade' enums
- * @param {array<object>}  (optional) ie. [{name: 'fib.py', 'contents': Buffer.from(fibFileContents).toString('base64')}]
+ *
+ * @param {string} instanceQuestionUrl The instance question url the student is answering the question on.
+ * @param {Record<string, any>} payload JSON data structure type formed on the basis of the question
+ * @param {'save' | 'grade'} action The action to take
+ * @param {{ name: string, contents: string }[]} [fileData] File data to submit to the question
  */
 module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileData) => {
   const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
   const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
   const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
-  const uploadSuffix = $instanceQuestionPage('input[name^=_file_upload]').attr('name');
+  const fileUploadInputName = $instanceQuestionPage('input[name^=_file_upload]').attr('name');
 
   // handles case where __variant_id should exist inside postData on only some instance questions submissions
   if (payload && payload.postData) {
@@ -121,12 +130,12 @@ module.exports.saveOrGrade = async (instanceQuestionUrl, payload, action, fileDa
   return fetch(instanceQuestionUrl, {
     method: 'POST',
     headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-    body: [
-      '__variant_id=' + variantId,
-      '__action=' + action,
-      '__csrf_token=' + token,
-      fileData ? uploadSuffix + '=' + encodeURIComponent(JSON.stringify(fileData)) : '',
-      querystring.encode(payload),
-    ].join('&'),
+    body: new URLSearchParams({
+      __variant_id: variantId,
+      __action: action,
+      __csrf_token: token,
+      ...(fileData ? { [fileUploadInputName]: JSON.stringify(fileData) } : {}),
+      ...payload,
+    }).toString(),
   });
 };
