@@ -19,12 +19,12 @@ const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
 const workers = require('../lib/workers');
 const tracing = require('../lib/tracing');
+const externalGrader = require('../lib/externalGrader');
+const externalGradingSocket = require('../lib/externalGradingSocket');
+
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-
-const externalGrader = require('../lib/externalGrader');
-const externalGradingSocket = require('../lib/externalGradingSocket');
 
 config.startServer = false;
 config.serverPort = 3007;
