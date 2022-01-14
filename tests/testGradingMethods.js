@@ -1,5 +1,8 @@
 const { assert } = require('chai');
 const cheerio = require('cheerio');
+const fs = require('fs-extra');
+const path = require('path');
+
 const config = require('../lib/config');
 const fetch = require('node-fetch');
 const helperServer = require('./helperServer');
@@ -11,12 +14,24 @@ const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClien
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const anyFileContent = 'any file content \n\n';
 const defaultUser = {
   authUid: config.authUid,
   authName: config.authName,
   authUin: config.authUin,
 };
+
+const fibonacciSolution = fs.readFileSync(
+  path.resolve(
+    __dirname,
+    '..',
+    'testCourse',
+    'questions',
+    'externalGrade',
+    'codeUpload',
+    'tests',
+    'ans.py'
+  )
+);
 
 let socket = null;
 
@@ -230,7 +245,7 @@ describe('Grading method(s)', function () {
         );
         it('should be possible to submit a save action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-            { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
+            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
         });
@@ -260,7 +275,7 @@ describe('Grading method(s)', function () {
                 'a:contains("HW9.3. External Grading: Fibonacci function, file upload")'
               ).attr('href');
             gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
-              { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
+              { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
             ]);
             assert.equal(gradeRes.status, 200);
             questionsPage = await gradeRes.text();
@@ -283,7 +298,7 @@ describe('Grading method(s)', function () {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
         it('should display submission status', async () => {
-          assert.equal(getLatestSubmissionStatus($questionsPage), 'invalid, not gradable');
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -302,7 +317,7 @@ describe('Grading method(s)', function () {
               ).attr('href');
 
             gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-              { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
+              { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
             ]);
             assert.equal(gradeRes.status, 200);
 
