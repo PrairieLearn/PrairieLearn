@@ -109,7 +109,7 @@ module.exports = {
           },
           async () => {
             debug('before(): start server');
-            httpServer = await server.startServerAsync();
+            httpServer = await server.startServer();
           },
           function (callback) {
             debug('before(): initialize socket server');

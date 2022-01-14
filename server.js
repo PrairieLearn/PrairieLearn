@@ -1578,7 +1578,7 @@ module.exports.initExpress = function () {
 
 var server;
 
-module.exports.startServerAsync = async () => {
+module.exports.startServer = async () => {
   const app = module.exports.initExpress();
 
   if (config.serverType === 'https') {
@@ -1601,7 +1601,6 @@ module.exports.startServerAsync = async () => {
 
   return server;
 };
-module.exports.startServer = util.callbackify(module.exports.startServerAsync);
 
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
@@ -1832,7 +1831,7 @@ if (config.startServer) {
       },
       async () => {
         logger.verbose('Starting server...');
-        await module.exports.startServerAsync();
+        await module.exports.startServer();
       },
       function (callback) {
         if (!config.devMode) return callback(null);
