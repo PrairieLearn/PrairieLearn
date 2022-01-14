@@ -1804,7 +1804,7 @@ if (config.startServer) {
         });
       },
       (callback) => {
-        externalGrader.init(assessment, function (err) {
+        externalGrader.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
