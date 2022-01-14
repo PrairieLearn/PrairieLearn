@@ -83,6 +83,16 @@ const loadHomeworkPage = async (user) => {
   return res.text();
 };
 
+/**
+ * Gets the score text for the first submission panel on the page.
+ *
+ * @param {import('cheerio')} $
+ * @returns {string}
+ */
+function getLatestSubmissionStatus($) {
+  return $('.card[id^="submission"] .card-header .badge').first().text();
+}
+
 describe('Grading method(s)', function () {
   this.timeout(80000);
 
@@ -134,11 +144,8 @@ describe('Grading method(s)', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should be given submission grade in "pastsubmission-block"', async () => {
-          assert.include(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 1);
@@ -174,11 +181,8 @@ describe('Grading method(s)', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -204,11 +208,8 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -237,11 +238,8 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -284,11 +282,8 @@ describe('Grading method(s)', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should be given submission grade in "pastsubmission-block"', async () => {
-          assert.include(
-            questionsPage,
-            '<td>Awarded points:</td>\n          <td>\n\n\n<span class="badge badge-danger">\n\n0/6\n</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'invalid, not gradable');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -324,11 +319,8 @@ describe('Grading method(s)', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
