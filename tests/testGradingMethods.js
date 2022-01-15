@@ -33,8 +33,6 @@ const fibonacciSolution = fs.readFileSync(
   )
 );
 
-let socket = null;
-
 const mockStudents = [
   { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
   { authUid: 'student2', authName: 'Student User 2', authUin: '00000002' },
@@ -43,38 +41,39 @@ const mockStudents = [
 ];
 
 const waitForExternalGrader = async ($questionsPage, questionsPage) => {
+  const variantId = $questionsPage('form > input[name="__variant_id"]').val();
+
+  // The variant token (used for a sort of authentication) is inlined into
+  // a `<script>` tag. This regex will read it out of the page's raw HTML.
+  const variantToken = questionsPage.match(/variantToken\s*=\s*['"](.*?)['"];/)[1];
+
+  const socket = io(`http://localhost:${config.serverPort}/external-grading`);
+
   return new Promise((resolve, reject) => {
-    try {
-      socket = io.connect('http://localhost:3007/external-grading');
-      socket.on('connect_error', (err) => {
-        throw Error(err);
+    socket.on('connect_error', (err) => {
+      reject(new Error(err));
+    });
+
+    const handleStatusChange = (msg) => {
+      msg.submissions.forEach((s) => {
+        if (s.grading_job_status === 'graded') {
+          resolve();
+          return;
+        }
       });
+    };
 
-      const handleStatusChange = (msg) => {
-        msg.submissions.forEach((s) => {
-          if (s.grading_job_status === 'graded') {
-            resolve(msg);
-            return;
-          }
-        });
-      };
+    socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
+      handleStatusChange(msg);
+    });
 
-      const variantId = $questionsPage('form > input[name="__variant_id"]').val();
-
-      // The variant token (used for a sort of authentication) is inlined into
-      // a `<script>` tag. This regex will read it out of the page's raw HTML.
-      const variantToken = questionsPage.match(/variantToken\s*=\s*['"](.*?)['"];/)[1];
-
-      socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
-        handleStatusChange(msg);
-      });
-
-      socket.on('change:status', function (msg) {
-        handleStatusChange(msg);
-      });
-    } catch (err) {
-      reject(err);
-    }
+    socket.on('change:status', function (msg) {
+      handleStatusChange(msg);
+    });
+  }).finally(() => {
+    // Whether or not we actually got a valid result, we should close the
+    // socket to allow the test process to exit.
+    socket.close();
   });
 };
 
@@ -288,7 +287,6 @@ describe('Grading method(s)', function () {
             $questionsPage = cheerio.load(questionsPage);
           }
         );
-        after('close external grader socket', () => socket.close());
 
         it('should result in 1 grading jobs', async () => {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
