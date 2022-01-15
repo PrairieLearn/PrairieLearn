@@ -195,7 +195,7 @@ Certain assessments might be designed to be done linearly, where each question a
 
 To enable these features, set `advanceScorePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
 
-```js
+```json
 {
     "advanceScorePerc": 100,
     "zones": [
@@ -211,13 +211,13 @@ To enable these features, set `advanceScorePerc` to any number between 0 and 100
 }
 ```
 
-In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `advanceScorePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80 in order to unlock `page3`. Because `advanceScorePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
+In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `advanceScorePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80% in order to unlock `page3`. Because `advanceScorePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
 
 If a student uses all of their attempts on a question and cannot submit any more attempts, the next question will automatically unlock, no matter what score they earned on the previous question. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
 
 ### Note about exam-type assessments and in-order questions
 
-The `advanceScorePerc` attribute is intended to be used in [groupwork](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in actual exams.
+The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in actual exams.
 
 ## Auto-closing Exam assessments
 
