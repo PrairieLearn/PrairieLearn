@@ -302,7 +302,7 @@ BEGIN
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
-                    (alternative_group->>'advance_score_perc')::integer,
+                    (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
                     new_zone_id
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
