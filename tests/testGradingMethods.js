@@ -53,17 +53,17 @@ const waitForExternalGrader = async ($questionsPage, questionsPage) => {
       const handleStatusChange = (msg) => {
         msg.submissions.forEach((s) => {
           if (s.grading_job_status === 'graded') {
-            return resolve(msg);
+            resolve(msg);
+            return;
           }
         });
       };
 
       const variantId = $questionsPage('form > input[name="__variant_id"]').val();
-      const variantTokenLine = questionsPage.match(/.*variantToken.*\n/)[0];
 
-      let variantToken = variantTokenLine.match(/'(.*?)'/g)[0].replace("'", '');
-      // hack, last ' not replaced on string
-      variantToken = variantToken.substring(0, variantToken.length - 1);
+      // The variant token (used for a sort of authentication) is inlined into
+      // a `<script>` tag. This regex will read it out of the page's raw HTML.
+      const variantToken = questionsPage.match(/variantToken\s*=\s*['"](.*?)['"];/)[1];
 
       socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
         handleStatusChange(msg);
