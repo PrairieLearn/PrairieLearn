@@ -197,17 +197,24 @@ To enable these features, set `advanceScorePerc` to any number between 0 and 100
 
 ```json
 {
-    "advanceScorePerc": 100,
-    "zones": [
+  "advanceScorePerc": 100,
+  "zones": [
+    {
+      "advanceScorePerc": 80,
+      "questions": [
         {
-            "advanceScorePerc": 80,
-            "questions": [
-                {"id": "page1", "advanceScorePerc": 50},
-                {"id": "page2"},
-                {"id": "page3"}
-            ]
+          "id": "page1",
+          "advanceScorePerc": 50
+        },
+        {
+          "id": "page2"
+        },
+        {
+          "id": "page3"
         }
-    ]
+      ]
+    }
+  ]
 }
 ```
 
