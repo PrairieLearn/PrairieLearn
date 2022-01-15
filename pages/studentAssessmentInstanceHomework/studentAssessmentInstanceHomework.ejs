@@ -94,8 +94,10 @@
             <% } %>
             <tr class="<% if (question.sequence_locked) { %>bg-light pl-sequence-locked<% } %>">
               <td>
-                <% question.rowLabelText = `${question.question_number}. ${question.question_title}`; %>
-                <%- include('../partials/studentAssessmentInstanceRowLabel.ejs', question); %>
+                <%- include('../partials/studentAssessmentInstanceRowLabel.ejs', {
+                  ...question,
+                  rowLabelText: `${question.question_number}. ${question.question_title}`,
+                }); %>
               </td>
               <td class="text-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
               <td class="text-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points});  %></td>

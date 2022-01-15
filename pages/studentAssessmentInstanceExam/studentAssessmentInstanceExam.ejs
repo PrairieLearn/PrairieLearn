@@ -209,8 +209,10 @@
             <% } %>
             <tr class="<% if (instance_question.sequence_locked) { %>bg-light pl-sequence-locked<% } %>">
               <td>
-                <% instance_question.rowLabelText = `Question ${instance_question.question_number}`;%>
-                <%- include('../partials/studentAssessmentInstanceRowLabel.ejs', instance_question); %>
+                <%- include('../partials/studentAssessmentInstanceRowLabel.ejs', {
+                  ...instance_question,
+                  rowLabelText: `Question ${instance_question.question_number}`,
+                }); %>
               </td>
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (assessment.allow_real_time_grading) { %>
