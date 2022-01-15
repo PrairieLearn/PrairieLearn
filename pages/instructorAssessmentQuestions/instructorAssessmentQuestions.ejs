@@ -123,7 +123,7 @@
                   <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
                 </td>
                 <% if (showAdvanceScorePercCol) { %>
-                  <td class="pl-sequence-prev-unlock-score <% if (question.assessment_question_advance_score_perc == 0) { %>text-muted<% } %>">
+                  <td class="<% if (question.assessment_question_advance_score_perc == 0) { %>text-muted<% } %>" data-testid="advance-score-perc">
                     <%= question.assessment_question_advance_score_perc %>%
                   </td>
                 <% } %>

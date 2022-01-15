@@ -35,7 +35,7 @@ describe('Assessment that forces students to complete questions in-order', funct
 
     context.expectedPercentages = [0, 60, 75, 0, 30, 100];
     const computedPercentages = response
-      .$('.pl-sequence-prev-unlock-score')
+      .$('[data-testid="advance-score-perc"]')
       .map((i, elem) => {
         // turn string "25%" -> number 25
         return Number(response.$(elem).text().trim().slice(0, -1));
@@ -93,7 +93,7 @@ describe('Assessment that forces students to complete questions in-order', funct
 
     it('Locks in student assessment instance page should match those in database', () => {
       const computedLocks = response
-        .$('table#assessment-questions tbody tr')
+        .$('table[data-testid="assessment-questions"] tbody tr')
         .map((i, elem) => {
           return response.$(elem).hasClass('pl-sequence-locked');
         })
@@ -103,7 +103,7 @@ describe('Assessment that forces students to complete questions in-order', funct
 
     it('Question 3 should require 60% on Question 2 to unlock', () => {
       assert.include(
-        response.$('table#assessment-questions tbody tr:nth-child(3)').html(),
+        response.$('table[data-testid="assessment-questions"] tbody tr:nth-child(3)').html(),
         '60% on Question 2'
       );
     });
