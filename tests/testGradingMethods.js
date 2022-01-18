@@ -1,30 +1,38 @@
 const { assert } = require('chai');
 const cheerio = require('cheerio');
-const config = require('../lib/config');
+const fs = require('fs-extra');
+const path = require('path');
 const fetch = require('node-fetch');
-const querystring = require('querystring');
+
+const config = require('../lib/config');
 const helperServer = require('./helperServer');
+const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
-const sql = sqlLoader.loadSqlEquiv(__filename);
 const io = require('socket.io-client');
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const anyFileContent = 'any file content \n\n';
 const defaultUser = {
   authUid: config.authUid,
   authName: config.authName,
   authUin: config.authUin,
 };
 
-let socket = null;
-
-const setUser = (user) => {
-  config.authUid = user.authUid;
-  config.authName = user.authName;
-  config.authUin = user.authUin;
-};
+const fibonacciSolution = fs.readFileSync(
+  path.resolve(
+    __dirname,
+    '..',
+    'testCourse',
+    'questions',
+    'externalGrade',
+    'codeUpload',
+    'tests',
+    'ans.py'
+  )
+);
 
 const mockStudents = [
   { authUid: 'student1', authName: 'Student User 1', authUin: '00000001' },
@@ -33,82 +41,40 @@ const mockStudents = [
   { authUid: 'student4', authName: 'Student User 4', authUin: '00000004' },
 ];
 
-const getFileUploadSuffix = ($instanceQuestionPage) => {
-  return $instanceQuestionPage('input[name^=_file_upload]').attr('name');
-};
-
 const waitForExternalGrader = async ($questionsPage, questionsPage) => {
+  const variantId = $questionsPage('form > input[name="__variant_id"]').val();
+
+  // The variant token (used for a sort of authentication) is inlined into
+  // a `<script>` tag. This regex will read it out of the page's raw HTML.
+  const variantToken = questionsPage.match(/variantToken\s*=\s*['"](.*?)['"];/)[1];
+
+  const socket = io(`http://localhost:${config.serverPort}/external-grading`);
+
   return new Promise((resolve, reject) => {
-    try {
-      socket = io.connect('http://localhost:3007/external-grading');
-      socket.on('connect_error', (err) => {
-        throw Error(err);
+    socket.on('connect_error', (err) => {
+      reject(new Error(err));
+    });
+
+    const handleStatusChange = (msg) => {
+      msg.submissions.forEach((s) => {
+        if (s.grading_job_status === 'graded') {
+          resolve();
+          return;
+        }
       });
+    };
 
-      const handleStatusChange = (msg) => {
-        msg.submissions.forEach((s) => {
-          if (s.grading_job_status === 'graded') {
-            return resolve(msg);
-          }
-        });
-      };
+    socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
+      handleStatusChange(msg);
+    });
 
-      const variantId = $questionsPage('form > input[name="__variant_id"]').val();
-      const variantTokenLine = questionsPage.match(/.*variantToken.*\n/)[0];
-
-      let variantToken = variantTokenLine.match(/'(.*?)'/g)[0].replace("'", '');
-      // hack, last ' not replaced on string
-      variantToken = variantToken.substring(0, variantToken.length - 1);
-
-      socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg) {
-        handleStatusChange(msg);
-      });
-
-      socket.on('change:status', function (msg) {
-        handleStatusChange(msg);
-      });
-    } catch (err) {
-      reject(err);
-    }
-  });
-};
-
-const parseInstanceQuestionId = (url) => {
-  const iqId = parseInt(url.match(/instance_question\/(\d+)/)[1]);
-  assert.isNumber(iqId);
-  return iqId;
-};
-
-/**
- * Acts as 'save' or 'save and grade' button click on student instance question page.
- * @param {string} instanceQuestionUrl the instance question url the student is answering the question on.
- * @param {object} payload json data structure type formed on the basis of the question
- * @param {string} 'save' or 'grade' enums
- */
-const saveOrGrade = async (instanceQuestionUrl, payload, action, fileData) => {
-  const $instanceQuestionPage = cheerio.load(await (await fetch(instanceQuestionUrl)).text());
-  const token = $instanceQuestionPage('form > input[name="__csrf_token"]').val();
-  const variantId = $instanceQuestionPage('form > input[name="__variant_id"]').val();
-
-  // handles case where __variant_id should exist inside postData on only some instance questions submissions
-  if (payload && payload.postData) {
-    payload.postData = JSON.parse(payload.postData);
-    payload.postData.variant.id = variantId;
-    payload.postData = JSON.stringify(payload.postData);
-  }
-
-  const uploadSuffix = getFileUploadSuffix($instanceQuestionPage);
-
-  return fetch(instanceQuestionUrl, {
-    method: 'POST',
-    headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-    body: [
-      '__variant_id=' + variantId,
-      '__action=' + action,
-      '__csrf_token=' + token,
-      fileData ? uploadSuffix + '=' + encodeURIComponent(JSON.stringify(fileData)) : '',
-      querystring.encode(payload),
-    ].join('&'),
+    socket.on('change:status', function (msg) {
+      handleStatusChange(msg);
+    });
+  }).finally(() => {
+    // Whether or not we actually got a valid result, we should close the
+    // socket to allow the test process to exit.
+    socket.close();
   });
 };
 
@@ -132,8 +98,18 @@ const loadHomeworkPage = async (user) => {
   return res.text();
 };
 
-describe('Grading method(s)', function () {
-  this.timeout(60000);
+/**
+ * Gets the score text for the first submission panel on the page.
+ *
+ * @param {import('cheerio')} $
+ * @returns {string}
+ */
+function getLatestSubmissionStatus($) {
+  return $('.card[id^="submission"] .card-header .badge').first().text();
+}
+
+describe('Grading methods', function () {
+  this.timeout(80000);
 
   let $hm1Body = null;
   let iqUrl = null;
@@ -183,11 +159,8 @@ describe('Grading method(s)', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should be given submission grade in "pastsubmission-block"', async () => {
-          assert.include(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 1);
@@ -223,11 +196,8 @@ describe('Grading method(s)', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -259,16 +229,8 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should result in 1 "pastsubmission-block" component being rendered', async () => {
-          questionsPage = await gradeRes.text();
-          $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('.pastsubmission-block'), 0);
-        });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -289,7 +251,7 @@ describe('Grading method(s)', function () {
         );
         it('should be possible to submit a save action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-            { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
+            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
         });
@@ -297,16 +259,8 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should result in 1 "pastsubmission-block" component being rendered', async () => {
-          questionsPage = await gradeRes.text();
-          $questionsPage = cheerio.load(questionsPage);
-          assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
-        });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -327,7 +281,7 @@ describe('Grading method(s)', function () {
                 'a:contains("HW9.3. External Grading: Fibonacci function, file upload")'
               ).attr('href');
             gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
-              { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
+              { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
             ]);
             assert.equal(gradeRes.status, 200);
             questionsPage = await gradeRes.text();
@@ -340,7 +294,6 @@ describe('Grading method(s)', function () {
             $questionsPage = cheerio.load(questionsPage);
           }
         );
-        after('close external grader socket', () => socket.close());
 
         it('should result in 1 grading jobs', async () => {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
@@ -349,11 +302,8 @@ describe('Grading method(s)', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should be given submission grade in "pastsubmission-block"', async () => {
-          assert.include(
-            questionsPage,
-            '<td>Awarded points:</td>\n          <td>\n\n\n<span class="badge badge-danger">\n\n0/6\n</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -372,7 +322,7 @@ describe('Grading method(s)', function () {
               ).attr('href');
 
             gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
-              { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
+              { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
             ]);
             assert.equal(gradeRes.status, 200);
 
@@ -389,11 +339,8 @@ describe('Grading method(s)', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);

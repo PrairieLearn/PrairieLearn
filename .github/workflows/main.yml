@@ -35,8 +35,14 @@ jobs:
       run: sh ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs
     - name: Build the testing docker image
       run: docker build -t pltest .
+    - name: Create a temporary directory for host files
+      run: mkdir -p /tmp/prairielearn
     - name: Start the container
-      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock --name=test_container pltest /bin/bash
+      # We have tests for external grading code, which relies on the Docker
+      # socket being available, as well as a specific volume mount and
+      # environment variable. See the docs for more details:
+      # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
+      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container pltest /bin/bash
     - name: Run the JavaScript linter
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
     - name: Run the Python linter
