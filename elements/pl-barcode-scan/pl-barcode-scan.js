@@ -18,10 +18,8 @@ $(() => {
   const toggleBarcodeRequired = (barcode) => {
     const barcodeRequired = $('#pl-barcode-scan-required');
     if (barcodeRequired && barcode.val().length === 0) {
-      console.log('showing 1');
       showBadge('#pl-barcode-scan-required');
     } else {
-      console.log('hiding 1');
       hideBadge('#pl-barcode-scan-required');
     }
   };
@@ -35,7 +33,6 @@ $(() => {
 
   // listener
   barcode.on('keyup', () => {
-    console.log('run...');
     const sanitized = barcode.val().toLowerCase().trim();
     const checksum = sanitized.substring(sanitized.length - 4, sanitized.length);
     const base36 = sanitized.replace(checksum, '');
