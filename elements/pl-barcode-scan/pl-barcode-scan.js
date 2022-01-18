@@ -31,7 +31,6 @@ $(() => {
     }
   };
 
-  // listener
   barcode.on('keyup', () => {
     const sanitized = barcode.val().toLowerCase().trim();
     const checksum = sanitized.substring(sanitized.length - 4, sanitized.length);
