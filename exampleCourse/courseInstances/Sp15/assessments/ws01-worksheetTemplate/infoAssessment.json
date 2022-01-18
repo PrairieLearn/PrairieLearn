@@ -1,10 +1,9 @@
 {
     "uuid": "E236920C-020C-448A-8E93-53CB6849BBDD",
-    "type": "Exam",
+    "type": "Homework",
     "title": "Worksheet template: Newton's law",
     "set": "Worksheet",
     "number": "1",
-    "requireHonorCode": false,
     "allowAccess": [
         {
             "mode": "Public",
@@ -14,12 +13,8 @@
     "zones": [
         {
             "questions": [
-                {"id": "demo/demoNewton-page1", "points": [5,2], "advanceScorePerc": 50}
-            ]
-        },
-        {
-            "questions": [
-                {"id": "demo/demoNewton-page2", "points": [5,4,3,2,1]}
+                { "id": "demo/demoNewton-page1", "points": [5,2], "advanceScorePerc": 50 },
+                { "id": "demo/demoNewton-page2", "points": [5,4,3,2,1] }
             ]
         }
     ]
