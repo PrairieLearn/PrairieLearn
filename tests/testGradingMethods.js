@@ -221,7 +221,7 @@ describe('Grading methods', function () {
         );
         it('should NOT be possible to submit a grade action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
-            { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
+            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
           ]);
           assert.equal(gradeRes.status, 500);
         });
@@ -407,7 +407,7 @@ describe('Grading methods', function () {
           const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
 
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'grade', [
-            { name: 'fib.py', contents: Buffer.from(anyFileContent).toString('base64') },
+            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
           ]);
           assert.equal(gradeRes.status, 200);
 
