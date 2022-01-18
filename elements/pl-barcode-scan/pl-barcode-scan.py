@@ -24,8 +24,8 @@ def crc16arc(msg):
 
 def is_invalid_barcode(barcode):
     barcode = barcode.lower()
-    checksum = barcode[len(barcode) - 4:len(barcode)]
-    base36 = barcode.replace(checksum, '')
+    base36 = barcode[:-4]
+    checksum = barcode[-4:]
     recomputed_checksum = hex(crc16arc(bytes(base36, encoding='utf-8')))
     if checksum in recomputed_checksum:
         return False
