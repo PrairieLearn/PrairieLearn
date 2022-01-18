@@ -1,63 +1,7 @@
-<script>
-    $(() => {
-        $('#pl-barcode-scan-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-barcode-scan-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-<script>
-    $(() => {
-        // NOTE: Dependency `js-crc` should be loaded in EJS parent view for client-side validation to work
-        const barcode = $('#pl-barcode-scan');
-        const showBadge = (selector) => {
-            $(selector).css('display', 'inline-block');
-        };
-        const hideBadge = (selector) => {
-            $(selector).css('display', 'none');
-        };
-        const toggleInvalidBarcode = (barcode, base36, checksum) => {
-            if (barcode.val().length == 0 || window.crc16(base36) === checksum) {
-                hideBadge('#pl-barcode-scan-invalid');
-            } else {
-                showBadge('#pl-barcode-scan-invalid');
-            }
-        };
-        const toggleBarcodeRequired = (barcode) => {
-            const barcodeRequired = $('#pl-barcode-scan-required');
-            if (barcodeRequired && barcode.val().length == 0) {
-                showBadge('#pl-barcode-scan-required');
-            } else {
-                hideBadge('#pl-barcode-scan-required');
-            }
-        };
-        const toggleValidBarcode = (barcode, base36, checksum) => {
-            if (window.crc16(base36) === checksum) {
-                showBadge('#pl-barcode-scan-valid');
-            } else {
-                hideBadge('#pl-barcode-scan-valid');
-            }
-        };
-
-        // listener
-        barcode.keyup((e) => {
-            const sanitized = barcode.val().toLowerCase().trim();
-            const checksum = sanitized.substring(sanitized.length-4, sanitized.length);
-            const base36 = sanitized.replace(checksum, '');
-
-            toggleBarcodeRequired(barcode);
-            toggleInvalidBarcode(barcode, base36, checksum);
-            toggleValidBarcode(barcode, base36, checksum);
-        });
-    });
-</script>
-
 {{#question}}
-    <!-- Will likely want to add button to add more barcodes that increment up-->
-    <div id="pl-barcode-scan-{{uuid}}" class="d-inline-block form-group">
-        <label for="_pdf_barcode_scan">Barcode</label>
-        <input type="text" id="pl-barcode-scan" style="text-transform:uppercase" name="_pdf_barcode_scan">
+    <div class="d-inline-block form-group">
+        <label for="pl-barcode-scan-input">Barcode</label>
+        <input type="text" id="pl-barcode-scan-input" name="_pdf_barcode_scan" class="form-control text-uppercase">
 
         <div class="pl-barcode-scan-badge-container d-inline-block">
             <span id="pl-barcode-scan-invalid" class="badge text-danger" style="display: none;"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
@@ -70,17 +14,15 @@
 {{/question}}
 
 {{^question}}
-    <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
+    <div class="d-inline-flex align-items-center form-group">
+        <input type="text" disabled value="{{barcode}}" class="form-control mr-2 text-uppercase">
 
         {{^parse-error}}
             <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
-            <input type="text" id="barcode" disabled name="_pdf_barcode_scan" value="{{barcode}}">
         {{/parse-error}}
 
         {{#parse-error}}
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid Barcode </span>
-            <input type="text" disabled value="{{barcode}}">
-            <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
         {{/parse-error}}
     </div>
 {{/question}}
