@@ -349,9 +349,9 @@ describe('Grading methods', function () {
     });
   });
 
-  describe('`gradingMethods` configuration (replaces `gradingMethod` implementation)', () => {
+  describe.only('`gradingMethods` configuration (replaces `gradingMethod` implementation)', () => {
     describe('Internal, External, Manual combination', () => {
-      describe('"save" action', () => {
+      describe.only('"save" action', () => {
         before('load page and post internal + external submission', async () => {
           const hm1Body = await loadHomeworkPage(mockStudents[0]);
           $hm1Body = cheerio.load(hm1Body);
@@ -367,7 +367,9 @@ describe('Grading methods', function () {
           iqId = parseInstanceQuestionId(iqUrl);
           const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
 
-          gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save');
+          gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save', [
+            { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+          ]);
           assert.equal(gradeRes.status, 200);
 
           questionsPage = await gradeRes.text();
@@ -380,11 +382,8 @@ describe('Grading methods', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should NOT be given submission grade in "pastsubmission-block"', async () => {
-          assert.notInclude(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status"', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -429,11 +428,8 @@ describe('Grading methods', function () {
         it('should result in 1 "pastsubmission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
         });
-        it('should be given submission grade in "pastsubmission-block"', async () => {
-          assert.include(
-            questionsPage,
-            'Submitted answer\n          \n        </span>\n        <span>\n    \n        <span class="badge badge-success">correct: 100%</span>'
-          );
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 1);
