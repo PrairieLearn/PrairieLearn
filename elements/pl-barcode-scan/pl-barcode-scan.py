@@ -3,7 +3,6 @@ import lxml.html
 import chevron
 
 BARCODE = '_pdf_barcode_scan'
-BLANK_ANSWER = ''
 REQUIRED = 'required'
 REQUIRED_DEFAULT = True
 
@@ -74,5 +73,5 @@ def parse(element_html, data):
 
     if submitted_barcode != '' and is_invalid_barcode(submitted_barcode):
         data['format_errors'][BARCODE] = 'Barcode "' + submitted_barcode + '" is invalid.'
-    elif submitted_barcode is BLANK_ANSWER and required is True:
+    elif submitted_barcode is '' and required is True:
         data['format_errors'][BARCODE] = 'A barcode associated with your written work MUST be submitted for this question!'
