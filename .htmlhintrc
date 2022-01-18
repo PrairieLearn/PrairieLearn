@@ -4,7 +4,6 @@
   "attr-lowercase": true,
   "attr-no-duplication": true,
   "attr-no-unnecessary-whitespace": true,
-  "attr-value-double-quotes": true,
   "space-tab-mixed-disabled": "space",
   "tag-pair": true
 }
