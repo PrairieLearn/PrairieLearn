@@ -26,19 +26,12 @@ const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const externalGrader = require('../lib/externalGrader');
-const externalGraderResults = require('../lib/externalGraderResults');
-const externalGradingSocket = require('../lib/externalGradingSocket');
-const assessment = require('../lib/assessment');
-
 config.startServer = false;
 config.serverPort = 3007;
 const server = require('../server');
 
 const logger = require('./dummyLogger');
 const helperDb = require('./helperDb');
-
-let _server;
 
 const courseDirDefault = path.join(__dirname, '..', 'testCourse');
 
