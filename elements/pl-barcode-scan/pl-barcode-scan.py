@@ -78,5 +78,5 @@ def parse(element_html, data):
 
     if submitted_barcode != '' and is_invalid_barcode(submitted_barcode):
         data['format_errors'][BARCODE] = 'Barcode "' + submitted_barcode + '" is invalid.'
-    elif submitted_barcode is '' and required is True:
+    elif submitted_barcode == '' and required:
         data['format_errors'][BARCODE] = 'A barcode associated with your written work MUST be submitted for this question!'
