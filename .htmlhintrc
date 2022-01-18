@@ -1,0 +1,10 @@
+{
+  // Question files don't need to have a doctype declaration
+  "doctype-first": false,
+  "attr-lowercase": true,
+  "attr-no-duplication": true,
+  "attr-no-unnecessary-whitespace": true,
+  "attr-value-double-quotes": true,
+  "space-tab-mixed-disabled": "space",
+  "tag-pair": true
+}
