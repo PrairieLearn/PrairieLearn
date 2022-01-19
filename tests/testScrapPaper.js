@@ -2,8 +2,8 @@ const assert = require('chai').assert;
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
-const { decodeBarcodes, readPdf } = require('../lib/scrapPaperReader');
-const { getBarcodeSegments } = require('../lib/scrapPaperMaker');
+const { decodeBarcodes, readPdf } = require('../lib/scrap-paper/read');
+const { getBarcodeSegments } = require('../lib/scrap-paper/generate');
 const config = require('../lib/config');
 const util = require('util');
 const sqldb = require('../prairielib/lib/sql-db');

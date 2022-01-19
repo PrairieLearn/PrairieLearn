@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createBarcodedPdf } = require('../../lib/scrapPaperMaker');
+const { createBarcodedPdf } = require('../../lib/scrap-paper/generate');
 const error = require('../../prairielib/lib/error');
 
 const pageLimit = 1000;
@@ -15,7 +15,7 @@ router.get('/', (req, res) => {
 router.post('/', async (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   if (req.body.__action === 'print_scrap_paper') {
-    const numPages = req.body.num_pages;
+    const numPages = Number.parseInt(req.body.num_pages, 10);
     const pageLabel = req.body.page_label;
 
     if (!numPages || numPages < 1 || numPages > pageLimit) {

@@ -3,7 +3,6 @@ import lxml.html
 import chevron
 
 BARCODE = '_pdf_barcode_scan'
-BLANK_ANSWER = ''
 REQUIRED = 'required'
 REQUIRED_DEFAULT = True
 
@@ -22,15 +21,19 @@ def crc16arc(msg):
     return crc
 
 
-def is_invalid_barcode(barcode):
+def is_valid_barcode(barcode):
     barcode = barcode.lower()
-    checksum = barcode[len(barcode) - 4:len(barcode)]
-    base36 = barcode.replace(checksum, '')
-    recomputed_checksum = hex(crc16arc(bytes(base36, encoding='utf-8')))
-    if checksum in recomputed_checksum:
-        return False
-    else:
-        return True
+    base36 = barcode[:-4]
+    checksum = barcode[-4:]
+    recomputed_checksum = format(crc16arc(bytes(base36, encoding='utf-8')), 'x')
+    print(checksum)
+    print(recomputed_checksum)
+    return checksum == recomputed_checksum
+
+
+def prepare(element_html, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.check_attribs(element, required_attribs=[], optional_attribs=['required'])
 
 
 def render(element_html, data):
@@ -72,7 +75,7 @@ def parse(element_html, data):
         data['format_errors'][BARCODE] = 'Barcode is not a valid string'
         return
 
-    if submitted_barcode != '' and is_invalid_barcode(submitted_barcode):
-        data['format_errors'][BARCODE] = 'Barcode "' + submitted_barcode + '" is invalid.'
-    elif submitted_barcode is BLANK_ANSWER and required is True:
+    if submitted_barcode != '' and not is_valid_barcode(submitted_barcode):
+        data['format_errors'][BARCODE] = f'Barcode "{submitted_barcode}" is invalid.'
+    elif submitted_barcode == '' and required:
         data['format_errors'][BARCODE] = 'A barcode associated with your written work MUST be submitted for this question!'
