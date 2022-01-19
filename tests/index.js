@@ -31,7 +31,9 @@ require('./testShowClosedAssessmentScore');
 require('./testActiveAccessRestriction');
 require('./testGradeRate');
 require('./testBonusPoints');
-require('./testScrapPaper'); // must go before testCron.js or breakage only in CI/CD pipeline; view commits before and after #541987f
+// must go before testCron.js or breakage only in CI/CD pipeline; view commits before and after #541987f
+// TODO: why is this the case?
+require('./testScrapPaper');
 require('./testAccess');
 require('./testAccessAsStudent');
 require('./testCourseElementExtension');
