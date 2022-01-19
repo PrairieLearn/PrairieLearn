@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const { createBarcodedPdf } = require('../../lib/scrapPaperMaker');
+const { createBarcodedPdf } = require('../../lib/scrap-paper/generate');
 const error = require('../../prairielib/lib/error');
 
 const pageLimit = 1000;
