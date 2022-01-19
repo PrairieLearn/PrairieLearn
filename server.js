@@ -34,7 +34,6 @@ const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
-const assessment = require('./lib/assessment');
 const sqldb = require('./prairielib/lib/sql-db');
 const migrations = require('./prairielib/lib/migrations');
 const sprocs = require('./sprocs');
@@ -1598,7 +1597,7 @@ module.exports.initExpress = function () {
 
 var server;
 
-module.exports.startServerAsync = async () => {
+module.exports.startServer = async () => {
   const app = module.exports.initExpress();
 
   if (config.serverType === 'https') {
@@ -1619,9 +1618,8 @@ module.exports.startServerAsync = async () => {
     throw new Error('unknown serverType: ' + config.serverType);
   }
 
-  return app;
+  return server;
 };
-module.exports.startServer = util.callbackify(module.exports.startServerAsync);
 
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
@@ -1824,7 +1822,7 @@ if (config.startServer) {
         });
       },
       (callback) => {
-        externalGrader.init(assessment, function (err) {
+        externalGrader.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
@@ -1852,7 +1850,7 @@ if (config.startServer) {
       },
       async () => {
         logger.verbose('Starting server...');
-        await module.exports.startServerAsync();
+        await module.exports.startServer();
       },
       function (callback) {
         if (!config.devMode) return callback(null);
