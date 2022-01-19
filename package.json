@@ -134,6 +134,7 @@
     "devDependencies": {
         "@types/async": "^3.2.8",
         "@types/chai": "^4.2.21",
+        "@types/cheerio": "^0.22.30",
         "@types/folder-hash": "^4.0.1",
         "@types/fs-extra": "^9.0.12",
         "@types/mocha": "^9.0.0",

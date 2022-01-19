@@ -19,6 +19,9 @@ const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
 const workers = require('../lib/workers');
 const tracing = require('../lib/tracing');
+const externalGrader = require('../lib/externalGrader');
+const externalGradingSocket = require('../lib/externalGradingSocket');
+
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -40,6 +43,7 @@ module.exports = {
     return function (callback) {
       debug('before()');
       var that = this;
+      let httpServer;
       async.series(
         [
           async () => {
@@ -103,16 +107,13 @@ module.exports = {
             workers.init();
             callback(null);
           },
-          function (callback) {
+          async () => {
             debug('before(): start server');
-            server.startServer(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            httpServer = await server.startServer();
           },
           function (callback) {
             debug('before(): initialize socket server');
-            socketServer.init(server, function (err) {
+            socketServer.init(httpServer, function (err) {
               if (ERR(err, callback)) return;
               callback(null);
             });
@@ -134,6 +135,18 @@ module.exports = {
           function (callback) {
             debug('before(): initialize freeform server');
             freeformServer.init(function (err) {
+              if (ERR(err, callback)) return;
+              callback(null);
+            });
+          },
+          function (callback) {
+            externalGrader.init(function (err) {
+              if (ERR(err, callback)) return;
+              callback(null);
+            });
+          },
+          function (callback) {
+            externalGradingSocket.init(function (err) {
               if (ERR(err, callback)) return;
               callback(null);
             });
