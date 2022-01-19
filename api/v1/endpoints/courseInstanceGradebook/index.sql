@@ -22,7 +22,7 @@ course_scores AS (
         ai.max_points,
         ai.points,
         format_date_iso8601(ai.date, ci.display_timezone) AS start_date,
-        EXTRACT(EPOCH FROM ai.duration) AS duration_seconds,
+        DATE_PART('epoch', ai.duration) AS duration_seconds,
         ai.id AS assessment_instance_id
     FROM
         assessment_instances AS ai

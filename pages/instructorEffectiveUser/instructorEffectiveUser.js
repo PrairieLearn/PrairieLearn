@@ -41,7 +41,7 @@ router.get('/', function (req, res, next) {
 
     res.locals.ipaddress = req.ip;
     // Trim out IPv6 wrapper on IPv4 addresses
-    if (res.locals.ipaddress.substr(0, 7) == '::ffff:') {
+    if (res.locals.ipaddress.substr(0, 7) === '::ffff:') {
       res.locals.ipaddress = res.locals.ipaddress.substr(7);
     }
     res.locals.req_date_for_display = moment(res.locals.req_date).toISOString(true);
@@ -60,7 +60,7 @@ router.post('/', function (req, res, next) {
     return next(error.make(403, 'Access denied (must be course previewer or student data viewer)'));
   }
 
-  if (req.body.__action == 'reset') {
+  if (req.body.__action === 'reset') {
     res.clearCookie('pl_requested_uid');
     res.clearCookie('pl_requested_course_role');
     res.clearCookie('pl_requested_course_instance_role');
@@ -68,31 +68,31 @@ router.post('/', function (req, res, next) {
     res.clearCookie('pl_requested_date');
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
-  } else if (req.body.__action == 'changeUid') {
+  } else if (req.body.__action === 'changeUid') {
     res.cookie('pl_requested_uid', req.body.pl_requested_uid, {
       maxAge: 60 * 60 * 1000,
     });
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
-  } else if (req.body.__action == 'changeCourseRole') {
+  } else if (req.body.__action === 'changeCourseRole') {
     res.cookie('pl_requested_course_role', req.body.pl_requested_course_role, {
       maxAge: 60 * 60 * 1000,
     });
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
-  } else if (req.body.__action == 'changeCourseInstanceRole') {
+  } else if (req.body.__action === 'changeCourseInstanceRole') {
     res.cookie('pl_requested_course_instance_role', req.body.pl_requested_course_instance_role, {
       maxAge: 60 * 60 * 1000,
     });
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
-  } else if (req.body.__action == 'changeMode') {
+  } else if (req.body.__action === 'changeMode') {
     res.cookie('pl_requested_mode', req.body.pl_requested_mode, {
       maxAge: 60 * 60 * 1000,
     });
     res.cookie('pl_requested_data_changed');
     res.redirect(req.originalUrl);
-  } else if (req.body.__action == 'changeDate') {
+  } else if (req.body.__action === 'changeDate') {
     debug(`POST: req.body.pl_requested_date = ${req.body.pl_requested_date}`);
     let date = moment(req.body.pl_requested_date, moment.ISO_8601);
     if (!date.isValid()) {

@@ -20,7 +20,7 @@ describe('GET /', function () {
       if (error) {
         return callback(error);
       }
-      if (response.statusCode != 200) {
+      if (response.statusCode !== 200) {
         return callback(new Error('bad status: ' + response.statusCode, { response, body }));
       }
       page = body;

@@ -1,4 +1,15 @@
 {{#question}}
+<script>
+$(function() {
+    var UUID = "{{uuid}}";
+
+    new window.PLOrderBlocks(UUID, {
+        maxIndent: {{max_indent}},
+        enableIndentation: {{check_indentation}}
+    });
+});
+</script>
+
     <div class="row">
         <div class="column {{dropzone_layout}}">
             <ul class="list-group-item list-group-item-primary header">
@@ -8,27 +19,27 @@
                     </a>
                 </li>
             </ul>
-            <ul id="{{answer_name}}-options" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}" indent={{max_indent}}>
+            <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
                     <li class="list-group-item shadow" uuid="{{uuid}}" string="{{inner_html}}">{{{inner_html}}}</li>
                 {{/options}}
             </ul>
         </div>
-            <div class="column {{dropzone_layout}}">
-                <ul class="list-group-item list-group-item-primary header">
-                    <li><strong>{{solution-header}}</strong>
-                        <a role="button" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
-                        <i class="fa fa-question-circle" aria-hidden="true"></i>
-                    </a>
-                    </li>
-                </ul>
-                <ul id="{{answer_name}}-dropzone" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone {{check_indentation}}" indent={{max_indent}}>
-                    {{#submission_dict}}
-                        <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="list-group-item shadow">{{{inner_html}}}</li>
-                    {{/submission_dict}}
-                </ul>
-            </div>
+        <div class="column {{dropzone_layout}}">
+            <ul class="list-group-item list-group-item-primary header">
+                <li><strong>{{solution-header}}</strong>
+                    <a role="button" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
+                    <i class="fa fa-question-circle" aria-hidden="true"></i>
+                </a>
+                </li>
+            </ul>
+            <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone">
+                {{#submission_dict}}
+                    <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="list-group-item shadow">{{{inner_html}}}</li>
+                {{/submission_dict}}
+            </ul>
         </div>
+    </div>
     <input id="{{answer_name}}-input" type="hidden" name="{{answer_name}}-input" value=""/>
 
 {{/question}}
@@ -70,7 +81,7 @@
 {{#true_answer}}
     <div class="true_answer_container">
         <ul class="list-group">
-            <li class="list-group-item list-group-item-success"><strong>Correct answer ({{grading_mode}}{{check_indentation}}):</strong></li>
+            <li class="list-group-item list-group-item-success"><strong>Correct answer ({{grading_mode}}{{indentation_message}}):</strong></li>
         </ul>
         <ul class="list-group answer_table">
         {{#question_solution}}
