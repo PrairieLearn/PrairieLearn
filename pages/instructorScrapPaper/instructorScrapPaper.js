@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
   if (req.body.__action === 'print_scrap_paper') {
-    const numPages = req.body.num_pages;
+    const numPages = Number.parseInt(req.body.num_pages, 10);
     const pageLabel = req.body.page_label;
 
     if (!numPages || numPages < 1 || numPages > pageLimit) {

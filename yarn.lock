@@ -1394,6 +1394,13 @@
   resolved "https://registry.yarnpkg.com/@types/parse5/-/parse5-5.0.3.tgz#e7b5aebbac150f8b5fdd4a46e7f0bd8e65e19109"
   integrity sha512-kUNnecmtkunAoQ3CnjmMkzNU/gtxG8guhi+Fk2U/kOpIKjIMKnXGp4IJCgQJrXSgMsWYimYG4TGjz/UzbGEBTw==
 
+"@types/pdfkit@^0.12.3":
+  version "0.12.3"
+  resolved "https://registry.yarnpkg.com/@types/pdfkit/-/pdfkit-0.12.3.tgz#cc433ab2a6feedd518eed55dd9a621c8433e6268"
+  integrity sha512-c19Izds2F/eks/c/YXl0Gtov/rkcmazNVQHKmYn+b6kpqry4jwQnvZ/dFo39l83Fuxb2yRw3Ha/CzH3GaB6zWQ==
+  dependencies:
+    "@types/node" "*"
+
 "@types/pg-pool@2.0.3":
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/@types/pg-pool/-/pg-pool-2.0.3.tgz#3eb8df2933f617f219a53091ad4080c94ba1c959"
@@ -1446,6 +1453,13 @@
   integrity sha512-nCkHGI4w7ZgAdNkrEu0bv+4xNV/XDqW+DydknebMOQwkpDGx8G+HTlj7R7ABI8i8nKxVw0wtKPi1D+lPOkh4YQ==
   dependencies:
     "@types/mime" "^1"
+    "@types/node" "*"
+
+"@types/sharp@^0.29.5":
+  version "0.29.5"
+  resolved "https://registry.yarnpkg.com/@types/sharp/-/sharp-0.29.5.tgz#9c7032d30d138ad16dde6326beaff2af757b91b3"
+  integrity sha512-3TC+S3H5RwnJmLYMHrcdfNjz/CaApKmujjY9b6PU/pE6n0qfooi99YqXGWoW8frU9EWYj/XTI35Pzxa+ThAZ5Q==
+  dependencies:
     "@types/node" "*"
 
 "@types/stack-utils@^2.0.0":
