@@ -46,3 +46,14 @@ WHERE
     AND e.course_instance_id = $course_instance_id
     AND check_course_instance_access($course_instance_id, u.uid, u.institution_id, $req_date)
 RETURNING e.id;
+
+-- BLOCK lti_course_instance_lookup
+SELECT
+    ci.short_name AS ci_short_name, ci.long_name AS ci_long_name,
+    plc.short_name AS plc_short_name, plc.title
+FROM
+    course_instances AS ci
+    JOIN pl_courses AS plc ON plc.id = ci.course_id
+WHERE
+    ci.id = $course_instance_id
+;
