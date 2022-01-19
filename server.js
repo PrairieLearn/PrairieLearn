@@ -124,8 +124,10 @@ module.exports.initExpress = function () {
   });
   app.post(
     '/pl/course_instance/:course_instance_id/instructor/scan_paper',
-    // Exception for PDF uploads, which may be quite a bit bigger than other file uploads
-    // Raw pdf does not persists. Segmented into jpeg pages downstream
+    // This particular route accepts files up to ~50MB, as they may be
+    // significantly larger than other files. Note that these PDFs are
+    // processed in memory and split up into separate images; the raw
+    // PDF is currently not persisted anywhere.
     multer({
       storage: multer.memoryStorage(),
       limits: {

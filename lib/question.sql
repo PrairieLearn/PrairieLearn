@@ -130,5 +130,3 @@ FROM
     barcodes AS b
     JOIN files AS f ON (b.file_id = f.id)
 WHERE $match;
-
-

@@ -15,7 +15,7 @@
                 <p>970 out of 1000 barcodes are currently decoded from PDF upload in testsuite and further optimization is needed. Feedback for optimization is requested. Please share scanning resolution and other related success/failures in the #pl-dev Slack channel to help in the ongoing development of this feature.</p>
             </div>
             <div class="card-body">
-                <form method="POST" name="scan-scrap-paper" method="POST" enctype="multipart/form-data">
+                <form method="POST" name="scan-scrap-paper" enctype="multipart/form-data">
                     <input type="hidden" name="__action" value="scan_scrap_paper">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                     <div class="form-group">

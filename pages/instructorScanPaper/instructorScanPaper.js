@@ -29,7 +29,6 @@ router.post('/', async (req, res, next) => {
       description: 'Load data from local disk',
     };
     const jobSequenceId = await serverJobs.createJobSequenceAsync(options);
-    debug('successfully created job', { jobSequenceId });
 
     const jobOptions = {
       course_id: res.locals.course ? res.locals.course.id : null,

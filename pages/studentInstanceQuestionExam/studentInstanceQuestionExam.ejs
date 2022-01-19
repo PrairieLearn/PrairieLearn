@@ -9,7 +9,6 @@
     </script>
     <% if (question.type != 'Freeform') { %>
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
-
     <script src="<%= asset_path('javascripts/require.js') %>"></script>
     <script src="<%= asset_path('localscripts/question.js') %>"></script>
     <script src="<%= asset_path(`localscripts/question${effectiveQuestionType}.js`) %>"></script>
