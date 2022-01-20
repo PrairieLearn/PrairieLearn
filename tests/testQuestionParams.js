@@ -51,7 +51,7 @@ describe('Parameterized questions', function() {
         it('should contain questions', function(callback) {
             sqldb.query(sql.select_questions, [], function(err, result) {
                 if (ERR(err, callback)) return;
-                if (result.rowCount == 0) {
+                if (result.rowCount === 0) {
                     return callback(new Error('no questions in DB'));
                 }
                 locals.questions = result.rows;
@@ -110,7 +110,7 @@ describe('Parameterized questions', function() {
             it('should have cleared data', function() {
                 questionsArray.forEach(function(question) {
                     for (var prop in question) {
-                        if (prop != 'qid' && prop != 'type' && prop != 'maxPoints') {
+                        if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
                             delete question[prop];
                         }
                     }
@@ -135,7 +135,7 @@ describe('Parameterized questions', function() {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
@@ -164,7 +164,7 @@ describe('Parameterized questions', function() {
                         return callback(error);
                     }
                     locals.postStartTime = Date.now();
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
@@ -179,7 +179,7 @@ describe('Parameterized questions', function() {
             it('should create one assessment_instance', function(callback) {
                 sqldb.query(sql.select_assessment_instances, [], function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount != 1) {
+                    if (result.rowCount !== 1) {
                         return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
                     }
                     locals.assessment_instance = result.rows[0];
@@ -192,7 +192,7 @@ describe('Parameterized questions', function() {
             it(`should create ${questionsArray.length} instance_questions`, function(callback) {
                 sqldb.query(sql.select_instance_questions, [], function(err, result) {
                     if (ERR(err, callback)) return;
-                    if (result.rowCount != questionsArray.length) {
+                    if (result.rowCount !== questionsArray.length) {
                         return callback(new Error(`expected ${questionsArray.length} instance_questions, got: ` + result.rowCount));
                     }
                     locals.instance_questions = result.rows;
@@ -213,7 +213,7 @@ describe('Parameterized questions', function() {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 200) {
+                    if (response.statusCode !== 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
@@ -243,7 +243,7 @@ describe('Parameterized questions', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode ));
                 }
                 page = body;
@@ -267,7 +267,7 @@ describe('Parameterized questions', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -291,7 +291,7 @@ describe('Parameterized questions', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
@@ -315,7 +315,7 @@ describe('Parameterized questions', function() {
                 if (error) {
                     return callback(error);
                 }
-                if (response.statusCode != 200) {
+                if (response.statusCode !== 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
                 page = body;
