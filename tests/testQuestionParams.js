@@ -34,7 +34,7 @@ const addNumbers4 = { qid: 'addNumbersParameterized/4', type: 'Freeform' };
 const questionsArray = [addNumbers1_assessment, addNumbers2, addNumbers3, addNumbers4];
 
 describe('Parameterized questions', function () {
-  this.timeout(60000);
+  this.timeout(40000);
   var page;
 
   before('set up testing server', helperServer.before());
@@ -257,7 +257,7 @@ describe('Parameterized questions', function () {
     });
 
     it('should have a range set by the course instance questionParams', function () {
-      elemList = locals.$('span:contains("[0, 10]")');
+      elemList = locals.$('span:contains("[0, 50]")');
       assert.lengthOf(elemList, 1);
     });
   });
