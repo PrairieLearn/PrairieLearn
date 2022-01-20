@@ -479,7 +479,11 @@ The chosen name could be used to generate some HTML in `question.html`:
 ```html
 What is this person&apos;s first name?
 
-<pl-figure file-name="student_images/{{params.photo}}.png" width="140px" directory="clientFilesCourse"></pl-figure>
+<pl-figure
+  file-name="student_images/{{params.photo}}.png"
+  width="140px"
+  directory="clientFilesCourse"
+></pl-figure>
 
 <pl-string-input answers-name="name"></pl-string-input>
 ```
@@ -524,7 +528,7 @@ Doing this does not change the question in the original assessment, which would 
 
 Question params can reduce the need to duplicate questions in order to change the data source of its variation. This makes maintenance of the questions easier. Examples:
 
-* A &quot;match each nation with its capital city&quot; question can use a different set of nations depending on what region has been studied most recently. (Instead of different questions for each region.)
-* A question on programming language syntax errors can involve more examples of errors as new features with different syntax rules are learned. (Instead of different questions for later in the course.)
-* A question that generates an indefinite integrals can use simple trig functions on an early calculus exam, and later use inverse trig functions. (Instead of two different questions that only vary in the chosen function.)
-* A question can read scenario information from a file parameter set by the course instance, so a new course instance can reuse the question with a new set of scenarios without changing the question's code. (Instead of making a new question just for the course instance.)
+- A &quot;match each nation with its capital city&quot; question can use a different set of nations depending on what region has been studied most recently. (Instead of different questions for each region.)
+- A question on programming language syntax errors can involve more examples of errors as new features with different syntax rules are learned. (Instead of different questions for later in the course.)
+- A question that generates an indefinite integrals can use simple trig functions on an early calculus exam, and later use inverse trig functions. (Instead of two different questions that only vary in the chosen function.)
+- A question can read scenario information from a file parameter set by the course instance, so a new course instance can reuse the question with a new set of scenarios without changing the question's code. (Instead of making a new question just for the course instance.)
