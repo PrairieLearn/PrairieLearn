@@ -55,6 +55,7 @@ RUN install.r bench flexdashboard microbenchmark lintr ttdo unix
 # Install plr (from sibbling PL repo), and visualTest from Mango
 RUN installGithub.r PrairieLearn/pl-r-helpers MangoTheCat/visualTest
 
+# Set up user ag
 RUN useradd ag \ 
 	&& mkdir /home/ag \
 	&& chown ag:ag /home/ag \
@@ -62,3 +63,6 @@ RUN useradd ag \
 	&& echo "	name = Autograding User" >> /home/ag/.gitconfig \
 	&& echo "	email = ag@nowhere" >> /home/ag/.gitconfig \
 	&& chown ag:ag /home/ag/.gitconfig
+
+# Copy autograder interface script into position
+COPY r_autograder /r_autograder

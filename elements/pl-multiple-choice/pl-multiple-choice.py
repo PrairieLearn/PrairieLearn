@@ -345,9 +345,10 @@ def grade(element_html, data):
     if (submitted_key is not None and submitted_key == correct_key):
         score = 1
 
+    feedback = None
     for option in data['params'][name]:
         if option['key'] == submitted_key:
-            feedback = option['feedback']
+            feedback = option.get('feedback', None)
 
     data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
 
@@ -375,7 +376,7 @@ def test(element_html, data):
             data['raw_submitted_answers'][name] = random_key
             for option in data['params'][name]:
                 if option['key'] == random_key:
-                    feedback = option['feedback']
+                    feedback = option.get('feedback', None)
             data['partial_scores'][name] = {'score': 0, 'weight': weight, 'feedback': feedback}
         else:
             # actually an invalid submission
