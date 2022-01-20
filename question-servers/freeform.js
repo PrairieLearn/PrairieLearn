@@ -1026,7 +1026,7 @@ module.exports = {
         return callback(new Error(`Error generating options: ${err}`));
       }
       const data = {
-        params: question.question.params,
+        params: question.question_params,
         correct_answers: {},
         variant_seed: parseInt(variant_seed, 36),
         options: _.defaults({}, course.options, question.options),
