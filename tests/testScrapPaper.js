@@ -323,7 +323,8 @@ describe('Barcode generation, student submission, and scanning process', functio
       it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
         const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
         barcodes.forEach((barcode) => {
-          assert.isDefined(barcode.file_id);
+          assert.isString(barcode.file_id);
+          assert.isAbove(barcode.file_id.length, 0);
         });
         assert.lengthOf(barcodes, testNumPages);
       });
