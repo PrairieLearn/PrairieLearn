@@ -26,8 +26,6 @@ def is_valid_barcode(barcode):
     base36 = barcode[:-4]
     checksum = barcode[-4:]
     recomputed_checksum = format(crc16arc(bytes(base36, encoding='utf-8')), 'x')
-    print(checksum)
-    print(recomputed_checksum)
     return checksum == recomputed_checksum
 
 
