@@ -117,7 +117,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number }[]} */
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, questionParams: Object }[]} */
       let alternatives;
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
@@ -153,7 +153,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             gradeRateMinutes: questionGradeRateMinutes,
-            question_params: question.questionParams || {},
+            questionParams: question.questionParams || {},
           },
         ];
       }
@@ -206,7 +206,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             grade_rate_minutes: alternative.gradeRateMinutes,
             question_id: questionId,
             number_in_alternative_group: alternativeIndex + 1,
-            question_params: alternative.question_params || {},
+            question_params: alternative.questionParams || {},
           };
         }
       );
