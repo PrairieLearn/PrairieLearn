@@ -114,13 +114,13 @@ describe('Barcode generation, student submission, and scanning process', functio
         });
         assert.equal(res.status, 200);
         const pdfBlob = await res.blob();
-        assert.isDefined(pdfBlob);
+        assert.exists(pdfBlob);
 
         pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
-        assert.isDefined(pdfBuffer);
+        assert.exists(pdfBuffer);
 
         pdf = await readPdf(pdfBuffer, 'ANY FILENAME.pdf');
-        assert.isDefined(pdf);
+        assert.exists(pdf);
 
         // IMAGE MAGICK IDENTIFY() METHOD DOES NOT WORK WITH 500 PAGE PDF.
         // const filepath = './output.pdf';
@@ -322,10 +322,7 @@ describe('Barcode generation, student submission, and scanning process', functio
       });
       it('file ids should exist for valid barcodes submitted in earlier `pl-barcode-scan` submissions', async () => {
         const barcodes = (await sqldb.queryAsync(sql.get_barcodes, {})).rows;
-        barcodes.forEach((barcode) => {
-          assert.isString(barcode.file_id);
-          assert.isAbove(barcode.file_id.length, 0);
-        });
+        barcodes.forEach((barcode) => assert.exists(barcode.file_id));
         assert.lengthOf(barcodes, testNumPages);
       });
     });
