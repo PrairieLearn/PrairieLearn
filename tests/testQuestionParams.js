@@ -10,7 +10,6 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
-//var helperQuestion = require('./helperQuestion');
 
 const locals = {};
 
@@ -121,8 +120,8 @@ describe('Parameterized questions', function() {
         });
 
         describe('the database', function() {
-            it('should contain HW9', function(callback) {
-                sqldb.queryOneRow(sql.select_hw9, [], function(err, result) {
+            it('should contain HW10', function(callback) {
+                sqldb.queryOneRow(sql.select_hw10, [], function(err, result) {
                     if (ERR(err, callback)) return;
                     locals.assessment_id = result.rows[0].id;
                     callback(null);
@@ -147,11 +146,11 @@ describe('Parameterized questions', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            it('should contain HW9', function() {
+            it('should contain HW10', function() {
                 elemList = locals.$('td a:contains("Homework to test question parameters")');
                 assert.lengthOf(elemList, 1, page);
             });
-            it('should have the correct link for HW9', function() {
+            it('should have the correct link for HW10', function() {
                 locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
                 assert.equal(locals.assessmentUrl, locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/');
             });
@@ -257,7 +256,7 @@ describe('Parameterized questions', function() {
         });
 
         it('should have a range set by the course instance questionParams', function() {
-            elemList = locals.$('span:contains("[0, 50]")');
+            elemList = locals.$('span:contains("[0, 10]")');
             assert.lengthOf(elemList, 1);
         });
     });
@@ -305,7 +304,7 @@ describe('Parameterized questions', function() {
         });
 
         it('should have a range set by the alternatives group questionParams', function() {
-            elemList = locals.$('span:contains("10, 20]")');
+            elemList = locals.$('span:contains("[10, 20]")');
             assert.lengthOf(elemList, 1);
         });
     });

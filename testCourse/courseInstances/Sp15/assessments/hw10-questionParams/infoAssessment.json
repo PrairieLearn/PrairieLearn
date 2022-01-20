@@ -3,11 +3,10 @@
     "type": "Homework",
     "title": "Homework to test question parameters",
     "set": "Homework",
-    "number": "9",
+    "number": "10",
     "allowAccess": [
         {
             "mode": "Public",
-            "role": "TA",
             "credit": 100,
             "timeLimitMin": 50
         },
