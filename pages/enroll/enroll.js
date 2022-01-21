@@ -12,9 +12,6 @@ var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
-  res.locals.authn_provider_name = 'LTI';
-  res.locals.authn_user.lti_course_instance_id = 2;
-  
   if (res.locals.authn_provider_name === 'LTI') {
     let params = {
       course_instance_id: res.locals.authn_user.lti_course_instance_id,
