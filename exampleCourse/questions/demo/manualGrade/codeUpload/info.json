@@ -1,8 +1,8 @@
 {
     "uuid": "a218ee9c-fabb-4b23-bdbe-2705952aaf3c",
     "title": "Demo: Fibonacci function, file upload, manual grading",
-    "topic": "Manual",
-    "tags": ["code", "v3"],
+    "topic": "Demo",
+    "tags": ["code"],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "Manual"
