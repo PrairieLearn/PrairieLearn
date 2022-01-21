@@ -4,9 +4,6 @@
     "title": "Questions using workspaces",
     "set": "Collection",
     "number": "3",
-    "comment": "you must add access rules below to make this assessment available to students",
-    "allowAccess": [
-    ],
     "zones": [
         {
             "questions": [

@@ -4,9 +4,6 @@
     "title": "Question gallery for PL drawing elements",
     "set": "Collection",
     "number": "5",
-    "comment": "you must add access rules below to make this assessment available to students",
-    "allowAccess": [
-    ],
     "zones": [
         {
             "questions": [

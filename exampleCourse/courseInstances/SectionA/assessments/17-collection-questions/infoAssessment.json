@@ -4,9 +4,6 @@
     "title": "Question templates",
     "set": "Collection",
     "number": "6",
-    "comment": "you must add access rules below to make this assessment available to students",
-    "allowAccess": [
-    ],
     "zones": [
       {
           "title": "Template: copy, paste and edit to start creating questions",

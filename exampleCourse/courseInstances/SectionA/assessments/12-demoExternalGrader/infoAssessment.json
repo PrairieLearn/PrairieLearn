@@ -4,9 +4,6 @@
     "title": "Questions using external auto-graders",
     "set": "Collection",
     "number": "2",
-    "comment": "you must add access rules below to make this assessment available to students",
-    "allowAccess": [
-    ],
     "zones": [
         {
             "title": "Questions using Python External Grader",

@@ -4,9 +4,6 @@
     "title": "Question gallery for PL elements",
     "set": "Collection",
     "number": "4",
-    "comment": "you must add access rules below to make this assessment available to students",
-    "allowAccess": [
-    ],
     "zones": [
         {
             "title": "Submission Elements",

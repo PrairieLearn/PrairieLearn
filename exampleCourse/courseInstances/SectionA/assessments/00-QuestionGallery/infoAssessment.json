@@ -4,7 +4,6 @@
     "title": "Questions from the gallery at https://www.prairielearn.com",
     "set": "Collection",
     "number": "1",
-    "comment": "you must add access rules below to make this assessment available to students",
     "zones": [
         {
             "title": "Checkbox Input",
