@@ -1,6 +1,6 @@
 ## Demo Course (XC 100)
 
-This [demo course](https://www.prairielearn.org/pl/course_instance/128605) was created to highlight the PrairieLearn features which allow instructors to create flexible, authentic and robust online assessments, including formative, summative, individual and group work.
+This [demo course](https://www.prairielearn.org/pl/course_instance/128605) was created to highlight the PrairieLearn features which allow instructors to create flexible, authentic, and robust online assessments, including formative, summative, individual, and group work.
 
 <!--### Pre-Lecture Activities
 
