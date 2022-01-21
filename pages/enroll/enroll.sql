@@ -49,11 +49,9 @@ RETURNING e.id;
 
 -- BLOCK lti_course_instance_lookup
 SELECT
-    ci.short_name AS ci_short_name, ci.long_name AS ci_long_name,
-    plc.short_name AS plc_short_name, plc.title
+    plc.short_name AS plc_short_name, ci.long_name AS ci_long_name
 FROM
     course_instances AS ci
     JOIN pl_courses AS plc ON plc.id = ci.course_id
 WHERE
-    ci.id = $course_instance_id
-;
+    ci.id = $course_instance_id;

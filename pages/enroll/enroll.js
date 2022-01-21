@@ -12,6 +12,9 @@ var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
+  res.locals.authn_provider_name = 'LTI';
+  res.locals.authn_user.lti_course_instance_id = 2;
+  
   if (res.locals.authn_provider_name === 'LTI') {
     let params = {
       course_instance_id: res.locals.authn_user.lti_course_instance_id,
@@ -19,7 +22,7 @@ router.get('/', function (req, res, next) {
     return sqldb.queryOneRow(sql.lti_course_instance_lookup, params, function (err, result) {
       if (ERR(err, next)) return;
       res.locals.lti_info = result.rows[0];
-      res.render('enroll/lti.ejs', res.locals);
+      res.render(path.resolve(__dirname, 'lti.ejs'), res.locals);
     });
   }
   var params = {
