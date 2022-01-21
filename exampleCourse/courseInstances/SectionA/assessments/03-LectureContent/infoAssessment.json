@@ -36,5 +36,5 @@
             ]
         }
     ],
-    "text": "<p><strong>Comments about this assessment:</strong> </p><p> Just like there are different teaching methods, people also learn in different ways. Mixing how content is presented to students can improve the learner engagement. In this assessment, we combine a mixture of text, equations, plots, videos, interactive JupyterLabs, and short quiz questions to introduce new course content to students. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/03-LectureContent/__docs/docs.md target=_blank>here</a>.</p> "
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> Just like there are different teaching methods, people also learn in different ways. Mixing how content is presented to students can improve the learner engagement. In this assessment, we combine a mixture of text, equations, plots, videos, interactive JupyterLabs, and short quiz questions to introduce new course content to students. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/03-LectureContent/__docs/docs.md target=_blank>here</a>.</p> "
 }
