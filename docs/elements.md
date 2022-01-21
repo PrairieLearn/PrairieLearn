@@ -1233,7 +1233,6 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 - [demo/randomPlot]
 - [demo/fixedCheckbox]
-- [demo/studentNames]
 - [element/figure]
 
 #### See also
@@ -2035,6 +2034,3 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/custom/gradefunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction
 
 <!-- Misc application questions -->
-
-[demo/studentfaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentFaces
-[demo/studentnames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentNames
