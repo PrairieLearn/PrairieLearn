@@ -28,6 +28,3 @@ def generate(data):
     data["params"]["coeff_lower_bound"] = coeff_lower_bound
     data["params"]["coeff_upper_bound"] = coeff_upper_bound
     data["correct_answers"]["df"] = str(df)
-
-if __name__ == "__main__":
-    generate({"params":{},"correct_answers":{}})

@@ -465,7 +465,7 @@ Example of a question's `server.py` that can be customized with `questionParams`
 ```python
 import random
 def generate(data):
-  # It is recommended to use .get() with a default value in case params have not been set, for example, 
+  # It is recommended to use .get() with a default value in case params have not been set, for example,
   # when viewing the question from the Questions list.
   param_names = data['params'].get('names', [{'name': 'Matt', 'photo': '001'}, {'name': 'Craig', 'photo': '002'}])
   # Choose a random person to display.
