@@ -27,5 +27,5 @@
         ]
       }
     ],
-    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is a group assignment where students will share the same questions and grades. In this configuration, students can create their own groups, with minimum size of 1 and maximum size of 5 (we set minimum of 1 so that anyone can try this assessment on their own, since the assessment can be not started unless the minimum size is reached). PrairieLearn also provides an option were instructors pre-assign students to teams. Read more <a href=https://github.com/PrairieLearn/pl-demo-course/blob/master/courseInstances/SectionA/assessments/07-GroupWork/__docs/docs.md>here</a>. "
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is a group assignment where students will share the same questions and grades. In this configuration, students can create their own groups, with minimum size of 1 and maximum size of 5 (we set minimum of 1 so that anyone can try this assessment on their own, since the assessment can be not started unless the minimum size is reached). PrairieLearn also provides an option were instructors pre-assign students to teams. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/07-GroupWork-Jupyter/__docs/docs.md>here</a>. "
 }
