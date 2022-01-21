@@ -13,8 +13,9 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   debug('GET /');
-  if (!res.locals.authz_data.has_course_instance_permission_view)
+  if (!res.locals.authz_data.has_course_instance_permission_view) {
     return next(error.make(403, 'Access denied (must be a student data viewer)'));
+  }
   var params = {
     assessment_id: res.locals.assessment.id,
   };
@@ -27,9 +28,11 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_edit)
+  if (!res.locals.authz_data.has_course_instance_permission_edit) {
     return next(error.make(403, 'Access denied (must be a student data editor)'));
-  if (req.body.__action == 'regrade_all') {
+  }
+
+  if (req.body.__action === 'regrade_all') {
     regrading.regradeAllAssessmentInstances(
       res.locals.assessment.id,
       res.locals.user.user_id,

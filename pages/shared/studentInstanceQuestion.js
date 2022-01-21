@@ -2,6 +2,7 @@ const _ = require('lodash');
 const sqldb = require('../../prairielib/lib/sql-db');
 
 const fileStore = require('../../lib/file-store');
+const { idsEqual } = require('../../lib/id');
 
 /*
  * Get a validated variant_id from a request, or throw an exception.
@@ -27,8 +28,9 @@ module.exports.getValidVariantId = async (req, res) => {
 
 module.exports.processFileUpload = async (req, res) => {
   if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
-  if (!res.locals.authz_result.active)
+  if (!res.locals.authz_result.active) {
     throw new Error(`This assessment is not accepting submissions at this time.`);
+  }
   await fileStore.upload(
     req.file.originalname,
     req.file.buffer,
@@ -44,8 +46,9 @@ module.exports.processFileUpload = async (req, res) => {
 
 module.exports.processTextUpload = async (req, res) => {
   if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
-  if (!res.locals.authz_result.active)
+  if (!res.locals.authz_result.active) {
     throw new Error(`This assessment is not accepting submissions at this time.`);
+  }
   await fileStore.upload(
     req.body.filename,
     Buffer.from(req.body.contents),
@@ -61,16 +64,18 @@ module.exports.processTextUpload = async (req, res) => {
 
 module.exports.processDeleteFile = async (req, res) => {
   if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
-  if (!res.locals.authz_result.active)
+  if (!res.locals.authz_result.active) {
     throw new Error(`This assessment is not accepting submissions at this time.`);
+  }
 
   // Check the requested file belongs to the current instance question
-  const validFiles = _.filter(res.locals.file_list, (file) => file.id == req.body.file_id);
-  if (validFiles.length == 0) throw new Error(`No such file_id: ${req.body.file_id}`);
+  const validFiles = _.filter(res.locals.file_list, (file) => idsEqual(file.id, req.body.file_id));
+  if (validFiles.length === 0) throw new Error(`No such file_id: ${req.body.file_id}`);
   const file = validFiles[0];
 
-  if (file.type != 'student_upload')
+  if (file.type !== 'student_upload') {
     throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
+  }
 
   await fileStore.delete(file.id, res.locals.authn_user.user_id);
 
@@ -83,7 +88,7 @@ module.exports.processIssue = async (req, res) => {
     throw new Error('Issue reporting not permitted for this assessment');
   }
   const description = req.body.description;
-  if (!_.isString(description) || description.length == 0) {
+  if (!_.isString(description) || description.length === 0) {
     throw new Error('A description of the issue must be provided');
   }
 

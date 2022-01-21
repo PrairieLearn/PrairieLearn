@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 yum install -y tmux
 
@@ -62,9 +63,9 @@ if [[ "${arch}" != "aarch64" ]]; then # R is not yet supported on ARM64.
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
 
-    echo "installing R packages..."
-    echo "set SKIP_R_PACKAGS=yes to skip this step"
     if [[ "${SKIP_R_PACKAGES}" != "yes" ]] ; then
+        echo "installing R packages..."
+        echo "set SKIP_R_PACKAGES=yes to skip this step"
         Rscript /r-requirements.R
     fi
 else

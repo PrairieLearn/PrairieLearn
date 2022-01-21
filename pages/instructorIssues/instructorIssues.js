@@ -9,6 +9,7 @@ const error = require('../../prairielib/lib/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const { idsEqual } = require('../../lib/id');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -105,8 +106,9 @@ router.get('/', function (req, res, next) {
 
   sqldb.query(sql.issues_count, params, function (err, result) {
     if (ERR(err, next)) return;
-    if (result.rowCount != 2)
+    if (result.rowCount !== 2) {
       return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
+    }
     res.locals.closedCount = result.rows[0].count;
     res.locals.openCount = result.rows[1].count;
 
@@ -115,8 +117,9 @@ router.get('/', function (req, res, next) {
       offset: 0,
       limit: PAGE_SIZE,
     };
-    if (_.isInteger(Number(req.query.page)))
+    if (_.isInteger(Number(req.query.page))) {
       params.offset = (Number(req.query.page) - 1) * PAGE_SIZE;
+    }
     _.assign(params, filters);
 
     sqldb.query(sql.select_issues, params, function (err, result) {
@@ -141,12 +144,13 @@ router.get('/', function (req, res, next) {
         row.relative_date = moment(row.formatted_date).from(row.now_date);
 
         if (row.assessment) {
-          if (!row.course_instance_id)
+          if (!row.course_instance_id) {
             return next(
               new Error(
                 `Issue id ${row.issue_id} is associated with an assessment but not a course instance`
               )
             );
+          }
 
           // Each issue is associated with a question variant. If an issue is also
           // associated with a course instance, then this question variant is from
@@ -164,7 +168,7 @@ router.get('/', function (req, res, next) {
           // we are accessing the issue through a different course instance page route).
           if (
             !res.locals.course_instance ||
-            res.locals.course_instance.id != row.course_instance_id
+            !idsEqual(res.locals.course_instance.id, row.course_instance_id)
           ) {
             row.assessment.urlPrefix = `${res.locals.plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`;
           }
@@ -185,7 +189,7 @@ router.get('/', function (req, res, next) {
         row.show_user =
           !row.course_instance_id ||
           (res.locals.course_instance &&
-            res.locals.course_instance.id == row.course_instance_id &&
+            idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
             res.locals.authz_data.has_course_instance_permission_view);
       });
 
@@ -204,9 +208,11 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course editor)'));
-  if (req.body.__action == 'open') {
+  }
+
+  if (req.body.__action === 'open') {
     let params = [
       req.body.issue_id,
       true, // open status
@@ -217,7 +223,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'close') {
+  } else if (req.body.__action === 'close') {
     let params = [
       req.body.issue_id,
       false, // open status
@@ -228,7 +234,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'close_all') {
+  } else if (req.body.__action === 'close_all') {
     let params = [
       false, // open status
       res.locals.course.id,

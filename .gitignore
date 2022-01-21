@@ -3,6 +3,9 @@
 ## Custom scripts
 /start-custom.sh
 
+## s3rver S3 emulation data directory
+/s3rver
+
 ### https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
 docker-compose.override.yml
 
@@ -17,12 +20,15 @@ docker-compose.override.yml
 ## Backup files
 
 ### vi
-**/*.swp 
+**/*.swp
 **/*.swo
 **/*~
 
 ### emacs
 **/[#]*[#]
+
+### jupyter
+.ipynb_checkpoints
 
 ## File explorers
 **/.DS_Store # OSX Finder
@@ -39,7 +45,7 @@ node_modules
 ## Generated HTML
 
 ### mkdocs
-/site/ 
+/site/
 
 ### jsdoc
 /docs/code-docs/
@@ -74,3 +80,5 @@ __pycache__/
 ## macOS files
 .DS_Store
 
+## s3rver file store
+/s3rver

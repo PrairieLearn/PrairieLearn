@@ -12,19 +12,23 @@ const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
 const sqldb = require('../../prairielib/lib/sql-db');
 
 function processSubmission(req, res, callback) {
-  if (!res.locals.assessment_instance.open)
+  if (!res.locals.assessment_instance.open) {
     return callback(error.make(400, 'assessment_instance is closed'));
-  if (!res.locals.instance_question.open)
+  }
+  if (!res.locals.instance_question.open) {
     return callback(error.make(400, 'instance_question is closed'));
-  if (!res.locals.authz_result.active)
+  }
+  if (!res.locals.authz_result.active) {
     return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
+  }
   let variant_id, submitted_answer;
-  if (res.locals.question.type == 'Freeform') {
+  if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
-    if (!req.body.postData)
+    if (!req.body.postData) {
       return callback(error.make(400, 'No postData', { locals: res.locals, body: req.body }));
+    }
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
@@ -52,7 +56,7 @@ function processSubmission(req, res, callback) {
     (err, result) => {
       if (ERR(err, callback)) return;
       const variant = result.rows[0];
-      if (req.body.__action == 'grade') {
+      if (req.body.__action === 'grade') {
         const overrideRateLimits = false;
         question.saveAndGradeSubmission(
           submission,
@@ -65,7 +69,7 @@ function processSubmission(req, res, callback) {
             callback(null, submission.variant_id);
           }
         );
-      } else if (req.body.__action == 'save') {
+      } else if (req.body.__action === 'save') {
         question.saveSubmission(
           submission,
           variant,
@@ -90,13 +94,16 @@ function processSubmission(req, res, callback) {
 
 router.post('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
-  if (!res.locals.authz_result.authorized_edit)
+
+  if (!res.locals.authz_result.authorized_edit) {
     return next(error.make(403, 'Not authorized', res.locals));
-  if (req.body.__action == 'grade' || req.body.__action == 'save') {
+  }
+
+  if (req.body.__action === 'grade' || req.body.__action === 'save') {
     if (res.locals.authz_result.time_limit_expired) {
       return next(new Error('time limit is expired, please go back and finish your assessment'));
     }
-    if (req.body.__action == 'grade' && !res.locals.assessment.allow_real_time_grading) {
+    if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
       next(error.make(403, 'Real-time grading is not allowed for this assessment'));
       return;
     }
@@ -104,7 +111,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'timeLimitFinish') {
+  } else if (req.body.__action === 'timeLimitFinish') {
     const closeExam = true;
     const overrideGradeRate = false;
     // Only close if the timer expired due to time limit, not for access end
@@ -126,7 +133,7 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'attach_file') {
+  } else if (req.body.__action === 'attach_file') {
     util.callbackify(studentInstanceQuestion.processFileUpload)(
       req,
       res,
@@ -141,7 +148,7 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'attach_text') {
+  } else if (req.body.__action === 'attach_text') {
     util.callbackify(studentInstanceQuestion.processTextUpload)(
       req,
       res,
@@ -156,7 +163,7 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'delete_file') {
+  } else if (req.body.__action === 'delete_file') {
     util.callbackify(studentInstanceQuestion.processDeleteFile)(
       req,
       res,
@@ -171,7 +178,7 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'report_issue') {
+  } else if (req.body.__action === 'report_issue') {
     util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;
       res.redirect(

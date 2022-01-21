@@ -11,6 +11,10 @@ jobs:
     - uses: actions/checkout@v2.3.4
       with:
         fetch-depth: 0
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1 # https://github.com/marketplace/actions/docker-setup-qemu
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1 # https://github.com/marketplace/actions/docker-setup-buildx
     - name: Build the plbase docker image if needed
       run: sh ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase
     - name: Build the grader-c docker image if needed
@@ -31,14 +35,24 @@ jobs:
       run: sh ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs
     - name: Build the testing docker image
       run: docker build -t pltest .
+    - name: Create a temporary directory for host files
+      run: mkdir -p /tmp/prairielearn
     - name: Start the container
-      run: docker run -td --name=test_container pltest /bin/bash
+      # We have tests for external grading code, which relies on the Docker
+      # socket being available, as well as a specific volume mount and
+      # environment variable. See the docs for more details:
+      # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
+      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container pltest /bin/bash
     - name: Run the JavaScript linter
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
+    - name: Run the HTML linter
+      run: docker exec test_container /PrairieLearn/docker/lint_html.sh
     - name: Run the Python linter
       run: docker exec test_container /PrairieLearn/docker/lint_python.sh
-    - name: Run typechecker
-      run: docker exec test_container /PrairieLearn/docker/typecheck.sh
+    - name: Run the JavaScript typechecker
+      run: docker exec test_container /PrairieLearn/docker/typecheck_js.sh
+    - name: Run the Python typechecker
+      run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
     - name: Run the Python tests

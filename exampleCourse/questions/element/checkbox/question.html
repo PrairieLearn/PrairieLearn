@@ -1,10 +1,10 @@
 <pl-question-panel>
     <p>
         Questions below were designed to showcase the different features of
-		<a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element"><code>pl-checkbox</code></a>.
-		The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element"><code>pl-checkbox</code></a>
-		is to allow users to select <b>multiple options</b> from a list of choices. To restrict choice to only one option, e.g.
-		what comes from a standard multiple choice, please consider using  <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_multiple_choice-element"><code>pl_multiple_choice</code></a>.
+        <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element"><code>pl-checkbox</code></a>.
+        The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-checkbox-element"><code>pl-checkbox</code></a>
+        is to allow users to select <b>multiple options</b> from a list of choices. To restrict choice to only one option, e.g.
+        what comes from a standard multiple choice, please consider using  <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_multiple_choice-element"><code>pl_multiple_choice</code></a>.
     </p>
 </pl-question-panel>
 
@@ -18,7 +18,7 @@
 
         <pl-question-panel>
             <p>Here, you can observe the default behavior of the <code>pl-checkbox</code> element.
-        	   In particular, all options are shown after being randomized with help text at the bottom to remind users to select <b> all possible </b> options. </p>
+                In particular, all options are shown after being randomized with help text at the bottom to remind users to select <b> all possible </b> options. </p>
             <p> Group work provides which of the following benefits: </p>
         </pl-question-panel>
 
@@ -46,7 +46,7 @@
 
         <pl-question-panel>
             <p>Here, the <code>pl-checkbox</code> element is restricted to displaying no more than <b>5</b> choices with between <b>2</b> to <b>4</b> correct answers.
-        	   Information regarding the range of correct answers users should select can be displayed by setting <code>detailed-help-text="true"</code></p>
+               Information regarding the range of correct answers users should select can be displayed by setting <code>detailed-help-text="true"</code></p>
             <p> Group work provides which of the following benefits: </p>
         </pl-question-panel>
 
@@ -101,7 +101,7 @@
 
         <pl-question-panel>
             <p>Here, options are displayed on the same line with <code>inline="true"</code> and the help text is suppressed with <code>hide-help-text = "true"</code>.
-        		Displaying options inline is only ideal if the choice options are not verbose and the number of choices is low. </p>
+                Displaying options inline is only ideal if the choice options are not verbose and the number of choices is low. </p>
             <p> Group work provides which of the following benefits: </p>
         </pl-question-panel>
 
@@ -254,6 +254,33 @@
             <pl-answer correct="true">Friendship.</pl-answer>
             <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
             <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 10
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Here, you can observe the behavior of the <code>feedback</code> attribute in <code>pl-answer</code>. Feedback is expected to convey a small piece of information that explains why an 
+                answer is correct or incorrect. When an answer with a feedback setting is selected and graded, a small box containing the feedback is displayed next to the answer.</p>
+
+            <p>Group work provides which of the following benefits:</p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_v10" hide-letter-keys="true" min-select="3" max-select="8">
+            <pl-answer correct="true" feedback="Correct, it's important for everyone's point of view to be expressed equally.">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+            <pl-answer correct="true" feedback="Correct, teams are generally more productive than a single person.">           Improved creativity and overall work quality.</pl-answer>
+            <pl-answer feedback="Incorrect, people in groups work together, not alone.">                                       The ability to work on a project by yourself.</pl-answer>
+            <pl-answer feedback="Incorrect, everyone in a group should have a say in decisions being made.">                   Having only one person make all of the decisions.</pl-answer>
+            <pl-answer correct="true" feedback="Correct, this increases the quality of work done overall.">                    Constructive dialog and increased internal group motivation.</pl-answer>
+            <pl-answer correct="true" feedback="Correct, this makes it easier to get work done on time.">                      Personal accountability to the team to work on a project.</pl-answer>
+            <pl-answer correct="true" feedback="Correct, working with someone on a project is a great way to bond with them."> Friendship.</pl-answer>
+            <pl-answer feedback="Incorrect, groups generally work on large projects.">                                         The resources to work on a small project instead of a large project. </pl-answer>
+            <pl-answer correct="true" feedback="Correct, most of the work done in these spaces is done through teams.">        Prepares you for a team-environment in the workplace or a research group.</pl-answer>
         </pl-checkbox>
     </div>
 </div>

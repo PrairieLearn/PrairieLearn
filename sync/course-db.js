@@ -556,8 +556,9 @@ module.exports.courseDataHasErrors = function (courseData) {
       if (infofile.hasErrors(courseInstance.courseInstance)) return true;
       return Object.values(courseInstance.assessments).some(infofile.hasErrors);
     })
-  )
+  ) {
     return true;
+  }
   return false;
 };
 
@@ -573,8 +574,9 @@ module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
       if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
       return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
     })
-  )
+  ) {
     return true;
+  }
   return false;
 };
 
@@ -924,7 +926,7 @@ async function loadInfoForDirectory({
       } else if (recursive) {
         try {
           const subInfoFiles = await walk(path.join(relativeDir, dir));
-          if (_.size(subInfoFiles) == 0) {
+          if (_.isEmpty(subInfoFiles)) {
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
               `Missing JSON file: ${infoFilePath}`
             );
@@ -1004,7 +1006,7 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
 function checkAllowAccessRoles(rule) {
   const warnings = [];
   if ('role' in rule) {
-    if (rule.role != 'Student') {
+    if (rule.role !== 'Student') {
       warnings.push(
         `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`
       );
@@ -1172,15 +1174,15 @@ async function validateAssessment(assessment, questions) {
 
       alternatives.forEach((alternative) => {
         if (assessment.type === 'Exam') {
-          if (alternative.maxPoints != undefined) {
+          if (alternative.maxPoints !== undefined) {
             errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
           }
-          if (alternative.points == undefined) {
+          if (alternative.points === undefined) {
             errors.push('Must specify "points" for a question in an "Exam" assessment');
           }
         }
         if (assessment.type === 'Homework') {
-          if (alternative.points == undefined) {
+          if (alternative.points === undefined) {
             errors.push('Must specify "points" for a question in a "Homework" assessment');
           }
           if (Array.isArray(alternative.points)) {

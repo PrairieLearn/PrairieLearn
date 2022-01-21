@@ -43,7 +43,7 @@ module.exports.attachFile = (locals, textFile) => {
         elemList = locals.$('.attach-file-form input[name="__variant_id"]');
       }
       delete locals.__variant_id;
-      if (elemList.length == 0) return; // assessment_instance page does not have variant_id
+      if (elemList.length === 0) return; // assessment_instance page does not have variant_id
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__variant_id = elemList[0].attribs.value;
@@ -164,7 +164,7 @@ module.exports.deleteAttachedFile = (locals) => {
     it('data-content might have a variant', () => {
       elemList = locals.data$('form input[name="__variant_id"]');
       delete locals.__variant_id;
-      if (elemList.length == 0) return; // assessment_instance page does not have variant_id
+      if (elemList.length === 0) return; // assessment_instance page does not have variant_id
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__variant_id = elemList[0].attribs.value;

@@ -198,7 +198,7 @@ manual grading procedure requires:
 From there, the grades are incorporated into the courses' gradebook and will
 be available for export as part of the total assessment.
 
-For a sample implementation of a manually graded question, please see the [`fibonacciUploadManual` question's `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacciUploadManual/info.json#L8) in the example course.
+For a sample implementation of a manually graded question, the example course includes a question where a Python submission is to be manually graded. Please [see the question's `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/demo/manualGrade/codeUpload/info.json#L8) in the example course.
 
 ## Why is my QID invalid?
 

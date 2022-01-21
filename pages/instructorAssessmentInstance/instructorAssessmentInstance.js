@@ -62,7 +62,7 @@ router.get('/', (req, res, next) => {
 });
 
 router.get('/:filename', (req, res, next) => {
-  if (req.params.filename == logCsvFilename(res.locals)) {
+  if (req.params.filename === logCsvFilename(res.locals)) {
     const params = [res.locals.assessment_instance.id, false];
     sqlDb.call('assessment_instances_select_log', params, (err, result) => {
       if (ERR(err, next)) return;
@@ -104,9 +104,11 @@ router.get('/:filename', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_instance_permission_edit)
+  if (!res.locals.authz_data.has_course_instance_permission_edit) {
     return next(error.make(403, 'Access denied (must be a student data editor)'));
-  if (req.body.__action == 'edit_total_points') {
+  }
+
+  if (req.body.__action === 'edit_total_points') {
     const params = [
       res.locals.assessment_instance.id,
       req.body.points,
@@ -119,7 +121,7 @@ router.post('/', (req, res, next) => {
         res.redirect(req.originalUrl);
       });
     });
-  } else if (req.body.__action == 'edit_total_score_perc') {
+  } else if (req.body.__action === 'edit_total_score_perc') {
     const params = [
       res.locals.assessment_instance.id,
       req.body.score_perc,
@@ -132,7 +134,7 @@ router.post('/', (req, res, next) => {
         res.redirect(req.originalUrl);
       });
     });
-  } else if (req.body.__action == 'edit_question_points') {
+  } else if (req.body.__action === 'edit_question_points') {
     const params = [
       null, // assessment_id
       res.locals.assessment_instance.id,
@@ -154,7 +156,7 @@ router.post('/', (req, res, next) => {
         res.redirect(req.originalUrl);
       });
     });
-  } else if (req.body.__action == 'edit_question_score_perc') {
+  } else if (req.body.__action === 'edit_question_score_perc') {
     const params = [
       null, // assessment_id
       res.locals.assessment_instance.id,

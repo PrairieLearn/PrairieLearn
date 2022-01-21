@@ -25,12 +25,14 @@ const fileStore = require('../../lib/file-store');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
+const { idsEqual } = require('../../lib/id');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be course editor)'));
+  }
 
   let workingPath;
   if (req.params[0]) {
@@ -48,7 +50,7 @@ router.get('/*', (req, res, next) => {
   // a route parameter, but all routes are being mapped to file paths, so
   // I am using a query string instead.
   if (req.query.serve) {
-    if (req.query.serve == 'client') {
+    if (req.query.serve === 'client') {
       debug('Responding to request for /instructorFileEditorClient.js');
       res.sendFile(path.join(__dirname, './instructorFileEditorClient.js'));
       return;
@@ -107,7 +109,7 @@ router.get('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
+  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
@@ -186,7 +188,7 @@ router.get('/*', (req, res, next) => {
     ],
     (err) => {
       if (ERR(err, next)) return;
-      if ('jobSequence' in fileEdit && fileEdit.jobSequence.status == 'Running') {
+      if ('jobSequence' in fileEdit && fileEdit.jobSequence.status === 'Running') {
         debug('Job sequence is still running - redirect to status page');
         res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
         return;
@@ -197,16 +199,16 @@ router.get('/*', (req, res, next) => {
       if ('editID' in fileEdit) {
         // There is a recently saved draft ...
         fileEdit.alertResults = true;
-        if (!fileEdit.didSave && fileEdit.editHash != fileEdit.diskHash) {
+        if (!fileEdit.didSave && fileEdit.editHash !== fileEdit.diskHash) {
           // ...that was not written to disk and that differs from what is on disk.
           fileEdit.alertChoice = true;
-          fileEdit.hasSameHash = fileEdit.origHash == fileEdit.diskHash;
+          fileEdit.hasSameHash = fileEdit.origHash === fileEdit.diskHash;
         }
       }
 
       if ('jobSequence' in fileEdit) {
         fileEdit.jobSequence.jobs.forEach((item) => {
-          if (item.type == 'git_push' && item.status == 'Error') {
+          if (item.type === 'git_push' && item.status === 'Error') {
             fileEdit.failedPush = true;
           }
         });
@@ -226,8 +228,9 @@ router.get('/*', (req, res, next) => {
 
 router.post('/*', (req, res, next) => {
   debug(`Responding to post with action ${req.body.__action}`);
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be course editor)'));
+  }
 
   let workingPath;
   if (req.params[0]) {
@@ -268,7 +271,7 @@ router.post('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] == '..' || path.isAbsolute(relPath)) {
+  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
@@ -277,14 +280,14 @@ router.post('/*', (req, res, next) => {
     );
   }
 
-  if (req.body.__action == 'save_and_sync' || req.body.__action == 'pull_and_save_and_sync') {
+  if (req.body.__action === 'save_and_sync' || req.body.__action === 'pull_and_save_and_sync') {
     debug('Save and sync');
 
     // The "Save and Sync" button is enabled only when changes have been made
     // to the file, so - in principle - it should never be the case that editHash
     // and origHash are the same. We will treat this is a catastrophic error.
     fileEdit.editHash = getHash(fileEdit.editContents);
-    if (fileEdit.editHash == fileEdit.origHash) {
+    if (fileEdit.editHash === fileEdit.origHash) {
       return next(
         error.make(
           400,
@@ -298,12 +301,12 @@ router.post('/*', (req, res, next) => {
     }
 
     // Whether or not to pull from remote git repo before proceeding to save and sync
-    fileEdit.doPull = req.body.__action == 'pull_and_save_and_sync';
+    fileEdit.doPull = req.body.__action === 'pull_and_save_and_sync';
 
-    if (res.locals.navPage == 'course_admin') {
+    if (res.locals.navPage === 'course_admin') {
       const rootPath = res.locals.course.path;
       fileEdit.commitMessage = `edit ${path.relative(rootPath, fullPath)}`;
-    } else if (res.locals.navPage == 'instance_admin') {
+    } else if (res.locals.navPage === 'instance_admin') {
       const rootPath = path.join(
         res.locals.course.path,
         'courseInstances',
@@ -313,7 +316,7 @@ router.post('/*', (req, res, next) => {
         rootPath,
         fullPath
       )}`;
-    } else if (res.locals.navPage == 'assessment') {
+    } else if (res.locals.navPage === 'assessment') {
       const rootPath = path.join(
         res.locals.course.path,
         'courseInstances',
@@ -325,7 +328,7 @@ router.post('/*', (req, res, next) => {
         rootPath,
         fullPath
       )}`;
-    } else if (res.locals.navPage == 'question') {
+    } else if (res.locals.navPage === 'question') {
       const rootPath = path.join(res.locals.course.path, 'questions', res.locals.question.qid);
       fileEdit.commitMessage = `${path.basename(rootPath)}: edit ${path.relative(
         rootPath,
@@ -347,7 +350,7 @@ router.post('/*', (req, res, next) => {
         },
         (callback) => {
           debug('Write edit to disk (also push and sync if necessary)');
-          fileEdit.needToSync = path.extname(fileEdit.fileName) == '.json';
+          fileEdit.needToSync = path.extname(fileEdit.fileName) === '.json';
           saveAndSync(fileEdit, res.locals, (err) => {
             // If there is an error, log it and pass null to the callback.
             if (ERR(err, (err) => logger.info(err))) {
@@ -427,7 +430,7 @@ function readEdit(fileEdit, callback) {
           debug(`Deleted ${result.rowCount} previously saved drafts`);
           if (result.rowCount > 0) {
             result.rows.forEach((row) => {
-              if (row.file_id == fileEdit.fileID) {
+              if (idsEqual(row.file_id, fileEdit.fileID)) {
                 debug(
                   `Defer removal of file_id=${row.file_id} from file store until after reading contents`
                 );
@@ -808,7 +811,7 @@ function saveAndSync(fileEdit, locals, callback) {
             job.fail(err);
           } else {
             fileEdit.diskHash = getHash(b64Util.b64EncodeUnicode(contents));
-            if (fileEdit.origHash != fileEdit.diskHash) {
+            if (fileEdit.origHash !== fileEdit.diskHash) {
               job.fail(new Error(`Another user made changes to the file you were editing.`));
             } else {
               job.verbose('No changes were made to the file since you started editing.');

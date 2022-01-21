@@ -27,7 +27,7 @@ module.exports = {
           sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
             if (ERR(err, callback)) return;
             locals.job_sequence = result.rows[0];
-            if (locals.job_sequence.status == 'Running') {
+            if (locals.job_sequence.status === 'Running') {
               setTimeout(checkComplete, 10);
             } else {
               callback(null);
@@ -37,7 +37,7 @@ module.exports = {
         setTimeout(checkComplete, 10);
       });
       it('should be successful', async () => {
-        if (locals.job_sequence.status != 'Success') {
+        if (locals.job_sequence.status !== 'Success') {
           console.log(locals.job_sequence);
           const params = { job_sequence_id: locals.job_sequence_id };
           const result = await sqldb.queryAsync(sql.select_jobs, params);
@@ -57,7 +57,7 @@ module.exports = {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
@@ -68,34 +68,35 @@ module.exports = {
         locals.$ = cheerio.load(page);
       });
       it('should contain question-data if Calculation', function () {
-        if (locals.question.type != 'Calculation') return;
+        if (locals.question.type !== 'Calculation') return;
         elemList = locals.$('.question-data');
         assert.lengthOf(elemList, 1);
       });
       it('question-data should contain base64 data of Calculation', function () {
-        if (locals.question.type != 'Calculation') return;
+        if (locals.question.type !== 'Calculation') return;
         assert.nestedProperty(elemList[0], 'children.0.data');
         assert.lengthOf(elemList[0].children, 1);
         assert.property(elemList[0].children[0], 'data');
       });
       it('base64 data should parse to JSON if Calculation', function () {
-        if (locals.question.type != 'Calculation') return;
+        if (locals.question.type !== 'Calculation') return;
         locals.questionData = JSON.parse(
           decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString())
         );
       });
       it('should have a variant_id in the questionData if Calculation', function () {
-        if (locals.question.type != 'Calculation') return;
+        if (locals.question.type !== 'Calculation') return;
         assert.nestedProperty(locals.questionData, 'variant.id');
         locals.variant_id = locals.questionData.variant.id;
       });
       it('should have a variant_id input if Freeform with grade or save buttons', function () {
-        if (locals.question.type != 'Freeform') return;
+        if (locals.question.type !== 'Freeform') return;
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         elemList = locals.$('.question-form input[name="__variant_id"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -106,8 +107,9 @@ module.exports = {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return callback(null);
+        }
         var params = {
           variant_id: locals.variant_id,
         };
@@ -121,8 +123,9 @@ module.exports = {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         if (!locals.isStudentPage) return;
         assert.equal(locals.variant.instance_question_id, locals.question.id);
       });
@@ -130,26 +133,29 @@ module.exports = {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         if (locals.isStudentPage) return;
         assert.equal(locals.variant.question_id, locals.question.id);
       });
       it('should not be a broken variant if Freeform with grade or save button', function () {
-        if (locals.question.type != 'Freeform') return;
+        if (locals.question.type !== 'Freeform') return;
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         assert.equal(locals.variant.broken, false);
       });
       it('should have a CSRF token if has grade or save button', function () {
         if (
           !locals.shouldHaveButtons.includes('grade') &&
           !locals.shouldHaveButtons.includes('save')
-        )
+        ) {
           return;
+        }
         elemList = locals.$('.question-form input[name="__csrf_token"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -157,7 +163,7 @@ module.exports = {
         assert.isString(locals.__csrf_token);
       });
       it('should have or not have grade button', function () {
-        if (locals.question.type == 'Freeform') {
+        if (locals.question.type === 'Freeform') {
           elemList = locals.$('button[name="__action"][value="grade"]');
           if (locals.shouldHaveButtons.includes('grade')) {
             assert.lengthOf(elemList, 1);
@@ -174,7 +180,7 @@ module.exports = {
         }
       });
       it('should have or not have save button', function () {
-        if (locals.question.type == 'Freeform') {
+        if (locals.question.type === 'Freeform') {
           elemList = locals.$('button[name="__action"][value="save"]');
           if (locals.shouldHaveButtons.includes('save')) {
             assert.lengthOf(elemList, 1);
@@ -216,7 +222,7 @@ module.exports = {
       });
       it('should load successfully', function (callback) {
         let form;
-        if (locals.question.type == 'Calculation') {
+        if (locals.question.type === 'Calculation') {
           form = {
             __action: locals.postAction,
             __csrf_token: locals.__csrf_token,
@@ -225,7 +231,7 @@ module.exports = {
               submittedAnswer: locals.submittedAnswer,
             }),
           };
-        } else if (locals.question.type == 'Freeform') {
+        } else if (locals.question.type === 'Freeform') {
           form = {
             __action: locals.postAction,
             __csrf_token: locals.__csrf_token,
@@ -245,7 +251,7 @@ module.exports = {
               return callback(error);
             }
             locals.postEndTime = Date.now();
-            if (response.statusCode != 200) {
+            if (response.statusCode !== 200) {
               return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             page = body;
@@ -260,7 +266,7 @@ module.exports = {
         var params = { variant_id: locals.variant.id };
         sqldb.query(sql.select_last_submission, params, function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.rowCount != 1) {
+          if (result.rowCount !== 1) {
             return callback(new Error('expected one submission, got: ' + result.rowCount));
           }
           locals.submission = result.rows[0];
@@ -271,14 +277,14 @@ module.exports = {
         assert.equal(locals.submission.variant_id, locals.variant.id);
       });
       it('should not be broken if Freeform', function () {
-        if (locals.question.type != 'Freeform') return;
+        if (locals.question.type !== 'Freeform') return;
         assert.equal(locals.submission.broken, false);
       });
       it('should select the assessment_instance duration from the DB if student page', function (callback) {
         if (!locals.isStudentPage) return callback(null);
         sqldb.query(sql.select_assessment_instance_durations, [], function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.rowCount != 1) {
+          if (result.rowCount !== 1) {
             return callback(new Error('expected one row, got: ' + result.rowCount));
           }
           locals.assessment_instance_duration = result.rows[0].duration;
@@ -302,7 +308,7 @@ module.exports = {
       });
       it('should error', function (callback) {
         let form;
-        if (locals.question.type == 'Calculation') {
+        if (locals.question.type === 'Calculation') {
           form = {
             __action: locals.postAction,
             __csrf_token: locals.__csrf_token,
@@ -311,7 +317,7 @@ module.exports = {
               submittedAnswer: locals.submittedAnswer,
             }),
           };
-        } else if (locals.question.type == 'Freeform') {
+        } else if (locals.question.type === 'Freeform') {
           form = {
             __action: locals.postAction,
             __csrf_token: locals.__csrf_token,
@@ -329,7 +335,7 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            if (response.statusCode != 400 && response.statusCode != 500) {
+            if (response.statusCode !== 400 && response.statusCode !== 500) {
               return callback(
                 new Error('bad status (expected 400 or 500): ' + response.statusCode)
               );
@@ -481,7 +487,7 @@ module.exports = {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
           }
           page = body;
@@ -515,7 +521,7 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            if (response.statusCode != 200) {
+            if (response.statusCode !== 200) {
               return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             callback(null);
@@ -538,7 +544,7 @@ module.exports = {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             console.log(response);
             console.log(body);
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
@@ -583,7 +589,7 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            if (response.statusCode != 200) {
+            if (response.statusCode !== 200) {
               console.log(response);
               console.log(body);
               return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
@@ -608,7 +614,7 @@ module.exports = {
           if (error) {
             return callback(error);
           }
-          if (response.statusCode != 200) {
+          if (response.statusCode !== 200) {
             console.log(response);
             console.log(body);
             return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
@@ -653,7 +659,7 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            if (response.statusCode != 200) {
+            if (response.statusCode !== 200) {
               console.log(response);
               console.log(body);
               return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
@@ -672,7 +678,7 @@ module.exports = {
         it('should find the question in the database', function (callback) {
           sqldb.queryZeroOrOneRow(sql.select_question_by_qid, { qid }, function (err, result) {
             if (ERR(err, callback)) return;
-            if (result.rowCount == 0) {
+            if (result.rowCount === 0) {
               return callback(new Error(`QID "${qid}" not found in the database`));
             }
             locals.question = result.rows[0];
@@ -716,7 +722,7 @@ module.exports = {
             if (error) {
               return callback(error);
             }
-            if (response.statusCode != 200) {
+            if (response.statusCode !== 200) {
               return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
             }
             page = body;
@@ -751,7 +757,7 @@ module.exports = {
               if (error) {
                 return callback(error);
               }
-              if (response.statusCode != 200) {
+              if (response.statusCode !== 200) {
                 return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
               }
               callback(null);
@@ -771,7 +777,7 @@ module.exports = {
             sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
               if (ERR(err, callback)) return;
               locals.job_sequence_status = result.rows[0].status;
-              if (locals.job_sequence_status == 'Running') {
+              if (locals.job_sequence_status === 'Running') {
                 setTimeout(checkComplete, 10);
               } else {
                 callback(null);

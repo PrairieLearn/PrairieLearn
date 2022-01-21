@@ -10,8 +10,9 @@ var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
+  }
   var params = {
     course_instance_id: res.locals.course_instance.id,
   };
@@ -25,10 +26,11 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_permission_edit)
+  if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
+  }
   var params;
-  if (req.body.__action == 'lti_new_cred') {
+  if (req.body.__action === 'lti_new_cred') {
     params = {
       key: 'K' + randomString(),
       secret: 'S' + randomString(),
@@ -38,7 +40,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'lti_del_cred') {
+  } else if (req.body.__action === 'lti_del_cred') {
     params = {
       id: req.body.lti_link_id,
       ci_id: res.locals.course_instance.id,
@@ -47,9 +49,9 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'lti_link_target') {
+  } else if (req.body.__action === 'lti_link_target') {
     var newAssessment = null;
-    if (req.body.newAssessment != '') {
+    if (req.body.newAssessment !== '') {
       newAssessment = req.body.newAssessment;
     }
 

@@ -12,8 +12,6 @@ const error = require('../lib/error');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-module.exports = {};
-
 var migrationDir;
 var project;
 
@@ -25,7 +23,7 @@ module.exports.init = function (dir, proj, callback) {
     logger.verbose(`Acquired lock ${lockName}`);
     migrationDir = dir;
     project = proj;
-    this._initWithLock((err) => {
+    module.exports._initWithLock((err) => {
       namedLocks.releaseLock(lock, (lockErr) => {
         if (ERR(lockErr, callback)) return;
         if (ERR(err, callback)) return;
@@ -53,7 +51,7 @@ module.exports._initWithLock = function (callback) {
         // Alter the migrations table if needed
         sqldb.query('SELECT project FROM migrations;', [], (err, _result) => {
           if (err) {
-            if (err.routine == 'errorMissingColumn') {
+            if (err.routine === 'errorMissingColumn') {
               logger.info('Altering migrations table');
               sqldb.query(sql.alter_migrations_table, [], (err, _result) => {
                 if (ERR(err, callback)) return;
