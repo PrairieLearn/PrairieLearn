@@ -5,6 +5,11 @@
         <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
             <blockquote style="color: red">Submission updated</blockquote>
         <% } %>
+        <a class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/assessment_question/<%= instance_question.assessment_question_id %>/manual_grading">
+          <i class="fas fa-arrow-left"></i>
+          Back to Question
+        </a>
+
         <form name="instance_question-manual-grade-update-form" method="POST">
             <input type="hidden" name="__action" value="add_manual_grade">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -13,11 +18,20 @@
             <div class="form-group">
               <label for="submissionScore">Score:</label>
               <div class="input-group">
-                <input type="number" min="0" max="100" step="5" class="form-control" id="submissionScore" name="submission_score" value="<%= score_perc %>" aria-describedby="scoreHelpBlock"/>  
+                Points: <input type="number" style="margin:2px;" min="0" max="<%= max_points %>" step="any" class="form-control" id="submissionScorePoints" name="submission_score_points" value="<%= instance_question.points %>" aria-describedby="scoreHelpBlock"
+                  oninput="document.getElementById('submissionScorePercent').value = this.value / <%= max_points %> * 100;"
+                />
+                <span class="input-group-addon">/ <%= max_points %></span>
+              </div>
+
+              <div class="input-group">
+                Percent: <input type="number" style="margin:2px;" min="0" max="100" step="any" class="form-control" id="submissionScorePercent" name="submission_score_percent" value="<%= score_perc %>" aria-describedby="scoreHelpBlock"
+                  oninput="document.getElementById('submissionScorePoints').value = this.value / 100 * <%= max_points %>;"
+                />
                 <span class="input-group-addon">%</span>
               </div>
               <small id="scoreHelpBlock" class="form-text text-muted">
-                This percentage will override the most recent submission score.
+                This score will override the most recent submission score.
               </small>
             </div>
             <div class="form-group">
@@ -34,4 +48,3 @@
       </div>
     </div>
 <% } %>
-    
