@@ -6,13 +6,20 @@
         "useNewQuestionRenderer": true
     },
     "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
-    "assessmentSets": [],
+    "assessmentSets": [
+      {"abbreviation": "W", "name": "Workshop", "heading": "Workshops and Tutorials", "color": "gray1"},
+      {"abbreviation": "C", "name": "Collection", "heading": "Collection of example questions", "color": "purple1"},
+      {"abbreviation": "L", "name": "Lecture", "heading": "Pre-Lecture Activities", "color": "blue1"},
+      {"abbreviation": "G", "name": "GroupActivity", "heading": "Group Activities", "color": "pink1"}
+
+    ],
     "topics": [
         {"name": "Template", "color": "orange1", "description": "Templates to copy as the start for a new question."},
         {"name": "Autograder", "color": "orange2", "description": "Questions using the external code grading feature."},
         {"name": "Element", "color": "orange3", "description": "Overviews for each feature available within an element."},
         {"name": "Demo", "color": "purple1", "description": "Demonstration questions showcasing PrairieLearn Features."},
         {"name": "Workshop Demo", "color": "pink2", "description": "Demonstration questions from the PrairieLearn workshop."},
+        {"name": "Gallery", "color": "purple1", "description": "Example questions highlighted in www.prairielearn.com"},
         {"name": "Drawing", "color": "purple2", "description": "Create interactive drawings."},
         {"name": "Custom", "color": "gray1", "description": "Generate custom elements or styles within PrairieLearn."},
         {"name": "Manual", "color": "gray2", "description": "Submission that must be graded manually."},
@@ -24,7 +31,10 @@
         {"name": "Particle kinetics", "color": "red3", "description": "Newton's equation for point masses."},
         {"name": "Coding", "color": "turquoise3", "description": "Writing computer code."},
         {"name": "Center of mass", "color": "green3", "description": "Calculating the center of mass for irregular bodies and systems."},
-        {"name": "Linear algebra", "color": "brown3", "description": "Matrix math."}
+        {"name": "Linear algebra", "color": "brown3", "description": "Matrix math."},
+        {"name": "Math", "color": "orange1", "description": "Mathematics topics"},
+        {"name": "Engineering", "color": "orange1", "description": "Engineering topics"}
+
     ],
     "tags": [
         {"name": "mwest", "color": "gray1", "description": "Question originally written by mwest"},
@@ -36,13 +46,6 @@
         {"name": "nwalter2", "color": "pink1", "description": "Question originally written by nwalter2"},
         {"name": "nnytko2", "color": "turquoise1", "description": "Question originally written by nnytko2"},
         {"name": "astec", "color": "orange2", "description": "Question originally written by andrewstec"},
-        {"name": "tpl101", "color": "gray1", "description": "Question originally written for the XC 101 example course"},
-        {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},
-        {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},
-        {"name": "su18", "color": "gray1", "description": "Question written in Summer 2018"},
-        {"name": "fa18", "color": "gray1", "description": "Question written in Fall 2018"},
-        {"name": "v2", "color": "red1", "description": "v2 generation question"},
-        {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"},
         {"name": "pearl", "color": "yellow3", "description": "Question originally written by pearl"},
         {"name": "rstats", "color": "blue2", "description": "Question requires the use of R"}
     ]
