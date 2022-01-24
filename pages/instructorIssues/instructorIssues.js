@@ -202,7 +202,8 @@ router.get('/', function (req, res, next) {
             !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
             _.some(
               res.locals.authz_data.course_instances,
-              (ci) => ci.has_course_instance_permission_view
+              (ci) =>
+                idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view
             ));
       });
 
