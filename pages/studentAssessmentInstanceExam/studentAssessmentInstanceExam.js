@@ -71,7 +71,7 @@ router.post('/', function (req, res, next) {
         }
       }
     );
-  } else if (req.body.__action == 'leave_group') {
+  } else if (req.body.__action === 'leave_group') {
     if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
     const params = {
         assessment_instance_id: res.locals.assessment_instance.id,
@@ -126,7 +126,7 @@ router.get('/', function (req, res, next) {
           sqldb.query(sql.get_group_info, params, function(err, result) {
               if (ERR(err, next)) return;
               res.locals.group_info = result.rows;
-              if (res.locals.group_info[0] == undefined) return next(error.make(403, 'Not a group member', res.locals));
+              if (res.locals.group_info[0] === undefined) return next(error.make(403, 'Not a group member', res.locals));
               res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           });

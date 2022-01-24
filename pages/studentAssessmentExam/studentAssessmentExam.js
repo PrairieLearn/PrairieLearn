@@ -11,46 +11,39 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
+  var params = {
+    assessment_id: res.locals.assessment.id,
+    user_id: res.locals.user.user_id,
+  };
   if (res.locals.assessment.multiple_instance) {
-    var params = {
-      assessment_id: res.locals.assessment.id,
-      user_id: res.locals.user.user_id,
-    };
-    sqldb.query(sql.find_assessment_instance, params, function(err, result) {
-        if (res.locals.assessment.group_work) {
-            sqldb.query(sql.get_config_info, params, function(err, result) {
+   if (res.locals.assessment.group_work) {
+        sqldb.query(sql.get_config_info, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.locals.permissions = result.rows[0];
+            res.locals.minsize = result.rows[0].minimum || 0;
+            res.locals.maxsize = result.rows[0].maximum || 999;
+            sqldb.query(sql.get_group_info, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.permissions = result.rows[0];
-                res.locals.minsize = result.rows[0].minimum || 0;
-                res.locals.maxsize = result.rows[0].maximum || 999;
-                sqldb.query(sql.get_group_info, params, function(err, result) {
-                    if (ERR(err, next)) return;
-                    res.locals.groupsize = result.rowCount;
-                    res.locals.needsize = res.locals.minsize - res.locals.groupsize;
-                    if (res.locals.groupsize > 0) {
-                        res.locals.group_info = result.rows;
-                        res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
-                        res.locals.start = false;
-                        if (res.locals.needsize <= 0) {
-                            res.locals.start = true;
-                        }
+                res.locals.groupsize = result.rowCount;
+                res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+                if (res.locals.groupsize > 0) {
+                    res.locals.group_info = result.rows;
+                    res.locals.join_code = res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+                    res.locals.start = false;
+                    if (res.locals.needsize <= 0) {
+                        res.locals.start = true;
                     }
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                });
+                }
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
-        } else {
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        }
-    });
+        });
+    } else {
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    }
   } else {
-    var params = {
-      assessment_id: res.locals.assessment.id,
-      user_id: res.locals.user.user_id,
-    };
     sqldb.query(sql.select_single_assessment_instance, params, function (err, result) {
       if (ERR(err, next)) return;
-      if (ERR(err, next)) return;
-      if (result.rowCount == 0) {
+      if (result.rowCount === 0) {
           if (res.locals.assessment.group_work) {
               sqldb.query(sql.get_config_info, params, function(err, result) {
                   if (ERR(err, next)) return;
@@ -80,10 +73,6 @@ router.get('/', function (req, res, next) {
       }
     });
   }
-  var params = {
-    assessment_id: res.locals.assessment.id,
-    user_id: res.locals.user.user_id,
-  };
   if (res.locals.assessment.group_work) {
       sqldb.query(sql.get_config_info, params, function(err, result) {
           if (ERR(err, next)) return;
@@ -135,11 +124,11 @@ router.post('/', function (req, res, next) {
       }
     );
   } 
-  else if (req.body.__action == 'join_group') {
+  else if (req.body.__action === 'join_group') {
     try{
         const group_name = req.body.join_code.split('-')[0];
         const join_code = req.body.join_code.split('-')[1].toUpperCase();
-        if (join_code.length != 4) {
+        if (join_code.length !== 4) {
             throw 'invalid length of join code';
         }
         let params = [
@@ -179,7 +168,7 @@ router.post('/', function (req, res, next) {
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     }
-  } else if (req.body.__action == 'create_group') {
+  } else if (req.body.__action === 'create_group') {
       const params = {
           assessment_id: res.locals.assessment.id,
           user_id: res.locals.user.user_id,
@@ -215,7 +204,7 @@ router.post('/', function (req, res, next) {
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           });
       }
-  } else if (req.body.__action == 'leave_group') {
+  } else if (req.body.__action === 'leave_group') {
       const params = {
           assessment_id: res.locals.assessment.id,
           user_id: res.locals.user.user_id,
