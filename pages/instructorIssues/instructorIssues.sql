@@ -35,6 +35,7 @@ SELECT
     u.name AS user_name,
     i.student_message,
     i.variant_id,
+    v.variant_seed,
     i.open,
     i.manually_reported,
     COUNT(*) OVER() AS issue_count
@@ -57,6 +58,7 @@ FROM
     LEFT JOIN questions AS q ON (q.id = i.question_id)
     LEFT JOIN users AS u ON (u.user_id = i.user_id)
     LEFT JOIN instance_questions AS iq ON (iq.id = i.instance_question_id)
+    LEFT JOIN variants AS v ON (v.id = i.variant_id)
 WHERE
     i.course_id = $course_id
     AND i.course_caused
