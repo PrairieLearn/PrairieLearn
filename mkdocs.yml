@@ -37,7 +37,6 @@ pages:
   - 'Workspaces': 'workspaces/index.md'
   - 'Manual grading': 'manualGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
-  - 'How to use PL to learn student names': 'howToLearnNames.md'
   - 'FAQ': 'faq.md'
   - 'API': 'api.md'
 - Developer Guide:

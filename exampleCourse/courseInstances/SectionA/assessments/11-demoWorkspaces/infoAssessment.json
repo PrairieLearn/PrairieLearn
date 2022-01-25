@@ -1,0 +1,17 @@
+{
+    "uuid": "ca79f95c-a788-45dc-b888-cbdd8ff72aa4",
+    "type": "Homework",
+    "title": "Questions using workspaces",
+    "set": "Collection",
+    "number": "3",
+    "zones": [
+        {
+            "questions": [
+                {"id": "demo/workspace/vscode",       "points": 1, "maxPoints": 5},
+                {"id": "demo/workspace/jupyterlab",   "points": 1, "maxPoints": 5},
+                {"id": "demo/workspace/xtermjs",      "points": 1, "maxPoints": 5},
+                {"id": "demo/workspace/desktop",      "points": 1, "maxPoints": 5}
+            ]
+        }
+    ]
+}
