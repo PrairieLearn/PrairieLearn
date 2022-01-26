@@ -336,7 +336,6 @@ BEGIN
                     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
                     JOIN questions AS q ON (q.id = pvl.question_id)
                     JOIN users AS u ON (u.user_id = pvl.authn_user_id)
-                    JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
                 WHERE
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentInstanceQuestion'
@@ -361,7 +360,6 @@ BEGIN
                 FROM
                     page_view_logs AS pvl
                     JOIN users AS u ON (u.user_id = pvl.authn_user_id)
-                    JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
                 WHERE
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentAssessmentInstance'
