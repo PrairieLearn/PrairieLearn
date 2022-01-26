@@ -60,6 +60,7 @@ problem_2_expected_ed_groups = [
     4,
 ]
 
+
 def test_grade_dag():
     for submission, expected, expected_ed in zip(problem_1_submissions, problem_1_expected, problem_1_expected_ed):
         assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
