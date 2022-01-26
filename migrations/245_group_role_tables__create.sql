@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS group_roles (
             REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX group_roles_assessment_question_id_key ON group_roles (assessment_id);
+CREATE UNIQUE INDEX group_roles_role_name_assessment_id_key ON group_roles (role_name, assessment_id);
 
 -- Create relational table and associated indexes between roles and assessment questions
 CREATE TABLE IF NOT EXISTS assessment_question_role_permissions (
