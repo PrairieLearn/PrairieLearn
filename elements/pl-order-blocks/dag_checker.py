@@ -130,8 +130,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
             if group_belonging.get(node1) is None or group_belonging.get(node1) != group_belonging.get(node2):
                 continue
             if not all([group_belonging[x] == group_belonging[node1] for x in submission[i:j + 1]]):
-                for node1 in submission[i:j + 1]:
-                    problematic_subgraph.add_node(node1)
+                problematic_subgraph.add_nodes_from(submission[i:j + 1])
 
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
