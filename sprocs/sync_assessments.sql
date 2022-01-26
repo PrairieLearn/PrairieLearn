@@ -13,7 +13,6 @@ DECLARE
     valid_assessment record;
     group_role JSONB;
     group_role_id bigint;
-    role_name JSONB;
     valid_group_role record;
     group_role_name text;
     role_name_can_view text;
