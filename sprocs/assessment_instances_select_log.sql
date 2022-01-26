@@ -340,7 +340,6 @@ BEGIN
                 WHERE
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentInstanceQuestion'
-                    AND pvl.authn_user_id = ai.user_id
             )
             UNION
             (
@@ -366,7 +365,6 @@ BEGIN
                 WHERE
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentAssessmentInstance'
-                    AND pvl.authn_user_id = ai.user_id
             )
             UNION
             (
