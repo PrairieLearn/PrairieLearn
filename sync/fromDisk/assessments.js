@@ -141,10 +141,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
             canView: _.has(alternative, 'canView')
-            ? alternative.canView
-            : _.has(question, 'canView')
-            ? question.canView
-            : null,
+              ? alternative.canView
+              : _.has(question, 'canView')
+              ? question.canView
+              : null,
             canSubmit: _.has(alternative, 'canSubmit')
               ? alternative.canSubmit
               : _.has(question, 'canSubmit')

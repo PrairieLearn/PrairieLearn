@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS assessment_question_role_permissions (
             REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX assessment_question_role_permissions_assessment_question_id_key ON assessment_question_role_permissions (assessment_question_id);
+CREATE UNIQUE INDEX assessment_question_role_permissions_assessment_question_id_group_role_id_key ON assessment_question_role_permissions (assessment_question_id, group_role_id);
 CREATE INDEX assessment_question_role_permissions_group_role_id_key ON assessment_question_role_permissions (group_role_id);
 
 -- Alter the group user table to include a role

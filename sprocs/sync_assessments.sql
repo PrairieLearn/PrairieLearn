@@ -12,7 +12,6 @@ DECLARE
     mismatched_uuid_tids TEXT;
     valid_assessment record;
     group_role JSONB;
-    group_role_id bigint;
     valid_group_role record;
     group_role_name text;
     role_name_can_view text;
@@ -198,7 +197,6 @@ BEGIN
                 deleted_at = NULL;
 
             -- Insert all group roles
-            -- FIXME: use ON CONFLICT () DO UPDATE to prevent duplicate entries
             FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
                 INSERT INTO group_roles (
                     role_name,
@@ -429,13 +427,12 @@ BEGIN
                         END LOOP;
 
                         -- Consolidate all temp table results
-                        -- FIXME: how do we prevent duplicate additions? can we do an ON CONFLICT check?
                         DROP TABLE IF EXISTS temp_role_permissions;
                         CREATE TEMPORARY TABLE temp_role_permissions (
                             assessment_question_id BIGINT,
                             group_role_id BIGINT,
-                            can_submit BOOLEAN,
-                            can_view BOOLEAN
+                            can_view BOOLEAN,
+                            can_submit BOOLEAN
                         ) ON COMMIT DROP;
 
                         INSERT INTO temp_role_permissions
@@ -452,7 +449,7 @@ BEGIN
                                 permission.group_role_id,
                                 permission.can_submit,
                                 permission.can_view
-                            ) ON CONFLICT (assessment_question_id) 
+                            ) ON CONFLICT (assessment_question_id, group_role_id) 
                             DO UPDATE
                             SET
                                 assessment_question_id = EXCLUDED.assessment_question_id,
