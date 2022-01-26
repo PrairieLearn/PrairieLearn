@@ -139,9 +139,11 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
         mvc_size = problematic_subgraph.number_of_nodes() - 1
         for i in range(1, problematic_subgraph.number_of_nodes() - 1):
             for subset in itertools.combinations(problematic_subgraph, i):
+                # make sure deleting subset will resolve blocks out of order
                 if not is_vertex_cover(problematic_subgraph, subset):
                     continue
 
+                # make sure deleting subset will resolve a seperated pl-block-group
                 new_order = [x for x in submission if x in subset]
                 new_group_belonging = {key: group_belonging[key] for key in new_order}
                 if len(new_order) == check_grouping(new_order, new_group_belonging):
