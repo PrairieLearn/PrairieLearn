@@ -55,7 +55,7 @@ def dag_to_nx(depends_graph):
     return graph
 
 
-def grade_dag(order, group_belonging, depends_graph):
+def grade_dag(order, depends_graph, group_belonging):
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
