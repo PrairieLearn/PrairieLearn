@@ -1,10 +1,9 @@
-from typing import Mapping, Optional, Iterable
 from collections import Counter
 import networkx as nx
 import itertools
 
 
-def check_topological_sorting(order: list[str], graph: nx.DiGraph) -> int:
+def check_topological_sorting(order, graph):
     """
     :param order: candidate for topological sorting
     :param graph: graph to check topological sorting over
@@ -18,7 +17,7 @@ def check_topological_sorting(order: list[str], graph: nx.DiGraph) -> int:
     return len(order)
 
 
-def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]]) -> int:
+def check_grouping(order, group_belonging):
     """
     :param order: candidate solution
     :param group_belonging: group that each block belongs to
@@ -46,7 +45,7 @@ def check_grouping(order: list[str], group_belonging: Mapping[str, Optional[int]
     return len(order)
 
 
-def dag_to_nx(depends_graph: Mapping[str, list[str]]) -> nx.DiGraph:
+def dag_to_nx(depends_graph):
     """Convert input graph format into NetworkX object to utilize their algorithms."""
     graph = nx.DiGraph()
     for node in depends_graph:
@@ -56,7 +55,7 @@ def dag_to_nx(depends_graph: Mapping[str, list[str]]) -> nx.DiGraph:
     return graph
 
 
-def grade_dag(order: list[str], depends_graph: Mapping[str, list[str]], group_belonging: Mapping[str, Optional[int]]) -> int:
+def grade_dag(order, depends_graph, group_belonging):
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
@@ -76,7 +75,7 @@ def grade_dag(order: list[str], depends_graph: Mapping[str, list[str]], group_be
     return top_sort_correctness if top_sort_correctness < grouping_correctness else grouping_correctness
 
 
-def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable):
+def is_vertex_cover(G, vertex_cover):
     """ this function from
     https://docs.ocean.dwavesys.com/projects/dwave-networkx/en/latest/_modules/dwave_networkx/algorithms/cover.html#is_vertex_cover
     """
@@ -84,7 +83,7 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable):
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit(order: list[str], depends_graph: Mapping[str, list[str]]) -> int:
+def lcs_partial_credit(order, depends_graph):
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
     The naive solution would be to enumerate all topological sorts, then get the edit distance to each of them,

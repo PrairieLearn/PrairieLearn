@@ -1,4 +1,3 @@
-from typing import Dict, Any
 import prairielearn as pl
 import lxml.html
 from lxml import etree
@@ -37,11 +36,11 @@ FIRST_WRONG_FEEDBACK = {
 }
 
 
-def filter_multiple_from_array(data: list[Dict[str, Any]], keys: list[str]) -> list[Dict[str, Any]]:
+def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -178,7 +177,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     data['correct_answers'][answer_name] = correct_answers
 
 
-def render(element_html: str, data: pl.QuestionData) -> str:
+def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -326,7 +325,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         raise Exception('Invalid panel type')
 
 
-def parse(element_html: str, data: pl.QuestionData) -> None:
+def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -372,7 +371,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         del data['submitted_answers'][answer_raw_name]
 
 
-def grade(element_html: str, data: pl.QuestionData) -> None:
+def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
@@ -466,7 +465,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     data['partial_scores'][answer_name] = {'score': round(final_score, 2), 'feedback': feedback, 'weight': answer_weight, 'first_wrong': first_wrong}
 
 
-def test(element_html: str, data: pl.ElementTestData) -> None:
+def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
     answer_name = pl.get_string_attrib(element, 'answers-name')
