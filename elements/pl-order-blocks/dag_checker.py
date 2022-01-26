@@ -83,7 +83,7 @@ def is_vertex_cover(G, vertex_cover):
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit(order, depends_graph, group_belonging):
+def lcs_partial_credit(order, depends_graph, group_belonging={}):
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
     The naive solution would be to enumerate all topological sorts, then get the edit distance to each of them,
@@ -124,7 +124,7 @@ def lcs_partial_credit(order, depends_graph, group_belonging):
     for i in range(len(order)):
         for j in range(i + 2, len(order)):
             node1, node2 = order[i], order[j]
-            if group_belonging[node1] is None or group_belonging[node1] != group_belonging[node2]:
+            if group_belonging.get(node1) is None or group_belonging.get(node1) != group_belonging.get(node2):
                 continue
             if not all([group_belonging[x] == group_belonging[node1] for x in order[i:j + 1]]):
                 for node in order[i:j + 1]:
