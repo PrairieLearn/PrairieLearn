@@ -29,6 +29,8 @@ problem_2_submissions = [
     ['4', '5', '6', '1', '2', '7'],
     ['1', '2', '4', '3', '5', '6', '7'],
     ['1', '2', '3', '7'],
+    ['1', '5', '6', '2', '3'],
+    ['1', '6', '5', '2', '3'],
 ]
 problem_2_expected = [
     7,
@@ -36,13 +38,37 @@ problem_2_expected = [
     5,
     2,
     3,
+    1,
+    1
 ]
-
+problem_2_expected_ed_no_groups = [
+    0,
+    0,
+    1,
+    0,
+    3,
+    2,
+    4,
+]
+problem_2_expected_ed_groups = [
+    0,
+    0,
+    1,
+    2,
+    3,
+    4,
+    4,
+]
 
 def test_grade_dag():
     for submission, expected, expected_ed in zip(problem_1_submissions, problem_1_expected, problem_1_expected_ed):
         assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
-        assert lcs_partial_credit(submission, problem_1_dag) == expected_ed
+        assert lcs_partial_credit(submission, problem_1_dag, {}) == expected_ed
 
-    for submission, expected in zip(problem_2_submissions, problem_2_expected):
+    counter = 0
+    for submission, expected, expected_ed_no_groups, expected_ed_groups in zip(problem_2_submissions, problem_2_expected, problem_2_expected_ed_no_groups, problem_2_expected_ed_groups):
+        print(counter)
+        counter += 1
         assert grade_dag(submission, problem_2_dag, problem_2_groups) == expected
+        assert lcs_partial_credit(submission, problem_2_dag, {}) == expected_ed_no_groups
+        assert lcs_partial_credit(submission, problem_2_dag, problem_2_groups) == expected_ed_groups

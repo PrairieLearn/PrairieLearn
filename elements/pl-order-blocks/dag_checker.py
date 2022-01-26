@@ -83,7 +83,7 @@ def is_vertex_cover(G, vertex_cover):
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit(order, depends_graph, group_belonging={}):
+def lcs_partial_credit(submission, depends_graph, group_belonging):
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
     The naive solution would be to enumerate all topological sorts, then get the edit distance to each of them,
@@ -91,11 +91,10 @@ def lcs_partial_credit(order, depends_graph, group_belonging={}):
         1. Remove all distractors from the student solution
         2. Construct the 'problematic subgraph'. We do this by finding the subset of nodes in the
         graph that have some 'problematic' relation, meaning that there is a node before it in the
-        student solution that should be after it, or one after it that must be before. Thus the
-        edge (u,v) is in the problematic subgraph if there is an edge from u to v in the transitive
-        closure of the dependency graph, but v appears before u in the student solution.
-        3. Find the Minimum Vertex Cover (MVC) of the problematic subgraph. This tells us the
-        minimum number of nodes that must be deleted to get rid of all problematic relations.
+        student solution that should be after it, or one after it that must be before, or nodes that
+        belong to the same pl-block-group are not contiguous with one another.
+        3. Find the minimum set of nodes to delete from the submission which will solve all problematic
+        relationships found in step 2.
         4. Once we know the minimum required deletions, you may simply add nodes to the student
         solution until it is the correct solution, so you can directly calculate the edit distance.
     :param order: the block ordering given by the student
@@ -105,30 +104,34 @@ def lcs_partial_credit(order, depends_graph, group_belonging={}):
     graph = dag_to_nx(depends_graph)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
 
+    # if node1 must occur before node2 in any correct solution, but node2 occurs before
+    # node1 in the submission, add them both and an edge between them to the problematic subgraph
     seen = set()
     problematic_subgraph = nx.DiGraph()
     distractors = 0
-    for node in order:
+    for node1 in submission:
         # in the parse function of pl-order-blocks, lines that aren't in any
         # correct answer are denoted by None in the answer list
-        if node is None:
+        if node1 is None:
             distractors += 1
             continue
 
         for node2 in seen:
-            if trans_clos.has_edge(node, node2):
-                problematic_subgraph.add_edge(node, node2)
+            if trans_clos.has_edge(node1, node2):
+                problematic_subgraph.add_edge(node1, node2)
 
-        seen.add(node)
+        seen.add(node1)
 
-    for i in range(len(order)):
-        for j in range(i + 2, len(order)):
-            node1, node2 = order[i], order[j]
+    # if two nodes are in the same `pl-block-group`, but don't occur next to one another in the
+    # submission, add them and all nodes in between to the problematic subgraph
+    for i in range(len(submission)):
+        for j in range(i + 2, len(submission)):
+            node1, node2 = submission[i], submission[j]
             if group_belonging.get(node1) is None or group_belonging.get(node1) != group_belonging.get(node2):
                 continue
-            if not all([group_belonging[x] == group_belonging[node1] for x in order[i:j + 1]]):
-                for node in order[i:j + 1]:
-                    problematic_subgraph.add_node(node)
+            if not all([group_belonging[x] == group_belonging[node1] for x in submission[i:j + 1]]):
+                for node1 in submission[i:j + 1]:
+                    problematic_subgraph.add_node(node1)
 
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
@@ -136,14 +139,18 @@ def lcs_partial_credit(order, depends_graph, group_belonging={}):
         mvc_size = problematic_subgraph.number_of_nodes() - 1
         for i in range(1, problematic_subgraph.number_of_nodes() - 1):
             for subset in itertools.combinations(problematic_subgraph, i):
-                new_order = [x for x in order if x in subset]
+                if not is_vertex_cover(problematic_subgraph, subset):
+                    continue
+
+                new_order = [x for x in submission if x in subset]
                 new_group_belonging = {key: group_belonging[key] for key in new_order}
-                if is_vertex_cover(problematic_subgraph, subset) and len(new_order) == check_grouping(new_order, new_group_belonging):
+                if len(new_order) == check_grouping(new_order, new_group_belonging):
                     mvc_size = len(subset)
                     break
+
             if mvc_size < problematic_subgraph.number_of_nodes() - 1:
                 break
 
     deletions_needed = distractors + mvc_size
-    insertions_needed = len(depends_graph.keys()) - (len(order) - deletions_needed)
+    insertions_needed = len(depends_graph.keys()) - (len(submission) - deletions_needed)
     return deletions_needed + insertions_needed
