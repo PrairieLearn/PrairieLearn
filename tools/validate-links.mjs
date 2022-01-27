@@ -7,8 +7,11 @@ const URL_REGEX =
 function filePathFromUrl(url) {
   let path = url.match(URL_REGEX)[1];
 
-  // Some URLs include line numbers at the end - strip them off
-  path = path.replace(/#L\d+(-L\d+)?$/, '');
+  // Some URLs include hashes at the end - strip them off
+  path = path.replace(/#.*$/, '');
+
+  // Remove any trailing slashes as well
+  path = path.replace(/\/$/, '');
 
   return path;
 }
