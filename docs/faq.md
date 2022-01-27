@@ -147,13 +147,13 @@ the following:
 For cheatsheets in `clientFilesCourse`, use:
 
 ```
-"text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesCourse %>/formulas.pdf\">PDF version</a></li>"
+"text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesCourse %>/formulas.pdf\">PDF version</a></li>"
 ```
 
 Otherwise, for cheatsheets in `clientFilesAssessment`, use:
 
 ```
-"text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
+"text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
 ```
 
 To learn more about where files are stored, please see
