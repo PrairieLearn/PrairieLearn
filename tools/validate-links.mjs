@@ -13,7 +13,7 @@ function filePathFromUrl(url) {
   return path;
 }
 
-const files = await glob('**/*.{md,html}', { ignore: ['node_modules/**'] });
+const files = await glob('**/*.{md,html,json}', { ignore: ['node_modules/**'] });
 
 let error = false;
 
