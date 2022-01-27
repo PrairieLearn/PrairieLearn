@@ -160,7 +160,7 @@ Otherwise, for cheatsheets in `clientFilesAssessment`, use:
 }
 ```
 
-To learn more about where files are stored, please see [clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/).
+To learn more about where files are stored, please see [clientFiles and serverFiles](clientServerFiles.md).
 
 ## How can I reference material in `serverFilesQuestion` and `clientFilesQuestion` from the `server.py`?
 
