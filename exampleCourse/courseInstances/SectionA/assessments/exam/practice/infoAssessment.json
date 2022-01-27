@@ -49,5 +49,5 @@
             ]
         }
     ],
-    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of a practice exam, where students can generate many different instances of the same assessment for additional practice. </p> <p> You can read more about a general exam setup <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/01-ExamInstantFeedback/__docs/docs.md target=_blank>here</a>.</p>"
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of a practice exam, where students can generate many different instances of the same assessment for additional practice. </p> <p> You can read more about a general exam setup <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md target=_blank>here</a>.</p>"
 }
