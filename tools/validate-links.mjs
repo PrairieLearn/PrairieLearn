@@ -24,8 +24,6 @@ for (const file of files) {
   const matches = contents.match(new RegExp(URL_REGEX, 'g'));
 
   if (matches) {
-    // console.log(file);
-    // console.log(matches);
     for (const match of matches) {
       // Extract the file path portion of the URL
       const filePath = filePathFromUrl(match);
