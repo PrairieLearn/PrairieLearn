@@ -34,15 +34,16 @@ test-python:
 # explicitly exclude it here.
 	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
 	
-lint: lint-js lint-python lint-html
+lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@eslint --ext js "**/*.js"
 	@prettier --check "**/*.{js,ts,md}"
-	node tools/validate-links.mjs
 lint-python:
 	@python3 -m flake8 ./
 lint-html:
 	@htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+lint-links:
+	@node tools/validate-links.mjs
 
 format: format-js
 format-js:
