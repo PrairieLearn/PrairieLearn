@@ -38,6 +38,7 @@ lint: lint-js lint-python lint-html
 lint-js:
 	@eslint --ext js "**/*.js"
 	@prettier --check "**/*.{js,ts,md}"
+	node tools/validate-links.mjs
 lint-python:
 	@python3 -m flake8 ./
 lint-html:
