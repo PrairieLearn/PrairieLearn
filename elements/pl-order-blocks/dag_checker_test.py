@@ -57,7 +57,7 @@ problem_2_expected_ed_groups = [
     2,
     3,
     4,
-    4,
+    6,
 ]
 
 
@@ -66,7 +66,10 @@ def test_grade_dag():
         assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
         assert lcs_partial_credit(submission, problem_1_dag, {}) == expected_ed
 
+    count = 0
     for submission, expected, expected_ed_no_groups, expected_ed_groups in zip(problem_2_submissions, problem_2_expected, problem_2_expected_ed_no_groups, problem_2_expected_ed_groups):
+        print(count)
+        count += 1
         assert grade_dag(submission, problem_2_dag, problem_2_groups) == expected
         assert lcs_partial_credit(submission, problem_2_dag, {}) == expected_ed_no_groups
         assert lcs_partial_credit(submission, problem_2_dag, problem_2_groups) == expected_ed_groups
