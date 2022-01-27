@@ -215,7 +215,7 @@ You can add a `text` property to your `infoAssessment.json`, which can be used t
 
 ```json
 {
-    "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
+  "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
 }
 ```
 
