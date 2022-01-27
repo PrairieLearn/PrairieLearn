@@ -24,7 +24,7 @@ See below for detailed information about each question type.
 
 ## `MultipleChoice` question type
 
-- Example: [`fossilFuelsRadio`](https://github.com/PrairieLearn/pl-template/tree/af9893d28a06ab8314ac9d8de19e860828f4f027/questions/fossilFuelsRadio)
+- Example: [`fossilFuelsRadio`](https://github.com/PrairieLearn/PrairieLearn/tree/21be1db08978b6f8a8ca76c1e53681fe2ebe2fce/exampleCourse/questions/fossilFuelsRadio)
 - Required files: `info.json`
 - Options schema: [`MultipleChoice` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsMultipleChoice.json)
 
@@ -86,7 +86,7 @@ A `MultipleTrueFalse` question has an `info.json` that provides the question tex
 
 ## `Checkbox` question type
 
-- Example: [`fossilFuelsCheckbox`](https://github.com/PrairieLearn/pl-template/tree/af9893d28a06ab8314ac9d8de19e860828f4f027/questions/fossilFuelsCheckbox)
+- Example: [`fossilFuelsCheckbox`](https://github.com/PrairieLearn/PrairieLearn/tree/21be1db08978b6f8a8ca76c1e53681fe2ebe2fce/exampleCourse/questions/fossilFuelsCheckbox)
 - Required files: `info.json`
 - Options schema: [`Checkbox` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsCheckbox.json)
 
@@ -119,7 +119,7 @@ A `Checkbox` question has an `info.json` that provides the question text, one or
 
 ## `File` question type
 
-- Example: [`fibonacciExternal`](https://github.com/PrairieLearn/PrairieLearn/tree/bb3fa6c4bc477172cc1e449161aa0e7981628ed8/exampleCourse/questions/fibonacciExternal)
+- Example: [`fibonacciExternal`](https://github.com/PrairieLearn/PrairieLearn/tree/21be1db08978b6f8a8ca76c1e53681fe2ebe2fce/exampleCourse/questions/fibonacciExternal)
 - Required files: `info.json`, `question.html`, `answer.html`
 - Options schema: [`File` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsFile.json)
 
