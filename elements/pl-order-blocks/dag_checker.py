@@ -97,8 +97,9 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
         relationships found in step 2.
         4. Once we know the minimum required deletions, you may simply add nodes to the student
         solution until it is the correct solution, so you can directly calculate the edit distance.
-    :param order: the block ordering given by the student
+    :param submission: the block ordering given by the student
     :param depends_graph: The dependency graph between blocks specified in the question
+    :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph)
