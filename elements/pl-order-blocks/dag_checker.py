@@ -143,9 +143,9 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
                     continue
 
                 # make sure deleting subset will resolve a separated pl-block-group
-                new_order = [x for x in submission if x not in subset]
-                new_group_belonging = {key: group_belonging[key] for key in new_order}
-                if len(new_order) == check_grouping(new_order, new_group_belonging):
+                edited_submission = [x for x in submission if x not in subset]
+                edited_group_belonging = {key: group_belonging[key] for key in edited_submission}
+                if len(edited_submission) == check_grouping(edited_submission, edited_group_belonging):
                     mvc_size = len(subset)
                     break
 
