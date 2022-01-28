@@ -3,6 +3,10 @@ import networkx as nx
 import itertools
 
 
+def validate_grouping(depends_graph, group_belonging):
+    return True
+
+
 def check_topological_sorting(submission, graph):
     """
     :param submission: candidate for topological sorting
