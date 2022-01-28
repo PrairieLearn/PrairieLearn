@@ -3,23 +3,23 @@ import networkx as nx
 import itertools
 
 
-def check_topological_sorting(order, graph):
+def check_topological_sorting(submission, graph):
     """
-    :param order: candidate for topological sorting
+    :param submission: candidate for topological sorting
     :param graph: graph to check topological sorting over
     :return: index of first element not topologically sorted, or length of list if sorted
     """
     seen = set()
-    for i, node in enumerate(order):
+    for i, node in enumerate(submission):
         if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
             return i
         seen.add(node)
-    return len(order)
+    return len(submission)
 
 
-def check_grouping(order, group_belonging):
+def check_grouping(submission, group_belonging):
     """
-    :param order: candidate solution
+    :param submission: candidate solution
     :param group_belonging: group that each block belongs to
     :return: index of first element breaking condition that members of the same group must be
     adjacent, or length of list if they all meet the condition
@@ -27,7 +27,7 @@ def check_grouping(order, group_belonging):
     group_sizes = Counter(group_belonging.values())
     cur_group = None
     cur_group_size = 0
-    for i, node in enumerate(order):
+    for i, node in enumerate(submission):
         group_id = group_belonging.get(node)
         if group_id is not None and cur_group is None:
             cur_group = group_id
@@ -42,7 +42,7 @@ def check_grouping(order, group_belonging):
                     cur_group_size = 0
             else:
                 return i
-    return len(order)
+    return len(submission)
 
 
 def dag_to_nx(depends_graph):
@@ -55,11 +55,11 @@ def dag_to_nx(depends_graph):
     return graph
 
 
-def grade_dag(order, depends_graph, group_belonging):
+def grade_dag(submission, depends_graph, group_belonging):
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
-    :param order: the block ordering given by the student
+    :param submission: the block ordering given by the student
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: length of list that meets both correctness conditions, starting from the beginning
@@ -69,8 +69,8 @@ def grade_dag(order, depends_graph, group_belonging):
     if not nx.is_directed_acyclic_graph(graph):
         raise Exception('Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.')
 
-    top_sort_correctness = check_topological_sorting(order, graph)
-    grouping_correctness = check_grouping(order, group_belonging)
+    top_sort_correctness = check_topological_sorting(submission, graph)
+    grouping_correctness = check_grouping(submission, group_belonging)
 
     return top_sort_correctness if top_sort_correctness < grouping_correctness else grouping_correctness
 
