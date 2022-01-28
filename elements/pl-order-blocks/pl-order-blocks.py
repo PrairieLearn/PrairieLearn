@@ -39,6 +39,11 @@ FIRST_WRONG_FEEDBACK = {
 def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
 
+def get_graph_info(html_tags):
+    tag = pl.get_string_attrib(html_tags, 'tag', None)
+    depends = pl.get_string_attrib(html_tags, 'depends', '')
+    depends = depends.strip().split(',') if depends else []
+    return tag, depends
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -98,11 +103,9 @@ def prepare(element_html, data):
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1)
 
-        tag = pl.get_string_attrib(html_tags, 'tag', None)
+        tag, depends = get_graph_info(html_tags)
         if grading_method == 'ranking':
             tag = str(index)
-        depends = pl.get_string_attrib(html_tags, 'depends', '')
-        depends = depends.strip().split(',') if depends else []
 
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
@@ -122,13 +125,14 @@ def prepare(element_html, data):
 
     index = 0
     group_counter = 0
+    group_info = {}
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
         if html_tags.tag is etree.Comment:
             continue
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
-
+            
             group_counter += 1
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
