@@ -343,7 +343,7 @@ BEGIN
                     AND (pvl.authn_user_id = ai.user_id
                          OR (ai.group_id IS NOT NULL
                              AND EXISTS (SELECT 1
-                                         FROM group_logs gl
+                                         FROM group_logs AS gl
                                          WHERE gl.action = 'join'
                                                AND gl.group_id = ai.group_id
                                                AND gl.user_id = pvl.authn_user_id
@@ -376,7 +376,7 @@ BEGIN
                     AND (pvl.authn_user_id = ai.user_id
                          OR (ai.group_id IS NOT NULL
                              AND EXISTS (SELECT 1
-                                         FROM group_logs gl
+                                         FROM group_logs AS gl
                                          WHERE gl.action = 'join'
                                                AND gl.group_id = ai.group_id
                                                AND gl.user_id = pvl.authn_user_id
