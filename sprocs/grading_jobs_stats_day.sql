@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS grading_jobs_stats_day();
-DROP FUNCTION IF EXISTS grading_jobs_stats_day(bigint,double precision,double precision,double precision,double precision,double precision);
-DROP FUNCTION IF EXISTS grading_jobs_stats_day(bigint,double precision,double precision,double precision,double precision,double precision,double precision,double precision,double precision,double precision,double precision);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_jobs_stats_day(
         OUT count bigint,
         OUT delta_total double precision,
@@ -22,12 +18,12 @@ AS $$
 BEGIN
     WITH recent_jobs AS (
         SELECT
-            extract(epoch from (gj.graded_at - gj.grading_requested_at)) AS delta_total,
-            extract(epoch from (gj.grading_submitted_at - gj.grading_requested_at)) AS delta_submitted_at,
-            extract(epoch from (gj.grading_received_at - gj.grading_submitted_at)) AS delta_received_at,
-            extract(epoch from (gj.grading_started_at - gj.grading_received_at)) AS delta_started_at,
-            extract(epoch from (gj.grading_finished_at - gj.grading_started_at)) AS delta_finished_at,
-            extract(epoch from (gj.graded_at - gj.grading_finished_at)) AS delta_final
+            DATE_PART('epoch', (gj.graded_at - gj.grading_requested_at)) AS delta_total,
+            DATE_PART('epoch', (gj.grading_submitted_at - gj.grading_requested_at)) AS delta_submitted_at,
+            DATE_PART('epoch', (gj.grading_received_at - gj.grading_submitted_at)) AS delta_received_at,
+            DATE_PART('epoch', (gj.grading_started_at - gj.grading_received_at)) AS delta_started_at,
+            DATE_PART('epoch', (gj.grading_finished_at - gj.grading_started_at)) AS delta_finished_at,
+            DATE_PART('epoch', (gj.graded_at - gj.grading_finished_at)) AS delta_final
         FROM
             grading_jobs as gj
         WHERE

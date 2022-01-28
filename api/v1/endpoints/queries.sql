@@ -44,20 +44,21 @@ WITH object_data AS (
         u.user_id,
         u.uid AS user_uid,
         u.name AS user_name,
-        coalesce(e.role, 'None'::enum_role) AS user_role,
+        users_get_displayed_role(u.user_id, ci.id) AS user_role,
         ai.max_points,
+        ai.max_bonus_points,
         ai.points,
         ai.score_perc,
         ai.number AS assessment_instance_number,
         ai.open,
         CASE
             WHEN ai.open AND ai.date_limit IS NOT NULL
-                THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
+                THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
             WHEN ai.open THEN 'Open'
             ELSE 'Closed'
         END AS time_remaining,
         format_date_iso8601(ai.date, ci.display_timezone) AS start_date,
-        EXTRACT(EPOCH FROM ai.duration) AS duration_seconds,
+        DATE_PART('epoch', ai.duration) AS duration_seconds,
         (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score
     FROM
         assessments AS a
@@ -65,7 +66,6 @@ WITH object_data AS (
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         JOIN users AS u ON (u.user_id = ai.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         ci.id = $course_instance_id
         AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
@@ -93,10 +93,8 @@ WITH object_data AS (
         aar.exam_uuid,
         aar.id AS assessment_access_rule_id,
         aar.mode,
-        aar.number,
         aar.number AS assessment_access_rule_number,
         aar.password,
-        aar.role,
         aar.seb_config,
         aar.show_closed_assessment,
         aar.show_closed_assessment_score,
@@ -145,6 +143,32 @@ SELECT
     ), '[]'::jsonb) AS item
 FROM
     object_data;
+-- BLOCK select_course_instance_access_rules
+WITH object_data AS (
+    SELECT
+        ci.id AS course_instance_id,
+        ci.short_name AS course_instance_short_name,
+        ci.long_name AS course_instance_long_name,
+        ci.course_id AS course_instance_course_id,
+        format_date_iso8601(ciar.end_date, ci.display_timezone) AS end_date,
+        ciar.id AS course_instance_access_rule_id,
+        ciar.institution,
+        ciar.number AS course_instance_access_rule_number,
+        format_date_iso8601(ciar.start_date, ci.display_timezone) AS start_date,
+        ciar.uids
+    FROM
+        course_instances AS ci
+        JOIN course_instance_access_rules AS ciar ON (ciar.course_instance_id = ci.id)
+    WHERE
+        ci.id = $course_instance_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY course_instance_access_rule_number, course_instance_access_rule_id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
 
 -- BLOCK select_instance_questions
 WITH object_data AS (
@@ -155,7 +179,11 @@ WITH object_data AS (
         iq.number AS instance_question_number,
         aq.max_points AS assessment_question_max_points,
         iq.points AS instance_question_points,
-        iq.score_perc AS instance_question_score_perc
+        iq.score_perc AS instance_question_score_perc,
+        iq.highest_submission_score,
+        iq.last_submission_score,
+        iq.number_attempts,
+        DATE_PART('epoch', iq.duration) AS duration_seconds
     FROM
         assessment_instances AS ai
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
@@ -179,7 +207,7 @@ WITH object_data AS (
         u.user_id,
         u.uid AS user_uid,
         u.name AS user_name,
-        coalesce(e.role, 'None'::enum_role) AS user_role,
+        users_get_displayed_role(u.user_id, ci.id) AS user_role,
         a.id AS assessment_id,
         a.tid AS assessment_name,
         (aset.abbreviation || a.number) AS assessment_label,
@@ -217,7 +245,6 @@ WITH object_data AS (
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         JOIN users AS u ON (u.user_id = ai.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)

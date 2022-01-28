@@ -14,7 +14,7 @@ describe('sanitizeObject', () => {
 
   test('null byte in top-level string', () => {
     const input = { test: 'test\u0000ing' };
-    const expected = { test: 'test\\u0000ing'};
+    const expected = { test: 'test\\u0000ing' };
     check(input, expected);
   });
 
@@ -66,6 +66,18 @@ describe('sanitizeObject', () => {
       test: 'test\\u0000ing',
       a: 1,
       b: 2.45,
+    };
+    check(input, expected);
+  });
+
+  test('handles null values correctly', () => {
+    const input = {
+      test: 'test\u0000ing',
+      a: null,
+    };
+    const expected = {
+      test: 'test\\u0000ing',
+      a: null,
     };
     check(input, expected);
   });

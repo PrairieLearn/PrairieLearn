@@ -1,12 +1,12 @@
-# C Autograder
+# C/C++ Autograder
 
-This file documents the default C autograder included in the `prairielearn/grader-c` Docker image.  For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
+This file documents the default C/C++ autograder included in the `prairielearn/grader-c` Docker image. For general information on how to set up an external grader, visit the [external grading](../externalGrading.md) page.
 
 ## Setting up
 
 ### `info.json`
 
-The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings.  To use the specific C autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-c"` and `"entrypoint"` should point to a test file in the question, which will then invoke the autograder.
+The question should be first set up to enable [external grading](../externalGrading.md), with `"gradingMethod": "External"` set in the `info.json` settings. To use the specific C/C++ autograder detailed in this document, in the `"externalGradingOptions"` dictionary, `"image"` should be set to `"prairielearn/grader-c"` and `"entrypoint"` should point to a test file in the question, which will then invoke the autograder.
 
 A full `info.json` file should look something like:
 
@@ -32,7 +32,7 @@ Note that the `entrypoint` setting includes a call to `python3` before the test 
 
 ### `question.html`
 
-Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grading-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions.  An example question markup is given below:
+Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grading-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -47,7 +47,7 @@ Most questions using this autograder will contain a `pl-file-editor` or `pl-file
 
 ### `tests/test.py`
 
-The `test.py` file will contain the basic tests that must be executed by the C grader. A simple `test.py` will look like this:
+The `test.py` file will contain the basic tests that must be executed by the C/C++ grader. A simple `test.py` to grade C code will look like this:
 
 ```python
 #! /usr/bin/python3
@@ -63,77 +63,99 @@ g = QuestionGrader()
 g.start()
 ```
 
-The `tests` method above will contain the basis for user tests, and will have access to some regular functions provided by the C grader. Some methods that can be called are listed below.
+A simple `test.py` to grade C++ code will look like this (the only difference is the parent class):
 
-Any file submitted using a `pl-file-editor` or `pl-file-upload` will
-be available for use by the C grader. To create tests based on
-parameters defined by `server.py`, or to have access to submitted data
-from other elements such as `pl-string-input` elements, you can access
-the `self.data` dictionary. This dictionary contains the similar keys
-to those found in the `grade()` function in `server.py`, such as
-`self.data["params"]` or `self.data["submitted_answers"]`.
+```python
+#! /usr/bin/python3
+
+import cgrader
+
+class QuestionGrader(cgrader.CPPGrader):
+
+    def tests(self):
+        # Include tests here
+
+g = QuestionGrader()
+g.start()
+```
+
+The `tests` method above will contain the basis for user tests, and will have access to some regular functions provided by the C/C++ grader. Some methods that can be called are listed below.
+
+Any file submitted using a `pl-file-editor` or `pl-file-upload` will be available for use by the C/C++ grader. To create tests based on parameters defined by `server.py`, or to have access to submitted data from other elements such as `pl-string-input` elements, you can access the `self.data` dictionary. This dictionary contains the similar keys to those found in the `grade()` function in `server.py`, such as `self.data["params"]` or `self.data["submitted_answers"]`.
 
 ## Available test options
 
-### Compiling a C program
+### Compiling a C/C++ program
 
-To compile a C file, you may use the `self.test_compile_file()` method. A simple invocation of this method, assuming the students write a complete C file including the `main` function, will include two parameters: the name of the C file to be compiled (typically the same name used in the `pl-file-upload` or `pl-file-editor` elements listed above), and the name of an executable file to be created.
+To compile a C or C++ file, you may use the methods `self.compile_file()` or `self.test_compile_file()`. Both methods provide similar functionality, with the difference being that `self.test_compile_file()` will also include a unit test for the compilation itself. The latter can be used to provide points to a submission based on a successful compilation.
+
+A simple invocation of these methods, assuming students write a complete C file including the `main` function, will include two parameters: the name of the C or C++ file to be compiled (typically the same name used in the `pl-file-upload` or `pl-file-editor` elements listed above), and the name of an executable file to be created.
 
 ```python
-self.test_compile_file('square.c', 'square')
+self.compile_file('square.c', 'square')      # Compile the file, but do not create a unit test result
+self.test_compile_file('square.c', 'square') # Compile the file and give one point to student if compilation is successful
 ```
 
 By default, if the compilation fails, it will stop all tests and return the submission as ungradable. This means that the submission will not count towards the student's submission limit, and the student will not receive a grade. The student will, however, see the result of the compilation. If you would like the tests to proceed in case of failure, you can call the function with:
 
 ```python
+self.compile_file('square.c', 'square', ungradable_if_failed=False)
 self.test_compile_file('square.c', 'square', ungradable_if_failed=False)
 ```
 
-By default, if the compilation succeeds but gives a warning, a message with the warning will be listed in the main results message, above the test results. If you would like the warnings to be listed only inside the results of the specific test, you can call the function with:
+By default, if the compilation succeeds but gives a warning, a message with the warning will be listed in the main results message, above the test results. If you would not like the warnings to be listed at the top of the results, you can call the function with:
 
 ```python
-self.test_compile_file('square.c', 'square', add_warning_result_msg=False)
+self.compile_file('square.c', 'square', add_warning_result_msg=False)      # Does not show any warnings
+self.test_compile_file('square.c', 'square', add_warning_result_msg=False) # Creates a test result that includes the warning as the output
 ```
 
-The results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
+You may also include additional compilation flags accepted by `gcc` (or `g++`) with the `flags` argument, which can be invoked with a single string for flags, or with an array of strings:
 
 ```python
-self.test_compile_file('square.c', 'square', name='Compilation of the first file', points=3)
+self.compile_file('square.c', 'square', flags='-Wall -O3') # single string
+self.compile_file('square.c', 'square', flags=['-Wall', '-O3']) # array
 ```
 
-You may also include additional compilation flags accepted by `gcc` with the `flags` argument, which can be invoked with a single string for flags, or with an array of strings:
+For flags based on `pkg-config`, use `pkg_config_flags` with the library or libraries that should be queried.
 
 ```python
-self.test_compile_file('square.c', 'square', flags='-Wall -O3') # single string
-self.test_compile_file('square.c', 'square', flags=['-Wall', '-O3']) # array
+self.compile_file('square.c', 'square', pkg_config_flags='check ncurses') # single string
+self.compile_file('square.c', 'square', pkg_config_flags=['check', 'ncurses']) # array
 ```
 
-It is also possible to test a program that is not complete on its own. To compile the C file submitted by the user with a `main` function implemented by the instructor, you can save a `main.c` file inside the `tests` folder and run:
+It is also possible to test programs where the student only submits part of an application. To compile the C/C++ file submitted by the user with a `main` function implemented by the instructor, you can save a `main.c` (or `main.cpp`) file inside the `tests` folder and run:
 
 ```python
-self.test_compile_file('square.c', 'square', main_file='/grade/tests/main.c')
+self.compile_file('square.c', 'square', add_c_file='/grade/tests/main.c')
 ```
 
-The instruction above will compile the student-provided C file with the instructor-provided C file into the same executable. If the student provides a `main` function, it will be ignored, and the instructor-provided main file will take precedence.
+The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable. If the student provides a `main` function, it will be ignored, and the instructor-provided main file will take precedence.
 
-In some situations you may want to include or replace other functions besides `main`. You may do that by placing these functions in a `.c` file inside the `tests` folder and run:
+In some situations you may want to include or replace other functions besides `main`. You may do that by placing these functions in a `.c` or `.cpp` file inside the `tests` folder and run:
 
 ```python
-self.test_compile_file('square.c', 'square', add_c_file='/grade/tests/otherfunctions.c')
+self.compile_file('square.c', 'square', add_c_file='/grade/tests/otherfunctions.c')
 ```
 
 It is also possible to compile multiple student files and multiple question-provided files into a single executable, by providing lists of files:
 
 ```python
-self.test_compile_file(['student_file1.c', 'student_file2.c'], 'executable',
-                       add_c_file=['/grade/tests/question_file1.c',
-                                   '/grade/tests/question_file2.c'],
-                       flags=['-I/grade/tests', '-I/grade/student'])
+self.compile_file(['student_file1.c', 'student_file2.c'], 'executable',
+                  add_c_file=['/grade/tests/question_file1.c',
+                              '/grade/tests/question_file2.c'],
+                  flags=['-I/grade/tests', '-I/grade/student'])
 ```
 
-If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (for question-provided includes) and `-I/grade/student` (for student-provided includes) are recommended as well. The specific `.h` files don't need to be listed as arguments to `test_compile_file`.
+If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (for question-provided includes) and `-I/grade/student` (for student-provided includes) are recommended as well. The specific `.h` files don't need to be listed as arguments to `compile_file`.
 
-### Running a program and checking its result
+For `self.test_compile_file()`, the results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
+
+```python
+self.test_compile_file('square.c', 'square', name='Compilation of the first file', points=3)
+```
+
+### Running a program and checking its standard output
 
 The `self.test_run()` method can be used to run an executable and check its output. This will typically be the program generated by the compiler above, but it can be used for any program. The program will run [as a non-privileged user](#sandbox-execution).
 
@@ -180,13 +202,13 @@ self.test_run('./square', args=['3', '5'], exp_output=['9', '25'],
               must_match_all_outputs=True)
 ```
 
-Some times a test must ensure that some strings are *not* found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
+Some times a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
 
 ```python
 self.test_run('diff -q output.txt expected.txt', reject_output=['differ'])
 ```
 
-By default, any sequence of space-like characters (space, line break, carriage return, tab) in the program output, expected output and rejected output strings will be treated as a single space for comparison. This means difference in the number and type of spacing will be ignored. So, for example, if the output prints two numbers as `1  \n 2`, while the expected output is `1 2`, the test will pass. If, however, the intention is that spaces must match a pattern exactly, the `ignore_consec_spaces` option can be set to `False`:
+By default, any sequence of space-like characters (space, line break, carriage return, tab) in the program output, expected output and rejected output strings will be treated as a single space for comparison. This means difference in the number and type of spacing will be ignored. So, for example, if the output prints two numbers as `1 \n 2`, while the expected output is `1 2`, the test will pass. If, however, the intention is that spaces must match a pattern exactly, the `ignore_consec_spaces` option can be set to `False`:
 
 ```python
 self.test_run('./pattern', exp_output='  1  2  3\n  4  5  6\n  7  8  9',
@@ -219,6 +241,45 @@ self.test_run('diff -q output.txt expected.txt', reject_output=['differ'],
               msg='Output file should match expected file.')
 ```
 
+### Running a Check framework test suite
+
+For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with the [Check framework](https://libcheck.github.io/check/). This framework provides functionality to run multiple test suites and test cases with individual unit tests. It is also able to capture signals (e.g., segmentation fault) by running unit tests in an isolated process.
+
+To run a Check suite, create a main C file containing the tests and a `main` function that runs the Check suite. A tutorial with instructions on how to create test suites, test cases and unit tests can be found in [the official Check tutorial](https://libcheck.github.io/check/doc/check_html/check_3.html#Tutorial). The example course also includes a basic test suite that can be used as an example.
+
+Note that the functionality for working with the Check framework relies on its [test logging features](https://libcheck.github.io/check/doc/check_html/check_4.html#Test-Logging). To ensure the tests are properly captured by the autograder you should not overwrite the log files.
+
+A typical `test.py` file for a Check-based suite will look something like this, assuming `student_code.c` contains the student code and `/grade/tests/main.c` contains the Check tests:
+
+```python
+import cgrader
+
+class DemoGrader(cgrader.CGrader):
+
+    def tests(self):
+
+        self.compile_file('student_code.c', 'main', add_c_file='/grade/tests/main.c',
+                          # The following must be included if compiling a Check test
+                          pkg_config_flags='check')
+        self.run_check_suite('./main')
+
+g = DemoGrader()
+g.start()
+```
+
+To compile the student code and test suite, use the `self.compile_file()` or `self.test_compile_file()` described above. Make sure that the `pkg_config_flags` argument includes the `check` library for proper compilation.
+
+The `self.run_check_suite()` method will call the executable containing the Check test suites, will parse the log files, and will create one autograder test for each unit test executed by the Check suites. The name of the test will typically be the name of the Check test case followed by the unit test ID, though this can be changed by setting the following arguments to `True` or `False`:
+
+- `use_suite_title`: use the title of the test suite in the test name (default: false);
+- `use_case_name`: use the name of the test case in the test name (default: true);
+- `use_unit_test_id`: use the ID of the unit test in the test name (default: true);
+- `use_iteration`: for tests executed in a loop, include the iteration number in the test name (default: false).
+
+```python
+self.run_check_suite('./main', use_suite_title=True, use_unit_test_id=False)
+```
+
 ### Running a command without creating a test
 
 It is also possible to run a command that is not directly linked to a specific test. This can be done with the `self.run_command()` method, which at the minimum receives a command as argument. This command can be a single string with or without arguments, or an array of strings containing the executable as the first element, and the arguments to follow. The method returns a string contaning the standard output (and standard error) generated by the program.
@@ -244,6 +305,12 @@ To ensure the program does not run forever, you may set a `timeout` option, whic
 
 ```python
 result = self.run_command('./square', timeout=1)
+```
+
+If the program requires specific environment variables, you may set the `env` argument. This argument must be provided as a key-value `dict`.
+
+```python
+result = self.run_command('./square', env={'TEMP_FILE': '/tmp/my_temp.dat'})
 ```
 
 ### Manually adding test results
@@ -300,4 +367,3 @@ self.change_mode('/grade/student/myfile.txt', '744')
 ```
 
 Any program compiled with `test_compile_file()` will be granted executable permissions (mode `755`), so these programs don't need to be explicitly allowed by your tests.
-

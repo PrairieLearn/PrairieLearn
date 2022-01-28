@@ -4,7 +4,7 @@
     "title": "Autograder demo: Hello World in Java",
     "topic": "Autograder",
     "tags": [
-        "burcu", "v3", "short-coding"
+        "burcu", "code"
     ],
     "singleVariant": true,
     "gradingMethod": "External",

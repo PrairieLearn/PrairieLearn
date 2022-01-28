@@ -44,46 +44,61 @@ at port 3000, the API is accessible via http://localhost:3000/pl/api/v1/.
 In the endpoint list below, path components starting with a colon like
 `:course_instance_id` should be replaced with the integer IDs.
 
-* **Course instance info:**
-    - `/pl/api/v1/course_instances/:course_instance_id`
-    - Information about the course instance.
+- **Course instance info:**
 
-* **Gradebook:**
-    - `/pl/api/v1/course_instances/:course_instance_id/gradebook`
-    - All of the data available in the course gradebook, with one entry per user containing summary data on all assessments.
+  - `/pl/api/v1/course_instances/:course_instance_id`
+  - Information about the course instance.
 
-* **Assessments list:**
-    - `/pl/api/v1/course_instances/:course_instance_id/assessments`
-    - All assessments in the course instance.
+- **Gradebook:**
 
-* **Single assessment:**
-    - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id`
-    - One specific assessment.
+  - `/pl/api/v1/course_instances/:course_instance_id/gradebook`
+  - All of the data available in the course gradebook, with one entry per user containing summary data on all assessments.
 
-* **Assessment instances list:**
-    - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_instances`
-    - All assessment instances for a given assessment.
+- **Course instance access rules list:**
 
-* **Assessment access rules list:**
-    - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_access_rules`
-    - All assessment access rules for a given assessment.
+  - `/pl/api/v1/course_instances/:course_instance_id/course_instance_access_rules`
+  - All access rules for the course instance.
 
-* **One assessment instance:**
-    - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id`
-    - One specific assessment instance.
+- **Assessments list:**
 
-* **Instance questions list:**
-    - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/instance_questions`
-    - All instance questions for a given assessment instance.
+  - `/pl/api/v1/course_instances/:course_instance_id/assessments`
+  - All assessments in the course instance.
 
-* **Submissions list:**
-    - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions`
-    - All submissions for a given assessment instance.
+- **Single assessment:**
 
-* **Assessment Instance Event Log:**
-    - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/log`
-    - Retrieves the event log for a specific assessment.
+  - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id`
+  - One specific assessment.
 
-* **One submission:**
-    - `/pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id`
-    - One specific submission.
+- **Assessment instances list:**
+
+  - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_instances`
+  - All assessment instances for a given assessment.
+
+- **Assessment access rules list:**
+
+  - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_access_rules`
+  - All assessment access rules for a given assessment.
+
+- **One assessment instance:**
+
+  - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id`
+  - One specific assessment instance.
+
+- **Instance questions list:**
+
+  - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/instance_questions`
+  - All instance questions for a given assessment instance.
+
+- **Submissions list:**
+
+  - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions`
+  - All submissions for a given assessment instance.
+
+- **Assessment Instance Event Log:**
+
+  - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/log`
+  - Retrieves the event log for a specific assessment.
+
+- **One submission:**
+  - `/pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id`
+  - One specific submission.
