@@ -128,8 +128,6 @@ def prepare(element_html, data):
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
-            if partial_credit_type != 'none':
-                raise Exception('Partial credit not yet supported in questions using block groups.')
 
             group_counter += 1
             for grouped_tag in html_tags:
@@ -413,7 +411,7 @@ def grade(element_html, data):
         final_score = 1 if student_answer == true_answer else 0
 
     elif grading_mode in ['ranking', 'dag']:
-        order = [ans['tag'] for ans in student_answer]
+        submission = [ans['tag'] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
@@ -434,8 +432,8 @@ def grade(element_html, data):
             depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
             group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
-        num_initial_correct = grade_dag(order, depends_graph, group_belonging)
-        first_wrong = -1 if num_initial_correct == len(order) else num_initial_correct
+        num_initial_correct = grade_dag(submission, depends_graph, group_belonging)
+        first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
 
         true_answer_length = len(depends_graph.keys())
         if partial_credit_type == 'none':
@@ -444,7 +442,7 @@ def grade(element_html, data):
             elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type == 'lcs':
-            edit_distance = lcs_partial_credit(order, depends_graph)
+            edit_distance = lcs_partial_credit(submission, depends_graph, group_belonging)
             final_score = max(0, float(true_answer_length - edit_distance) / true_answer_length)
 
         if final_score < 1:
