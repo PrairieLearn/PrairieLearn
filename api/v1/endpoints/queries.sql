@@ -137,12 +137,10 @@ WITH object_data AS (
         ci.id = $course_instance_id
 )
 SELECT
-    coalesce(jsonb_agg(
-        to_jsonb(object_data)
-        ORDER BY course_instance_id, course_instance_short_name
-    ), '[]'::jsonb) AS item
+    to_jsonb(object_data) AS item
 FROM
     object_data;
+
 -- BLOCK select_course_instance_access_rules
 WITH object_data AS (
     SELECT

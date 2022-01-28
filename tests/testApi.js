@@ -534,8 +534,9 @@ describe('API', function () {
     it('should parse as JSON', function () {
       locals.json = JSON.parse(page);
     });
-    it('should have one item of info', function () {
-      assert.lengthOf(locals.json, 1);
+    it('should contain course instance data', function () {
+      assert.exists(locals.json.course_instance_id);
+      assert.exists(locals.json.course_title);
     });
   });
 });
