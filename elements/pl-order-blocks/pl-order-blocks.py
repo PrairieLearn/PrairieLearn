@@ -128,8 +128,6 @@ def prepare(element_html, data):
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
-            if partial_credit_type != 'none':
-                raise Exception('Partial credit not yet supported in questions using block groups.')
 
             group_counter += 1
             for grouped_tag in html_tags:
@@ -413,29 +411,31 @@ def grade(element_html, data):
         final_score = 1 if student_answer == true_answer else 0
 
     elif grading_mode in ['ranking', 'dag']:
-        order = [ans['tag'] for ans in student_answer]
+        submission = [ans['tag'] for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
         if grading_mode == 'ranking':
             true_answer_list = sorted(true_answer_list, key=lambda x: int(x['ranking']))
-            true_answer = [answer['ranking'] for answer in true_answer_list]
-            lines_of_rank = {rank: [str(i) for i, x in enumerate(true_answer) if x == rank] for rank in set(true_answer)}
+            true_answer = [answer['tag'] for answer in true_answer_list]
+            tag_to_rank = {answer['tag']: answer['ranking'] for answer in true_answer_list}
+            lines_of_rank = {rank: [tag for tag in tag_to_rank if tag_to_rank[tag] == rank] for rank in set(tag_to_rank.values())}
 
             cur_rank_depends = []
             prev_rank = None
-            for i, ranking in enumerate(true_answer):
+            for tag in true_answer:
+                ranking = tag_to_rank[tag]
                 if prev_rank is not None and ranking != prev_rank:
                     cur_rank_depends = lines_of_rank[prev_rank]
-                depends_graph[str(i)] = cur_rank_depends
+                depends_graph[tag] = cur_rank_depends
                 prev_rank = ranking
 
         elif grading_mode == 'dag':
             depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
             group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
-        num_initial_correct = grade_dag(order, depends_graph, group_belonging)
-        first_wrong = -1 if num_initial_correct == len(order) else num_initial_correct
+        num_initial_correct = grade_dag(submission, depends_graph, group_belonging)
+        first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
 
         true_answer_length = len(depends_graph.keys())
         if partial_credit_type == 'none':
@@ -444,7 +444,7 @@ def grade(element_html, data):
             elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type == 'lcs':
-            edit_distance = lcs_partial_credit(order, depends_graph)
+            edit_distance = lcs_partial_credit(submission, depends_graph, group_belonging)
             final_score = max(0, float(true_answer_length - edit_distance) / true_answer_length)
 
         if final_score < 1:

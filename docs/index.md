@@ -17,4 +17,4 @@ PrairieLearn is an online problem-driven learning system for creating homeworks 
 
 [![Coverage Status](https://coveralls.io/repos/github/PrairieLearn/PrairieLearn/badge.svg?branch=master)](https://coveralls.io/github/PrairieLearn/PrairieLearn?branch=master)
 
-[![License](https://img.shields.io/github/license/PrairieLearn/PrairieLearn.svg)](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE.md) — see [License](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE.md)
+[![License](https://img.shields.io/github/license/PrairieLearn/PrairieLearn.svg)](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE) — see [License](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE)

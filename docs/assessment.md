@@ -211,7 +211,15 @@ By default, an assessment is only accessible to course staff. To allow students 
 
 ## Adding text and links to assessments
 
-See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details, and [`exam1` in the example course](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/assessments/exam1/) for an example.
+You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. You can use EJS syntax to access `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`.
+
+```json
+{
+  "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
+}
+```
+
+See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details about making files available to users.
 
 ## Student-attached files
 
