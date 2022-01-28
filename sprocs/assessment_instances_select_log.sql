@@ -341,12 +341,13 @@ BEGIN
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentInstanceQuestion'
                     AND (pvl.authn_user_id = ai.user_id
-                         OR EXISTS (SELECT 1
-                                    FROM group_logs gl
-                                    WHERE gl.action in ('create', 'join')
-                                          AND gl.group_id = ai.group_id
-                                          AND gl.user_id = pvl.authn_user_id
-                                          AND gl.date <= pvl.date))
+                         OR (ai.group_id IS NOT NULL
+                             AND EXISTS (SELECT 1
+                                         FROM group_logs gl
+                                         WHERE gl.action = 'join'
+                                               AND gl.group_id = ai.group_id
+                                               AND gl.user_id = pvl.authn_user_id
+                                               AND gl.date <= pvl.date)))
             )
             UNION
             (
@@ -373,12 +374,13 @@ BEGIN
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentAssessmentInstance'
                     AND (pvl.authn_user_id = ai.user_id
-                         OR EXISTS (SELECT 1
-                                    FROM group_logs AS gl
-                                    WHERE gl.action in ('create', 'join')
-                                          AND gl.group_id = ai.group_id
-                                          AND gl.user_id = pvl.authn_user_id
-                                          AND gl.date <= pvl.date))
+                         OR (ai.group_id IS NOT NULL
+                             AND EXISTS (SELECT 1
+                                         FROM group_logs gl
+                                         WHERE gl.action = 'join'
+                                               AND gl.group_id = ai.group_id
+                                               AND gl.user_id = pvl.authn_user_id
+                                               AND gl.date <= pvl.date)))
             )
             UNION
             (
