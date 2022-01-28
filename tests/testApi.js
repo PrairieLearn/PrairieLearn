@@ -2,6 +2,7 @@ const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
+const fetch = require('node-fetch');
 
 const helperServer = require('./helperServer');
 const helperQuestion = require('./helperQuestion');
@@ -21,7 +22,7 @@ describe('API', function () {
 
   helperExam.startExam(locals);
 
-  describe('1. grade correct answer to question addNumbers', function () {
+  describe('grade correct answer to question addNumbers', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
@@ -48,22 +49,11 @@ describe('API', function () {
     helperQuestion.checkAssessmentScore(locals);
   });
 
-  describe('2. GET settings page', function () {
-    it('should load successfully', function (callback) {
+  describe('obtain token from settings page', function () {
+    it('should load successfully', async function () {
       locals.settingsUrl = locals.baseUrl + '/settings';
-      request(locals.settingsUrl, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
-    });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.settingsUrl);
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
