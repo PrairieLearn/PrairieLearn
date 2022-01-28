@@ -374,7 +374,7 @@ BEGIN
                     AND pvl.page_type = 'studentAssessmentInstance'
                     AND (pvl.authn_user_id = ai.user_id
                          OR EXISTS (SELECT 1
-                                    FROM group_logs gl
+                                    FROM group_logs AS gl
                                     WHERE gl.action in ('create', 'join')
                                           AND gl.group_id = ai.group_id
                                           AND gl.user_id = pvl.authn_user_id
