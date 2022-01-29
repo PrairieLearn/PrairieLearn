@@ -1,5 +1,4 @@
 // @ts-check
-const _ = require('lodash');
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
 const fetch = require('node-fetch').default;
