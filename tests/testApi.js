@@ -49,22 +49,22 @@ describe('API', function () {
   });
 
   describe('obtain token from settings page', function () {
-    it('loads the setting page successfully', async function () {
-      locals.settingsUrl = locals.baseUrl + '/settings';
-      const res = await fetch(locals.settingsUrl);
-      assert.isTrue(res.ok);
-      locals.$ = cheerio.load(await res.text());
-    });
+    let settingsUrl;
 
-    it('has a button', () => {
-      const button = locals.$('#generateTokenButton').get(0);
+    it('loads the setting page successfully', async function () {
+      settingsUrl = locals.baseUrl + '/settings';
+      const res = await fetch(settingsUrl);
+      assert.isTrue(res.ok);
+      const page$ = cheerio.load(await res.text());
+
+      const button = page$('#generateTokenButton').get(0);
 
       // Load the popover content
       assert.isString(button.attribs['data-content']);
-      locals.data$ = cheerio.load(button.attribs['data-content']);
+      const data$ = cheerio.load(button.attribs['data-content']);
 
       // Validate that the CSRF token is present
-      const csrfInput = locals.data$('form input[name="__csrf_token"]').get(0);
+      const csrfInput = data$('form input[name="__csrf_token"]').get(0);
       const csrfToken = csrfInput.attribs.value;
       assert.isString(csrfToken);
 
@@ -72,7 +72,7 @@ describe('API', function () {
       locals.__csrf_token = csrfToken;
 
       // Validate the action input
-      const actionInput = locals.data$('form input[name="__action"]').get(0);
+      const actionInput = data$('form input[name="__action"]').get(0);
       const action = actionInput.attribs.value;
       assert.equal(action, 'token_generate');
 
@@ -81,14 +81,14 @@ describe('API', function () {
       locals.__action = action;
 
       // Validate that there's an input for the token name
-      assert.lengthOf(locals.data$('form input[name="token_name"]'), 1);
+      assert.lengthOf(data$('form input[name="token_name"]'), 1);
 
       // There shouldn't be an access token displayed on the page
-      assert.lengthOf(locals.$('.new-access-token'), 0);
+      assert.lengthOf(page$('.new-access-token'), 0);
     });
 
     it('generates a token', async function () {
-      const res = await fetch(locals.settingsUrl, {
+      const res = await fetch(settingsUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: locals.__action,
@@ -100,8 +100,8 @@ describe('API', function () {
       assert.isTrue(res.ok);
 
       // Extract the token from the response
-      locals.$ = cheerio.load(await res.text());
-      const tokenContainer = locals.$('.new-access-token');
+      const page$ = cheerio.load(await res.text());
+      const tokenContainer = page$('.new-access-token');
       assert.lengthOf(tokenContainer, 1);
       locals.api_token = tokenContainer.text().trim();
 
