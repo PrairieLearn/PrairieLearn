@@ -1,8 +1,10 @@
+// @ts-check
 const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
+const { URLSearchParams } = require('url');
 
 const helperServer = require('./helperServer');
 const helperQuestion = require('./helperQuestion');
@@ -18,7 +20,7 @@ describe('API', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  let elemList, page;
+  let page;
 
   helperExam.startExam(locals);
 
@@ -50,140 +52,99 @@ describe('API', function () {
   });
 
   describe('obtain token from settings page', function () {
-    it('should load successfully', async function () {
+    it('loads the setting page successfully', async function () {
       locals.settingsUrl = locals.baseUrl + '/settings';
       const res = await fetch(locals.settingsUrl);
+      assert.isTrue(res.ok);
+      const text = await res.text();
+      console.log(text);
+      locals.$ = cheerio.load(text);
+    });
+
+    it('has a button', () => {
+      const button = locals.$('#generateTokenButton').get(0);
+
+      // Load the popover content
+      assert.isString(button.attribs['data-content']);
+      locals.data$ = cheerio.load(button.attribs['data-content']);
+
+      // Validate that the CSRF token is present
+      const csrfInput = locals.data$('form input[name="__csrf_token"]').get(0);
+      const csrfToken = csrfInput.attribs.value;
+      assert.isString(csrfToken);
+
+      // Store CSRF token for later requests
+      locals.__csrf_token = csrfToken;
+
+      // Validate the action input
+      const actionInput = locals.data$('form input[name="__action"]').get(0);
+      const action = actionInput.attribs.value;
+      assert.equal(action, 'token_generate');
+
+      // Persist the action for later
+      // TODO: just hardcode this!
+      locals.__action = action;
+
+      // Validate that there's an input for the token name
+      assert.lengthOf(locals.data$('form input[name="token_name"]'), 1);
+
+      // There shouldn't be an access token displayed on the page
+      assert.lengthOf(locals.$('.new-access-token'), 0);
+    });
+
+    it('generates a token', async function () {
+      const res = await fetch(locals.settingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: locals.__action,
+          __csrf_token: locals.__csrf_token,
+          token_name: 'test',
+        }),
+        redirect: 'follow',
+      });
+      assert.isTrue(res.ok);
+
+      // Extract the token from the response
       locals.$ = cheerio.load(await res.text());
-    });
-  });
+      const tokenContainer = locals.$('.new-access-token');
+      assert.lengthOf(tokenContainer, 1);
+      locals.api_token = tokenContainer.text().trim();
 
-  describe('3. generate token button', function () {
-    it('should exist', function () {
-      elemList = locals.$('#generateTokenButton');
-      assert.lengthOf(elemList, 1);
-    });
-    it('should have data-content', function () {
-      assert.isString(elemList[0].attribs['data-content']);
-    });
-    it('data-content should parse', function () {
-      locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
-    });
-    it('data-content should have a CSRF token', function () {
-      elemList = locals.data$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-    it('data-content should have an __action', function () {
-      elemList = locals.data$('form input[name="__action"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__action = elemList[0].attribs.value;
-      assert.isString(locals.__action);
-      assert.equal(locals.__action, 'token_generate');
-    });
-    it('data-content should have a token_name input', function () {
-      elemList = locals.data$('form input[name="token_name"]');
-      assert.lengthOf(elemList, 1);
-    });
-    it('should not contain a new token', function () {
-      elemList = locals.$('.new-access-token');
-      assert.lengthOf(elemList, 0);
-    });
-  });
-
-  describe('4. POST to generate token', function () {
-    it('should load successfully', function (callback) {
-      const form = {
-        __action: locals.__action,
-        __csrf_token: locals.__csrf_token,
-        token_name: 'test',
-      };
-      request.post(
-        { url: locals.settingsUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          locals.postEndTime = Date.now();
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-          }
-          page = body;
-          callback(null);
-        }
-      );
-    });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should contain a new token', function () {
-      elemList = locals.$('.new-access-token');
-      assert.lengthOf(elemList, 1);
-      locals.api_token = elemList.text().trim();
-    });
-    it('the new token should have the correct format', function () {
+      // Check that the token has the correct format
       assert.ok(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.api_token)
       );
     });
   });
 
-  describe('5. GET to API for assessments', function () {
-    it('should fail without token', function (callback) {
+  describe('assessments API', function () {
+    it('fails without token', async function () {
       locals.apiUrl = locals.baseUrl + '/api/v1';
       locals.apiCourseInstanceUrl = locals.apiUrl + '/course_instances/1';
       locals.apiAssessmentsUrl = locals.apiCourseInstanceUrl + '/assessments';
-      request(locals.apiAssessmentsUrl, function (error, response, _body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 401) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        callback(null);
-      });
+      const res = await fetch(locals.apiAssessmentsUrl);
+      assert.equal(res.status, 401);
     });
-    it('should fail with an incorrect token', function (callback) {
-      const options = {
-        url: locals.apiAssessmentsUrl,
+
+    it('fails with an incorrect token', async function () {
+      const res = await fetch(locals.apiAssessmentsUrl, {
         headers: {
           'Private-Token': '12345678-1234-1234-1234-1234567890ab',
         },
-      };
-      request(options, function (error, response, _body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 401) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        callback(null);
       });
+      assert.equal(res.status, 401);
     });
-    it('should load successfully with the correct token', function (callback) {
-      const options = {
-        url: locals.apiAssessmentsUrl,
+
+    it('loads successfully with the correct token', async function () {
+      const res = await fetch(locals.apiAssessmentsUrl, {
         headers: {
           'Private-Token': locals.api_token,
         },
-      };
-      request(options, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
       });
-    });
-    it('should parse as JSON', function () {
-      locals.json = JSON.parse(page);
-    });
-    it('should contain E1', function () {
+      assert.equal(res.status, 200);
+
+      locals.json = await res.json();
+
       const objectList = _.filter(
         locals.json,
         (o) => o.assessment_name === 'exam1-automaticTestSuite'
