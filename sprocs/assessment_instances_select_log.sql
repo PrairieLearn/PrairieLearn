@@ -340,14 +340,16 @@ BEGIN
                 WHERE
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentInstanceQuestion'
+                    -- Only include events for the assessment's user or, in case of
+                    -- group assessments, for events triggered by any user that at
+                    -- some point was part of the group.
                     AND (pvl.authn_user_id = ai.user_id
                          OR (ai.group_id IS NOT NULL
                              AND EXISTS (SELECT 1
                                          FROM group_logs AS gl
                                          WHERE gl.action = 'join'
                                                AND gl.group_id = ai.group_id
-                                               AND gl.user_id = pvl.authn_user_id
-                                               AND gl.date <= pvl.date)))
+                                               AND gl.user_id = pvl.authn_user_id)))
             )
             UNION
             (
@@ -373,14 +375,16 @@ BEGIN
                 WHERE
                     pvl.assessment_instance_id = ai_id
                     AND pvl.page_type = 'studentAssessmentInstance'
+                    -- Only include events for the assessment's user or, in case of
+                    -- group assessments, for events triggered by any user that at
+                    -- some point was part of the group.
                     AND (pvl.authn_user_id = ai.user_id
                          OR (ai.group_id IS NOT NULL
                              AND EXISTS (SELECT 1
                                          FROM group_logs AS gl
                                          WHERE gl.action = 'join'
                                                AND gl.group_id = ai.group_id
-                                               AND gl.user_id = pvl.authn_user_id
-                                               AND gl.date <= pvl.date)))
+                                               AND gl.user_id = pvl.authn_user_id)))
             )
             UNION
             (
