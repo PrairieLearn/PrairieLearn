@@ -511,4 +511,32 @@ describe('API', function () {
       assert.lengthOf(locals.json, 1);
     });
   });
+
+  describe('15. GET to API for course instance info', function () {
+    it('should load successfully', function (callback) {
+      const options = {
+        url: locals.apiCourseInstanceUrl,
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      };
+      request(options, function (error, response, body) {
+        if (error) {
+          return callback(error);
+        }
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse as JSON', function () {
+      locals.json = JSON.parse(page);
+    });
+    it('should contain course instance data', function () {
+      assert.exists(locals.json.course_instance_id);
+      assert.exists(locals.json.course_title);
+    });
+  });
 });
