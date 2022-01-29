@@ -1,7 +1,6 @@
 // @ts-check
 const _ = require('lodash');
 const assert = require('chai').assert;
-const request = require('request');
 const cheerio = require('cheerio');
 const fetch = require('node-fetch').default;
 const { URLSearchParams } = require('url');
@@ -19,8 +18,6 @@ describe('API', function () {
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
-
-  let page;
 
   helperExam.startExam(locals);
 
@@ -56,9 +53,7 @@ describe('API', function () {
       locals.settingsUrl = locals.baseUrl + '/settings';
       const res = await fetch(locals.settingsUrl);
       assert.isTrue(res.ok);
-      const text = await res.text();
-      console.log(text);
-      locals.$ = cheerio.load(text);
+      locals.$ = cheerio.load(await res.text());
     });
 
     it('has a button', () => {
@@ -284,117 +279,66 @@ describe('API', function () {
   });
 
   describe('12. GET to API for Exam 1 instance questions', function () {
-    it('should load successfully', function (callback) {
+    it('should load successfully', async function () {
       locals.apiInstanceQuestionUrl =
         locals.apiCourseInstanceUrl +
         `/assessment_instances/${locals.assessment_instance_id}/instance_questions`;
-      const options = {
-        url: locals.apiInstanceQuestionUrl,
+
+      const res = await fetch(locals.apiInstanceQuestionUrl, {
         headers: {
           'Private-Token': locals.api_token,
         },
-      };
-      request(options, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
       });
-    });
-    it('should parse as JSON', function () {
-      locals.json = JSON.parse(page);
-    });
-    it('should have seven questions', function () {
+
+      locals.json = await res.json();
       assert.lengthOf(locals.json, 7);
     });
   });
 
   describe('13. GET to API for Exam 1 access rules', function () {
-    it('should load successfully', function (callback) {
+    it('should load successfully', async function () {
       locals.apiAssessmentAccessRulesUrl =
         locals.apiCourseInstanceUrl +
         `/assessments/${locals.assessment_id}/assessment_access_rules`;
-      const options = {
-        url: locals.apiAssessmentAccessRulesUrl,
+
+      const res = await fetch(locals.apiAssessmentAccessRulesUrl, {
         headers: {
           'Private-Token': locals.api_token,
         },
-      };
-      request(options, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
       });
-    });
-    it('should parse as JSON', function () {
-      locals.json = JSON.parse(page);
-    });
-    it('should have one access rule', function () {
+      assert.equal(res.status, 200);
+
+      locals.json = await res.json();
       assert.lengthOf(locals.json, 1);
     });
   });
 
   describe('14. GET to API for course instance access rules', function () {
-    it('should load successfully', function (callback) {
+    it('should load successfully', async function () {
       locals.apiCourseInstanceAccessRulesUrl =
         locals.apiCourseInstanceUrl + `/course_instance_access_rules`;
-      const options = {
-        url: locals.apiCourseInstanceAccessRulesUrl,
+      const res = await fetch(locals.apiCourseInstanceAccessRulesUrl, {
         headers: {
           'Private-Token': locals.api_token,
         },
-      };
-      request(options, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
       });
-    });
-    it('should parse as JSON', function () {
-      locals.json = JSON.parse(page);
-    });
-    it('should have one access rule', function () {
+      assert.equal(res.status, 200);
+
+      locals.json = await res.json();
       assert.lengthOf(locals.json, 1);
     });
   });
 
   describe('15. GET to API for course instance info', function () {
-    it('should load successfully', function (callback) {
-      const options = {
-        url: locals.apiCourseInstanceUrl,
+    it('should load successfully', async function () {
+      const res = await fetch(locals.apiCourseInstanceUrl, {
         headers: {
           'Private-Token': locals.api_token,
         },
-      };
-      request(options, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
       });
-    });
-    it('should parse as JSON', function () {
-      locals.json = JSON.parse(page);
-    });
-    it('should contain course instance data', function () {
+      assert.equal(res.status, 200);
+
+      locals.json = await res.json();
       assert.exists(locals.json.course_instance_id);
       assert.exists(locals.json.course_title);
     });
