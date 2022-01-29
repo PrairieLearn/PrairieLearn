@@ -139,15 +139,14 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
+      const json = await res.json();
 
-      const objectList = _.filter(
-        locals.json,
-        (o) => o.assessment_name === 'exam1-automaticTestSuite'
-      );
-      assert.lengthOf(objectList, 1);
-      locals.assessment_id = objectList[0].assessment_id;
-      assert.equal(objectList[0].assessment_label, 'E1');
+      const assessment = json.find((o) => o.assessment_name === 'exam1-automaticTestSuite');
+      assert.exists(assessment);
+      assert.equal(assessment.assessment_label, 'E1');
+
+      // Persist the assessment ID for later requests
+      locals.assessment_id = assessment.assessment_id;
     });
 
     step('GET to API for single assesment succeeds', async function () {
@@ -161,9 +160,10 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      assert.equal(locals.json.assessment_id, locals.assessment_id);
-      assert.equal(locals.json.assessment_label, 'E1');
+      const json = await res.json();
+
+      assert.equal(json.assessment_id, locals.assessment_id);
+      assert.equal(json.assessment_label, 'E1');
     });
 
     step('GET to API for assessment instances succeeds', async function () {
@@ -177,13 +177,14 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      assert.lengthOf(locals.json, 1);
+      const json = await res.json();
+      const assessmentInstance = json[0];
+      assert.equal(assessmentInstance.user_uid, 'dev@illinois.edu');
+      assert.equal(assessmentInstance.points, assessmentPoints);
+      assert.equal(assessmentInstance.max_points, helperExam.assessmentMaxPoints);
 
-      locals.assessment_instance_id = locals.json[0].assessment_instance_id;
-      assert.equal(locals.json[0].user_uid, 'dev@illinois.edu');
-      assert.equal(locals.json[0].points, assessmentPoints);
-      assert.equal(locals.json[0].max_points, helperExam.assessmentMaxPoints);
+      // Persist the assessment instance ID for later requests
+      locals.assessment_instance_id = assessmentInstance.assessment_instance_id;
     });
 
     step('GET to API for a single assessment instance succeeds', async function () {
@@ -195,14 +196,15 @@ describe('API', function () {
           'Private-Token': locals.api_token,
         },
       });
+
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      assert.equal(locals.json.assessment_instance_id, locals.assessment_instance_id);
-      assert.equal(locals.json.assessment_id, locals.assessment_id);
-      assert.equal(locals.json.user_uid, 'dev@illinois.edu');
-      assert.equal(locals.json.points, assessmentPoints);
-      assert.equal(locals.json.max_points, helperExam.assessmentMaxPoints);
+      const json = await res.json();
+      assert.equal(json.assessment_instance_id, locals.assessment_instance_id);
+      assert.equal(json.assessment_id, locals.assessment_id);
+      assert.equal(json.user_uid, 'dev@illinois.edu');
+      assert.equal(json.points, assessmentPoints);
+      assert.equal(json.max_points, helperExam.assessmentMaxPoints);
     });
 
     step('GET to API for assessment submissions succeeds', async function () {
@@ -217,11 +219,12 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      assert.lengthOf(locals.json, 1);
+      const json = await res.json();
+      assert.lengthOf(json, 1);
+      assert.equal(json[0].instance_question_points, assessmentPoints);
 
-      locals.submission_id = locals.json[0].submission_id;
-      assert.equal(locals.json[0].instance_question_points, assessmentPoints);
+      // Persist the submission ID for later requests
+      locals.submission_id = json[0].submission_id;
     });
 
     describe('GET to API for single submission succeeds', async function () {
@@ -235,11 +238,11 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      assert.equal(locals.json.submission_id, locals.submission_id);
-      assert.equal(locals.json.assessment_instance_id, locals.assessment_instance_id);
-      assert.equal(locals.json.assessment_id, locals.assessment_id);
-      assert.equal(locals.json.instance_question_points, assessmentPoints);
+      const json = await res.json();
+      assert.equal(json.submission_id, locals.submission_id);
+      assert.equal(json.assessment_instance_id, locals.assessment_instance_id);
+      assert.equal(json.assessment_id, locals.assessment_id);
+      assert.equal(json.instance_question_points, assessmentPoints);
     });
 
     step('GET to API for gradebook', async function () {
@@ -251,19 +254,13 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      const users = _.filter(locals.json, (o) => o.user_uid === 'dev@illinois.edu');
-      assert.lengthOf(users, 1);
-      locals.devObject = users[0];
-
-      const assessments = _.filter(
-        locals.devObject.assessments,
-        (o) => o.assessment_label === 'E1'
-      );
-      assert.lengthOf(assessments, 1);
-      locals.gradebookEntry = assessments[0];
-      assert.equal(locals.gradebookEntry.points, assessmentPoints);
-      assert.equal(locals.gradebookEntry.max_points, helperExam.assessmentMaxPoints);
+      const json = await res.json();
+      const user = json.find((o) => o.user_uid === 'dev@illinois.edu');
+      assert.exists(user);
+      const assessment = user.assessments.find((o) => o.assessment_label === 'E1');
+      assert.exists(assessment);
+      assert.equal(assessment.points, assessmentPoints);
+      assert.equal(assessment.max_points, helperExam.assessmentMaxPoints);
     });
 
     step('GET to API for assessment instance questions succeeds', async function () {
@@ -277,8 +274,8 @@ describe('API', function () {
         },
       });
 
-      locals.json = await res.json();
-      assert.lengthOf(locals.json, 7);
+      const json = await res.json();
+      assert.lengthOf(json, 7);
     });
 
     step('GET to API for assessment access rules succeeds', async function () {
@@ -293,8 +290,8 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      assert.lengthOf(locals.json, 1);
+      const json = await res.json();
+      assert.lengthOf(json, 1);
     });
 
     step('GET to API for course instance access rules succeeds', async function () {
@@ -307,8 +304,8 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      assert.lengthOf(locals.json, 1);
+      const json = await res.json();
+      assert.lengthOf(json, 1);
     });
 
     step('GET to API for course instance info succeeds', async function () {
@@ -319,9 +316,9 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      locals.json = await res.json();
-      assert.exists(locals.json.course_instance_id);
-      assert.exists(locals.json.course_title);
+      const json = await res.json();
+      assert.exists(json.course_instance_id);
+      assert.exists(json.course_title);
     });
   });
 });
