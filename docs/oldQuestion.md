@@ -24,7 +24,7 @@ See below for detailed information about each question type.
 
 ## `MultipleChoice` question type
 
-- Example: [`fossilFuelsRadio`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsRadio)
+- Example: [`fossilFuelsRadio`](https://github.com/PrairieLearn/PrairieLearn/tree/21be1db08978b6f8a8ca76c1e53681fe2ebe2fce/exampleCourse/questions/fossilFuelsRadio)
 - Required files: `info.json`
 - Options schema: [`MultipleChoice` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsMultipleChoice.json)
 
@@ -55,7 +55,7 @@ A `MultipleChoice` question has an `info.json` that provides the question text, 
 
 ## `MultipleTrueFalse` question type
 
-- Example: [`fossilFuelsTrueFalse`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsTrueFalse)
+- Example: [`fossilFuelsTrueFalse`](https://github.com/PrairieLearn/PrairieLearn/tree/21be1db08978b6f8a8ca76c1e53681fe2ebe2fce/exampleCourse/questions/fossilFuelsTrueFalse)
 - Required files: `info.json`
 - Options schema: [`MultipleTrueFalse` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsMultipleTrueFalse.json)
 
@@ -86,7 +86,7 @@ A `MultipleTrueFalse` question has an `info.json` that provides the question tex
 
 ## `Checkbox` question type
 
-- Example: [`fossilFuelsCheckbox`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsCheckbox)
+- Example: [`fossilFuelsCheckbox`](https://github.com/PrairieLearn/PrairieLearn/tree/21be1db08978b6f8a8ca76c1e53681fe2ebe2fce/exampleCourse/questions/fossilFuelsCheckbox)
 - Required files: `info.json`
 - Options schema: [`Checkbox` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsCheckbox.json)
 
@@ -119,9 +119,9 @@ A `Checkbox` question has an `info.json` that provides the question text, one or
 
 ## `File` question type
 
-- Example: [`fibonacciExternal`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacciExternal)
+- Example: [`fibonacciExternal`](https://github.com/PrairieLearn/PrairieLearn/tree/21be1db08978b6f8a8ca76c1e53681fe2ebe2fce/exampleCourse/questions/fibonacciExternal)
 - Required files: `info.json`, `question.html`, `answer.html`
-- Options schema: [`File` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsFiles.json)
+- Options schema: [`File` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsFile.json)
 
 A `File` question gives the student a file to download, and then requires an uploaded file for the answer. The downloaded file is specified in the `info.json` like:
 
@@ -142,7 +142,7 @@ Note that a file question can also utilize external grading! See the [External g
 
 ## `Calculation` question type
 
-- Example: [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/addVectors)
+- Example: [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/testCourse/questions/addVectors)
 - Required files: `info.json`, `client.js`, `server.js`
 - Options schema: [`Calculation` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/questionOptionsCalculation.json)
 
