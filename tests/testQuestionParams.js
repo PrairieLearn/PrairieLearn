@@ -1,7 +1,8 @@
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
+const { promisify } = require('util');
+const requestAsync = promisify(request);
 const cheerio = require('cheerio');
 
 const config = require('../lib/config');
@@ -43,15 +44,10 @@ describe('Parameterized questions', function () {
   var elemList, res;
 
   describe('the database', function () {
-    it('should contain questions', function (callback) {
-      sqldb.query(sql.select_questions, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount === 0) {
-          return callback(new Error('no questions in DB'));
-        }
-        locals.questions = result.rows;
-        callback(null);
-      });
+    it('should contain questions', async function () {
+      const result = await sqldb.queryAsync(sql.select_questions, []);
+      assert.notEqual(result.rowCount, 0, 'No questions found in DB');
+      locals.questions = result.rows;
     });
 
     it('should contain the addNumbersParameterized1 question', function () {
@@ -114,36 +110,29 @@ describe('Parameterized questions', function () {
     });
 
     describe('the database', function () {
-      it('should contain HW10', function (callback) {
-        sqldb.queryOneRow(sql.select_hw10, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          locals.assessment_id = result.rows[0].id;
-          callback(null);
-        });
+      it('should contain HW10', async function () {
+        const result = await sqldb.queryOneRowAsync(sql.select_hw, []);
+        locals.assessment_id = result.rows[0].id;
       });
     });
 
     describe('GET ' + locals.assessmentsUrl, function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentsUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
+      it('should load successfully', async function () {
+        const response = await requestAsync(locals.assessmentsUrl);
+        assert.equal(response.statusCode, 200);
+        res = response;
+        page = response.body;
       });
+
       it('should parse', function () {
         locals.$ = cheerio.load(page);
       });
+
       it('should contain HW10', function () {
         elemList = locals.$('td a:contains("Homework to test question parameters")');
         assert.lengthOf(elemList, 1, page);
       });
+
       it('should have the correct link for HW10', function () {
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
         assert.equal(
@@ -154,51 +143,34 @@ describe('Parameterized questions', function () {
     });
 
     describe('GET to assessment URL', function () {
-      it('should load successfully', function (callback) {
+      it('should load successfully', async function () {
         locals.preStartTime = Date.now();
-        request(locals.assessmentUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          locals.postStartTime = Date.now();
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
+        const response = await requestAsync(locals.assessmentUrl);
+        locals.postStartTime = Date.now();
+        assert.equal(response.statusCode, 200);
+        res = response;
+        page = response.body;
       });
       it('should redirect to the correct path', function () {
         locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
         assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
       });
-      it('should create one assessment_instance', function (callback) {
-        sqldb.query(sql.select_assessment_instances, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount !== 1) {
-            return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
-          }
-          locals.assessment_instance = result.rows[0];
-          callback(null);
-        });
+      it('should create one assessment_instance', async function () {
+        const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
+        assert.equal(result.rowCount, 1, 'expected one assessment_instance');
+        locals.assessment_instance = result.rows[0];
       });
       it('should have the correct assessment_instance.assessment_id', function () {
         assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
-      it(`should create ${questionsArray.length} instance_questions`, function (callback) {
-        sqldb.query(sql.select_instance_questions, [], function (err, result) {
-          if (ERR(err, callback)) return;
-          if (result.rowCount !== questionsArray.length) {
-            return callback(
-              new Error(
-                `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
-              )
-            );
-          }
-          locals.instance_questions = result.rows;
-          callback(null);
-        });
+      it(`should create ${questionsArray.length} instance_questions`, async function () {
+        const result = await sqldb.queryAsync(sql.select_instance_questions, []);
+        assert.equal(
+          result.rowCount,
+          questionsArray.length,
+          `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount
+        );
+        locals.instance_questions = result.rows;
       });
       questionsArray.forEach(function (question, i) {
         it(`should have question #${i + 1} as QID ${question.qid}`, function () {
@@ -209,18 +181,11 @@ describe('Parameterized questions', function () {
     });
 
     describe('GET to assessment_instance URL', function () {
-      it('should load successfully', function (callback) {
-        request(locals.assessmentInstanceUrl, function (error, response, body) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          res = response;
-          page = body;
-          callback(null);
-        });
+      it('should load successfully', async function () {
+        const response = await requestAsync(locals.assessmentInstanceUrl);
+        assert.equal(response.statusCode, 200);
+        res = response;
+        page = response.body;
       });
       it('should parse', function () {
         locals.$ = cheerio.load(page);
@@ -239,17 +204,10 @@ describe('Parameterized questions', function () {
   startAssessment();
 
   describe('2. Assessment question inherits parameters from course instance', function () {
-    it('should load successfully', function (callback) {
-      request(addNumbers1_assessment.url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should load successfully', async function () {
+      const response = await requestAsync(addNumbers1_assessment.url);
+      assert.equal(response.statusCode, 200);
+      page = response.body;
     });
 
     it('should parse', function () {
@@ -263,17 +221,10 @@ describe('Parameterized questions', function () {
   });
 
   describe('3. Assessment question inherits parameters from zone', function () {
-    it('should load successfully', function (callback) {
-      request(addNumbers2.url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should load successfully', async function () {
+      const response = await requestAsync(addNumbers2.url);
+      assert.equal(response.statusCode, 200);
+      page = response.body;
     });
 
     it('should parse', function () {
@@ -287,17 +238,10 @@ describe('Parameterized questions', function () {
   });
 
   describe('4. Assessment question inherits parameters from alternatives group', function () {
-    it('should load successfully', function (callback) {
-      request(addNumbers3.url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should load successfully', async function () {
+      const response = await requestAsync(addNumbers3.url);
+      assert.equal(response.statusCode, 200);
+      page = response.body;
     });
 
     it('should parse', function () {
@@ -311,17 +255,10 @@ describe('Parameterized questions', function () {
   });
 
   describe('5. Assessment question inherits parameters from assessment question', function () {
-    it('should load successfully', function (callback) {
-      request(addNumbers4.url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should load successfully', async function () {
+      const response = await requestAsync(addNumbers4.url);
+      assert.equal(response.statusCode, 200);
+      page = response.body;
     });
 
     it('should parse', function () {

@@ -2,7 +2,7 @@
 SELECT *
 FROM questions;
 
--- BLOCK select_hw10
+-- BLOCK select_hw
 SELECT
     a.id
 FROM
