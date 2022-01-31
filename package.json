@@ -8,7 +8,7 @@
         "@grpc/grpc-js": "^1.5.4",
         "@octokit/rest": "^18.12.0",
         "@opentelemetry/api": "^1.0.4",
-        "@opentelemetry/auto-instrumentations-node": "^0.25.0",
+        "@opentelemetry/auto-instrumentations-node": "^0.27.2",
         "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
         "@opentelemetry/resources": "^1.0.1",
         "@opentelemetry/sdk-node": "^0.26.0",
