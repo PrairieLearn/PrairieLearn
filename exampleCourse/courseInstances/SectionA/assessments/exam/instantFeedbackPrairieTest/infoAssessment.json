@@ -1,0 +1,51 @@
+{
+    "uuid": "13D012E5-9C66-5092-BA1A-0445919CB0C3",
+    "type": "Exam",
+    "title": "Exam with real-time autograding linked to PrairieTest",
+    "set": "Exam",
+    "number": "0",
+    "allowAccess": [
+      {
+          "mode": "Exam",
+          "examUuid": "9c1b3e5c-9caa-4c82-9445-ac564d51c40d",
+          "credit": 100
+      },
+      {
+        "mode": "Exam",
+        "examUuid": "2b26b075-4c91-4fa0-8f1e-219326f4d046",
+        "credit": 100
+      }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "demo/annotated/mathNumberInput","points": [3,1]}
+            ]
+        },
+        {
+            "questions": [
+              {"id": "demo/annotated/graphAdjacencyMatrix","points": [3,1]}
+            ]
+        },
+        {
+            "questions": [
+              {"id": "demo/annotated/engCircuit", "points": [5,4,3,2,1]}
+            ]
+        },
+        {
+            "questions": [
+              {
+                  "comment": "Similar questions",
+                  "numberChoose": 1,
+                  "points": [4,2,1],
+                  "alternatives": [
+                      {"id": "demo/annotated/mathOuterProduct"},
+                      {"id": "demo/annotated/mathMatrixMult"},
+                      {"id": "demo/annotated/mathMatrixMultT"}
+                  ]
+              }
+            ]
+        }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of an auto-graded exam with instant feedback, where students will receive a single (fixed) variant for each question, and can have a pre-defined number of retry attempts, depending on the difficulty level and question type. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md target=_blank>here</a>.</p><p>This exam is linked to <a href=https://www.prairietest.org/pt target=_blank>PrairieTest</a>, a scheduling and proctoring tool that will control student's access to the exam. </p><p> You can enter any general instructions for your exam here. For example, you can provide access to <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>.</p>"
+}

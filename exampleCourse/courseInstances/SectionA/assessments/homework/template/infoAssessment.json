@@ -1,0 +1,54 @@
+{
+    "uuid": "13D012E4-9C66-4092-BA1A-1445919DB0C3",
+    "type": "Homework",
+    "title": "Homework template",
+    "set": "Homework",
+    "number": "1",
+    "allowAccess": [
+        {
+            "comment": "Set end date for 100% credit",
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2023-11-15T23:59:59"
+        },
+        {
+            "comment": "Set later end date for reduced credit",
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2023-11-30T23:59:59"
+        },
+        {
+            "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessement)",
+            "mode": "Public",
+            "credit": 0,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2023-12-31T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Zone 1: Unlimited question variants with one single attempt",
+            "questions": [
+                {"id": "demo/annotated/mathNumbersConcept-all", "points": 1,"maxPoints": 6},
+                {"id": "demo/annotated/engBinary", "points": 1, "maxPoints": 3},
+                {"id": "demo/annotated/mathFunctionDerivative", "points": 1,"maxPoints": 6}
+            ]
+        },
+        {
+            "title": "Zone 2: Unlimited question variants with prescribed number of attempts",
+            "questions": [
+                {"id": "demo/annotated/engVectorDrawing", "points": 2, "maxPoints": 6, "triesPerVariant": 2},
+                {"id": "demo/annotated/engBeamStress", "points": 2, "maxPoints": 6, "triesPerVariant": 3}
+            ]
+        },
+        {
+            "title": "Zone 3: Single question variant with unlimited number of attempts",
+            "questions": [
+                {"id": "demo/annotated/engMarkovBrewing", "points": 8}
+            ]
+        }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong></p> </p><p><strong>Zone 1</strong> includes examples of lower level questions that involve nearly automatic responses. As such, we use the drilling for mastery configuration (PrairieLearn default for homework), where students can create unlimited question variants, each one with a single attempt. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md/#Drilling-basic-skills-using-unlimited-variants-with single-attempt target=_blank>here</a>.</p> <p><strong>Zone 2</strong> includes examples of more sophisticated questions that often involve more than one step to achieve the solution. These questions allow students to retry the same question variant more than once, before creating a new variant. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md/#Limiting-the-number-of-attempts-per-variant target=_blank>here</a>.</p><p><strong>Zone 3</strong> includes a coding question that involve multiple skills levels (lower to high) and several steps to obtain the solution. Students receive only one variant of the question and have unlimited attempts to complete it successfuly. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md/#Unlimited-retry-attempts-for-the-same-question-variant target=_blank>here</a>.</p>"
+}

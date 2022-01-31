@@ -9,6 +9,12 @@
  <% if (typeof questionHtml != 'undefined' && questionHtml.includes('pl-requires-svg-mathjax')) { %>
      outputComponent = 'output/svg';
  <% } %>
+ <% if (userAgent && userAgent.os.name == 'Linux') { %>
+     // Workaround for horizontal lines disappearing
+     // on Linux. Seems to work in Firefox, Brave,
+     // Chromium.
+     outputComponent = 'output/svg';
+ <% } %>
 
  var MathJax = {
      tex: {
