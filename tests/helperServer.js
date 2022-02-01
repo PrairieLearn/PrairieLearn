@@ -220,12 +220,9 @@ module.exports = {
           localCache.close();
           callback(null);
         },
-        function (callback) {
+        async function () {
           debug('after(): finish DB');
-          helperDb.after.call(that, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperDb.after.call(that);
         },
       ],
       function (err) {
