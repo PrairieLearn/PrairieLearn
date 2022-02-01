@@ -1598,6 +1598,25 @@ module.exports.startServer = async () => {
     throw new Error('unknown serverType: ' + config.serverType);
   }
 
+  // Wait for the server to either start successfully or error out.
+  await new Promise((resolve, reject) => {
+    let done = false;
+
+    server.on('error', (err) => {
+      if (!done) {
+        done = true;
+        reject(err);
+      }
+    });
+
+    server.on('listening', () => {
+      if (!done) {
+        done = true;
+        resolve();
+      }
+    });
+  });
+
   return server;
 };
 
