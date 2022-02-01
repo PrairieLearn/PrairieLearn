@@ -187,27 +187,6 @@ describe('course database', () => {
         assert.isOk(result.data);
       });
     });
-
-    it('warns about a default assessment set being present', async () => {
-      await withTempDirectory(async (dir) => {
-        const course = getCourse();
-        course.assessmentSets.push({
-          name: 'Homework',
-          abbreviation: 'HW',
-          heading: 'Homeworks',
-          color: 'red1',
-        });
-        await writeCourse(dir, course);
-        const result = await courseDb.loadCourseInfo(dir);
-        assert.isFalse(infofile.hasErrors(result));
-        assert.isTrue(infofile.hasWarnings(result));
-        assert.include(
-          result.warnings,
-          'Default assessmentSet "Homework" should not be included in infoCourse.json'
-        );
-        assert.isOk(result.data);
-      });
-    });
   });
 
   describe('questions loading', () => {
@@ -238,15 +217,15 @@ describe('course database', () => {
         assert.isFalse(infofile.hasWarnings(result));
         assert.equal(Object.keys(result).length, 3);
         assert.match(
-          infofile.stringifyErrors(result['question1']),
+          infofile.stringifyWarnings(result['question1']),
           /UUID.*is used in other questions/
         );
-        assert.isFalse(infofile.hasWarnings(result['question1']));
+        assert.isFalse(infofile.hasErrors(result['question1']));
         assert.match(
-          infofile.stringifyErrors(result['question2']),
+          infofile.stringifyWarnings(result['question2']),
           /UUID.*is used in other questions/
         );
-        assert.isFalse(infofile.hasWarnings(result['question2']));
+        assert.isFalse(infofile.hasErrors(result['question2']));
         assert.isFalse(infofile.hasErrors(result['question3']));
         assert.isFalse(infofile.hasWarnings(result['question3']));
       });
