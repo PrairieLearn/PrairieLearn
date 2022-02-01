@@ -130,8 +130,6 @@ async function setupDatabases(mochaThis) {
   await establishSql(dbName);
 }
 
-module.exports.POSTGRES_DATABASE_TEMPLATE = POSTGRES_DATABASE_TEMPLATE;
-
 module.exports.before = async function before() {
   var that = this;
   await setupDatabases(that);
