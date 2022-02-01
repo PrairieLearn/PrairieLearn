@@ -19,7 +19,16 @@ export async function mochaGlobalTeardown() {
  * We take advantage of this to create a separate database for each worker.
  */
 export const mochaHooks = {
-  beforeAll: async function () {},
+  beforeAll: async function () {
+    const logger = await import('../lib/logger.js');
 
-  afterAll: async function () {},
+    const consoleTransport = logger.default.transports.find(
+      (transport) => transport.name === 'console'
+    );
+    consoleTransport.level = 'warn';
+
+    const config = (await import('../lib/config.js')).default;
+    config.workersCount = 2; // explicitly use 2 workers to test parallelism
+    config.fileEditorUseGit = true; // test use of git in file editor
+  },
 };
