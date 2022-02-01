@@ -1,7 +1,6 @@
 // @ts-check
 const pg = require('pg');
 const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const _ = require('lodash');
 const util = require('util');
 
@@ -40,7 +39,6 @@ async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
 }
 
 async function createFullDatabase(dbName, dropFirst, mochaThis) {
-  debug(`createFullDatabase(${dbName})`);
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
   mochaThis.timeout(20000);
@@ -56,7 +54,6 @@ async function createFullDatabase(dbName, dropFirst, mochaThis) {
 }
 
 async function createFromTemplate(dbName, dbTemplateName, dropFirst, mochaThis) {
-  debug(`createFromTemplate(${dbName}, ${dbTemplateName})`);
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
   mochaThis.timeout(20000);
@@ -67,7 +64,7 @@ async function createFromTemplate(dbName, dbTemplateName, dropFirst, mochaThis) 
   }
   await client.query(`CREATE DATABASE ${dbName} TEMPLATE ${dbTemplateName};`);
   await client.end();
-  runMigrationsAndSprocs(dbName, mochaThis, false);
+  await runMigrationsAndSprocs(dbName, mochaThis, false);
 }
 
 async function establishSql(dbName) {
@@ -138,7 +135,6 @@ module.exports = {
   // schema verification, where databaseDiff will set up a connection to the
   // desired database.
   beforeOnlyCreate: async function beforeOnlyCreate() {
-    debug(`beforeOnlyCreate()`);
     var that = this;
     await setupDatabases(that);
     await closeSql();
@@ -151,7 +147,6 @@ module.exports = {
   },
 
   dropTemplate: async function dropTemplate() {
-    debug(`dropTemplate()`);
     var that = this;
     await closeSql();
     await dropDatabase(
