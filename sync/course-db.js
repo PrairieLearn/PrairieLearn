@@ -308,10 +308,10 @@ const FILE_UUID_REGEX =
 /**
  * @typedef {Object} GroupRole
  * @property {string} name
- * @property {number} minimum 
+ * @property {number} minimum
  * @property {number} maximum
- * @property {boolean} canAssignRolesAtStart 
- * @property {boolean} canAssignRolesDuringAssessment 
+ * @property {boolean} canAssignRolesAtStart
+ * @property {boolean} canAssignRolesDuringAssessment
  */
 
 /**

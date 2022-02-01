@@ -8,8 +8,6 @@ CREATE TABLE IF NOT EXISTS group_roles (
     can_assign_roles_at_start BOOLEAN DEFAULT FALSE,
     can_assign_roles_during_assessment BOOLEAN DEFAULT FALSE,
     can_submit_assessment BOOLEAN DEFAULT TRUE,
-    -- CONSTRAINT group_roles_role_name_assessment_id_pkey
-    --     PRIMARY KEY (id),
     CONSTRAINT group_roles_assessment_id_fkey
         FOREIGN KEY (assessment_id)
             REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -208,6 +208,7 @@ BEGIN
                 ) VALUES (
                     (group_role->>'role_name'),
                     new_assessment_id,
+                    -- Insert default values where necessary
                     CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
                     CASE WHEN group_role ? 'maximum' THEN (group_role->>'maximum')::integer ELSE (valid_assessment.data->>'group_min_size')::integer END,
                     CASE WHEN group_role ? 'can_assign_roles_at_start' THEN (group_role->>'can_assign_roles_at_start')::boolean ELSE FALSE END,
