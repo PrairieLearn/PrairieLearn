@@ -21,8 +21,8 @@ start-s3rver:
 test: test-js test-python
 test-js: test-prairielearn test-prairielib test-grader-host
 test-prairielearn: start-support
-	@mocha --full-trace --parallel --jobs 4 --require tests/mocha-hooks.mjs tests/testDatabase.js tests/testAdministratorQueries.js tests/testAdministrator.js
-# @mocha --full-trace --parallel --require tests/mocha-hooks.mjs tests/testDatabase.js tests/testAdministrator.js tests/testAdministratorQueries.js tests/testFileEditor.js tests/testCourseEditor.js tests/testGetHomepage.js
+	@mocha --full-trace --parallel --require tests/mocha-hooks.mjs "tests/chunkAssessment.test.js"
+# @mocha --full-trace --parallel --jobs 4 --require tests/mocha-hooks.mjs "tests/**/*.test.{js,mjs}"
 test-prairielib:
 	@jest prairielib/
 test-grader-host:
