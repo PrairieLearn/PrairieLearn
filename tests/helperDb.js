@@ -8,18 +8,23 @@ const sqldb = require('../prairielib/lib/sql-db');
 const migrations = require('../prairielib/lib/migrations');
 const sprocs = require('../sprocs');
 
-const postgresqlUser = 'postgres';
-const postgresqlDatabase = 'pltest';
-const postgresqlDatabaseTemplate = 'pltest_template';
-const postgresqlHost = 'localhost';
-const initConString = 'postgres://postgres@localhost/postgres';
+const POSTGRES_USER = 'postgres';
+const POSTGRES_HOST = 'localhost';
+const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres';
+
+const POSTGRES_DATABASE = 'pltest';
+const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
+
+function connectionStringForDatabase(dbName) {
+  return `postgres://${POSTGRES_USER}@${POSTGRES_HOST}/${dbName}`;
+}
 
 async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
   mochaThis.timeout(20000);
   const pgConfig = {
-    user: postgresqlUser,
+    user: POSTGRES_USER,
     database: dbName,
-    host: postgresqlHost,
+    host: POSTGRES_HOST,
     max: 10,
     idleTimeoutMillis: 30000,
   };
@@ -43,7 +48,7 @@ async function createFullDatabase(dbName, dropFirst, mochaThis) {
   // if other processes have an open connection to that database
   mochaThis.timeout(20000);
 
-  const client = new pg.Client(initConString);
+  const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   if (dropFirst) {
     await client.query('DROP DATABASE IF EXISTS ' + dbName + ';');
@@ -57,7 +62,7 @@ async function createFromTemplate(dbName, dbTemplateName, dropFirst, mochaThis) 
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
   mochaThis.timeout(20000);
-  const client = new pg.Client(initConString);
+  const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   if (dropFirst) {
     await client.query('DROP DATABASE IF EXISTS ' + dbName + ';');
@@ -69,9 +74,9 @@ async function createFromTemplate(dbName, dbTemplateName, dropFirst, mochaThis) 
 
 async function establishSql(dbName) {
   const pgConfig = {
-    user: postgresqlUser,
+    user: POSTGRES_USER,
     database: dbName,
-    host: postgresqlHost,
+    host: POSTGRES_HOST,
     max: 10,
     idleTimeoutMillis: 30000,
   };
@@ -96,14 +101,14 @@ async function dropDatabase(dbName, mochaThis, forceDrop = false) {
   // if other processes have an open connection to that database
   mochaThis.timeout(20000);
 
-  const client = new pg.Client(initConString);
+  const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   await client.query('DROP DATABASE IF EXISTS ' + dbName + ';');
   await client.end();
 }
 
 async function databaseExists(dbName) {
-  const client = new pg.Client(initConString);
+  const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   const result = await client.query(
     `SELECT exists(SELECT * FROM pg_catalog.pg_database WHERE datname = '${dbName}');`
@@ -114,14 +119,15 @@ async function databaseExists(dbName) {
 }
 
 async function setupDatabases(mochaThis) {
-  const exists = await databaseExists(postgresqlDatabaseTemplate);
-  if (exists) {
-    await createFromTemplate(postgresqlDatabase, postgresqlDatabaseTemplate, true, mochaThis);
+  const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
+  const dbName = module.exports.getDatabaseNameForCurrentWorker();
+  if (templateExists) {
+    await createFromTemplate(dbName, POSTGRES_DATABASE_TEMPLATE, true, mochaThis);
   } else {
-    await createFullDatabase(postgresqlDatabaseTemplate, true, mochaThis);
-    await createFromTemplate(postgresqlDatabase, postgresqlDatabaseTemplate, true, mochaThis);
+    await createFullDatabase(POSTGRES_DATABASE_TEMPLATE, true, mochaThis);
+    await createFromTemplate(dbName, POSTGRES_DATABASE_TEMPLATE, true, mochaThis);
   }
-  await establishSql(postgresqlDatabase);
+  await establishSql(dbName);
 }
 
 module.exports = {
@@ -143,17 +149,26 @@ module.exports = {
   after: async function after() {
     var that = this;
     await closeSql();
-    await dropDatabase(postgresqlDatabase, that);
+    const dbName = module.exports.getDatabaseNameForCurrentWorker();
+    await dropDatabase(dbName, that);
   },
 
   dropTemplate: async function dropTemplate() {
     var that = this;
     await closeSql();
     await dropDatabase(
-      postgresqlDatabaseTemplate,
+      POSTGRES_DATABASE_TEMPLATE,
       that,
       // Always drop the template regardless of PL_KEEP_TEST_DB env
       true
     );
+  },
+
+  getDatabaseNameForWorker: function getDatabaseNameForWorker(workerId = '1') {
+    return `${POSTGRES_DATABASE}_${workerId}`;
+  },
+
+  getDatabaseNameForCurrentWorker: function getDatabaseNameForCurrentWorker() {
+    return module.exports.getDatabaseNameForWorker(process.env.JEST_WORKER_ID);
   },
 };

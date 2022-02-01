@@ -25,7 +25,8 @@ describe('database', function () {
       outputFormat: 'string',
       coloredOutput: process.stdout.isTTY,
     };
-    databaseDiff.diffDirectoryAndDatabase('database', 'pltest', options, (err, data) => {
+    const dbName = helperDb.getDatabaseNameForCurrentWorker();
+    databaseDiff.diffDirectoryAndDatabase('database', dbName, options, (err, data) => {
       if (ERR(err, done)) return;
       data ? done(new DatabaseError('\n'.red + data)) : done(null);
     });
@@ -43,8 +44,9 @@ describe('database', function () {
      *
      * See https://github.com/PrairieLearn/PrairieLearn/issues/2256 for a bug caused by this problem.
      */
+    const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const options = {
-      databaseName: 'pltest',
+      databaseName: dbName,
       outputFormat: 'object',
     };
     databaseDescribe.describe(options, (err, data) => {

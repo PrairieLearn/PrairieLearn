@@ -21,7 +21,7 @@ start-s3rver:
 test: test-js test-python
 test-js: test-prairielearn test-prairielib test-grader-host
 test-prairielearn: start-support
-	@nyc --reporter=lcov mocha --full-trace tests/index.js
+	@mocha --full-trace --parallel tests/testDatabase.js tests/testAdministrator.js tests/testAdministratorQueries.js tests/testFileEditor.js tests/testCourseEditor.js tests/testGetHomepage.js
 test-prairielib:
 	@jest prairielib/
 test-grader-host:
