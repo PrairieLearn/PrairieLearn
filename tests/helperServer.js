@@ -53,7 +53,7 @@ module.exports = {
           async () => {
             await aws.init();
           },
-          async function () {
+          async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls
             await helperDb.before.call(that);
@@ -217,7 +217,7 @@ module.exports = {
           localCache.close();
           callback(null);
         },
-        async function () {
+        async () => {
           debug('after(): finish DB');
           await helperDb.after.call(that);
         },
