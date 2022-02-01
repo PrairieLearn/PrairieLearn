@@ -15,10 +15,6 @@ const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres'
 const POSTGRES_DATABASE = 'pltest';
 const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
 
-function connectionStringForDatabase(dbName) {
-  return `postgres://${POSTGRES_USER}@${POSTGRES_HOST}/${dbName}`;
-}
-
 async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
   mochaThis.timeout?.(20000);
   const pgConfig = {
