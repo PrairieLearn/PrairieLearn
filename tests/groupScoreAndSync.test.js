@@ -27,6 +27,16 @@ const questions = _.keyBy(question, 'qid');
 describe('assessment instance group synchronization test', function () {
   this.timeout(10000);
 
+  const storedConfig = {};
+  before('store authenticated user', () => {
+    storedConfig.authUid = config.authUid;
+    storedConfig.authName = config.authName;
+    storedConfig.authUin = config.authUin;
+  });
+  after('unset authenticated user', () => {
+    Object.assign(config, storedConfig);
+  });
+
   before('set up testing server', helperServer.before(courseDir));
   after('shut down testing server', helperServer.after);
   describe('1. database initialization', function () {
