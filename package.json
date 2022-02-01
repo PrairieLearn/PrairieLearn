@@ -132,7 +132,7 @@
         "@types/fs-extra": "^9.0.13",
         "@types/mocha": "^9.1.0",
         "@types/node": "^16.7.10",
-        "@types/node-fetch": "^2.5.12",
+        "@types/node-fetch": "^3.0.3",
         "@types/pg": "^8.6.4",
         "chai": "^4.3.6",
         "chai-as-promised": "^7.1.1",
