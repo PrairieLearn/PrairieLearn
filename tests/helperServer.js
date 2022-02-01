@@ -53,13 +53,10 @@ module.exports = {
           async () => {
             await aws.init();
           },
-          function (callback) {
+          async function () {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls
-            helperDb.before.call(that, function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await helperDb.before.call(that);
           },
           util.callbackify(async () => {
             debug('before(): create tmp dir for config.filesRoot');
