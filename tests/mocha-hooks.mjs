@@ -23,6 +23,7 @@ export const mochaHooks = {
     const logger = await import('../lib/logger.js');
 
     const consoleTransport = logger.default.transports.find(
+      // @ts-expect-error - The `TransportStream` type does not include `name`.
       (transport) => transport.name === 'console'
     );
     consoleTransport.level = 'warn';
