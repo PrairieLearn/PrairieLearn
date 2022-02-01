@@ -53,13 +53,10 @@ module.exports = {
           async () => {
             await aws.init();
           },
-          function (callback) {
+          async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls
-            helperDb.before.call(that, function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await helperDb.before.call(that);
           },
           util.callbackify(async () => {
             debug('before(): create tmp dir for config.filesRoot');
@@ -220,12 +217,9 @@ module.exports = {
           localCache.close();
           callback(null);
         },
-        function (callback) {
+        async () => {
           debug('after(): finish DB');
-          helperDb.after.call(that, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperDb.after.call(that);
         },
       ],
       function (err) {
