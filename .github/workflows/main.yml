@@ -57,14 +57,3 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
     - name: Run the Python tests
       run: docker exec test_container /PrairieLearn/docker/test_python.sh
-    - name: Copy code-coverage data out of container
-      run: docker cp test_container:/PrairieLearn/coverage coverage
-    - name: Directory listing for debug
-      run: ls -lR
-    - name: Head of lcov.info for debug
-      run: head -1000 coverage/lcov.info
-    - name: Send code-coverage data to Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-      continue-on-error: true
