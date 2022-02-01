@@ -20,7 +20,7 @@ function connectionStringForDatabase(dbName) {
 }
 
 async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
-  mochaThis.timeout(20000);
+  mochaThis.timeout?.(20000);
   const pgConfig = {
     user: POSTGRES_USER,
     database: dbName,
@@ -46,7 +46,7 @@ async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
 async function createFullDatabase(dbName, dropFirst, mochaThis) {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
-  mochaThis.timeout(20000);
+  mochaThis.timeout?.(20000);
 
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
@@ -61,7 +61,7 @@ async function createFullDatabase(dbName, dropFirst, mochaThis) {
 async function createFromTemplate(dbName, dbTemplateName, dropFirst, mochaThis) {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
-  mochaThis.timeout(20000);
+  mochaThis.timeout?.(20000);
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   if (dropFirst) {
@@ -99,7 +99,7 @@ async function dropDatabase(dbName, mochaThis, forceDrop = false) {
 
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
-  mochaThis.timeout(20000);
+  mochaThis.timeout?.(20000);
 
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
@@ -124,51 +124,55 @@ async function setupDatabases(mochaThis) {
   if (templateExists) {
     await createFromTemplate(dbName, POSTGRES_DATABASE_TEMPLATE, true, mochaThis);
   } else {
-    await createFullDatabase(POSTGRES_DATABASE_TEMPLATE, true, mochaThis);
+    await module.exports.createTemplate(mochaThis);
     await createFromTemplate(dbName, POSTGRES_DATABASE_TEMPLATE, true, mochaThis);
   }
   await establishSql(dbName);
 }
 
-module.exports = {
-  before: async function before() {
-    var that = this;
-    await setupDatabases(that);
-  },
+module.exports.POSTGRES_DATABASE_TEMPLATE = POSTGRES_DATABASE_TEMPLATE;
 
-  // This version will only (re)create the database with migrations; it will
-  // then close the connection in sqldb. This is necessary for database
-  // schema verification, where databaseDiff will set up a connection to the
-  // desired database.
-  beforeOnlyCreate: async function beforeOnlyCreate() {
-    var that = this;
-    await setupDatabases(that);
-    await closeSql();
-  },
+module.exports.before = async function before() {
+  var that = this;
+  await setupDatabases(that);
+};
 
-  after: async function after() {
-    var that = this;
-    await closeSql();
-    const dbName = module.exports.getDatabaseNameForCurrentWorker();
-    await dropDatabase(dbName, that);
-  },
+// This version will only (re)create the database with migrations; it will
+// then close the connection in sqldb. This is necessary for database
+// schema verification, where databaseDiff will set up a connection to the
+// desired database.
+module.exports.beforeOnlyCreate = async function beforeOnlyCreate() {
+  var that = this;
+  await setupDatabases(that);
+  await closeSql();
+};
 
-  dropTemplate: async function dropTemplate() {
-    var that = this;
-    await closeSql();
-    await dropDatabase(
-      POSTGRES_DATABASE_TEMPLATE,
-      that,
-      // Always drop the template regardless of PL_KEEP_TEST_DB env
-      true
-    );
-  },
+module.exports.after = async function after() {
+  var that = this;
+  await closeSql();
+  const dbName = module.exports.getDatabaseNameForCurrentWorker();
+  await dropDatabase(dbName, that);
+};
 
-  getDatabaseNameForWorker: function getDatabaseNameForWorker(workerId = '1') {
-    return `${POSTGRES_DATABASE}_${workerId}`;
-  },
+module.exports.createTemplate = async function createTemplate(mochaThis) {
+  await createFullDatabase(POSTGRES_DATABASE_TEMPLATE, true, mochaThis);
+};
 
-  getDatabaseNameForCurrentWorker: function getDatabaseNameForCurrentWorker() {
-    return module.exports.getDatabaseNameForWorker(process.env.JEST_WORKER_ID);
-  },
+module.exports.dropTemplate = async function dropTemplate() {
+  var that = this;
+  await closeSql();
+  await dropDatabase(
+    POSTGRES_DATABASE_TEMPLATE,
+    that,
+    // Always drop the template regardless of PL_KEEP_TEST_DB env
+    true
+  );
+};
+
+module.exports.getDatabaseNameForWorker = function getDatabaseNameForWorker(workerId = '1') {
+  return `${POSTGRES_DATABASE}_${workerId}`;
+};
+
+module.exports.getDatabaseNameForCurrentWorker = function getDatabaseNameForCurrentWorker() {
+  return module.exports.getDatabaseNameForWorker(process.env.MOCHA_WORKER_ID);
 };
