@@ -374,6 +374,33 @@ def parse(element_html, data):
         del data['submitted_answers'][answer_raw_name]
 
 
+def add_edges_for_groups(element, depends_graph, group_belonging):
+    groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
+    groups.pop(None, None)
+    if not validate_grouping(depends_graph, group_belonging):
+        raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
+
+    group_info = {}
+    for html_tags in element:
+        if html_tags.tag != 'pl-block-group':
+            continue
+        group_tag, depends = get_graph_info(html_tags)
+        group_info[group_tag] = depends
+
+    # if a group G depends on a block B, all blocks in the group G should depend on block B
+    for group_tag in groups:
+        for dependency in group_info[group_tag]:
+            for block_tag in groups[group_tag]:
+                depends_graph[block_tag].append(dependency)
+
+    # if a block B depends on a group G, block B should depend on all blocks in G
+    for block_tag in depends_graph:
+        for group_tag in groups:
+            if group_tag in depends_graph[block_tag]:
+                depends_graph[block_tag].remove(group_tag)
+                depends_graph[block_tag] = depends_graph[block_tag] + groups[group_tag]
+
+
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
@@ -439,33 +466,9 @@ def grade(element_html, data):
             depends_graph = {ans['tag']: deepcopy(ans['depends']) for ans in true_answer_list}
             group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
-        groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
-        groups.pop(None, None)
-        if not validate_grouping(depends_graph, group_belonging):
-            raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
-
-        group_info = {}
-        for html_tags in element:
-            if html_tags.tag != 'pl-block-group':
-                continue
-            group_tag, depends = get_graph_info(html_tags)
-            group_info[group_tag] = depends
-
-        # if a group G depends on a block B, all blocks in the group G should depend on block B
-        for group_tag in groups:
-            for dependency in group_info[group_tag]:
-                for block_tag in groups[group_tag]:
-                    depends_graph[block_tag].append(dependency)
-
-        # if a block B depends on a group G, block B should depend on all blocks in G
-        for block_tag in depends_graph:
-            for group_tag in groups:
-                if group_tag in depends_graph[block_tag]:
-                    depends_graph[block_tag].remove(group_tag)
-                    depends_graph[block_tag] = depends_graph[block_tag] + groups[group_tag]
+        add_edges_for_groups(element, depends_graph, group_belonging)
 
         num_initial_correct = grade_dag(submission, depends_graph, group_belonging)
-        print(num_initial_correct)
         first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
 
         true_answer_length = len(depends_graph.keys())
