@@ -10,6 +10,7 @@ CREATE FUNCTION
         IN mode enum_mode,
         IN variant_id bigint,
         IN authn_user_id bigint,
+        IN percentage_credit_grading boolean,
         OUT submission_id bigint
     )
 AS $$
@@ -82,9 +83,9 @@ BEGIN
 
     INSERT INTO submissions
             (variant_id, auth_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, duration, params, true_answer, gradable, broken, regradable)
+            credit, mode, duration, params, true_answer, gradable, broken, regradable, percentage_credit_grading)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta, variant.params, variant.true_answer, gradable, broken, regradable)
+            credit, mode, delta, variant.params, variant.true_answer, gradable, broken, regradable, percentage_credit_grading)
     RETURNING id
     INTO submission_id;
 

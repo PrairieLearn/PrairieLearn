@@ -236,6 +236,11 @@
                     "description": "Whether the student can create a new assessment instance and submit answers to questions. If set to false, the available credit must be 0.",
                     "type": "boolean",
                     "default": true
+                },
+                "percentageCreditGrading": {
+                  "description": "Whether credit will be multiplied to the current score as a percentage (100 being full marks). If set to false, minimum of credit and score will be taken.",
+                  "type": "boolean",
+                  "default": false
                 }
             }
         },

@@ -17,6 +17,7 @@ DECLARE
     instance_question_id bigint;
     assessment_instance_id bigint;
     new_correct boolean;
+    percentage_credit_grading boolean;
 BEGIN
     PERFORM grading_jobs_lock(grading_job_id);
 
@@ -27,8 +28,8 @@ BEGIN
     IF NOT FOUND THEN RAISE EXCEPTION 'no grading_job_id: %', grading_job_id; END IF;
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id,                iq.id,                  ai.id
-    INTO     credit, variant_id, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id,                iq.id,                  ai.id, s.percentage_credit_grading
+    INTO     credit, variant_id, instance_question_id, assessment_instance_id,   percentage_credit_grading
     FROM
         grading_jobs AS gj
         JOIN submissions AS s ON (s.id = gj.submission_id)
@@ -105,7 +106,7 @@ BEGIN
         PERFORM variants_update_after_grading(variant_id, grading_job.correct);
         IF assessment_instance_id IS NOT NULL THEN
            PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
-           PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+           PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit, FALSE, FALSE, percentage_credit_grading);
         END IF;
     END IF;
 END;

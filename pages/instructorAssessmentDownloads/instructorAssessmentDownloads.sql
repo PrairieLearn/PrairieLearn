@@ -157,6 +157,7 @@ WITH all_submissions AS (
         g.name AS group_name,
         groups_uid_list(g.id) AS uid_list,
         su.uid AS submission_user
+        s.percentage_credit_grading,
     FROM
         assessments AS a
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)

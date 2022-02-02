@@ -95,6 +95,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         show_closed_assessment: !!_.get(accessRule, 'showClosedAssessment', true),
         show_closed_assessment_score: !!_.get(accessRule, 'showClosedAssessmentScore', true),
         active: !!_.get(accessRule, 'active', true),
+        percentage_credit_grading: !!_.get(accessRule, 'percentageCreditGrading', false),
       };
     });
 

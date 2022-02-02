@@ -12,13 +12,14 @@ DECLARE
     instance_question_id bigint;
     assessment_instance_id bigint;
     grading_method enum_grading_method;
+    percentage_credit_grading boolean;
 BEGIN
     -- ######################################################################
     -- get the related objects
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id, q.grading_method,                iq.id,                  ai.id
-    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id, q.grading_method,                iq.id,                  ai.id, s.percentage_credit_grading
+    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id,   percentage_credit_grading
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -80,7 +81,7 @@ BEGIN
 
     IF assessment_instance_id IS NOT NULL THEN
         PERFORM instance_questions_update_in_grading(instance_question_id, authn_user_id);
-        PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit);
+        PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit, FALSE, FALSE, percentage_credit_grading);
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -24,6 +24,7 @@ columns
     true_answer: jsonb
     v2_score: double precision
     variant_id: bigint not null
+    percentage_credit_grading: boolean not null default false
 
 indexes
     submissions_pkey: PRIMARY KEY (id) USING btree (id)

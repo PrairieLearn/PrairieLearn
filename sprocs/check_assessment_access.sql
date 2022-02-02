@@ -20,7 +20,8 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,     -- If the assessment is visible but not active
         OUT next_active_time text, -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules JSONB,      -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT percentage_credit_grading boolean  -- Will the credit field be used for percentage credit grading?
     ) AS $$
 DECLARE
     active_access_rule_id bigint;
@@ -55,7 +56,8 @@ BEGIN
         aar.show_closed_assessment,
         aar.show_closed_assessment_score,
         aar.active,
-        aar.id
+        aar.id,
+        aar.percentage_credit_grading
     INTO
         authorized,
         exam_access_end,
@@ -68,7 +70,8 @@ BEGIN
         show_closed_assessment,
         show_closed_assessment_score,
         active,
-        active_access_rule_id
+        active_access_rule_id,
+        percentage_credit_grading
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode,
@@ -94,13 +97,15 @@ BEGIN
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = FALSE;
+        percentage_credit_grading = FALSE;
     END IF;
     
     -- Select the *next* access rule with active = true that gives the user access
     IF active_access_rule_id IS NOT NULL AND check_assessment_access.date IS NOT NULL AND NOT active THEN
         SELECT
             aar.start_date,
-            aar.credit
+            aar.credit,
+            aar.percentage_credit_grading
         INTO
             next_active_start_date,
             next_active_credit
@@ -147,6 +152,7 @@ BEGIN
         show_closed_assessment = TRUE;
         show_closed_assessment_score = TRUE;
         active = TRUE;
+        percentage_credit_grading = FALSE;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode at some date (past or future),

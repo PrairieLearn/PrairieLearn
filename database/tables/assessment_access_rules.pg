@@ -2,6 +2,7 @@ columns
     active: boolean not null default true
     assessment_id: bigint not null
     credit: integer
+    percentage_credit_grading: boolean not null default false
     end_date: timestamp with time zone
     exam_uuid: uuid
     id: bigint not null default nextval('assessment_access_rules_id_seq'::regclass)

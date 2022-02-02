@@ -269,6 +269,7 @@ const FILE_UUID_REGEX =
  * @property {number} timeLimitMin
  * @property {string} password
  * @property {SEBConfig} SEBConfig
+ * @property {boolean} percentageCreditGrading
  */
 
 /**
@@ -1104,6 +1105,10 @@ async function validateAssessment(assessment, questions) {
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
       errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
+    }
+
+    if ('percentageCreditGrading' in rule && !('credit' in rule)) {
+      errors.push('Invalid allowAccess rule: credit must be declared if percentageCreditGrading is declared')
     }
 
     errors.push(...allowAccessResult.errors);

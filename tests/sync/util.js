@@ -82,6 +82,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {number} timeLimitMin
  * @property {string} password
  * @property {SEBConfig} SEBConfig
+ * @property {boolean} percentageCreditGrading
  */
 
 /**

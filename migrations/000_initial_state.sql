@@ -370,7 +370,8 @@ CREATE TABLE IF NOT EXISTS submissions (
     graded_at TIMESTAMP WITH TIME ZONE,
     score DOUBLE PRECISION,
     correct BOOLEAN,
-    feedback JSONB
+    feedback JSONB,
+    percentage_credit_grading BOOLEAN DEFAULT FALSE
 );
 
 -- job_sequences

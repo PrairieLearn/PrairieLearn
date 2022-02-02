@@ -23,13 +23,14 @@ DECLARE
     assessment_instance_id bigint;
     grading_method enum_grading_method;
     new_correct boolean;
+    percentage_credit_grading boolean;
 BEGIN
     -- ######################################################################
     -- get the related objects
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id, q.grading_method,              iq.id,                  ai.id
-    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id, q.grading_method,                iq.id,                  ai.id, s.percentage_credit_grading
+    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id,   percentage_credit_grading
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -105,7 +106,7 @@ BEGIN
         PERFORM variants_update_after_grading(variant_id, grading_job.correct);
         IF assessment_instance_id IS NOT NULL THEN
            PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
-           PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+           PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit, FALSE, FALSE, percentage_credit_grading);
         END IF;
     END IF;
 END;

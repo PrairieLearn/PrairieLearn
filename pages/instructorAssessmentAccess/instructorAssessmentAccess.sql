@@ -46,7 +46,11 @@ SELECT
     CASE
         WHEN aar.active THEN 'True'
         ELSE 'False'
-    END AS active
+    END AS active,
+    CASE
+        WHEN aar.percentage_credit_grading THEN 'True'
+        ELSE 'False'
+    END AS percentage_credit_grading
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)

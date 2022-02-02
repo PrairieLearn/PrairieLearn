@@ -5,6 +5,7 @@ CREATE FUNCTION
         IN credit integer DEFAULT NULL,
         IN only_log_if_score_updated boolean DEFAULT FALSE,
         IN allow_decrease boolean DEFAULT FALSE,
+        IN percentage_credit_grading boolean DEFAULT FALSE,
         OUT updated boolean,
         OUT new_points double precision,
         OUT new_score_perc double precision
@@ -28,6 +29,7 @@ DECLARE
     max_possible_points DOUBLE PRECISION;
     max_possible_score_perc DOUBLE PRECISION;
     instance_questions_used_for_grade BIGINT[];
+    use_percentage_credit boolean;
 BEGIN
     SELECT ai.points, ai.points_in_grading, ai.score_perc, ai.score_perc_in_grading
     INTO old_values
@@ -36,10 +38,11 @@ BEGIN
 
     IF credit IS NOT NULL THEN
         use_credit := credit;
+        use_percentage_credit := percentage_credit_grading;
     ELSE
         -- determine credit from the last submission, if any
-        SELECT s.credit
-        INTO use_credit
+        SELECT s.credit, s.percentage_credit_grading
+        INTO use_credit, use_percentage_credit
         FROM
             submissions AS s
             JOIN variants AS v ON (v.id = s.variant_id)
@@ -49,6 +52,7 @@ BEGIN
         LIMIT 1;
 
         use_credit := coalesce(use_credit, 0);
+        use_percentage_credit := coalesce(use_percentage_credit, FALSE);
     END IF;
 
 
@@ -86,7 +90,11 @@ BEGIN
     score_perc := points
         / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
     IF use_credit < 100 THEN
-        score_perc := least(score_perc, use_credit);
+        IF use_percentage_credit THEN
+            score_perc := use_credit * score_perc / 100;
+        ELSE
+            score_perc := least(score_perc, use_credit);
+        END IF;
     ELSIF (use_credit > 100) AND (points >= max_points) THEN
         score_perc := use_credit * score_perc / 100;
     END IF;

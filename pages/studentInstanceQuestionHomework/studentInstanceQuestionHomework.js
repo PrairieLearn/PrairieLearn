@@ -42,6 +42,7 @@ function processSubmission(req, res, callback) {
     submitted_answer: submitted_answer,
     credit: res.locals.authz_result.credit,
     mode: res.locals.authz_data.mode,
+    percentage_credit_grading: res.locals.authz_result.percentage_credit_grading,
   };
   sqldb.callOneRow(
     'variants_ensure_instance_question',
