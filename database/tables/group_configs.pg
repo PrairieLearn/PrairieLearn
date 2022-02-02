@@ -13,7 +13,7 @@ columns
 
 indexes
     group_configs_pkey: PRIMARY KEY (id) USING btree (id)
-    group_configs_assessment_id_key: USING btree (assessment_id)
+    group_configs_assessment_id_key: UNIQUE USING btree (assessment_id)
     group_configs_course_instance_id_key: USING btree (course_instance_id)
 
 foreign-key constraints
