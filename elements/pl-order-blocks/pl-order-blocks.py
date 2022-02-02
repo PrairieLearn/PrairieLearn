@@ -40,11 +40,13 @@ FIRST_WRONG_FEEDBACK = {
 def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
 
+
 def get_graph_info(html_tags):
     tag = pl.get_string_attrib(html_tags, 'tag', None)
     depends = pl.get_string_attrib(html_tags, 'depends', '')
     depends = depends.strip().split(',') if depends else []
     return tag, depends
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
