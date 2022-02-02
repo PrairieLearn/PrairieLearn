@@ -51,6 +51,7 @@ jobs:
         context: .
         push: false
         tags: pltest:latest
+        load: true
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new
     - name: Create a temporary directory for host files
