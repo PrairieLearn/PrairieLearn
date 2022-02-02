@@ -226,7 +226,7 @@ describe('API', function () {
       locals.submission_id = json[0].submission_id;
     });
 
-    describe('GET to API for single submission succeeds', async function () {
+    step('GET to API for single submission succeeds', async function () {
       locals.apiSubmissionUrl =
         locals.apiCourseInstanceUrl + `/submissions/${locals.submission_id}`;
 
