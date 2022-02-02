@@ -45,6 +45,8 @@ jobs:
       run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container pltest /bin/bash
     - name: Run the JavaScript linter
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
+    - name: Run the HTML linter
+      run: docker exec test_container /PrairieLearn/docker/lint_html.sh
     - name: Run the Python linter
       run: docker exec test_container /PrairieLearn/docker/lint_python.sh
     - name: Run the JavaScript typechecker

@@ -5,6 +5,7 @@
 !.editorconfig
 !.eslintignore
 !.eslintrc.js
+!.htmlhintrc
 !.prettierignore
 !.prettierrc.json
 !tsconfig.json

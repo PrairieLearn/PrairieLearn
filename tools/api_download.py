@@ -25,6 +25,7 @@ def download_course_instance(args, logfile):
     log(logfile, f'starting download at {local_iso_time()} ...')
     start_time = time.time()
     course_instance_path = f'/course_instances/{args.course_instance_id}'
+    course_instance_info = get_and_save_json(course_instance_path, 'course_instance_info', args, logfile)
     gradebook = get_and_save_json(f'{course_instance_path}/gradebook', 'gradebook', args, logfile)
     course_instance_access_rules = get_and_save_json(f'{course_instance_path}/course_instance_access_rules', 'course_instance_access_rules', args, logfile)
     assessments = get_and_save_json(f'{course_instance_path}/assessments', 'assessments', args, logfile)

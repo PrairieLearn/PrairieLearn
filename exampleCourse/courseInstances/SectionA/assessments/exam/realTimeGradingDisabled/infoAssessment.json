@@ -1,0 +1,67 @@
+{
+    "uuid": "1f73588f-129e-4c88-a859-b0fff8ef1b27",
+    "type": "Exam",
+    "title": "Exam with real-time grading disabled",
+    "set": "Exam",
+    "number": "2",
+    "allowRealTimeGrading": false,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100,
+            "timeLimitMin": 3,
+            "showClosedAssessment": false
+       }
+    ],
+    "zones": [
+        {
+            "title": "Warm-up",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": 25,
+                    "alternatives": [
+                        {"id": "template/checkbox"},
+                        {"id": "template/multipleChoiceMultipleCorrect"}
+                    ]
+                }
+            ]
+        },
+        {
+            "title": "Choice question type",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": 10,
+                    "alternatives": [
+                        {"id": "template/multipleChoiceWithFigure"},
+                        {"id": "template/multipleChoiceSingleCorrect"}
+                    ]
+                },
+                {
+                    "numberChoose": 1,
+                    "points": 10,
+                    "alternatives": [
+                        {"id": "template/multipleChoiceTrueFalseFromList"},
+                        {"id": "template/multipleChoiceFromList"}
+                    ]
+                }
+           ]
+        },
+        {
+            "title": "Math",
+            "questions": [
+                {
+                    "numberChoose": 1,
+                    "points": 5,
+                    "alternatives": [
+                        {"id": "demo/fixedCheckbox"},
+                        {"id": "demo/randomSymbolic"}
+                    ]
+                },
+                {"id": "demo/randomMultipleChoice", "points": 5}
+            ]
+        }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This assessment will only be graded after it is completed. Students will not be able to auto-grade their questions during the assessment, instead they will only be able to save their answers. The assessment will be graded once the time limit expires (here set to 3 minutes), or once students click the 'Finish assessment' button. Once the assessment is closed, the questions will be auto-graded, and students will be able to immediately see their total score. To prevent students from seeing their total score as soon as the assessment is over, instructors can set 'showClosedAssessmentScore' to false. </p> <p> In this assessment configuration, students will never see their grading result for each specific question, because it uses 'showClosedAssessment: false'. If this attribute is removed, students are be able to go back to each question from a closed assessment, and review how the questions were graded. </p>"
+}

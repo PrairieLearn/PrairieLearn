@@ -1,0 +1,55 @@
+<pl-question-panel>
+    <p>
+        As a food researcher at large beverage company, you have been tasked with coming up with a secret formula for the next probiotic superfood: {{params.beverage}}!
+         At any point in time during the fermentation process, the {{params.beverage}} solution can have <strong>four ingredients</strong> that react with
+         each other: sugar water, acid, carbon dioxide, and the {{params.beverage}} culture itself.
+    </p>
+
+    <pl-figure file-name="drink.png" width="450"></pl-figure>
+    <br>
+
+    <p> You know how each ingredient of the solution changes in one hour: </p>
+    <ul>
+        <li> {{params.sw_to_acid}}% of the sugar water gets converted to acid, and another {{params.sw_to_culture}}% is converted to the culture. </li>
+        <li> {{params.acid_to_co2}}% of the acid is converted to carbon dioxide, and {{params.acid_to_culture}}% is converted to the culture. </li>
+        <li> {{params.co2_to_acid}}% of the carbon dioxide gets re-absorbed back into acid. </li>
+        <li> The culture does not change into another state. </li>
+    </ul>
+
+    <p> Given the initial solution contains <strong>{{params.initial_sw}}% of sugar water and {{params.initial_culture}}% of culture</strong>,
+      find how many hours it will take for the concentration of sugar water to decrease to <strong>{{params.percent_composition}}%</strong>,
+      and save this as <code class="user-output">hours</code>.
+      Save the composition of ingredients at this time as the 1d numpy array <code class="user-output">composition</code>, assuming the
+      following ingredient's order:
+    </p>
+
+    <p>
+    <pl-python-variable params-name="ingredients" prefix="composition_ingredient_order = "></pl-python-variable>
+    </p>
+
+    <p> Your code snippet should define the following variables: </p>
+    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    <pl-file-editor
+        file_name="user_code.py"
+        source-file-name="tests/initial_code.py"
+        ace_mode="ace/mode/python">
+    </pl-file-editor>
+
+
+</pl-question-panel>
+
+<pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+    <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
+
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes-->
+  <p></p>
+  <div class="alert alert-info p-2" role="alert">
+      <small>Note: this is an example of <i>fixed variant</i> question.
+        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank">here</a>.</small>
+        <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>
