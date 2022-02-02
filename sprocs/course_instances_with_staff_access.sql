@@ -28,7 +28,9 @@ BEGIN
                 'formatted_end_date', CASE
                     WHEN d.end_date IS NULL THEN '—'
                     ELSE format_date_full_compact(d.end_date, ci.display_timezone)
-                END
+                END,
+                'has_course_instance_permission_view',
+                is_administrator OR cip.course_instance_role > 'None'
             ) ORDER BY d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC
         )
     INTO
