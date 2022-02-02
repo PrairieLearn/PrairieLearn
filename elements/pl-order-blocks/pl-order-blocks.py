@@ -7,6 +7,7 @@ import base64
 import os
 import json
 import math
+from copy import deepcopy
 from dag_checker import grade_dag, lcs_partial_credit, validate_grouping
 
 PL_ANSWER_CORRECT_DEFAULT = True
@@ -433,7 +434,7 @@ def grade(element_html, data):
                 prev_rank = ranking
 
         elif grading_mode == 'dag':
-            depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
+            depends_graph = {ans['tag']: deepcopy(ans['depends']) for ans in true_answer_list}
             group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
         groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
@@ -461,8 +462,8 @@ def grade(element_html, data):
                     depends_graph[block_tag].remove(group_tag)
                     depends_graph[block_tag] = depends_graph[block_tag] + groups[group_tag]
 
-
         num_initial_correct = grade_dag(submission, depends_graph, group_belonging)
+        print(num_initial_correct)
         first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
 
         true_answer_length = len(depends_graph.keys())

@@ -4,6 +4,10 @@ import itertools
 
 
 def validate_grouping(depends_graph, group_belonging):
+    for node in depends_graph:
+        for dependency in depends_graph[node]:
+            if group_belonging.get(node) != depends_graph.get(dependency):
+                return False
     return True
 
 
