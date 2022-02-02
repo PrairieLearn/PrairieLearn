@@ -124,7 +124,6 @@ def prepare(element_html, data):
             incorrect_answers.append(answer_data_dict)
 
     index = 0
-    # group_info = {}
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
         if html_tags.tag is etree.Comment:
             continue
@@ -132,8 +131,7 @@ def prepare(element_html, data):
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
 
-            group_tag, depends = get_graph_info(html_tags)
-            # group_info[grozup_tag] = depends
+            group_tag, _ = get_graph_info(html_tags)
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
                     continue
@@ -143,28 +141,6 @@ def prepare(element_html, data):
         else:
             prepare_tag(html_tags, index)
             index += 1
-
-    # if grading_method == 'dag':
-    #     depends_graph = {ans['tag']: ans['depends'] for ans in correct_answers}
-    #     group_belonging = {ans['tag']: ans['group'] for ans in correct_answers}
-    #     groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
-    #     if not validate_grouping(depends_graph, group_belonging):
-    #         raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
-
-    #     # if a group G depends on a block B, all blocks in the group G should depend on block B
-    #     for group_tag in groups:
-    #         for dependency in group_info[group_tag]:
-    #             for block_tag in groups[group_tag]:
-    #                 block_info = next(block for block in correct_answers if block['tag'] == block_tag)
-    #                 block_info['depends'].append(dependency)
-
-    #     # if a block B depends on a group G, block B should depend on all blocks in G
-    #     for block_info in correct_answers:
-    #         for group_tag in groups:
-    #             if group_tag in block_info['depends']:
-    #                 block_info['depends'].remove(group_tag)
-    #                 for block_tag in groups[group_tag]:
-    #                     block_info['depends'].append(group_tag)
 
     if grading_method != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
