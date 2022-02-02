@@ -70,7 +70,14 @@ describe('Auto-test questions in exampleCourse', function () {
   this.timeout(60000);
 
   before('set up testing server', helperServer.before(exampleCourseDir));
-  after('shut down testing server', helperServer.after);
+  // Temp for debugging tests in CI - remove.
+  after('shut down testing server', function (callback) {
+    process.env.DEBUG = 'prairielearn:helperServer';
+    helperServer.after((err) => {
+      delete process.env.DEBUG;
+      callback(err);
+    });
+  });
 
   qidsExampleCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
 });
