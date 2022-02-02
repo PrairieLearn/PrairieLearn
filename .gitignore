@@ -20,12 +20,15 @@ docker-compose.override.yml
 ## Backup files
 
 ### vi
-**/*.swp 
+**/*.swp
 **/*.swo
 **/*~
 
 ### emacs
 **/[#]*[#]
+
+### jupyter
+.ipynb_checkpoints
 
 ## File explorers
 **/.DS_Store # OSX Finder
@@ -42,7 +45,7 @@ node_modules
 ## Generated HTML
 
 ### mkdocs
-/site/ 
+/site/
 
 ### jsdoc
 /docs/code-docs/

@@ -1233,7 +1233,6 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 - [demo/randomPlot]
 - [demo/fixedCheckbox]
-- [demo/studentNames]
 - [element/figure]
 
 #### See also
@@ -2021,7 +2020,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/orderblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
-[element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/prairieDrawFigure
+[element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/testCourse/questions/prairieDrawFigure
 [element/pythonvariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/pythonVariable
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
@@ -2035,6 +2034,3 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/custom/gradefunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction
 
 <!-- Misc application questions -->
-
-[demo/studentfaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentFaces
-[demo/studentnames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentNames
