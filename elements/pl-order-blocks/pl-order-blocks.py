@@ -7,7 +7,7 @@ import base64
 import os
 import json
 import math
-from dag_checker import grade_dag, lcs_partial_credit
+from dag_checker import grade_dag, lcs_partial_credit, validate_grouping
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
@@ -124,27 +124,49 @@ def prepare(element_html, data):
             incorrect_answers.append(answer_data_dict)
 
     index = 0
-    group_counter = 0
-    group_info = {}
+    # group_info = {}
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
         if html_tags.tag is etree.Comment:
             continue
         elif html_tags.tag == 'pl-block-group':
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
-            
-            group_counter += 1
+
+            group_tag, depends = get_graph_info(html_tags)
+            # group_info[grozup_tag] = depends
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
                     continue
                 else:
-                    prepare_tag(grouped_tag, index, group_counter)
+                    prepare_tag(grouped_tag, index, group_tag)
                     index += 1
         else:
             prepare_tag(html_tags, index)
             index += 1
 
-    if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
+    # if grading_method == 'dag':
+    #     depends_graph = {ans['tag']: ans['depends'] for ans in correct_answers}
+    #     group_belonging = {ans['tag']: ans['group'] for ans in correct_answers}
+    #     groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
+    #     if not validate_grouping(depends_graph, group_belonging):
+    #         raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
+
+    #     # if a group G depends on a block B, all blocks in the group G should depend on block B
+    #     for group_tag in groups:
+    #         for dependency in group_info[group_tag]:
+    #             for block_tag in groups[group_tag]:
+    #                 block_info = next(block for block in correct_answers if block['tag'] == block_tag)
+    #                 block_info['depends'].append(dependency)
+
+    #     # if a block B depends on a group G, block B should depend on all blocks in G
+    #     for block_info in correct_answers:
+    #         for group_tag in groups:
+    #             if group_tag in block_info['depends']:
+    #                 block_info['depends'].remove(group_tag)
+    #                 for block_tag in groups[group_tag]:
+    #                     block_info['depends'].append(group_tag)
+
+    if grading_method != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
 
     all_incorrect_answers = len(incorrect_answers)
@@ -437,6 +459,32 @@ def grade(element_html, data):
         elif grading_mode == 'dag':
             depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
             group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
+
+        groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
+        groups.pop(None, None)
+        if not validate_grouping(depends_graph, group_belonging):
+            raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
+
+        group_info = {}
+        for html_tags in element:
+            if html_tags.tag != 'pl-block-group':
+                continue
+            group_tag, depends = get_graph_info(html_tags)
+            group_info[group_tag] = depends
+
+        # if a group G depends on a block B, all blocks in the group G should depend on block B
+        for group_tag in groups:
+            for dependency in group_info[group_tag]:
+                for block_tag in groups[group_tag]:
+                    depends_graph[block_tag].append(dependency)
+
+        # if a block B depends on a group G, block B should depend on all blocks in G
+        for block_tag in depends_graph:
+            for group_tag in groups:
+                if group_tag in depends_graph[block_tag]:
+                    depends_graph[block_tag].remove(group_tag)
+                    depends_graph[block_tag] = depends_graph[block_tag] + groups[group_tag]
+
 
         num_initial_correct = grade_dag(submission, depends_graph, group_belonging)
         first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
