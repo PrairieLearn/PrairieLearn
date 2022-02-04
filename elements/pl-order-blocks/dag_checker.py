@@ -5,21 +5,12 @@ from copy import deepcopy
 
 
 def validate_grouping(graph, group_belonging):
-    # print(graph)
-    # print(group_belonging)
     for node in graph:
-        # if node in groups: # TODO actually do proper validation here!
-        #     continue
         group_tag = group_belonging.get(node)
-        # print('node: ', node)
-        # print('group tag: ', group_tag)
         if group_tag is None:
-            # print([group_belonging.get(dependency) is not None for dependency in graph.in_edges(node)])
-            if sum(group_belonging.get(dependency) is not None for dependency in graph.in_edges(node)) != 0:
+            if sum(group_belonging.get(dependency) is not None for (dependency, _) in graph.in_edges(node)) != 0:
                 return False
         else:
-            # print(graph.in_edges(node))
-            # print([group_belonging.get(dependency) == group_tag for dependency in graph.in_edges(node)])
             if not all(group_belonging.get(dependency) == group_tag for (dependency, _) in graph.in_edges(node)):
                 return False
     return True
