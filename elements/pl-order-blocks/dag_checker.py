@@ -1,21 +1,26 @@
 from collections import Counter
 import networkx as nx
 import itertools
+from copy import deepcopy
 
 
-def validate_grouping(depends_graph, group_belonging):
-    print(depends_graph)
-    print(group_belonging)
-    for node in depends_graph:
+def validate_grouping(graph, group_belonging):
+    # print(graph)
+    # print(group_belonging)
+    for node in graph:
+        # if node in groups: # TODO actually do proper validation here!
+        #     continue
         group_tag = group_belonging.get(node)
-        print("group tag:", group_tag)
+        # print('node: ', node)
+        # print('group tag: ', group_tag)
         if group_tag is None:
-            print(node)
-            print([group_belonging.get(dependency) is None for dependency in depends_graph[node]])
-            if not all(group_belonging.get(dependency) is None for dependency in depends_graph[node]):
+            # print([group_belonging.get(dependency) is not None for dependency in graph.in_edges(node)])
+            if sum(group_belonging.get(dependency) is not None for dependency in graph.in_edges(node)) != 0:
                 return False
         else:
-            if not all(group_belonging.get(dependency) == group_tag for dependency in depends_graph[node]):
+            # print(graph.in_edges(node))
+            # print([group_belonging.get(dependency) == group_tag for dependency in graph.in_edges(node)])
+            if not all(group_belonging.get(dependency) == group_tag for (dependency, _) in graph.in_edges(node)):
                 return False
     return True
 
@@ -72,24 +77,26 @@ def dag_to_nx(depends_graph):
     return graph
 
 
-def add_edges_for_groups(depends_graph, group_belonging, group_info):
+def add_edges_for_groups(graph, group_belonging, group_info):
     groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
     groups.pop(None, None)
-    if not validate_grouping(depends_graph, group_belonging):
+    if not validate_grouping(graph, group_belonging):
         raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
 
     # if a group G depends on a block B, all blocks in the group G should depend on block B
     for group_tag in groups:
         for dependency in group_info[group_tag]:
-            for block_tag in groups[group_tag]:
-                depends_graph[block_tag].append(dependency)
+            for node in groups[group_tag]:
+                graph.add_edge(dependency, node)
 
     # if a block B depends on a group G, block B should depend on all blocks in G
-    for block_tag in depends_graph:
-        for group_tag in groups:
-            if group_tag in depends_graph[block_tag]:
-                depends_graph[block_tag].remove(group_tag)
-                depends_graph[block_tag] = depends_graph[block_tag] + groups[group_tag]
+    for node in graph.nodes():
+        for depends, _ in deepcopy(graph.in_edges(node)):
+            if depends in groups:
+                graph.add_edges_from((tag, node) for tag in groups[depends])
+
+    for group in groups:
+        graph.remove_node(group)
 
 
 def grade_dag(submission, depends_graph, group_belonging, group_info):
@@ -101,12 +108,13 @@ def grade_dag(submission, depends_graph, group_belonging, group_info):
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: length of list that meets both correctness conditions, starting from the beginning
     """
-    add_edges_for_groups(depends_graph, group_belonging, group_info)
     graph = dag_to_nx(depends_graph)
+    add_edges_for_groups(graph, group_belonging, group_info)
 
     if not nx.is_directed_acyclic_graph(graph):
         raise Exception('Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.')
 
+    print('graph: ', graph.nodes())
     top_sort_correctness = check_topological_sorting(submission, graph)
     grouping_correctness = check_grouping(submission, group_belonging)
 
@@ -140,8 +148,8 @@ def lcs_partial_credit(submission, depends_graph, group_belonging, group_info):
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: edit distance from the student submission to some correct solution
     """
-    add_edges_for_groups(depends_graph, group_belonging, group_info)
     graph = dag_to_nx(depends_graph)
+    add_edges_for_groups(graph, group_belonging, group_info)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
