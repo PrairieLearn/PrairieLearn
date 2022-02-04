@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const assert = require('chai').assert;
 const requestp = require('request-promise-native');
 const cheerio = require('cheerio');
+const { step } = require('mocha-steps');
 
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
@@ -12,7 +13,6 @@ const helperServer = require('./helperServer');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const questionUrl = baseUrl + '/course_instance/1/instructor/question/1/preview';
 const courseInstanceIssuesUrl = baseUrl + '/course_instance/1/instructor/course_admin/issues';
 const courseIssuesUrl = baseUrl + '/course/1/course_admin/issues';
 
@@ -24,20 +24,27 @@ describe('Issues', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  doTest(questionUrl, courseInstanceIssuesUrl, 'course');
-  doTest(questionUrl, courseIssuesUrl, 'course instance');
+  doTest(courseInstanceIssuesUrl, 'course');
+  doTest(courseIssuesUrl, 'course instance');
 });
 
-function doTest(questionUrl, issuesUrl, label) {
+function doTest(issuesUrl, label) {
   let page, elemList;
 
   describe(`Report issue with question and close all issues in ${label}`, () => {
-    it('should get question preview page', async () => {
+    let questionUrl;
+
+    step('should get question URL', async () => {
+      const questionId = (await sqldb.queryOneRowAsync(sql.select_question_id, [])).rows[0].id;
+      questionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
+    });
+
+    step('should get question preview page', async () => {
       page = await requestp(questionUrl);
       locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
     });
 
-    it('should have a __csrf_token and a __variant_id', () => {
+    step('should have a __csrf_token and a __variant_id', () => {
       elemList = locals.$('div[id="issueCollapse"] input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -50,7 +57,7 @@ function doTest(questionUrl, issuesUrl, label) {
       assert.isString(locals.__variant_id);
     });
 
-    it('should post report_issue', async () => {
+    step('should post report_issue', async () => {
       const options = {
         url: questionUrl,
         followAllRedirects: true,
@@ -67,7 +74,7 @@ function doTest(questionUrl, issuesUrl, label) {
       locals.$ = cheerio.load(page.body); // eslint-disable-line require-atomic-updates
     });
 
-    it('should have one open issue', (callback) => {
+    step('should have one open issue', (callback) => {
       sqldb.query(sql.select_open_issues, [], (err, result) => {
         if (ERR(err, callback)) return;
         if (result.rowCount !== 1) {
@@ -83,12 +90,12 @@ function doTest(questionUrl, issuesUrl, label) {
       });
     });
 
-    it('should get issues page successfully', async () => {
+    step('should get issues page successfully', async () => {
       page = await requestp(issuesUrl);
       locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
     });
 
-    it('should have a __csrf_token', () => {
+    step('should have a __csrf_token', () => {
       elemList = locals.$('div[id="closeAllIssuesModal"] input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -96,7 +103,7 @@ function doTest(questionUrl, issuesUrl, label) {
       assert.isString(locals.__csrf_token);
     });
 
-    it('should post close_all', async () => {
+    step('should post close_all', async () => {
       const options = {
         url: issuesUrl,
         followAllRedirects: true,
@@ -111,7 +118,7 @@ function doTest(questionUrl, issuesUrl, label) {
       locals.$ = cheerio.load(page.body); // eslint-disable-line require-atomic-updates
     });
 
-    it('should have zero open issues', (callback) => {
+    step('should have zero open issues', (callback) => {
       sqldb.query(sql.select_open_issues, [], (err, result) => {
         if (ERR(err, callback)) return;
         if (result.rowCount > 0) {

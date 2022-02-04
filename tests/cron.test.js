@@ -13,6 +13,7 @@ const helperServer = require('./helperServer');
 describe('Cron', function () {
   this.timeout(60000);
 
+  before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
   describe('1. cron jobs', () => {
