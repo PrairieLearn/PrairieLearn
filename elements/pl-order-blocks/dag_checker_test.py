@@ -1,4 +1,4 @@
-from dag_checker import grade_dag, lcs_partial_credit  # , validate_grouping
+from dag_checker import grade_dag, lcs_partial_credit, validate_grouping
 
 problem_1_dag = {'1': [], '2': ['1'], '3': ['1'], '4': ['2', '3'], '5': ['1'], '6': ['2'], '7': ['4', '5', '6'], '8': [], '9': ['7', '8'], '10': ['9']}
 problem_1_groups = {str(i): None for i in range(1, 11)}
@@ -21,8 +21,9 @@ problem_1_expected_ed = [
     4,
 ]
 
-problem_2_dag = {'1': [], '2': ['1'], '3': ['2'], '4': [], '5': ['4'], '6': ['5'], '7': ['3', '6']}
-problem_2_groups = {'1': 1, '2': 1, '3': 1, '4': 2, '5': 2, '6': 2, '7': None}
+problem_2_dag = {'1': [], '2': ['1'], '3': ['2'], '4': [], '5': ['4'], '6': ['5'], '7': ['g1', 'g2']}
+problem_2_groups = {'1': 'g1', '2': 'g1', '3': 'g1', '4': 'g2', '5': 'g2', '6': 'g2', '7': None}
+problem_2_group_info = {'g1': [], 'g2': []}
 problem_2_submissions = [
     ['1', '2', '3', '4', '5', '6', '7'],
     ['4', '5', '6', '1', '2', '3', '7'],
@@ -63,24 +64,26 @@ problem_2_expected_ed_groups = [
 
 def test_grade_dag():
     for submission, expected, expected_ed in zip(problem_1_submissions, problem_1_expected, problem_1_expected_ed):
-        assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
-        assert lcs_partial_credit(submission, problem_1_dag, {}) == expected_ed
+        assert grade_dag(submission, problem_1_dag, problem_1_groups, {}) == expected
+        assert lcs_partial_credit(submission, problem_1_dag, {}, {}) == expected_ed
 
     for submission, expected, expected_ed_no_groups, expected_ed_groups in zip(problem_2_submissions, problem_2_expected, problem_2_expected_ed_no_groups, problem_2_expected_ed_groups):
-        assert grade_dag(submission, problem_2_dag, problem_2_groups) == expected
-        assert lcs_partial_credit(submission, problem_2_dag, {}) == expected_ed_no_groups
-        assert lcs_partial_credit(submission, problem_2_dag, problem_2_groups) == expected_ed_groups
+        assert grade_dag(submission, problem_2_dag, problem_2_groups, problem_2_group_info) == expected
+        assert lcs_partial_credit(submission, problem_2_dag, {}, {}) == expected_ed_no_groups
+        assert lcs_partial_credit(submission, problem_2_dag, problem_2_groups, problem_2_group_info) == expected_ed_groups
 
 
-problem_3_dag = {'1': [], '2': ['1'], '3': ['2'], '4': ['1'], '5': ['4', 'g1']}
-problem_3_invalid_groups_1 = {'1': None, '2': 1, '3': 1, '4': 2, '5': 2}
-problem_3_invalid_groups_2 = {'1': None, '2': 1, '3': 1, '4': 2, '5': 2}
-problem_3_groups = {'1': None, '2': 1, '3': 1, '4': 2, '5': 2}
+problem_3_invalid_dag_1 = {'1': [], '2': ['1'], '3': ['2'], '4': ['1'], '5': ['4'], '6': ['g1', 'g2']}
+problem_3_invalid_dag_2 = {'1': [], '2': [], '3': ['2'], '4': [], '5': ['4'], '6': ['3', '5']}
+problem_3_invalid_dag_3 = {'1': [], '2': [], '3': ['2'], '4': [], '5': ['4', 'g1'], '6': ['g1', 'g2']}
+problem_3_dag = {'1': [], '2': [], '3': ['2'], '4': [], '5': ['4'], '6': ['g1', 'g2']}
+problem_3_groups = {'1': None, '2': 'g1', '3': 'g1', '4': 'g2', '5': 'g2'}
 
 
-# def test_problem_validation():
-#     assert validate_grouping(problem_1_dag, problem_1_groups)
-#     assert validate_grouping(problem_2_dag, problem_2_groups)
-#     assert not validate_grouping(problem_3_dag, problem_3_invalid_groups_1)
-#     assert not validate_grouping(problem_3_dag, problem_3_invalid_groups_2)
-#     assert validate_grouping(problem_3_dag, problem_3_groups)
+def test_problem_validation():
+    assert validate_grouping(problem_1_dag, problem_1_groups)
+    assert validate_grouping(problem_2_dag, problem_2_groups)
+    assert not validate_grouping(problem_3_invalid_dag_1, problem_3_groups)
+    assert not validate_grouping(problem_3_invalid_dag_2, problem_3_groups)
+    assert not validate_grouping(problem_3_invalid_dag_3, problem_3_groups)
+    assert validate_grouping(problem_3_dag, problem_3_groups)

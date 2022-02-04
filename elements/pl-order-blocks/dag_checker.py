@@ -4,9 +4,18 @@ import itertools
 
 
 def validate_grouping(depends_graph, group_belonging):
+    print(depends_graph)
+    print(group_belonging)
     for node in depends_graph:
-        for dependency in depends_graph[node]:
-            if group_belonging.get(node) != depends_graph.get(dependency):
+        group_tag = group_belonging.get(node)
+        print("group tag:", group_tag)
+        if group_tag is None:
+            print(node)
+            print([group_belonging.get(dependency) is None for dependency in depends_graph[node]])
+            if not all(group_belonging.get(dependency) is None for dependency in depends_graph[node]):
+                return False
+        else:
+            if not all(group_belonging.get(dependency) == group_tag for dependency in depends_graph[node]):
                 return False
     return True
 
@@ -63,7 +72,27 @@ def dag_to_nx(depends_graph):
     return graph
 
 
-def grade_dag(submission, depends_graph, group_belonging):
+def add_edges_for_groups(depends_graph, group_belonging, group_info):
+    groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
+    groups.pop(None, None)
+    if not validate_grouping(depends_graph, group_belonging):
+        raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
+
+    # if a group G depends on a block B, all blocks in the group G should depend on block B
+    for group_tag in groups:
+        for dependency in group_info[group_tag]:
+            for block_tag in groups[group_tag]:
+                depends_graph[block_tag].append(dependency)
+
+    # if a block B depends on a group G, block B should depend on all blocks in G
+    for block_tag in depends_graph:
+        for group_tag in groups:
+            if group_tag in depends_graph[block_tag]:
+                depends_graph[block_tag].remove(group_tag)
+                depends_graph[block_tag] = depends_graph[block_tag] + groups[group_tag]
+
+
+def grade_dag(submission, depends_graph, group_belonging, group_info):
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
@@ -72,6 +101,7 @@ def grade_dag(submission, depends_graph, group_belonging):
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: length of list that meets both correctness conditions, starting from the beginning
     """
+    add_edges_for_groups(depends_graph, group_belonging, group_info)
     graph = dag_to_nx(depends_graph)
 
     if not nx.is_directed_acyclic_graph(graph):
@@ -91,7 +121,7 @@ def is_vertex_cover(G, vertex_cover):
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit(submission, depends_graph, group_belonging):
+def lcs_partial_credit(submission, depends_graph, group_belonging, group_info):
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
     The naive solution would be to enumerate all topological sorts, then get the edit distance to each of them,
@@ -110,6 +140,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: edit distance from the student submission to some correct solution
     """
+    add_edges_for_groups(depends_graph, group_belonging, group_info)
     graph = dag_to_nx(depends_graph)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
 
