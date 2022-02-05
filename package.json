@@ -27,7 +27,7 @@
         "body-parser": "^1.19.1",
         "bootstrap": "^4.6.0",
         "bootstrap-icons": "^1.8.0",
-        "bootstrap-table": "1.18.3",
+        "bootstrap-table": "^1.19.1",
         "bowser": "^2.11.0",
         "byline": "^5.0.0",
         "chalk": "^2.4.2",
