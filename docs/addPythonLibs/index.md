@@ -9,10 +9,10 @@ The quickest way to add custom libraries is to install them directly to your cou
 1. Check out a copy of your course locally with Git, and make sure it is up-to-date (i.e., you have pulled the latest master).
 2. Locate the package that you would like to install. You can find a list of all the available Python libraries at the [_Python Package Index_](https://pypi.org).
 3. Install the package to your courses's `serverFileCourse` directory. You can use the command
-    ```
-    docker run -it --rm -v <path-to-course>:/course prairielearn/prairielearn pip3 install -target /course/serverFilesCourse <library>
-    ```
-    replacing `<path-to-course>` and `<library>` with the absolute path to the course on your local computer, and the library you wish to install.
+   ```
+   docker run -it --rm -v <path-to-course>:/course prairielearn/prairielearn pip3 install -target /course/serverFilesCourse <library>
+   ```
+   replacing `<path-to-course>` and `<library>` with the absolute path to the course on your local computer, and the library you wish to install.
 4. Using Git, commit and push the new files that are now in your `serverFilesCourse` directory.
 
 After these steps, you should be able to `import` the library as normal in your `server.py` files.
