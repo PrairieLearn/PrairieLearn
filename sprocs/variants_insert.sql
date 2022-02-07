@@ -110,7 +110,7 @@ BEGIN
     RETURNING id
     INTO variant_id;
 
-    SELECT variants_select(variant_id)
+    SELECT variants_select(variant_id, question_id, instance_question_id)
     INTO variant;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
