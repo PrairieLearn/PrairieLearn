@@ -7,9 +7,13 @@
   window.allowQuestionUnload = false;
   
   window.submitTimeLimitFinish = function() {
+      <% if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+      // viewing exam as a different effective user, do not trigger time limit finish
+      <% } else { %>
       // do not trigger unsaved warning dialog
       window.allowQuestionUnload = true;
       document.forms['time-limit-finish-form'].submit();
+      <% } %>
   };
   window.timeLimitBGColor = function(remainingSec) {
       if (remainingSec >= 180) {
@@ -20,6 +24,9 @@
           return 'bg-danger';
       }
   };
+  window.serverUpdateFail = function(jqXHR, textStatus, error) {
+      window.location.reload(true);
+  }
 </script>
 
 <%- include('countdown', {
@@ -28,6 +35,7 @@
      progressSelector: progressSelector,
      displaySelector: displaySelector,
      serverUpdateURL: typeof serverUpdateURL === "undefined" ? null : serverUpdateURL,
+     serverUpdateFailFunction: "window.serverUpdateFail",
      timerOutCode: "window.submitTimeLimitFinish();",
      backgroundColorFunction: "window.timeLimitBGColor",
    }) %>

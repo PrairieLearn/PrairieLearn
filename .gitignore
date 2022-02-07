@@ -1,60 +1,84 @@
-# JetBrains IDE files
+# Development
+
+## Custom scripts
+/start-custom.sh
+
+## s3rver S3 emulation data directory
+/s3rver
+
+### https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
+docker-compose.override.yml
+
+## Editors
+
+### JetBrains
 /.idea/
 
-# OS X Finder files
-**/.DS_Store
+.vscode
+.tmux.conf
 
-# Backend dependencies
-/v1/backend/node_modules/
-/v1/frontend-build/
-/node_modules/
+## Backup files
 
-# Custom startup script
-/start.sh
+### vi
+**/*.swp
+**/*.swo
+**/*~
 
-# Server log files
-/v1/backend/server.log
-/server.log
+### emacs
+**/[#]*[#]
 
-# MkDocs generated HTML
-/site/
+### jupyter
+.ipynb_checkpoints
 
-# JSDoc generated HTML
-/docs/code-docs/
+## File explorers
+**/.DS_Store # OSX Finder
 
-# Config files
-/v1/backend/config.json
-/v1/backend/config.json.*
+# PrairieLearn
+
+## Config
 /config.json
 /aws-config.json
 
-# Swap files
-**/*.swp
-**/*.swo
+## Dependencies
+node_modules
 
-# Backup Files
-**/*~
+## Generated HTML
 
-# NPM log file
-npm-debug.log
+### mkdocs
+/site/
 
-# Code coverage files
+### jsdoc
+/docs/code-docs/
+
+## Runtime artifacts
+
+### Logs
+/server.log
+
+### Code coverage
 /coverage/
 /.nyc_output/
 
-# Python
+### Tests
+/tests/testFileEditor/courseLive/
+/tests/testFileEditor/courseOrigin/
+/tests/testFileEditor/courseDev/
+
+## Programming languages
+
+### Python
 __pycache__/
 *.py[cod]
 *$py.class
 
-# R
+### R
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 
-# VSCode files
-.vscode
+## macOS files
+.DS_Store
 
-# tmux
-.tmux.conf
+## s3rver file store
+/s3rver

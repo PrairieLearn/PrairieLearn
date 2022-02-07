@@ -1,20 +1,18 @@
--- BLOCK instance_question_select_last_variant_with_submission
-DROP FUNCTION IF EXISTS instance_question_select_manual_grading_objects(bigint);
-
 -- Retrieves the last variant for an instance question and last submission for the variant.
 
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_question_select_manual_grading_objects(
         IN iq_id bigint,
         OUT question jsonb,
         OUT variant jsonb,
-        OUT submission jsonb
+        OUT submission jsonb,
+        OUT max_points bigint
     )
 AS $$
 BEGIN
 
-    SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*)
-    INTO question, variant, submission
+    SELECT to_jsonb(q.*), to_jsonb(v.*), to_jsonb(s.*), aq.max_points
+    INTO question, variant, submission, max_points
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

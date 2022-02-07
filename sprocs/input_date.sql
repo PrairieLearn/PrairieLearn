@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     input_date (
         date_string text, -- can be either '2016-07-24T16:52:48' or '2016-07-24 16:52:48'
         display_timezone text

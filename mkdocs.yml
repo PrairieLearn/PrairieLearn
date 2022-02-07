@@ -33,12 +33,11 @@ pages:
   - 'Request new Python libraries for questions': 'addPythonLibs/index.md'
   - 'External grading': 'externalGrading.md'
   - 'Python autograder': 'python-grader/index.md'
-  - 'C autograder': 'c-grader/index.md'
+  - 'C/C++ autograder': 'c-grader/index.md'
   - 'Java autograder': 'java-grader/index.md'
   - 'Workspaces': 'workspaces/index.md'
   - 'Manual grading': 'manualGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
-  - 'How to use PL to learn student names': 'howToLearnNames.md'
   - 'FAQ': 'faq.md'
   - 'API': 'api.md'
 - Developer Guide:
@@ -50,10 +49,6 @@ pages:
   - 'Element extensions': 'elementExtensions.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
-- Admin Guide:
-  - 'Adding new courses': 'admin/makeCourse.md'
-  - 'Getting deployment changelogs': 'admin/deployDiff.md'
-  - 'Autoscaling settings': 'admin/workspaceAutoscaling.md'
 - Deprecated Features:
   - 'Old v1/v2 question format': 'oldQuestion.md'
   - 'Old PrairieDraw graphics': 'PrairieDraw.md'

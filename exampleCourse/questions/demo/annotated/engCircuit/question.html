@@ -1,0 +1,32 @@
+<pl-question-panel>
+
+<p>Determine the {{params.ask}} of the circuit below:</p>
+
+<p> <pl-figure file-name={{params.figname}} directory="clientFilesQuestion"></pl-figure> </p>
+
+<p> The input variables are provided below: </p>
+<p>
+<pl-variable-output digits="0" show-matlab="false" show-mathematica="false" show-r="false">
+    <variable params-name="R1">R1</variable>
+    <variable params-name="R2">R2</variable>
+    <variable params-name="R3">R3</variable>
+    <variable params-name="Vt">VT</variable>
+</pl-variable-output>
+</p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name=ans  label={{params.lab}} suffix={{params.unit}}></pl-number-input>
+</p>
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes-->
+  <p></p>
+  <div class="alert alert-info p-2" role="alert">
+    <small>Note: this is an example of a question generator with randomized parameters, which is used to
+       generate a <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md" target="_blank">fixed question variant for an exam</a>. Students receive instant feedback and have <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank">retry attempts for partial credit.</a>
+      </small>
+      <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>
