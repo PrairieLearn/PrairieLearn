@@ -59,11 +59,12 @@ def prepare(element_html, data):
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
 
-    partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'default')
-    if grading_method != 'dag' and partial_credit_type != 'default':
-        raise Exception('You may only specify different partial credit options in the DAG grading mode.')
-    elif grading_method == 'dag':
-        partial_credit_type = 'lcs' if partial_credit_type == 'default' else partial_credit_type
+    if grading_method in ['dag', 'ranking']:
+        partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'lcs')
+        if partial_credit_type not in ['none', 'lcs']:
+            raise Exception('partial credit type "' + partial_credit_type + '" is not available with the "' + grading_method + '" grading-method.')
+    elif pl.get_string_attrib(element, 'partial-credit', None) is not None:
+        raise Exception('You may only specify partial credit options in the DAG and ranking grading modes.')
 
     accepted_grading_method = ['ordered', 'unordered', 'ranking', 'dag', 'external']
     if grading_method not in accepted_grading_method:
@@ -72,9 +73,6 @@ def prepare(element_html, data):
     if (grading_method not in ['dag', 'ranking'] and feedback_type != 'none') or \
        (grading_method in ['dag', 'ranking'] and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
-
-    if grading_method == 'dag' and partial_credit_type not in ['none', 'lcs']:
-        raise Exception('partial credit type "' + partial_credit_type + '" is not available with the "' + grading_method + '" grading-method.')
 
     correct_answers = []
     incorrect_answers = []
