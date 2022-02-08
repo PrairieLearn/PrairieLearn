@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/html",
   "version": "1.0.0",
+  "main": "src/index.js",
   "dependencies": {
     "ejs": "^3.1.6"
   }
