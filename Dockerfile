@@ -19,6 +19,7 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && mkdir -p /jobs \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
+    && make build \
     && node server.js --migrate-and-exit \
     && su postgres -c "createuser -s root" \
     && /PrairieLearn/docker/start_postgres.sh stop \
