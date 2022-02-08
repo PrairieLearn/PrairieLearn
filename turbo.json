@@ -1,0 +1,8 @@
+{
+  "baseBranch": "origin/master",
+  "pipeline": {
+    "test": {
+      "outputs": []
+    }
+  }
+}
