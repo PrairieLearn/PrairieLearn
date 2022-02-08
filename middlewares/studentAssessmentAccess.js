@@ -72,6 +72,8 @@ module.exports = router;
  *
  * Returns `true` if the password is correct, `false` otherwise. If this
  * function returns `false`, the caller should not continue with the request.
+ *
+ * @returns {boolean}
  */
 module.exports.checkPasswordOrRedirect = function (req, res) {
   if (!res.locals.authz_result?.password) {
