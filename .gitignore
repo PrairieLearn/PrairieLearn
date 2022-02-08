@@ -85,3 +85,6 @@ __pycache__/
 
 ## Turborepo caches
 .turbo
+
+## Compiled package files
+packages/*/dist

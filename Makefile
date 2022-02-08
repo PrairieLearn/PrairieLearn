@@ -1,5 +1,11 @@
 export PATH := node_modules/.bin/:$(PATH)
 
+build:
+	@turbo run build
+
+dev:
+	@turbo run dev
+
 start: start-support
 	@node server.js
 start-nodemon: start-support
