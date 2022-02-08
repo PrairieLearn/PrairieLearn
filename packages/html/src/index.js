@@ -55,9 +55,9 @@ class HtmlSafeString {
  * @param {...any} values
  * @returns  {HtmlSafeString}
  */
-export function html(strings, ...values) {
+module.exports.html = function html(strings, ...values) {
   return new HtmlSafeString(strings, values);
-}
+};
 
 /**
  * Pre-escpapes the rendered HTML. Useful for when you want to inline the HTML
