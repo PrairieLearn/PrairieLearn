@@ -56,12 +56,8 @@ router.all('/', function (req, res, next) {
   // the intricacies of creating a new assessment instance. We handle those
   // cases on the `studentAssessmentExam` and `studentAssessmentHomework`
   // pages.
-  if (res.locals?.assessment_instance?.open) {
-    if (!module.exports.checkPasswordOrRedirect(req, res)) {
-      return;
-    }
-
-    // Successful password case: falls though
+  if (res.locals?.assessment_instance?.open && !module.exports.checkPasswordOrRedirect(req, res)) {
+    return;
   }
 
   // Pass-through for everything else
