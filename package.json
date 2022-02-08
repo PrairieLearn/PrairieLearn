@@ -174,5 +174,8 @@
             "testCourse/*"
         ],
         "ext": "js,json,sql"
-    }
+    },
+    "workspaces": [
+        "packages/*"
+    ]
 }
