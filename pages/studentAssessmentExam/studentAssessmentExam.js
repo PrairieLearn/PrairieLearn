@@ -13,9 +13,12 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
   if (res.locals.assessment.multiple_instance) {
-    // The student is on this page to create and start a new assessment instance.
-    // If the current access rules require a password, we'll check if the
-    // password has been entered and prompt for it if not.
+    // The user has landed on this page to create a new assessment instance.
+    //
+    // Before allowing the user to create a new assessment instance, we need
+    // to check if the current access rules require a password. If they do,
+    // we'll ensure that the password has already been entered before allowing
+    // students to create and start a new assessment instance.
     if (!checkPasswordOrRedirect(req, res)) return;
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -27,9 +30,10 @@ router.get('/', function (req, res, next) {
     sqldb.query(sql.select_single_assessment_instance, params, function (err, result) {
       if (ERR(err, next)) return;
       if (result.rowCount === 0) {
-        // The student is on this page to create and start a new assessment instance.
-        // If the current access rules require a password, we'll check if the
-        // password has been entered and prompt for it if not.
+        // Before allowing the user to create a new assessment instance, we need
+        // to check if the current access rules require a password. If they do,
+        // we'll ensure that the password has already been entered before allowing
+        // students to create and start a new assessment instance.
         if (!checkPasswordOrRedirect(req, res)) return;
 
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -53,8 +57,10 @@ router.post('/', function (req, res, next) {
   // permission required to create an assessment for the effective user.
 
   if (req.body.__action === 'new_instance') {
-    // If the current access rules require a password, we'll check if the
-    // password has been entered and prompt for it if not.
+    // Before allowing the user to create a new assessment instance, we need
+    // to check if the current access rules require a password. If they do,
+    // we'll ensure that the password has already been entered before allowing
+    // students to create and start a new assessment instance.
     if (!checkPasswordOrRedirect(req, res)) return;
 
     assessment.makeAssessmentInstance(

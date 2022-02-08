@@ -69,10 +69,10 @@ router.get('/', function (req, res, next) {
           });
         });
       } else {
-        // Before creating a new assessment instance, we need to check if the
-        // current access rules require a password. If they do, we'll ensure
-        // that the password has already been entered before allowing students
-        // to create and start a new assessment instance.
+        // Before allowing the user to create a new assessment instance, we need
+        // to check if the current access rules require a password. If they do,
+        // we'll ensure that the password has already been entered before allowing
+        // students to create and start a new assessment instance.
         if (!checkPasswordOrRedirect(req, res)) return;
 
         const time_limit_min = null;
@@ -108,10 +108,10 @@ router.post('/', function (req, res, next) {
     sqldb.query(sql.find_single_assessment_instance, params, function (err, result) {
       if (ERR(err, next)) return;
       if (result.rowCount === 0) {
-        // Before creating a new assessment instance, we need to check if the
-        // current access rules require a password. If they do, we'll ensure
-        // that the password has already been entered before allowing students
-        // to create and start a new assessment instance.
+        // Before allowing the user to create a new assessment instance, we need
+        // to check if the current access rules require a password. If they do,
+        // we'll ensure that the password has already been entered before allowing
+        // students to create and start a new assessment instance.
         if (!checkPasswordOrRedirect(req, res)) return;
 
         const time_limit_min = null;
