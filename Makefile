@@ -19,7 +19,7 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-prairielib test-grader-host
+test-js: test-prairielearn test-prairielib test-grader-host test-packages
 test-prairielearn: start-support
 	@nyc --reporter=lcov mocha --full-trace tests/index.js
 test-prairielib:
