@@ -4,7 +4,7 @@
   "main": "src/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
+    "dev": "tsc --watch --preserveWatchOutput",
     "test": "mocha --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
