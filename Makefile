@@ -29,15 +29,21 @@ test-grader-host:
 test-nocoverage: start-support
 	@mocha tests/index.js
 test-python:
-	@python3 question-servers/freeformPythonLib/prairielearn_test.py
-	@python3 elements/pl-order-blocks/dag_checker_test.py
-
-lint: lint-js lint-python
+# `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
+# pytest uses to discover tests, but it isn't actually a test file itself. We
+# explicitly exclude it here.
+	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
+	
+lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@eslint --ext js "**/*.js"
 	@prettier --check "**/*.{js,ts,md}"
 lint-python:
 	@python3 -m flake8 ./
+lint-html:
+	@htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+lint-links:
+	@node tools/validate-links.mjs
 
 format: format-js
 format-js:
@@ -48,7 +54,7 @@ typecheck: typecheck-js typecheck-python
 typecheck-js:
 	@tsc
 typecheck-python:
-	@pyright elements/pl-order-blocks/dag*.py  # TODO enable for all Python
+	@pyright
 
 depcheck:
 	-depcheck --ignore-patterns=public/**

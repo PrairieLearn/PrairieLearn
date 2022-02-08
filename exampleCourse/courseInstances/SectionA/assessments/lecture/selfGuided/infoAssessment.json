@@ -1,0 +1,40 @@
+{
+    "uuid": "13D012E4-9C66-4092-BA1A-0445919DB0C3",
+    "type": "Homework",
+    "title": "Learning new concepts asynchronously",
+    "set": "Lecture",
+    "number": "1",
+    "allowAccess": [
+        {
+            "comment": "Set end date for 100% credit",
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2025-12-01T23:59:59"
+       },
+       {
+           "comment": "Set later end date for reduced credit",
+           "mode": "Public",
+           "credit": 50,
+           "startDate": "2021-01-01T00:00:01",
+           "endDate": "2025-12-08T23:59:59"
+      },
+      {
+          "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessement)",
+          "mode": "Public",
+          "credit": 0,
+          "startDate": "2021-01-01T00:00:01",
+          "endDate": "2025-12-31T23:59:59"
+     }
+    ],
+    "zones": [
+        {
+            "questions": [
+                { "id": "demo/annotated/LectureVelocity/1-Introduction", "points": 1, "triesPerVariant": 2},
+                { "id": "demo/annotated/LectureVelocity/2-Derivative", "points": 1},
+                { "id": "demo/annotated/LectureVelocity/4-KnowledgeTest", "points": 2, "triesPerVariant": 2}
+            ]
+        }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> Just like there are different teaching methods, people also learn in different ways. Mixing how content is presented to students can improve the learner engagement. In this assessment, we combine a mixture of text, equations, plots, videos, interactive JupyterLabs, and short quiz questions to introduce new course content to students. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/lecture/selfGuided/__docs/docs.md target=_blank>here</a>.</p> "
+}

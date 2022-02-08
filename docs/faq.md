@@ -146,21 +146,21 @@ the following:
 
 For cheatsheets in `clientFilesCourse`, use:
 
-```
-"text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesCourse %>/formulas.pdf\">PDF version</a></li>"
+```json
+{
+  "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesCourse %>/formulas.pdf\">PDF version</a></li>"
+}
 ```
 
 Otherwise, for cheatsheets in `clientFilesAssessment`, use:
 
-```
-"text": "The following forumula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
+```json
+{
+  "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
+}
 ```
 
-To learn more about where files are stored, please see
-[clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/).
-For an implementation, please see
-[Exam 1](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/assessments/exam1/infoAssessment.json#L34)
-in the example course.
+To learn more about where files are stored, please see [clientFiles and serverFiles](clientServerFiles.md).
 
 ## How can I reference material in `serverFilesQuestion` and `clientFilesQuestion` from the `server.py`?
 
@@ -198,7 +198,7 @@ manual grading procedure requires:
 From there, the grades are incorporated into the courses' gradebook and will
 be available for export as part of the total assessment.
 
-For a sample implementation of a manually graded question, please see the [`fibonacciUploadManual` question's `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacciUploadManual/info.json#L8) in the example course.
+For a sample implementation of a manually graded question, the example course includes a question where a Python submission is to be manually graded. Please [see the question's `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/demo/manualGrade/codeUpload/info.json#L8) in the example course.
 
 ## Why is my QID invalid?
 

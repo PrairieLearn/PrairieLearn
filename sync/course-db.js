@@ -584,7 +584,7 @@ module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
- * @template T
+ * @template {{ uuid: string }} T
  * @param {Object} options - Options for loading and validating the file
  * @param {string} options.coursePath
  * @param {string} options.filePath
@@ -656,11 +656,12 @@ module.exports.loadInfoFile = async function ({
     }
 
     // Validate file against schema
+    /** @type {import('ajv').ValidateFunction<T>} */
     const validate = ajv.compile(schema);
     try {
       const valid = validate(json);
       if (!valid) {
-        const result = { uuid: json.uuid };
+        const result = { uuid: /** @type {any} */ (json).uuid };
         const errorText = betterAjvErrors(schema, json, validate.errors, {
           indent: 2,
         });
@@ -829,7 +830,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
 };
 
 /**
- * @template T
+ * @template {{ uuid: string }} T
  * @param {Object} options - Options for loading and validating the file
  * @param {string} options.coursePath
  * @param {string} options.filePath
@@ -848,12 +849,14 @@ async function loadAndValidateJson({
   tolerateMissing,
 }) {
   // perf.start(`loadandvalidate:${filePath}`);
-  const loadedJson = await module.exports.loadInfoFile({
-    coursePath,
-    filePath,
-    schema,
-    tolerateMissing,
-  });
+  const loadedJson = /** @type {InfoFile<T>} */ (
+    await module.exports.loadInfoFile({
+      coursePath,
+      filePath,
+      schema,
+      tolerateMissing,
+    })
+  );
   // perf.end(`loadandvalidate:${filePath}`);
   if (loadedJson === null) {
     // This should only occur if we looked for a file in a non-directory,
@@ -878,7 +881,7 @@ async function loadAndValidateJson({
 
 /**
  * Loads and schema-validates all info files in a directory.
- * @template T
+ * @template {{ uuid: string }} T
  * @param {Object} options - Options for loading and validating files
  * @param {string} options.coursePath The path of the course being synced
  * @param {string} options.directory The path of the directory relative to `coursePath`
@@ -911,16 +914,18 @@ async function loadInfoForDirectory({
     // hooray, we're done.
     await async.each(files, async (/** @type {string} */ dir) => {
       const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
-      const info = await loadAndValidateJson({
-        coursePath,
-        filePath: infoFilePath,
-        defaults: defaultInfo,
-        schema,
-        validate,
-        // If we aren't operating in recursive mode, we want to ensure
-        // that missing files are correctly reflected as errors.
-        tolerateMissing: recursive,
-      });
+      const info = /** @type {InfoFile<T>} */ (
+        await loadAndValidateJson({
+          coursePath,
+          filePath: infoFilePath,
+          defaults: defaultInfo,
+          schema,
+          validate,
+          // If we aren't operating in recursive mode, we want to ensure
+          // that missing files are correctly reflected as errors.
+          tolerateMissing: recursive,
+        })
+      );
       if (info) {
         infoFiles[path.join(relativeDir, dir)] = info;
       } else if (recursive) {
