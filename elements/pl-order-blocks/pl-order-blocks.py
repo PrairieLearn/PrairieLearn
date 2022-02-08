@@ -74,7 +74,6 @@ def prepare(element_html, data):
        (grading_method in ['dag', 'ranking'] and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
 
-
     correct_answers = []
     incorrect_answers = []
 
