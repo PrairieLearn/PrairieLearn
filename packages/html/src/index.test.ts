@@ -1,7 +1,6 @@
-/* eslint-env mocha */
-const { assert } = require('chai');
+import { assert } from 'chai';
 
-const { escapeHtml, html, renderEjs } = require('./index');
+import { escapeHtml, html, renderEjs } from './index';
 
 describe('html', () => {
   it('escapes string value', () => {
