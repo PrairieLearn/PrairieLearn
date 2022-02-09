@@ -161,8 +161,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             gradeRateMinutes: questionGradeRateMinutes,
-            canView: question.canView || null,
-            canSubmit: question.canSubmit || null,
+            canView: question.canView,
+            canSubmit: question.canSubmit,
           },
         ];
       }
@@ -224,8 +224,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     });
   });
 
-  const groupRoles = assessment.groupRoles || [];
-  assessmentParams.groupRoles = groupRoles.map((role) => {
+  const groupRoles = (assessment.groupRoles ?? []).map((role) => {
     return {
       role_name: role.name,
       minimum: role.minimum,

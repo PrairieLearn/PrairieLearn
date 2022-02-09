@@ -154,12 +154,11 @@
                 "minimum": {
                     "description": "The minimum number of users that should be in this role in a group.",
                     "type": "number",
-                    "default": 1
+                    "default": 0
                 },
                 "maximum": {
                     "description": "The maximum number of users that should be in this role in a group.",
-                    "type": "number",
-                    "default": 1
+                    "type": "number"
                 },
                 "canAssignRolesAtStart": {
                     "description": "Whether users with this role can assign other users' group roles before the assessment starts.",

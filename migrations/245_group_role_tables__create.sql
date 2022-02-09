@@ -2,15 +2,12 @@
 CREATE TABLE IF NOT EXISTS group_roles (
     id BIGSERIAL PRIMARY KEY,
     role_name TEXT NOT NULL,
-    assessment_id BIGINT NOT NULL,
+    assessment_id BIGINT REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE,
     minimum INT DEFAULT 0,
     maximum INT DEFAULT 4,
     can_assign_roles_at_start BOOLEAN DEFAULT FALSE,
     can_assign_roles_during_assessment BOOLEAN DEFAULT FALSE,
-    can_submit_assessment BOOLEAN DEFAULT TRUE,
-    CONSTRAINT group_roles_assessment_id_fkey
-        FOREIGN KEY (assessment_id)
-            REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    can_submit_assessment BOOLEAN DEFAULT TRUE
 );
 
 CREATE UNIQUE INDEX group_roles_role_name_assessment_id_key ON group_roles (role_name, assessment_id);
