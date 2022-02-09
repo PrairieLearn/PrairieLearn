@@ -13,10 +13,8 @@ By convention, HTML templates are located in `*.html.tmpl.js` files.
 const { hmtl } = require('@prairielearn/html');
 
 module.exports.Hello = function Hello({ name }) {
-  return html`
-    <div>Hello, ${name}!</div>
-  `;
-}
+  return html`<div>Hello, ${name}!</div>`;
+};
 ```
 
 This can then be used to render a string:
@@ -36,12 +34,7 @@ If you want to pre-escape some HTML, you can wrap it in `escapeHtml` to avoid es
 const { html, escapeHtml } = require('@prairielearn/html');
 
 console.log(html`
-  <button
-    data-bs-toggle="popover"
-    data-bs-content="${escapeHtml(html`
-      <div>Content here</div>
-    `)}"
-  >
+  <button data-bs-toggle="popover" data-bs-content="${escapeHtml(html`<div>Content here</div>`)}">
     Open popover
   </button>
 `);
@@ -59,10 +52,12 @@ Hello, <%= name %>!
 ```js
 const { hmtl, renderEjs } = require('@prairielearn/html');
 
-console.log(html`
-  <div>Hello, world!</div>
-  <div>${renderEjs(__filename, "<%- include('./hello'); %>", { name: 'Anjali' })}</div>
-`.toString());
+console.log(
+  html`
+    <div>Hello, world!</div>
+    <div>${renderEjs(__filename, "<%- include('./hello'); %>", { name: 'Anjali' })}</div>
+  `.toString()
+);
 ```
 
 ## Why not EJS?
