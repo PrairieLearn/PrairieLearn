@@ -125,6 +125,7 @@ def prepare(element_html, data):
             incorrect_answers.append(answer_data_dict)
 
     index = 0
+    group_depends = {}
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
         if html_tags.tag is etree.Comment:
             continue
@@ -132,7 +133,8 @@ def prepare(element_html, data):
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
 
-            group_tag, _ = get_graph_info(html_tags)
+            group_tag, depends = get_graph_info(html_tags)
+            group_depends[group_tag] = depends
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
                     continue
@@ -176,6 +178,7 @@ def prepare(element_html, data):
 
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = correct_answers
+    data['group_depends'][answer_name] = group_depends
 
 
 def render(element_html, data):
@@ -437,14 +440,9 @@ def grade(element_html, data):
             depends_graph = {ans['tag']: deepcopy(ans['depends']) for ans in true_answer_list}
             group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
 
-        group_info = {}
-        for html_tags in element:
-            if html_tags.tag != 'pl-block-group':
-                continue
-            group_tag, depends = get_graph_info(html_tags)
-            group_info[group_tag] = depends
+        group_depends = data['group_depends'][answer_name]
 
-        num_initial_correct = grade_dag(submission, depends_graph, group_belonging, group_info)
+        num_initial_correct = grade_dag(submission, depends_graph, group_belonging, group_depends)
         first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
 
         true_answer_length = len(depends_graph.keys())
@@ -454,7 +452,7 @@ def grade(element_html, data):
             elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type == 'lcs':
-            edit_distance = lcs_partial_credit(submission, depends_graph, group_belonging, group_info)
+            edit_distance = lcs_partial_credit(submission, depends_graph, group_belonging, group_depends)
             final_score = max(0, float(true_answer_length - edit_distance) / true_answer_length)
 
         if final_score < 1:
