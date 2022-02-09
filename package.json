@@ -3,6 +3,9 @@
     "description": "PrairieLearn online problem-solving system",
     "version": "3.2.0",
     "private": true,
+    "scripts": {
+        "release": "turbo run build && changeset publish"
+    },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.15.4",
         "@grpc/grpc-js": "^1.5.4",
