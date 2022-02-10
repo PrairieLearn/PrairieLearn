@@ -68,7 +68,7 @@ def dag_to_nx(depends_graph):
     return graph
 
 
-def add_edges_for_groups(graph, group_belonging, group_info):
+def add_edges_for_groups(graph, group_belonging, group_depends):
     groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
     groups.pop(None, None)
     if not validate_grouping(graph, group_belonging):
@@ -76,7 +76,7 @@ def add_edges_for_groups(graph, group_belonging, group_info):
 
     # if a group G depends on a block B, all blocks in the group G should depend on block B
     for group_tag in groups:
-        for dependency in group_info[group_tag]:
+        for dependency in group_depends[group_tag]:
             for node in groups[group_tag]:
                 graph.add_edge(dependency, node)
 
@@ -90,7 +90,7 @@ def add_edges_for_groups(graph, group_belonging, group_info):
         graph.remove_node(group)
 
 
-def grade_dag(submission, depends_graph, group_belonging, group_info):
+def grade_dag(submission, depends_graph, group_belonging, group_depends):
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
@@ -100,7 +100,7 @@ def grade_dag(submission, depends_graph, group_belonging, group_info):
     :return: length of list that meets both correctness conditions, starting from the beginning
     """
     graph = dag_to_nx(depends_graph)
-    add_edges_for_groups(graph, group_belonging, group_info)
+    add_edges_for_groups(graph, group_belonging, group_depends)
 
     if not nx.is_directed_acyclic_graph(graph):
         raise Exception('Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.')
@@ -120,7 +120,7 @@ def is_vertex_cover(G, vertex_cover):
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit(submission, depends_graph, group_belonging, group_info):
+def lcs_partial_credit(submission, depends_graph, group_belonging, group_depends):
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
     The naive solution would be to enumerate all topological sorts, then get the edit distance to each of them,
@@ -140,7 +140,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging, group_info):
     :return: edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph)
-    add_edges_for_groups(graph, group_belonging, group_info)
+    add_edges_for_groups(graph, group_belonging, group_depends)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
