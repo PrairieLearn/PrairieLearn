@@ -16,6 +16,7 @@
         "@opentelemetry/resources": "^1.0.1",
         "@opentelemetry/sdk-node": "^0.26.0",
         "@prairielearn/html": "^1.0.0",
+        "@prairielearn/opentelemetry": "^1.0.0",
         "ace-builds": "^1.4.14",
         "ajv": "^7.1.1",
         "ansi_up": "^5.1.0",

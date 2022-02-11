@@ -1,6 +1,6 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-const tracing = require('./lib/tracing');
+const opentelemetry = require('@prairielearn/opentelemetry');
 
 const ERR = require('async-stacktrace');
 const util = require('util');
@@ -1645,7 +1645,7 @@ if (config.startServer) {
 
         // Before we start executing any real code, ensure that tracing has
         // been configured correctly.
-        await tracing.waitForStart();
+        await opentelemetry.waitForStart();
 
         // Load config values from AWS as early as possible so we can use them
         // to set values for e.g. the database connection
@@ -1655,7 +1655,7 @@ if (config.startServer) {
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
-        await tracing.init(config);
+        await opentelemetry.init(config);
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
