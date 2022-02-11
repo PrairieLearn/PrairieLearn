@@ -73,3 +73,6 @@ depcheck:
 	@echo WARNING: Note that many devDependencies will show up as unused. This is not
 	@echo WARNING: a problem.
 	@echo WARNING:
+
+changeset:
+	@changeset
