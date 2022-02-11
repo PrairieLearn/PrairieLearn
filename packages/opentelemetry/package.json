@@ -6,7 +6,17 @@
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@grpc/grpc-js": "^1.5.5",
+    "@opentelemetry/auto-instrumentations-node": "^0.27.3",
+    "@opentelemetry/core": "^1.0.1",
+    "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
+    "@opentelemetry/instrumentation-express": "^0.28.0",
+    "@opentelemetry/resources": "^1.0.1",
+    "@opentelemetry/sdk-node": "^0.27.0",
+    "@opentelemetry/sdk-trace-base": "^1.0.1",
+    "@opentelemetry/semantic-conventions": "^1.0.1"
+  },
   "devDependencies": {
     "typescript": "^4.5.5"
   }
