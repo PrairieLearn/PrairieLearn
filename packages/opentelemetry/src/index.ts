@@ -1,35 +1,32 @@
-// @ts-check
-const process = require('process');
-const { Metadata, credentials } = require('@grpc/grpc-js');
+import process from 'process';
+import { Metadata, credentials } from '@grpc/grpc-js';
 
-const {
-  NodeSDK,
-  tracing: { ConsoleSpanExporter },
-} = require('@opentelemetry/sdk-node');
-const { getNodeAutoInstrumentations } = require('@opentelemetry/auto-instrumentations-node');
-const { Resource } = require('@opentelemetry/resources');
-const { SemanticResourceAttributes } = require('@opentelemetry/semantic-conventions');
-const { OTLPTraceExporter } = require('@opentelemetry/exporter-otlp-grpc');
-const { ExpressLayerType } = require('@opentelemetry/instrumentation-express');
-const { BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base');
-const {
+import { NodeSDK, tracing } from '@opentelemetry/sdk-node';
+import type { SpanExporter, ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
+import { Resource } from '@opentelemetry/resources';
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-grpc';
+import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import {
+  ExportResult,
   ExportResultCode,
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
   AlwaysOnSampler,
   AlwaysOffSampler,
   hrTimeToMilliseconds,
-} = require('@opentelemetry/core');
+} from '@opentelemetry/core';
+import { Context, Link, Sampler, SpanAttributes, SpanKind } from '@opentelemetry/api';
 
 /**
  * Will (possibly) contain a `SpanExporter` that will export to Honeycomb, the
  * console, or somewhere else, depending on what `config.openTelemetryExporter`
  * is configured as. The creation of that exporter is deferred until we've been
  * able to load the config.
- *
- * @type {import('@opentelemetry/sdk-trace-base').SpanExporter | undefined}
  */
-let maybeExporter;
+let maybeExporter: SpanExporter | undefined;
 
 /** Indicates whether trace exporting has been stopped with `shutdown()`. */
 let delayedTraceExporterStopped = false;
@@ -38,12 +35,14 @@ let delayedTraceExporterStopped = false;
  * Stores spans that are emitted between the initialization of the SDK and
  * the point in time when we've finally loaded our config and can omit the
  * spans to the configured collector.
- *
- * @type {[import('@opentelemetry/sdk-trace-base').ReadableSpan[], (result: import('@opentelemetry/core').ExportResult) => void][]}
  */
-const bufferedSpans = [];
+const bufferedSpans: [ReadableSpan[], (result: ExportResult) => void][] = [];
 
 const MAX_BUFFERED_SPANS = 1000;
+
+interface FlushableExporter extends SpanExporter {
+  flushToExporter: () => void;
+}
 
 /**
  * Ideally, we'd be able to immediately load our config and create a
@@ -54,10 +53,8 @@ const MAX_BUFFERED_SPANS = 1000;
  * custom collector that allows us to delay sending traces until we've been
  * able to load our config and create an exporter with the correct secrets from
  * our config.
- *
- * @type {import('@opentelemetry/sdk-trace-base').SpanExporter & { flushToExporter: () => void }}
  */
-const delayedTraceExporter = {
+const delayedTraceExporter: FlushableExporter = {
   export(spans, resultCallback) {
     if (delayedTraceExporterStopped) {
       // Drop trace; we don't need to do anything with it. We'll report success
@@ -93,41 +90,41 @@ const delayedTraceExporter = {
   },
 };
 
-/** @typedef {import('@opentelemetry/api').Sampler} Sampler */
-
 /**
  * The sample rate is configurable, but our configuration isn't actually loaded
  * until after the SDK is constructed. So that we can update the sampler and the
  * sample rate, this sampler wraps another sampler that we can adjust after it's
  * been constructed.
- *
- * @implements {Sampler}
  */
-class ConfigurableSampler {
+class ConfigurableSampler implements Sampler {
+  private sampler: Sampler;
+
   constructor() {
-    /** @type {Sampler} */
-    this._sampler = new AlwaysOnSampler();
+    this.sampler = new AlwaysOnSampler();
   }
 
-  shouldSample(context, traceId, spanName, spanKind, attributes, links) {
-    return this._sampler.shouldSample(context, traceId, spanName, spanKind, attributes, links);
+  shouldSample(
+    context: Context,
+    traceId: string,
+    spanName: string,
+    spanKind: SpanKind,
+    attributes: SpanAttributes,
+    links: Link[]
+  ) {
+    return this.sampler.shouldSample(context, traceId, spanName, spanKind, attributes, links);
   }
 
   /**
    * Updates the underlying sampler that's used.
-   *
-   * @param {Sampler} sampler
    */
-  setSampler(sampler) {
-    this._sampler = sampler;
+  setSampler(sampler: Sampler) {
+    this.sampler = sampler;
   }
 
   toString() {
-    return this._sampler.toString();
+    return this.sampler.toString();
   }
 }
-
-/** @typedef {import('@opentelemetry/sdk-trace-base').ReadableSpan} ReadableSpan */
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -135,11 +132,9 @@ class ConfigurableSampler {
  * that we can filter spans _after_ they've been emitted.
  */
 class FilterBatchSpanProcessor extends BatchSpanProcessor {
-  /**
-   * @param {import('@opentelemetry/sdk-trace-base').SpanExporter} exporter
-   * @param {(span: ReadableSpan) => boolean} filter
-   */
-  constructor(exporter, filter) {
+  private filter: (span: ReadableSpan) => boolean;
+
+  constructor(exporter: SpanExporter, filter: (span: ReadableSpan) => boolean) {
     super(exporter);
     this.filter = filter;
   }
@@ -148,10 +143,8 @@ class FilterBatchSpanProcessor extends BatchSpanProcessor {
    * This is invoked after a span is "finalized". `super.onEnd` will queue up
    * the span to be exported, but if we don't call that, we can just drop the
    * span and the parent will be none the wiser!
-   *
-   * @param {ReadableSpan} span
    */
-  onEnd(span) {
+  onEnd(span: ReadableSpan) {
     if (!this.filter(span)) return;
 
     super.onEnd(span);
@@ -164,10 +157,8 @@ const sampler = new ConfigurableSampler();
  * This will be used with our {@link FilterBatchSpanProcessor} to filter out
  * events that we're not interested in. This helps reduce our event volume
  * but still gives us fine-grained control over which events we keep.
- *
- * @param {ReadableSpan} span
  */
-function filter(span) {
+function filter(span: ReadableSpan) {
   if (span.name === 'pg-pool.connect') {
     // Looking at historical data, this generally happens in under a millisecond,
     // precisely because we maintain a pool of long-lived connections. The only
@@ -216,8 +207,7 @@ const sdk = new NodeSDK({
   sampler,
 });
 
-/** @type {(() => void)[]} */
-const startupCallbacks = [];
+const startupCallbacks: (() => void)[] = [];
 
 function onSdkStart() {
   startupCallbacks.forEach((callback) => callback());
@@ -240,14 +230,21 @@ process.on('SIGTERM', () => {
     .finally(() => process.exit(0));
 });
 
+export interface OpenTelemetryConfig {
+  openTelemetryEnabled: boolean;
+  openTelemetryExporter?: 'console' | 'honeycomb';
+  openTelemetrySamplerType?: 'always-on' | 'always-off' | 'trace-id-ratio';
+  openTelemetrySampleRate?: number;
+  honeycombApiKey?: string;
+  honeycombDataset?: string;
+}
+
 /**
  * Should be called once we've loaded our config; this will allow us to set up
  * the correct metadata for the Honeycomb exporter. We don't actually have that
  * information available until we've loaded our config.
- *
- * @param {import('./config')} config
  */
-module.exports.init = async function init(config) {
+export async function init(config: OpenTelemetryConfig) {
   if (!config.openTelemetryEnabled) {
     // Shut down the SDK to remove all instrumentation.
     // It's important that we flag the delayed trace exporter as stopped here,
@@ -259,7 +256,7 @@ module.exports.init = async function init(config) {
     switch (config.openTelemetryExporter) {
       case 'console': {
         // Export spans to the console for testing purposes.
-        maybeExporter = new ConsoleSpanExporter();
+        maybeExporter = new tracing.ConsoleSpanExporter();
         break;
       }
       case 'honeycomb': {
@@ -305,17 +302,15 @@ module.exports.init = async function init(config) {
     // Flush any buffered traces to the newly-created exporter.
     delayedTraceExporter.flushToExporter();
   }
-};
+}
 
 /**
  * Allows server initialization code to wait for the tracing SDK to start
  * before proceeding. This ensures that everything after that can be
  * instrumented correctly.
- *
- * @returns {Promise<void>}
  */
-module.exports.waitForStart = () => {
+export function waitForStart(): Promise<void> {
   return new Promise((resolve) => {
     startupCallbacks.push(resolve);
   });
-};
+}
