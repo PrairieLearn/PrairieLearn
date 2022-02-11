@@ -4,6 +4,12 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
+#
+# Note that we also have to copy the `packages` directory so that `yarn`
+# can resolve the workspaces inside it and set up symlinks correctly.
+# This is suboptimal, as a change to any file under `package/` will
+# invalidate this layer's cache, but it's unavoidable.
+COPY packages/ /PrairieLearn/packages/
 COPY package.json yarn.lock /PrairieLearn/
 RUN cd /PrairieLearn \
     && yarn install --frozen-lockfile \
@@ -19,6 +25,7 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && mkdir -p /jobs \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
+    && make build \
     && node server.js --migrate-and-exit \
     && su postgres -c "createuser -s root" \
     && /PrairieLearn/docker/start_postgres.sh stop \

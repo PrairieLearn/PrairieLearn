@@ -1,5 +1,11 @@
 export PATH := node_modules/.bin/:$(PATH)
 
+build:
+	@turbo run build
+
+dev:
+	@turbo run dev
+
 start: start-support
 	@node server.js
 start-nodemon: start-support
@@ -19,13 +25,15 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-prairielib test-grader-host
+test-js: test-prairielearn test-prairielib test-grader-host test-packages
 test-prairielearn: start-support
 	@mocha --full-trace --parallel --require tests/mocha-hooks.mjs "tests/**/*.test.{js,mjs}"
 test-prairielib:
 	@jest prairielib/
 test-grader-host:
 	@jest grader_host/
+test-packages:
+	@turbo run test
 test-python:
 # `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
 # pytest uses to discover tests, but it isn't actually a test file itself. We
