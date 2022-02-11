@@ -5,6 +5,12 @@
     "esModuleInterop": true,
     "outDir": "./dist",
     "rootDir": "src/",
-    "sourceMap": true
+    "sourceMap": true,
+    // This package will only be used server-side on Node 14+, so target the
+    // newest version of the ES spec that Node 14 supports.
+    "target": "ES2020",
+    // However, we don't yet make extensive use of ES Modules, so specifically
+    // compile `import`/`export` down to CommonJS.
+    "module": "CommonJS",
   }
 }
