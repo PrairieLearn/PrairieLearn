@@ -60,7 +60,7 @@ public class JUnitAutograder implements TestExecutionListener {
     public void runTests() throws UngradableException {
 
         for (String classSrcName : testClasses) {
-	    LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
+            LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
             String className = classSrcName
                 .replaceFirst("^/grade/tests/junit/", "")
                 .replaceFirst("\\.java$", "")
