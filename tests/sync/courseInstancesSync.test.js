@@ -26,10 +26,10 @@ function makeCourseInstance() {
 }
 
 describe('Course instance syncing', () => {
-  // Uncomment whenever you change relevant sprocs or migrations
-  // before('remove the template database', helperDb.dropTemplate);
-  beforeEach('set up testing database', helperDb.before);
-  afterEach('tear down testing database', helperDb.after);
+  before('set up testing database', helperDb.before);
+  after('tear down testing database', helperDb.after);
+
+  beforeEach('reset testing database', helperDb.resetDatabase);
 
   it('allows nesting of course instances in subfolders', async () => {
     const courseData = util.getCourseData();

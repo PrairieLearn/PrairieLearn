@@ -3,10 +3,10 @@ const util = require('./util');
 const helperDb = require('../helperDb');
 
 describe('Initial Sync', () => {
-  // Uncomment whenever you change relevant sprocs or migrations
-  // before('remove the template database', helperDb.dropTemplate);
-  beforeEach('set up testing database', helperDb.before);
-  afterEach('tear down testing database', helperDb.after);
+  before('set up testing database', helperDb.before);
+  after('tear down testing database', helperDb.after);
+
+  beforeEach('reset testing database', helperDb.resetDatabase);
 
   it('correctly syncs content from disk to the database', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();

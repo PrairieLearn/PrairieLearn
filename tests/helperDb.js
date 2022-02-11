@@ -144,8 +144,8 @@ module.exports.beforeOnlyCreate = async function beforeOnlyCreate() {
 module.exports.after = async function after() {
   var that = this;
   await closeSql();
-  const dbName = module.exports.getDatabaseNameForCurrentWorker();
-  await dropDatabase(dbName, that);
+  // const dbName = module.exports.getDatabaseNameForCurrentWorker();
+  // await dropDatabase(dbName, that);
 };
 
 module.exports.createTemplate = async function createTemplate(mochaThis) {
@@ -161,6 +161,37 @@ module.exports.dropTemplate = async function dropTemplate() {
     // Always drop the template regardless of PL_KEEP_TEST_DB env
     true
   );
+};
+
+module.exports.resetDatabase = async function resetDatabase() {
+  const client = new pg.Client({
+    user: POSTGRES_USER,
+    database: module.exports.getDatabaseNameForCurrentWorker(),
+    host: POSTGRES_HOST,
+  });
+  await client.connect();
+  await client.query(`
+      DO
+      $func$
+      BEGIN
+        EXECUTE (
+          SELECT 'TRUNCATE TABLE ' || string_agg(oid::regclass::text, ', ') || ' RESTART IDENTITY CASCADE'
+            FROM pg_class
+            WHERE relkind = 'r'
+            AND relnamespace = 'public'::regnamespace
+        );
+      END
+      $func$;
+    `);
+
+  // This is the sole piece of database state that's actually created in a
+  // migration (`153_institutions__create`) - when we TRUNCATE the `institutions`
+  // table above, we lose the default institution, so we add it back here.
+  await client.query(
+    "INSERT INTO institutions (id, long_name, short_name) VALUES (1, 'Default', 'Default') ON CONFLICT DO NOTHING;"
+  );
+
+  await client.end();
 };
 
 module.exports.getDatabaseNameForWorker = function getDatabaseNameForWorker(workerId = '1') {
