@@ -314,3 +314,6 @@ export function waitForStart(): Promise<void> {
     startupCallbacks.push(resolve);
   });
 }
+
+export { trace, context, SpanStatusCode } from '@opentelemetry/api';
+export { suppressTracing } from '@opentelemetry/core';
