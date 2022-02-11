@@ -3,15 +3,16 @@ const assert = require('chai').assert;
 const cheerio = require('cheerio');
 const config = require('../lib/config');
 
-module.exports = {};
-
 /**
  * A wrapper around node-fetch that provides a few features:
- * * Automatic parsing with cheerio
- * * A `form` option akin to that from the `request` library
  *
- * Here is an example of how to set cookies, if desired:
- *  options.headers = {cookie: 'pl_access_as_administrator=active'};
+ * - Automatic parsing with cheerio
+ * - A `form` option akin to that from the `request` library
+ *
+ * If desired, you can set cookies via the `cookie` header:
+ * ```
+ * options.headers = {cookie: 'pl_access_as_administrator=active'};
+ * ```
  */
 module.exports.fetchCheerio = async (url, options = {}) => {
   if (options.form) {

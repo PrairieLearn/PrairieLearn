@@ -1,7 +1,4 @@
 const assert = require('chai').assert;
-const fetch = require('node-fetch');
-const cheerio = require('cheerio');
-const { step } = require('mocha-steps');
 
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
@@ -9,29 +6,7 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
-
-/**
- * A wrapper around node-fetch that provides a few features:
- * * Automatic parsing with cheerio
- * * A `form` option akin to that from the `request` library
- */
-const fetchCheerio = async (url, options = {}) => {
-  if (options.form) {
-    options.body = JSON.stringify(options.form);
-    options.headers = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-    delete options.form;
-  }
-  const response = await fetch(url, options);
-  const text = await response.text();
-  response.$ = cheerio.load(text);
-  // response.text() can only be called once, which we already did.
-  // Patch this so consumers can use it as normal.
-  response.text = () => text;
-  return response;
-};
+const helperClient = require('./helperClient');
 
 describe('Exam assessment response to `requireHonorCode`', function () {
   this.timeout(60000);
@@ -45,16 +20,14 @@ describe('Exam assessment response to `requireHonorCode`', function () {
 
   after('shut down testing server', helperServer.after);
 
-  step('get default exam info', async () => {
+  it('visits the landing page of default assessment', async () => {
     const results = await sqldb.queryOneRowAsync(sql.select_exam, {
       number: '1',
     });
-    context.assessmentId = results.rows[0].id;
-    context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
-  });
+    const assessmentId = results.rows[0].id;
+    const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
 
-  step('visit default exam landing page', async () => {
-    const response = await fetchCheerio(context.assessmentUrl);
+    const response = await helperClient.fetchCheerio(assessmentUrl);
     assert.isTrue(response.ok);
 
     assert.equal(response.$('#start-assessment').text(), 'Start assessment');
@@ -63,22 +36,19 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     assert.lengthOf(response.$('div.test-class-honor-code'), 1);
   });
 
-  step('get `"requireHonorCode": false` exam info', async () => {
+  it('visits landing page of assessment with disabled honor code', async () => {
     const results = await sqldb.queryOneRowAsync(sql.select_exam, {
-      number: '2',
+      number: '12',
     });
-    context.assessmentId = results.rows[0].id;
-    context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
-  });
+    const assessmentId = results.rows[0].id;
+    const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
 
-  step('visit `"requireHonorCode": false` exam landing page', async () => {
-    const response = await fetchCheerio(context.assessmentUrl);
+    const response = await helperClient.fetchCheerio(assessmentUrl);
     assert.isTrue(response.ok);
 
     assert.equal(response.$('#start-assessment').text(), 'Start assessment');
 
     // We should not see the honor code div anymore
-    // TODO: fix this test. Exam 2 in `testCourse` no longer disables the honor code.
-    // assert.lengthOf(response.$('div.test-class-honor-code'), 0);
+    assert.lengthOf(response.$('div.test-class-honor-code'), 0);
   });
 });
