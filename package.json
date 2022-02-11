@@ -14,7 +14,7 @@
         "@opentelemetry/auto-instrumentations-node": "^0.25.0",
         "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
         "@opentelemetry/resources": "^1.0.1",
-        "@opentelemetry/sdk-node": "^0.26.0",
+        "@opentelemetry/sdk-node": "^0.27.0",
         "@prairielearn/html": "^1.0.0",
         "ace-builds": "^1.4.14",
         "ajv": "^7.1.1",
