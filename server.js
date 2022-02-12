@@ -1643,10 +1643,6 @@ if (config.startServer) {
           configFilename = argv['config'];
         }
 
-        // Before we start executing any real code, ensure that tracing has
-        // been configured correctly.
-        await opentelemetry.waitForStart();
-
         // Load config values from AWS as early as possible so we can use them
         // to set values for e.g. the database connection
         await config.loadConfigAsync(configFilename);
@@ -1655,7 +1651,10 @@ if (config.startServer) {
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
-        await opentelemetry.init(config);
+        await opentelemetry.init({
+          ...config,
+          serviceName: 'prairielearn',
+        });
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
