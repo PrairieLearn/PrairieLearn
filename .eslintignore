@@ -8,3 +8,6 @@
 /out/
 /workspaces/
 /site/
+
+# Transpiled code
+packages/*/dist/
