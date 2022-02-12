@@ -144,8 +144,8 @@ module.exports.beforeOnlyCreate = async function beforeOnlyCreate() {
 module.exports.after = async function after() {
   var that = this;
   await closeSql();
-  // const dbName = module.exports.getDatabaseNameForCurrentWorker();
-  // await dropDatabase(dbName, that);
+  const dbName = module.exports.getDatabaseNameForCurrentWorker();
+  await dropDatabase(dbName, that);
 };
 
 module.exports.createTemplate = async function createTemplate(mochaThis) {
