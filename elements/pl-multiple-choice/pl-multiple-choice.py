@@ -228,7 +228,7 @@ def render(element_html, data):
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
                 'display_score_badge': display_score and submitted_key == answer['key'],
-                "display_feedback": submitted_key == answer["key"] and feedback,
+                'display_feedback': submitted_key == answer['key'] and feedback,
                 'feedback': feedback
             }
             if answer_html['display_score_badge']:
