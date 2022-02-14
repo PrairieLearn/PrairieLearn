@@ -28,4 +28,12 @@ module.exports = {
       },
     ],
   },
+  overrides: [
+    {
+      files: ['*.test.{js,ts,mjs}'],
+      env: {
+        mocha: true,
+      },
+    },
+  ],
 };
