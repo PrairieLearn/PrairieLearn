@@ -49,7 +49,7 @@ router.get('/', function (req, res, next) {
     }
     const params = [
       identity.email, // uid
-      identity.email, // name
+      identity.name || identity.email, // name (use email if name is not present)
       null, // uin
       'Google', // provider
     ];
