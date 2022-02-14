@@ -15,13 +15,11 @@
     iconClasses:    'fa fa-edit',
     tabLabel:       'Files'}) %>
 <% } %>
-<% if (authz_data.has_course_instance_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'gradebook',
     urlSuffix:      '/instance_admin/gradebook',
     iconClasses:    'fas fa-balance-scale',
     tabLabel:       'Gradebook'}) %>
-<% } %>
 <% if (authz_data.has_course_permission_edit) { %>
 <%- include('navTab', {
     activeSubPage:  'lti',

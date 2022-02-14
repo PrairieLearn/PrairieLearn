@@ -21,9 +21,11 @@ var csvFilename = function (locals) {
 };
 
 router.get('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
-  }
+  // We don't actually forbid access to this page if the user is not a student
+  // data viewer, because we want to allow users to click the gradebook tab and
+  // see instructions for how to get student data viewer permissions. Otherwise,
+  // users just wouldn't see the tab at all, and this caused a lot of questions
+  // about why staff couldn't see the gradebook tab.
   res.locals.csvFilename = csvFilename(res.locals);
   var params = { course_instance_id: res.locals.course_instance.id };
   sqldb.query(sql.course_assessments, params, function (err, result) {

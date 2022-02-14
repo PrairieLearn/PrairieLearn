@@ -81,6 +81,7 @@ module.exports = function (req, res, next) {
               (course) => course.permissions_course.has_course_permission_edit
             ),
           };
+          console.log(res.locals.authz_data);
           res.locals.user = res.locals.authz_data.user;
           if (isCourseInstance) {
             res.locals.course_instance = result.rows[0].course_instance;

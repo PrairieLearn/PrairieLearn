@@ -54,9 +54,7 @@
         <%# Instance non-admin %> 
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/assessments">Assessments</a></li>
 
-        <% if (authz_data.has_course_instance_permission_view) { %>
         <li class="nav-item <% if (navPage == "instance_admin" && typeof navSubPage !== 'undefined' && navSubPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/instance_admin/gradebook">Gradebook</a></li>
-        <% } %>
 
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
             <span class="navbar-text mx-2 no-select">/</span>
