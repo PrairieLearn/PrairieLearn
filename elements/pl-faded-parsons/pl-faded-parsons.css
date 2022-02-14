@@ -1,0 +1,150 @@
+/** Stylesheet for the puzzles */
+
+.sortable-code {
+    position: static;
+    padding-left: 0px;
+    /*margin-left: 2%;*/
+    float: left;
+}
+.line-number {
+    float: right !important;
+    font-size: 80%;
+}
+#sortableTrash { width: 38%; }
+#sortable { width: 56%; }
+
+/* the code boxes appear inside a .pl-faded-parsons.row */
+
+.pl-faded-parsons {
+    padding: 0;
+}
+
+/* #starter-code is the given lines, #parsons-solution is where student constructs solution */
+
+#starter-code, #parsons-solution { width: 50%; }
+
+/* all code boxes are classed with .sortable-code and the lines appear as <li> in a <ul> */
+
+.sortable-code {
+    padding: 0 0.5em;
+}
+.sortable-code ul {
+    font-size: smaller;
+    font-family: monospace;
+    list-style: none;
+    background-color: #efefff;
+    padding-bottom: 60px;
+    padding-left: 0;
+    margin-left: 0;
+    border: 1px solid #efefff;;
+}
+.sortable-code ul:empty {
+  padding-bottom: 80px;
+}
+.sortable-code li, .sortable-code li:before, .sortable-code li:after {
+  box-sizing: content-box;
+}
+ul.output {
+    background-color: #FFA;
+}
+.sortable-code li {
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    border-radius: 10px;
+    background-color:#EFEFEF;
+    border:1px solid lightgray;
+    padding:2px;
+    /* Keep difference of 10 to respect padding specified just above */
+    padding-left: 30px;
+    text-indent: -20px;
+    margin-top: 5px;
+    overflow: hidden;
+    cursor: move;
+}
+.sortable-code li span::before {
+    content: "\200b";
+}
+.sortable-code li:hover {
+    overflow: visible;
+}
+
+ul.incorrect {
+    border: 1px solid red;
+    background-color: #ffefef;
+}
+
+ul.correct {
+    background-color: #efffef;
+    background-color: #DFF2BF;
+}
+
+li.incorrectIndent {
+    border: 1px solid red;
+    border-left: 10px solid red;
+}
+
+li.correctIndent {
+    border: 1px solid green;
+    border-left: 10px solid green;
+}
+
+li.incorrectPosition, .testcase.fail, .testcase.error {
+    background-color: #FFBABA;
+    border:1px solid red;
+}
+
+li.correctPosition, .testcase.pass {
+    background-color: #DFF2BF;
+    border:1px solid green;
+}
+
+.testcase { padding: 10px; margin-bottom: 10px;}
+.testcase .msg { font-weight: bold; }
+.testcase .error { color: red;}
+.testcase .feedback { font-weight: bolder;}
+.testcase .fail .expected, .testcase .fail .actual {
+    color: red;
+    font-weight: bolder;
+}
+.testcase .output {
+    display: block;
+    white-space: pre;
+    background-color: #555555;
+    color: white;
+    line-height: 15px;
+    margin: 5px;
+    padding: 5px;
+}
+/** For styling the toggleable elements */
+.jsparson-toggle {
+    padding: 0 15px;
+    display: inline-block;
+    border: 1px dashed black;
+    z-index: 500;
+    cursor: pointer;
+    min-width: 10px;
+    min-height: 15px;
+}
+.jsparson-toggle:empty {
+    border-color: red;
+}
+.jsparson-toggle:empty:before {
+    content: "??";
+    display: block;
+    color: red;
+}
+
+/** For input within parsons blocks */
+.text-box {
+    border-width: 0px;
+    border-bottom: solid 1px black;
+    width: 3em;
+    min-width:2em;
+    padding: 5px;
+    font-family: monospace;
+    background-color: #EFEFEF;
+}
+
+.text-box:focus{
+    outline:0;
+}

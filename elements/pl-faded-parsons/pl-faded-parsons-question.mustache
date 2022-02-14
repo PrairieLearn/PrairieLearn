@@ -1,0 +1,56 @@
+{{! TBD: throughout, we should use answers_name to avoid ID collisions, but this also requires modifying pl-faded-parsons.js to keep multiple widget instances separate, etc }}
+
+{{! hidden form field that will be filled with student response right before submit; we have to capture the state of both the 'starter code' box and the 'solution' box}}
+
+<input id="{{answers_name}}student-parsons-solution" name="{{answers-name}}student-parsons-solution" type="hidden" value=""/>
+
+{{! form field to be filled with order to save the current submission }}
+<input id="{{answers_name}}starter-code-order" name="{{answers-name}}starter-code-order" type="hidden" value=""/>
+<input id="{{answers_name}}parsons-solution-order" name="{{answers-name}}parsons-solution-order" type="hidden" value=""/>
+
+{{! hidden form field populated with initial code; no 'name' attrib so won't be submitted }}
+
+<input id="{{answers_name}}code-lines" type="hidden" value="{{{code_lines}}}"/>
+
+{{! the side by side boxes, starter code on left, solution area on right }}
+<div class="pl-faded-parsons row">
+  <div id="{{answers_name}}starter-code"     class="col-sm-6 border px-1 sortable-code"></div>
+  <div id="{{answers_name}}parsons-solution" class="col-sm-6 border sortable-code"></div>
+</div>
+
+<script>
+  var populateCheck = setInterval(function() {
+    {{#populate_info}}
+    var exists = document.forms['question-form']['{{name}}'];
+    if (exists) {
+      clearInterval(populateCheck);
+      document.forms['question-form']['{{name}}'].value = '{{value}}'
+    }
+    {{/populate_info}}
+  }, 25);
+
+  var studentOrderCheck = setInterval(function() {
+    var exists = $("#ul-starter-code").length;
+    if (exists) {
+      clearInterval(studentOrderCheck);
+      var starterCode = document.getElementById('ul-starter-code')
+      {{#student_order_info}}
+      document.getElementById('{{id}}').style.marginLeft = '{{indent}}'
+      starterCode.appendChild(document.getElementById('{{id}}'))
+      {{/student_order_info}}
+    }
+  }, 25);
+
+  var solutionOrderCheck = setInterval(function() {
+    var exists = $("#ul-parsons-solution").length;
+    if (exists) {
+      clearInterval(solutionOrderCheck);
+      var solutionCode = document.getElementById('ul-parsons-solution')
+      {{#solution_order_info}}
+      document.getElementById('{{id}}').style.marginLeft = '{{indent}}'
+      solutionCode.appendChild(document.getElementById('{{id}}'))
+      {{/solution_order_info}}
+    }
+  }, 25);
+
+</script>

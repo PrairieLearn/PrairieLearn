@@ -1,0 +1,18 @@
+{
+  "controller": "pl-faded-parsons.py",
+  "dependencies": {
+    "elementScripts": [
+      "jquery-ui.js",
+      "jquery.ui.touch-punch.min.js",
+      "prettify.js",
+      "underscore-min.js",
+      "lis.js",
+      "parsons.js",
+      "pl-faded-parsons.js"
+    ],
+    "elementStyles": [
+      "pl-faded-parsons.css",
+      "pl-faded-parsons-prettify.css"
+    ]
+  }
+}
