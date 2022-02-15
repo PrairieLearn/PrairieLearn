@@ -84,7 +84,7 @@ def prepare(element_html, data):
     correct_answers = []
     incorrect_answers = []
 
-    def prepare_tag(html_tags, index, group=None):
+    def prepare_tag(html_tags, index, group_info=None):
         if html_tags.tag != 'pl-answer':
             raise Exception('Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
                 Any html tags nested inside <pl-block-group> must be <pl-answer>')
@@ -116,7 +116,7 @@ def prepare(element_html, data):
                             'index': index,
                             'tag': tag,          # set by HTML with DAG grader, set internally for ranking grader
                             'depends': depends,  # only used with DAG grader
-                            'group': group       # only used with DAG grader
+                            'group': group_info  # only used with DAG grader
                             }
         if is_correct:
             correct_answers.append(answer_data_dict)
@@ -131,12 +131,12 @@ def prepare(element_html, data):
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
 
-            group_tag, _ = get_graph_info(html_tags)
+            group_tag, group_depends = get_graph_info(html_tags)
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
                     continue
                 else:
-                    prepare_tag(grouped_tag, index, group_tag)
+                    prepare_tag(grouped_tag, index, {'tag': group_tag, 'depends': group_depends})
                     index += 1
         else:
             prepare_tag(html_tags, index)
@@ -435,15 +435,10 @@ def grade(element_html, data):
         elif grading_mode == 'dag':
             depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
             group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
+            group_depends = {ans['group_info']['tag']: ans['group_info']['depends'] for ans in true_answer_list}
+            depends_graph.update(group_depends)
 
-        group_depends = {}
-        for html_tags in element:
-            if html_tags.tag != 'pl-block-group':
-                continue
-            group_tag, depends = get_graph_info(html_tags)
-            group_depends[group_tag] = depends
-
-        num_initial_correct = grade_dag(submission, depends_graph, group_belonging, group_depends)
+        num_initial_correct = grade_dag(submission, depends_graph, group_belonging)
         first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
 
         true_answer_length = len(depends_graph.keys())
@@ -453,7 +448,7 @@ def grade(element_html, data):
             elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type == 'lcs':
-            edit_distance = lcs_partial_credit(submission, depends_graph, group_belonging, group_depends)
+            edit_distance = lcs_partial_credit(submission, depends_graph, group_belonging)
             final_score = max(0, float(true_answer_length - edit_distance) / true_answer_length)
 
         if final_score < 1:
