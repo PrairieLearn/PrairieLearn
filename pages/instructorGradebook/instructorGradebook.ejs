@@ -167,7 +167,7 @@
 
         <% if (!authz_data.has_course_instance_permission_view) { %>
           <div class="card-body">
-            <h2>Missing student data access</h2>
+            <h2>Insufficient permissions</h2>
             <p>You must have permission to view student data in order to access the gradebook.</p>
             <% if (authz_data.has_course_permission_own) { %>
               <p>
@@ -175,7 +175,14 @@
                 <a href="<%= urlPrefix %>/course_admin/staff">Staff tab</a>.
               </p>
             <% } else { %>
-              <p>You can request access to the student data by contacting a course owner.</p>
+              <p>Contact one of the below course owners to request access.</p>
+              <ul>
+              <% course_owners.forEach(function(owner) { %>
+                <li>
+                  <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
+                </li>
+              <% }); %>
+              </ul>
             <% } %>
             <p></p>
           </div>
