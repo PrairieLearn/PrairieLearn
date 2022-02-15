@@ -154,18 +154,11 @@
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          Gradebook
-        </div>
-
-        <!--
-        <div id="table-toolbar" class="p-2 pl-3">
-          Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
-        </div>
-        -->
-
-        <% if (!authz_data.has_course_instance_permission_view) { %>
+      <% if (!authz_data.has_course_instance_permission_view) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-danger text-white">
+            Gradebook
+          </div>
           <div class="card-body">
             <h2>Insufficient permissions</h2>
             <p>You must have permission to view student data in order to access the gradebook.</p>
@@ -186,7 +179,12 @@
             <% } %>
             <p></p>
           </div>
-        <% } else { %>
+        </div>
+      <% } else { %>
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            Gradebook
+          </div>
           <table id="gradebook-table"
                 data-unique-id="user_id"
                 data-classes="table table-sm table-hover table-bordered"
@@ -243,8 +241,8 @@
           </table>
 
           <div class="spinning-wheel card-body spinner-border"><span class="sr-only">Loading...</span></div>
-        <% } %>
-        
+        </div>
+
         <div class="modal fade" id="role-help" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
@@ -267,8 +265,7 @@
             </div>
           </div>
         </div>
-
-      </div>
+      <% } %>
     </div>
     <!-- needed for tests since we can't grab it out of javascript -->
     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>"
