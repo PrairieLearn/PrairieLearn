@@ -64,11 +64,11 @@ problem_2_expected_ed_no_groups = [
 
 def test_grade_dag():
     for submission, expected, expected_ed in zip(problem_1_submissions, problem_1_expected, problem_1_expected_ed):
-        assert grade_dag(submission, problem_1_dag, problem_1_groups) == expected
+        assert grade_dag(submission, problem_1_dag, problem_1_groups) == (expected, 10)
         assert lcs_partial_credit(submission, problem_1_dag, {}) == expected_ed
 
     for submission, expected, expected_ed_no_groups, expected_ed_groups in zip(problem_2_submissions, problem_2_expected, problem_2_expected_ed_no_groups, problem_2_expected_ed_groups):
-        assert grade_dag(submission, problem_2_dag, problem_2_groups) == expected
+        assert grade_dag(submission, problem_2_dag, problem_2_groups) == (expected, 7)
         assert lcs_partial_credit(submission, problem_2_dag_no_groups, {}) == expected_ed_no_groups
         assert lcs_partial_credit(submission, problem_2_dag, problem_2_groups) == expected_ed_groups
 

@@ -84,7 +84,7 @@ def prepare(element_html, data):
     correct_answers = []
     incorrect_answers = []
 
-    def prepare_tag(html_tags, index, group_info=None):
+    def prepare_tag(html_tags, index, group_info={'tag': None, 'depends': None}):
         if html_tags.tag != 'pl-answer':
             raise Exception('Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
                 Any html tags nested inside <pl-block-group> must be <pl-answer>')
@@ -116,7 +116,7 @@ def prepare(element_html, data):
                             'index': index,
                             'tag': tag,          # set by HTML with DAG grader, set internally for ranking grader
                             'depends': depends,  # only used with DAG grader
-                            'group': group_info  # only used with DAG grader
+                            'group_info': group_info  # only used with DAG grader
                             }
         if is_correct:
             correct_answers.append(answer_data_dict)
@@ -434,14 +434,13 @@ def grade(element_html, data):
 
         elif grading_mode == 'dag':
             depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
-            group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
-            group_depends = {ans['group_info']['tag']: ans['group_info']['depends'] for ans in true_answer_list}
+            group_belonging = {ans['tag']: ans['group_info']['tag'] for ans in true_answer_list}
+            group_depends = {ans['group_info']['tag']: ans['group_info']['depends'] for ans in true_answer_list if ans['group_info']['depends'] is not None}
             depends_graph.update(group_depends)
 
-        num_initial_correct = grade_dag(submission, depends_graph, group_belonging)
+        num_initial_correct, true_answer_length = grade_dag(submission, depends_graph, group_belonging)
         first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
 
-        true_answer_length = len(depends_graph.keys())
         if partial_credit_type == 'none':
             if num_initial_correct == true_answer_length:
                 final_score = 1
@@ -504,7 +503,7 @@ def test(element_html, data):
 
         if grading_mode == 'dag' and feedback_type == 'first-wrong':
             feedback = FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1)
-            group_belonging = {ans['tag']: ans['group'] for ans in data['correct_answers'][answer_name]}
+            group_belonging = {ans['tag']: ans['group_info']['tag'] for ans in data['correct_answers'][answer_name]}
             has_block_groups = group_belonging != {} and set(group_belonging.values()) != {None}
             if has_block_groups:
                 feedback += FIRST_WRONG_FEEDBACK['block-group']

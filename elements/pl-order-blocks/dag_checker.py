@@ -76,15 +76,15 @@ def add_edges_for_groups(graph, group_belonging):
 
     # if a group G depends on a block B, all blocks in the group G should depend on block B
     for group_tag in groups:
-        for dependency in graph.in_edges(group_tag):
+        for dependency, _ in graph.in_edges(group_tag):
             for node in groups[group_tag]:
                 graph.add_edge(dependency, node)
 
     # if a block B depends on a group G, block B should depend on all blocks in G
     for node in graph.nodes():
-        for depends, _ in deepcopy(graph.in_edges(node)):
-            if depends in groups:
-                graph.add_edges_from((tag, node) for tag in groups[depends])
+        for dependency, _ in deepcopy(graph.in_edges(node)):
+            if dependency in groups:
+                graph.add_edges_from([(tag, node) for tag in groups[dependency]])
 
     for group_tag in groups:
         graph.remove_node(group_tag)
@@ -97,7 +97,8 @@ def grade_dag(submission, depends_graph, group_belonging):
     :param submission: the block ordering given by the student
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :return: length of list that meets both correctness conditions, starting from the beginning
+    :return: tuple containing length of list that meets both correctness conditions, starting from the beginning,
+    and the length of any correct solution
     """
     graph = dag_to_nx(depends_graph)
     add_edges_for_groups(graph, group_belonging)
@@ -108,7 +109,7 @@ def grade_dag(submission, depends_graph, group_belonging):
     top_sort_correctness = check_topological_sorting(submission, graph)
     grouping_correctness = check_grouping(submission, group_belonging)
 
-    return top_sort_correctness if top_sort_correctness < grouping_correctness else grouping_correctness
+    return (top_sort_correctness if top_sort_correctness < grouping_correctness else grouping_correctness), graph.number_of_nodes()
 
 
 def is_vertex_cover(G, vertex_cover):
@@ -191,5 +192,5 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
                 break
 
     deletions_needed = distractors + mvc_size
-    insertions_needed = len(graph.nodes()) - (len(submission) - deletions_needed)
+    insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
     return deletions_needed + insertions_needed
