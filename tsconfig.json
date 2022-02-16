@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowJs": true,
+    "esModuleInterop": true,
     "noEmit": true,
     // Allow spreading Maps/Sets into arrays
     "downlevelIteration": true

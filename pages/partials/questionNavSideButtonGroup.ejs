@@ -1,0 +1,19 @@
+<div class="text-center mb-2">
+  <%- include("../partials/questionNavSideButton", {
+    button: {
+      "id": "question-nav-prev",
+      "label": "Previous question",
+    },
+    question: instance_question_info.prev_instance_question,
+  }); %>
+  <%- include("../partials/questionNavSideButton", {
+    // NOTE: This must be kept in sync the the corresponding code in
+    // `lib/question.js`.
+    button: {
+      "id": "question-nav-next",
+      "label": "Next question",
+    },
+    question: instance_question_info.next_instance_question,
+    advance_score_perc: instance_question_info.advance_score_perc,
+  }); %>
+</div>

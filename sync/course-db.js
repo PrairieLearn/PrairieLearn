@@ -290,6 +290,7 @@ const FILE_UUID_REGEX =
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  * @property {string[]} canView
  * @property {string[]} canSubmit
@@ -302,6 +303,7 @@ const FILE_UUID_REGEX =
  * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
 
@@ -339,6 +341,7 @@ const FILE_UUID_REGEX =
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
  * @property {GroupRole[]} groupRoles
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
 

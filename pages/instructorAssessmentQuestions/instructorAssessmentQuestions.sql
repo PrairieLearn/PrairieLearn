@@ -56,6 +56,7 @@ SELECT
     (z.max_points IS NOT NULL) AS zone_has_max_points,
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
+    aq.effective_advance_score_perc AS assessment_question_advance_score_perc,
     q.sync_errors,
     q.sync_warnings
 FROM
