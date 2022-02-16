@@ -69,8 +69,7 @@ def dag_to_nx(depends_graph):
 
 
 def add_edges_for_groups(graph, group_belonging):
-    groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values())}
-    groups.pop(None, None)
+    groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values()) if group is not None}
     if not validate_grouping(graph, group_belonging):
         raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
 
