@@ -73,13 +73,13 @@ def add_edges_for_groups(graph, group_belonging):
     if not validate_grouping(graph, group_belonging):
         raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
 
-    # if a group G depends on a block B, all blocks in the group G should depend on block B
+    # if a group G depends on a node N, all blocks in the group G should depend on Node N
     for group_tag in groups:
         for dependency, _ in graph.in_edges(group_tag):
             for node in groups[group_tag]:
                 graph.add_edge(dependency, node)
 
-    # if a block B depends on a group G, block B should depend on all blocks in G
+    # if a node N depends on a group G, node N should depend on all blocks in G
     for node in graph.nodes():
         for dependency, _ in deepcopy(graph.in_edges(node)):
             if dependency in groups:
