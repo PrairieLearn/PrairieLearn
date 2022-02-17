@@ -56,7 +56,7 @@
                     "points": 1, 
                     "maxPoints": 5,
                     "canView": ["Reflector"],
-                    "canSubmit": ["Recorder"]
+                    "canSubmit": ["Reflector"]
                 }
             ]
         }

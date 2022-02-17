@@ -418,8 +418,8 @@ BEGIN
                             FROM group_roles as gr
                             WHERE gr.assessment_id = new_assessment_id
                         ) LOOP
-                            -- Insert entry for whether role can view question
-                            INSERT INTO roles_can_view (
+                            -- Insert roles that can view
+                            INSERT INTO assessment_question_role_permissions (
                                 assessment_question_id,
                                 group_role_id,
                                 can_view
@@ -427,10 +427,15 @@ BEGIN
                                 new_assessment_question_id,
                                 valid_group_role.id,
                                 (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view')))
-                            );
-                            
-                            -- Insert entry for whether role can submit question
-                            INSERT INTO roles_can_submit (
+                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            DO UPDATE
+                            SET
+                                assessment_question_id = EXCLUDED.assessment_question_id,
+                                group_role_id = EXCLUDED.group_role_id,
+                                can_view = EXCLUDED.can_view;
+
+                            -- Insert roles that can submit
+                            INSERT INTO assessment_question_role_permissions (
                                 assessment_question_id,
                                 group_role_id,
                                 can_submit
@@ -438,39 +443,12 @@ BEGIN
                                 new_assessment_question_id,
                                 valid_group_role.id,
                                 (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
-                            );
-                        END LOOP;
-
-                        -- Consolidate all temp table results
-                        DROP TABLE IF EXISTS temp_role_permissions;
-                        CREATE TEMPORARY TABLE temp_role_permissions (
-                            assessment_question_id BIGINT,
-                            group_role_id BIGINT,
-                            can_view BOOLEAN,
-                            can_submit BOOLEAN
-                        ) ON COMMIT DROP;
-
-                        INSERT INTO temp_role_permissions
-                        SELECT * FROM roles_can_view NATURAL LEFT JOIN roles_can_submit;
-
-                        FOR permission in SELECT * FROM temp_role_permissions LOOP
-                            INSERT INTO assessment_question_role_permissions (
-                                assessment_question_id,
-                                group_role_id,
-                                can_submit,
-                                can_view
-                            ) VALUES (
-                                permission.assessment_question_id,
-                                permission.group_role_id,
-                                permission.can_submit,
-                                permission.can_view
                             ) ON CONFLICT (assessment_question_id, group_role_id) 
                             DO UPDATE
                             SET
                                 assessment_question_id = EXCLUDED.assessment_question_id,
                                 group_role_id = EXCLUDED.group_role_id,
-                                can_submit = EXCLUDED.can_submit,
-                                can_view = EXCLUDED.can_view;
+                                can_submit = EXCLUDED.can_submit;
                         END LOOP;
                     END IF;
                 END LOOP;
