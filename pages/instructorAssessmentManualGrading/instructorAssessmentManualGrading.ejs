@@ -46,12 +46,12 @@
                   <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
                 </td>
                 <td class="text-center">
-                  <%= question.num_submissions %>
+                  <%= question.num_instance_questions %>
                 </td>
                 <td>
-                  <% if (question.num_ungraded_submissions > 0) { %>
+                  <% if (question.num_instance_questions_to_grade > 0) { %>
                   <a class="btn btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/next_ungraded">
-                    Grade <%= question.num_ungraded_submissions %> submission<% if (question.num_ungraded_submissions > 1) { %>s<% } %>
+                    Grade <%= question.num_instance_questions_to_grade %> submission<% if (question.num_instance_questions_to_grade > 1) { %>s<% } %>
                   </a>
                   <% } %>
                 </td>

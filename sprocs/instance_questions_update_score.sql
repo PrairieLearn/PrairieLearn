@@ -163,7 +163,8 @@ BEGIN
             score_perc_in_grading = 0,
             status = 'complete',
             modified_at = now(),
-            highest_submission_score = new_score
+            highest_submission_score = new_score,
+            requires_manual_grading = FALSE
         WHERE iq.id = instance_question_id;
 
         INSERT INTO question_score_logs

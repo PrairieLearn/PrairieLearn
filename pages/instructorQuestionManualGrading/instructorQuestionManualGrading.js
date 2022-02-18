@@ -89,58 +89,39 @@ router.get('/', (req, res, next) => {
 
 router.post('/', function (req, res, next) {
   if (req.body.__action === 'add_manual_grade') {
-    const note = req.body.submission_note;
-    const score_perc = req.body.submission_score_percent;
-    const params = [res.locals.instance_question.id];
+    const params = [
+      req.body.assessment_id,
+      null, // assessment_instance_id,
+      null, // submission_id
+      res.locals.instance_question.id, // instance_question_id,
+      null, // uid
+      null, // assessment_instance_number
+      null, // qid
+      req.body.submission_score_percent, // score_perc
+      null, // points
+      { manual: req.body.submission_note }, // feedback
+      null, // partial_scores
+      res.locals.authn_user.user_id,
+    ];
 
-    sqlDb.callZeroOrOneRow(
-      'instance_question_select_manual_grading_objects',
-      params,
-      (err, result) => {
+    /*
+     * TODO: calling 'instance_questions_update_score' may not be the perfect thing to do here,
+     * because it won't respect the 'credit' property of the assessment_instance.  However, allowing
+     * the 'credit' calculation in a manually graded problem is also problematic, because it means
+     * that the behavior of the instructor editing the score on the manual grading page would be
+     * different than the behavior of the instructor editing the score on any of the other pages
+     * where they can edit score. Fundamentally, we need to rethink how to treat questions that are
+     * manually graded within PrairieLearn and how to handle those score calculations.
+     */
+    sqlDb.call('instance_questions_update_score', params, (err, _result) => {
+      if (ERR(err, next)) return;
+      ltiOutcomes.updateScore(req.body.assessment_instance_id, null, (err) => {
         if (ERR(err, next)) return;
-
-        const { question, variant, submission } = result.rows[0];
-        if (!question || !variant || !submission) {
-          return next(error.make('500', 'Manual grading dependencies missing'));
-        }
-
-        Object.assign(res.locals, { question, variant, submission });
-
-        const params = [
-          req.body.assessment_id,
-          null, // assessment_instance_id,
-          submission.id, // submission_id
-          null, // instance_question_id,
-          null, // uid
-          null, // assessment_instance_number
-          null, // qid
-          score_perc,
-          null, // points
-          { manual: note }, // feedback
-          null, // partial_scores
-          res.locals.authn_user.user_id,
-        ];
-
-        /**
-         *  TODO: calling 'instance_questions_update_score' may not be the perfect thing to do
-         * here, because it won't respect the 'credit' property of the assessment_instance.
-         * However, allowing the 'credit' calculation in a manually graded problem is also problematic,
-         * because it means that the behavior of the instructor editing the score on the manual grading
-         * page would be different than the behavior of the instructor editing the score on any of the other
-         * pages where they can edit score. Fundamentally, we need to rethink how to treat questions
-         * that are manually graded within PrairieLearn and how to handle those score calculations.
-         */
-        sqlDb.call('instance_questions_update_score', params, (err, _result) => {
-          if (ERR(err, next)) return;
-          ltiOutcomes.updateScore(req.body.assessment_instance_id, null, (err) => {
-            if (ERR(err, next)) return;
-            res.redirect(
-              `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded?instance_question=${res.locals.instance_question.id}`
-            );
-          });
-        });
-      }
-    );
+        res.redirect(
+          `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded?prior_instance_question=${res.locals.instance_question.id}`
+        );
+      });
+    });
   } else {
     return next(
       error.make(400, 'unknown __action', {

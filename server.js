@@ -1196,11 +1196,6 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded',
     [
-      function (req, res, next) {
-        res.locals.assessment_question_id = req.params.assessment_question_id;
-        res.locals.prior_instance_question_id = req.query.instance_question;
-        next();
-      },
       require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
     ]
   );

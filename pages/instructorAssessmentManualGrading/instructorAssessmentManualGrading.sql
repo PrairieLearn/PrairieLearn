@@ -1,4 +1,15 @@
 -- BLOCK select_questions_manual_grading
+WITH instance_questions_with_submission AS (
+    SELECT
+        iq.assessment_question_id,
+        COUNT(1) FILTER (WHERE iq.requires_manual_grading) AS num_instance_questions_to_grade
+        COUNT(1) AS num_instance_questions
+    FROM instance_questions iq
+    WHERE EXISTS(SELECT 1
+                 FROM variant AS v JOIN submissions AS s ON (s.variant_id = v.id)
+                 WHERE v.instance_question_id = iq.id)
+    GROUP BY iq.assessment_question_id
+)
 SELECT
     aq.*,
     q.qid,
@@ -7,30 +18,13 @@ SELECT
     admin_assessment_question_number(aq.id) as number,
     ag.number AS alternative_group_number,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
-    (SELECT COUNT(DISTINCT iq.id)
-     FROM
-         instance_questions AS iq
-         JOIN variants AS v ON (v.instance_question_id = iq.id)
-         JOIN submissions AS s ON (s.variant_id = v.id)
-     WHERE
-         iq.assessment_question_id = aq.id
-    ) AS num_submissions,
-    (SELECT COUNT(*) FROM
-        (SELECT DISTINCT ON (iq.id) iq.id, s.graded_at
-         FROM
-             instance_questions AS iq
-             JOIN variants AS v ON (v.instance_question_id = iq.id)
-             JOIN submissions AS s ON (s.variant_id = v.id)
-         WHERE
-             iq.assessment_question_id = aq.id
-         GROUP BY iq.id, s.date, s.graded_at
-         ORDER BY iq.id DESC, s.date DESC
-         ) AS submission_info
-     WHERE submission_info.graded_at IS NULL) AS num_ungraded_submissions
+    iqs.num_instance_questions,
+    iqs.num_instance_questions_to_grade
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+    LEFT JOIN instance_questions_with_submission iqs ON (iqs.assessment_question_id = aq.id)
 WHERE
     aq.assessment_id = $assessment_id
     AND aq.deleted_at IS NULL
