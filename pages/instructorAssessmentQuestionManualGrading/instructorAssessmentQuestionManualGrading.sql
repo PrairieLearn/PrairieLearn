@@ -15,16 +15,18 @@ WHERE
 SELECT
     iq.*,
     u.uid,
+    aq.max_points,
     COALESCE(g.name, u.name) AS user_or_group_name
 FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id)
 WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id
     AND EXISTS(SELECT 1
-               FROM variant AS v JOIN submissions AS s ON (s.variant_id = v.id)
+               FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
                WHERE v.instance_question_id = iq.id)
 ORDER BY user_or_group_name, iq.id;
