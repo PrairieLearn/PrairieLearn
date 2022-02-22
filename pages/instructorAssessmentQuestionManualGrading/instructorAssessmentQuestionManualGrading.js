@@ -24,22 +24,22 @@ router.get('/', function (req, res, next) {
     res.locals.question_title = result.rows[0].question_title;
     res.locals.max_points = result.rows[0].max_points;
 
-    var params = {
-      assessment_id: res.locals.assessment.id,
-      assessment_question_id: res.locals.assessment_question_id,
-    };
+    debug('render page');
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  });
+});
 
-    sqlDb.query(sql.select_instance_questions_manual_grading, params, function (err, result) {
-      if (ERR(err, next)) return;
-      res.locals.instance_questions_to_grade = result.rows.filter(
-        (iq) => iq.requires_manual_grading
-      );
-      res.locals.instance_questions_graded = result.rows.filter(
-        (iq) => !iq.requires_manual_grading
-      );
-      debug('render page');
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
+router.get('/instances.json', function (req, res, next) {
+  debug('GET /instances.json');
+
+  var params = {
+    assessment_id: res.locals.assessment.id,
+    assessment_question_id: res.locals.assessment_question_id,
+  };
+
+  sqlDb.query(sql.select_instance_questions_manual_grading, params, function (err, result) {
+    if (ERR(err, next)) return;
+    res.send({ instance_questions: result.rows });
   });
 });
 
