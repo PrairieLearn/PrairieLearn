@@ -2,11 +2,11 @@
 WITH instance_questions_with_submission AS (
     SELECT
         iq.assessment_question_id,
-        COUNT(1) FILTER (WHERE iq.requires_manual_grading) AS num_instance_questions_to_grade
+        COUNT(1) FILTER (WHERE iq.requires_manual_grading) AS num_instance_questions_to_grade,
         COUNT(1) AS num_instance_questions
     FROM instance_questions iq
     WHERE EXISTS(SELECT 1
-                 FROM variant AS v JOIN submissions AS s ON (s.variant_id = v.id)
+                 FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
                  WHERE v.instance_question_id = iq.id)
     GROUP BY iq.assessment_question_id
 )
