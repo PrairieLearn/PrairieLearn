@@ -104,6 +104,11 @@
             return $(msg.questionPanelFooter).fadeIn('slow');
           });
         }
+        if (msg.questionNavNextButton) {
+          $('#question-nav-next').replaceWith(() => {
+            return $(msg.questionNavNextButton);
+          });
+        }
       });
     }
 

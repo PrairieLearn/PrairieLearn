@@ -1,0 +1,53 @@
+{
+    "uuid": "12D012E4-9C66-4092-BA1A-0445919CB0C3",
+    "type": "Exam",
+    "title": "Auto-graded randomized practice exams",
+    "set": "Practice Exam",
+    "number": "1",
+    "comment": "students can open several instances of this quiz for practice. Here we disable the honor code message, since in the practice environment students may be allowed to communicate with each other.",
+    "multipleInstance": true,
+    "requireHonorCode": false,
+    "allowAccess": [
+        {
+            "comment": "Set the start/end dates for the quiz period. By using the showClosedAssessment: false, students do not have access to the quiz questions after the time limit is reached",
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2025-12-31T23:59:59",
+            "timeLimitMin": 50,
+            "showClosedAssessment": false
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "demo/annotated/mathNumberInput","points": [3,1]}
+            ]
+        },
+        {
+            "questions": [
+              {"id": "demo/annotated/graphAdjacencyMatrix","points": [3,1]}
+            ]
+        },
+        {
+            "questions": [
+              {"id": "demo/annotated/engCircuit", "points": [5,4,3,2,1]}
+            ]
+        },
+        {
+            "questions": [
+              {
+                  "comment": "Similar questions",
+                  "numberChoose": 1,
+                  "points": [4,2,1],
+                  "alternatives": [
+                      {"id": "demo/annotated/mathOuterProduct"},
+                      {"id": "demo/annotated/mathMatrixMult"},
+                      {"id": "demo/annotated/mathMatrixMultT"}
+                  ]
+              }
+            ]
+        }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of a practice exam, where students can generate many different instances of the same assessment for additional practice. </p> <p> You can read more about a general exam setup <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md target=_blank>here</a>.</p>"
+}

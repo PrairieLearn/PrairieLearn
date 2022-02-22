@@ -3,7 +3,7 @@
     "title": "Autograder demo: Square function in C (Standard Output Override)",
     "topic": "Autograder",
     "tags": [
-        "jonatan", "demo", "autograder", "c"
+        "jonatan","code", "c"
     ],
     "type": "v3",
     "singleVariant": true,

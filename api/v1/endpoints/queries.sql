@@ -122,6 +122,29 @@ SELECT
 FROM
     object_data;
 
+-- BLOCK select_course_instance_info
+WITH object_data AS (
+    SELECT
+        ci.id AS course_instance_id,
+        ci.long_name AS course_instance_long_name,
+        ci.short_name AS course_instance_short_name,
+        ci.course_id AS course_instance_course_id,
+        ci.display_timezone,
+        format_date_iso8601(ci.deleted_at, ci.display_timezone) AS deleted_at,
+        ci.hide_in_enroll_page,
+        pl_c.title AS course_title,
+        pl_c.short_name AS course_short_name
+    FROM
+        course_instances AS ci
+        JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
+    WHERE
+        ci.id = $course_instance_id
+)
+SELECT
+    to_jsonb(object_data) AS item
+FROM
+    object_data;
+
 -- BLOCK select_course_instance_access_rules
 WITH object_data AS (
     SELECT

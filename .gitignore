@@ -20,12 +20,15 @@ docker-compose.override.yml
 ## Backup files
 
 ### vi
-**/*.swp 
+**/*.swp
 **/*.swo
 **/*~
 
 ### emacs
 **/[#]*[#]
+
+### jupyter
+.ipynb_checkpoints
 
 ## File explorers
 **/.DS_Store # OSX Finder
@@ -42,7 +45,7 @@ node_modules
 ## Generated HTML
 
 ### mkdocs
-/site/ 
+/site/
 
 ### jsdoc
 /docs/code-docs/
@@ -79,3 +82,9 @@ __pycache__/
 
 ## s3rver file store
 /s3rver
+
+## Turborepo caches
+.turbo
+
+## Compiled package files
+packages/*/dist

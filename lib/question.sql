@@ -54,11 +54,40 @@ FROM issues AS i
 WHERE i.variant_id = $variant_id;
 
 -- BLOCK select_submission_info
+WITH next_iq AS (
+    SELECT
+        iq.id AS current_id,
+        (lead(iq.id) OVER w) AS id,
+        (lead(qo.sequence_locked) OVER w) AS sequence_locked
+    FROM
+        instance_questions AS iq
+        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        JOIN question_order(ai.id) AS qo ON (qo.instance_question_id = iq.id)
+    WHERE
+        -- need all of these rows to join on question_order
+        ai.id IN (
+            SELECT 
+                iq.assessment_instance_id 
+            FROM
+                submissions AS s
+                JOIN variants AS v ON (v.id = s.variant_id)
+                JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+                JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+            WHERE
+                s.id = $submission_id
+        )
+    WINDOW
+        w AS (ORDER BY qo.row_order)
+)
 SELECT
     to_jsonb(gj) AS grading_job,
     to_jsonb(s) AS submission,
     to_jsonb(v) AS variant,
     to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
+    jsonb_build_object(
+        'id', next_iq.id,
+        'sequence_locked', next_iq.sequence_locked
+    ) AS next_instance_question,
     to_jsonb(q) AS question,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(ai) AS assessment_instance,
@@ -94,6 +123,7 @@ FROM
     LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
     JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
+    JOIN next_iq ON (next_iq.current_id = iq.id)
 WHERE
     s.id = $submission_id
     AND gj.id = (

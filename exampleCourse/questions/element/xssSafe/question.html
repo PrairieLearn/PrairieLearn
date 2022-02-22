@@ -8,7 +8,9 @@
 </pl-question-panel>
 
 <pl-hide-in-panel answer="true">
-<hr style="margin-top: 3rem"></hr>
+
+<hr>
+
 <pl-question-panel>
   <p>The typical use of this element would be to provide, in the submission panel, a formatted view of a student's HTML or Markdown code. In that case, a <code>pl-file-editor</code> or <code>pl-file-upload</code> element provides the interface for the user to input the code in the question panel, while the same file name is used in the <code>pl-xss-safe</code> element to identify the file.</p>
   <p>What is the meaning of life?</p>
@@ -19,7 +21,8 @@
   <pl-xss-safe submitted-file-name="ans1.html"></pl-xss-safe>
 </pl-submission-panel>
   
-<hr style="margin-top: 3rem"></hr>
+<hr>
+
 <pl-question-panel>
   <p>The element <code>pl-xss-safe</code> can also be used to format Markdown code by using <code>language="markdown"</code>.</p>
   <p>Note that the <code>preview</code> attribute of <code>pl-file-editor</code> also provides a similar functionality in the question panel, and also provides the same XSS filtering functionality as <code>pl-xss-safe</code>.</p>
@@ -31,7 +34,8 @@
   <pl-xss-safe submitted-file-name="ans2.md" language="markdown"></pl-xss-safe>
 </pl-submission-panel>
 
-<hr style="margin-top: 3rem"></hr>
+<hr>
+
 <pl-question-panel>
   <p>The element <code>pl-xss-safe</code> also supports content that does not come from a file, using the <code>contents</code> attribute. A typical use-case for this processing is when a regular element is used that does not save its content in a file, such as a <code>pl-string-input</code>. In that case, <code>contents="{{submitted_answers.answers_name}}"</code> provides the content to be displayed.</p>
   <p>Provide the input <code>This is a **bold** text</code> to make the word bold.</p>
