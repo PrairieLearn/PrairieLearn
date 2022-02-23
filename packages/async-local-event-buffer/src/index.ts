@@ -32,9 +32,23 @@ export const runWithEventBuffer = (fn: () => Promise<void> | void) => {
 
   const buffer: EventBuffer = {
     push: (msg: string, data: any) => {
+      // Capture the location of the calling function to aid with debugging.
+      const e = new Error();
+      const stack = e.stack?.split('\n');
+      let location = stack?.[2]?.trim().replace(/^at /, '');
+
+      // The location sometimes looks like this:
+      //  at Object.<anonymous> (/Users/.../.../.../src/index.ts:12:5)
+      // We want to isolate the file path and line number.
+      const match = location.match(/^(.*) \((.*:\d+:\d+)\)$/);
+      if (match) {
+        location = match[2];
+      }
+
       messages.push({
         timestamp: new Date(),
         message: msg,
+        location,
         data,
       });
     },

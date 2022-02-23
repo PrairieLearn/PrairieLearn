@@ -21,6 +21,7 @@ const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
+const { eventBuffer } = require('@prairielearn/async-local-event-buffer');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -428,6 +429,7 @@ module.exports = {
         `execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
       );
       pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
+        eventBuffer.push('call complete');
         if (err instanceof codeCaller.FunctionMissingError) {
           // function wasn't present in server
           debug(`execPythonServer(): function not present`);
@@ -898,6 +900,7 @@ module.exports = {
     }
 
     module.exports.execPythonServer(pc, phase, data, html, context, (err, ret_val, consoleLog) => {
+      eventBuffer.push('execPythonServer complete');
       if (err) {
         const serverFile = path.join(context.question_dir, 'server.py');
         const courseIssue = new Error(
@@ -970,6 +973,7 @@ module.exports = {
         Buffer.from(''),
         context,
         (err, courseIssues, data, html, fileData) => {
+          eventBuffer.push('processQuestionServer complete');
           if (ERR(err, callback)) return;
           callback(null, courseIssues, data, html, fileData);
         }
@@ -981,6 +985,7 @@ module.exports = {
         data,
         context,
         (err, courseIssues, data, html, fileData, renderedElementNames) => {
+          eventBuffer.push('processQuestionHtml complete');
           if (ERR(err, callback)) return;
           const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
           if (hasFatalError) return callback(null, courseIssues, data, html, fileData);
@@ -992,6 +997,7 @@ module.exports = {
             fileData,
             context,
             (err, ret_courseIssues, data, html, fileData) => {
+              eventBuffer.push('processQuestionServer complete');
               if (ERR(err, callback)) return;
               courseIssues.push(...ret_courseIssues);
               callback(null, courseIssues, data, html, fileData, renderedElementNames);
@@ -1022,6 +1028,7 @@ module.exports = {
   generate: function (question, course, variant_seed, callback) {
     debug('generate()');
     module.exports.getContext(question, course, (err, context) => {
+      eventBuffer.push('getContext complete');
       if (err) {
         return callback(new Error(`Error generating options: ${err}`));
       }
@@ -1033,6 +1040,7 @@ module.exports = {
       };
       _.extend(data.options, module.exports.getContextOptions(context));
       workers.getPythonCaller((err, pc) => {
+        eventBuffer.push('getPythonCaller complete');
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'generate',
@@ -1040,8 +1048,10 @@ module.exports = {
           data,
           context,
           (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
+            eventBuffer.push('processQuestion complete');
             // don't immediately error here; we have to return the pythonCaller
             workers.returnPythonCaller(pc, (pcErr) => {
+              eventBuffer.push('returnPythonCaller complete');
               if (ERR(pcErr, callback)) return;
               if (ERR(err, callback)) return;
               const ret_vals = {
@@ -1061,6 +1071,7 @@ module.exports = {
     debug('prepare()');
     if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
     module.exports.getContext(question, course, (err, context) => {
+      eventBuffer.push('getContext complete');
       if (err) {
         return callback(new Error(`Error generating options: ${err}`));
       }
@@ -1073,6 +1084,7 @@ module.exports = {
       };
       _.extend(data.options, module.exports.getContextOptions(context));
       workers.getPythonCaller((err, pc) => {
+        eventBuffer.push('getPythonCaller complete');
         if (ERR(err, callback)) return;
         module.exports.processQuestion(
           'prepare',
@@ -1080,8 +1092,10 @@ module.exports = {
           data,
           context,
           (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
+            eventBuffer.push('processQuestion complete');
             // don't immediately error here; we have to return the pythonCaller
             workers.returnPythonCaller(pc, (pcErr) => {
+              eventBuffer.push('returnPythonCaller complete');
               if (ERR(pcErr, callback)) return;
               if (ERR(err, callback)) return;
               const ret_vals = {

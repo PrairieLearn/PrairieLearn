@@ -15,6 +15,7 @@
         "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
         "@opentelemetry/resources": "^1.0.1",
         "@opentelemetry/sdk-node": "^0.26.0",
+        "@prairielearn/async-local-event-buffer": "^1.0.0",
         "@prairielearn/html": "^1.0.0",
         "ace-builds": "^1.4.14",
         "ajv": "^7.1.1",

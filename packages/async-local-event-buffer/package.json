@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/async-local-event-buffer",
   "version": "1.0.0",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
