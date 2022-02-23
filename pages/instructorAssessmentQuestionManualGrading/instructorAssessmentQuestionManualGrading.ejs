@@ -12,7 +12,7 @@
     <script>
       $(function () {
           window.bsTable = $('#instanceQuestionGradingTable').bootstrapTable({
-              classes: 'table table-sm table-hover table-bordered',
+              classes: 'table table-sm table-bordered',
               url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= assessment_question_id %>/manual_grading/instances.json',
               dataField: 'instance_questions',
               escape: true,
@@ -30,7 +30,7 @@
               stickyHeader: true,
               rowStyle: row => {
                   if (!row.requires_manual_grading)
-                      return { classes: 'text-muted' };
+                      return { classes: 'text-muted bg-light' };
                   return {};
               },
               icons: {
@@ -42,9 +42,14 @@
               },
               columns: [[
                   {
-                      field: 'requires_manual_grading',
-                      title: 'Graded',
-                      formatter: value => `<i class="${value ? 'far fa-square' : 'fas fa-check'}"></i>`,
+                      checkbox: true
+                  },
+                  {
+                      field: 'user_or_group_name',
+                      title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
+                      searchable: true,
+                      searchFormatter: false,
+                      formatter: (value, row) => `<a href="<%= urlPrefix %>/instance_question/${row.id}/manual_grading">${value}</a>`,
                   },
                   {
                       field: 'uid',
@@ -53,15 +58,17 @@
                       visible: <%= !assessment.group_work %>,
                   },
                   {
-                      field: 'user_or_group_name',
-                      title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
-                      searchable: true,
-                      searchFormatter: false,
-                      formatter: (value, row) => `${value} (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/${row.id}/">student view</a>)`,
+                      field: 'assigned_grader_name',
+                      title: 'Grading status',
+                      searchable: false,
+                      class: 'text-center',
+                      formatter: (value, row) => row.requires_manual_grading ?
+                          row.assigned_grader ? `Assigned to ${row.assigned_grader_name}`
+                          : 'No grader assigned' : 'Graded',
                   },
                   {
                       field: 'points',
-                      title: 'Awarded Points',
+                      title: 'Awarded points',
                       class: 'text-center',
                       searchable: false,
                       formatter: pointsFormatter,
@@ -74,11 +81,10 @@
                       formatter: scorebarFormatter,
                   },
                   {
-                      field: 'id',
-                      title: 'Begin Grading',
-                      class: 'text-center',
+                      field: 'last_grader_name',
+                      title: 'Graded by',
                       searchable: false,
-                      formatter: (value, row) => `<a class="btn btn-xs btn-secondary" href="<%= urlPrefix %>/instance_question/${value}/manual_grading"><i class="fa fa-arrow-right" aria-hidden="true"></i></a>`,
+                      formatter: (value, row) => row.last_grader ? row.last_grader_name : '&mdash;',
                   },
               ]],
           });
@@ -96,8 +102,8 @@
                             data-html="true" data-placement="auto" title="Change question points"
                             data-content="<%= include('../partials/editQuestionPointsForm',
                                                       {id: 'editQuestionPoints${row.id}',
-                                                       instance_question: {}}); %>"
-                            data-trigger="manual" onclick="$(this).popover('show')">
+                                                       instance_question: {id: '${row.id}', assessment_instance_id: 
+'${row.assessment_instance_id}', points: '${row.points}', max_points}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
           //<% } %>
@@ -126,8 +132,8 @@
                             data-html="true" data-placement="auto" title="Change question percentage score"
                             data-content="<%= include('../partials/editQuestionScorePercForm',
                                                       {id: 'editQuestionScorePerc${row.id}',
-                                                       instance_question: {}}); %>"
-                            data-trigger="manual" onclick="$(this).popover('show')">
+                                                       instance_question: {id: '${row.id}', assessment_instance_id: 
+'${row.assessment_instance_id}', score_perc: '${row.score_perc}'}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
           //<% } %>
@@ -144,7 +150,8 @@
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <%= question_title %>: Manual Grading Instance Questions
+          <%= assessment.tid %> / Question <%= number_in_alternative_group %>.
+          <%= question_title %>
         </div>
         <table id="instanceQuestionGradingTable"></table>
 

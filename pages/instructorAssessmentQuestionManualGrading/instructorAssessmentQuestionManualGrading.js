@@ -20,9 +20,7 @@ router.get('/', function (req, res, next) {
   sqlDb.queryOneRow(sql.select_question, params, (err, result) => {
     if (ERR(err, next)) return;
 
-    res.locals.question_id = result.rows[0].question_id;
-    res.locals.question_title = result.rows[0].question_title;
-    res.locals.max_points = result.rows[0].max_points;
+    Object.assign(res.locals, result.rows[0]);
 
     debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);

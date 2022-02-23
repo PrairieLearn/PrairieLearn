@@ -18,7 +18,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id)
-    LEFT JOIN prior_instance_questions AS piq ON (TRUE)
+    LEFT JOIN prior_instance_question AS piq ON (TRUE)
 WHERE
     iq.assessment_question_id = $assessment_question_id
     AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
@@ -28,7 +28,7 @@ ORDER BY
     -- Choose one assigned to authn_user if one exists, unassigned if not
     iq.assigned_grader NULLS LAST,
     -- Choose question that list after the prior if one exists (follow the order in the instance list)
-    (user_or_group_name, iq.id) > (piq.prior_user_or_group_name, piq.id) DESC,
+    (COALESCE(g.name, u.name), iq.id) > (piq.prior_user_or_group_name, piq.id) DESC,
     user_or_group_name,
     iq.id
 LIMIT 1;

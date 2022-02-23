@@ -11,7 +11,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', (req, res, next) => {
   const params = {
     assessment_id: res.locals.assessment.id,
-    assessment_question_id: req.params.assessment_question_id,
+    assessment_question_id: res.locals.assessment_question_id,
     authn_user_id: res.locals.authz_data.authn_user.user_id,
     prior_instance_question_id: req.query.prior_instance_question,
   };
@@ -29,7 +29,7 @@ router.get('/', (req, res, next) => {
           params
         );
         res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading?done`
+          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/assessment_question/${res.locals.assessment_question_id}/manual_grading?done`
         );
         return;
       }

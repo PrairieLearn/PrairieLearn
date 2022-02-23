@@ -2,6 +2,7 @@
 SELECT
     q.id AS question_id,
     q.title AS question_title,
+    admin_assessment_question_number(aq.id) as number_in_alternative_group,
     aq.max_points
 FROM
     assessment_questions AS aq
@@ -15,6 +16,8 @@ WHERE
 SELECT
     iq.*,
     u.uid,
+    agu.name AS assigned_grader_name,
+    lgu.name AS last_grader_name,
     aq.max_points,
     COALESCE(g.name, u.name) AS user_or_group_name
 FROM
@@ -23,6 +26,8 @@ FROM
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id)
+    LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
+    LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
 WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id
