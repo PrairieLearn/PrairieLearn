@@ -17,15 +17,16 @@
               dataField: 'instance_questions',
               escape: true,
               uniqueId: 'id',
+              idField: 'id',
+              selectItemName: 'instance_question_id',
               search: true,
               showButtonText: true,
               showColumns: false,
               showRefresh: true,
-              showFullscreen: true,
               autoRefresh: true,
               autoRefreshStatus: false,
               autoRefreshInterval: 30,
-              buttonsOrder: ['refresh', 'autoRefresh', 'columns', 'fullscreen'],
+              buttonsOrder: ['refresh', 'autoRefresh'],
               theadClasses: 'thead-light',
               stickyHeader: true,
               rowStyle: row => {
@@ -33,34 +34,40 @@
                       return { classes: 'text-muted bg-light' };
                   return {};
               },
-              icons: {
-              },
               onLoadSuccess: data => {
               },
               onPostBody: () => {
-                  $('[data-toggle="popover"]').popover({sanitize: false});
+                  $('#instanceQuestionGradingTable [data-toggle="popover"]').popover({sanitize: false});
               },
               columns: [[
                   {
-                      checkbox: true
+                      checkbox: true,
                   },
                   {
                       field: 'user_or_group_name',
                       title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
                       searchable: true,
                       searchFormatter: false,
+                      sortable: true,
                       formatter: (value, row) => `<a href="<%= urlPrefix %>/instance_question/${row.id}/manual_grading">${value}</a>`,
                   },
                   {
                       field: 'uid',
                       title: 'UID',
                       searchable: true,
+                      sortable: true,
                       visible: <%= !assessment.group_work %>,
                   },
                   {
                       field: 'assigned_grader_name',
                       title: 'Grading status',
                       searchable: false,
+                      sortable: true,
+                      sorter: (valA, valB, rowA, rowB) => {
+                          return (rowB.requires_manual_grading - rowA.requires_manual_grading) ||
+                              (!!rowA.assigned_grader - !!rowB.assigned_grader) ||
+                              (rowA.assigned_grader_name || '').localeCompare(rowB.assigned_grader_name || '');
+                      },
                       class: 'text-center',
                       formatter: (value, row) => row.requires_manual_grading ?
                           row.assigned_grader ? `Assigned to ${row.assigned_grader_name}`
@@ -71,6 +78,7 @@
                       title: 'Awarded points',
                       class: 'text-center',
                       searchable: false,
+                      sortable: true,
                       formatter: pointsFormatter,
                   },
                   {
@@ -78,6 +86,7 @@
                       title: 'Percentage score',
                       class: 'text-center align-middle text-nowrap',
                       searchable: false,
+                      sortable: true,
                       formatter: scorebarFormatter,
                   },
                   {
