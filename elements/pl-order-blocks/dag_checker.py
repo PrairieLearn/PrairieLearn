@@ -1,6 +1,19 @@
 from collections import Counter
 import networkx as nx
 import itertools
+from copy import deepcopy
+
+
+def validate_grouping(graph, group_belonging):
+    for node in graph:
+        group_tag = group_belonging.get(node)
+        if group_tag is None:
+            if sum(group_belonging.get(dependency) is not None for (dependency, _) in graph.in_edges(node)) != 0:
+                return False
+        else:
+            if not all(group_belonging.get(dependency) == group_tag for (dependency, _) in graph.in_edges(node)):
+                return False
+    return True
 
 
 def check_topological_sorting(submission, graph):
@@ -55,6 +68,27 @@ def dag_to_nx(depends_graph):
     return graph
 
 
+def add_edges_for_groups(graph, group_belonging):
+    groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values()) if group is not None}
+    if not validate_grouping(graph, group_belonging):
+        raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
+
+    # if a group G depends on a node N, all blocks in the group G should depend on Node N
+    for group_tag in groups:
+        for dependency, _ in graph.in_edges(group_tag):
+            for node in groups[group_tag]:
+                graph.add_edge(dependency, node)
+
+    # if a node N depends on a group G, node N should depend on all blocks in G
+    for node in graph.nodes():
+        for dependency, _ in deepcopy(graph.in_edges(node)):
+            if dependency in groups:
+                graph.add_edges_from([(tag, node) for tag in groups[dependency]])
+
+    for group_tag in groups:
+        graph.remove_node(group_tag)
+
+
 def grade_dag(submission, depends_graph, group_belonging):
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
@@ -62,9 +96,11 @@ def grade_dag(submission, depends_graph, group_belonging):
     :param submission: the block ordering given by the student
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
-    :return: length of list that meets both correctness conditions, starting from the beginning
+    :return: tuple containing length of list that meets both correctness conditions, starting from the beginning,
+    and the length of any correct solution
     """
     graph = dag_to_nx(depends_graph)
+    add_edges_for_groups(graph, group_belonging)
 
     if not nx.is_directed_acyclic_graph(graph):
         raise Exception('Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.')
@@ -72,7 +108,7 @@ def grade_dag(submission, depends_graph, group_belonging):
     top_sort_correctness = check_topological_sorting(submission, graph)
     grouping_correctness = check_grouping(submission, group_belonging)
 
-    return top_sort_correctness if top_sort_correctness < grouping_correctness else grouping_correctness
+    return (top_sort_correctness if top_sort_correctness < grouping_correctness else grouping_correctness), graph.number_of_nodes()
 
 
 def is_vertex_cover(G, vertex_cover):
@@ -103,6 +139,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     :return: edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph)
+    add_edges_for_groups(graph, group_belonging)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
@@ -154,5 +191,5 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
                 break
 
     deletions_needed = distractors + mvc_size
-    insertions_needed = len(depends_graph.keys()) - (len(submission) - deletions_needed)
+    insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
     return deletions_needed + insertions_needed
