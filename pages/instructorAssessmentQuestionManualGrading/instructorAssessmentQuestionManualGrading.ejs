@@ -5,13 +5,15 @@
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js') %>"></script>
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
     <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.css') %>" rel="stylesheet" />
   </head>
   <body>
     <script>
       $(function () {
-          window.bsTable = $('#instanceQuestionGradingTable').bootstrapTable({
+          window.bsTable = $('#grading-table').bootstrapTable({
               classes: 'table table-sm table-bordered',
               url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= assessment_question_id %>/manual_grading/instances.json',
               dataField: 'instance_questions',
@@ -19,7 +21,6 @@
               uniqueId: 'id',
               idField: 'id',
               selectItemName: 'instance_question_id',
-              search: true,
               showButtonText: true,
               showColumns: false,
               showRefresh: true,
@@ -29,15 +30,12 @@
               buttonsOrder: ['refresh', 'autoRefresh'],
               theadClasses: 'thead-light',
               stickyHeader: true,
-              rowStyle: row => {
-                  if (!row.requires_manual_grading)
-                      return { classes: 'text-muted bg-light' };
-                  return {};
-              },
+              filterControl: true,
+              rowStyle: row => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
               onLoadSuccess: data => {
               },
               onPostBody: () => {
-                  $('#instanceQuestionGradingTable [data-toggle="popover"]').popover({sanitize: false});
+                  $('#grading-table [data-toggle="popover"]').popover({sanitize: false});
               },
               columns: [[
                   {
@@ -47,6 +45,7 @@
                       field: 'user_or_group_name',
                       title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
                       searchable: true,
+                      filterControl: 'input',
                       searchFormatter: false,
                       sortable: true,
                       formatter: (value, row) => `<a href="<%= urlPrefix %>/instance_question/${row.id}/manual_grading">${value}</a>`,
@@ -55,29 +54,35 @@
                       field: 'uid',
                       title: 'UID',
                       searchable: true,
+                      filterControl: 'input',
                       sortable: true,
                       visible: <%= !assessment.group_work %>,
                   },
                   {
-                      field: 'assigned_grader_name',
+                      field: 'requires_manual_grading',
                       title: 'Grading status',
-                      searchable: false,
+                      filterControl: 'select',
+                      // filterDefault: 'true',
+                      searchFormatter: false,
                       sortable: true,
-                      sorter: (valA, valB, rowA, rowB) => {
-                          return (rowB.requires_manual_grading - rowA.requires_manual_grading) ||
-                              (!!rowA.assigned_grader - !!rowB.assigned_grader) ||
-                              (rowA.assigned_grader_name || '').localeCompare(rowB.assigned_grader_name || '');
-                      },
                       class: 'text-center',
-                      formatter: (value, row) => row.requires_manual_grading ?
-                          row.assigned_grader ? `Assigned to ${row.assigned_grader_name}`
-                          : 'No grader assigned' : 'Graded',
+                      formatter: (value, row) => row.requires_manual_grading ? 'Requires grading' : 'Graded',
+                  },
+                  {
+                      field: 'assigned_grader',
+                      title: 'Assigned grader',
+                      filterControl: 'select',
+                      searchFormatter: false,
+                      class: 'text-center',
+                      formatter: (value, row) => row.assigned_grader ? row.assigned_grader_name : '&mdash;',
                   },
                   {
                       field: 'points',
                       title: 'Awarded points',
                       class: 'text-center',
-                      searchable: false,
+                      filterControl: 'input',
+                      filterControlPlaceholder: 'hint: use &lt;<%= Math.ceil(max_points / 2) %>, or &gt;0',
+                      searchFormatter: false,
                       sortable: true,
                       formatter: pointsFormatter,
                   },
@@ -85,14 +90,17 @@
                       field: 'score_perc',
                       title: 'Percentage score',
                       class: 'text-center align-middle text-nowrap',
-                      searchable: false,
+                      filterControl: 'input',
+                      filterControlPlaceholder: 'hint: use &lt;50, or &gt;0',
+                      searchFormatter: false,
                       sortable: true,
                       formatter: scorebarFormatter,
                   },
                   {
-                      field: 'last_grader_name',
+                      field: 'last_grader',
                       title: 'Graded by',
-                      searchable: false,
+                      filterControl: 'select',
+                      searchFormatter: false,
                       formatter: (value, row) => row.last_grader ? row.last_grader_name : '&mdash;',
                   },
               ]],
@@ -162,15 +170,7 @@
           <%= assessment.tid %> / Question <%= number_in_alternative_group %>.
           <%= question_title %>
         </div>
-        <table id="instanceQuestionGradingTable"></table>
-
-        <div class="card-footer">
-          <small>
-            <p class="mb-0">
-              This list may include answers that students saved but did not request to be graded.
-            </p>
-          </small>
-        </div>
+        <table id="grading-table"></table>
       </div>
 
     </div>
