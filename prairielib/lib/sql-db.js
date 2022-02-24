@@ -4,6 +4,17 @@ const pg = require('pg');
 const path = require('path');
 const debug = require('debug')('prairielib:' + path.basename(__filename, '.js'));
 const { callbackify } = require('util');
+const { AsyncLocalStorage } = require('async_hooks');
+
+/**
+ * @type {AsyncLocalStorage<import('pg').PoolClient>}
+ *
+ * We use this to propagate the client associated with the current transaction
+ * to any nested queries. In the past, we had some nasty bugs associated with
+ * the fact that we tried to acquire new clients inside of transactions, which
+ * ultimately lead to a deadlock.
+ */
+const alsTransaction = new AsyncLocalStorage();
 
 const error = require('./error');
 
@@ -203,7 +214,16 @@ module.exports.getClientAsync = async function () {
     throw new Error('Connection pool is not open');
   }
 
-  const client = await pool.connect();
+  /** @type {import('pg').PoolClient} */
+  let client;
+
+  // If we're inside a transaction, we'll reuse the same client to avoid a
+  // potential deadlock.
+  if (alsTransaction.getStore() === undefined) {
+    client = await pool.connect();
+  } else {
+    client = alsTransaction.getStore();
+  }
 
   // If we're configured to use a particular schema, we'll store whether or
   // not the search path has already been configured for this particular
@@ -464,6 +484,49 @@ module.exports.endTransaction = function (client, done, err, callback) {
     .endTransactionAsync(client, err)
     .then(() => callback(null))
     .catch((error) => callback(error));
+};
+
+/**
+ * Runs the specified function inside of a transaction. The function will
+ * receive a database client as an argument, but it can also make queries
+ * as usual, and the correct client will be used automatically.
+ *
+ * The transaction will be rolled back if the function throws an error, and
+ * will be committed otherwise.
+ *
+ * @param {(client: import('pg').PoolClient) => Promise<void>} fn
+ */
+module.exports.runInTransactionAsync = async function (fn) {
+  const client = await module.exports.beginTransactionAsync();
+  try {
+    await alsTransaction.run(client, () => fn(client));
+  } catch (err) {
+    await module.exports.endTransactionAsync(client, err);
+    throw err;
+  }
+
+  // Note that we don't invoke `endTransactionAsync` inside the `try` block
+  // because we don't want an error thrown by it to trigger *another* call
+  // to `endTransactionAsync` in the `catch` block.
+  await module.exports.endTransactionAsync(client, null);
+};
+
+/**
+ * Like `runInTransactionAsync`, but with callbacks.
+ *
+ * @param {(client: import('pg').PoolClient, callback: (err?: Error) => void) => void} fn
+ * @param {(err?: Error) => void} callback
+ */
+module.exports.runInTransaction = function (fn, callback) {
+  module.exports.beginTransaction((err, client, done) => {
+    if (err) return callback(err);
+
+    alsTransaction.run(client, () => {
+      fn(client, (err) => {
+        module.exports.endTransaction(client, done, err, callback);
+      });
+    });
+  });
 };
 
 /**
