@@ -1,4 +1,5 @@
 // @ts-check
+const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const pg = require('pg');
 const path = require('path');
@@ -14,7 +15,7 @@ const { AsyncLocalStorage } = require('async_hooks');
  * the fact that we tried to acquire new clients inside of transactions, which
  * ultimately lead to a deadlock.
  */
-const alsTransaction = new AsyncLocalStorage();
+const alsClient = new AsyncLocalStorage();
 
 const error = require('./error');
 
@@ -219,10 +220,10 @@ module.exports.getClientAsync = async function () {
 
   // If we're inside a transaction, we'll reuse the same client to avoid a
   // potential deadlock.
-  if (alsTransaction.getStore() === undefined) {
+  if (alsClient.getStore() === undefined) {
     client = await pool.connect();
   } else {
-    client = alsTransaction.getStore();
+    client = alsClient.getStore();
   }
 
   // If we're configured to use a particular schema, we'll store whether or
@@ -389,7 +390,10 @@ module.exports.rollbackWithClientAsync = async function (client) {
   // From https://node-postgres.com/features/transactions
   try {
     await client.query('ROLLBACK');
-    client.release();
+    // Only release the client if we weren't already inside a transaction.
+    if (alsClient.getStore() === undefined) {
+      client.release();
+    }
   } catch (err) {
     // If there was a problem rolling back the query, something is
     // seriously messed up. Return the error to the release() function to
@@ -465,7 +469,10 @@ module.exports.endTransactionAsync = async function (client, err) {
     try {
       await module.exports.queryWithClientAsync(client, 'COMMIT', {});
     } finally {
-      client.release();
+      // Only release the client if we aren't nested inside another transaction.
+      if (alsClient.getStore() === undefined) {
+        client.release();
+      }
     }
   }
 };
@@ -499,7 +506,7 @@ module.exports.endTransaction = function (client, done, err, callback) {
 module.exports.runInTransactionAsync = async function (fn) {
   const client = await module.exports.beginTransactionAsync();
   try {
-    await alsTransaction.run(client, () => fn(client));
+    await alsClient.run(client, () => fn(client));
   } catch (err) {
     await module.exports.endTransactionAsync(client, err);
     throw err;
@@ -514,16 +521,24 @@ module.exports.runInTransactionAsync = async function (fn) {
 /**
  * Like `runInTransactionAsync`, but with callbacks.
  *
- * @param {(client: import('pg').PoolClient, callback: (err?: Error) => void) => void} fn
+ * @param {(client: import('pg').PoolClient, done: (err?: Error) => void) => void} fn
  * @param {(err?: Error) => void} callback
  */
 module.exports.runInTransaction = function (fn, callback) {
+  const alreadyInTransaction = alsClient.getStore() !== undefined;
   module.exports.beginTransaction((err, client, done) => {
-    if (err) return callback(err);
+    if (ERR(err, callback)) return;
 
-    alsTransaction.run(client, () => {
+    alsClient.run(client, () => {
       fn(client, (err) => {
-        module.exports.endTransaction(client, done, err, callback);
+        if (alreadyInTransaction) {
+          module.exports.endTransaction(client, done, err, callback);
+        } else {
+          // If this wasn't invoked inside an existing transaction, "exit"
+          // from the current execution context so that any code downstream
+          // of the callback isn't executed with this client.
+          alsClient.exit(() => module.exports.endTransaction(client, done, err, callback));
+        }
       });
     });
   });
@@ -543,7 +558,10 @@ module.exports.queryAsync = async function (sql, params) {
   try {
     return await module.exports.queryWithClientAsync(client, sql, params);
   } finally {
-    client.release();
+    // Only release if we aren't nested in a transaction.
+    if (alsClient.getStore() === undefined) {
+      client.release();
+    }
   }
 };
 
