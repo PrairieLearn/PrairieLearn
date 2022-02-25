@@ -1,6 +1,6 @@
 CREATE FUNCTION
     question_order (
-        assessment_instance_id BIGINT
+        arg_assessment_instance_id BIGINT
     ) RETURNS TABLE (
         instance_question_id BIGINT,
         row_order INTEGER,
@@ -26,7 +26,7 @@ WITH locks_next AS (
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
-        ai.id = assessment_instance_id
+        ai.id = arg_assessment_instance_id
 )
 SELECT
     iq.id AS instance_question_id,
@@ -58,7 +58,7 @@ FROM
     JOIN zones AS z ON (z.id = ag.zone_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE
-    ai.id = question_order.assessment_instance_id
+    ai.id = arg_assessment_instance_id
     AND aq.deleted_at IS NULL
 WINDOW
     w AS (
