@@ -1777,6 +1777,7 @@ if (config.startServer) {
         });
       },
       function (callback) {
+        if (!config.initNewsItems) return callback(null);
         const notify_with_new_server = false;
         news_items.init(notify_with_new_server, function (err) {
           if (ERR(err, callback)) return;
