@@ -19,7 +19,7 @@ WITH locks_next AS (
             (iq.open = false) 
             OR -- Score >= unlock score
             (100*COALESCE(iq.highest_submission_score, 0)
-                >= aq.effective_advance_score_perc) 
+                >= coalesce(aq.effective_advance_score_perc, 0))
         ) AS locking
     FROM
         assessment_instances ai 
