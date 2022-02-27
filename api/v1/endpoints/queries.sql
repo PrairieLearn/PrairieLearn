@@ -51,6 +51,9 @@ WITH object_data AS (
         ai.score_perc,
         ai.number AS assessment_instance_number,
         ai.open,
+        gi.id AS group_id,
+        gi.name AS group_name,
+        gi.uid_list AS group_uids,
         CASE
             WHEN ai.open AND ai.date_limit IS NOT NULL
                 THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
@@ -65,7 +68,8 @@ WITH object_data AS (
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN group_info(a.id) AS gi ON (gi.id = ai.group_id)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
         ci.id = $course_instance_id
         AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
