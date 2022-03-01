@@ -53,7 +53,7 @@
         "dockerode": "^3.3.1",
         "dropzone": "^5.9.2",
         "ejs": "^3.1.6",
-        "express": "^4.17.2",
+        "express": "^4.17.3",
         "express-async-handler": "^1.2.0",
         "fabric": "^4.6.0",
         "file-type": "^16.5.3",
