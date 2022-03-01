@@ -9985,10 +9985,10 @@ text-table@^0.2.0:
   resolved "https://registry.yarnpkg.com/text-table/-/text-table-0.2.0.tgz#7f5ee823ae805207c00af2df4a84ec3fcfa570b4"
   integrity sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=
 
-three@^0.132.2:
-  version "0.132.2"
-  resolved "https://registry.yarnpkg.com/three/-/three-0.132.2.tgz#95eb1856147237c03e887cbbe56f964b6fb40b5e"
-  integrity sha512-0wcR7LxxkXMn6Gi58gEs3QvY8WpTVXA31L2VOvpjm4ZPYFRHCZC13UqynheFoS5OXDYgtBneN0dhbaNBE8iLhQ==
+three@^0.138.2:
+  version "0.138.2"
+  resolved "https://registry.yarnpkg.com/three/-/three-0.138.2.tgz#946c7c550b58e16606343cec0e44715e8865c04e"
+  integrity sha512-l49+mdqpevKIk7ByLmt7cc5RdSwSnZ6rP1cLe8VCI/++c0/6AFYyHw6xjT2VyXYxodCnDSw7iARjKL2MlHVCOg==
 
 throat@^6.0.1:
   version "6.0.1"
