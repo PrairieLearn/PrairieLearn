@@ -58,7 +58,7 @@
         "fabric": "^4.6.0",
         "file-type": "^16.5.3",
         "filesize": "^6.4.0",
-        "folder-hash": "^4.0.1",
+        "folder-hash": "^4.0.2",
         "fs-extra": "^10.0.0",
         "googleapis": "^85.0.0",
         "he": "^1.2.0",
