@@ -22,6 +22,18 @@ OUT_DIR=$JOB_DIR'/results'
 # where we will copy everything
 export MERGE_DIR=$JOB_DIR'/run'
 
+# Mustache process test files with names containing .mustache 
+# and rename without the .mustache. (Hidden directories and
+# files starting with .mustache are not processed.)
+MUSTACHE_PROCESSOR="/python_autograder/mustache-process.sh"
+
+if [[ -f $MUSTACHE_PROCESSOR ]]
+then
+    chmod u+x $MUSTACHE_PROCESSOR
+    (cd $TEST_DIR && $MUSTACHE_PROCESSOR)
+fi
+
+
 # now set up the stuff so that our run.sh can work
 mkdir $MERGE_DIR
 mkdir $OUT_DIR
