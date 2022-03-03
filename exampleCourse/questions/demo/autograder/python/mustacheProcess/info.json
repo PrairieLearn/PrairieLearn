@@ -1,0 +1,20 @@
+{
+    "uuid": "6151dec6-f12d-4d05-969a-dd8be64d4664",
+    "title": "Autograder demo: Use mustache processing",
+    "topic": "Autograder",
+    "tags": [
+        "code"
+    ],
+    "dependencies": {
+        "clientFilesQuestionStyles": ["style.css"]
+    },
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    }
+}
