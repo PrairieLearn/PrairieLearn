@@ -83,13 +83,12 @@ BEGIN
     -- grade submissions in a different order than how they were saved.
     -- This does not impact instructors since there's no notion of an assessment
     -- to grade.
-    SELECT 1
-    FROM
+    PERFORM 1 FROM
         instance_questions AS iq
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
-        iq.id = instance_question_id
+        iq.id = main.instance_question_id
         AND s.id != submission_id
         AND s.date > submission_date
         AND s.grading_requested_at IS NOT NULL;
