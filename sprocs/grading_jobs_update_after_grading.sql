@@ -1,5 +1,6 @@
 CREATE FUNCTION
-    grading_jobs_process_external(
+    grading_jobs_update_after_grading(
+        -- TODO: reorder params to match `submissions_insert`.
         grading_job_id bigint,
         new_score double precision,
         new_feedback jsonb,
@@ -11,9 +12,9 @@ CREATE FUNCTION
         new_broken boolean,
         new_partial_scores jsonb,
         new_v2_score double precision,
-        new_submitted_answer jsonb,
-        new_params jsonb,
-        new_true_answer jsonb
+        new_submitted_answer jsonb, -- NULL => no change
+        new_params jsonb, -- NULL => no change
+        new_true_answer jsonb -- NULL => no change
     ) RETURNS void
 AS $$
 DECLARE
@@ -92,14 +93,14 @@ BEGIN
         v2_score = new_v2_score,
         correct = new_correct,
         feedback = new_feedback,
-        submitted_answer = new_submitted_answer
+        submitted_answer = COALESCE(new_submitted_answer, submitted_answer),
         grading_method = grading_jobs_process_external.grading_method
     WHERE id = grading_job.submission_id;
 
     UPDATE variants AS v
     SET
-        params = new_params,
-        true_answer = new_true_answer
+        params = COALESCE(new_params, params),
+        true_answer = COALESCE(new_true_answer, true_answer)
     WHERE v.id = variant_id;
 
     UPDATE grading_jobs
