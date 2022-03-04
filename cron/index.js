@@ -275,30 +275,27 @@ module.exports = {
   tryJobWithLock(job, cronUuid, callback) {
     debug(`tryJobWithLock(): ${job.name}`);
     const lockName = 'cron:' + job.name;
-    namedLocks.tryLock(lockName, (err, lock) => {
-      if (ERR(err, callback)) return;
-      if (lock == null) {
-        debug(`tryJobWithLock(): ${job.name}: did not acquire lock`);
-        logger.verbose('cron: ' + job.name + ' did not acquire lock', {
-          cronUuid,
-        });
-        callback(null);
-      } else {
+    namedLocks.tryDoWithLock(
+      lockName,
+      (lock) => {
+        if (lock == null) {
+          debug(`tryJobWithLock(): ${job.name}: did not acquire lock`);
+          logger.verbose('cron: ' + job.name + ' did not acquire lock', { cronUuid });
+          callback(null);
+          return;
+        }
+
         debug(`tryJobWithLock(): ${job.name}: acquired lock`);
         logger.verbose('cron: ' + job.name + ' acquired lock', { cronUuid });
-        this.tryJobWithTime(job, cronUuid, (err) => {
-          namedLocks.releaseLock(lock, (lockErr) => {
-            if (ERR(lockErr, callback)) return;
-            if (ERR(err, callback)) return;
-            debug(`tryJobWithLock(): ${job.name}: released lock`);
-            logger.verbose('cron: ' + job.name + ' released lock', {
-              cronUuid,
-            });
-            callback(null);
-          });
-        });
+        this.tryJobWithTime(job, cronUuid, (err) => callback(err));
+      },
+      (err) => {
+        if (ERR(err, callback)) return;
+        debug(`tryJobWithLock(): ${job.name}: released lock`);
+        logger.verbose('cron: ' + job.name + ' released lock', { cronUuid });
+        callback(null);
       }
-    });
+    );
   },
 
   // See how long it is since we last ran the job and only run it if

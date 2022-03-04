@@ -494,6 +494,43 @@ module.exports.endTransaction = function (client, done, err, callback) {
 };
 
 /**
+ * Runs the provided function with the given `client` as the current client
+ * for this async context. In most cases you should use
+ * {@link module.exports.runInTransactionAsync} instead of this, but if you
+ * must manually start a transaction, you should make sure to wrap any code
+ * that may make a query with `runWithClientAsync`.
+ *
+ * This function will not automatically end the transaction and release the
+ * client. Callers must take care to do that themselves.
+ *
+ * @template T
+ * @param {import('pg').PoolClient} client
+ * @param {(client: import('pg').PoolClient) => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+module.exports.runWithClientAsync = async function (client, fn) {
+  return alsClient.run(client, () => fn(client));
+};
+
+/**
+ * Like` runWithClientAsync`, but with callbacks.
+ *
+ * @param {import('pg').PoolClient} client
+ * @param {(client: import('pg').PoolClient, done: (err?: Error) => void) => void} fn
+ * @param {(err?: Error) => void} callback
+ */
+module.exports.runWithClient = async function (client, fn, callback) {
+  const parentClient = alsClient.getStore();
+  alsClient.run(client, () => {
+    fn(client, (err) => {
+      // Ensure that the callback (and everything downstream of it) is executed
+      // with the original client.
+      alsClient.run(parentClient, () => callback(err));
+    });
+  });
+};
+
+/**
  * Runs the specified function inside of a transaction. The function will
  * receive a database client as an argument, but it can also make queries
  * as usual, and the correct client will be used automatically.
@@ -506,7 +543,7 @@ module.exports.endTransaction = function (client, done, err, callback) {
 module.exports.runInTransactionAsync = async function (fn) {
   const client = await module.exports.beginTransactionAsync();
   try {
-    await alsClient.run(client, () => fn(client));
+    await module.exports.runWithClientAsync(client, fn);
   } catch (err) {
     await module.exports.endTransactionAsync(client, err);
     throw err;
@@ -525,21 +562,26 @@ module.exports.runInTransactionAsync = async function (fn) {
  * @param {(err?: Error) => void} callback
  */
 module.exports.runInTransaction = function (fn, callback) {
-  const alreadyInTransaction = alsClient.getStore() !== undefined;
+  const parentTransactionClient = alsClient.getStore();
   module.exports.beginTransaction((err, client, done) => {
     if (ERR(err, callback)) return;
 
-    alsClient.run(client, () => {
-      fn(client, (err) => {
-        if (alreadyInTransaction) {
-          module.exports.endTransaction(client, done, err, callback);
-        } else {
-          // If this wasn't invoked inside an existing transaction, "exit"
-          // from the current execution context so that any code downstream
-          // of the callback isn't executed with this client.
-          alsClient.exit(() => module.exports.endTransaction(client, done, err, callback));
-        }
-      });
+    module.exports.runWithClient(client, fn, (err) => {
+      // End the transaction with the parent transaction's client as the
+      // "current" client. This covers two cases:
+      //
+      // If `runInTransaction` was executed inside another transaction,
+      // then this call to `endTransaction` should not release the client.
+      // If the "current" client is not undefined, then it will not release
+      // the client.
+      //
+      // If `runInTransaction` was executed outside of an existing transaction,
+      // then this call to `endTransaction` should release the client.
+      // Since `parentTransactionClient` will be undefined, the client will
+      // be released.
+      alsClient.run(parentTransactionClient, () =>
+        module.exports.endTransaction(client, done, err, callback)
+      );
     });
   });
 };
