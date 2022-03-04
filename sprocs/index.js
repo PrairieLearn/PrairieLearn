@@ -120,7 +120,6 @@ module.exports._initWithLock = function (callback) {
       'grading_job_status.sql',
       'grading_jobs_lock.sql',
       'grading_jobs_insert.sql',
-      'grading_jobs_insert_internal_DELETE_ME.sql',
       'grading_jobs_process_external.sql',
       'ip_to_mode.sql',
       'config_select.sql',
