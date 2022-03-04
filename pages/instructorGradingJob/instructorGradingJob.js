@@ -45,7 +45,9 @@ const allowedFilesPreviewer = ['output.log', 'results.json'];
 
 router.get('/:job_id/file/:file', (req, res, next) => {
   const file = req.params.file;
-  const allowList = res.locals.authz_data.has_course_permission_view ? allowedFilesViewer : allowedFilesPreviewer;
+  const allowList = res.locals.authz_data.has_course_permission_view
+    ? allowedFilesViewer
+    : allowedFilesPreviewer;
 
   if (allowList.indexOf(file) === -1) {
     return next(new Error(`Unknown file ${file}`));
