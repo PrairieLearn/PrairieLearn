@@ -70,6 +70,7 @@ BEGIN
     -- ######################################################################
     -- update the variant
 
+    -- TODO: Shift to post-grading
     UPDATE variants AS v
     SET
         params = new_params,
@@ -88,6 +89,7 @@ BEGIN
     RETURNING gj.*
     INTO grading_job;
 
+    -- TODO: Shift to post-grading
     IF new_gradable = FALSE THEN
         -- ######################################################################
         -- If the submission is ungradable then we shouldn't update grades
@@ -102,6 +104,7 @@ BEGIN
         -- ######################################################################
         -- update all parent objects
 
+        -- TODO: Shift to post-grading
         PERFORM variants_update_after_grading(variant_id, grading_job.correct);
         IF assessment_instance_id IS NOT NULL THEN
            PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
