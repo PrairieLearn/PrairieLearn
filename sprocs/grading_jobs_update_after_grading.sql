@@ -17,6 +17,7 @@ CREATE FUNCTION
         new_true_answer jsonb -- NULL => no change
     ) RETURNS void
 AS $$
+<<main>>
 DECLARE
     grading_job grading_jobs%rowtype;
     credit integer;
@@ -94,7 +95,7 @@ BEGIN
         correct = new_correct,
         feedback = new_feedback,
         submitted_answer = COALESCE(new_submitted_answer, submitted_answer),
-        grading_method = grading_jobs_process_external.grading_method
+        grading_method = main.grading_method
     WHERE id = grading_job.submission_id;
 
     UPDATE variants AS v

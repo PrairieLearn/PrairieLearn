@@ -34,11 +34,11 @@ BEGIN
     -- ######################################################################
     -- cancel any outstanding grading jobs
 
-    FOR grading_job IN
+    WITH canceled_jobs AS (
         UPDATE grading_jobs AS gj
         SET
             grading_request_canceled_at = now(),
-            grading_request_canceled_by = grading_jobs_insert_external_manual.authn_user_id
+            grading_request_canceled_by = grading_jobs_insert.authn_user_id
         FROM
             variants AS v
             JOIN submissions AS s ON (s.variant_id = v.id)
@@ -49,11 +49,11 @@ BEGIN
             AND gj.grading_requested_at IS NOT NULL
             AND gj.grading_request_canceled_at IS NULL
         RETURNING gj.*
-    LOOP
-        UPDATE submissions AS s
-        SET grading_requested_at = NULL
-        WHERE s.id = grading_job.submission_id;
-    END LOOP;
+    )
+    UPDATE submissions AS s
+    SET grading_requested_at = NULL
+    FROM canceled_jobs
+    WHERE s.id = canceled_jobs.submission_id;
 
     -- ######################################################################
     -- insert the new grading job
