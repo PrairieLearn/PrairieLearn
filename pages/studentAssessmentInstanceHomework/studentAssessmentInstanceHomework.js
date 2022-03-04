@@ -10,6 +10,8 @@ const studentAssessmentInstance = require('../shared/studentAssessmentInstance')
 const error = require('../../prairielib/lib/error');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+var groupAssessmentHelper = require('../shared/studentGroupAssessmentHelpers/studentGroupAssessmentHelpers');
+
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -103,13 +105,7 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'leave_group') {
     if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
-    const params = {
-      assessment_instance_id: res.locals.assessment_instance.id,
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-    };
-    sqldb.query(sql.leave_group, params, function (err, _result) {
-      if (ERR(err, next)) return;
+    groupAssessmentHelper.leaveGroup(req, res, function () {
       res.redirect(
         '/pl/course_instance/' +
           res.locals.course_instance.id +

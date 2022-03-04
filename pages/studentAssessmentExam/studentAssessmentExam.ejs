@@ -32,7 +32,7 @@
           </p>
           <% } %>
 
-          <% if (locals.assessment.group_work) { %>  
+          <% if (locals.assessment.group_work) { %>
             <% if (groupsize == 0) { %>
               <% if (!permissions.student_authz_join && !permissions.student_authz_create) { %>
                 <p class="text-center">
@@ -76,7 +76,7 @@
               </p>
               <% } %>
             <% } %>
-          <% } %> 
+          <% } %>
 
           <% if (locals.assessment.group_work && locals.assessment.require_honor_code) { %>
             <div class="card card-secondary mb-4 test-class-honor-code">
@@ -84,7 +84,7 @@
                 <li class="list-group-item py-2">I certify that I am <%= user.name %> and our group is allowed to take this assessment.</li>
                 <li class="list-group-item py-2">We pledge on our honor that we will not give or receive any unauthorized assistance on this assessment and that all work will be our own.</li>
               </ul>
-  
+
               <div class="card-footer text-center border-top-0 py-2">
                 <span class="form-check d-inline">
                   <input type="checkbox" class="form-check-input" id="certify-pledge">
@@ -92,7 +92,7 @@
                 </span>
               </div>
             </div>
-          
+
           <% } else if (locals.assessment.require_honor_code) { %>
           <div class="card card-secondary mb-4 test-class-honor-code">
             <ul class="list-group list-group-flush">
