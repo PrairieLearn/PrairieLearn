@@ -12,7 +12,6 @@ const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 var groupAssessmentHelper = require('../shared/studentGroupAssessmentHelpers/studentGroupAssessmentHelpers');
 
-
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const ensureUpToDate = (locals, callback) => {
