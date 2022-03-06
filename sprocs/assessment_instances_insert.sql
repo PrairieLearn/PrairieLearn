@@ -35,16 +35,16 @@ BEGIN
             group_users as gu
             JOIN groups AS g ON (g.id = gu.group_id)
             JOIN group_configs AS gc ON (gc.id = g.group_config_id)
-        WHERE 
+        WHERE
             gu.user_id = assessment_instances_insert.user_id
             AND gc.assessment_id = assessment_instances_insert.assessment_id
             AND gc.deleted_at IS NULL
             AND g.deleted_at IS NULL;
-        
+
         IF NOT FOUND THEN
             RAISE EXCEPTION 'no matched group_id with user_id: %', assessment_instances_insert.user_id;
         END IF;
-    END IF;    
+    END IF;
 
     IF assessment.multiple_instance THEN
         SELECT coalesce(max(ai.number), 0) + 1
@@ -52,8 +52,8 @@ BEGIN
         FROM assessment_instances AS ai
         WHERE
             ai.assessment_id = assessment_instances_insert.assessment_id
-            AND (CASE 
-                    WHEN group_work THEN ai.group_id = tmp_group_id 
+            AND (CASE
+                    WHEN group_work THEN ai.group_id = tmp_group_id
                     ELSE ai.user_id = assessment_instances_insert.user_id
                  END);
     END IF;
@@ -61,7 +61,7 @@ BEGIN
     -- if a.multiple_instance is FALSE then we use
     -- number = 1 so we will error on INSERT if there
     -- are existing assessment_instances
-        
+
     -- ######################################################################
     -- determine other properties
 
@@ -78,7 +78,7 @@ BEGIN
 
     INSERT INTO assessment_instances
             ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close, date_limit, number)
-    VALUES  (authn_user_id, assessment_id, 
+    VALUES  (authn_user_id, assessment_id,
             CASE WHEN group_work THEN NULL      ELSE user_id END,
             CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close, date_limit, number)
     RETURNING id
@@ -87,13 +87,13 @@ BEGIN
     -- ######################################################################
     -- start a record of the last access time
     -- After code review I will delete those two lines of comment
-    IF group_work THEN 
+    IF group_work THEN
         INSERT INTO last_accesses
                 (group_id, last_access)
         VALUES  (tmp_group_id, current_timestamp)
         ON CONFLICT (group_id) DO UPDATE
         SET last_access = EXCLUDED.last_access;
-    ELSE 
+    ELSE
         INSERT INTO last_accesses
                 (user_id, last_access)
         VALUES  (user_id, current_timestamp)
