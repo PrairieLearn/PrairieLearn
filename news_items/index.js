@@ -1,3 +1,4 @@
+// @ts-check
 const fsPromises = require('fs').promises;
 const util = require('util');
 const path = require('path');
@@ -51,15 +52,9 @@ async function loadNewsItems() {
 }
 
 module.exports.initAsync = async function (notify_with_new_server) {
-  const lockName = 'news_items';
-  const lock = await namedLocks.waitLockAsync(lockName, {});
-  try {
+  await namedLocks.doWithLockAsync('news_items', {}, async () => {
     const news_items = await loadNewsItems();
     await sqldb.callAsync('sync_news_items', [JSON.stringify(news_items), notify_with_new_server]);
-  } catch (err) {
-    await namedLocks.releaseLockAsync(lock);
-    throw err;
-  }
-  await namedLocks.releaseLockAsync(lock);
+  });
 };
 module.exports.init = util.callbackify(module.exports.initAsync);

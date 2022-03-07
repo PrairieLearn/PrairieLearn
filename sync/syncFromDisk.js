@@ -119,23 +119,32 @@ module.exports._syncDiskToSqlWithLock = function (courseDir, course_id, logger, 
 module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback) {
   const lockName = 'coursedir:' + courseDir;
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
-  namedLocks.tryLock(lockName, (err, lock) => {
-    if (ERR(err, callback)) return;
-    if (lock == null) {
-      logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
-      callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
-    } else {
+  /** @type {SyncResults} */
+  let syncResults = null;
+  namedLocks.tryDoWithLock(
+    lockName,
+    (lock, callback) => {
+      if (lock == null) {
+        logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
+        callback(
+          new Error(`Another user is already syncing or modifying the course: ${courseDir}`)
+        );
+        return;
+      }
+
       logger.verbose(chalkDim(`Acquired lock ${lockName}`));
       module.exports._syncDiskToSqlWithLock(courseDir, course_id, logger, (err, result) => {
-        namedLocks.releaseLock(lock, (lockErr) => {
-          if (ERR(lockErr, callback)) return;
-          if (ERR(err, callback)) return;
-          logger.verbose(chalkDim(`Released lock ${lockName}`));
-          callback(null, result);
-        });
+        if (ERR(err, callback)) return;
+        syncResults = result;
+        callback(null);
       });
+    },
+    (err) => {
+      logger.verbose(chalkDim(`Released lock ${lockName}`));
+      if (ERR(err, callback)) return;
+      callback(null, syncResults);
     }
-  });
+  );
 };
 module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
 

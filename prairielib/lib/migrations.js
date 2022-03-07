@@ -18,20 +18,24 @@ var project;
 module.exports.init = function (dir, proj, callback) {
   const lockName = 'migrations';
   logger.verbose(`Waiting for lock ${lockName}`);
-  namedLocks.waitLock(lockName, {}, (err, lock) => {
-    if (ERR(err, callback)) return;
-    logger.verbose(`Acquired lock ${lockName}`);
-    migrationDir = dir;
-    project = proj;
-    module.exports._initWithLock((err) => {
-      namedLocks.releaseLock(lock, (lockErr) => {
-        if (ERR(lockErr, callback)) return;
+  namedLocks.doWithLock(
+    lockName,
+    {},
+    (lock, callback) => {
+      logger.verbose(`Acquired lock ${lockName}`);
+      migrationDir = dir;
+      project = proj;
+      module.exports._initWithLock((err) => {
         if (ERR(err, callback)) return;
-        logger.verbose(`Released lock ${lockName}`);
         callback(null);
       });
-    });
-  });
+    },
+    (err) => {
+      if (ERR(err, callback)) return;
+      logger.verbose(`Released lock ${lockName}`);
+      callback(null);
+    }
+  );
 };
 
 module.exports._initWithLock = function (callback) {

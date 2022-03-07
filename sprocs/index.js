@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const fs = require('fs');
 const path = require('path');
@@ -11,18 +12,22 @@ const sqldb = require('../prairielib/lib/sql-db');
 module.exports.init = function (callback) {
   const lockName = 'sprocs';
   logger.verbose(`Waiting for lock ${lockName}`);
-  namedLocks.waitLock(lockName, {}, (err, lock) => {
-    if (ERR(err, callback)) return;
-    logger.verbose(`Acquired lock ${lockName}`);
-    module.exports._initWithLock((err) => {
-      namedLocks.releaseLock(lock, (lockErr) => {
-        if (ERR(lockErr, callback)) return;
+  namedLocks.doWithLock(
+    lockName,
+    {},
+    (lock, callback) => {
+      logger.verbose(`Acquired lock ${lockName}`);
+      module.exports._initWithLock((err) => {
         if (ERR(err, callback)) return;
-        logger.verbose(`Released lock ${lockName}`);
         callback(null);
       });
-    });
-  });
+    },
+    (err) => {
+      if (ERR(err, callback)) return;
+      logger.verbose(`Released lock ${lockName}`);
+      callback(null);
+    }
+  );
 };
 
 module.exports._initWithLock = function (callback) {
