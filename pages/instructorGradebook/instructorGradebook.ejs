@@ -149,6 +149,11 @@
     .fixed-table-toolbar div.pagination-detail {
         margin: 0 1em 0 0 !important;
     }
+    .gradebook-uin {
+        max-width: 10em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
   </style>
   <body>
     <%- include('../partials/navbar'); %>
@@ -193,16 +198,13 @@
                     data-switchable="false">UID</th>
                 <th data-field="uin"
                     data-sortable="true"
-                    data-class="text-nowrap"
-                    data-switchable="false">UIN</th>
+                    data-class="text-nowrap gradebook-uin">UIN</th>
                 <th data-field="user_name"
                     data-sortable="true"
-                    data-class="text-nowrap"
-                    data-switchable="false">Name</th>
+                    data-class="text-nowrap">Name</th>
                 <th data-field="role"
                     data-sortable="true"
-                    data-sort-order="desc"
-                    data-switchable="false">
+                    data-sort-order="desc">
                   Role
                   <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
                     <i class="bi-question-circle-fill" aria-hidden="true"></i>
