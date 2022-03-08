@@ -106,7 +106,6 @@ BEGIN
         new_correct := (new_score >= 1.0);
     END IF;
 
-    -- TODO: verify that all of these actually *can* change via grade.
     UPDATE submissions
     SET
         graded_at = now(),
@@ -131,9 +130,13 @@ BEGIN
     UPDATE grading_jobs
     SET
         graded_at = now(),
-        grading_received_at = received_time,
-        grading_started_at = start_time,
-        grading_finished_at = finish_time,
+        -- For internally-graded questions, these three timestamps will be NULL
+        -- in this sproc's params. For the first two, we'll reuse the existing
+        -- values that were set in `grading_jobs_insert`, and for the finish
+        -- timestamp, we'll use the current time.
+        grading_received_at = COALESCE(received_time, grading_received_at),
+        grading_started_at = COALESCE(start_time, grading_started_at),
+        grading_finished_at = COALESCE(finish_time, now()),
         gradable = new_gradable,
         score = new_score,
         correct = new_correct,

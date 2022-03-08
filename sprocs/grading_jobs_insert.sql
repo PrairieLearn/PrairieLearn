@@ -58,10 +58,24 @@ BEGIN
     -- ######################################################################
     -- insert the new grading job
 
-    INSERT INTO grading_jobs AS gj
-        (submission_id,  auth_user_id, grading_method, grading_requested_at)
-    VALUES
-        (submission_id, authn_user_id, grading_method, now())
+    INSERT INTO grading_jobs AS gj (
+        submission_id,
+        auth_user_id,
+        grading_method,
+        grading_requested_at,
+        grading_received_at,
+        grading_started_at
+    ) VALUES (
+        submission_id,
+        authn_user_id,
+        grading_method,
+        now(),
+        -- For internal grading jobs, we can just use the same timestamp for
+        -- all of these. When we're grading manually or externally, these will
+        -- be set when the grading job is actually "processed".
+        CASE WHEN grading_method = 'Internal' THEN now() ELSE NULL END,
+        CASE WHEN grading_method = 'Internal' THEN now() ELSE NULL END
+    )
     RETURNING gj.*
     INTO grading_job;
 
