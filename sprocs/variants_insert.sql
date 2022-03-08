@@ -34,6 +34,12 @@ BEGIN
     -- just use them. Similarly for course_instance_id.
 
     IF instance_question_id IS NOT NULL THEN
+        PERFORM instance_questions_lock(instance_question_id);
+
+        -- This handles the race condition where we simultaneously start generating
+        -- two variants for the same instance question. If we're the second one
+        -- to try and insert a variant, just pull the existing variant back out of
+        -- the database and use that instead.
         existing_variant := instance_questions_select_variant(instance_question_id, require_open);
         IF existing_variant IS NOT NULL THEN
             SELECT variants_select(existing_variant->'id', real_question_id, instance_question_id)
