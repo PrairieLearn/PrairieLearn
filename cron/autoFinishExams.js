@@ -18,12 +18,21 @@ module.exports.run = function (callback) {
       examList,
       function (examItem, callback) {
         logger.verbose('autoFinishExams: finishing ' + examItem.assessment_instance_id, examItem);
-        const authn_user_id = null; // graded by the system
-        const closeExam = true; // close the exam after grading it
-        const overrideGradeRate = true; // override submission/grading limits
+        // Grading was performed by the syste.
+        const authn_user_id = null;
+        // Don't require the assessment to be open. This is important to
+        // ensure we correctly handle the case where the PrairieLearn process
+        // dies in the middle of grading a question. In that case, the assessment
+        // would have already been closed, but we still need to grade it.
+        const requireOpen = false;
+        // Close them exam before grading it.
+        const closeExam = true;
+        // Override any submission or grading rate limites.
+        const overrideGradeRate = true;
         assessment.gradeAssessmentInstance(
           examItem.assessment_instance_id,
           authn_user_id,
+          requireOpen,
           closeExam,
           overrideGradeRate,
           function (err) {
