@@ -36,6 +36,14 @@
               },
               onPostBody: () => {
                   $('#grading-table [data-toggle="popover"]').popover({sanitize: false});
+                  $('th[data-field="points"] .filter-control input').tooltip({
+                      title: 'hint: use <code>&lt;<%= Math.ceil(max_points / 2) %></code>, or <code>&gt;0</code>',
+                      html: true,
+                  });
+                  $('th[data-field="score_perc"] .filter-control input').tooltip({
+                      title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
+                      html: true,
+                  });
               },
               columns: [[
                   {
