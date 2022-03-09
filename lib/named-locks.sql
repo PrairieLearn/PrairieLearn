@@ -11,6 +11,9 @@ VALUES
     ($name)
 ON CONFLICT (name) DO NOTHING;
 
+-- BLOCK set_lock_timeout
+SET LOCAL lock_timeout TO $timeout;
+
 -- BLOCK lock_row_nowait
 SELECT *
 FROM named_locks
