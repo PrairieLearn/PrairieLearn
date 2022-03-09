@@ -40,6 +40,7 @@ async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
 
   await sqldb.setRandomSearchSchemaAsync('test');
   await util.promisify(sprocs.init)();
+
   await namedLocks.close();
   await sqldb.closeAsync();
 }
