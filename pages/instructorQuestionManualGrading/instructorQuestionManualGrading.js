@@ -132,7 +132,7 @@ router.post('/', function (req, res, next) {
          */
         sqlDb.call('instance_questions_update_score', params, (err, _result) => {
           if (ERR(err, next)) return;
-          ltiOutcomes.updateScore(req.body.assessment_instance_id, null, (err) => {
+          ltiOutcomes.updateScore(req.body.assessment_instance_id, (err) => {
             if (ERR(err, next)) return;
             res.redirect(
               `${res.locals.urlPrefix}/assessment/${req.body.assessment_id}/assessment_question/${req.body.assessment_question_id}/next_ungraded?instance_question=${res.locals.instance_question.id}`
