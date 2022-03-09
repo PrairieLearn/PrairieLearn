@@ -66,7 +66,7 @@ router.post('/', (req, res, next) => {
       if (ERR(err, next)) return;
       ltiOutcomes.updateScore(req.body.assessment_instance_id, null, (err) => {
         if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
+        res.send({});
       });
     });
   } else if (req.body.__action === 'edit_question_score_perc') {
@@ -88,7 +88,7 @@ router.post('/', (req, res, next) => {
       if (ERR(err, next)) return;
       ltiOutcomes.updateScore(req.body.assessment_instance_id, null, (err) => {
         if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
+        res.send({});
       });
     });
   } else {

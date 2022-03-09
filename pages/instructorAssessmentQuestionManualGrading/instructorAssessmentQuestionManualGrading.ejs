@@ -32,15 +32,45 @@
               stickyHeader: true,
               filterControl: true,
               rowStyle: row => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
-              onLoadSuccess: data => {
+              onRefresh: () => {
+                  // a bug in bootstrap-table causes the filters to lose value on refresh
+                  // (https://github.com/wenzhixin/bootstrap-table/issues/6030).
+                  // This code saves the value of all filters to be reloaded once filter controls are re-created.
+                  window.savedFilterValues = {};
+                  $('#grading-table .filter-control').find('input, select').each(function() {
+                      const field_name = $(this).parents('[data-field]:first').data('field');
+                      window.savedFilterValues[field_name] = $(this).val();
+                  });
+              },
+              onSearch: () => {
+                  if (window.savedFilterValues) {
+                      for (const [field, value] of Object.entries(window.savedFilterValues)) {
+                          $(`#grading-table th[data-field=${field}]`).find('input, select').val(value);
+                      }
+                      window.savedFilterValues = false;
+                  }
               },
               onPostBody: () => {
-                  $('#grading-table [data-toggle="popover"]').popover({sanitize: false});
-                  $('th[data-field="points"] .filter-control input').tooltip({
+                  $('#grading-table [data-toggle="popover"]').popover({
+                      sanitize: false,
+                      content: function() {
+                          let that = this;
+                          let dataContent = $($(this).data('base-content'));
+                          dataContent.submit(function(e) {
+                              e.preventDefault();
+                              $.post($(this).attr('action'), $(this).serialize(), function(data) {
+                                  $('#grading-table').bootstrapTable('refresh');
+                              }); // , 'json');
+                              $(that).popover('hide');
+                          });
+                          return dataContent;
+                      },
+                  });
+                  $('#grading-table th[data-field="points"] .filter-control input').tooltip({
                       title: 'hint: use <code>&lt;<%= Math.ceil(max_points / 2) %></code>, or <code>&gt;0</code>',
                       html: true,
                   });
-                  $('th[data-field="score_perc"] .filter-control input').tooltip({
+                  $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
                       title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
                       html: true,
                   });
@@ -123,10 +153,9 @@
                             id="editQuestionPoints${row.id}" tabindex="0"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question points"
-                            data-content="<%= include('../partials/editQuestionPointsForm',
-                                                      {id: 'editQuestionPoints${row.id}',
-                                                       instance_question: {id: '${row.id}', assessment_instance_id: 
-'${row.assessment_instance_id}', points: '${row.points}', max_points}}); %>">
+                            data-base-content="<%= include('../partials/editQuestionPointsForm',
+                                                           {id: 'editQuestionPoints${row.id}',
+                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', points: '${row.points}', max_points}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
           //<% } %>
@@ -153,10 +182,9 @@
                             id="editQuestionScorePerc${row.id}" tabindex="0"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question percentage score"
-                            data-content="<%= include('../partials/editQuestionScorePercForm',
-                                                      {id: 'editQuestionScorePerc${row.id}',
-                                                       instance_question: {id: '${row.id}', assessment_instance_id: 
-'${row.assessment_instance_id}', score_perc: '${row.score_perc}'}}); %>">
+                            data-base-content="<%= include('../partials/editQuestionScorePercForm',
+                                                           {id: 'editQuestionScorePerc${row.id}',
+                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', score_perc: '${row.score_perc}'}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
           //<% } %>
