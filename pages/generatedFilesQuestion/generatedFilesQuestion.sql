@@ -10,4 +10,4 @@ WHERE
     -- validated by middleware. For the instructor preview page, we don't have
     -- an instance question, so we ignore it in that case.
     AND v.question_id = $question_id
-    AND (($instance_question_id IS NULL) OR (v.instance_question_id = $instance_question_id));
+    AND (($has_instance_question IS FALSE) OR (v.instance_question_id = $instance_question_id));
