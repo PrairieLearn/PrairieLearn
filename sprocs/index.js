@@ -150,7 +150,6 @@ module.exports._initWithLock = function (callback) {
       'variants_select_for_assessment_instance_grading.sql',
       'variants_update_after_grading.sql',
       'variants_ensure_open.sql',
-      'variants_unlink.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
       'server_usage_current.sql',
