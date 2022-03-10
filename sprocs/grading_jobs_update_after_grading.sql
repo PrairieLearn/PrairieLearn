@@ -1,20 +1,19 @@
 CREATE FUNCTION
     grading_jobs_update_after_grading(
-        -- TODO: reorder params to match `submissions_insert`.
         grading_job_id bigint,
-        new_score double precision,
-        new_feedback jsonb,
-        new_format_errors jsonb,
         received_time timestamptz,
         start_time timestamptz,
         finish_time timestamptz,
+        new_submitted_answer jsonb, -- NULL => no change
+        new_format_errors jsonb,
         new_gradable boolean,
         new_broken boolean,
-        new_partial_scores jsonb,
-        new_v2_score double precision,
-        new_submitted_answer jsonb, -- NULL => no change
         new_params jsonb, -- NULL => no change
         new_true_answer jsonb -- NULL => no change
+        new_feedback jsonb,
+        new_partial_scores jsonb,
+        new_score double precision,
+        new_v2_score double precision,
     ) RETURNS void
 AS $$
 <<main>>
