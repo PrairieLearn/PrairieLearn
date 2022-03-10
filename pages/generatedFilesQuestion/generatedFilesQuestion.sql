@@ -5,4 +5,9 @@ FROM
     variants AS v
 WHERE
     v.id = $variant_id
-    AND v.question_id = $question_id; -- check for security
+    -- We check both `question_id` and `instance_question_id` to make sure that
+    -- this variant is actually accessible by the user. Both will have been
+    -- validated by middleware. For the instructor preview page, we don't have
+    -- an instance question, so we ignore it in that case.
+    AND v.question_id = $question_id
+    AND (($instance_question_id IS NULL) OR (v.instance_question_id = $instance_question_id));

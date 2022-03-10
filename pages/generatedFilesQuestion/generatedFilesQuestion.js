@@ -12,6 +12,9 @@ router.get('/variant/:variant_id/*', function (req, res, next) {
   var variant_id = req.params.variant_id;
   var filename = req.params[0];
   var params = {
+    // The instance question generally won't be present if this is used on
+    // an instuctor route.
+    instance_question_id: res.locals.instance_question.id,
     question_id: res.locals.question.id,
     variant_id: variant_id,
   };
