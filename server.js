@@ -1114,7 +1114,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
@@ -1286,7 +1286,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
-      require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
@@ -1501,7 +1501,7 @@ module.exports.initExpress = function () {
   // generatedFiles
   app.use('/pl/course/:course_id/question/:question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
   // legacy client file paths
