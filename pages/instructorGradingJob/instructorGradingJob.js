@@ -40,11 +40,16 @@ router.get('/:job_id', (req, res, next) => {
   });
 });
 
-const allowedFiles = ['job.tar.gz', 'archive.tar.gz', 'output.log', 'results.json'];
+const allowedFilesViewer = ['job.tar.gz', 'archive.tar.gz', 'output.log', 'results.json'];
+const allowedFilesPreviewer = ['output.log', 'results.json'];
 
 router.get('/:job_id/file/:file', (req, res, next) => {
   const file = req.params.file;
-  if (allowedFiles.indexOf(file) === -1) {
+  const allowList = res.locals.authz_data.has_course_permission_view
+    ? allowedFilesViewer
+    : allowedFilesPreviewer;
+
+  if (allowList.indexOf(file) === -1) {
     return next(new Error(`Unknown file ${file}`));
   }
 

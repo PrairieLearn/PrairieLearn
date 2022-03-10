@@ -51,6 +51,9 @@ WITH object_data AS (
         ai.score_perc,
         ai.number AS assessment_instance_number,
         ai.open,
+        gi.id AS group_id,
+        gi.name AS group_name,
+        gi.uid_list AS group_uids,
         CASE
             WHEN ai.open AND ai.date_limit IS NOT NULL
                 THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
@@ -65,7 +68,8 @@ WITH object_data AS (
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN group_info(a.id) AS gi ON (gi.id = ai.group_id)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
         ci.id = $course_instance_id
         AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
@@ -115,6 +119,29 @@ SELECT
         to_jsonb(object_data)
         ORDER BY assessment_access_rule_number, assessment_access_rule_id
     ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
+-- BLOCK select_course_instance_info
+WITH object_data AS (
+    SELECT
+        ci.id AS course_instance_id,
+        ci.long_name AS course_instance_long_name,
+        ci.short_name AS course_instance_short_name,
+        ci.course_id AS course_instance_course_id,
+        ci.display_timezone,
+        format_date_iso8601(ci.deleted_at, ci.display_timezone) AS deleted_at,
+        ci.hide_in_enroll_page,
+        pl_c.title AS course_title,
+        pl_c.short_name AS course_short_name
+    FROM
+        course_instances AS ci
+        JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
+    WHERE
+        ci.id = $course_instance_id
+)
+SELECT
+    to_jsonb(object_data) AS item
 FROM
     object_data;
 

@@ -185,12 +185,26 @@ router.get('/', function (req, res, next) {
         //     associated with the same course instance, and the user has student
         //     data view access.
         //
+        //  3) We are not accessing this page through the course instance
+        //     associated to the issue (i.e., we are accessing it through the
+        //     course or through a different course instance), and the user has
+        //     student data view access in the course instance associated to the
+        //     issue. This is distinguished from situation 2 above to ensure
+        //     effective user roles are taken into account.
+        //
         // Otherwise, all issues must be anonymized.
         row.show_user =
           !row.course_instance_id ||
           (res.locals.course_instance &&
             idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
-            res.locals.authz_data.has_course_instance_permission_view);
+            res.locals.authz_data.has_course_instance_permission_view) ||
+          ((!res.locals.course_instance ||
+            !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
+            _.some(
+              res.locals.authz_data.course_instances,
+              (ci) =>
+                idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view
+            ));
       });
 
       res.locals.rows = result.rows;
