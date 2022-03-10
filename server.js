@@ -1242,7 +1242,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
