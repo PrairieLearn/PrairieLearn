@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -55,6 +54,11 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
+      # The JS tests hang relatively often when someone makes a mistake in a PR,
+      # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
+      # spinning until it eventually times out. This shorter timeout helps
+      # ensure that the tests fail more quickly so that people can fix them.
+      timeout-minutes: 30
     - name: Run the Python tests
       run: docker exec test_container /PrairieLearn/docker/test_python.sh
     - name: Copy code-coverage data out of container
