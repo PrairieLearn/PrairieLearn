@@ -2,9 +2,17 @@
 WITH instance_questions_info AS (
     SELECT
         iq.id,
-        (lag(iq.id) OVER w) AS prev_instance_question_id,
-        (lead(iq.id) OVER w) AS next_instance_question_id,
-        qo.question_number
+        -- prev and next instance questions are JSON objects to pass directly 
+        -- to partials that render links inside of instance question pages.
+        jsonb_build_object(
+            'id', (lag(iq.id) OVER w)
+        ) AS prev_instance_question,
+        jsonb_build_object(
+            'id', (lead(iq.id) OVER w),
+            'sequence_locked', (lead(qo.sequence_locked) OVER w)
+        ) AS next_instance_question,
+        qo.question_number,
+        qo.sequence_locked
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -27,10 +35,10 @@ SELECT
     jsonb_set(to_jsonb(ai), '{formatted_date}',
         to_jsonb(format_date_full_compact(ai.date, COALESCE(ci.display_timezone, c.display_timezone)))) AS assessment_instance,
     CASE
-        WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(extract(epoch from (LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz)) * 1000)
+        WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(DATE_PART('epoch', (LEAST(aai.exam_access_end, ai.date_limit) - $req_date::timestamptz)) * 1000)
     END AS assessment_instance_remaining_ms,
     CASE
-        WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(extract(epoch from (LEAST(aai.exam_access_end, ai.date_limit) - ai.date)) * 1000)
+        WHEN COALESCE(aai.exam_access_end, ai.date_limit) IS NOT NULL THEN floor(DATE_PART('epoch', (LEAST(aai.exam_access_end, ai.date_limit) - ai.date)) * 1000)
     END AS assessment_instance_time_limit_ms,
     (ai.date_limit IS NOT NULL AND ai.date_limit <= $req_date::timestamptz) AS assessment_instance_time_limit_expired,
     to_jsonb(u) AS instance_user,
@@ -40,14 +48,16 @@ SELECT
     to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
-        'prev_instance_question_id', iqi.prev_instance_question_id,
-        'next_instance_question_id', next_instance_question_id,
-        'question_number', question_number,
+        'prev_instance_question', iqi.prev_instance_question,
+        'next_instance_question', iqi.next_instance_question,
+        'question_number', iqi.question_number,
         'max_points', CASE
             WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
             ELSE aq.max_points
         END,
-        'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)]
+        'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
+        'advance_score_perc', aq.effective_advance_score_perc,
+        'sequence_locked', iqi.sequence_locked
     ) AS instance_question_info,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(q) AS question,
@@ -74,4 +84,5 @@ FROM
 WHERE
     iq.id = $instance_question_id
     AND ci.id = $course_instance_id
-    AND aai.authorized;
+    AND aai.authorized
+    AND NOT iqi.sequence_locked;

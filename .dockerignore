@@ -2,9 +2,15 @@
 *
 
 # whitelist things to copy
+!.editorconfig
 !.eslintignore
-!.eslintrc.json
+!.eslintrc.js
+!.htmlhintrc
+!.prettierignore
+!.prettierrc.json
 !tsconfig.json
+!turbo.json
+!pyrightconfig.json
 !admin_queries/
 !api/
 !cron/
@@ -21,8 +27,9 @@
 !models/
 !news_items/
 !package.json
-!package-lock.json
+!yarn.lock
 !pages/
+!packages/
 !prairielib/
 !public/
 !question-servers/

@@ -1,6 +1,6 @@
 var logger = require('../lib/logger');
 
-const consoleTransport = logger.transports.find(transport => (transport.name === 'console'));
+const consoleTransport = logger.transports.find((transport) => transport.name === 'console');
 consoleTransport.level = 'warn';
 
 const helperDb = require('./helperDb');
@@ -25,6 +25,7 @@ require('./testInstructorAssessment');
 require('./testInstructorAssessmentDownloads');
 require('./testHomework');
 require('./testExam');
+require('./testGradingMethods');
 require('./testRealTimeGradingDisabled');
 require('./testShowClosedAssessment');
 require('./testShowClosedAssessmentScore');
@@ -48,6 +49,7 @@ require('./testSchemas');
 require('./testMarkdown');
 require('./testRedirects');
 require('./testIssues');
+require('./testSequentialQuestions');
 require('./testChunks');
 require('./testChunkAssessment');
 require('./testLocalLock');

@@ -4,13 +4,16 @@ on: [push, pull_request]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2.3.4
       with:
         fetch-depth: 0
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v1 # https://github.com/marketplace/actions/docker-setup-qemu
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1 # https://github.com/marketplace/actions/docker-setup-buildx
     - name: Build the plbase docker image if needed
       run: sh ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase
     - name: Build the grader-c docker image if needed
@@ -21,30 +24,41 @@ jobs:
       run: sh ./tools/build-image-if-needed.sh graders/python prairielearn/grader-python
     - name: Build the grader-r docker image if needed
       run: sh ./tools/build-image-if-needed.sh graders/r prairielearn/grader-r
+    - name: Build the workspace-desktop docker image if needed
+      run: sh ./tools/build-image-if-needed.sh workspaces/desktop prairielearn/workspace-desktop
     - name: Build the workspace-jupyterlab docker image if needed
       run: sh ./tools/build-image-if-needed.sh workspaces/jupyterlab prairielearn/workspace-jupyterlab
+    - name: Build the workspace-rstudio docker image if needed
+      run: sh ./tools/build-image-if-needed.sh workspaces/rstudio prairielearn/workspace-rstudio
     - name: Build the workspace-xtermjs docker image if needed
       run: sh ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs
     - name: Build the testing docker image
       run: docker build -t pltest .
+    - name: Create a temporary directory for host files
+      run: mkdir -p /tmp/prairielearn
     - name: Start the container
-      run: docker run -td --name=test_container pltest /bin/bash
+      # We have tests for external grading code, which relies on the Docker
+      # socket being available, as well as a specific volume mount and
+      # environment variable. See the docs for more details:
+      # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
+      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container pltest /bin/bash
     - name: Run the JavaScript linter
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
+    - name: Run the HTML linter
+      run: docker exec test_container /PrairieLearn/docker/lint_html.sh
     - name: Run the Python linter
       run: docker exec test_container /PrairieLearn/docker/lint_python.sh
-    - name: Run the PrairieLib linter
-      run: docker exec test_container /PrairieLearn/docker/lint_prairielib.sh
-    - name: Run the grader_host linter
-      run: docker exec test_container /PrairieLearn/docker/lint_grader_host.sh
-    - name: Run typechecker
-      run: docker exec test_container /PrairieLearn/docker/typecheck.sh
-    - name: Run the PrairieLib tests
-      run: docker exec test_container /PrairieLearn/docker/test_prairielib.sh
-    - name: Run the grader_host tests
-      run: docker exec test_container /PrairieLearn/docker/test_grader_host.sh
+    - name: Run the JavaScript typechecker
+      run: docker exec test_container /PrairieLearn/docker/typecheck_js.sh
+    - name: Run the Python typechecker
+      run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
+      # The JS tests hang relatively often when someone makes a mistake in a PR,
+      # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
+      # spinning until it eventually times out. This shorter timeout helps
+      # ensure that the tests fail more quickly so that people can fix them.
+      timeout-minutes: 30
     - name: Run the Python tests
       run: docker exec test_container /PrairieLearn/docker/test_python.sh
     - name: Copy code-coverage data out of container

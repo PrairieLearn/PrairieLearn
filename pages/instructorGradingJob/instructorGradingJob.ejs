@@ -58,6 +58,7 @@
               </tr>
             </thead>
             <tbody>
+              <% if (authz_data.has_course_permission_view) { %>
               <tr>
                 <td>
                   <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/job.tar.gz">job.tar.gz</a>
@@ -75,6 +76,7 @@
                   A snapshot of <code>/grade</code> after your job has been executed.
                 </td>
               </tr>
+              <% } %>
               <tr>
                 <td>
                   <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/results.json">results.json</a>

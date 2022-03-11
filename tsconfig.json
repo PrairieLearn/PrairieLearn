@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "allowJs": true,
+    "esModuleInterop": true,
     "noEmit": true,
     // Allow spreading Maps/Sets into arrays
     "downlevelIteration": true
@@ -9,7 +10,7 @@
   // standard JavaScript with JSDoc comments.
   // Adding new code? Consider opting in to type checking!
   "include": [
-    "tests/sync/**/*",
+    "tests/**/*",
     "sync/**/*",
     "lib/**/*"
   ]

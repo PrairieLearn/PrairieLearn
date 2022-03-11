@@ -6,7 +6,7 @@ FROM
 
 -- BLOCK select_assessment_instance_durations
 SELECT
-    extract (epoch FROM ai.duration) AS duration
+    DATE_PART('epoch', ai.duration) AS duration
 FROM
     assessment_instances AS ai;
 

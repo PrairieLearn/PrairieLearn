@@ -1,4 +1,3 @@
-
 # What To Tell Students
 
 Students who are using PrairieLearn for the first time often have questions about its little quirks. This page collects examples and best practices for what to tell students, in order to minimize confusion.
@@ -6,7 +5,6 @@ Students who are using PrairieLearn for the first time often have questions abou
 ## Grading of Homework-type assessments
 
 See the [Assessment page](assessment.md) for a description of how grading works. See below for an example (a piazza post from AE353, Spring 2017) of how this process might be explained to students.
-
 
 ### An example note to students about how grading works
 
@@ -25,7 +23,7 @@ If you answer a question incorrectly, one thing happens:
 
 <ul><li>The value goes back to what it was originally (1x).</li></ul>
 
-This system rewards repeated correct answers, which tend to demonstrate mastery. There is no penalty (other than resetting the value) for answering a question incorrectly, so don't be afraid to submit an answer. Similarly, don't be afraid to keep doing a question after you reach the point maximum - your point total with <em>never</em> go down!
+This system rewards repeated correct answers, which tend to demonstrate mastery. There is no penalty (other than resetting the value) for answering a question incorrectly, so don't be afraid to submit an answer. Similarly, don't be afraid to keep doing a question after you reach the point maximum - your point total will <em>never</em> go down!
 
 HW1.1 is due at 10:59AM on Friday, January 27. There is no need to "submit" your homework. The system will record whatever your score is at that time.
 
