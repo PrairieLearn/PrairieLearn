@@ -149,7 +149,7 @@
         "eslint-plugin-import": "^2.25.4",
         "fast-glob": "^3.2.11",
         "htmlhint": "^1.1.2",
-        "jest": "^27.4.7",
+        "jest": "^27.5.1",
         "jsdoc": "^3.6.10",
         "json-stable-stringify": "^1.0.1",
         "mocha": "^9.2.0",
