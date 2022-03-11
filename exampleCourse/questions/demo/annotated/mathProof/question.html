@@ -7,13 +7,14 @@
 </pl-question-panel>
 
 <pl-order-blocks answers-name="proof-by-cases" source-blocks-order="random" grading-method="dag">
-  <pl-answer correct="true" tag="1" depends=""  > Proof by Cases:</pl-answer>
-  <pl-block-group>
-    <pl-answer correct="true" tag="2" depends="1"> Case $A \land C$: </pl-answer>
+  <pl-answer correct="true" tag="1"> Proof by Cases:</pl-answer>
+  <pl-block-group tag="g1" depends="1">
+    <pl-answer correct="true" tag="2"> Case $A \land C$: </pl-answer>
     <pl-answer correct="true" tag="3" depends="2"> Since $A \land C$ is true, we know $A$ is true.</pl-answer>
   </pl-block-group>
-  <pl-block-group>
-    <pl-answer correct="true" tag="4" depends="1"> Case $A \land B$: </pl-answer>
+  <pl-block-group tag="g2" depends="1">
+    <pl-answer correct="true" tag="4"> Case $A \land B$: </pl-answer>
     <pl-answer correct="true" tag="5" depends="4"> Since $A \land B$ is true, we know $A$ is true.</pl-answer>
   </pl-block-group>
+  <pl-answer correct="true" tag="6" depends="g1,g2">This completes the proof.</pl-answer>
 </pl-order-blocks>
