@@ -3,29 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const async = require('async');
 
-const namedLocks = require('../lib/named-locks');
 const error = require('../prairielib/lib/error');
 const logger = require('../lib/logger');
 const sqldb = require('../prairielib/lib/sql-db');
 
 module.exports.init = function (callback) {
-  const lockName = 'sprocs';
-  logger.verbose(`Waiting for lock ${lockName}`);
-  namedLocks.waitLock(lockName, {}, (err, lock) => {
-    if (ERR(err, callback)) return;
-    logger.verbose(`Acquired lock ${lockName}`);
-    module.exports._initWithLock((err) => {
-      namedLocks.releaseLock(lock, (lockErr) => {
-        if (ERR(lockErr, callback)) return;
-        if (ERR(err, callback)) return;
-        logger.verbose(`Released lock ${lockName}`);
-        callback(null);
-      });
-    });
-  });
-};
-
-module.exports._initWithLock = function (callback) {
   logger.verbose('Starting DB stored procedure initialization');
   async.eachSeries(
     [
