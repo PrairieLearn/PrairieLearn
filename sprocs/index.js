@@ -169,7 +169,6 @@ module.exports._initWithLock = function (callback) {
       'sync_question_tags.sql',
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
-      'lock_timeout_set.sql',
       'course_requests_insert.sql',
       'assessment_groups_update.sql',
       'assessment_groups_delete_all.sql',
