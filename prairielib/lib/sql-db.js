@@ -916,5 +916,6 @@ module.exports = {
   setSearchSchema: defaultPool.setSearchSchema,
   getSearchSchema: defaultPool.getSearchSchema,
   setRandomSearchSchemaAsync: defaultPool.setRandomSearchSchemaAsync,
-  PostgresPool,
 };
+
+module.exports.PostgresPool = PostgresPool;
