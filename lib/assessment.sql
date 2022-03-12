@@ -50,3 +50,9 @@ WHERE
     a.id = $assessment_id
     AND ai.open;
 
+-- BLOCK unset_grading_needed
+UPDATE assessment_instances AS ai
+SET
+    grading_needed = TRUE
+WHERE
+    ai.id = $assessment_instance_id;
