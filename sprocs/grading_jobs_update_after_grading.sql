@@ -9,11 +9,11 @@ CREATE FUNCTION
         new_gradable boolean,
         new_broken boolean,
         new_params jsonb, -- NULL => no change
-        new_true_answer jsonb -- NULL => no change
+        new_true_answer jsonb, -- NULL => no change
         new_feedback jsonb,
         new_partial_scores jsonb,
         new_score double precision,
-        new_v2_score double precision,
+        new_v2_score double precision
     ) RETURNS void
 AS $$
 <<main>>
