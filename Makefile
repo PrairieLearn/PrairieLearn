@@ -11,7 +11,7 @@ start: start-support
 start-nodemon: start-support
 	@nodemon -L server.js
 start-workspace-host: start-support kill-running-workspaces
-	@node workspace_host/interface.js &
+	@node workspace_host/interface.js
 
 kill-running-workspaces:
 	@docker/kill_running_workspaces.sh
