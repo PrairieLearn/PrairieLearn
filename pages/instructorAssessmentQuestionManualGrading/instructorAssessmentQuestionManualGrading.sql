@@ -13,13 +13,26 @@ WHERE
 
 
 -- BLOCK select_instance_questions_manual_grading
+WITH issue_count AS (
+    SELECT
+        i.instance_question_id AS instance_question_id,
+        count(*) AS open_issue_count
+    FROM
+        issues AS i
+    WHERE
+        i.assessment_id = $assessment_id
+        AND i.course_caused
+        AND i.open
+    GROUP BY i.instance_question_id
+)
 SELECT
     iq.*,
     u.uid,
     agu.name AS assigned_grader_name,
     lgu.name AS last_grader_name,
     aq.max_points,
-    COALESCE(g.name, u.name) AS user_or_group_name
+    COALESCE(g.name, u.name) AS user_or_group_name,
+    ic.open_issue_count
 FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -28,6 +41,7 @@ FROM
     LEFT JOIN groups AS g ON (g.id = ai.group_id)
     LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
     LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
+    LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
 WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id

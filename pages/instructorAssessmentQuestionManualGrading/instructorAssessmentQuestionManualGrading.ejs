@@ -86,7 +86,8 @@
                       filterControl: 'input',
                       searchFormatter: false,
                       sortable: true,
-                      formatter: (value, row) => `<a href="<%= urlPrefix %>/instance_question/${row.id}/manual_grading">${value}</a>`,
+                      formatter: (value, row) => `<a href="<%= urlPrefix %>/instance_question/${row.id}/manual_grading">${value}` +
+                          (row.open_issue_count ? ` <span class="badge badge-pill badge-danger">${row.open_issue_count}</span>` : '') + '</a>',
                   },
                   {
                       field: 'uid',
