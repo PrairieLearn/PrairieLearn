@@ -2,19 +2,8 @@
 <html lang="en">
   <head>
     <%- include('../partials/head', {pageTitle: 'Courses'}); %>
-
-    <style>
-      .modal-course-title-style {
-        font-size: 125%;
-      }
-    </style>
   </head>
   <body>
-    <script>
-      $(function () {
-          $('[data-toggle="popover"]').popover({sanitize: false})
-      });
-    </script>
     <%- include('../partials/navbar', {navPage: 'enroll'}); %>
     <div id="content" class="container">
       <div class="card mb-4">
