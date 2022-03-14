@@ -25,6 +25,13 @@ BEGIN
     RETURN query
         WITH
         ai_group_users AS (
+            -- This selects not only all users who are currently in the group,
+            -- but all users who were EVER in the group at some point. We've
+            -- seen real-world examples of a user creating and joining a group,
+            -- completing the assessment, and then leaving the group. If we
+            -- didn't include past group members as well, we'd end up with an
+            -- assessment log that didn't include any `page_view_logs` events,
+            -- which would be undesirable for the instructor.
             SELECT gl.user_id
             FROM
                 assessment_instances AS ai
@@ -40,13 +47,10 @@ BEGIN
                 JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
             WHERE
                 pvl.assessment_instance_id = ai_id
-                -- Only include events for the assessment's user or, in case of
-                -- group assessments, for events triggered by any user that at
-                -- some point was part of the group.
-                AND (
-                    (ai.user_id IS NOT NULL AND pvl.authn_user_id = ai.user_id)
-                    OR (ai.group_id IS NOT NULL AND pvl.authn_user_id IN (SELECT * FROM ai_group_users))
-                )
+                -- Include events for the assessment's owner and, in case of
+                -- group assessments, for any user that at some point was part
+                -- of the group.
+                AND (pvl.authn_user_id = ai.user_id OR pvl.authn_user_id IN (SELECT * FROM ai_group_users))
         ),
         event_log AS (
             (
