@@ -53,6 +53,6 @@ WHERE
 -- BLOCK unset_grading_needed
 UPDATE assessment_instances AS ai
 SET
-    grading_needed = TRUE
+    grading_needed = FALSE
 WHERE
     ai.id = $assessment_instance_id;
