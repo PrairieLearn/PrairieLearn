@@ -10,7 +10,7 @@ assessment_users_with_submission_counts AS (
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
-    WHERE s.date > now() - interval '10 minutes'
+    WHERE s.date > now() - $interval::interval
     GROUP BY a.id, s.auth_user_id
 ),
 assessments_with_submission_counts AS (
@@ -46,4 +46,4 @@ ORDER BY
     ci.short_name,
     assessment,
     a.id
-LIMIT 100;
+LIMIT $limit;
