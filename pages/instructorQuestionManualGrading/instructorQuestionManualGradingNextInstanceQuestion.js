@@ -11,7 +11,7 @@ router.get('/', (req, res, next) => {
   const params = {
     assessment_id: res.locals.assessment.id,
     assessment_question_id: res.locals.assessment_question_id,
-    authn_user_id: res.locals.authz_data.authn_user.user_id,
+    user_id: res.locals.authz_data.user.user_id,
     prior_instance_question_id: req.query.prior_instance_question,
   };
 

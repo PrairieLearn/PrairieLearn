@@ -3,7 +3,7 @@ WITH instance_questions_with_submission AS (
     SELECT
         iq.assessment_question_id,
         COUNT(1) FILTER (WHERE iq.requires_manual_grading) AS num_instance_questions_to_grade,
-        COUNT(1) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader = $authn_user_id) AS num_instance_questions_assigned,
+        COUNT(1) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader = $user_id) AS num_instance_questions_assigned,
         COUNT(1) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader IS NULL) AS num_instance_questions_unassigned,
         COUNT(1) AS num_instance_questions,
         JSONB_AGG(DISTINCT jsonb_build_object('user_id', agu.user_id, 'name', agu.name, 'uid', agu.uid)) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader IS NOT NULL) AS assigned_graders,

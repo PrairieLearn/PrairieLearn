@@ -23,9 +23,9 @@ WHERE
     iq.assessment_question_id = $assessment_question_id
     AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
     AND iq.requires_manual_grading
-    AND (iq.assigned_grader = $authn_user_id OR iq.assigned_grader IS NULL)
+    AND (iq.assigned_grader = $user_id OR iq.assigned_grader IS NULL)
 ORDER BY
-    -- Choose one assigned to authn_user if one exists, unassigned if not
+    -- Choose one assigned to current user if one exists, unassigned if not
     iq.assigned_grader NULLS LAST,
     -- Choose question that list after the prior if one exists (follow the order in the instance list)
     (COALESCE(g.name, u.name), iq.id) > (piq.prior_user_or_group_name, piq.id) DESC,

@@ -12,7 +12,7 @@ router.get('/', function (req, res, next) {
   debug('GET /');
   var params = {
     assessment_id: res.locals.assessment.id,
-    authn_user_id: res.locals.authz_data.authn_user.user_id,
+    user_id: res.locals.authz_data.user.user_id,
   };
   sqlDb.query(sql.select_questions_manual_grading, params, function (err, result) {
     if (ERR(err, next)) return;
