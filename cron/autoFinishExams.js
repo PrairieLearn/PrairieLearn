@@ -2,6 +2,7 @@
 var ERR = require('async-stacktrace');
 var async = require('async');
 
+var error = require('../prairielib/lib/error');
 var config = require('../lib/config');
 var logger = require('../lib/logger');
 var assessment = require('../lib/assessment');
@@ -44,7 +45,7 @@ module.exports.run = function (callback) {
           overrideGradeRate,
           function (err) {
             if (ERR(err, () => {})) {
-              logger.error('Error finishing exam', { examItem, err });
+              logger.error('Error finishing exam', error.addData(err, { examItem }));
             }
             callback(null);
           }
