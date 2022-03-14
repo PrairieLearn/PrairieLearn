@@ -886,35 +886,56 @@ class PostgresPool {
 const defaultPool = new PostgresPool();
 
 module.exports = {
-  ...defaultPool,
-  // Class methods are non-enumerable, so we can't spread them. We'll manually
-  // attach them to `module.exports`.
-  initAsync: defaultPool.initAsync,
-  closeAsync: defaultPool.closeAsync,
-  getClientAsync: defaultPool.getClientAsync,
-  getClient: defaultPool.getClient,
-  queryWithClientAsync: defaultPool.queryWithClientAsync,
-  queryWithClientOneRowAsync: defaultPool.queryWithClientOneRowAsync,
-  queryWithClientZeroOrOneRowAsync: defaultPool.queryWithClientZeroOrOneRowAsync,
-  rollbackWithClientAsync: defaultPool.rollbackWithClientAsync,
-  rollbackWithClient: defaultPool.rollbackWithClient,
-  beginTransactionAsync: defaultPool.beginTransactionAsync,
-  beginTransaction: defaultPool.beginTransaction,
-  endTransactionAsync: defaultPool.endTransactionAsync,
-  endTransaction: defaultPool.endTransaction,
-  runInTransactionAsync: defaultPool.runInTransactionAsync,
-  runInTransaction: defaultPool.runInTransaction,
-  queryAsync: defaultPool.queryAsync,
-  queryOneRowAsync: defaultPool.queryOneRowAsync,
-  queryZeroOrOneRowAsync: defaultPool.queryZeroOrOneRowAsync,
-  callAsync: defaultPool.callAsync,
-  callOneRowAsync: defaultPool.callOneRowAsync,
-  callZeroOrOneRowAsync: defaultPool.callZeroOrOneRowAsync,
-  callWithClientAsync: defaultPool.callWithClientAsync,
-  callWithClientOneRowAsync: defaultPool.callWithClientOneRowAsync,
-  callWithClientZeroOrOneRowAsync: defaultPool.callWithClientZeroOrOneRowAsync,
-  setSearchSchema: defaultPool.setSearchSchema,
-  getSearchSchema: defaultPool.getSearchSchema,
-  setRandomSearchSchemaAsync: defaultPool.setRandomSearchSchemaAsync,
-  PostgresPool,
+  // We re-expose all functions from the default pool here to account for the
+  // default case of a shared global pool of clients. If someone want to create
+  // their own pool, we expose the `PostgresPool` class.
+  //
+  // Note that we explicitly bind all functions to `defaultPool`. This ensures
+  // that they'll be invoked with the correct `this` context, specifically when
+  // this module is imported as `import * as db from '...'` and that import is
+  // subsequently transformed by Babel to `interopRequireWildcard(...)`.
+  init: defaultPool.init.bind(defaultPool),
+  initAsync: defaultPool.initAsync.bind(defaultPool),
+  close: defaultPool.close.bind(defaultPool),
+  closeAsync: defaultPool.closeAsync.bind(defaultPool),
+  getClientAsync: defaultPool.getClientAsync.bind(defaultPool),
+  getClient: defaultPool.getClient.bind(defaultPool),
+  queryWithClient: defaultPool.queryWithClient.bind(defaultPool),
+  queryWithClientAsync: defaultPool.queryWithClientAsync.bind(defaultPool),
+  queryWithClientOneRow: defaultPool.queryWithClientOneRow.bind(defaultPool),
+  queryWithClientOneRowAsync: defaultPool.queryWithClientOneRowAsync.bind(defaultPool),
+  queryWithClientZeroOrOneRow: defaultPool.queryWithClientZeroOrOneRow.bind(defaultPool),
+  queryWithClientZeroOrOneRowAsync: defaultPool.queryWithClientZeroOrOneRowAsync.bind(defaultPool),
+  rollbackWithClientAsync: defaultPool.rollbackWithClientAsync.bind(defaultPool),
+  rollbackWithClient: defaultPool.rollbackWithClient.bind(defaultPool),
+  beginTransactionAsync: defaultPool.beginTransactionAsync.bind(defaultPool),
+  beginTransaction: defaultPool.beginTransaction.bind(defaultPool),
+  endTransactionAsync: defaultPool.endTransactionAsync.bind(defaultPool),
+  endTransaction: defaultPool.endTransaction.bind(defaultPool),
+  runInTransactionAsync: defaultPool.runInTransactionAsync.bind(defaultPool),
+  runInTransaction: defaultPool.runInTransaction.bind(defaultPool),
+  query: defaultPool.query.bind(defaultPool),
+  queryAsync: defaultPool.queryAsync.bind(defaultPool),
+  queryOneRow: defaultPool.queryOneRow.bind(defaultPool),
+  queryOneRowAsync: defaultPool.queryOneRowAsync.bind(defaultPool),
+  queryZeroOrOneRow: defaultPool.queryZeroOrOneRow.bind(defaultPool),
+  queryZeroOrOneRowAsync: defaultPool.queryZeroOrOneRowAsync.bind(defaultPool),
+  call: defaultPool.call.bind(defaultPool),
+  callAsync: defaultPool.callAsync.bind(defaultPool),
+  callOneRow: defaultPool.callOneRow.bind(defaultPool),
+  callOneRowAsync: defaultPool.callOneRowAsync.bind(defaultPool),
+  callZeroOrOneRow: defaultPool.callZeroOrOneRow.bind(defaultPool),
+  callZeroOrOneRowAsync: defaultPool.callZeroOrOneRowAsync.bind(defaultPool),
+  callWithClient: defaultPool.callWithClient.bind(defaultPool),
+  callWithClientAsync: defaultPool.callWithClientAsync.bind(defaultPool),
+  callWithClientOneRow: defaultPool.callWithClientOneRow.bind(defaultPool),
+  callWithClientOneRowAsync: defaultPool.callWithClientOneRowAsync.bind(defaultPool),
+  callWithClientZeroOrOneRow: defaultPool.callWithClientZeroOrOneRow.bind(defaultPool),
+  callWithClientZeroOrOneRowAsync: defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool),
+  setSearchSchema: defaultPool.setSearchSchema.bind(defaultPool),
+  getSearchSchema: defaultPool.getSearchSchema.bind(defaultPool),
+  setRandomSearchSchema: defaultPool.setRandomSearchSchema.bind(defaultPool),
+  setRandomSearchSchemaAsync: defaultPool.setRandomSearchSchemaAsync.bind(defaultPool),
 };
+
+module.exports.PostgresPool = PostgresPool;

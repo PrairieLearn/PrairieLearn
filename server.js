@@ -47,6 +47,7 @@ const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
 const assets = require('./lib/assets');
+const namedLocks = require('./lib/named-locks');
 
 process.on('warning', (e) => console.warn(e)); // eslint-disable-line no-console
 
@@ -1737,8 +1738,8 @@ if (config.startServer) {
           })
         );
       },
-      function (callback) {
-        var pgConfig = {
+      async function () {
+        const pgConfig = {
           user: config.postgresqlUser,
           database: config.postgresqlDatabase,
           host: config.postgresqlHost,
@@ -1746,19 +1747,21 @@ if (config.startServer) {
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
         };
-        logger.verbose(
-          'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
-        );
-        var idleErrorHandler = function (err) {
+        function idleErrorHandler(err) {
           logger.error('idle client error', err);
           // https://github.com/PrairieLearn/PrairieLearn/issues/2396
           process.exit(1);
-        };
-        sqldb.init(pgConfig, idleErrorHandler, function (err) {
-          if (ERR(err, callback)) return;
-          logger.verbose('Successfully connected to database');
-          callback(null);
-        });
+        }
+
+        logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+
+        await sqldb.initAsync(pgConfig, idleErrorHandler);
+
+        // Our named locks code maintains a separate pool of database connections.
+        // This ensures that we avoid deadlocks.
+        await namedLocks.init(pgConfig, idleErrorHandler);
+
+        logger.verbose('Successfully connected to database');
       },
       function (callback) {
         if (!config.runMigrations) return callback(null);
