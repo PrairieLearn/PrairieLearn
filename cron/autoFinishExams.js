@@ -1,3 +1,4 @@
+// @ts-check
 var ERR = require('async-stacktrace');
 var async = require('async');
 
@@ -6,8 +7,16 @@ var logger = require('../lib/logger');
 var assessment = require('../lib/assessment');
 var sqldb = require('../prairielib/lib/sql-db');
 
-module.exports = {};
-
+/**
+ * This cron job runs periodically to check for any exams that need to be
+ * "finished". This includes exams that are still open and are configured to
+ * auto-close after a certain time period, and exams that were previously
+ * closed but not completely graded.
+ *
+ * @see assessment.gradeAssessmentInstance
+ *
+ * @param {(err?: Error) => void} callback
+ */
 module.exports.run = function (callback) {
   var params = [config.autoFinishAgeMins];
   sqldb.call('assessment_instances_select_for_auto_close', params, function (err, result) {
@@ -25,15 +34,13 @@ module.exports.run = function (callback) {
         // dies in the middle of grading a question. In that case, the assessment
         // would have already been closed, but we still need to grade it.
         const requireOpen = false;
-        // Close them exam before grading it.
-        const closeExam = true;
-        // Override any submission or grading rate limites.
+        // Override any submission or grading rate limits.
         const overrideGradeRate = true;
         assessment.gradeAssessmentInstance(
           examItem.assessment_instance_id,
           authn_user_id,
           requireOpen,
-          closeExam,
+          examItem.close_assessment,
           overrideGradeRate,
           function (err) {
             if (ERR(err, () => {})) {
