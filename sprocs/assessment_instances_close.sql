@@ -11,7 +11,9 @@ BEGIN
     -- Lock the assessment instance to guard against concurrent updates.
     PERFORM assessment_instances_lock(assessment_instance_id);
 
-    -- Ensure that the assessment instance is still open.
+    -- Ensure that the assessment instance is still open. This ensures that
+    -- users can't force a regrade by trying to close an assessment instance
+    -- that's already closed.
     PERFORM assessment_instances_ensure_open(assessment_instance_id);
 
     -- Compute the duration.
