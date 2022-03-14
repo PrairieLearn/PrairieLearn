@@ -14,7 +14,7 @@ course_instance_user_submission_counts AS (
         JOIN users AS u ON (u.user_id = s.auth_user_id)
         JOIN institutions AS i ON (i.id = u.institution_id)
     WHERE
-        ($institution_short_name = '' OR i.short_name = institution_short_name)
+        ($institution_short_name = '' OR i.short_name = $institution_short_name)
         AND s.date > $start_time
         AND s.date < $end_time
     GROUP BY
