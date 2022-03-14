@@ -34,6 +34,7 @@ BEGIN
         -- immediately append it to the results if that's the case.
         IF assessment_instance.open = false AND assessment_instance.grading_needed THEN
             RETURN NEXT;
+            CONTINUE;
         END IF;
 
         -- find the oldest submission information
