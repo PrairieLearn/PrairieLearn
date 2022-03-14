@@ -24,6 +24,29 @@ AS $$
 BEGIN
     RETURN query
         WITH
+        group_users AS (
+            SELECT gl.user_id
+            FROM
+                assessment_instances AS ai
+                JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
+            WHERE ai.id = ai_id
+            AND gl.action = 'join'
+        ),
+        user_page_view_logs AS (
+            SELECT pvl.*
+            FROM
+                assessment_instances AS ai
+                JOIN page_view_logs AS pvl ON (pvl.assessment_instance_id = ai.id)
+            WHERE
+                ai.id = ai_id
+                -- Only include events for the assessment's user or, in case of
+                -- group assessments, for events triggered by any user that at
+                -- some point was part of the group.
+                AND (
+                    (ai.user_id IS NOT NULL AND pvl.authn_user_id = ai.user_id)
+                    OR (ai.group_id IS NOT NULL AND pvl.authn_user_id IN (SELECT * FROM group_users))
+                )
+        ),
         event_log AS (
             (
                 SELECT
@@ -337,19 +360,7 @@ BEGIN
                     JOIN questions AS q ON (q.id = pvl.question_id)
                     JOIN users AS u ON (u.user_id = pvl.authn_user_id)
                     JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
-                WHERE
-                    pvl.assessment_instance_id = ai_id
-                    AND pvl.page_type = 'studentInstanceQuestion'
-                    -- Only include events for the assessment's user or, in case of
-                    -- group assessments, for events triggered by any user that at
-                    -- some point was part of the group.
-                    AND (pvl.authn_user_id = ai.user_id
-                         OR (ai.group_id IS NOT NULL
-                             AND EXISTS (SELECT 1
-                                         FROM group_logs AS gl
-                                         WHERE gl.action = 'join'
-                                               AND gl.group_id = ai.group_id
-                                               AND gl.user_id = pvl.authn_user_id)))
+                WHERE pvl.page_type = 'studentInstanceQuestion'
             )
             UNION
             (
@@ -369,22 +380,10 @@ BEGIN
                     pvl.id AS log_id,
                     NULL::JSONB AS data
                 FROM
-                    page_view_logs AS pvl
+                    user_page_view_logs AS pvl
                     JOIN users AS u ON (u.user_id = pvl.authn_user_id)
                     JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
-                WHERE
-                    pvl.assessment_instance_id = ai_id
-                    AND pvl.page_type = 'studentAssessmentInstance'
-                    -- Only include events for the assessment's user or, in case of
-                    -- group assessments, for events triggered by any user that at
-                    -- some point was part of the group.
-                    AND (pvl.authn_user_id = ai.user_id
-                         OR (ai.group_id IS NOT NULL
-                             AND EXISTS (SELECT 1
-                                         FROM group_logs AS gl
-                                         WHERE gl.action = 'join'
-                                               AND gl.group_id = ai.group_id
-                                               AND gl.user_id = pvl.authn_user_id)))
+                WHERE pvl.page_type = 'studentAssessmentInstance'
             )
             UNION
             (
