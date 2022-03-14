@@ -64,6 +64,7 @@
                   }
               },
               onPostBody: () => {
+                  updateGradingTagButton();
                   $('#grading-table [data-toggle="popover"]').popover({
                       sanitize: false,
                       content: function() {

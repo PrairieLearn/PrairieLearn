@@ -23,13 +23,13 @@
                 <th></th>
                 <th>QID</th>
                 <th>Points</th>
-                <th>Number of Submissions</th>
+                <th>Submissions to grade</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               <% questions.forEach(function(question, i) { %>
-              <tr>
+              <tr <% if (question.num_instance_questions_assigned > 0) { %>class="bg-light"<% } %> >
                 <td>
                   <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/manual_grading">
                     <% if (question.alternative_group_size == 1) { %>
@@ -45,13 +45,19 @@
                   <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
                   <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
                 </td>
-                <td class="text-center">
-                  <%= question.num_instance_questions %>
+                <td>
+                  <%= question.num_instance_questions_to_grade ?? 0 %> /
+                  <%= question.num_instance_questions ?? 0 %>
+                  <% if (question.num_instance_questions_assigned > 0) { %>
+                  <small class="text-muted">(<%= question.num_instance_questions_assigned ?? 0 %> assigned to you)</small>
+                  <% } else if (question.num_instance_questions_unassigned > 0) { %>
+                  <small class="text-muted">(<%= question.num_instance_questions_unassigned ?? 0 %> unassigned)</small>
+                  <% } %>
                 </td>
                 <td>
-                  <% if (question.num_instance_questions_to_grade > 0) { %>
-                  <a class="btn btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/next_ungraded">
-                    Grade <%= question.num_instance_questions_to_grade %> submission<% if (question.num_instance_questions_to_grade > 1) { %>s<% } %>
+                  <% if (question.num_instance_questions_assigned > 0 || question.num_instance_questions_unassigned > 0) { %>
+                  <a class="btn btn-sm btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/next_ungraded">
+                    Grade next submission
                   </a>
                   <% } %>
                 </td>
