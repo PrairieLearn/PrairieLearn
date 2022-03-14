@@ -1,5 +1,5 @@
 CREATE FUNCTION
-    assessment_instances_select_for_auto_close(
+    assessment_instances_select_for_auto_finish(
         age_mins integer -- time in minutes (after last activity) when we auto-close an exam
     ) RETURNS TABLE (
         assessment_instance_id bigint,
@@ -32,7 +32,7 @@ BEGIN
 
         -- First check if the exam is closed and in need of grading. We can
         -- immediately append it to the results if that's the case.
-        IF ai.open = false AND ai.grading_needed THEN
+        IF assessment_instance.open = false AND assessment_instance.grading_needed THEN
             RETURN NEXT;
         END IF;
 
