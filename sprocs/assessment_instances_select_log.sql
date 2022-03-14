@@ -24,27 +24,28 @@ AS $$
 BEGIN
     RETURN query
         WITH
-        group_users AS (
+        ai_group_users AS (
             SELECT gl.user_id
             FROM
                 assessment_instances AS ai
                 JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
-            WHERE ai.id = ai_id
-            AND gl.action = 'join'
+            WHERE
+                ai.id = ai_id
+                AND gl.action = 'join'
         ),
         user_page_view_logs AS (
             SELECT pvl.*
             FROM
-                assessment_instances AS ai
-                JOIN page_view_logs AS pvl ON (pvl.assessment_instance_id = ai.id)
+                page_view_logs AS pvl
+                JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
             WHERE
-                ai.id = ai_id
+                pvl.assessment_instance_id = ai_id
                 -- Only include events for the assessment's user or, in case of
                 -- group assessments, for events triggered by any user that at
                 -- some point was part of the group.
                 AND (
                     (ai.user_id IS NOT NULL AND pvl.authn_user_id = ai.user_id)
-                    OR (ai.group_id IS NOT NULL AND pvl.authn_user_id IN (SELECT * FROM group_users))
+                    OR (ai.group_id IS NOT NULL AND pvl.authn_user_id IN (SELECT * FROM ai_group_users))
                 )
         ),
         event_log AS (
@@ -354,7 +355,7 @@ BEGIN
                     pvl.id AS log_id,
                     NULL::JSONB AS data
                 FROM
-                    page_view_logs AS pvl
+                    user_page_view_logs AS pvl
                     JOIN variants AS v ON (v.id = pvl.variant_id)
                     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
                     JOIN questions AS q ON (q.id = pvl.question_id)
