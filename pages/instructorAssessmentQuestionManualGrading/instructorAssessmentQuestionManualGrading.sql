@@ -82,10 +82,25 @@ WHERE
 ORDER BY user_or_group_name, iq.id;
 
 -- BLOCK update_instance_questions
+WITH course_staff AS (
+    SELECT
+        cp.user_id
+    FROM
+        assessments AS a
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN course_instance_permissions AS cip ON (cip.course_instance_id = ci.id)
+        JOIN course_permissions AS cp ON (cp.id = cip.course_permission_id)
+    WHERE
+        a.id = $assessment_id
+        AND cip.course_instance_role >= 'Student Data Editor'
+)
 UPDATE instance_questions AS iq
 SET
     requires_manual_grading = $requires_manual_grading,
     assigned_grader = $assigned_grader
 WHERE
     iq.assessment_question_id = $assessment_question_id
-    AND iq.id = ANY($instance_question_ids::BIGINT[]);
+    AND iq.id = ANY($instance_question_ids::BIGINT[])
+    AND ($assigned_grader::BIGINT IS NULL OR
+         EXISTS (SELECT * FROM course_staff AS cs WHERE cs.user_id = $assigned_grader))
+    ;
