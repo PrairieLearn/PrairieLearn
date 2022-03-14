@@ -101,6 +101,5 @@ SET
 WHERE
     iq.assessment_question_id = $assessment_question_id
     AND iq.id = ANY($instance_question_ids::BIGINT[])
-    AND ($assigned_grader::BIGINT IS NULL OR
-         EXISTS (SELECT * FROM course_staff AS cs WHERE cs.user_id = $assigned_grader))
-    ;
+    AND ($assigned_grader::BIGINT IS NULL
+         OR EXISTS (SELECT * FROM course_staff AS cs WHERE cs.user_id = $assigned_grader));

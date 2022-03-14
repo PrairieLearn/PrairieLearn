@@ -61,7 +61,7 @@ router.post('/', (req, res, next) => {
     };
     sqlDb.query(sql.update_instance_questions, params, function (err, _result) {
       if (ERR(err, next)) return;
-      res.send(req.body);
+      res.send({});
     });
   } else if (req.body.__action === 'edit_question_points') {
     const params = [
