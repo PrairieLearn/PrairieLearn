@@ -462,10 +462,14 @@ class PostgresPool {
     if (err) {
       try {
         await this.rollbackWithClientAsync(client);
-        throw error.addData(err, { rollback: 'success' });
       } catch (rollbackErr) {
         throw error.addData(rollbackErr, { prevErr: err, rollback: 'fail' });
       }
+
+      // Even though we successfully rolled back the transaction, there was
+      // still an error in the first place that necessitated a rollback. Re-throw
+      // that error here so that everything downstream of here will know about it.
+      throw error.addData(err, { rollback: 'success' });
     } else {
       try {
         await this.queryWithClientAsync(client, 'COMMIT', {});
