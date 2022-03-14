@@ -7,6 +7,10 @@ columns
     short_name: text
     title: text
     user_id: bigint
+    first_name: text
+    last_name: text
+    institution: text
+    email: text
 
 indexes
     course_requests_pkey: PRIMARY KEY (id) USING btree (id)
