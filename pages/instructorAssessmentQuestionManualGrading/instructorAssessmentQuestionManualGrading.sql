@@ -14,17 +14,29 @@ WITH course_staff AS (
     WHERE
         a.id = $assessment_id
         AND cip.course_instance_role >= 'Student Data Editor'
+),
+open_instances AS (
+    SELECT
+        COUNT(*) AS num_open_instances
+    FROM
+        assessments AS a
+        JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    WHERE
+        a.id = $assessment_id
+        AND ai.open
 )
 SELECT
     q.id AS question_id,
     q.title AS question_title,
     admin_assessment_question_number(aq.id) as number_in_alternative_group,
     aq.max_points,
-    COALESCE(cs.course_staff, '[]'::jsonb) AS course_staff
+    COALESCE(cs.course_staff, '[]'::jsonb) AS course_staff,
+    COALESCE(oi.num_open_instances, 0) AS num_open_instances
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
     LEFT JOIN course_staff AS cs ON (TRUE)
+    LEFT JOIN open_instances AS oi ON (TRUE)
 WHERE
     aq.assessment_id = $assessment_id
     AND aq.id = $assessment_question_id;
@@ -45,6 +57,7 @@ WITH issue_count AS (
 )
 SELECT
     iq.*,
+    ai.open AS assessment_open,
     u.uid,
     COALESCE(agu.name, agu.uid) AS assigned_grader_name,
     COALESCE(lgu.name, lgu.uid) AS last_grader_name,

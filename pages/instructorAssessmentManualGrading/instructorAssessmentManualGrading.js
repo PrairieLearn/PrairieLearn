@@ -17,6 +17,7 @@ router.get('/', function (req, res, next) {
   sqlDb.query(sql.select_questions_manual_grading, params, function (err, result) {
     if (ERR(err, next)) return;
     res.locals.questions = result.rows;
+    res.locals.num_open_instances = result.rows[0]?.num_open_instances || 0;
     debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });

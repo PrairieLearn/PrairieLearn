@@ -11,6 +11,14 @@ WITH instance_questions_with_submission AS (
                  FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
                  WHERE v.instance_question_id = iq.id)
     GROUP BY iq.assessment_question_id
+),
+open_instances AS (
+    SELECT
+        ai.assessment_id,
+        COUNT(1) num_open_instances
+    FROM assessment_instances ai
+    WHERE ai.open
+    GROUP BY ai.assessment_id
 )
 SELECT
     aq.*,
@@ -23,12 +31,14 @@ SELECT
     iqs.num_instance_questions,
     iqs.num_instance_questions_to_grade,
     iqs.num_instance_questions_assigned,
-    iqs.num_instance_questions_unassigned
+    iqs.num_instance_questions_unassigned,
+    oi.num_open_instances
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
     LEFT JOIN instance_questions_with_submission iqs ON (iqs.assessment_question_id = aq.id)
+    LEFT JOIN open_instances oi ON (oi.assessment_id = aq.assessment_id)
 WHERE
     aq.assessment_id = $assessment_id
     AND aq.deleted_at IS NULL
