@@ -5,8 +5,13 @@ WITH instance_questions_with_submission AS (
         COUNT(1) FILTER (WHERE iq.requires_manual_grading) AS num_instance_questions_to_grade,
         COUNT(1) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader = $authn_user_id) AS num_instance_questions_assigned,
         COUNT(1) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader IS NULL) AS num_instance_questions_unassigned,
-        COUNT(1) AS num_instance_questions
-    FROM instance_questions iq
+        COUNT(1) AS num_instance_questions,
+        JSONB_AGG(DISTINCT jsonb_build_object('user_id', agu.user_id, 'name', agu.name, 'uid', agu.uid)) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader IS NOT NULL) AS assigned_graders,
+        JSONB_AGG(DISTINCT jsonb_build_object('user_id', lgu.user_id, 'name', lgu.name, 'uid', lgu.uid)) FILTER (WHERE iq.last_grader IS NOT NULL) AS actual_graders
+    FROM
+        instance_questions iq
+        LEFT JOIN users agu ON (agu.user_id = iq.assigned_grader)
+        LEFT JOIN users lgu ON (lgu.user_id = iq.last_grader)
     WHERE EXISTS(SELECT 1
                  FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
                  WHERE v.instance_question_id = iq.id)
@@ -32,6 +37,8 @@ SELECT
     iqs.num_instance_questions_to_grade,
     iqs.num_instance_questions_assigned,
     iqs.num_instance_questions_unassigned,
+    iqs.assigned_graders,
+    iqs.actual_graders,
     oi.num_open_instances
 FROM
     assessment_questions AS aq

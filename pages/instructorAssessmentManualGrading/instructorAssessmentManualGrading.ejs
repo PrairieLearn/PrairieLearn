@@ -34,6 +34,8 @@
                 <th>QID</th>
                 <th>Points</th>
                 <th>Submissions to grade</th>
+                <th>Grading assigned to</th>
+                <th>Graded by</th>
                 <th></th>
               </tr>
             </thead>
@@ -63,6 +65,12 @@
                   <% } else if (question.num_instance_questions_unassigned > 0) { %>
                   <small class="text-muted">(<%= question.num_instance_questions_unassigned ?? 0 %> unassigned)</small>
                   <% } %>
+                </td>
+                <td>
+                  <%= (question.assigned_graders || []).map(u => u.name ?? u.uid).join(', ') %>
+                </td>
+                <td>
+                  <%= (question.actual_graders || []).map(u => u.name ?? u.uid).join(', ') %>
                 </td>
                 <td>
                   <% if (question.num_instance_questions_assigned > 0 || question.num_instance_questions_unassigned > 0) { %>
