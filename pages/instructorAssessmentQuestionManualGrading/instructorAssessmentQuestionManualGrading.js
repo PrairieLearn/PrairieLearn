@@ -47,9 +47,25 @@ router.get('/instances.json', function (req, res, next) {
 
 router.post('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
-  if (req.body.__action === 'edit_question_points') {
+  if (req.body.__action === 'batch_action') {
+    const action_data = JSON.parse(req.body.batch_action_data) || {};
+    const instance_question_ids = Array.isArray(req.body.instance_question_id)
+      ? req.body.instance_question_id
+      : [req.body.instance_question_id];
+    const params = {
+      assessment_id: res.locals.assessment.id,
+      assessment_question_id: res.locals.assessment_question_id,
+      instance_question_ids,
+      requires_manual_grading: !!action_data?.requires_manual_grading,
+      assigned_grader: action_data?.assigned_grader,
+    };
+    sqlDb.query(sql.update_instance_questions, params, function (err, _result) {
+      if (ERR(err, next)) return;
+      res.send(req.body);
+    });
+  } else if (req.body.__action === 'edit_question_points') {
     const params = [
-      null, // assessment_id
+      res.locals.assessment_id,
       req.body.assessment_instance_id,
       null, // submission_id
       req.body.instance_question_id,
@@ -71,7 +87,7 @@ router.post('/', (req, res, next) => {
     });
   } else if (req.body.__action === 'edit_question_score_perc') {
     const params = [
-      null, // assessment_id
+      res.locals.assessment_id,
       req.body.assessment_instance_id,
       null, // submission_id
       req.body.instance_question_id,

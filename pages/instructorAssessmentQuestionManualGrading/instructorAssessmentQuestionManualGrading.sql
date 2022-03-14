@@ -1,12 +1,30 @@
 -- BLOCK select_question
+WITH course_staff AS (
+    SELECT
+        jsonb_agg(jsonb_build_object(
+            'user_id', u.user_id,
+            'uid', u.uid,
+            'name', u.name) ORDER BY u.uid, u.name, u.user_id) AS course_staff
+    FROM
+        assessments AS a
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN course_instance_permissions AS cip ON (cip.course_instance_id = ci.id)
+        JOIN course_permissions AS cp ON (cp.id = cip.course_permission_id)
+        JOIN users AS u ON (u.user_id = cp.user_id)
+    WHERE
+        a.id = $assessment_id
+        AND cip.course_instance_role >= 'Student Data Editor'
+)
 SELECT
     q.id AS question_id,
     q.title AS question_title,
     admin_assessment_question_number(aq.id) as number_in_alternative_group,
-    aq.max_points
+    aq.max_points,
+    COALESCE(cs.course_staff, '[]'::jsonb) AS course_staff
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
+    LEFT JOIN course_staff AS cs ON (TRUE)
 WHERE
     aq.assessment_id = $assessment_id
     AND aq.id = $assessment_question_id;
@@ -28,8 +46,8 @@ WITH issue_count AS (
 SELECT
     iq.*,
     u.uid,
-    agu.name AS assigned_grader_name,
-    lgu.name AS last_grader_name,
+    COALESCE(agu.name, agu.uid) AS assigned_grader_name,
+    COALESCE(lgu.name, lgu.uid) AS last_grader_name,
     aq.max_points,
     COALESCE(g.name, u.name) AS user_or_group_name,
     ic.open_issue_count
@@ -49,3 +67,12 @@ WHERE
                FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
                WHERE v.instance_question_id = iq.id)
 ORDER BY user_or_group_name, iq.id;
+
+-- BLOCK update_instance_questions
+UPDATE instance_questions AS iq
+SET
+    requires_manual_grading = $requires_manual_grading,
+    assigned_grader = $assigned_grader
+WHERE
+    iq.assessment_question_id = $assessment_question_id
+    AND iq.id = ANY($instance_question_ids::BIGINT[]);

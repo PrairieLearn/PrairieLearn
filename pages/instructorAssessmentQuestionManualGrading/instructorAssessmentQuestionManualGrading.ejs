@@ -27,11 +27,24 @@
               autoRefresh: true,
               autoRefreshStatus: false,
               autoRefreshInterval: 30,
-              buttonsOrder: ['refresh', 'autoRefresh'],
+              buttonsOrder: ['refresh', 'autoRefresh', 'status'],
               theadClasses: 'thead-light',
               stickyHeader: true,
               filterControl: true,
               rowStyle: row => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
+              buttons: {
+                  status: {
+                      text: 'Tag for grading',
+                      icon: 'fa-tags',
+                      html: gradingTagDropdown,
+                  },
+              },
+              onUncheck: updateGradingTagButton,
+              onUncheckAll: updateGradingTagButton,
+              onUncheckSome: updateGradingTagButton,
+              onCheck: updateGradingTagButton,
+              onCheckAll: updateGradingTagButton,
+              onCheckSome: updateGradingTagButton,
               onRefresh: () => {
                   // a bug in bootstrap-table causes the filters to lose value on refresh
                   // (https://github.com/wenzhixin/bootstrap-table/issues/6030).
@@ -54,15 +67,8 @@
                   $('#grading-table [data-toggle="popover"]').popover({
                       sanitize: false,
                       content: function() {
-                          let that = this;
                           let dataContent = $($(this).data('base-content'));
-                          dataContent.submit(function(e) {
-                              e.preventDefault();
-                              $.post($(this).attr('action'), $(this).serialize(), function(data) {
-                                  $('#grading-table').bootstrapTable('refresh');
-                              }); // , 'json');
-                              $(that).popover('hide');
-                          });
+                          dataContent.submit(ajaxSubmit).submit(e => $(this).popover('hide'));
                           return dataContent;
                       },
                   });
@@ -112,7 +118,6 @@
                       title: 'Assigned grader',
                       filterControl: 'select',
                       searchFormatter: false,
-                      class: 'text-center',
                       formatter: (value, row) => row.assigned_grader ? row.assigned_grader_name : '&mdash;',
                   },
                   {
@@ -143,6 +148,62 @@
               ]],
           });
       });
+
+      function ajaxSubmit(e) {
+          e.preventDefault();
+          const submitter = e.submitter || e.originalEvent?.submitter;
+          if (submitter) {
+              // Obtain information from submit button that was used
+              $(e.target).find('input[name=batch_action_data]')
+                  .val(JSON.stringify($(submitter).data('batch-action') || {}));
+          }
+          $.post($(e.target).attr('action'), $(e.target).serialize(), function(data) {
+              $('#grading-table').bootstrapTable('refresh');
+          }, 'json').fail(function(data) {
+              // TODO Better user notification of update failure
+          });
+      }
+
+      function gradingTagDropdown() {
+          const course_staff = JSON.parse('<%- JSON.stringify(course_staff) %>') || [];
+          const dropdown = $('<div class="dropdown ml-1">');
+          const button = $('<button class="btn btn-secondary dropdown-toggle grading-tag-button" data-toggle="dropdown" name="status" disabled>').appendTo(dropdown);
+          button.text(' Tag for grading').prepend($('<i class="fas fa-tags">'));
+
+          const menu = $('<div class="dropdown-menu dropdown-menu-right">').appendTo(dropdown);
+          menu.append('<div class="dropdown-header">Tag as requiring grading</div>');
+
+          course_staff.forEach((grader) => {
+              const item_grader = $('<button class="dropdown-item" type="submit">').appendTo(menu);
+              item_grader.attr('data-batch-action', JSON.stringify({
+                  requires_manual_grading: true,
+                  assigned_grader: grader.user_id,
+              }));
+              item_grader.text(` Assign to: ${grader.name || ''} (${grader.uid})`);
+              item_grader.prepend('<i class="fas fa-user-tag"></i>');
+          });
+
+          const item_no_grader = $('<button class="dropdown-item" type="submit">').appendTo(menu);
+          item_no_grader.attr('data-batch-action', JSON.stringify({
+              requires_manual_grading: true,
+              assigned_grader: null,
+          }));
+          item_no_grader.text(` No grader assigned`).prepend('<i class="fas fa-tag"></i>');
+
+          menu.append('<div class="dropdown-divider">');
+
+          const item_graded = $('<button class="dropdown-item" type="submit">').appendTo(menu);
+          item_graded.attr('data-batch-action', JSON.stringify({
+              requires_manual_grading: false,
+          }));
+          item_graded.text(` Tag as graded`).prepend('<i class="fas fa-check-square"></i>');
+
+          return $('<div>').append(dropdown).html();
+      }
+
+      function updateGradingTagButton() {
+          $('.grading-tag-button').prop('disabled', !$('#grading-table').bootstrapTable('getSelections').length);
+      }
 
       //<% include('../partials/pointsFormatter'); %>
       window.getStringFromFloat = <%- getStringFromFloat.toString() %>;
@@ -205,7 +266,12 @@
           <%= assessment.tid %> / Question <%= number_in_alternative_group %>.
           <%= question_title %>
         </div>
-        <table id="grading-table"></table>
+        <form name="grading-form" method="POST" onsubmit="ajaxSubmit(event)">
+          <input type="hidden" name="__action" value="batch_action">
+          <input type="hidden" name="batch_action_data" value="">
+          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+          <table id="grading-table"></table>
+        </form>
       </div>
 
     </div>
