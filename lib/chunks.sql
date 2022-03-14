@@ -27,7 +27,7 @@ FROM
     -- Note that we specifically use a LEFT JOIN here - this is what allows the
     -- caller to differentiate between a chunk that exists and one that does not.
     -- Chunks that don't exist will have a NULL id, but they'll still contain
-    -- other information like the course instnace/assessment/question name so that
+    -- other information like the course instance/assessment/question name so that
     -- we can clean up unused chunks from disk.
     LEFT JOIN chunks ON (
         chunks.course_id = ($course_id)::bigint
