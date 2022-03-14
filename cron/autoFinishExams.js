@@ -19,7 +19,7 @@ var sqldb = require('../prairielib/lib/sql-db');
  */
 module.exports.run = function (callback) {
   var params = [config.autoFinishAgeMins];
-  sqldb.call('assessment_instances_select_for_auto_close', params, function (err, result) {
+  sqldb.call('assessment_instances_select_for_auto_finish', params, function (err, result) {
     if (ERR(err, callback)) return;
     var examList = result.rows;
 

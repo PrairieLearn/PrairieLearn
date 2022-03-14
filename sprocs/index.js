@@ -78,7 +78,7 @@ module.exports.init = function (callback) {
       'assessment_instances_delete_all.sql',
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
-      'assessment_instances_select_for_auto_close.sql',
+      'assessment_instances_select_for_auto_finish.sql',
       'assessment_instances_select_log.sql',
       'assessment_instances_ensure_open.sql',
       'instance_questions_points_homework.sql',
