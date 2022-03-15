@@ -26,10 +26,10 @@ router.post('/', function (req, res, next) {
   const short_name = req.body['cr-shortname'].toUpperCase() || '';
   const title = req.body['cr-title'] || '';
   const github_user = req.body['cr-ghuser'] || null;
-  const first_name = req.body['cr-firstname'] || ''
-  const last_name = req.body['cr-lastname'] || ''
-  const work_email = req.body['cr-email'] || ''
-  const institution = req.body['cr-institution'] || ''
+  const first_name = req.body['cr-firstname'] || '';
+  const last_name = req.body['cr-lastname'] || '';
+  const work_email = req.body['cr-email'] || '';
+  const institution = req.body['cr-institution'] || '';
 
   if (!short_name.match(/[A-Z]+ [A-Z0-9]+/)) {
     res.locals.error_message =
@@ -100,7 +100,16 @@ router.post('/', function (req, res, next) {
           } else {
             /* Otherwise, insert the course request and send a Slack message */
 
-            const sql_params = [res.locals.authn_user.user_id, short_name, title, github_user, first_name, last_name, work_email, institution];
+            const sql_params = [
+              res.locals.authn_user.user_id,
+              short_name,
+              title,
+              github_user,
+              first_name,
+              last_name,
+              work_email,
+              institution,
+            ];
             sqldb.call('course_requests_insert', sql_params, (err, result) => {
               if (ERR(err, next)) return;
               const auto_created = result.rows[0].auto_created;
