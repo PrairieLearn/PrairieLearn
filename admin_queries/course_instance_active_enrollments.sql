@@ -20,16 +20,16 @@ course_instance_user_instance_question_counts AS (
 ),
 course_instance_student_counts AS (
     SELECT
-        ciusc.id,
+        ciuiqc.id,
         count(*) AS student_count
     FROM
         course_instance_user_instance_question_counts AS ciuiqc
         JOIN enrollments AS e ON (e.course_instance_id = ciuiqc.id AND e.user_id = ciuiqc.user_id)
     WHERE
-        NOT users_is_instructor_in_course_instance(e.user_id, ciusc.id)
+        NOT users_is_instructor_in_course_instance(e.user_id, ciuiqc.id)
         AND ciuiqc.instance_question_count >= $minimum_instance_question_count
     GROUP BY
-        ciusc.id
+        ciuiqc.id
 )
 SELECT
     i.short_name AS institution,
