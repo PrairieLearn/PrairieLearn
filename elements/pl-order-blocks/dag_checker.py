@@ -62,6 +62,7 @@ def dag_to_nx(depends_graph):
     """Convert input graph format into NetworkX object to utilize their algorithms."""
     graph = nx.DiGraph()
     for node in depends_graph:
+        graph.add_node(node)
         for node2 in depends_graph[node]:
             # the depends graph lists the *incoming* edges of a node
             graph.add_edge(node2, node)
