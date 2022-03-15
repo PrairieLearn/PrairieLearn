@@ -14,7 +14,7 @@ course_instance_user_instance_question_counts AS (
     WHERE
         ($institution_short_name = '' OR i.short_name = $institution_short_name)
         AND iq.modified_at > $start_date
-        AND iq.modified_at < $end_end
+        AND iq.modified_at < $end_date
     GROUP BY
         ci.id, u.user_id
 ),
