@@ -62,12 +62,13 @@
                   <%= question.num_instance_questions ?? 0 %>
                   <% if (question.num_instance_questions_assigned > 0) { %>
                   <small class="text-muted">(<%= question.num_instance_questions_assigned ?? 0 %> assigned to you)</small>
-                  <% } else if (question.num_instance_questions_unassigned > 0) { %>
-                  <small class="text-muted">(<%= question.num_instance_questions_unassigned ?? 0 %> unassigned)</small>
                   <% } %>
                 </td>
                 <td>
                   <%= (question.assigned_graders || []).map(u => u.name ?? u.uid).join(', ') %>
+                  <% if (question.num_instance_questions_unassigned > 0) { %>
+                  <small class="text-muted">(<%= question.num_instance_questions_unassigned ?? 0 %> unassigned)</small>
+                  <% } %>
                 </td>
                 <td>
                   <%= (question.actual_graders || []).map(u => u.name ?? u.uid).join(', ') %>
