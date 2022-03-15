@@ -140,7 +140,7 @@ router.post('/', function (req, res, next) {
                           `Course rubric: ${short_name}\n` +
                           `Course title: ${title}\n` +
                           `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-                          `Login as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                           `GitHub username: ${github_user || 'not provided'}`,
                         (err) => {
                           ERR(err, () => {
@@ -161,7 +161,7 @@ router.post('/', function (req, res, next) {
                     `Course rubric: ${short_name}\n` +
                     `Course title: ${title}\n` +
                     `Requested by: ${first_name} ${last_name} (${work_email})\n` +
-                    `Login as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                    `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                     `GitHub username: ${github_user || 'not provided'}`,
                   (err) => {
                     ERR(err, () => {
