@@ -23,7 +23,6 @@
                     <th>Requested By</th>
                     <th>Institution</th>
                     <th>Official Email</th>
-                    <th>User name</th>
                     <th>User ID</th>
                     <th>GitHub Username</th>
                     <th>Status</th>
@@ -36,10 +35,9 @@
                     <tr>
                         <td class="align-middle"><%= req.short_name %></td>
                         <td class="align-middle"><%= req.title %></td>
-                        <td class="align-middle"><%= req.first_name %></td>
+                        <td class="align-middle"><%= req.first_name + ' ' + req.last_name%></td>
                         <td class="align-middle"><%= req.institution %></td>
                         <td class="align-middle"><%= req.work_email %></td>
-                        <td class="align-middle"><%= req.user_name %></td>
                         <td class="align-middle"><%= req.user_id %></td>
                         <td class="align-middle"><%= req.github_user %></td>
                         <td class="align-middle"><%- include('courseRequestStatusIcon', { status: req.status }) %></td>
