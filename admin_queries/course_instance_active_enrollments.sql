@@ -1,37 +1,35 @@
 WITH
-course_instance_user_submission_counts AS (
+course_instance_user_instance_question_counts AS (
     SELECT
         ci.id,
         u.user_id,
-        count(*) AS submission_count
+        count(*) AS instance_question_count
     FROM
-        submissions AS s
-        JOIN variants AS v ON (v.id = s.variant_id)
-        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        instance_questions AS iq
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        JOIN users AS u ON (u.user_id = s.auth_user_id)
+        JOIN users AS u ON (u.user_id = iq.authn_user_id)
         JOIN institutions AS i ON (i.id = u.institution_id)
     WHERE
         ($institution_short_name = '' OR i.short_name = $institution_short_name)
-        AND s.date > $start_time
-        AND s.date < $end_time
+        AND iq.modified_at > $start_date
+        AND iq.modified_at < $end_date
     GROUP BY
         ci.id, u.user_id
 ),
 course_instance_student_counts AS (
     SELECT
-        ciusc.id,
+        ciuiqc.id,
         count(*) AS student_count
     FROM
-        course_instance_user_submission_counts AS ciusc
-        JOIN enrollments AS e ON (e.course_instance_id = ciusc.id AND e.user_id = ciusc.user_id)
+        course_instance_user_instance_question_counts AS ciuiqc
+        JOIN enrollments AS e ON (e.course_instance_id = ciuiqc.id AND e.user_id = ciuiqc.user_id)
     WHERE
-        NOT users_is_instructor_in_course_instance(e.user_id, ciusc.id)
-        AND ciusc.submission_count >= $minimum_submission_count
+        NOT users_is_instructor_in_course_instance(e.user_id, ciuiqc.id)
+        AND ciuiqc.instance_question_count >= $minimum_instance_question_count
     GROUP BY
-        ciusc.id
+        ciuiqc.id
 )
 SELECT
     i.short_name AS institution,
