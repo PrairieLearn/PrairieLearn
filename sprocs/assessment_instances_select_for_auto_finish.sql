@@ -1,7 +1,10 @@
 CREATE FUNCTION
-    assessment_instances_select_for_auto_close(
+    assessment_instances_select_for_auto_finish(
         age_mins integer -- time in minutes (after last activity) when we auto-close an exam
-    ) RETURNS TABLE (assessment_instance_id bigint)
+    ) RETURNS TABLE (
+        assessment_instance_id bigint,
+        close_assessment boolean
+    )
 AS $$
 DECLARE
     assessment_instance assessment_instances;
@@ -15,11 +18,24 @@ BEGIN
             assessment_instances AS ai
             JOIN assessments AS a ON (a.id = ai.assessment_id)
         WHERE
-            ai.open = true
-            AND a.type = 'Exam'
-            AND ai.auto_close
+            a.type = 'Exam'
+            AND (
+                (ai.open AND ai.auto_close)
+                OR
+                (ai.open = false AND ai.grading_needed)
+            )
     LOOP
         assessment_instance_id := assessment_instance.id;
+
+        -- Only mark this assessment as needing to be closed if it's still open.
+        close_assessment := assessment_instance.open;
+
+        -- First check if the exam is closed and in need of grading. We can
+        -- immediately append it to the results if that's the case.
+        IF assessment_instance.open = false AND assessment_instance.grading_needed THEN
+            RETURN NEXT;
+            CONTINUE;
+        END IF;
 
         -- find the oldest submission information
         SELECT s.date
