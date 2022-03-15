@@ -100,7 +100,7 @@ router.post('/', function (req, res, next) {
           } else {
             /* Otherwise, insert the course request and send a Slack message */
 
-            const sql_params = [res.locals.authn_user.user_id, short_name, title, github_user];
+            const sql_params = [res.locals.authn_user.user_id, short_name, title, github_user, first_name, last_name, work_email, institution];
             sqldb.call('course_requests_insert', sql_params, (err, result) => {
               if (ERR(err, next)) return;
               const auto_created = result.rows[0].auto_created;

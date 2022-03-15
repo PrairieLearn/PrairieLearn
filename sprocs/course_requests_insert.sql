@@ -4,6 +4,10 @@ CREATE FUNCTION
         IN short_name text,
         IN title text,
         IN github_user text,
+        IN first_name text,
+        IN last_name text,
+        IN work_email text,
+        IN institution text,
         OUT auto_created bool,
         OUT course_request_id bigint
     )
