@@ -10,7 +10,7 @@ columns
     first_name: text
     last_name: text
     institution: text
-    email: text
+    work_email: text
 
 indexes
     course_requests_pkey: PRIMARY KEY (id) USING btree (id)
