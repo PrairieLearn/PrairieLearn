@@ -5,6 +5,7 @@ CREATE FUNCTION
         IN format_errors jsonb,
         IN gradable boolean,
         IN broken boolean,
+        IN new_true_answer jsonb,
         IN regradable boolean,
         IN credit integer,
         IN mode enum_mode,
@@ -23,6 +24,12 @@ DECLARE
     new_requires_manual_grading boolean;
 BEGIN
     PERFORM variants_lock(variant_id);
+
+    -- ######################################################################
+    -- update the variant's `correct_answer`, which is permitted to change
+    -- during the `parse` phase (which occurs before this submission is
+    -- inserted).
+    UPDATE variants SET true_answer = new_true_answer WHERE id = variant_id;
 
     -- ######################################################################
     -- get the variant

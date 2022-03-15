@@ -80,7 +80,7 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('instance_questions_update_score', params, (err, _result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(req.body.assessment_instance_id, null, (err) => {
+      ltiOutcomes.updateScore(req.body.assessment_instance_id, (err) => {
         if (ERR(err, next)) return;
         res.send({});
       });
@@ -102,7 +102,7 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('instance_questions_update_score', params, (err, _result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(req.body.assessment_instance_id, null, (err) => {
+      ltiOutcomes.updateScore(req.body.assessment_instance_id, (err) => {
         if (ERR(err, next)) return;
         res.send({});
       });
