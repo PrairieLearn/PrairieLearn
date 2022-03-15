@@ -26,6 +26,10 @@ router.post('/', function (req, res, next) {
   const short_name = req.body['cr-shortname'].toUpperCase() || '';
   const title = req.body['cr-title'] || '';
   const github_user = req.body['cr-ghuser'] || null;
+  const first_name = req.body['cr-firstname'] || ''
+  const last_name = req.body['cr-lastname'] || ''
+  const work_email = req.body['cr-email'] || ''
+  const institution = req.body['cr-institution'] || ''
 
   if (!short_name.match(/[A-Z]+ [A-Z0-9]+/)) {
     res.locals.error_message =
@@ -34,6 +38,22 @@ router.post('/', function (req, res, next) {
   }
   if (title.length < 1) {
     res.locals.error_message = 'The course title should not be empty.';
+    return next();
+  }
+  if (first_name.length < 1) {
+    res.locals.error_message = 'The first name should not be empty.';
+    return next();
+  }
+  if (last_name.length < 1) {
+    res.locals.error_message = 'The last name should not be empty.';
+    return next();
+  }
+  if (work_email.length < 1) {
+    res.locals.error_message = 'The work email should not be empty.';
+    return next();
+  }
+  if (institution.length < 1) {
+    res.locals.error_message = 'The institution should not be empty.';
     return next();
   }
 
@@ -119,7 +139,8 @@ router.post('/', function (req, res, next) {
                           `Course repo: ${repo_short_name}\n` +
                           `Course rubric: ${short_name}\n` +
                           `Course title: ${title}\n` +
-                          `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+                          `Login as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                           `GitHub username: ${github_user || 'not provided'}`,
                         (err) => {
                           ERR(err, () => {
@@ -139,7 +160,8 @@ router.post('/', function (req, res, next) {
                   `*Incoming course request*\n` +
                     `Course rubric: ${short_name}\n` +
                     `Course title: ${title}\n` +
-                    `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                    `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+                    `Login as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                     `GitHub username: ${github_user || 'not provided'}`,
                   (err) => {
                     ERR(err, () => {
