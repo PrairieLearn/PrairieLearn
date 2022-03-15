@@ -24,6 +24,34 @@ AS $$
 BEGIN
     RETURN query
         WITH
+        ai_group_users AS (
+            -- This selects not only all users who are currently in the group,
+            -- but all users who were EVER in the group at some point. We've
+            -- seen real-world examples of a user creating and joining a group,
+            -- completing the assessment, and then leaving the group. If we
+            -- didn't include past group members as well, we'd end up with an
+            -- assessment log that didn't include any `page_view_logs` events,
+            -- which would be undesirable for the instructor.
+            SELECT gl.user_id
+            FROM
+                assessment_instances AS ai
+                JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
+            WHERE
+                ai.id = ai_id
+                AND gl.action = 'join'
+        ),
+        user_page_view_logs AS (
+            SELECT pvl.*
+            FROM
+                page_view_logs AS pvl
+                JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
+            WHERE
+                pvl.assessment_instance_id = ai_id
+                -- Include events for the assessment's owner and, in case of
+                -- group assessments, for any user that at some point was part
+                -- of the group.
+                AND (pvl.authn_user_id = ai.user_id OR pvl.authn_user_id IN (SELECT * FROM ai_group_users))
+        ),
         event_log AS (
             (
                 SELECT
@@ -331,25 +359,13 @@ BEGIN
                     pvl.id AS log_id,
                     NULL::JSONB AS data
                 FROM
-                    page_view_logs AS pvl
+                    user_page_view_logs AS pvl
                     JOIN variants AS v ON (v.id = pvl.variant_id)
                     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
                     JOIN questions AS q ON (q.id = pvl.question_id)
                     JOIN users AS u ON (u.user_id = pvl.authn_user_id)
                     JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
-                WHERE
-                    pvl.assessment_instance_id = ai_id
-                    AND pvl.page_type = 'studentInstanceQuestion'
-                    -- Only include events for the assessment's user or, in case of
-                    -- group assessments, for events triggered by any user that at
-                    -- some point was part of the group.
-                    AND (pvl.authn_user_id = ai.user_id
-                         OR (ai.group_id IS NOT NULL
-                             AND EXISTS (SELECT 1
-                                         FROM group_logs AS gl
-                                         WHERE gl.action = 'join'
-                                               AND gl.group_id = ai.group_id
-                                               AND gl.user_id = pvl.authn_user_id)))
+                WHERE pvl.page_type = 'studentInstanceQuestion'
             )
             UNION
             (
@@ -369,22 +385,10 @@ BEGIN
                     pvl.id AS log_id,
                     NULL::JSONB AS data
                 FROM
-                    page_view_logs AS pvl
+                    user_page_view_logs AS pvl
                     JOIN users AS u ON (u.user_id = pvl.authn_user_id)
                     JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
-                WHERE
-                    pvl.assessment_instance_id = ai_id
-                    AND pvl.page_type = 'studentAssessmentInstance'
-                    -- Only include events for the assessment's user or, in case of
-                    -- group assessments, for events triggered by any user that at
-                    -- some point was part of the group.
-                    AND (pvl.authn_user_id = ai.user_id
-                         OR (ai.group_id IS NOT NULL
-                             AND EXISTS (SELECT 1
-                                         FROM group_logs AS gl
-                                         WHERE gl.action = 'join'
-                                               AND gl.group_id = ai.group_id
-                                               AND gl.user_id = pvl.authn_user_id)))
+                WHERE pvl.page_type = 'studentAssessmentInstance'
             )
             UNION
             (

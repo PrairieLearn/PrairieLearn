@@ -1,5 +1,5 @@
 {
-    "description": "Course instances enrollments with a minimum submission count.",
+    "description": "Course instances enrollments with a minimum modified instance question count.",
     "params": [
         {
             "name": "institution_short_name",
@@ -7,24 +7,24 @@
             "default": ""
         },
         {
-            "name": "start_time",
-            "description": "Lower bound on submission timestamps.",
+            "name": "start_date",
+            "description": "Lower bound on instance question modification timestamps.",
             "default": "2021-01-01T00:00:00"
         },
         {
-            "name": "end_time",
-            "description": "Upper bound on submission timestamps.",
+            "name": "end_date",
+            "description": "Upper bound on instance question modification timestamps.",
             "default": "2022-01-01T00:00:00"
         },
         {
-            "name": "minimum_submission_count",
-            "description": "Minimum number of submissions for an enrollment to be included.",
+            "name": "minimum_instance_question_count",
+            "description": "Minimum number of modified instance questions for an enrollment to be included.",
             "default": "10"
         },
         {
             "name": "minimum_enrollment_count",
             "description": "Minimum number of enrollments for a course instance to be included.",
-            "default": "5"
+            "default": "10"
         }
     ]
 }
