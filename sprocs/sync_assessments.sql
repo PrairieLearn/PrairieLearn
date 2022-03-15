@@ -211,7 +211,7 @@ BEGIN
                     new_assessment_id,
                     -- Insert default values where necessary
                     CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
-                    CASE WHEN group_role ? 'maximum' THEN (group_role->>'maximum')::integer ELSE (valid_assessment.data->>'group_min_size')::integer END,
+                    (group_role->>'maximum')::integer,
                     CASE WHEN group_role ? 'can_assign_roles_at_start' THEN (group_role->>'can_assign_roles_at_start')::boolean ELSE FALSE END,
                     CASE WHEN group_role ? 'can_assign_roles_during_assessment' THEN (group_role->>'can_assign_roles_during_assessment')::boolean ELSE FALSE END
                 ) ON CONFLICT (role_name, assessment_id)
@@ -223,6 +223,12 @@ BEGIN
                     can_assign_roles_at_start = EXCLUDED.can_assign_roles_at_start,
                     can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment;
             END LOOP;
+
+            -- Delete excess group roles
+            DELETE FROM group_roles
+            WHERE
+                assessment_id = new_assessment_id
+                AND number > jsonb_array_length(valid_assessment.data->'groupRoles');
         ELSE
             UPDATE group_configs
             SET deleted_at = now()

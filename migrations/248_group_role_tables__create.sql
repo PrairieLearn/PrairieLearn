@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS group_roles (
     role_name TEXT NOT NULL,
     assessment_id BIGINT REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE,
     minimum INT DEFAULT 0,
-    maximum INT DEFAULT 4,
+    maximum INT,
     can_assign_roles_at_start BOOLEAN DEFAULT FALSE,
     can_assign_roles_during_assessment BOOLEAN DEFAULT FALSE,
     can_submit_assessment BOOLEAN DEFAULT TRUE
