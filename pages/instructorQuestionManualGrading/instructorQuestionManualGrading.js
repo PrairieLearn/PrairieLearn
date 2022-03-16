@@ -38,11 +38,7 @@ router.get(
     res.locals.score_perc = res.locals.submission.score * 100;
 
     res.locals.overlayGradingInterface = true;
-    await util.promisify(question.getAndRenderVariant).bind(question)(
-      res.locals.variant.id,
-      null,
-      res.locals
-    );
+    await util.promisify(question.getAndRenderVariant)(res.locals.variant.id, null, res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
