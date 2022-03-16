@@ -1,4 +1,3 @@
-from typing import Dict, Any, TypedDict, Literal
 import lxml.html
 import html
 import to_precision
@@ -16,33 +15,6 @@ import importlib
 import importlib.util
 import os
 import collections
-
-
-# TODO: This type definition should not yet be seen as authoritative, it may
-# need to be modified as we expand type checking to cover more of the element code.
-# The fields below containing 'Any' in the types are ones which are used
-# in different ways by different question elements. Ideally we would have
-# QuestionData be a generic type so that question elements could declare types
-# for their answer data, feedback data, etc., but TypedDicts with Generics are
-# not yet supported: https://bugs.python.org/issue44863
-class QuestionData(TypedDict):
-    format_errors: Dict[str, str]
-    score: float
-    feedback: Dict[str, str]
-    variant_seed: int
-    options: Dict[str, str]
-    editable: bool
-    panel: Literal['question', 'submission', 'answer']
-    partial_scores: Dict[str, Dict[str, Any]]
-    extensions: Dict[str, Any]
-    params: Dict[str, list[Any]]
-    correct_answers: Dict[str, list[Any]]
-    raw_submitted_answers: Dict[str, str]
-    submitted_answers: Dict[str, list[Any]]
-
-
-class ElementTestData(QuestionData):
-    test_type: Literal['correct', 'incorrect', 'invalid']
 
 
 def to_json(v):
@@ -730,13 +702,14 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 if a_parse_r is None or not np.isfinite(a_parse_r):
                     raise ValueError(f'The denominator could not be interpreted as a decimal{ or_complex }number.')
 
-                a_frac = a_parse_l / a_parse_r
+                with np.errstate(divide='raise'):
+                    a_frac = a_parse_l / a_parse_r
                 if not np.isfinite(a_frac):
                     raise ValueError('The submitted answer is not a finite number.')
 
                 value = a_frac
                 data['submitted_answers'] = to_json(value)
-            except ZeroDivisionError:
+            except FloatingPointError:  # Caused by numpy division
                 data['format_errors'] = 'Your expression resulted in a division by zero.'
             except Exception as error:
                 data['format_errors'] = f'Invalid format: {str(error)}'

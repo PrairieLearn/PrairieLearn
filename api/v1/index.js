@@ -8,6 +8,7 @@ router.use(require('./prettyPrintJson'));
 router.use('/course_instances/:course_instance_id', [
   require('../../middlewares/authzCourseOrInstance'),
   require('../../middlewares/authzHasCoursePreviewOrInstanceView'),
+  require('./endpoints/courseInstanceInfo'),
 ]);
 
 // ROUTES

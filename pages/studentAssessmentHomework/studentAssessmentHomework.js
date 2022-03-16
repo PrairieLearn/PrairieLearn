@@ -4,6 +4,7 @@ var router = express.Router();
 var path = require('path');
 var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const { checkPasswordOrRedirect } = require('../../middlewares/studentAssessmentAccess');
 var error = require('../../prairielib/lib/error');
 var assessment = require('../../lib/assessment');
 var sqldb = require('../../prairielib/lib/sql-db');
@@ -43,7 +44,8 @@ router.get('/', function (req, res, next) {
       // student data in the course instance (which has already been checked), exactly the
       // permission required to create an assessment for the effective user.
 
-      //if it is a group_work with no instance, jump to a confirm page.
+      // If this assessment is group work and there is no existing instance,
+      // show the group info page.
       if (res.locals.assessment.group_work) {
         sqldb.query(sql.get_config_info, params, function (err, result) {
           if (ERR(err, next)) return;
@@ -67,6 +69,12 @@ router.get('/', function (req, res, next) {
           });
         });
       } else {
+        // Before allowing the user to create a new assessment instance, we need
+        // to check if the current access rules require a password. If they do,
+        // we'll ensure that the password has already been entered before allowing
+        // students to create and start a new assessment instance.
+        if (!checkPasswordOrRedirect(req, res)) return;
+
         const time_limit_min = null;
         assessment.makeAssessmentInstance(
           res.locals.assessment.id,
@@ -100,6 +108,12 @@ router.post('/', function (req, res, next) {
     sqldb.query(sql.find_single_assessment_instance, params, function (err, result) {
       if (ERR(err, next)) return;
       if (result.rowCount === 0) {
+        // Before allowing the user to create a new assessment instance, we need
+        // to check if the current access rules require a password. If they do,
+        // we'll ensure that the password has already been entered before allowing
+        // students to create and start a new assessment instance.
+        if (!checkPasswordOrRedirect(req, res)) return;
+
         const time_limit_min = null;
         assessment.makeAssessmentInstance(
           res.locals.assessment.id,

@@ -15,9 +15,18 @@ git clone https://github.com/PrairieLearn/PrairieLearn.git
 ```sh
 docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 
-# following commands are inside the container:
-yarn                     # install packages, repeat this after switching branches or pulling new code
-make start               # run PrairieLearn
+# You can now run the following commands inside the container:
+
+# Install Node packages.
+# Repeat after switching branches or pulling new code.
+yarn
+
+# Transpile code in the `packages/` directory.
+# Repeat after switching branches, pulling new code, or editing JS/TS in `packages/`.
+make build
+
+# Run the PrairieLearn server.
+make start
 
 # now you can Ctrl-C and run "make start" again to restart PrairieLearn (after code edits, for example)
 # or Ctrl-C to stop PL and Ctrl-D to exit the container
@@ -32,7 +41,7 @@ The linters and tests for the JavaScript and Python code can be run with the fol
 ```sh
 docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn /bin/bash
 
-# following commands are inside the container:
+# You can now run the following commands inside the container:
 make lint   # or run "make lint-js" and "make lint-python" separately
 make test   # or "make test-js" and "make test-python"
 ```

@@ -17,6 +17,7 @@ SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
 HIGHLIGHT_LINES_DEFAULT = None
 HIGHLIGHT_LINES_COLOR_DEFAULT = '#b3d7ff'
+DIRECTORY_DEFAULT = '.'
 
 
 class NoHighlightingLexer(pygments.lexer.Lexer):
@@ -104,7 +105,7 @@ def get_lexer_by_name(name):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
-    optional_attribs = ['language', 'no-highlight', 'source-file-name', 'prevent-select', 'highlight-lines', 'highlight-lines-color']
+    optional_attribs = ['language', 'no-highlight', 'source-file-name', 'directory', 'prevent-select', 'highlight-lines', 'highlight-lines-color']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     language = pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
@@ -131,12 +132,18 @@ def render(element_html, data):
     no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
     specify_language = (language is not None) and (not no_highlight)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
+    directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
     prevent_select = pl.get_boolean_attrib(element, 'prevent-select', PREVENT_SELECT_DEFAULT)
     highlight_lines = pl.get_string_attrib(element, 'highlight-lines', HIGHLIGHT_LINES_DEFAULT)
     highlight_lines_color = pl.get_string_attrib(element, 'highlight-lines-color', HIGHLIGHT_LINES_COLOR_DEFAULT)
 
     if source_file_name is not None:
-        base_path = data['options']['question_path']
+        if directory == 'serverFilesCourse':
+            base_path = data['options']['server_files_course_path']
+        elif directory == 'clientFilesCourse':
+            base_path = data['options']['client_files_course_path']
+        else:
+            base_path = os.path.join(data['options']['question_path'], directory)
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
             raise Exception(f'Unknown file path: "{file_path}".')

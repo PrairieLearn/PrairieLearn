@@ -5,7 +5,7 @@ module.exports = {
   },
   extends: ['eslint:recommended', 'plugin:import/recommended', 'prettier'],
   parserOptions: {
-    ecmaVersion: 12,
+    ecmaVersion: 13,
   },
   rules: {
     curly: ['error', 'multi-line', 'consistent'],
@@ -28,4 +28,12 @@ module.exports = {
       },
     ],
   },
+  overrides: [
+    {
+      files: ['*.test.{js,ts,mjs}'],
+      env: {
+        mocha: true,
+      },
+    },
+  ],
 };

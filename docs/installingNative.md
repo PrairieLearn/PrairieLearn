@@ -29,6 +29,17 @@ cd PrairieLearn
 yarn
 ```
 
+- Transpile code in `packages/`:
+
+```sh
+make build
+
+# If you're actively working on the code in this directory, you can
+# run the following command instead to automatically rebuild the files
+# whenever you modify code.
+make dev
+```
+
 - Make sure `python3` and `python3.6` will run the right version, and make executable links if needed:
 
 ```sh

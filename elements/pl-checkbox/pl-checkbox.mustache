@@ -92,7 +92,7 @@
 {{#answers}}
     <li {{#inline}}class="list-inline-item"{{/inline}}>
         <div class="d-inline-flex align-items-center">
-        {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}
+        <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
         {{#display_feedback}}
             <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">
                 {{{feedback}}}

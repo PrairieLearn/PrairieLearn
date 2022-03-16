@@ -49,8 +49,8 @@ router.get('/', function (req, res, next) {
     }
     const params = [
       identity.email, // uid
-      identity.email, // name
-      null, // uin
+      identity.name || identity.email, // name (use email if name is not present)
+      identity.sub, // uin
       'Google', // provider
     ];
     sqldb.call('users_select_or_insert', params, (err, result) => {

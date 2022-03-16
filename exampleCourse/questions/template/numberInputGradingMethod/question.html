@@ -1,24 +1,26 @@
 <pl-question-panel>
-  <p>The comparison between the correct and submitted answers can be done using
+  <p>
+    The comparison between the correct and submitted answers can be done using
     three different methods: <code>relabs</code>, <code>sigfigs</code> and <code>decdig</code>.
-    For example:</p>
+    For example:
+  </p>
 
 
   <p>1) <code>relabs</code> uses relative (<code>rtol</code>) and absolute (<code>atol</code>) tolerances:</p>
 
-          <p> Calculate the area of a square with size equal to ${{params.a}}$ cm:</p>
-
+  <p> Calculate the area of a square with size equal to ${{params.a}}$ cm:</p>
 </pl-question-panel>
-          <p>
-            <pl-number-input answers-name="area" label="Area $\;=$" comparison="relabs" rtol="1e-2" atol="1e-6" suffix="cm$^2$"></pl-number-input>
-          </p>
+
+<p>
+  <pl-number-input answers-name="area" label="Area $\;=$" comparison="relabs" rtol="1e-2" atol="1e-6" suffix="cm$^2$"></pl-number-input>
+</p>
 
 <pl-question-panel>
-  <p>2) <code>sigfig</code> uses significant digits:<p>
+  <p>2) <code>sigfig</code> uses significant digits:</p>
 
-          <p> If $b = {{params.b}}$, determine the product $2b$:</p>
+  <p> If $b = {{params.b}}$, determine the product $2b$:</p>
 </pl-question-panel>
 
-          <p>
-            <pl-number-input answers-name="b2" label="$2b =$" comparison="sigfig" rtol="2" ></pl-number-input>
-          </p>
+<p>
+  <pl-number-input answers-name="b2" label="$2b =$" comparison="sigfig" rtol="2"></pl-number-input>
+</p>

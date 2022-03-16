@@ -1083,14 +1083,15 @@ line callouts.
 
 #### Customizations
 
-| Attribute               | Type    | Default   | Description                                                                                                                                                                                                              |
-| ----------------------- | ------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `language`              | string  | —         | The programming language syntax highlighting to use. See below for options.                                                                                                                                              |
-| `no-highlight`          | boolean | false     | Disable highlighting.                                                                                                                                                                                                    |
-| `source-file-name`      | text    | -         | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                     |
-| `prevent-select`        | boolean | false     | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students. |
-| `highlight-lines`       | text    | -         | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.                                                                                                |
-| `highlight-lines-color` | text    | `#b3d7ff` | Specifies the color of highlighted lines of code.                                                                                                                                                                        |
+| Attribute               | Type    | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------- | ------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `language`              | string  | —         | The programming language syntax highlighting to use. See below for options.                                                                                                                                                                                                                                                                                                                                                                           |
+| `no-highlight`          | boolean | false     | Disable highlighting.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `source-file-name`      | text    | -         | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                                  |
+| `directory`             | string  | special   | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
+| `prevent-select`        | boolean | false     | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.                                                                                                                                                                                                                              |
+| `highlight-lines`       | text    | -         | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.                                                                                                                                                                                                                                                                                                                             |
+| `highlight-lines-color` | text    | `#b3d7ff` | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 #### Details
 
@@ -1233,7 +1234,6 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 - [demo/randomPlot]
 - [demo/fixedCheckbox]
-- [demo/studentNames]
 - [element/figure]
 
 #### See also
@@ -2021,7 +2021,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/orderblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
-[element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/prairieDrawFigure
+[element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/testCourse/questions/prairieDrawFigure
 [element/pythonvariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/pythonVariable
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
@@ -2035,6 +2035,3 @@ The provided `script-name` corresponds to a file located within the director for
 [demo/custom/gradefunction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction
 
 <!-- Misc application questions -->
-
-[demo/studentfaces]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentFaces
-[demo/studentnames]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/studentNames
