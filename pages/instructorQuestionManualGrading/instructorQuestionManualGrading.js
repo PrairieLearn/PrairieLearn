@@ -1,12 +1,8 @@
-const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const util = require('util');
-const path = require('path');
-const async = require('async');
 const question = require('../../lib/question');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
 const sqlDb = require('../../prairielib/lib/sql-db');
 const ltiOutcomes = require('../../lib/ltiOutcomes');

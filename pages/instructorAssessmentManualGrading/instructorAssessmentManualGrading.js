@@ -1,4 +1,3 @@
-const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
@@ -11,7 +10,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res, _next) => {
     debug('GET /');
     var params = {
       assessment_id: res.locals.assessment.id,
