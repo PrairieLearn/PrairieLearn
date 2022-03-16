@@ -215,8 +215,16 @@
           $('.grading-tag-button').prop('disabled', !$('#grading-table').bootstrapTable('getSelections').length);
       }
 
-      //<% include('../partials/pointsFormatter'); %>
-      window.getStringFromFloat = <%- getStringFromFloat.toString() %>;
+      // Copied from partials/stringFormatter.ejs, simplifying for single value only.
+      function getStringFromFloat(v) {
+          vAsString = String(v);
+          vAsFixed = (Math.floor(v*100) / 100).toFixed(2);
+          if (vAsString.length <= vAsFixed.length) {
+              return vAsString;
+          } else {
+              return vAsFixed;
+          }
+      }
 
       function pointsFormatter(points, row) {
           let text = `${getStringFromFloat(row.points)} <small>/<span class="text-muted"><%= max_points %></span></small> `, button = '';
