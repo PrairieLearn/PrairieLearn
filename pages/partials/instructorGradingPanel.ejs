@@ -25,7 +25,7 @@
               </div>
 
               <div class="input-group">
-                Percent: <input type="number" style="margin:2px;" min="0" max="100" step="any" class="form-control" id="submissionScorePercent" name="submission_score_percent" value="<%= score_perc %>" aria-describedby="scoreHelpBlock"
+                Percent: <input type="number" style="margin:2px;" min="0" max="100" step="any" class="form-control" id="submissionScorePercent" name="submission_score_percent" value="<%= instance_question.score_perc %>" aria-describedby="scoreHelpBlock"
                   oninput="document.getElementById('submissionScorePoints').value = this.value / 100 * <%= max_points %>;"
                 />
                 <span class="input-group-addon">%</span>
