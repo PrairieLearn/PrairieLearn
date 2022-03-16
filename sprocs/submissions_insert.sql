@@ -39,10 +39,14 @@ BEGIN
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id = %', variant_id; END IF;
     
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT iq.id,                ai.id,
-           iq.requires_manual_grading OR q.grading_method = 'Manual'
-    INTO   instance_question_id, assessment_instance_id,
-           new_requires_manual_grading
+    SELECT
+        iq.id,
+        ai.id,
+        iq.requires_manual_grading OR q.grading_method = 'Manual'
+    INTO
+        instance_question_id,
+        assessment_instance_id,
+        new_requires_manual_grading
     FROM
         variants AS v
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
