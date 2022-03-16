@@ -22,7 +22,6 @@ router.get('/', function (req, res, next) {
 
     Object.assign(res.locals, result.rows[0]);
 
-    debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
 });
