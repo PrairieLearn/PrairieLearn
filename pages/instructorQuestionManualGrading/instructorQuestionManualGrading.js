@@ -13,65 +13,43 @@ const ltiOutcomes = require('../../lib/ltiOutcomes');
 const manualGrading = require('../../lib/manualGrading');
 
 // Other cases to figure out later: grading in progress, question is broken...
-router.get('/', (req, res, next) => {
-  async.series(
-    [
-      // Should we move this block into question.js? getAndRenderVariantForGrading
-      (callback) => {
-        const params = [res.locals.instance_question.id];
-        sqlDb.callZeroOrOneRow(
-          'instance_question_select_manual_grading_objects',
-          params,
-          (err, result) => {
-            if (ERR(err, next)) return;
-            // Instance question doesn't exist (redirect to config page)
-            if (result.rowCount === 0) {
-              return callback(
-                error.make(404, 'Instance question not found.', {
-                  locals: res.locals,
-                  body: req.body,
-                })
-              );
-            }
+router.get(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    // Should we move this block into question.js? getAndRenderVariantForGrading
+    const result = await sqlDb.callZeroOrOneRowAsync(
+      'instance_question_select_manual_grading_objects',
+      [res.locals.instance_question.id]
+    );
 
-            /**
-             * Student never loaded question (variant and submission is null)
-             * Student loaded question but did not submit anything (submission is null)
-             */
-            if (!result.rows[0].variant || !result.rows[0].submission) {
-              return callback(
-                error.make(404, 'No gradable submissions found.', {
-                  locals: res.locals,
-                  body: req.body,
-                })
-              );
-            }
-
-            res.locals.question = result.rows[0].question;
-            res.locals.variant = result.rows[0].variant;
-            res.locals.submission = result.rows[0].submission;
-            res.locals.max_points = result.rows[0].max_points;
-            res.locals.score_perc = res.locals.submission.score * 100;
-            callback(null);
-          }
-        );
-      },
-      (callback) => {
-        res.locals.overlayGradingInterface = true;
-        question.getAndRenderVariant(res.locals.variant.id, null, res.locals, function (err) {
-          if (ERR(err, next)) return;
-          callback(null);
-        });
-      },
-    ],
-    (err) => {
-      if (ERR(err, next)) return;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    /**
+     * Student never loaded question (variant and submission is null)
+     * Student loaded question but did not submit anything (submission is null)
+     */
+    if (!result.rows[0]?.variant || !result.rows[0]?.submission) {
+      return next(
+        error.make(404, 'No gradable submissions found.', {
+          locals: res.locals,
+          body: req.body,
+        })
+      );
     }
-  );
 
-  debug('GET /');
-});
+    res.locals.question = result.rows[0].question;
+    res.locals.variant = result.rows[0].variant;
+    res.locals.submission = result.rows[0].submission;
+    res.locals.max_points = result.rows[0].max_points;
+    res.locals.score_perc = res.locals.submission.score * 100;
+
+    res.locals.overlayGradingInterface = true;
+    await util.promisify(question.getAndRenderVariant).bind(question)(
+      res.locals.variant.id,
+      null,
+      res.locals
+    );
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
 
 router.post(
   '/',
