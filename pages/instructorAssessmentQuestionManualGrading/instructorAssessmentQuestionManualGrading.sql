@@ -96,8 +96,8 @@ WITH course_staff AS (
 )
 UPDATE instance_questions AS iq
 SET
-    requires_manual_grading = $requires_manual_grading,
-    assigned_grader = $assigned_grader
+    requires_manual_grading = CASE WHEN $update_requires_manual_grading THEN $requires_manual_grading ELSE requires_manual_grading END,
+    assigned_grader =  CASE WHEN $update_assigned_grader THEN $assigned_grader ELSE assigned_grader END
 WHERE
     iq.assessment_question_id = $assessment_question_id
     AND iq.id = ANY($instance_question_ids::BIGINT[])

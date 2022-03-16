@@ -59,7 +59,9 @@ router.post(
         assessment_id: res.locals.assessment.id,
         assessment_question_id: res.locals.assessment_question_id,
         instance_question_ids,
+        update_requires_manual_grading: !!action_data?.hasOwnProperty('requires_manual_grading'),
         requires_manual_grading: !!action_data?.requires_manual_grading,
+        update_assigned_grader: !!action_data?.hasOwnProperty('assigned_grader'),
         assigned_grader: action_data?.assigned_grader,
       };
       await sqlDb.queryAsync(sql.update_instance_questions, params);

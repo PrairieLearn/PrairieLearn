@@ -176,7 +176,7 @@
           button.text(' Tag for grading').prepend($('<i class="fas fa-tags">'));
 
           const menu = $('<div class="dropdown-menu dropdown-menu-right">').appendTo(dropdown);
-          menu.append('<div class="dropdown-header">Tag as requiring grading</div>');
+          menu.append('<div class="dropdown-header">Assign for grading</div>');
 
           course_staff.forEach((grader) => {
               const item_grader = $('<button class="dropdown-item" type="submit">').appendTo(menu);
@@ -190,12 +190,17 @@
 
           const item_no_grader = $('<button class="dropdown-item" type="submit">').appendTo(menu);
           item_no_grader.attr('data-batch-action', JSON.stringify({
-              requires_manual_grading: true,
               assigned_grader: null,
           }));
-          item_no_grader.text(` No grader assigned`).prepend('<i class="fas fa-tag"></i>');
+          item_no_grader.text(` Remove grader assignment`).prepend('<i class="fas fa-user-slash"></i>');
 
           menu.append('<div class="dropdown-divider">');
+
+          const item_req_grade = $('<button class="dropdown-item" type="submit">').appendTo(menu);
+          item_req_grade.attr('data-batch-action', JSON.stringify({
+              requires_manual_grading: true,
+          }));
+          item_req_grade.text(` Tag as required grading`).prepend('<i class="fas fa-tag"></i>');
 
           const item_graded = $('<button class="dropdown-item" type="submit">').appendTo(menu);
           item_graded.attr('data-batch-action', JSON.stringify({
