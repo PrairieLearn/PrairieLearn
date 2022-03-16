@@ -24,7 +24,7 @@ router.get('/', (req, res, next) => {
       // If we have no more submissions, then redirect back to manual grading page
       if (!result.rows[0]) {
         res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/assessment_question/${res.locals.assessment_question_id}/manual_grading?done`
+          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/assessment_question/${res.locals.assessment_question_id}/manual_grading`
         );
         return;
       }
