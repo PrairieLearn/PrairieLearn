@@ -12,7 +12,9 @@
   </head>
   <body>
     <script>
+      const has_course_instance_permission_edit = <%= !!authz_data.has_course_instance_permission_edit %>;
       $(function () {
+          var savedFilterValues = {};
           window.bsTable = $('#grading-table').bootstrapTable({
               classes: 'table table-sm table-bordered',
               url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= assessment_question_id %>/manual_grading/instances.json',
@@ -49,18 +51,18 @@
                   // a bug in bootstrap-table causes the filters to lose value on refresh
                   // (https://github.com/wenzhixin/bootstrap-table/issues/6030).
                   // This code saves the value of all filters to be reloaded once filter controls are re-created.
-                  window.savedFilterValues = {};
+                  savedFilterValues = {};
                   $('#grading-table .filter-control').find('input, select').each(function() {
                       const field_name = $(this).parents('[data-field]:first').data('field');
-                      window.savedFilterValues[field_name] = $(this).val();
+                      savedFilterValues[field_name] = $(this).val();
                   });
               },
               onSearch: () => {
-                  if (window.savedFilterValues) {
-                      for (const [field, value] of Object.entries(window.savedFilterValues)) {
+                  if (savedFilterValues) {
+                      for (const [field, value] of Object.entries(savedFilterValues)) {
                           $(`#grading-table th[data-field=${field}]`).find('input, select').val(value);
                       }
-                      window.savedFilterValues = false;
+                      savedFilterValues = false;
                   }
               },
               onPostBody: () => {
@@ -213,8 +215,8 @@
 
       function pointsFormatter(points, row) {
           let text = `${getStringFromFloat(row.points)} <small>/<span class="text-muted"><%= max_points %></span></small> `, button = '';
-          //<% if (authz_data.has_course_instance_permission_edit) { %>
-          button = `<button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
+          if (has_course_instance_permission_edit) {
+              button = `<button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
                             id="editQuestionPoints${row.id}" tabindex="0"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question points"
@@ -223,7 +225,7 @@
                                                             instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', points: '${row.points}', max_points}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
-          //<% } %>
+          }
           return text + button;
       }
 
@@ -242,8 +244,8 @@
               bar += `<div class="progress-bar bg-danger" style="width: ${100 - Math.floor(Math.min(100, score))}%">${right}</div>`;
               bar += '</div>';
           }
-          //<% if (authz_data.has_course_instance_permission_edit) { %>
-          button = `<button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
+          if (has_course_instance_permission_edit) {
+              button = `<button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
                             id="editQuestionScorePerc${row.id}" tabindex="0"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question percentage score"
@@ -252,7 +254,7 @@
                                                             instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', score_perc: '${row.score_perc}'}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
-          //<% } %>
+          }
           return `<div class="d-inline-block align-middle">${bar}</div> ${button}`;
       }
     </script>
