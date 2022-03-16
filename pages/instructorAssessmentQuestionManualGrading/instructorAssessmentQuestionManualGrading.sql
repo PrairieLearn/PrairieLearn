@@ -1,4 +1,4 @@
--- BLOCK select_question
+-- BLOCK select_assessment_question_data
 WITH course_staff AS (
     SELECT
         jsonb_agg(jsonb_build_object(

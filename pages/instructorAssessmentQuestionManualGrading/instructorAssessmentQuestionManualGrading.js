@@ -20,7 +20,7 @@ router.get(
       assessment_id: res.locals.assessment.id,
       assessment_question_id: res.locals.assessment_question_id,
     };
-    const result = await sqlDb.queryOneRowAsync(sql.select_question, params);
+    const result = await sqlDb.queryOneRowAsync(sql.select_assessment_question_data, params);
     Object.assign(res.locals, result.rows[0]);
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
