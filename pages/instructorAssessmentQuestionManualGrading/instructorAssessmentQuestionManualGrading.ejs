@@ -169,7 +169,7 @@
 
       function gradingTagDropdown() {
           const course_staff = JSON.parse('<%- JSON.stringify(course_staff) %>') || [];
-          const dropdown = $('<div class="dropdown ml-1">');
+          const dropdown = $('<div class="dropdown btn-group">');
           const button = $('<button class="btn btn-secondary dropdown-toggle grading-tag-button" data-toggle="dropdown" name="status" disabled>').appendTo(dropdown);
           button.text(' Tag for grading').prepend($('<i class="fas fa-tags">'));
 
