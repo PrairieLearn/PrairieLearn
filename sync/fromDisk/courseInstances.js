@@ -33,7 +33,7 @@ function getParamsForCourseInstance(courseInstance, courseTimezone) {
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
     display_timezone: courseInstance.timezone || courseTimezone || 'America/Chicago',
     access_rules: accessRules,
-    group_by: courseInstance.groupBy,    
+    group_by: courseInstance.groupBy,
   };
 }
 
