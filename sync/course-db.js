@@ -26,7 +26,9 @@ const DEFAULT_QUESTION_INFO = {
   type: 'Calculation',
   clientFiles: ['client.js', 'question.html', 'answer.html'],
 };
-const DEFAULT_COURSE_INSTANCE_INFO = {};
+const DEFAULT_COURSE_INSTANCE_INFO = {
+  defaultUnit: 'Set',
+};
 const DEFAULT_ASSESSMENT_INFO = {};
 
 const DEFAULT_ASSESSMENT_SETS = [
