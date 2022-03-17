@@ -117,6 +117,7 @@ BEGIN
     UPDATE course_instances AS dest
     SET
         long_name = src.data->>'long_name',
+        assessments_group_by = src.data->>'group_by',
         display_timezone = src.data->>'display_timezone',
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         sync_errors = NULL,

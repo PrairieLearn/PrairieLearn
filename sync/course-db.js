@@ -230,7 +230,6 @@ const FILE_UUID_REGEX =
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
  * @property {AssessmentUnit[]} assessmentUnits
- * @property {"Set" | "Unit"} groupBy
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
@@ -255,6 +254,7 @@ const FILE_UUID_REGEX =
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
+ * @property {"Set" | "Unit"} groupBy
  */
 
 /**
@@ -802,7 +802,6 @@ module.exports.loadCourseInfo = async function (coursePath) {
     assessmentUnits,
     tags,
     topics,
-    groupBy: info.groupBy || 'Set',
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),

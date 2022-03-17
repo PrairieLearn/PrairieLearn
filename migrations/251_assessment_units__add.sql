@@ -10,4 +10,4 @@ CREATE TABLE IF NOT EXISTS assessment_units (
 ALTER TABLE assessments ADD COLUMN assessment_unit_id BIGINT REFERENCES assessment_units(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 CREATE TYPE enum_assessment_grouping AS ENUM ('Set', 'Unit');
-ALTER TABLE pl_courses ADD COLUMN assessments_group_by enum_assessment_grouping DEFAULT 'Set' NOT NULL;
+ALTER TABLE course_instances ADD COLUMN assessments_group_by enum_assessment_grouping DEFAULT 'Set' NOT NULL;

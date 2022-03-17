@@ -93,6 +93,15 @@
                     }
                 }
             }
+        },
+        "groupBy": {
+            "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
+            "type": "string",
+            "default": "Set",
+            "enum": [
+                "Set",
+                "Unit"
+            ]
         }
     }
 }

@@ -8,8 +8,7 @@ SET
     example_course = $example_course,
     options = $options,
     sync_errors = NULL,
-    sync_warnings = $sync_warnings,
-    assessments_group_by = $group_by
+    sync_warnings = $sync_warnings
 WHERE
     c.id = $course_id
 RETURNING
