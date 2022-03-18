@@ -4,7 +4,6 @@
     "title": "Exam with real-time grading disabled",
     "set": "Exam",
     "number": "2",
-    "unit": "grading",
     "allowRealTimeGrading": false,
     "allowAccess": [
         {
