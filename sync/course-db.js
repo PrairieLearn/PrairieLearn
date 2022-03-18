@@ -27,7 +27,7 @@ const DEFAULT_QUESTION_INFO = {
   clientFiles: ['client.js', 'question.html', 'answer.html'],
 };
 const DEFAULT_COURSE_INSTANCE_INFO = {
-  defaultUnit: 'Set',
+  groupBy: 'Set',
 };
 const DEFAULT_ASSESSMENT_INFO = {};
 
