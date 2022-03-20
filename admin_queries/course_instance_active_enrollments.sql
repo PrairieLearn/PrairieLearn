@@ -80,10 +80,10 @@ SELECT
     round(cid.instance_question_count::double precision / cid.total_students::double precision)::integer AS questions_per_student,
 
     -- approximate first date when most students starting working on questions in the course instance (over all students and all time)
-    cid.start_date::date,
+    to_char(cid.start_date, 'YYYY-MM-DD'),
 
     -- approximate last date when most students last worked on questions in the course instance (over all students and all time)
-    cid.end_date::date
+    to_char(cid.end_date, 'YYYY-MM-DD')
 FROM
     course_instance_data AS cid
     JOIN course_instances AS ci ON (ci.id = cid.id)
