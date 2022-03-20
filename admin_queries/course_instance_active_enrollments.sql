@@ -82,7 +82,10 @@ SELECT
     to_char(cid.start_date, 'YYYY-MM-DD') AS start_date,
 
     -- approximate last date when most students last worked on questions in the course instance (over all students and all time)
-    to_char(cid.end_date, 'YYYY-MM-DD') AS end_date
+    to_char(cid.end_date, 'YYYY-MM-DD') AS end_date,
+
+    -- number of dates from start_date to end_date
+    round(extract(epoch from (end_date - start_date))::double precision / (24 * 60 * 60)::double precision)::integer AS duration_days
 FROM
     course_instance_data AS cid
     JOIN course_instances AS ci ON (ci.id = cid.id)
