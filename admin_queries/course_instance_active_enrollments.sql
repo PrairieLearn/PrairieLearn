@@ -61,7 +61,6 @@ course_instance_data AS (
 )
 SELECT
     i.short_name AS institution,
-    i.id AS institution_id,
     c.short_name AS course,
     c.id AS course_id,
     ci.short_name AS course_instance,
