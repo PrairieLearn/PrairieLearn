@@ -57,6 +57,14 @@ WHERE r.conrelid = $oid
     AND r.contype = 'f'
 ORDER BY 1;
 
+-- BLOCK get_views
+SELECT v.*
+FROM pg_views v
+WHERE v.schemaname != 'pg_catalog'
+    AND v.schemaname != 'information_schema'
+    AND v.schemaname !~ '^pg_toast'
+ORDER BY v.viewname;
+
 
 -- BLOCK get_enums
 SELECT t.typname AS name,
