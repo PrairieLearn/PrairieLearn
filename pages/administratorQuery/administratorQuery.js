@@ -64,7 +64,6 @@ router.get(
         query_name: req.params.query,
       });
       res.locals.recent_query_runs = recentQueryRuns.rows;
-      console.log(res.locals.recent_query_runs);
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
   })
