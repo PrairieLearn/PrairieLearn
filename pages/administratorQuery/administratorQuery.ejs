@@ -159,6 +159,50 @@
         <% } %>
       </div>
 
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Recent query runs
+        </div>
+        <div class="table-responsive">
+        <% if (recent_query_runs.length > 0) { %>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Params</th>
+                <th>User name</th>
+                <th>User UID</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recent_query_runs.forEach(run => { %>
+                <tr>
+                  <td>
+                    <a href="?query_run_id=<%= run.id %>">
+                      <%= run.formatted_date %>
+                    </a>
+                  </td>
+                  <td>
+                    <pre class="mb-0"><%= JSON.stringify(run.params) %></pre>
+                  </td>
+                  <td>
+                    <%= run.user_name %>
+                  </td>
+                  <td>
+                    <%= run.user_uid %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <div class="card-body">
+            <div class="text-center text-muted">No recent runs found</div>
+          </div>
+        <% } %>
+        </div>
+      </div>
+
     </div>
   </body>
 </html>
