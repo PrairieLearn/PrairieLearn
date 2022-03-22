@@ -37,6 +37,7 @@ We follow the [GitHub flow](https://docs.github.com/en/get-started/quickstart/gi
   - If the change you're making will resolve an existing issue, you should [link the issue to the pull request](https://docs.github.com/en/github/managing-your-work-on-github/linking-a-pull-request-to-an-issue) so that the issue is closed automatically once the pull request is merged.
 - Monitor the [GitHub status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks). If they fail, you should check the output to see why. You may need to fix a broken test, adjust the formatting of your code, or fix a lint error.
 - Like many open-source projects, we require you to "sign" a contributor license agreement (CLA) prior to accepting any contributions. When you open your first pull request, a bot will prompt you to leave a comment stating that you accept the terms of [our CLA](https://github.com/PrairieLearn/cla).
+  - You should paste the acceptance message without any formatting, even though the bot's message will appear as bold and italic.
 - One or more PrairieLearn maintainers will review your PR. You should be prepared to engage with the maintainers to answer questions, update code, etc.
 - Once the PR is in a satisfactory state, a maintainer will approve and merge your change! :tada:
 
