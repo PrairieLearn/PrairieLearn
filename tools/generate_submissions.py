@@ -1,5 +1,28 @@
 #! /usr/bin/python3
 
+# Generates blank submissions for all students in an assessment. This
+# can be used in local testing where having several submissions is
+# beneficial. It works by obtaining a list of all students and staff
+# in the course and, for each of these users, open the assessment with
+# the student as the effective user, then opening each instance
+# question in the assessment and triggering the equivalent of pressing
+# the "Save" button in the submission without changing any values.
+#
+# This script benefits from running after the course instance has been
+# populated with students, which can be done with the
+# generate_and_enroll_users admin query. If grading is expected, it is
+# possible to, after running this script, select the "Grade all
+# instances" in the assessment's Students tab, though note that in
+# most cases grading will not be possible since answers are left
+# blank.
+#
+# Running this script multiple times is possible, and will cause a new
+# submission to be created for all students in each
+# question. Assessments that were already closed will not have new
+# submissions created, though it is possible to use the assessment's
+# Students tab to change the remaining time for all instances, which
+# has the option to re-open all closed assessment instances.
+
 import argparse, json
 import requests
 from lxml import html
@@ -35,7 +58,6 @@ def main():
                 url = f'http://{args.host}' + iq.get('href')
                 with requests.get(url, cookies=cookies) as response:
                     root = html.document_fromstring(response.text)
-                    csrf_token = root.get_element_by_id('test_csrf_token').text_content().strip()
                     data = {i.get('name'): i.get('value') for i in root.cssselect(f'input') if i.get('name')}
                     data['__action'] = 'save'
                     with requests.post(url, cookies=cookies, data=data) as response:
