@@ -45,4 +45,3 @@ We follow the [GitHub flow](https://docs.github.com/en/get-started/quickstart/gi
 After your changes have been merged to `master`, a new [`prairielearn/prairielearn` Docker image](https://hub.docker.com/r/prairielearn/prairielearn) will be built and published to Docker Hub. If you're developing course content locally, you can then run `docker pull prairielearn/prairielearn` to access the new image.
 
 Usually, your changes will be deployed to all production instances of PrairieLearn within a week. Watch the `#announce` Slack channel to see when your change has been deployed. If it's been several weeks since your PR has been merged and your changes still haven't been deployed, feel free to reach out in the `#pl-dev` Slack channel.
-
