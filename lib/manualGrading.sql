@@ -24,6 +24,9 @@ WHERE
     AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
     AND iq.requires_manual_grading
     AND (iq.assigned_grader = $user_id OR iq.assigned_grader IS NULL)
+    AND EXISTS(SELECT 1
+               FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
+               WHERE v.instance_question_id = iq.id)
 ORDER BY
     -- Choose one assigned to current user if one exists, unassigned if not
     iq.assigned_grader NULLS LAST,
