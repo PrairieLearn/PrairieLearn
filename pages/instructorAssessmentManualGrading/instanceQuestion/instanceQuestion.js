@@ -23,12 +23,7 @@ router.get(
      * Student loaded question but did not submit anything (submission is null)
      */
     if (!result.rows[0]?.variant || !result.rows[0]?.submission) {
-      return next(
-        error.make(404, 'No gradable submissions found.', {
-          locals: res.locals,
-          body: req.body,
-        })
-      );
+      return next(error.make(404, 'No gradable submissions found.'));
     }
 
     res.locals.question = result.rows[0].question;
@@ -46,6 +41,9 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res, next) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit)
+      return next(error.make(403, 'Access denied (must be a student data editor)'));
+
     if (req.body.__action === 'add_manual_grade') {
       const params = [
         req.body.assessment_id,

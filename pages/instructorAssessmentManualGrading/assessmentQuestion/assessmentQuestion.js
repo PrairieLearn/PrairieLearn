@@ -55,7 +55,8 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res, next) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) return next();
+    if (!res.locals.authz_data.has_course_instance_permission_edit)
+      return next(error.make(403, 'Access denied (must be a student data editor)'));
     if (req.body.__action === 'batch_action') {
       const action_data = JSON.parse(req.body.batch_action_data) || {};
       const instance_question_ids = Array.isArray(req.body.instance_question_id)
