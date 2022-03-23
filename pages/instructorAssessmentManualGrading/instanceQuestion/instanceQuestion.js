@@ -12,6 +12,10 @@ const manualGrading = require('../../../lib/manualGrading');
 router.get(
   '/',
   asyncHandler(async (req, res, next) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    }
+
     // Should we move this block into question.js? getAndRenderVariantForGrading
     const result = await sqlDb.callZeroOrOneRowAsync(
       'instance_question_select_manual_grading_objects',
@@ -41,9 +45,9 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res, next) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit)
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
       return next(error.make(403, 'Access denied (must be a student data editor)'));
-
+    }
     if (req.body.__action === 'add_manual_grade') {
       const params = [
         req.body.assessment_id,

@@ -2,8 +2,6 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const util = require('util');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../../prairielib/lib/error');
 const sqlDb = require('../../../prairielib/lib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
@@ -16,13 +14,19 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res, next) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
 
 router.get(
   '/instances.json',
-  asyncHandler(async (req, res, _next) => {
+  asyncHandler(async (req, res, next) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    }
     var params = {
       assessment_id: res.locals.assessment.id,
       assessment_question_id: res.locals.assessment_question.id,
@@ -39,7 +43,10 @@ router.get(
 
 router.get(
   '/next_ungraded',
-  asyncHandler(async (req, res, _next) => {
+  asyncHandler(async (req, res, next) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      return next(error.make(403, 'Access denied (must be a student data viewer)'));
+    }
     res.redirect(
       await manualGrading.nextUngradedInstanceQuestionUrl(
         res.locals.urlPrefix,
@@ -55,8 +62,9 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res, next) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit)
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
       return next(error.make(403, 'Access denied (must be a student data editor)'));
+    }
     if (req.body.__action === 'batch_action') {
       const action_data = JSON.parse(req.body.batch_action_data) || {};
       const instance_question_ids = Array.isArray(req.body.instance_question_id)
