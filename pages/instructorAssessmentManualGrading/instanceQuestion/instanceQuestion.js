@@ -5,8 +5,11 @@ const util = require('util');
 const question = require('../../../lib/question');
 const error = require('../../../prairielib/lib/error');
 const sqlDb = require('../../../prairielib/lib/sql-db');
+const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
 const manualGrading = require('../../../lib/manualGrading');
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 // Other cases to figure out later: grading in progress, question is broken...
 router.get(
@@ -75,6 +78,23 @@ router.post(
        */
       await sqlDb.callAsync('instance_questions_update_score', params);
       await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
+      res.redirect(
+        await manualGrading.nextUngradedInstanceQuestionUrl(
+          res.locals.urlPrefix,
+          res.locals.assessment.id,
+          req.body.assessment_question_id,
+          res.locals.authz_data.user.user_id,
+          res.locals.instance_question.id
+        )
+      );
+    } else if (req.body.__action === 'reassign_nobody') {
+      const params = {
+        assessment_id: res.locals.assessment.id,
+        instance_question_id: res.locals.instance_question.id,
+        assigned_grader: null,
+      };
+      await sqlDb.queryAsync(sql.update_assigned_grader, params);
+
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
           res.locals.urlPrefix,

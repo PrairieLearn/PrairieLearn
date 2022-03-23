@@ -11,7 +11,6 @@
         </a>
 
         <form name="instance_question-manual-grade-update-form" method="POST">
-            <input type="hidden" name="__action" value="add_manual_grade">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
             <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
@@ -44,9 +43,23 @@
             </div>
             <div class="text-right">
               <% if (authz_data.has_course_instance_permission_edit) { %>
-              <button type="submit" class="btn btn-primary">Submit and Next</button>
+              <button type="submit" class="btn btn-primary" name="__action" value="add_manual_grade">Submit</button>
               <% } %>
-              <a role="button" class="btn btn-secondary" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>/next_ungraded?prior_instance_question_id=<%= instance_question.id %>">Skip</a>
+              <div class="btn-group">
+                <a role="button" class="btn btn-secondary"
+                   href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>/next_ungraded?prior_instance_question_id=<%= instance_question.id %>">
+                  <% if (authz_data.has_course_instance_permission_edit) { %>Skip<% } else { %>Next<% } %>
+                </a>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
+                <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <span class="sr-only">Change assigned grader</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right">
+                  <button type="submit" class="dropdown-item" name="__action" value="reassign_nobody">Remove grader assignment</button>
+                  <%# TODO: Assign to other graders, read course staff %>
+                </div>
+                <% } %>
+              </div>
             </div>
         </form>
       </div>
