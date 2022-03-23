@@ -17,7 +17,7 @@
           var savedFilterValues = {};
           window.bsTable = $('#grading-table').bootstrapTable({
               classes: 'table table-sm table-bordered',
-              url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= assessment_question_id %>/manual_grading/instances.json',
+              url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= assessment_question_id %>/instances.json',
               dataField: 'instance_questions',
               escape: true,
               uniqueId: 'id',
@@ -96,7 +96,7 @@
                       filterControl: 'input',
                       searchFormatter: false,
                       sortable: true,
-                      formatter: (value, row) => `<a href="<%= urlPrefix %>/instance_question/${row.id}/manual_grading">${value}` +
+                      formatter: (value, row) => `<a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/${row.id}">${value}` +
                           (row.open_issue_count ? ` <span class="badge badge-pill badge-danger">${row.open_issue_count}</span>` : '') + '</a>' +
                           (row.assessment_open ? ` <span title="Assessment instance is still open" data-toggle="tooltip"><i class="fas fa-exclamation-triangle text-warning"></i></span>` : ''),
                   },

@@ -5,7 +5,7 @@
         <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
             <blockquote style="color: red">Submission updated</blockquote>
         <% } %>
-        <a class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/assessment_question/<%= instance_question.assessment_question_id %>/manual_grading">
+        <a class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>">
           <i class="fas fa-arrow-left"></i>
           Back to Question
         </a>

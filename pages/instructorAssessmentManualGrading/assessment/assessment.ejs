@@ -33,7 +33,7 @@
               <% questions.forEach(function(question, i) { %>
               <tr <% if (question.num_instance_questions_assigned > 0) { %>class="bg-light"<% } %> >
                 <td>
-                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/manual_grading">
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= question.id %>">
                     <% if (question.alternative_group_size == 1) { %>
                     <%= question.alternative_group_number %>.
                     <% } else { %>

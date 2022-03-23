@@ -137,9 +137,15 @@
 
       <div class="d-flex flex-wrap">
           <div class="pr-1">Status:</div>
-          <div><%= ip_instance_question.requires_manual_grading ? ip_instance_question.assigned_grader ?
-                   ('Assigned to ' + ip_instance_question.assigned_grader_name) : 'Requires grading' : 'Graded' %></div>
+          <div><%= ip_instance_question.requires_manual_grading ? 'Requires grading' : 'Graded' %></div>
       </div>
+
+      <% if (ip_instance_question.requires_manual_grading) { %>
+      <div class="d-flex flex-wrap">
+          <div class="pr-1">Assigned to:</div>
+          <div><%= ip_instance_question.assigned_grader ? ip_instance_question.assigned_grader_name : 'Unassigned' %></div>
+      </div>
+      <% } %>
 
       <% if (ip_instance_question.last_grader) { %>
       <div class="d-flex flex-wrap">
@@ -149,7 +155,7 @@
       <% } %>
 
       <div class="pb-2">
-          <a href="<%= instructorUrlPrefix %>/instance_question/<%= ip_instance_question.id %>/manual_grading">Grade</a>
+          <a href="<%= instructorUrlPrefix %>/assessment/<%= ip_assessment.id %>/manual_grading/instance_question/<%= ip_instance_question.id %>">Grade</a>
       </div>
       <% } %>
   <% } %>
