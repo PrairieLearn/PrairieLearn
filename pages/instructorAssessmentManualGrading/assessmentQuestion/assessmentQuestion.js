@@ -22,7 +22,7 @@ router.get(
     };
     const result = await sqlDb.queryZeroOrOneRowAsync(sql.select_assessment_question_data, params);
     if (result.rowCount == 0) {
-      return next(error.make(403, 'assessment question ID does not match assessment ID', null));
+      return next(error.make(403, 'Access denied', null));
     }
     Object.assign(res.locals, result.rows[0]);
 
