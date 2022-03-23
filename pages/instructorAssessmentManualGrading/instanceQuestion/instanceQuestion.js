@@ -11,7 +11,6 @@ const manualGrading = require('../../../lib/manualGrading');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-// Other cases to figure out later: grading in progress, question is broken...
 router.get(
   '/',
   asyncHandler(async (req, res, next) => {
@@ -19,28 +18,14 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
-    // Should we move this block into question.js? getAndRenderVariantForGrading
-    const result = await sqlDb.callZeroOrOneRowAsync(
-      'instance_question_select_manual_grading_objects',
-      [res.locals.instance_question.id]
-    );
+    res.locals.overlayGradingInterface = true;
+    await util.promisify(question.getAndRenderVariant)(null, null, res.locals);
 
-    /**
-     * Student never loaded question (variant and submission is null)
-     * Student loaded question but did not submit anything (submission is null)
-     */
-    if (!result.rows[0]?.variant || !result.rows[0]?.submission) {
-      return next(error.make(404, 'No gradable submissions found.'));
+    // If student never loaded question or never submitted anything (submission is null)
+    if (!res.locals.submission) {
+      return next(error.make(404, 'Instance question does not have a gradable submission.'));
     }
 
-    res.locals.question = result.rows[0].question;
-    res.locals.variant = result.rows[0].variant;
-    res.locals.submission = result.rows[0].submission;
-    res.locals.max_points = result.rows[0].max_points;
-    res.locals.score_perc = res.locals.submission.score * 100;
-
-    res.locals.overlayGradingInterface = true;
-    await util.promisify(question.getAndRenderVariant)(res.locals.variant.id, null, res.locals);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );

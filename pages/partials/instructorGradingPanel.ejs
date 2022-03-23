@@ -17,17 +17,17 @@
             <div class="form-group">
               <label for="submissionScore">Score:</label>
               <div class="input-group">
-                Points: <input type="number" style="margin:2px;" min="0" max="<%= max_points %>" step="any" class="form-control" id="submissionScorePoints" name="submission_score_points" value="<%= instance_question.points %>" aria-describedby="scoreHelpBlock"
+                Points: <input type="number" style="margin:2px;" min="0" max="<%= assessment_question.max_points %>" step="any" class="form-control" id="submissionScorePoints" name="submission_score_points" value="<%= instance_question.points %>" aria-describedby="scoreHelpBlock"
                   <% if (!authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
-                  oninput="document.getElementById('submissionScorePercent').value = this.value / <%= max_points %> * 100;"
+                  oninput="document.getElementById('submissionScorePercent').value = this.value / <%= assessment_question.max_points %> * 100;"
                 />
-                <span class="input-group-addon">/ <%= max_points %></span>
+                <span class="input-group-addon">/ <%= assessment_question.max_points %></span>
               </div>
 
               <div class="input-group">
                 Percent: <input type="number" style="margin:2px;" min="0" max="100" step="any" class="form-control" id="submissionScorePercent" name="submission_score_percent" value="<%= instance_question.score_perc %>" aria-describedby="scoreHelpBlock"
                   <% if (!authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
-                  oninput="document.getElementById('submissionScorePoints').value = this.value / 100 * <%= max_points %>;"
+                  oninput="document.getElementById('submissionScorePoints').value = this.value / 100 * <%= assessment_question.max_points %>;"
                 />
                 <span class="input-group-addon">%</span>
               </div>
