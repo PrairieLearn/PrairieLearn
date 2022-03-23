@@ -38,6 +38,7 @@
                   status: {
                       text: 'Tag for grading',
                       icon: 'fa-tags',
+                      render: <%= authz_data.has_course_instance_permission_edit %>,
                       html: gradingTagDropdown,
                   },
               },
