@@ -2,11 +2,11 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const util = require('util');
-const question = require('../../lib/question');
-const error = require('../../prairielib/lib/error');
-const sqlDb = require('../../prairielib/lib/sql-db');
-const ltiOutcomes = require('../../lib/ltiOutcomes');
-const manualGrading = require('../../lib/manualGrading');
+const question = require('../../../lib/question');
+const error = require('../../../prairielib/lib/error');
+const sqlDb = require('../../../prairielib/lib/sql-db');
+const ltiOutcomes = require('../../../lib/ltiOutcomes');
+const manualGrading = require('../../../lib/manualGrading');
 
 // Other cases to figure out later: grading in progress, question is broken...
 router.get(

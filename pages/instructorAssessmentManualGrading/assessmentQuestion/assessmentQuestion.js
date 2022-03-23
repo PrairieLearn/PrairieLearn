@@ -4,11 +4,11 @@ const asyncHandler = require('express-async-handler');
 const util = require('util');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('../../prairielib/lib/error');
-const sqlDb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const error = require('../../../prairielib/lib/error');
+const sqlDb = require('../../../prairielib/lib/sql-db');
+const sqlLoader = require('../../../prairielib/lib/sql-loader');
 
-const ltiOutcomes = require('../../lib/ltiOutcomes');
+const ltiOutcomes = require('../../../lib/ltiOutcomes');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

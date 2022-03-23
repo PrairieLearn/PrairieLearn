@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <%- include('../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
-    <%- include('../partials/mathjax'); %>
+    <%- include('../../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
+    <%- include('../../partials/mathjax'); %>
     <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
@@ -16,9 +16,9 @@
     <%- extraHeadersHtml %>
   </head>
   <body>
-    <%- include('../partials/navbar'); %>
+    <%- include('../../partials/navbar'); %>
     <div class="container-fluid">
-      <%- include('../partials/questionSyncErrorsAndWarnings'); %>
+      <%- include('../../partials/questionSyncErrorsAndWarnings'); %>
     </div>
     <div id="content" class="container">
       <% if (assessment_instance.open) { %>
@@ -28,11 +28,11 @@
       <% } %>
       <div class="row">
           <div class="col-lg-9 col-sm-12">
-              <%- include('../partials/question', {question_context: 'instructor'}); %>
+              <%- include('../../partials/question', {question_context: 'instructor'}); %>
           </div>
 
           <div class="col-lg-3 col-sm-12">
-              <%- include('../partials/instructorGradingPanel', {question_context: 'instructor'}); %>
+              <%- include('../../partials/instructorGradingPanel', {question_context: 'instructor'}); %>
               <div class="card mb-4">
                   <div class="card-header bg-secondary text-white">Student view placeholder</div>
                   <div class="card-body">
@@ -41,7 +41,7 @@
                       </div>
                   </div>
               </div>
-              <%- include('../partials/instructorInfoPanel', {question_context: 'instructor'}); %>
+              <%- include('../../partials/instructorInfoPanel', {question_context: 'instructor'}); %>
           </div>
       </div>
 

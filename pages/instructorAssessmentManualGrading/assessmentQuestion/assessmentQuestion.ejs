@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../../partials/head'); %>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js') %>"></script>
@@ -233,7 +233,7 @@
                             id="editQuestionPoints${row.id}" tabindex="0"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question points"
-                            data-base-content="<%= include('../partials/editQuestionPointsForm',
+                            data-base-content="<%= include('../../partials/editQuestionPointsForm',
                                                            {id: 'editQuestionPoints${row.id}',
                                                             instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', points: '${row.points}', max_points}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
@@ -262,7 +262,7 @@
                             id="editQuestionScorePerc${row.id}" tabindex="0"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question percentage score"
-                            data-base-content="<%= include('../partials/editQuestionScorePercForm',
+                            data-base-content="<%= include('../../partials/editQuestionScorePercForm',
                                                            {id: 'editQuestionScorePerc${row.id}',
                                                             instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', score_perc: '${row.score_perc}'}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
@@ -271,14 +271,14 @@
           return `<div class="d-inline-block align-middle">${bar}</div> ${button}`;
       }
     </script>
-    <%- include('../partials/navbar'); %>
+    <%- include('../../partials/navbar'); %>
     <div id="content" class="container-fluid">
-      <%- include('../partials/assessmentOpenInstancesAlert') %>
+      <%- include('../../partials/assessmentOpenInstancesAlert') %>
       <a class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading">
         <i class="fas fa-arrow-left"></i>
         Back to <%= assessment_set.name %> <%= assessment.number %> Overview
       </a>
-      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
+      <%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

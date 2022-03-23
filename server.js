@@ -797,7 +797,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
-      require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
+      require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
     ]
   );
   app.use(
@@ -1201,7 +1201,7 @@ module.exports.initExpress = function () {
         res.locals.assessment_question_id = req.params.assessment_question_id;
         next();
       },
-      require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
+      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestionNextUngraded'),
     ]
   );
   app.use(
@@ -1215,7 +1215,7 @@ module.exports.initExpress = function () {
         res.locals.assessment_question_id = req.params.assessment_question_id;
         next();
       },
-      require('./pages/instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading'),
+      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
     ]
   );
   app.use(
@@ -1226,7 +1226,7 @@ module.exports.initExpress = function () {
         next();
       },
       require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
+      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
     ]
   );
 

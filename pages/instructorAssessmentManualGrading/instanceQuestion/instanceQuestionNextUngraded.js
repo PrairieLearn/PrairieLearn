@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const manualGrading = require('../../lib/manualGrading');
+const manualGrading = require('../../../lib/manualGrading');
 
 router.get(
   '/',
