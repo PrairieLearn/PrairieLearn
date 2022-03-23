@@ -14,13 +14,16 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get(
   '/',
-  asyncHandler(async (req, res, _next) => {
+  asyncHandler(async (req, res, next) => {
     debug('GET /');
     var params = {
       assessment_id: res.locals.assessment.id,
       assessment_question_id: res.locals.assessment_question_id,
     };
-    const result = await sqlDb.queryOneRowAsync(sql.select_assessment_question_data, params);
+    const result = await sqlDb.queryZeroOrOneRowAsync(sql.select_assessment_question_data, params);
+    if (result.rowCount == 0) {
+      return next(error.make(403, 'assessment question ID does not match assessment ID', null));
+    }
     Object.assign(res.locals, result.rows[0]);
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
