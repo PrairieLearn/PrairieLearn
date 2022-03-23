@@ -53,7 +53,7 @@ router.get(
         res.locals.assessment.id,
         res.locals.assessment_question.id,
         res.locals.authz_data.user.user_id,
-        null
+        req.query.prior_instance_question_id
       )
     );
   })

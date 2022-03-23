@@ -5,7 +5,7 @@
         <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
             <blockquote style="color: red">Submission updated</blockquote>
         <% } %>
-        <a class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>">
+        <a role="button" class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>">
           <i class="fas fa-arrow-left"></i>
           Back to Question
         </a>
@@ -46,6 +46,7 @@
               <% if (authz_data.has_course_instance_permission_edit) { %>
               <button type="submit" class="btn btn-primary">Submit and Next</button>
               <% } %>
+              <a role="button" class="btn btn-secondary" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>/next_ungraded?prior_instance_question_id=<%= instance_question.id %>">Skip</a>
             </div>
         </form>
       </div>
