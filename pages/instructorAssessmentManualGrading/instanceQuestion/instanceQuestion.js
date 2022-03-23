@@ -26,6 +26,11 @@ router.get(
       return next(error.make(404, 'Instance question does not have a gradable submission.'));
     }
 
+    const graders_result = await sqlDb.queryZeroOrOneRowAsync(sql.select_graders, {
+      course_instance_id: res.locals.course_instance.id,
+    });
+    res.locals.graders = graders_result.rows[0]?.graders;
+
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
@@ -72,11 +77,13 @@ router.post(
           res.locals.instance_question.id
         )
       );
-    } else if (req.body.__action === 'reassign_nobody') {
+    } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
+      const assigned_grader = req.body.__action.substring(9);
       const params = {
+        course_instance_id: res.locals.course_instance.id,
         assessment_id: res.locals.assessment.id,
         instance_question_id: res.locals.instance_question.id,
-        assigned_grader: null,
+        assigned_grader: assigned_grader === 'nobody' ? null : assigned_grader,
       };
       await sqlDb.queryAsync(sql.update_assigned_grader, params);
 

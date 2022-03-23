@@ -53,8 +53,10 @@
                   <span class="sr-only">Change assigned grader</span>
                 </button>
                 <div class="dropdown-menu dropdown-menu-right">
+                  <% (locals.graders || []).forEach(grader => { %>
+                  <button type="submit" class="dropdown-item" name="__action" value="reassign_<%= grader.user_id %>">Assign to: <%= grader.name %> (<%= grader.uid %>)</button>
+                  <% }); %>
                   <button type="submit" class="dropdown-item" name="__action" value="reassign_nobody">Remove grader assignment</button>
-                  <%# TODO: Assign to other graders, read course staff %>
                 </div>
                 <% } %>
               </div>

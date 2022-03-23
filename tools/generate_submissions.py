@@ -54,6 +54,14 @@ def main():
         url = f'{base_url}/assessment/{args.assessment}'
         with requests.get(url, cookies=cookies) as response:
             root = html.document_fromstring(response.text)
+            for start in root.cssselect(f'#confirm-form'):
+                # Need to start assessment (confirm form)
+                data = {i.get('name'): i.get('value') for i in root.cssselect(f'input') if i.get('name')}
+                with requests.post(url, cookies=cookies, data=data) as response:
+                    pass
+            
+        with requests.get(url, cookies=cookies) as response:
+            root = html.document_fromstring(response.text)
             for iq in root.cssselect(f'a[href^="/pl/course_instance/{args.course_instance}/instance_question/"]'):
                 url = f'http://{args.host}' + iq.get('href')
                 with requests.get(url, cookies=cookies) as response:
