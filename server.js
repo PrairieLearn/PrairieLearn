@@ -826,16 +826,6 @@ module.exports.initExpress = function () {
   );
 
   app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
-    [
-      function (req, res, next) {
-        res.locals.assessment_question_id = req.params.assessment_question_id;
-        next();
-      },
-      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestionNextUngraded'),
-    ]
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
     [
       function (req, res, next) {

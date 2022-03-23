@@ -9,6 +9,7 @@ const sqlDb = require('../../../prairielib/lib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
 
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
+const manualGrading = require('../../../lib/manualGrading');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -46,6 +47,21 @@ router.get(
       Object.assign(row, { assigned_grader: row.assigned_grader || 0 });
     });
     res.send({ instance_questions: result.rows });
+  })
+);
+
+router.get(
+  '/next_ungraded',
+  asyncHandler(async (req, res, _next) => {
+    res.redirect(
+      await manualGrading.nextUngradedInstanceQuestionUrl(
+        res.locals.urlPrefix,
+        res.locals.assessment.id,
+        res.locals.assessment_question_id,
+        res.locals.authz_data.user.user_id,
+        null
+      )
+    );
   })
 );
 

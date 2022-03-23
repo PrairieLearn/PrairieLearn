@@ -65,7 +65,7 @@
                 </td>
                 <td>
                   <% if (question.num_instance_questions_assigned > 0 || question.num_instance_questions_unassigned > 0) { %>
-                  <a class="btn btn-xs btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/assessment_question/<%= question.id %>/next_ungraded">
+                  <a class="btn btn-xs btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= question.id %>/next_ungraded">
                     Grade next submission
                   </a>
                   <% } %>
