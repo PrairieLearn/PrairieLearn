@@ -56,15 +56,33 @@
                   $('#grading-table .filter-control').find('input, select').each(function() {
                       const field_name = $(this).parents('[data-field]:first').data('field');
                       savedFilterValues[field_name] = $(this).val();
+                      $(this).tooltip('dispose');
+                  });
+              },
+              onCreatedControls: () => {
+                  $('#grading-table th[data-field="points"] .filter-control input').tooltip({
+                      title: 'hint: use <code>&lt;<%= Math.ceil(assessment_question.max_points / 2) %></code>, or <code>&gt;0</code>',
+                      html: true,
+                  });
+                  $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
+                      title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
+                      html: true,
                   });
               },
               onSearch: () => {
+                  // This update is done with the search method because onCreatedControls
+                  // is called before the filter control selects are populated
+                  // (https://github.com/wenzhixin/bootstrap-table/issues/6072).
                   if (savedFilterValues) {
                       for (const [field, value] of Object.entries(savedFilterValues)) {
                           $(`#grading-table th[data-field=${field}]`).find('input, select').val(value);
                       }
                       savedFilterValues = false;
                   }
+              },
+              onPreBody: () => {
+                  $('#grading-table [data-toggle="popover"]').popover('dispose');
+                  $('#grading-table [data-toggle="tooltip"]').tooltip('dispose');
               },
               onPostBody: () => {
                   updateGradingTagButton();
@@ -77,14 +95,6 @@
                       },
                   });
                   $('#grading-table [data-toggle=tooltip]').tooltip({ html: true });
-                  $('#grading-table th[data-field="points"] .filter-control input').tooltip({
-                      title: 'hint: use <code>&lt;<%= Math.ceil(assessment_question.max_points / 2) %></code>, or <code>&gt;0</code>',
-                      html: true,
-                  });
-                  $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
-                      title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
-                      html: true,
-                  });
               },
               columns: [[
                   {
