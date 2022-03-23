@@ -16,17 +16,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res, next) => {
-    debug('GET /');
-    var params = {
-      assessment_id: res.locals.assessment.id,
-      assessment_question_id: res.locals.assessment_question_id,
-    };
-    const result = await sqlDb.queryZeroOrOneRowAsync(sql.select_assessment_question_data, params);
-    if (result.rowCount == 0) {
-      return next(error.make(403, 'Access denied', null));
-    }
-    Object.assign(res.locals, result.rows[0]);
-
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
@@ -34,11 +23,9 @@ router.get(
 router.get(
   '/instances.json',
   asyncHandler(async (req, res, _next) => {
-    debug('GET /instances.json');
-
     var params = {
       assessment_id: res.locals.assessment.id,
-      assessment_question_id: res.locals.assessment_question_id,
+      assessment_question_id: res.locals.assessment_question.id,
     };
 
     const result = await sqlDb.queryAsync(sql.select_instance_questions_manual_grading, params);
@@ -57,7 +44,7 @@ router.get(
       await manualGrading.nextUngradedInstanceQuestionUrl(
         res.locals.urlPrefix,
         res.locals.assessment.id,
-        res.locals.assessment_question_id,
+        res.locals.assessment_question.id,
         res.locals.authz_data.user.user_id,
         null
       )
@@ -76,7 +63,7 @@ router.post(
         : [req.body.instance_question_id];
       const params = {
         assessment_id: res.locals.assessment.id,
-        assessment_question_id: res.locals.assessment_question_id,
+        assessment_question_id: res.locals.assessment_question.id,
         instance_question_ids,
         update_requires_manual_grading: 'requires_manual_grading' in action_data,
         requires_manual_grading: !!action_data?.requires_manual_grading,

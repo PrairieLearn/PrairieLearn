@@ -17,7 +17,7 @@
           var savedFilterValues = {};
           window.bsTable = $('#grading-table').bootstrapTable({
               classes: 'table table-sm table-bordered',
-              url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= assessment_question_id %>/instances.json',
+              url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= assessment_question.id %>/instances.json',
               dataField: 'instance_questions',
               escape: true,
               uniqueId: 'id',
@@ -77,7 +77,7 @@
                   });
                   $('#grading-table [data-toggle=tooltip]').tooltip({ html: true });
                   $('#grading-table th[data-field="points"] .filter-control input').tooltip({
-                      title: 'hint: use <code>&lt;<%= Math.ceil(max_points / 2) %></code>, or <code>&gt;0</code>',
+                      title: 'hint: use <code>&lt;<%= Math.ceil(assessment_question.max_points / 2) %></code>, or <code>&gt;0</code>',
                       html: true,
                   });
                   $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
@@ -227,7 +227,7 @@
       }
 
       function pointsFormatter(points, row) {
-          let text = `${getStringFromFloat(row.points)} <small>/<span class="text-muted"><%= max_points %></span></small> `, button = '';
+          let text = `${getStringFromFloat(row.points)} <small>/<span class="text-muted"><%= assessment_question.max_points %></span></small> `, button = '';
           if (has_course_instance_permission_edit) {
               button = `<button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
                             id="editQuestionPoints${row.id}" tabindex="0"
@@ -235,7 +235,7 @@
                             data-html="true" data-placement="auto" title="Change question points"
                             data-base-content="<%= include('../../partials/editQuestionPointsForm',
                                                            {id: 'editQuestionPoints${row.id}',
-                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', points: '${row.points}', max_points}}); %>">
+                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', points: '${row.points}', max_points: assessment_question.max_points}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
           }
@@ -283,7 +283,7 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment.tid %> / Question <%= number_in_alternative_group %>.
-          <%= question_title %>
+          <%= question.title %>
         </div>
         <form name="grading-form" method="POST" onsubmit="ajaxSubmit(event)">
           <input type="hidden" name="__action" value="batch_action">

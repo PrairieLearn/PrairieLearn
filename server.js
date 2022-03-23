@@ -830,9 +830,9 @@ module.exports.initExpress = function () {
     [
       function (req, res, next) {
         res.locals.navSubPage = 'manual_grading';
-        res.locals.assessment_question_id = req.params.assessment_question_id;
         next();
       },
+      require('./middlewares/selectAndAuthzAssessmentQuestion'),
       require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
     ]
   );
