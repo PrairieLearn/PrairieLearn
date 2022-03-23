@@ -69,7 +69,7 @@
     </div>
   </div>
 
-  <% if ((typeof question_context !== "undefined") && (question_context == "instructor")) { %>
+  <% if ((typeof question_context !== "undefined") && (question_context == "instructor" || question_context == "manual_grading")) { %>
   <div class="row">
     <div class="col-auto">
       <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
@@ -105,7 +105,7 @@
      if (typeof variant !== "undefined" && variant.assessment_instance) {
         ip_assessment = variant.assessment;
         ip_assessment_instance = variant.assessment_instance;
-        ip_instance_question = variant.instance_question;
+        ip_instance_question = variant.instance_question ?? ip_instance_question;
      }
      if (ip_assessment && ip_assessment_instance) {
         let instructorUrlPrefix = `${plainUrlPrefix}/course_instance/${ip_assessment.course_instance_id}/instructor`;
@@ -131,7 +131,7 @@
           <a href="<%= instructorUrlPrefix %>/assessment_instance/<%= ip_assessment_instance.id %>">View log</a>
       </div>
 
-      <% if (ip_instance_question && course.manual_grading_visible) { %>
+      <% if (ip_instance_question && course.manual_grading_visible) { console.log(Object.keys(locals)); %>
       <hr>
       <h5 class="card-title">Manual Grading:</h5>
 
@@ -154,9 +154,11 @@
       </div>
       <% } %>
 
+      <% if (locals.question_context !== "manual_grading") { %>
       <div class="pb-2">
           <a href="<%= instructorUrlPrefix %>/assessment/<%= ip_assessment.id %>/manual_grading/instance_question/<%= ip_instance_question.id %>">Grade</a>
       </div>
+      <% } %>
       <% } %>
   <% } %>
 
