@@ -47,6 +47,7 @@ const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
 const assets = require('./lib/assets');
+const namedLocks = require('./lib/named-locks');
 
 process.on('warning', (e) => console.warn(e)); // eslint-disable-line no-console
 
@@ -1114,7 +1115,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
@@ -1229,6 +1230,23 @@ module.exports.initExpress = function () {
       require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
     ]
   );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/clientFilesQuestion/clientFilesQuestion'),
+    ]
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
@@ -1286,7 +1304,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
-      require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
@@ -1501,7 +1519,7 @@ module.exports.initExpress = function () {
   // generatedFiles
   app.use('/pl/course/:course_id/question/:question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
   // legacy client file paths
@@ -1720,8 +1738,8 @@ if (config.startServer) {
           })
         );
       },
-      function (callback) {
-        var pgConfig = {
+      async function () {
+        const pgConfig = {
           user: config.postgresqlUser,
           database: config.postgresqlDatabase,
           host: config.postgresqlHost,
@@ -1729,19 +1747,21 @@ if (config.startServer) {
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
         };
-        logger.verbose(
-          'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
-        );
-        var idleErrorHandler = function (err) {
+        function idleErrorHandler(err) {
           logger.error('idle client error', err);
           // https://github.com/PrairieLearn/PrairieLearn/issues/2396
           process.exit(1);
-        };
-        sqldb.init(pgConfig, idleErrorHandler, function (err) {
-          if (ERR(err, callback)) return;
-          logger.verbose('Successfully connected to database');
-          callback(null);
-        });
+        }
+
+        logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+
+        await sqldb.initAsync(pgConfig, idleErrorHandler);
+
+        // Our named locks code maintains a separate pool of database connections.
+        // This ensures that we avoid deadlocks.
+        await namedLocks.init(pgConfig, idleErrorHandler);
+
+        logger.verbose('Successfully connected to database');
       },
       function (callback) {
         if (!config.runMigrations) return callback(null);

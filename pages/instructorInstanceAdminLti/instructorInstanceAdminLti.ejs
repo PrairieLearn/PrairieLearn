@@ -23,7 +23,7 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">LTI configuration</div>
         <div class="card-body">
-          <p class="mb-0">
+          <p>
             The LTI (Learning Tools Interoperability) standard allows
             other online learning websites to embed PrairieLearn
             assessments within them. PrairieLearn acts as a <em>Tool
@@ -31,8 +31,10 @@
             the <a href="https://www.imsglobal.org/basic-overview-how-lti-works">LTI
             overview</a> for more information.
           </p>
+          <p><strong>This version of LTI is deprecated. Check with PrairieLearn admins
+              before enabling to ensure it is appropriate for your course.</strong></p>
           <% if (!config.hasLti) { %>
-          <p class="mb-0 mt-3">
+          <p>
             <em>LTI not enabled on this server.</em>
           </p>
           <% } %>

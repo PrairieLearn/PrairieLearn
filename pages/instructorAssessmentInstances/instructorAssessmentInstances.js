@@ -56,11 +56,13 @@ router.post('/', function (req, res, next) {
     assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
       if (ERR(err, next)) return;
 
+      const requireOpen = true;
       const close = true;
       const overrideGradeRate = true;
       assessment.gradeAssessmentInstance(
         assessment_instance_id,
         res.locals.authn_user.user_id,
+        requireOpen,
         close,
         overrideGradeRate,
         function (err) {

@@ -3,29 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const async = require('async');
 
-const namedLocks = require('../lib/named-locks');
 const error = require('../prairielib/lib/error');
 const logger = require('../lib/logger');
 const sqldb = require('../prairielib/lib/sql-db');
 
 module.exports.init = function (callback) {
-  const lockName = 'sprocs';
-  logger.verbose(`Waiting for lock ${lockName}`);
-  namedLocks.waitLock(lockName, {}, (err, lock) => {
-    if (ERR(err, callback)) return;
-    logger.verbose(`Acquired lock ${lockName}`);
-    module.exports._initWithLock((err) => {
-      namedLocks.releaseLock(lock, (lockErr) => {
-        if (ERR(lockErr, callback)) return;
-        if (ERR(err, callback)) return;
-        logger.verbose(`Released lock ${lockName}`);
-        callback(null);
-      });
-    });
-  });
-};
-
-module.exports._initWithLock = function (callback) {
   logger.verbose('Starting DB stored procedure initialization');
   async.eachSeries(
     [
@@ -96,7 +78,7 @@ module.exports._initWithLock = function (callback) {
       'assessment_instances_delete_all.sql',
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
-      'assessment_instances_select_for_auto_close.sql',
+      'assessment_instances_select_for_auto_finish.sql',
       'assessment_instances_select_log.sql',
       'assessment_instances_ensure_open.sql',
       'instance_questions_points_homework.sql',
@@ -120,9 +102,7 @@ module.exports._initWithLock = function (callback) {
       'grading_job_status.sql',
       'grading_jobs_lock.sql',
       'grading_jobs_insert.sql',
-      'grading_jobs_insert_external_manual.sql',
-      'grading_jobs_insert_internal.sql',
-      'grading_jobs_process_external.sql',
+      'grading_jobs_update_after_grading.sql',
       'ip_to_mode.sql',
       'config_select.sql',
       'users_select_or_insert.sql',
@@ -150,7 +130,6 @@ module.exports._initWithLock = function (callback) {
       'variants_select_for_assessment_instance_grading.sql',
       'variants_update_after_grading.sql',
       'variants_ensure_open.sql',
-      'variants_unlink.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
       'server_usage_current.sql',
@@ -169,7 +148,6 @@ module.exports._initWithLock = function (callback) {
       'sync_question_tags.sql',
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
-      'lock_timeout_set.sql',
       'course_requests_insert.sql',
       'assessment_groups_update.sql',
       'assessment_groups_delete_all.sql',
