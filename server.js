@@ -848,7 +848,7 @@ module.exports.initExpress = function () {
     ]
   );
   app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/clientFilesQuestion',
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/clientFilesQuestion/clientFilesQuestion'),
@@ -856,7 +856,7 @@ module.exports.initExpress = function () {
   );
 
   app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/generatedFilesQuestion',
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
