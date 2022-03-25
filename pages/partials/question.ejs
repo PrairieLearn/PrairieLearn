@@ -91,7 +91,7 @@
           <%= instance_question_info.question_number %>. <%= question.title %>
         <% } else if (question_context == 'student_exam') { %>
           Question <%= instance_question_info.question_number %>: <%= question.title %>
-        <% } else if (question_context == 'instructor') { %>
+        <% } else if (question_context == 'instructor' || question_context == 'manual_grading') { %>
           <%= question.title %>
         <% } else { %>
             <% throw Error('unknown question_context: ' + question_context); %>
@@ -121,7 +121,7 @@
       <% } else if (question_context == 'student_exam') { %>
             <!-- FIXME: insert question number properly -->
             Question <%= instance_question_info.question_number %>: <%= question.title %>
-      <% } else if (question_context == 'instructor') { %>
+      <% } else if (question_context == 'instructor' || question_context == 'manual_grading') { %>
         <%= question.title %>
       <% } else { %>
         <% throw Error('unknown question_context: ' + question_context); %>
