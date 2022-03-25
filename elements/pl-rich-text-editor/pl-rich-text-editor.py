@@ -68,7 +68,7 @@ def render(element_html, data):
             'editor_uuid': uuid,
             'question': data['panel'] == 'question',
             'submission': data['panel'] == 'submission',
-            'read_only': 'true' if data['panel'] == 'submission' else 'false'
+            'read_only': 'true' if (data['panel'] == 'submission' or not data['editable']) else 'false'
         }
 
         if source_file_name is not None:
