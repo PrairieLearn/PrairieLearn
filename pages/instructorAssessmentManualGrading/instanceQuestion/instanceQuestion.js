@@ -18,7 +18,7 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
-    res.locals.overlayGradingInterface = true;
+    res.locals.manualGradingInterface = true;
     await util.promisify(question.getAndRenderVariant)(null, null, res.locals);
 
     // If student never loaded question or never submitted anything (submission is null)
