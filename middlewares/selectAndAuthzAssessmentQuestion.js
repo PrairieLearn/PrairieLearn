@@ -1,5 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
+const util = require('util');
 
 var sqldb = require('../prairielib/lib/sql-db');
 var sqlLoader = require('../prairielib/lib/sql-loader');
@@ -7,7 +8,7 @@ var error = require('../prairielib/lib/error');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-module.exports = function (req, res, next) {
+module.exports = util.callbackify(async (req, res) => {
   var params = {
     assessment_question_id: req.params.assessment_question_id,
     assessment_id: res.locals.assessment.id,
@@ -15,10 +16,7 @@ module.exports = function (req, res, next) {
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   };
-  sqldb.query(sql.select_and_auth, params, function (err, result) {
-    if (ERR(err, next)) return;
-    if (result.rowCount === 0) return next(error.make(403, 'Access denied'));
-    _.assign(res.locals, result.rows[0]);
-    next();
-  });
-};
+  const result = await sqldb.queryAsync(sql.select_and_auth, params);
+  if (result.rowCount === 0) return error.make(403, 'Access denied');
+  _.assign(res.locals, result.rows[0]);
+});
