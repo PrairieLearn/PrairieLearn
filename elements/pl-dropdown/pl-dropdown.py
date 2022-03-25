@@ -102,6 +102,7 @@ def render(element_html, data):
             'uuid': uuid,
             'options': dropdown_options,
             'has_submission': correct is not None,
+            'editable': data['editable'],
             'correct': correct
         }
 
