@@ -54,6 +54,8 @@ public class JUnitAutograder implements TestExecutionListener {
             autograder.gradable = false;
         } finally {
             autograder.saveResults();
+            // Force exit to ensure any pending threads don't cause the autograder to hang
+            System.exit(0);
         }
     }
 
