@@ -11,7 +11,7 @@ In this 5-day training course, we will provide an introduction to the following 
 
 1. **Login to PrairieLearn** at [https://prairielearn.engr.illinois.edu/pl/](https://prairielearn.engr.illinois.edu/pl/) (in case you have never done this before). This is necessary so that we can give you access to PrairieLearn before the workshop starts.
 
-2. **Request course access.** We are processing all the access requests using the PrairieLearn Slack [`#request-course`](https://go.illinois.edu/joinplslack) channel. Check the options below for instructions.
+2. **Request course access.** We are processing all the access requests using the PrairieLearn Slack [`#request-course`](https://go.illinois.edu/PrairieLearnSlack) channel. Check the options below for instructions.
 
 3. **Complete Homework 0.** See below for instructions on Homework 0. It would be very helpful if you can do this before the first meeting on Monday.
 
@@ -19,7 +19,7 @@ In this 5-day training course, we will provide an introduction to the following 
 
 #### 1) You are a Course Instructor:
 
-Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
+Provide the following information in the [`#request-course`](https://go.illinois.edu/PrairieLearnSlack) channel:
 
 ```
 Course rubric: XX-100
@@ -30,7 +30,7 @@ Your institution: UIUC
 
 #### 2) You are a Teaching Assistant already assigned to a course
 
-Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
+Provide the following information in the [`#request-course`](https://go.illinois.edu/PrairieLearnSlack) channel:
 
 ```
 I want access to the course listed below:
@@ -43,7 +43,7 @@ Your email: netid@illinois.edu
 
 You may be a teaching assistant not yet assigned to a course, or just someone wanting to learn how to use PrairieLearn, without any connections to a course. Everyone is welcome!
 
-Provide the following information in the [`#request-course`](https://go.illinois.edu/joinplslack) channel:
+Provide the following information in the [`#request-course`](https://go.illinois.edu/PrairieLearnSlack) channel:
 
 ```
 I want access to the training course TRAIN-101

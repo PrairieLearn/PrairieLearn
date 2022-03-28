@@ -22,7 +22,7 @@ The aforementioned setup documentation also includes instructions on starting a 
 
 The [dev guide](./docs/dev-guide.md) is currently quite long and dense, but it contains a lot of information about our preferences, conventions, and code structure.
 
-If you get stuck, reach out to the friendly folks in the `#pl-dev` channel on the [PrairieLearn Slack](https://go.illinois.edu/joinplslack)!
+If you get stuck, reach out to the friendly folks in the `#pl-dev` channel on the [PrairieLearn Slack](https://go.illinois.edu/PrairieLearnSlack)!
 
 ## Opening a pull request
 
