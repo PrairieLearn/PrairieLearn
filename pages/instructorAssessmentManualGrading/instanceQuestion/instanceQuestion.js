@@ -18,6 +18,10 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
+    res.locals.attempted_score = req.query.attempted_score
+      ? JSON.parse(req.query.attempted_score)
+      : null;
+
     res.locals.manualGradingInterface = true;
     await util.promisify(question.getAndRenderVariant)(null, null, res.locals);
 
@@ -50,6 +54,7 @@ router.post(
         null, // uid
         null, // assessment_instance_number
         null, // qid
+        req.body.modified_at,
         req.body.submission_score_percent, // score_perc
         null, // points
         { manual: req.body.submission_note }, // feedback
@@ -66,7 +71,16 @@ router.post(
        * where they can edit score. Fundamentally, we need to rethink how to treat questions that are
        * manually graded within PrairieLearn and how to handle those score calculations.
        */
-      await sqlDb.callAsync('instance_questions_update_score', params);
+      const result = await sqlDb.callAsync('instance_questions_update_score', params);
+      if (result.rows[0]?.modified_since_query) {
+        const attempted_score = JSON.stringify({
+          score_perc: req.body.submission_score_percent,
+          feedback: req.body.submission_note,
+        });
+        return res.redirect(
+          req.baseUrl + `?attempted_score=${encodeURIComponent(attempted_score)}`
+        );
+      }
       await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(

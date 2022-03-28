@@ -10,14 +10,18 @@ CREATE FUNCTION
         IN arg_uid_or_group text,           -- OR (uid/group, assessment_instance_number, qid)
         IN arg_assessment_instance_number integer,
         IN arg_qid text,
+        IN arg_modified_at timestamptz,     -- if modified_at is specified, update only if matches previous value
 
         -- specify what should be updated
         IN arg_score_perc double precision,
         IN arg_points double precision,
         IN arg_feedback jsonb,
         IN arg_partial_scores jsonb,
-        IN arg_authn_user_id bigint
-    ) RETURNS void
+        IN arg_authn_user_id bigint,
+
+        -- resulting updates
+        OUT modified_since_query boolean
+    )
 AS $$
 DECLARE
     submission_id bigint;
@@ -25,6 +29,7 @@ DECLARE
     assessment_instance_id bigint;
     found_uid_or_group text;
     found_qid text;
+    current_modified_at timestamptz;
     max_points double precision;
     new_score_perc double precision;
     new_points double precision;
@@ -35,8 +40,24 @@ BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid), q.qid, s.partial_scores
-    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group, found_qid, current_partial_score
+    SELECT
+        s.id,
+        iq.id,
+        ai.id,
+        aq.max_points,
+        COALESCE(g.name, u.uid),
+        q.qid,
+        s.partial_scores,
+        iq.modified_at
+    INTO
+        submission_id,
+        instance_question_id,
+        assessment_instance_id,
+        max_points,
+        found_uid_or_group,
+        found_qid,
+        current_partial_score,
+        current_modified_at
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -73,6 +94,13 @@ BEGIN
     IF arg_qid IS NOT NULL AND (found_qid IS NULL OR found_qid != arg_qid) THEN
         RAISE EXCEPTION 'found submission with id=%, but question does not match %', arg_submission_id, arg_qid;
     END IF;
+
+    IF arg_modified_at IS NOT NULL AND current_modified_at != arg_modified_at THEN
+        modified_since_query = TRUE;
+        RETURN;
+    END IF;
+
+    modified_since_query = FALSE;
 
     -- ##################################################################
     -- check if partial_scores is an object

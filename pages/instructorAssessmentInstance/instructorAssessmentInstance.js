@@ -143,6 +143,7 @@ router.post('/', (req, res, next) => {
       null, // uid
       null, // assessment_instance_number
       null, // qid
+      req.body.modified_at,
       null, // score_perc
       req.body.points,
       null, // feedback
@@ -165,6 +166,7 @@ router.post('/', (req, res, next) => {
       null, // uid
       null, // assessment_instance_number
       null, // qid
+      req.body.modified_at,
       req.body.score_perc,
       null, // points
       null, // feedback

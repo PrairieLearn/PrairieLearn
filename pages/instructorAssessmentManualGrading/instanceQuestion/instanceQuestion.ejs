@@ -26,6 +26,20 @@
         This assessment instance is still open. Student may still be able to submit new answers.
       </div>
       <% } %>
+      <% if (attempted_score) { %>
+      <div class="alert alert-warning">
+        You tried to submit a grade for this student, but there was a conflict. Here is what you tried:
+        <ul>
+          <li>Score: <%= attempted_score.score_perc %>%</li>
+          <li>Feedback: <%= attempted_score.feedback %></li>
+        </ul>
+         Here is what someone else (user <%= instance_question.last_grader %>) tried:
+        <ul>
+          <li>Score: <%= instance_question.score_perc %>%</li>
+          <li>Feedback: <%= submission.feedback?.manual %></li>
+        </ul>
+      </div>
+      <% } %>
       <div class="row">
           <div class="col-lg-9 col-sm-12">
               <%- include('../../partials/question', {question_context: 'manual_grading'}); %>
