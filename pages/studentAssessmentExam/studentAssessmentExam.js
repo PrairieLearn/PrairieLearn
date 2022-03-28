@@ -8,7 +8,7 @@ var sqldb = require('../../prairielib/lib/sql-db');
 var sqlLoader = require('../../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
-var groupAssessmentHelper = require('../shared/studentGroupAssessmentHelpers/studentGroupAssessmentHelpers');
+var groupAssessmentHelper = require('../../lib/groups');
 
 router.get('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();

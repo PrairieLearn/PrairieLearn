@@ -8,7 +8,7 @@ const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
-var groupAssessmentHelper = require('../shared/studentGroupAssessmentHelpers/studentGroupAssessmentHelpers');
+var groupAssessmentHelper = require('../../lib/groups');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

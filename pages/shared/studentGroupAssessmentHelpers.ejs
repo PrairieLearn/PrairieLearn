@@ -22,10 +22,10 @@
     Failed to create the group. It is already taken. Please try another one.
   </div>
 <% } %>
-<%- include('../groupWorkInitial.ejs', {permissions: permissions}); %>
+<%- include('groupWorkInitial.ejs', {permissions: permissions}); %>
 <% } %>
 <% } else {%>
-  <%- include('../groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
+  <%- include('groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
   <% if (start) { %>
   <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
     <input type="hidden" name="__action" value="new_instance">

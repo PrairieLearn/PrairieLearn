@@ -8,7 +8,7 @@ var error = require('../../prairielib/lib/error');
 var assessment = require('../../lib/assessment');
 var sqldb = require('../../prairielib/lib/sql-db');
 var sqlLoader = require('../../prairielib/lib/sql-loader');
-var groupAssessmentHelper = require('../shared/studentGroupAssessmentHelpers/studentGroupAssessmentHelpers');
+var groupAssessmentHelper = require('../../lib/groups');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
