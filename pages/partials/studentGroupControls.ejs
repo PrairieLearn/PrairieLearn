@@ -26,6 +26,22 @@
 <% } %>
 <% } else {%>
   <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
+  <% if (locals.assessment.require_honor_code) { %>
+    <div class="card card-secondary mb-4 test-class-honor-code">
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item py-2">I certify that I am <%= user.name %> and our group is allowed to take this assessment.</li>
+        <li class="list-group-item py-2">We pledge on our honor that we will not give or receive any unauthorized assistance on this assessment and that all work will be our own.</li>
+      </ul>
+
+      <div class="card-footer text-center border-top-0 py-2">
+        <span class="form-check d-inline">
+          <input type="checkbox" class="form-check-input" id="certify-pledge">
+          <label class="form-check-label font-weight-bold" for="certify-pledge">I certify and pledge the above.</label>
+        </span>
+      </div>
+    </div>
+
+  <% } %>
   <% if (start) { %>
   <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
     <input type="hidden" name="__action" value="new_instance">
