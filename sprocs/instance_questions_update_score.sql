@@ -20,7 +20,8 @@ CREATE FUNCTION
         IN arg_authn_user_id bigint,
 
         -- resulting updates
-        OUT modified_since_query boolean
+        OUT modified_at_conflict boolean,
+        OUT grading_job_id bigint
     )
 AS $$
 DECLARE
@@ -95,12 +96,7 @@ BEGIN
         RAISE EXCEPTION 'found submission with id=%, but question does not match %', arg_submission_id, arg_qid;
     END IF;
 
-    IF arg_modified_at IS NOT NULL AND current_modified_at != arg_modified_at THEN
-        modified_since_query = TRUE;
-        RETURN;
-    END IF;
-
-    modified_since_query = FALSE;
+    modified_at_conflict = arg_modified_at IS NOT NULL AND current_modified_at != arg_modified_at;
 
     -- ##################################################################
     -- check if partial_scores is an object
@@ -148,6 +144,7 @@ BEGIN
     IF submission_id IS NOT NULL
     AND (
         submission_id = arg_submission_id
+        OR new_score IS NOT NULL
         OR arg_feedback IS NOT NULL
         OR arg_partial_scores IS NOT NULL
     ) THEN
@@ -156,33 +153,36 @@ BEGIN
             grading_method, correct,     score,     feedback, partial_scores)
         VALUES
             (submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
-            'Manual',   new_correct, new_score, arg_feedback, arg_partial_scores);
+            'Manual',   new_correct, new_score, arg_feedback, arg_partial_scores)
+        RETURNING id INTO grading_job_id;
 
-        UPDATE submissions AS s
-        SET
-            feedback = CASE
-                WHEN feedback IS NULL THEN arg_feedback
-                WHEN arg_feedback IS NULL THEN feedback
-                WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(arg_feedback) = 'object' THEN feedback || arg_feedback
-                ELSE arg_feedback
-            END,
-            partial_scores = CASE
-                WHEN arg_partial_scores IS NULL THEN partial_scores
-                ELSE arg_partial_scores
-            END,
-            graded_at = now(),
-            grading_method = 'External',
-            override_score = new_score,
-            score = COALESCE(new_score, score),
-            correct = COALESCE(new_correct, correct),
-            gradable = CASE WHEN new_score IS NULL THEN gradable ELSE TRUE END
-        WHERE s.id = submission_id;
+        IF NOT modified_at_conflict THEN
+            UPDATE submissions AS s
+            SET
+                feedback = CASE
+                    WHEN feedback IS NULL THEN arg_feedback
+                    WHEN arg_feedback IS NULL THEN feedback
+                    WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(arg_feedback) = 'object' THEN feedback || arg_feedback
+                    ELSE arg_feedback
+                END,
+                partial_scores = CASE
+                    WHEN arg_partial_scores IS NULL THEN partial_scores
+                    ELSE arg_partial_scores
+                END,
+                graded_at = now(),
+                grading_method = 'External',
+                override_score = new_score,
+                score = COALESCE(new_score, score),
+                correct = COALESCE(new_correct, correct),
+                gradable = CASE WHEN new_score IS NULL THEN gradable ELSE TRUE END
+            WHERE s.id = submission_id;
+        END IF;
     END IF;
 
     -- ##################################################################
     -- do the score update of the instance_question, log it, and update the assessment_instance, if we have a new_score
 
-    IF new_score IS NOT NULL THEN
+    IF new_score IS NOT NULL AND NOT modified_at_conflict THEN
         UPDATE instance_questions AS iq
         SET
             points = new_points,

@@ -18,9 +18,16 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
-    res.locals.attempted_score = req.query.attempted_score
-      ? JSON.parse(req.query.attempted_score)
-      : null;
+    res.locals.conflict_grading_job = null;
+    if (req.query.conflict_grading_job_id) {
+      const params = {
+        grading_job_id: req.query.conflict_grading_job_id,
+        instance_question_id: res.locals.instance_question.id, // for authz
+      };
+      res.locals.conflict_grading_job = (
+        await sqlDb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
+      ).rows[0];
+    }
 
     res.locals.manualGradingInterface = true;
     await util.promisify(question.getAndRenderVariant)(null, null, res.locals);
@@ -71,14 +78,11 @@ router.post(
        * where they can edit score. Fundamentally, we need to rethink how to treat questions that are
        * manually graded within PrairieLearn and how to handle those score calculations.
        */
-      const result = await sqlDb.callAsync('instance_questions_update_score', params);
-      if (result.rows[0]?.modified_since_query) {
-        const attempted_score = JSON.stringify({
-          score_perc: req.body.submission_score_percent,
-          feedback: req.body.submission_note,
-        });
+      const update_result = (await sqlDb.callAsync('instance_questions_update_score', params))
+        .rows[0];
+      if (update_result.modified_at_conflict) {
         return res.redirect(
-          req.baseUrl + `?attempted_score=${encodeURIComponent(attempted_score)}`
+          req.baseUrl + `?conflict_grading_job_id=${update_result.grading_job_id}`
         );
       }
       await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);

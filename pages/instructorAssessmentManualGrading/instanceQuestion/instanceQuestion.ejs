@@ -26,19 +26,45 @@
         This assessment instance is still open. Student may still be able to submit new answers.
       </div>
       <% } %>
-      <% if (attempted_score) { %>
-      <div class="alert alert-warning">
-        You tried to submit a grade for this student, but there was a conflict. Here is what you tried:
-        <ul>
-          <li>Score: <%= attempted_score.score_perc %>%</li>
-          <li>Feedback: <%= attempted_score.feedback %></li>
-        </ul>
-         Here is what someone else (user <%= instance_question.last_grader %>) tried:
-        <ul>
-          <li>Score: <%= instance_question.score_perc %>%</li>
-          <li>Feedback: <%= submission.feedback?.manual %></li>
-        </ul>
+      <% if (conflict_grading_job) { %>
+      <div id="conflictGradingJobModal" class="modal fade">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-light">
+              <div class="modal-title">Grading conflict identified</div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+              <p>A conflicting grade has been submitted by <%= instance_question.last_grader_name %>. Your score
+                and feedback have not been applied. Please review the feedback below and select how you would like
+                to proceed.</p>
+              <div class="row">
+                <div class="col-6">
+                  <p><%= instance_question.last_grader_name %>'s score and feedback (current)</p>
+                  <ul>
+                    <li>Score: <%= instance_question.score_perc %>%</li>
+                    <li>Feedback: <%= submission.feedback?.manual %></li>
+                  </ul>
+                </div>
+                <div class="col-6">
+                  <p>Your score and feedback (pending)</p>
+                  <ul>
+                    <li>Score: <%= conflict_grading_job.score_perc %>%</li>
+                    <li>Feedback: <%= conflict_grading_job.feedback?.manual %></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <a class="btn btn-secondary" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>/next_ungraded?prior_instance_question_id=<%= instance_question.id %>">Accept current score</a>
+              <!-- Add general buttons here -->
+            </div>
+          </div>
+        </div>
       </div>
+      <script>
+        $(function() {$('#conflictGradingJobModal').modal({})})
+      </script>
       <% } %>
       <div class="row">
           <div class="col-lg-9 col-sm-12">
