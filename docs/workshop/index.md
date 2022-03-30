@@ -15,9 +15,9 @@ In this training course, we will provide an introduction to the following topics
 
 3. **Complete the ["Get Started" tutorial](https://prairielearn.readthedocs.io/en/latest/getStarted/)**, which will show you how to create:
 
-   - course instances
-   - assessments
-   - questions
+      - course instances
+      - assessments
+      - questions
 
 ## Workshop Schedule
 
