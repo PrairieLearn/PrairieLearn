@@ -36,20 +36,27 @@
             </div>
             <div class="modal-body">
               <div class="alert alert-danger" role="alert">
-                A conflicting grade has been submitted by <%= instance_question.last_grader_name %>. Your score
-                and feedback have not been applied. Please review the feedback below and select how you would like
-                to proceed.
+                The submission you have just graded has already been graded by <%= instance_question.last_grader_name %>. Your score
+                and feedback have not been applied. Please review the feedback below and select how you would like to proceed.
+              </div>
+              <div class="row mb-2">
+                <div class="col-6">
+                  <div><strong>Existing score and feedback</strong></div>
+                  <div><%= instance_question.modified_at_formatted %>, by <%= instance_question.last_grader_name %></div>
+                </div>
+                <div class="col-6">
+                  <div><strong>Conflicting score and feedback</strong></div>
+                  <div><%= conflict_grading_job.grading_date_formatted %>, by <%= conflict_grading_job.grader_name %></div>
+                </div>
               </div>
               <div class="row">
                 <div class="col-6">
-                  <p><strong>Current score and feedback (by <%= instance_question.last_grader_name %>)</strong></p>
                   <%- include('../../partials/instructorGradingPanel',
                               {score_perc: instance_question.score_perc,
                                points: instance_question.points,
-                               submission, disable: true, skip_text: 'Accept current score'}); %>
+                               submission, disable: true, skip_text: 'Accept existing score'}); %>
                 </div>
                 <div class="col-6">
-                  <p><strong>My score and feedback (unsuccessful)</strong></p>
                   <%- include('../../partials/instructorGradingPanel',
                               {score_perc: conflict_grading_job.score_perc,
                                points: conflict_grading_job.score * assessment_question.max_points,

@@ -47,7 +47,8 @@ SELECT
     groups_uid_list(g.id) AS instance_group_uid_list,
     to_jsonb(iq) || to_jsonb(iqnag) || jsonb_build_object(
         'assigned_grader_name', COALESCE(uag.name, uag.uid),
-        'last_grader_name', COALESCE(ulg.name, ulg.uid)
+        'last_grader_name', COALESCE(ulg.name, ulg.uid),
+        'modified_at_formatted', format_date_short(iq.modified_at, COALESCE(ci.display_timezone, c.display_timezone))
     ) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
