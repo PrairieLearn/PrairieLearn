@@ -3,7 +3,6 @@
 const tracing = require('./lib/tracing');
 
 const ERR = require('async-stacktrace');
-const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
