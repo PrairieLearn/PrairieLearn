@@ -49,14 +49,14 @@ Take a look at the documentation for the [python auto grader](https://prairielea
 
 #### Example 4:
 
-Write a question that provides students with a matrix $A$, and asks them to  compute the following:
+Write a question that provides students with a matrix $A$, and asks them to compute the following:
 
 1. another matrix $B = \beta \, A$, where $\beta \in [2,9]$.
 
 2. a function that takes two matrices $M_1$ and $M_2$ as arguments, and returns:
 
-    - a matrix $C$ given by the element-wise multiplication of $M_1$ and $M_2$ (and hence $M_1$ and $M_2$ should have the same dimensions)
-    - the summation of all the entries of $C$
+   - a matrix $C$ given by the element-wise multiplication of $M_1$ and $M_2$ (and hence $M_1$ and $M_2$ should have the same dimensions)
+   - the summation of all the entries of $C$
 
 **PrairieLearn implementation:**
 
@@ -64,4 +64,4 @@ Write a question that provides students with a matrix $A$, and asks them to  com
 
 ## Homework 4
 
-Continue creating more questions using the PL elements that best fit your needs. The topics discussed today can be helpful when creating more advanced questions, but not everyone will need this type of customized grading. 
+Continue creating more questions using the PL elements that best fit your needs. The topics discussed today can be helpful when creating more advanced questions, but not everyone will need this type of customized grading.

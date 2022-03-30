@@ -125,7 +125,6 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Disable honor code message
 - You may want to adjust the `startDate` and `endDate` to give students more opportunity for practice
 
-
 [Assessment template](https://www.prairielearn.org/pl/course_instance/4970/assessment/1981282) from the Example Course
 
 ### Configuration 4: Synchronous exam using PrairieTest
@@ -147,5 +146,5 @@ You will be able to find the `examUuid` in the CBTF scheduler app.
 
 ## Homework 2
 
-Continue creating questions using the elements highlighted in lesson 1. 
+Continue creating questions using the elements highlighted in lesson 1.
 You can also create one assessment. What options do you think will be useful for your course? You can take a look at different types of assessments in the [example course](https://www.prairielearn.org/pl/course_instance/4970/)
