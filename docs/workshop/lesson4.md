@@ -33,7 +33,7 @@ This is an example of a question that expects data collected from an experiment.
 The purpose of this experiment is to determine the convective heat transfer coefficients for natural convection over pin fins. Seven thermocouples are embedded along the length of the fin.
 One thermocouple is placed at the base of the fin, which is the reference position $x_0 = 0$. We denote the temperature
 at the base as $T_b = T(x_0)$. The other thermocouples are placed at positions $x_1$, $x_2$, ... with
-corresponsing temperatures $T_1$, $T_2$, etc. The pin fin has diameter $D$, length $L$ and is made of stainless steel with thermal conductivity $k = 20 \rm W/mK$.
+corresponding temperatures $T_1$, $T_2$, etc. The pin fin has diameter $D$, length $L$ and is made of stainless steel with thermal conductivity $k = 20 \rm W/mK$.
 
 Students will be asked to enter measurements for temperature and the position of the thermocouples. Make sure you think about the tolerances you expect for these variables.
 
