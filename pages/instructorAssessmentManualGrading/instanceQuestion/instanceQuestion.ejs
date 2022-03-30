@@ -28,36 +28,34 @@
       <% } %>
       <% if (conflict_grading_job) { %>
       <div id="conflictGradingJobModal" class="modal fade">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
           <div class="modal-content">
             <div class="modal-header bg-danger text-light">
               <div class="modal-title">Grading conflict identified</div>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
             </div>
             <div class="modal-body">
-              <p>A conflicting grade has been submitted by <%= instance_question.last_grader_name %>. Your score
+              <div class="alert alert-danger" role="alert">
+                A conflicting grade has been submitted by <%= instance_question.last_grader_name %>. Your score
                 and feedback have not been applied. Please review the feedback below and select how you would like
-                to proceed.</p>
+                to proceed.
+              </div>
               <div class="row">
                 <div class="col-6">
-                  <p><%= instance_question.last_grader_name %>'s score and feedback (current)</p>
-                  <ul>
-                    <li>Score: <%= instance_question.score_perc %>%</li>
-                    <li>Feedback: <%= submission.feedback?.manual %></li>
-                  </ul>
+                  <p><strong>Current score and feedback (by <%= instance_question.last_grader_name %>)</strong></p>
+                  <%- include('../../partials/instructorGradingPanel',
+                              {score_perc: instance_question.score_perc,
+                               points: instance_question.points,
+                               submission, disable: true, skip_text: 'Accept current score'}); %>
                 </div>
                 <div class="col-6">
-                  <p>Your score and feedback (pending)</p>
-                  <ul>
-                    <li>Score: <%= conflict_grading_job.score_perc %>%</li>
-                    <li>Feedback: <%= conflict_grading_job.feedback?.manual %></li>
-                  </ul>
+                  <p><strong>My score and feedback (unsuccessful)</strong></p>
+                  <%- include('../../partials/instructorGradingPanel',
+                              {score_perc: conflict_grading_job.score_perc,
+                               points: conflict_grading_job.score * assessment_question.max_points,
+                               submission: conflict_grading_job}); %>
                 </div>
               </div>
-            </div>
-            <div class="modal-footer">
-              <a class="btn btn-secondary" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>/next_ungraded?prior_instance_question_id=<%= instance_question.id %>">Accept current score</a>
-              <!-- Add general buttons here -->
             </div>
           </div>
         </div>
@@ -67,22 +65,30 @@
       </script>
       <% } %>
       <div class="row">
-          <div class="col-lg-9 col-sm-12">
-              <%- include('../../partials/question', {question_context: 'manual_grading'}); %>
+        <div class="col-lg-9 col-sm-12">
+          <%- include('../../partials/question', {question_context: 'manual_grading'}); %>
+        </div>
+
+        <div class="col-lg-3 col-sm-12">
+          <div class="card mb-4 border-success">
+            <div class="card-header bg-success">Grading Panel</div>
+            <div class="card-body">
+              <a role="button" class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>">
+                <i class="fas fa-arrow-left"></i>
+                Back to Question
+              </a>
+              <%- include('../../partials/instructorGradingPanel',
+                          {score_perc: instance_question.score_perc,
+                           points: instance_question.points,
+                           submission}); %>
+            </div>
+            <div class="card-footer small">
+              This box is not visible to students.
+            </div>
           </div>
 
-          <div class="col-lg-3 col-sm-12">
-              <%- include('../../partials/instructorGradingPanel'); %>
-              <div class="card mb-4">
-                  <div class="card-header bg-secondary text-white">Student view placeholder</div>
-                  <div class="card-body">
-                      <div class="d-flex justify-content-center">
-                          In student views this area is used for assessment and score info.
-                      </div>
-                  </div>
-              </div>
-              <%- include('../../partials/instructorInfoPanel', {question_context: 'manual_grading'}); %>
-          </div>
+          <%- include('../../partials/instructorInfoPanel', {question_context: 'manual_grading'}); %>
+        </div>
       </div>
 
     </div>
