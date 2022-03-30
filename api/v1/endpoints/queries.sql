@@ -267,3 +267,13 @@ SELECT
     ), '[]'::jsonb) AS item
 FROM
     object_data;
+
+-- BLOCK select_assessment_instance
+SELECT ai.id AS assessment_instance_id
+FROM
+    assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+    ai.id = $unsafe_assessment_instance_id
+    AND ci.id = $course_instance_id;
