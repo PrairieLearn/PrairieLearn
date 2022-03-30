@@ -53,6 +53,7 @@ WHERE
 -- BLOCK select_instance_questions
 SELECT
     iq.*,
+    to_jsonb(iq.modified_at) AS modified_at,
     ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
     z.id AS zone_id,
     z.title AS zone_title,

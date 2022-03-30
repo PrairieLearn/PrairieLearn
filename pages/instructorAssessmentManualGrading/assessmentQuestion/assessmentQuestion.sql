@@ -13,6 +13,7 @@ WITH issue_count AS (
 )
 SELECT
     iq.*,
+    to_jsonb(iq.modified_at) AS modified_at,
     ai.open AS assessment_open,
     u.uid,
     COALESCE(agu.name, agu.uid) AS assigned_grader_name,
