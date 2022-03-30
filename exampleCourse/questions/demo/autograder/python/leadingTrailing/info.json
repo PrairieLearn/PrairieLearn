@@ -3,10 +3,9 @@
     "title": "Autograder demo: Adding leading/trailing code",
     "topic": "Autograder",
     "tags": [
-        "v3",
         "Fa20",
         "nnytko2",
-        "short-coding"
+        "code"
     ],
     "type": "v3",
     "singleVariant": true,

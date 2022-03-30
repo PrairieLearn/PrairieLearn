@@ -198,6 +198,21 @@ the `inv` and `pinv` functions will be effectively banned from use. Any time the
 
 ![](grader-structure.png)
 
+# Course-specific libraries
+
+Some courses may use libraries that are common across multiple questions. For such questions, it is possible to save these libraries and classes in the course's `serverFilesCourse` directory. Any files in this directory are automatically added to the Python PATH, so they can be imported in any of the files above as needed. If this option is used, however, the question's `info.json` file should indicate that these files should be added to the grading container, as below:
+
+```json
+{
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "serverFilesCourse": ["course_lib.py"],
+    "entrypoint": "/python_autograder/run.sh"
+  }
+}
+```
+
 # Security
 
 At the start of a grading job, the script `run.sh` is run with `root` privileges. This will initialise directories and copy grading files into the correct location, delete itself, and generate a secret filename for the grading results using `uuidgen` which is passed into the grading code via command-line argument. Then the actual grading script will then be run (`pltest.py`) as the user `ag`.

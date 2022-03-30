@@ -1,0 +1,6 @@
+# Recommended way to use this file:
+# git config blame.ignoreRevsFile .git-blame-ignore-revs
+# See https://www.moxio.com/blog/43/ignoring-bulk-change-commits-with-git-blame
+
+# Format all files with Prettier
+2f3b359987bebf00d45a8c32d58e3b302d117c4a

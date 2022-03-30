@@ -1,0 +1,75 @@
+{
+    "uuid": "854E9FAF-7283-4501-99D8-B8C309AD7C9E",
+    "type": "Exam",
+    "title": "Exam including autograded and manually graded questions",
+    "set": "Exam",
+    "number": "4",
+    "allowAccess": [
+        {
+            "comment": "students will have access to this timed exam, but will not be able to see their scores or questions once the exam is completed",
+            "mode": "Public",
+            "credit": 100,
+            "timeLimitMin": 3,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2023-11-07T23:59:59",
+            "showClosedAssessment": false,
+            "showClosedAssessmentScore": false
+       },
+       {
+           "comment": "students will have access to their final total score at a later time, after all the questions are manually graded and scores are uploaded",
+           "mode": "Public",
+           "credit": 0,
+           "startDate": "2023-11-08T00:00:00",
+           "endDate": "2023-11-15T23:59:59",
+           "showClosedAssessment": false
+      }
+    ],
+    "zones": [
+      {
+          "title": "Auto-graded questions",
+          "questions": [
+              {
+                  "numberChoose": 1,
+                  "points": 5,
+                  "alternatives": [
+                      {"id": "template/checkbox"},
+                      {"id": "template/multipleChoiceMultipleCorrect"}
+                  ]
+              },
+              {
+                  "numberChoose": 1,
+                  "points": [5,1],
+                  "alternatives": [
+                      {"id": "template/multipleChoiceWithFigure"},
+                      {"id": "template/multipleChoiceSingleCorrect"}
+                  ]
+              },
+              {
+                  "numberChoose": 1,
+                  "points": 5,
+                  "alternatives": [
+                      {"id": "template/multipleChoiceTrueFalseFromList"},
+                      {"id": "template/multipleChoiceFromList"}
+                  ]
+              },
+              {
+                  "numberChoose": 1,
+                  "points": [5,2],
+                  "alternatives": [
+                      {"id": "demo/fixedCheckbox"},
+                      {"id": "demo/randomSymbolic"}
+                  ]
+              }
+          ]
+      },
+      {
+          "title": "Manually graded questions",
+          "questions": [
+              {"id": "demo/manualGrade/codeUpload",          "points": [10]},
+              {"id": "demo/fileDownloadUpload",              "points": [10]},
+              {"id": "demo/markdownEditorLivePreview",       "points": [5]}
+          ]
+      }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> The auto-graded questions are graded as students complete the assessment, allowing them to see their scores immediately and retry some of the questions when points are still available.</p> <p> Students can save the manually graded question as they complete the assessment. Instructors will later download the submission files, assign grades, and upload back the scores and feedback. </p><p> The assessment will be closed when the time limit expires (here set to 3 minutes), or once students click the 'Finish assessment' button. Students will not be able to see their total score after the assessment is closed. An additional access rule can be used to allow students to see their total score once all the questions are graded.</p>"
+}

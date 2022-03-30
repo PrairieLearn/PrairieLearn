@@ -29,6 +29,13 @@
         </div>
 
         <div class="table-responsive">
+          <% 
+          var nTableCols = 9;
+          
+          // If at least one question has a nonzero unlock score, display the Advance Score column
+          const showAdvanceScorePercCol = questions.filter(q => {return q.assessment_question_advance_score_perc != 0}).length >= 1;
+          if (showAdvanceScorePercCol) nTableCols++;
+          %>
           <table class="table table-sm table-hover">
             <thead>
               <tr>
@@ -37,6 +44,9 @@
                 <th>Topic</th>
                 <th>Tags</th>
                 <th>Points</th>
+                <% if (showAdvanceScorePercCol) { %>
+                  <th>Advance Score</th>
+                <% } %>
                 <th width="100">Mean score</th>
                 <th width="100">Question score</th>
                 <th>Num. Submissions Histogram</th>
@@ -47,7 +57,7 @@
               <% questions.forEach(function(question, i) { %>
               <% if (question.start_new_zone) { %>
               <tr>
-                <th colspan="9">
+                <th colspan="<%= nTableCols %>">
                   Zone <%= question.zone_number %>. <%= question.zone_title %>
                   <% if (question.zone_number_choose == null) { %>
                   (Choose all questions)
@@ -67,7 +77,7 @@
               <% } %>
               <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
               <tr>
-                <td colspan="9">
+                <td colspan="<%= nTableCols %>">
                   <%= question.alternative_group_number %>.
                   <% if (question.alternative_group_number_choose == null) { %>
                   Choose all questions from:
@@ -112,6 +122,11 @@
                   <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
                   <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
                 </td>
+                <% if (showAdvanceScorePercCol) { %>
+                  <td class="<% if (question.assessment_question_advance_score_perc == 0) { %>text-muted<% } %>" data-testid="advance-score-perc">
+                    <%= question.assessment_question_advance_score_perc %>%
+                  </td>
+                <% } %>
                 <td>
                   <% if (question.mean_question_score) { %>
                     <%= question.mean_question_score.toFixed(3) %>

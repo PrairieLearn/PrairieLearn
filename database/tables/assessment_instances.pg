@@ -6,6 +6,7 @@ columns
     date: timestamp with time zone default CURRENT_TIMESTAMP
     date_limit: timestamp with time zone
     duration: interval default '00:00:00'::interval
+    grading_needed: boolean not null default false
     group_id: bigint
     id: bigint not null default nextval('assessment_instances_id_seq'::regclass)
     max_bonus_points: double precision
