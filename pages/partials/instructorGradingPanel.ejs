@@ -8,7 +8,7 @@
     <label>Score:</label>
     <div class="input-group">
       <input type="number" min="0" max="<%= assessment_question.max_points %>" step="any" class="form-control"
-             name="submission_score_points" value="<%= points %>" aria-describedby="scoreHelpBlock"
+             name="submission_score_points" value="<%= locals.points ?? instance_question.points %>" aria-describedby="scoreHelpBlock"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
              oninput="$(this).parents('form').find('[name=submission_score_percent]').val(this.value * 100 / <%= assessment_question.max_points %>);"
              />
@@ -16,7 +16,7 @@
     </div>
     <div class="input-group">
       <input type="number" min="0" max="100" step="any" class="form-control"
-             name="submission_score_percent" value="<%= score_perc %>" aria-describedby="scoreHelpBlock"
+             name="submission_score_percent" value="<%= locals.score_perc ?? instance_question.score_perc %>" aria-describedby="scoreHelpBlock"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
              oninput="$(this).parents('form').find('[name=submission_score_points]').val(this.value * <%= assessment_question.max_points %> / 100);"
              />

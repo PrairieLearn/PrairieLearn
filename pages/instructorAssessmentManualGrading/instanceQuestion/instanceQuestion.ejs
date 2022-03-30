@@ -52,9 +52,7 @@
               <div class="row">
                 <div class="col-6">
                   <%- include('../../partials/instructorGradingPanel',
-                              {score_perc: instance_question.score_perc,
-                               points: instance_question.points,
-                               submission, disable: true, skip_text: 'Accept existing score'}); %>
+                              {disable: true, skip_text: 'Accept existing score'}); %>
                 </div>
                 <div class="col-6">
                   <%- include('../../partials/instructorGradingPanel',
@@ -84,10 +82,7 @@
                 <i class="fas fa-arrow-left"></i>
                 Back to Question
               </a>
-              <%- include('../../partials/instructorGradingPanel',
-                          {score_perc: instance_question.score_perc,
-                           points: instance_question.points,
-                           submission}); %>
+              <%- include('../../partials/instructorGradingPanel'); %>
             </div>
             <div class="card-footer small">
               This box is not visible to students.
