@@ -26,7 +26,7 @@ const assets = require('../lib/assets');
 let coreElementsCache = {};
 // Maps course IDs to course element info
 let courseElementsCache = {};
-/* Maps course IDs to course element extension info */
+// Maps course IDs to course element extension info
 let courseExtensionsCache = {};
 
 module.exports = {
@@ -82,7 +82,7 @@ module.exports = {
           });
         },
         async (files) => {
-          /* Filter out any non-directories */
+          // Filter out any non-directories
           return async.filter(files, async (file) => {
             const stats = await fs.promises.lstat(path.join(sourceDir, file));
             return stats.isDirectory();
@@ -166,13 +166,15 @@ module.exports = {
    * Takes a directory containing an extension directory and returns a new
    * object mapping element names to each extension, which itself an object
    * that contains relevant extension scripts and styles.
-   * @param  {String}   sourceDir Absolute path to the directory of extensions
+   *
+   * @param {string} sourceDir Absolute path to the directory of extensions
+   * @param {string} runtimeDir The path that the worker will load extensions from
    */
-  async loadExtensionsAsync(sourceDir) {
+  async loadExtensionsAsync(sourceDir, runtimeDir) {
     const readdir = promisify(fs.readdir);
     const readJson = promisify(fs.readJson);
 
-    /* Load each root element extension folder */
+    // Load each root element extension folder
     let elementFolders;
     try {
       elementFolders = await readdir(sourceDir);
@@ -185,7 +187,8 @@ module.exports = {
       }
     }
 
-    /* Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ] */
+    // Get extensions from each element folder.  Each is stored as
+    // `['element name', 'extension name']`
     const elementArrays = (
       await async.map(elementFolders, async (element) => {
         const extensions = await readdir(path.join(sourceDir, element));
@@ -193,7 +196,7 @@ module.exports = {
       })
     ).flat();
 
-    /* Populate element map */
+    // Populate element map
     const elements = {};
     elementArrays.forEach((extension) => {
       if (!(extension[0] in elements)) {
@@ -201,7 +204,7 @@ module.exports = {
       }
     });
 
-    /* Load extensions */
+    // Load extensions
     await async.each(elementArrays, async (extension) => {
       const [element, extensionDir] = extension;
       const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
@@ -211,11 +214,11 @@ module.exports = {
         info = await readJson(infoPath);
       } catch (err) {
         if (err.code === 'ENOENT') {
-          /* Not an extension directory, skip it. */
+          // Not an extension directory, skip it.
           logger.verbose(`${infoPath} not found, skipping...`);
           return;
         } else if (err.code === 'ENOTDIR') {
-          /* Random file, skip it as well. */
+          // Random file, skip it as well.
           logger.verbose(`Found stray file ${infoPath}, skipping...`);
           return;
         } else {
@@ -225,14 +228,15 @@ module.exports = {
 
       await jsonLoader.validateJSONAsync(info, schemas.infoElementExtension);
       info.name = extensionDir;
-      info.directory = path.join(sourceDir, element, extensionDir);
+      info.directory = path.join(runtimeDir, element, extensionDir);
       elements[element][extensionDir] = info;
     });
 
     return elements;
   },
 
-  async loadExtensionsForCourseAsync(course) {
+  async loadExtensionsForCourseAsync(context) {
+    const { course, course_dir, course_dir_host } = context;
     if (
       courseExtensionsCache[course.id] !== undefined &&
       courseExtensionsCache[course.id].commit_hash &&
@@ -241,9 +245,9 @@ module.exports = {
       return courseExtensionsCache[course.id].data;
     }
 
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     let extensions = await module.exports.loadExtensionsAsync(
-      path.join(coursePath, 'elementExtensions')
+      path.join(course_dir_host, 'elementExtensions'),
+      path.join(course_dir, 'elementExtensions')
     );
     courseExtensionsCache[course.id] = {
       commit_hash: course.commit_hash,
@@ -282,11 +286,11 @@ module.exports = {
    */
   getElementClientFiles: function (data, elementName, context) {
     let dataCopy = _.cloneDeep(data);
-    /* The options field wont contain URLs unless in the 'render' stage, so check
-           if it is populated before adding the element url */
+    // The options field won't contain URLs unless in the 'render' stage, so check
+    // if it is populated before adding the element url
     if ('base_url' in data.options) {
-      /* Join the URL using Posix join to avoid generating a path with backslashes,
-               as would be the case when running on Windows */
+      // Join the URL using Posix join to avoid generating a path with backslashes,
+      // as would be the case when running on Windows
       dataCopy.options.client_files_element_url = path.posix.join(
         data.options.base_url,
         'elements',
@@ -573,7 +577,7 @@ module.exports = {
         if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
           renderedElementNames.push(elementName);
         }
-        /* Populate the extensions used by this element */
+        // Populate the extensions used by this element
         data.extensions = [];
         if (_.has(context.course_element_extensions, elementName)) {
           data.extensions = context.course_element_extensions[elementName];
@@ -602,7 +606,7 @@ module.exports = {
           // We'll catch this and add it to the course issues list
           throw courseIssue;
         }
-        /* We'll be sneaky and remove the extensions, since they're not used elsewhere */
+        // We'll be sneaky and remove the extensions, since they're not used elsewhere
         delete data.extensions;
         delete ret_val.extensions;
         if (_.isString(consoleLog) && consoleLog.length > 0) {
@@ -700,7 +704,7 @@ module.exports = {
             }
 
             const elementFile = module.exports.getElementController(elementName, context);
-            /* Populate the extensions used by this element */
+            // Populate the extensions used by this element
             data.extensions = [];
             if (_.has(context.course_element_extensions, elementName)) {
               data.extensions = context.course_element_extensions[elementName];
@@ -992,7 +996,7 @@ module.exports = {
    * URLs are not included here because those are only applicable during 'render'.
    */
   getContextOptions: function (context) {
-    /* These options are always available in any phase. */
+    // These options are always available in any phase.
 
     let options = {};
     options.question_path = context.question_dir;
@@ -1296,7 +1300,8 @@ module.exports = {
                 clientFilesQuestionScripts: [],
               };
 
-              /* Question dependencies are checked via schema on sync-time, so there's no need for sanity checks here. */
+              // Question dependencies are checked via schema on sync-time,
+              // so there's no need for safety checks here.
               for (let type in question.dependencies) {
                 for (let dep of question.dependencies[type]) {
                   if (!_.includes(dependencies[type], dep)) {
@@ -1376,7 +1381,7 @@ module.exports = {
                   }
                 }
 
-                /* Load any extensions if they exist */
+                // Load any extensions if they exist
                 if (_.has(extensions, elementName)) {
                   for (const extensionName of Object.keys(extensions[elementName])) {
                     if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
@@ -1757,9 +1762,9 @@ module.exports = {
       question_dir_host: questionDirectoryHost,
     };
 
-    /* Load elements and any extensions */
+    // Load elements and any extensions
     const elements = await module.exports.loadElementsForCourseAsync(course);
-    const extensions = await module.exports.loadExtensionsForCourseAsync(course);
+    const extensions = await module.exports.loadExtensionsForCourseAsync(context);
 
     context.course_elements = elements;
     context.course_element_extensions = extensions;
