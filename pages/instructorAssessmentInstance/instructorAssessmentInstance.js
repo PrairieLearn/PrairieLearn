@@ -178,7 +178,7 @@ router.post('/', (req, res, next) => {
       null, // partial_scores
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('instance_questions_update_score', params, (err, _result) => {
+    sqlDb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
       if (result.rows[0].modified_at_conflict && res.locals.course.manual_grading_visible) {
         return res.redirect(
