@@ -12,13 +12,19 @@
 -- grading when it shouldn't.
 
 WITH ranked_submissions AS (
-    SELECT
-        v.instance_question_id,
-        s.*,
-        ROW_NUMBER() OVER (PARTITION BY v.instance_question_id ORDER BY s.date DESC) AS submission_row
+    SELECT DISTINCT ON (iq.id)
+        iq.id AS instance_question_id,
+        s.graded_at
     FROM
-        variants AS v
-        JOIN submissions AS s ON (s.variant_id = v.id)
+        submissions AS s
+        JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
+        JOIN questions AS q ON (q.id = v.question_id)
+    WHERE
+        q.grading_method = 'Manual'
+        AND iq.modified_at > now() - interval '3 months'
+    ORDER BY
+        iq.id, s.date DESC, s.id DESC
 )
 UPDATE instance_questions AS iq
 SET
@@ -31,5 +37,4 @@ WHERE
     aq.id = iq.assessment_question_id
     AND q.grading_method = 'Manual'
     AND rs.instance_question_id = iq.id
-    AND rs.submission_row = 1
     AND (iq.requires_manual_grading OR rs.graded_at IS NULL);
