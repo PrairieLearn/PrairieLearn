@@ -30,7 +30,7 @@ To push the built image to the Docker and ECR registries, run:
 
 Build the image using the above instructions. Make note of the name of the resulting image; you'll need this image name momentarily.
 
-Start the container, using the version of the container that you noted above (the examples below use the Git hash `12345`). Note that we mount in the PrairieLearn `elements` directory so that the examples below can use PrairieLearn's elements:
+Start the container, using the version of the container that you noted above (the examples below use the Git hash `12345`).
 
 ```sh
 docker run --rm -it prairielearn/executor:12345
