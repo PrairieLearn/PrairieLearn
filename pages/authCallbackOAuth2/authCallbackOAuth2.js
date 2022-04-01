@@ -62,6 +62,7 @@ router.get('/', function (req, res, next) {
       const pl_authn = csrf.generateToken(tokenData, config.secretKey);
       res.cookie('pl_authn', pl_authn, {
         maxAge: config.authnCookieMaxAgeMilliseconds,
+        httpOnly: true,
       });
       let redirUrl = res.locals.homeUrl;
       if ('preAuthUrl' in req.cookies) {

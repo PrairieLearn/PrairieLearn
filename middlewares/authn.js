@@ -175,6 +175,7 @@ module.exports = function (req, res, next) {
     var pl_authn = csrf.generateToken(tokenData, config.secretKey);
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
+      httpOnly: true,
     });
 
     next();

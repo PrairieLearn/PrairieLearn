@@ -34,6 +34,7 @@ router.all('/', function (req, res, next) {
       var pl_authn = csrf.generateToken(tokenData, config.secretKey);
       res.cookie('pl_authn', pl_authn, {
         maxAge: config.authnCookieMaxAgeMilliseconds,
+        httpOnly: true,
       });
       var redirUrl = res.locals.homeUrl;
       if ('preAuthUrl' in req.cookies) {
