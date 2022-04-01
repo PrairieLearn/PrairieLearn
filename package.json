@@ -148,7 +148,7 @@
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-import": "^2.25.4",
         "fast-glob": "^3.2.11",
-        "htmlhint": "^1.1.2",
+        "htmlhint": "^1.1.3",
         "jest": "^27.4.7",
         "jsdoc": "^3.6.10",
         "json-stable-stringify": "^1.0.1",
