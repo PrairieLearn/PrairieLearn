@@ -28,7 +28,9 @@ yum -y install \
     texlive-dvipng \
     git \
     graphviz \
-    graphviz-devel
+    graphviz-devel \
+    # Needed by the Pillow package
+    libjpeg
 
 yum clean all
 
