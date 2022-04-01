@@ -127,29 +127,31 @@ module.exports._initWithLock = function (callback) {
             async.waterfall(
               [
                 (callback) => {
-                  fs.readFile(path.join(migrationDir, file.filename), 'utf8', (err, sql) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, sql);
-                  });
+                  fs.readFile(
+                    path.join(migrationDir, file.filename),
+                    'utf8',
+                    (err, migrationSql) => {
+                      if (ERR(err, callback)) return;
+                      callback(null, migrationSql);
+                    }
+                  );
                 },
-                (sql, callback) => {
-                  // Perform the migration
-                  sqldb.query(sql, [], (err, _result) => {
-                    if (err) error.addData(err, { sqlFile: file.filename });
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                  });
-                },
-                (callback) => {
-                  // Record the migration
-                  const params = {
-                    filename: file.filename,
-                    index: file.index,
-                    project,
-                  };
-                  sqldb.query(sql.insert_migration, params, (err, _result) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
+                async (migrationSql) => {
+                  await sqldb.runInTransactionAsync(async () => {
+                    // Perform the migration
+                    try {
+                      await sqldb.queryAsync(migrationSql, []);
+                    } catch (err) {
+                      error.addData(err, { sqlFile: file.filename });
+                      throw err;
+                    }
+
+                    // Record the migration
+                    await sqldb.queryAsync(sql.insert_migration, {
+                      filename: file.filename,
+                      index: file.index,
+                      project,
+                    });
                   });
                 },
               ],
