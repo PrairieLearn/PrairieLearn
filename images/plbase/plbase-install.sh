@@ -29,8 +29,7 @@ yum -y install \
     git \
     graphviz \
     graphviz-devel \
-    # Needed by the Pillow package
-    libjpeg
+    libjpeg # Needed by the Pillow package
 
 yum clean all
 
