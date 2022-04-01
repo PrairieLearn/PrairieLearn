@@ -64,6 +64,8 @@ function paramsToArray(sql, params) {
   if (!_.isObjectLike(params)) throw new Error('params must be array or object');
 
   const re = /\$([-_a-zA-Z0-9]+)/;
+  /** @type {Set<string>} */
+  let usedParams = new Set();
   let result;
   let processedSql = '';
   let remainingSql = sql;
@@ -72,6 +74,7 @@ function paramsToArray(sql, params) {
   let paramsArray = [];
   while ((result = re.exec(remainingSql)) !== null) {
     const v = result[1];
+    usedParams.add(v);
     if (!_(map).has(v)) {
       if (!_(params).has(v)) throw new Error(`Missing parameter: ${v}`);
       if (_.isArray(params[v])) {
@@ -92,6 +95,14 @@ function paramsToArray(sql, params) {
     processedSql += remainingSql.substring(0, result.index) + map[v];
     remainingSql = remainingSql.substring(result.index + result[0].length);
   }
+
+  // Throw an error if any parameters weren't used by the query. This is
+  // probably the result of a bug or incomplete refactor.
+  const unusedParams = Object.keys(params).filter((p) => !usedParams.has(p));
+  if (unusedParams.length > 0) {
+    throw new Error(`Unused parameters: ${unusedParams.join(', ')}`);
+  }
+
   processedSql += remainingSql;
   remainingSql = '';
   return { processedSql, paramsArray };
