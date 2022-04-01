@@ -90,13 +90,20 @@ router.post(
         null, // uid
         null, // assessment_instance_number
         null, // qid
+        req.body.modified_at,
         null, // score_perc
         req.body.points,
         null, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
       ];
-      await sqlDb.callAsync('instance_questions_update_score', params);
+      const result = (await sqlDb.callAsync('instance_questions_update_score', params)).rows[0];
+      if (result.modified_at_conflict) {
+        return res.send({
+          conflict_grading_job_id: result.grading_job_id,
+          conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
+        });
+      }
       await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
       res.send({});
     } else if (req.body.__action === 'edit_question_score_perc') {
@@ -108,13 +115,20 @@ router.post(
         null, // uid
         null, // assessment_instance_number
         null, // qid
+        req.body.modified_at,
         req.body.score_perc,
         null, // points
         null, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
       ];
-      await sqlDb.callAsync('instance_questions_update_score', params);
+      const result = (await sqlDb.callAsync('instance_questions_update_score', params)).rows[0];
+      if (result.modified_at_conflict) {
+        return res.send({
+          conflict_grading_job_id: result.grading_job_id,
+          conflict_details_url: `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`,
+        });
+      }
       await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
       res.send({});
     } else {
