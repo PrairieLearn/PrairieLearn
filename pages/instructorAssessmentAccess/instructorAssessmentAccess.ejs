@@ -112,7 +112,17 @@
             </thead>
             <tbody>
               <% explained_sets.forEach(function(set) { %>
-              <tr><th colspan="7"><em><%= set.uids.map(uid => set.names[uid] ?? uid).join(', ') %></em></th></tr>
+              <tr>
+                <th colspan="7">
+                  <% if (set.other_uids) { %>
+                  Students in general
+                  <% } else if (authz_data.has_course_instance_permission_view) { %>
+                  <%= set.uids.map(uid => set.names[uid] ?? uid).join(', ') %>
+                  <% } else { %>
+                  <a role="button" class="btn btn-xs btn-warning" tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body" data-placement="auto" title="Hidden UIDs" data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones.">Hidden</a>
+                  <% } %>
+                </th>
+              </tr>
               <% set.rules.forEach(function(access_rule) { %>
               <tr>
                 <td></td>

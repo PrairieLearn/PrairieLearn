@@ -134,7 +134,7 @@ router.get(
     });
 
     if (student_rules && student_rules.length) {
-      user_spec_rules.push({ uids: ['Students in general'], names: {}, rules: student_rules });
+      user_spec_rules.push({ other_uids: true, rules: student_rules });
     }
 
     res.locals.explained_sets = user_spec_rules;
