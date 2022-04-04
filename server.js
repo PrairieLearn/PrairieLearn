@@ -12,6 +12,7 @@ const async = require('async');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
+const cookie = require('cookie');
 const passport = require('passport');
 const Bowser = require('bowser');
 const http = require('http');
@@ -194,6 +195,29 @@ module.exports.initExpress = function () {
     upload.single('file')
   );
 
+  /**
+   * Function to strip "sensitive" cookies from requests that will be proxied
+   * to workspace hosts.
+   */
+  function stripSensitiveCookies(proxyReq) {
+    const cookies = proxyReq.getHeader('cookie');
+    if (!cookies) return;
+
+    const items = cookies.split(';');
+    const filteredItems = items.filter((item) => {
+      const name = item.split('=')[0].trim();
+      return (
+        name !== 'pl_authn' &&
+        name !== 'pl_assessmentpw' &&
+        // The workspace authz cookies use a prefix plus the workspace ID, so
+        // we need to check for that prefix instead of an exact name match.
+        !name.startsWith('pl_authz_workspace_')
+      );
+    });
+
+    proxyReq.setHeader('cookie', filteredItems.join(';'));
+  }
+
   // proxy workspaces to remote machines
   let workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   const workspaceProxyOptions = {
@@ -248,6 +272,12 @@ module.exports.initExpress = function () {
         logger.error(`Error in router for url=${req.url}: ${err}`);
         return 'not-matched';
       }
+    },
+    onProxyReq: (proxyReq) => {
+      stripSensitiveCookies(proxyReq);
+    },
+    onProxyReqWs: (proxyReq) => {
+      stripSensitiveCookies(proxyReq);
     },
     onError: (err, req, res) => {
       logger.error(`Error proxying workspace request: ${err}`, {

@@ -39,6 +39,7 @@
         "cheerio": "^0.22.0",
         "chokidar": "^3.5.3",
         "clipboard": "^2.0.9",
+        "cookie": "^0.4.2",
         "cookie-parser": "^1.4.6",
         "crypto-js": "^4.1.1",
         "csv-parse": "^4.16.2",
