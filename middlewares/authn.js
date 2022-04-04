@@ -176,6 +176,7 @@ module.exports = function (req, res, next) {
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
+      secure: true,
     });
 
     next();

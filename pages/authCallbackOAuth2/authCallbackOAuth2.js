@@ -63,6 +63,7 @@ router.get('/', function (req, res, next) {
       res.cookie('pl_authn', pl_authn, {
         maxAge: config.authnCookieMaxAgeMilliseconds,
         httpOnly: true,
+        secure: true,
       });
       let redirUrl = res.locals.homeUrl;
       if ('preAuthUrl' in req.cookies) {

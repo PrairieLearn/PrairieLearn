@@ -32,6 +32,7 @@ router.get('/:action?/:target(*)?', function (req, res, next) {
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
       httpOnly: true,
+      secure: true,
     });
     if (req.params.action === 'redirect') return res.redirect('/' + req.params.target);
     var redirUrl = res.locals.homeUrl;
