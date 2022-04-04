@@ -41,7 +41,7 @@
               <tr>
                 <td>
                   <% if (!access_rule.has_application) { %>
-                  <span data-toggle="tooltip" title="This rule does not affect assessment access for any user">
+                  <span data-toggle="tooltip" title="This rule does not affect assessment access for any user. This is typically caused by rules that are too restrictive, or because previous rules overlap this rule at all times. If you believe this is a mistake, make sure the rules are configured in an appropriate order of precedence.">
                     <i class="fas fa-eye-slash text-danger"></i><span class="sr-only">Not used</span>
                   </span>
                   <% } %>
@@ -103,7 +103,7 @@
           <table class="table table-sm table-hover">
             <thead>
               <tr>
-                <th colspan="3"></th>
+                <th colspan="3">Filters</th>
                 <th>Starting the Assessment</th>
                 <th colspan="3">While Assessment is Open</th>
                 <th>After Assessment is Closed</th>
@@ -122,7 +122,7 @@
             <tbody>
               <% explained_sets.forEach(function(set) { %>
               <tr>
-                <th colspan="7">
+                <th colspan="8">
                   <% if (set.other_uids) { %>
                   Students in general
                   <% } else if (authz_data.has_course_instance_permission_view) { %>

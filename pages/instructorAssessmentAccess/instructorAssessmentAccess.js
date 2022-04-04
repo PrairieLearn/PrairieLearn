@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const path = require('path');
+const _ = require('lodash');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const config = require('../../lib/config');
@@ -113,11 +114,11 @@ router.get(
         let uids = formal.uids_raw;
         // Check if any existing user list has an intersection with current list.
         user_spec_rules.forEach((old) => {
-          let inter = old.uids.filter((uid) => uids.includes(uid));
+          let inter = _.intersection(old.uids, uids);
           if (inter.length) {
             user_spec_rules.push({ uids: inter, names: formal.uids_names, rules: [] });
-            old.uids = old.uids.filter((uid) => !inter.includes(uid));
-            uids = uids.filter((uid) => !inter.includes(uid));
+            old.uids = _.difference(old.uids, inter);
+            uids = _.difference(uids, inter);
           }
         });
         if (uids) user_spec_rules.push({ uids, names: formal.uids_names, rules: [] });
@@ -141,14 +142,26 @@ router.get(
       });
     });
 
+    res.locals.explained_sets = [];
+    user_spec_rules.forEach((new_set) => {
+      // If a student has the same rules as the default, list only the default rule
+      if (!new_set.rules || _.isEqual(student_rules, new_set.rules)) return;
+      // If two or more student lists have the same rules, combine them into a single set of rules
+      res.locals.explained_sets
+        .filter((old_set) => _.isEqual(old_set.rules, new_set.rules))
+        .forEach((old_set) => {
+          old_set.uids = _.union(old_set.uids, new_set.uids);
+          new_set.uids = [];
+        });
+      if (new_set.uids.length) res.locals.explained_sets.push(new_set);
+    });
+
     if (student_rules && student_rules.length) {
-      user_spec_rules.push({ other_uids: true, rules: student_rules });
+      res.locals.explained_sets.push({ other_uids: true, rules: student_rules });
     }
 
-    res.locals.explained_sets = user_spec_rules;
-
     res.locals.access_rules.forEach((formal) => {
-      formal.has_application = user_spec_rules.some((set) =>
+      formal.has_application = res.locals.explained_sets.some((set) =>
         set.rules.some((applied) => applied.id === formal.id)
       );
     });
