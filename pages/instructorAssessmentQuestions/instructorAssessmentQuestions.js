@@ -16,7 +16,6 @@ router.get('/', function (req, res, next) {
   debug('GET /');
   const params = {
     assessment_id: res.locals.assessment.id,
-    course_id: res.locals.course.id,
   };
   sqldb.query(sql.questions, params, function (err, result) {
     if (ERR(err, next)) return;

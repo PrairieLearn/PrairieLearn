@@ -102,7 +102,6 @@ router.get('/', function (req, res, next) {
   var params = {
     course_id: res.locals.course.id,
   };
-  _.assign(params, filters);
 
   sqldb.query(sql.issues_count, params, function (err, result) {
     if (ERR(err, next)) return;

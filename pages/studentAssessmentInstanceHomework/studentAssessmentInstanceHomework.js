@@ -45,7 +45,6 @@ router.get('/', function (req, res, next) {
     debug('selecting questions');
     var params = {
       assessment_instance_id: res.locals.assessment_instance.id,
-      user_id: res.locals.user.user_id,
     };
     sqldb.query(sql.get_questions, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -59,8 +58,11 @@ router.get('/', function (req, res, next) {
         function (err, assessment_text_templated) {
           if (ERR(err, next)) return;
           res.locals.assessment_text_templated = assessment_text_templated;
-          debug('rendering EJS');
           if (res.locals.assessment.group_work) {
+            const params = {
+              assessment_instance_id: res.locals.assessment_instance.id,
+              user_id: res.locals.user.user_id,
+            };
             sqldb.query(sql.get_group_info, params, function (err, result) {
               if (ERR(err, next)) return;
               res.locals.group_info = result.rows;
@@ -69,6 +71,7 @@ router.get('/', function (req, res, next) {
               }
               res.locals.join_code =
                 res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+              debug('rendering EJS');
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
           } else {

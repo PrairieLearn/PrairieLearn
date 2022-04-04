@@ -43,14 +43,22 @@ function obtainInfo(req, res, next) {
     const params = {
       assessment_id: res.locals.assessment.id,
       course_instance_id: res.locals.config_info.course_instance_id,
-      group_config_id: res.locals.config_info.id,
     };
     sqldb.query(sql.assessment_list, params, function (err, result) {
       if (ERR(err, next)) return;
       res.locals.assessment_list_rows = result.rows;
+
+      const params = {
+        group_config_id: res.locals.config_info.id,
+      };
       sqldb.query(sql.select_group_users, params, function (err, result) {
         if (ERR(err, next)) return;
         res.locals.groups = result.rows;
+
+        const params = {
+          course_instance_id: res.locals.config_info.course_instance_id,
+          group_config_id: res.locals.config_info.id,
+        };
         sqldb.query(sql.select_not_in_group, params, function (err, result) {
           if (ERR(err, next)) return;
           res.locals.notAssigned = result.rows;

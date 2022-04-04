@@ -47,27 +47,31 @@ router.get('/', function (req, res, next) {
       // If this assessment is group work and there is no existing instance,
       // show the group info page.
       if (res.locals.assessment.group_work) {
-        sqldb.query(sql.get_config_info, params, function (err, result) {
-          if (ERR(err, next)) return;
-          res.locals.permissions = result.rows[0];
-          res.locals.minsize = result.rows[0].minimum || 0;
-          res.locals.maxsize = result.rows[0].maximum || 999;
-          sqldb.query(sql.get_group_info, params, function (err, result) {
+        sqldb.query(
+          sql.get_config_info,
+          { assessment_id: res.locals.assessment.id },
+          function (err, result) {
             if (ERR(err, next)) return;
-            res.locals.groupsize = result.rowCount;
-            res.locals.needsize = res.locals.minsize - res.locals.groupsize;
-            if (res.locals.groupsize > 0) {
-              res.locals.group_info = result.rows;
-              res.locals.join_code =
-                res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
-              res.locals.start = false;
-              if (res.locals.needsize <= 0) {
-                res.locals.start = true;
+            res.locals.permissions = result.rows[0];
+            res.locals.minsize = result.rows[0].minimum || 0;
+            res.locals.maxsize = result.rows[0].maximum || 999;
+            sqldb.query(sql.get_group_info, params, function (err, result) {
+              if (ERR(err, next)) return;
+              res.locals.groupsize = result.rowCount;
+              res.locals.needsize = res.locals.minsize - res.locals.groupsize;
+              if (res.locals.groupsize > 0) {
+                res.locals.group_info = result.rows;
+                res.locals.join_code =
+                  res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
+                res.locals.start = false;
+                if (res.locals.needsize <= 0) {
+                  res.locals.start = true;
+                }
               }
-            }
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          });
-        });
+              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
+          }
+        );
       } else {
         // Before allowing the user to create a new assessment instance, we need
         // to check if the current access rules require a password. If they do,

@@ -183,7 +183,6 @@ router.get('/:filename', function (req, res, next) {
   } else if (req.params.filename === res.locals.instanceQuestionsCsvFilename) {
     let params = {
       assessment_id: res.locals.assessment.id,
-      group_work: res.locals.assessment.group_work,
     };
     sqldb.query(sql.select_instance_questions, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -210,7 +209,6 @@ router.get('/:filename', function (req, res, next) {
   } else if (req.params.filename === res.locals.submissionsForManualGradingCsvFilename) {
     let params = {
       assessment_id: res.locals.assessment.id,
-      group_work: res.locals.assessment.group_work,
     };
     sqldb.query(sql.submissions_for_manual_grading, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -248,7 +246,6 @@ router.get('/:filename', function (req, res, next) {
       include_all,
       include_final,
       include_best,
-      group_work: res.locals.assessment.group_work,
     };
     let submissionColumn = identityColumn;
     if (res.locals.assessment.group_work) {

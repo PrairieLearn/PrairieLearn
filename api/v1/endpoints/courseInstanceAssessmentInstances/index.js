@@ -33,7 +33,6 @@ router.get('/:assessment_instance_id/instance_questions', (req, res, next) => {
   const params = {
     course_instance_id: res.locals.course_instance.id,
     assessment_instance_id: req.params.assessment_instance_id,
-    instance_question_id: null,
   };
   sqldb.queryOneRow(sql.select_instance_questions, params, (err, result) => {
     if (ERR(err, next)) return;

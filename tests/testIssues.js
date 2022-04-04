@@ -85,7 +85,7 @@ function doTest(questionUrl, issuesUrl, label) {
 
     it('should get issues page successfully', async () => {
       page = await requestp(issuesUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
 
     it('should have a __csrf_token', () => {

@@ -58,6 +58,8 @@ SELECT
     s.*
 FROM
     submissions AS s
+WHERE
+    variant_id = $variant_id
 ORDER BY
     s.date DESC
 LIMIT

@@ -7,6 +7,7 @@ const debug = require('debug')('prairielib:' + path.basename(__filename, '.js'))
 const { callbackify } = require('util');
 const { AsyncLocalStorage } = require('async_hooks');
 
+const logger = require('../../lib/logger');
 const error = require('./error');
 
 const SEARCH_SCHEMA = Symbol('SEARCH_SCHEMA');
@@ -96,11 +97,22 @@ function paramsToArray(sql, params) {
     remainingSql = remainingSql.substring(result.index + result[0].length);
   }
 
-  // Throw an error if any parameters weren't used by the query. This is
+  // Log an error if any parameters weren't used by the query. This is
   // probably the result of a bug or incomplete refactor.
+  //
+  // This should throw an error, but at the time of writing, we didn't
+  // actually know how many queries have extra params. Until we can gain
+  // confidence in that, we'll just log an error.
+  //
+  // TODO: After this has been running in production for a while and we've had
+  // the chance to verify that this doesn't show up in the logs, this should
+  // throw an error instead of just logging.
   const unusedParams = Object.keys(params).filter((p) => !usedParams.has(p));
   if (unusedParams.length > 0) {
-    throw new Error(`Unused parameters: ${unusedParams.join(', ')}`);
+    logger.error('Extra parameters', {
+      unusedParams,
+      sql,
+    });
   }
 
   processedSql += remainingSql;

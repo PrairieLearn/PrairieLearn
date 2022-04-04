@@ -191,8 +191,11 @@ WITH object_data AS (
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     WHERE
         ai.id = $assessment_instance_id
+        AND ci.id = $course_instance_id
 )
 SELECT
     coalesce(jsonb_agg(

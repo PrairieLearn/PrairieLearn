@@ -23,7 +23,6 @@ ORDER BY
     user_id;
 
 -- BLOCK select_group_users
-
 SELECT 
     *
 FROM 
