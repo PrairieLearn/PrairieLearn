@@ -41,6 +41,10 @@ SELECT
     aar.show_closed_assessment_score AS show_closed_assessment_score,
     aar.mode AS mode_raw,
     aar.uids AS uids_raw,
+    (SELECT jsonb_object_agg(aruid, u.name)
+     FROM UNNEST(aar.uids) aruid
+          LEFT JOIN users AS u ON (u.uid = aruid)
+    ) AS uids_names,
     aar.start_date AS start_date_raw,
     aar.end_date AS end_date_raw,
     aar.exam_uuid,

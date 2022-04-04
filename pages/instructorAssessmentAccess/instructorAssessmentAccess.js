@@ -83,15 +83,17 @@ router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
     debug('GET /');
-    var params = {
-      course_instance_id: res.locals.course_instance.id,
-      assessment_id: res.locals.assessment.id,
-      link_exam_id: config.syncExamIdAccessRules,
-    };
     res.locals.assessment_settings = (
-      await sqldb.queryOneRowAsync(sql.assessment_settings, params)
+      await sqldb.queryOneRowAsync(sql.assessment_settings, {
+        assessment_id: res.locals.assessment.id,
+      })
     ).rows[0];
-    res.locals.access_rules = (await sqldb.queryAsync(sql.assessment_access_rules, params)).rows;
+    res.locals.access_rules = (
+      await sqldb.queryAsync(sql.assessment_access_rules, {
+        assessment_id: res.locals.assessment.id,
+        link_exam_id: config.syncExamIdAccessRules,
+      })
+    ).rows;
 
     debug('building user-friendly description');
     let student_rules = [];
@@ -105,12 +107,12 @@ router.get(
         user_spec_rules.forEach((old) => {
           let inter = old.uids.filter((uid) => uids.includes(uid));
           if (inter.length) {
-            user_spec_rules.push({ uids: inter, rules: [] });
+            user_spec_rules.push({ uids: inter, names: formal.uids_names, rules: [] });
             old.uids = old.uids.filter((uid) => !inter.includes(uid));
             uids = uids.filter((uid) => !inter.includes(uid));
           }
         });
-        if (uids) user_spec_rules.push({ uids, rules: [] });
+        if (uids) user_spec_rules.push({ uids, names: formal.uids_names, rules: [] });
       }
     });
     // Remove lists without UIDs remaining
@@ -132,7 +134,7 @@ router.get(
     });
 
     if (student_rules && student_rules.length) {
-      user_spec_rules.push({ uids: ['Students in general'], rules: student_rules });
+      user_spec_rules.push({ uids: ['Students in general'], names: {}, rules: student_rules });
     }
 
     res.locals.explained_sets = user_spec_rules;
