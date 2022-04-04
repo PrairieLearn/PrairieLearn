@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_update_in_grading (
         instance_question_id bigint,
         authn_user_id bigint

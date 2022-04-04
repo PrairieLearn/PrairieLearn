@@ -1,4 +1,3 @@
-
 # `clientFiles` and `serverFiles`
 
 There are multiple locations within each course where files can be stored for access from the client or server. These can be used for code libraries used in questions, images embedded within questions, formula sheets available during exams, or online textbooks for reference during exams.
@@ -22,7 +21,7 @@ exampleCourse
 |       +-- clientFilesQuestion           # client files for the fossilFuels question
 |       |   `-- power-station.jpg
 |       `-- serverFilesQuestion           # server files for the fossilFuels question
-|           `-- 
+|           `--
 `-- courseInstances
     `-- Fa16
        +-- clientFilesCourseInstance      # client files for the Fall 2016 course instance
@@ -49,3 +48,7 @@ From within HTML, `clientFiles` directories can be templated with the following 
 {{ options.client_files_course_url }}/filename.ext
 {{ options.client_files_question_url }}/filename.ext
 ```
+
+## Accessing files from `server.py` question code
+
+See the [accessing files on disk](question.md#accessing-files-on-disk) section for details.

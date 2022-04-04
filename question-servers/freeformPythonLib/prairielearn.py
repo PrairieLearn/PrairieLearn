@@ -11,6 +11,10 @@ from python_helper_sympy import json_to_sympy
 import re
 import colors
 import unicodedata
+import importlib
+import importlib.util
+import os
+import collections
 
 
 def to_json(v):
@@ -397,6 +401,12 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
 
         c(., ., .)
 
+    If language is 'sympy' and A is a 2D ndarray, the string looks like this:
+        Matrix([[ ..., ... ], [ ..., ... ]])
+
+    If A is a 1D ndarray, the string looks like this:
+        Matrix([ ..., ..., ... ])
+
     In either case, if A is not a 1D or 2D ndarray, the string is a single number,
     not wrapped in brackets.
 
@@ -468,8 +478,23 @@ def string_from_numpy(A, language='python', presentation_type='f', digits=2):
             ncol = A.shape[1]
             result = f'matrix({result}, nrow = {nrow}, ncol = {ncol}, byrow = TRUE)'
         return result
+    elif language == 'sympy':
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+        result = np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
+        # Cast to a vector: Matrix([1, 2, 3, 4, 5, 6])
+        result = f'Matrix({result})'
+        return result
     else:
-        raise Exception('language "{:s}" must be either "python", "matlab", "mathematica", or "r"'.format(language))
+        raise Exception('language "{:s}" must be either "python", "matlab", "mathematica", "r", or "sympy"'.format(language))
 
 
 # Deprecated version, keeping for backwards compatibility
@@ -574,22 +599,22 @@ def string_partition_outer_interval(s, left='[', right=']'):
     return s_before_left, s, s_after_right
 
 
-def string_to_integer(s):
-    """string_to_integer(s)
+def string_to_integer(s, base=10):
+    """string_to_integer(s, base=10)
 
     Parses a string that is an integer.
 
     Returns a number with type int, or None on parse error.
     """
+    if s is None:
+        return None
+
     # Replace unicode minus with hyphen minus wherever it occurs
     s = s.replace(u'\u2212', '-').strip()
-    # Check if it is an integer, i.e., if it contains only digits and possibly
-    # hypen minus as the first character
-    if not (s.isdigit() or s[1:].isdigit()):
-        return None
+
     # Try to parse as int
     try:
-        s_int = int(s)
+        s_int = int(s, base)
         return s_int
     except Exception:
         # If that didn't work, return None
@@ -677,13 +702,14 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 if a_parse_r is None or not np.isfinite(a_parse_r):
                     raise ValueError(f'The denominator could not be interpreted as a decimal{ or_complex }number.')
 
-                a_frac = a_parse_l / a_parse_r
+                with np.errstate(divide='raise'):
+                    a_frac = a_parse_l / a_parse_r
                 if not np.isfinite(a_frac):
                     raise ValueError('The submitted answer is not a finite number.')
 
                 value = a_frac
                 data['submitted_answers'] = to_json(value)
-            except ZeroDivisionError:
+            except FloatingPointError:  # Caused by numpy division
                 data['format_errors'] = 'Your expression resulted in a division by zero.'
             except Exception as error:
                 data['format_errors'] = f'Invalid format: {str(error)}'
@@ -1084,6 +1110,99 @@ def escape_invalid_string(string):
     Wraps and escapes string in <code> tags.
     """
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
+
+
+def clean_identifier_name(name):
+    """
+    clean_identifier_name(string)
+
+    Escapes a string so that it becomes a valid Python identifier.
+    """
+
+    # Strip invalid characters and weird leading characters so we have
+    # a decent python identifier
+    name = re.sub('[^a-zA-Z0-9_]', '_', name)
+    name = re.sub('^[^a-zA-Z]+', '', name)
+    return name
+
+
+def load_extension(data, extension_name):
+    """
+    load_extension(data, extension_name)
+
+    Loads a single specific extension by name for an element.
+    Returns a dictionary of defined variables and functions.
+    """
+    if 'extensions' not in data:
+        raise Exception('load_extension() must be called from an element!')
+    if extension_name not in data['extensions']:
+        raise Exception(f'Could not find extension {extension_name}!')
+
+    ext_info = data['extensions'][extension_name]
+    if 'controller' not in ext_info:
+        # Nothing to load, just return an empty dict
+        return {}
+
+    # wrap extension functions so that they execute in their own directory
+    def wrap(f):
+        # If not a function, just return
+        if not callable(f):
+            return f
+
+        def wrapped_function(*args, **kwargs):
+            old_wd = os.getcwd()
+            os.chdir(ext_info['directory'])
+            ret_val = f(*args, **kwargs)
+            os.chdir(old_wd)
+            return ret_val
+        return wrapped_function
+
+    # Load any Python functions and variables from the defined controller
+    script = os.path.join(ext_info['directory'], ext_info['controller'])
+    loaded = {}
+    spec = importlib.util.spec_from_file_location(f'{extension_name}-{script}', script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    # Filter out extra names so we only get user defined functions and variables
+    loaded = {f: wrap(module.__dict__[f]) for f in module.__dict__.keys() if not f.startswith('__')}
+
+    # Return functions and variables as a namedtuple, so we get the nice dot access syntax
+    module_tuple = collections.namedtuple(clean_identifier_name(extension_name), loaded.keys())
+    return module_tuple(**loaded)
+
+
+def load_all_extensions(data):
+    """
+    load_all_extensions(data)
+
+    Loads all available extensions for a given element.
+    Returns an ordered dictionary mapping the extension name to its defined variables and functions
+    """
+
+    if 'extensions' not in data:
+        raise Exception('load_all_extensions() must be called from an element!')
+    if len(data['extensions']) == 0:
+        return {}
+
+    loaded_extensions = collections.OrderedDict()
+    for name in sorted(data['extensions'].keys()):
+        loaded_extensions[name] = load_extension(data, name)
+
+    return loaded_extensions
+
+
+def load_host_script(script_name):
+    """
+    load_host_script(script_name)
+
+    Small convenience function to load a host element script from an extension.
+    """
+
+    # Chop off the file extension because it's unnecessary here
+    if script_name.endswith('.py'):
+        script_name = script_name[:-3]
+    return __import__(script_name)
 
 
 def index2key(i):

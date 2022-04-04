@@ -16,12 +16,12 @@ setup_ci AS (
 ),
 setup_ciars AS (
     INSERT INTO course_instance_access_rules
-        (id, course_instance_id, number, role, uids, start_date, end_date, institution) VALUES
-        (1, 1, 1, 'TA', '{"person1@host.com", "person2@host.com"}', '2010-01-01 00:00:00-00', '2010-12-31 23:59:59-00', 'Any'),
-        (2, 1, 2, null, null, '2011-01-01 00:00:00-00', '2011-12-31 23:59:59-00', 'school'),
-        (3, 1, 3, null, null, '2012-01-01 00:00:00-00', '2012-12-31 23:59:59-00', 'notInDb'),
-        (4, 1, 4, null, null, '2013-01-01 00:00:00-00', '2013-12-31 23:59:59-00', null),
-        (5, 1, 5, null, null, '2013-01-01 00:00:00-00', '2013-12-31 23:59:59-00', 'LTI')
+        (id, course_instance_id, number, uids, start_date, end_date, institution) VALUES
+        (1, 1, 1, '{"person1@host.com", "person2@host.com"}', '2010-01-01 00:00:00-00', '2010-12-31 23:59:59-00', 'Any'),
+        (2, 1, 2, null, '2011-01-01 00:00:00-00', '2011-12-31 23:59:59-00', 'school'),
+        (3, 1, 3, null, '2012-01-01 00:00:00-00', '2012-12-31 23:59:59-00', 'notInDb'),
+        (4, 1, 4, null, '2013-01-01 00:00:00-00', '2013-12-31 23:59:59-00', null),
+        (5, 1, 5, null, '2013-01-01 00:00:00-00', '2013-12-31 23:59:59-00', 'LTI')
 ),
 setup_institutions AS (
     INSERT INTO institutions (id, short_name, long_name, uid_regexp) VALUES
@@ -38,7 +38,7 @@ FROM
     course_instance_access_rules AS ciar,
     (SELECT id FROM institutions WHERE $uid ~ uid_regexp) AS user_institution (user_institution_id),
     (SELECT id FROM institutions WHERE short_name = $short_name) AS course_institution (course_institution_id),
-    check_course_instance_access_rule(ciar, $role, $uid, user_institution_id, course_institution_id, $date) AS authorized
+    check_course_instance_access_rule(ciar, $uid, user_institution_id, course_institution_id, $date) AS authorized
 WHERE
     ciar.id = $ciar_id
 ;
@@ -48,5 +48,5 @@ SELECT
     *
 FROM
     (SELECT id FROM institutions WHERE $uid ~ uid_regexp) AS user_institution (user_institution_id),
-    check_course_instance_access($ci_id, $role, $uid, user_institution_id, $date) AS authorized
+    check_course_instance_access($ci_id, $uid, user_institution_id, $date) AS authorized
 ;

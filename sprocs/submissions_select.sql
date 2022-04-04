@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     submissions_select (
         IN submission_id bigint,
         OUT submission submissions

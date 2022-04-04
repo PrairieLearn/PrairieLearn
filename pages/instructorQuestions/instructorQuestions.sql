@@ -11,12 +11,18 @@ WITH issue_count AS (
     GROUP BY i.question_id
 )
 SELECT
-    q.*,
+    q.id,
+    q.qid,
+    q.title,
+    q.sync_errors,
+    q.sync_warnings,
+    q.grading_method,
+    q.external_grading_image,
     case when q.type = 'Freeform' then 'v3' else 'v2 (' || q.type || ')' end AS display_type,
     coalesce(issue_count.open_issue_count, 0) AS open_issue_count,
     row_to_json(top) AS topic,
     tags_for_question(q.id) AS tags,
-    assessments_format_for_question(q.id, $course_instance_id) AS assessments
+    assessments_format_for_question(q.id, NULL) AS assessments
 FROM
     questions AS q
     JOIN topics AS top ON (top.id = q.topic_id)
@@ -25,21 +31,7 @@ WHERE
     q.course_id = $course_id
     AND q.deleted_at IS NULL
 GROUP BY q.id, top.id, issue_count.open_issue_count
-ORDER BY top.number, q.title;
-
--- BLOCK tags
-SELECT tag.name AS name
-FROM tags AS tag
-WHERE tag.course_id = $course_id
-ORDER BY tag.number;
-
--- BLOCK assessments
-SELECT aset.abbreviation || a.number AS label
-FROM assessments AS a
-JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-WHERE a.course_instance_id = $course_instance_id
-AND a.deleted_at IS NULL
-ORDER BY aset.number,a.number;
+ORDER BY q.qid;
 
 -- BLOCK select_question_id_from_uuid
 SELECT

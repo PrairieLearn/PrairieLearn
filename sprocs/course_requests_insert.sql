@@ -1,9 +1,13 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     course_requests_insert(
         IN user_id bigint,
         IN short_name text,
         IN title text,
         IN github_user text,
+        IN first_name text,
+        IN last_name text,
+        IN work_email text,
+        IN institution text,
         OUT auto_created bool,
         OUT course_request_id bigint
     )
@@ -29,11 +33,15 @@ BEGIN
         status := 'pending';
     END IF;
 
-    INSERT INTO course_requests(short_name, title, user_id, github_user, approved_status)
+    INSERT INTO course_requests(short_name, title, user_id, github_user, first_name, last_name, work_email, institution, approved_status)
     VALUES (course_requests_insert.short_name,
             course_requests_insert.title,
             course_requests_insert.user_id,
             course_requests_insert.github_user,
+            course_requests_insert.first_name,
+            course_requests_insert.last_name,
+            course_requests_insert.work_email,
+            course_requests_insert.institution,
             status)
     RETURNING
         course_requests.id INTO course_request_id;

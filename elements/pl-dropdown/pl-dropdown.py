@@ -102,6 +102,7 @@ def render(element_html, data):
             'uuid': uuid,
             'options': dropdown_options,
             'has_submission': correct is not None,
+            'editable': data['editable'],
             'correct': correct
         }
 
@@ -111,6 +112,7 @@ def render(element_html, data):
             'parse-error': data['format_errors'].get(answers_name, None),
             'submission': True,
             'submitted-answer': submitted_answer,
+            'display-score-badge': correct is not None,
             'correct': correct
         }
 

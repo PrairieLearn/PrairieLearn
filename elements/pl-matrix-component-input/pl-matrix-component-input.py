@@ -15,12 +15,14 @@ ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
 ALLOW_PARTIAL_CREDIT_DEFAULT = False
 ALLOW_FRACTIONS_DEFAULT = True
+ALLOW_BLANK_DEFAULT = False
+BLANK_VALUE_DEFAULT = 0
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback', 'allow-fractions', 'rows', 'columns']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback', 'allow-fractions', 'rows', 'columns', 'allow-blank', 'blank-value']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
     if name not in data['correct_answers']:
@@ -141,7 +143,7 @@ def render(element_html, data):
             if a_submitted is not None and len(a_submitted.shape) == 2:
                 m, n = np.shape(a_submitted)
         else:
-            a_tru = pl.from_json(data['correct_answers'].get(name, None))
+            a_tru = np.array(pl.from_json(data['correct_answers'].get(name, None)))
             if a_tru is not None and len(a_tru.shape) == 2:
                 m, n = np.shape(a_tru)
             else:
@@ -239,6 +241,8 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     allow_fractions = pl.get_boolean_attrib(element, 'allow-fractions', ALLOW_FRACTIONS_DEFAULT)
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, 'blank-value', str(BLANK_VALUE_DEFAULT))
 
     # Get dimensions of the input matrix
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
@@ -261,6 +265,8 @@ def parse(element_html, data):
         for j in range(n):
             each_entry_name = name + str(n * i + j + 1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
+            if allow_blank and a_sub is not None and a_sub.strip() == '':
+                a_sub = blank_value
             value, newdata = pl.string_fraction_to_number(a_sub, allow_fractions, allow_complex=False)
             if value is not None:
                 A[i, j] = value

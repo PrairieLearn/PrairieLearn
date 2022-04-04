@@ -22,7 +22,7 @@ describe('Initial Sync', () => {
     assert.lengthOf(questions, Object.keys(courseData.questions).length);
     for (const qid of Object.keys(courseData.questions)) {
       const question = courseData.questions[qid];
-      const syncedQuestion = questions.find(q => q.qid === qid);
+      const syncedQuestion = questions.find((q) => q.qid === qid);
       assert.isOk(syncedQuestion);
       assert.equal(syncedQuestion.uuid, question.uuid);
       assert.equal(syncedQuestion.qid, qid);
@@ -37,7 +37,7 @@ describe('Initial Sync', () => {
     // have additional default topics added for us
     assert(topics.length >= courseData.course.topics.length);
     for (const topic of courseData.course.topics) {
-      const syncedTopic = topics.find(t => t.name === topic.name);
+      const syncedTopic = topics.find((t) => t.name === topic.name);
       assert.isOk(syncedTopic);
       assert.equal(syncedTopic.name, topic.name);
       assert.equal(syncedTopic.color, topic.color);
@@ -48,7 +48,7 @@ describe('Initial Sync', () => {
     // As above, we don't know exactly how many tags there will be
     assert(tags.length >= courseData.course.tags.length);
     for (const tag of courseData.course.tags) {
-      const syncedTag = tags.find(t => t.name === tag.name);
+      const syncedTag = tags.find((t) => t.name === tag.name);
       assert.isOk(syncedTag);
       assert.equal(syncedTag.name, tag.name);
       assert.equal(syncedTag.color, tag.color);

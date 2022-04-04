@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     administrators_delete_by_user_id(
         user_id bigint,
         authn_user_id bigint

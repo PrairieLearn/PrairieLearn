@@ -11,7 +11,7 @@ FROM
 WHERE
     a.id = $assessment_id;
 
--- BLOCK select_assessment_instance
+-- BLOCK select_assessment_instance_uid
 SELECT
     ai.id AS assessment_instance_id
 FROM
@@ -21,3 +21,14 @@ WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = $instance_number
     AND u.uid = $uid;
+
+-- BLOCK select_assessment_instance_group
+SELECT
+    ai.id AS assessment_instance_id
+FROM
+    assessment_instances AS ai
+    JOIN groups AS g ON (g.id = ai.group_id)
+WHERE
+    ai.assessment_id = $assessment_id
+    AND ai.number = $instance_number
+    AND g.name = $group_name;

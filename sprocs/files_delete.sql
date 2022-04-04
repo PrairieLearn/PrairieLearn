@@ -1,5 +1,4 @@
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     files_delete(
         IN file_id bigint,
         IN authn_user_id bigint

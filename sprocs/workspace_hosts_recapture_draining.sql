@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     workspace_hosts_recapture_draining(
         IN needed_hosts integer,
         OUT recaptured_hosts integer

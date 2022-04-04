@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS workspace_hosts_assign_workspace(bigint, integer);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     workspace_hosts_assign_workspace(
         IN workspace_id bigint,
         IN capacity integer,

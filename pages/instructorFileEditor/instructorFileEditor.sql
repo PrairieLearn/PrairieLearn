@@ -5,7 +5,7 @@ SELECT
     fe.file_id,
     fe.did_save,
     fe.did_sync,
-    floor(EXTRACT(epoch FROM CURRENT_TIMESTAMP - fe.created_at) / 3600) AS age,
+    floor(DATE_PART('epoch', CURRENT_TIMESTAMP - fe.created_at) / 3600) AS age,
     fe.job_sequence_id
 FROM
     file_edits AS fe

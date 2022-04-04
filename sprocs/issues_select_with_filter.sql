@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS issues_select_with_filter (boolean,boolean,boolean,text[],text[],text[],text[],text);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     issues_select_with_filter (
         filter_is_open boolean,
         filter_is_closed boolean,

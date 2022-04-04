@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     courses_update_column(
         course_id bigint,
         column_name text,
@@ -40,6 +40,10 @@ BEGIN
             RETURNING c.* INTO new_row;
         WHEN 'repository' THEN
             UPDATE pl_courses AS c SET repository = value
+            WHERE c.id = course_id
+            RETURNING c.* INTO new_row;
+        WHEN 'branch' THEN
+            UPDATE pl_courses AS c SET branch = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'institution_id' THEN

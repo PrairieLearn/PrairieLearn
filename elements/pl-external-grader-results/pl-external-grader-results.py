@@ -15,7 +15,7 @@ ansi2html_style.SCHEME['iterm'] = (
     '#0037da', '#c930c7', '#00c5c7', '#c7c7c7',
     '#676767', '#ff6d67', '#5ff967', '#fefb67',
     '#6871ff', '#ff76ff', '#5ffdff', '#feffff',
-) * 2
+)
 conv = Ansi2HTMLConverter(inline=True, scheme='iterm')
 
 

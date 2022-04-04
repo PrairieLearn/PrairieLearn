@@ -3,6 +3,11 @@ SELECT w.version AS workspace_version
 FROM workspaces AS w
 WHERE w.id = $workspace_id;
 
+-- BLOCK select_workspace_homedir_location
+SELECT w.homedir_location
+fROM workspaces AS W
+WHERE w.id = $workspace_id;
+
 -- BLOCK select_workspace_settings
 SELECT
     q.*

@@ -15,11 +15,11 @@ indexes
 
 foreign-key constraints
     groups_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
-    groups_group_config_id_fkey: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE CASCADE
+    groups_group_config_id_fkey: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     assessment_instances: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     audit_logs: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_users: FOREIGN KEY (group_id) REFERENCES groups(id)
+    group_users: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     last_accesses: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE

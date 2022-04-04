@@ -6,7 +6,7 @@ WITH access_rules_with_near_date AS (
         aar.time_limit_min,
         coalesce(
             array_length(aar.uids, 1),
-            (SELECT count(*) FROM enrollments AS e WHERE e.course_instance_id = a.course_instance_id AND e.role = 'Student')
+            (SELECT count(*) FROM enrollments AS e WHERE e.course_instance_id = a.course_instance_id AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id))
         ) AS student_count
     FROM
         assessment_access_rules AS aar
@@ -31,7 +31,7 @@ SELECT
     format_date_full_compact(arwnd.start_date, config_select('display_timezone')) AS start_date,
     format_date_full_compact(arwnd.end_date, config_select('display_timezone')) AS end_date,
     format_interval(arwnd.end_date - arwnd.start_date) AS end_minus_start,
-    EXTRACT(EPOCH FROM (arwnd.end_date - arwnd.start_date)) AS _sortval_end_minus_start,
+    DATE_PART('epoch', (arwnd.end_date - arwnd.start_date)) AS _sortval_end_minus_start,
     format_interval(make_interval(mins => arwnd.time_limit_min)) AS time_limit,
     arwnd.time_limit_min AS _sortval_time_limit,
     arwnd.student_count,

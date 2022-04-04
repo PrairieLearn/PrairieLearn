@@ -1,0 +1,50 @@
+{
+    "uuid": "69aa799b-9492-4db2-9102-7753263f4863",
+    "type": "Homework",
+    "title": "Question gallery for PL elements",
+    "set": "Collection",
+    "number": "4",
+    "zones": [
+        {
+            "title": "Submission Elements",
+            "questions": [
+                {"id": "element/multipleChoice",           "points": 2, "maxPoints": 10},
+                {"id": "element/checkbox",                 "points": 2, "maxPoints": 10},
+                {"id": "element/numberInput",              "points": 2, "maxPoints": 10},
+                {"id": "element/dropdown",                 "points": 2, "maxPoints": 10},
+                {"id": "element/orderBlocks",              "points": 2, "maxPoints": 10},
+                {"id": "element/integerInput",             "points": 2, "maxPoints": 10},
+                {"id": "element/symbolicInput",            "points": 2, "maxPoints": 10},
+                {"id": "element/stringInput",              "points": 2, "maxPoints": 10},
+                {"id": "element/matching",                 "points": 2, "maxPoints": 10},
+                {"id": "element/matrixComponentInput",     "points": 2, "maxPoints": 10},
+                {"id": "demo/matrixComplexAlgebra",        "points": 2, "maxPoints": 10},
+                {"id": "element/richTextEditor",           "points": 2},
+                {"id": "element/fileEditor",               "points": 2, "maxPoints": 10},
+                {"id": "element/fileUpload",               "points": 2},
+                {"id": "element/threeJS",                  "points": 2, "maxPoints": 10},
+                {"id": "element/codeDocumentation",        "points": 2, "maxPoints": 10}
+            ]
+        },
+        {
+            "title": "Decorative Elements",
+            "questions": [
+                {"id": "element/code",                     "points": 2, "maxPoints": 10},
+                {"id": "element/pythonVariable",           "points": 2, "maxPoints": 10},
+                {"id": "element/figure",                   "points": 2, "maxPoints": 10},
+                {"id": "element/fileDownload",             "points": 2, "maxPoints": 10},
+                {"id": "element/variableOutput",           "points": 2, "maxPoints": 10},
+                {"id": "element/matrixLatex",              "points": 2, "maxPoints": 10},
+                {"id": "element/graph",                    "points": 2, "maxPoints": 10},
+                {"id": "element/overlay",                  "points": 2, "maxPoints": 10},
+                {"id": "element/xssSafe",                  "points": 2}
+            ]
+        },
+        {
+            "title": "Conditional Elements",
+            "questions": [
+                {"id": "element/panels",                   "points": 2, "maxPoints": 10}
+            ]
+        }
+    ]
+}

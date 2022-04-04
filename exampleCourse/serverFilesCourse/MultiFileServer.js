@@ -1,19 +1,18 @@
-define([], function() {
+define([], function () {
+  var server = {};
 
-    var server = {};
-
-    server.getData = function(vid, options, questionDir) {
-        var params = {
-            requiredFiles: (options.requiredFiles || []),
-        };
-
-        var trueAnswer = {};
-
-        return {
-            params: params,
-            trueAnswer: trueAnswer,
-        };
+  server.getData = function (vid, options, questionDir) {
+    var params = {
+      requiredFiles: options.requiredFiles || [],
     };
 
-    return server;
+    var trueAnswer = {};
+
+    return {
+      params: params,
+      trueAnswer: trueAnswer,
+    };
+  };
+
+  return server;
 });

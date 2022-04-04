@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS select_assessment_questions(bigint);
-DROP FUNCTION IF EXISTS select_assessment_questions(bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     select_assessment_questions(
         assessment_id bigint,
         assessment_instance_id bigint DEFAULT NULL -- if provided, an existing assessment instance

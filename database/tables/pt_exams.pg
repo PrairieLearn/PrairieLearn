@@ -1,0 +1,14 @@
+columns
+    course_id: bigint
+    id: bigint not null default nextval('pt_exams_id_seq'::regclass)
+    name: text
+    uuid: uuid
+
+indexes
+    pt_exams_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    pt_exams_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pt_courses(id)
+
+referenced by
+    pt_reservations: FOREIGN KEY (exam_id) REFERENCES pt_exams(id)

@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS issues_insert_for_variant(bigint,text,boolean,jsonb,jsonb,bigint);
-DROP FUNCTION IF EXISTS issues_insert_for_variant(bigint,text,boolean,boolean,jsonb,jsonb,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     issues_insert_for_variant(
         variant_id bigint,
         student_message text,

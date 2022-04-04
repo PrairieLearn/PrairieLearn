@@ -15,18 +15,18 @@ locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
 locals.isStudentPage = false;
 
 const qidsTestCourse = [
-    'addNumbers',
-    'differentiatePolynomial',
-    'downloadFile',
-    'positionTimeGraph',
-    'prairieDrawFigure',
+  'addNumbers',
+  'differentiatePolynomial',
+  'downloadFile',
+  'positionTimeGraph',
+  'prairieDrawFigure',
 ];
 
-describe('Auto-test questions in testCourse', function() {
-    this.timeout(60000);
+describe('Auto-test questions in testCourse', function () {
+  this.timeout(60000);
 
-    before('set up testing server', helperServer.before());
-    after('shut down testing server', helperServer.after);
+  before('set up testing server', helperServer.before());
+  after('shut down testing server', helperServer.after);
 
-    qidsTestCourse.forEach(qid => helperQuestion.autoTestQuestion(locals, qid));
+  qidsTestCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
 });

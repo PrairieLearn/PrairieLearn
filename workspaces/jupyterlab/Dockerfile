@@ -1,4 +1,4 @@
-FROM jupyter/datascience-notebook
+FROM jupyter/datascience-notebook:aec555e49be6
 COPY jupyter_notebook_config.py /etc/jupyter/
 
 ENV XDG_DATA_HOME=/tmp/local/share
@@ -11,5 +11,10 @@ ENV NPM_CONFIG_CACHE=/tmp/npm
 ENV NO_UPDATE_NOTIFIER=true
 ENV IPYTHONDIR=/tmp/ipython
 ENV YARN_CACHE_FOLDER=/tmp/yarn_cache
+
+USER root
+COPY install.sh /
+RUN /bin/bash /install.sh
+USER jovyan
 
 CMD ["start.sh", "jupyter", "lab"]

@@ -1,0 +1,18 @@
+{
+    "uuid": "e2bdacbe-a8ba-41c1-86aa-607aa84ab2d2",
+    "title": "Autograder demo: Square method in Java",
+    "topic": "Autograder",
+    "tags": [
+        "jonatan",
+        "code"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-java",
+        "timeout": 20,
+        "entrypoint": "autograder.sh"
+    }
+}

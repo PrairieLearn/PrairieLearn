@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS users_select_or_insert(text, text, text, text);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_select_or_insert(
         IN uid text,
         IN name text,

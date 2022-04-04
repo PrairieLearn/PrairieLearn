@@ -36,7 +36,7 @@ def generate(data):
     # Pick a non-zero slope
     while(True):
         m = random.randint(-2,2)
-        if m is not 0:
+        if m != 0:
             break
 
     # Pick a y-intercept

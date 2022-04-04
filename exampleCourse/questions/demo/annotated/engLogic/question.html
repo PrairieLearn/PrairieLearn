@@ -1,0 +1,46 @@
+<pl-question-panel>
+<p>
+Construct a correct logic diagram using the image provided below. There are more than one correct answer.
+</p>
+<br>
+</pl-question-panel>
+
+<p>
+<pl-hide-in-panel answer="true">
+<pl-overlay width=500 clip="false">
+    <pl-background>
+      <pl-figure file-name="logic-diagram.png" directory="clientFilesQuestion"></pl-figure>
+    </pl-background>
+      <pl-location left="60" top="15">
+        <pl-dropdown sort="ascend" answers-name="x">
+          <pl-answer correct="true">1</pl-answer>
+          <pl-answer correct="false">0</pl-answer>
+        </pl-dropdown>
+      </pl-location>
+      <pl-location left="60" top="80">
+        <pl-dropdown sort="ascend" answers-name="y">
+          <pl-answer correct="true">1</pl-answer>
+          <pl-answer correct="false">0</pl-answer>
+        </pl-dropdown>
+      </pl-location>
+      <pl-location left="60" top="130">
+        <pl-dropdown sort="ascend" answers-name="z">
+          <pl-answer correct="true">1</pl-answer>
+          <pl-answer correct="false">0</pl-answer>
+        </pl-dropdown>
+      </pl-location>
+      <pl-location left="450" top="80">
+          <pl-dropdown sort="ascend" answers-name="F">
+            <pl-answer correct="true">1</pl-answer>
+            <pl-answer correct="false">0</pl-answer>
+          </pl-dropdown>
+      </pl-location>
+</pl-overlay>
+</pl-hide-in-panel>
+</p>
+
+
+<pl-submission-panel>
+<br>
+  <p>{{feedback.F}}</p>
+</pl-submission-panel>

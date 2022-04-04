@@ -1,0 +1,15 @@
+{
+    "uuid": "356308B1-25E3-44EB-B455-83A4F21371BE",
+    "title": "Element pl-order-blocks: Externally graded python code using numpy",
+    "topic": "Autograder",
+    "tags": ["code"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 20
+    }
+}

@@ -1,5 +1,3 @@
 #!/bin/bash
 
-cd /PrairieLearn/grader_host
-npm ci
-npm test
+make -s -C /PrairieLearn/grader_host test

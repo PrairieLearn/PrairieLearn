@@ -6,12 +6,6 @@
     "number": "6",
     "allowAccess": [
         {
-            "mode": "Public",
-            "role": "TA",
-            "credit": 100,
-            "timeLimitMin": 50
-        },
-        {
             "mode": "Exam",
             "credit": 100,
             "startDate": "1900-07-07T23:59:59",

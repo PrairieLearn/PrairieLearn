@@ -1,0 +1,31 @@
+{
+    "uuid": "1646F291-3E3C-4992-892B-5B62FE52884E",
+    "type": "Homework",
+    "title": "Group activity template",
+    "set": "GroupActivity",
+    "number": "1",
+    "comment": "this is a group activity, with minimum size of 1 and maximum size of 5, where students can self-assign to groups.",
+    "groupWork": true,
+    "groupMinSize": 1,
+    "groupMaxSize": 5,
+    "studentGroupCreate": true,
+    "studentGroupJoin": true,
+    "studentGroupLeave": true,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "title": "Fundamental questions",
+            "bestQuestions": 3,
+            "questions": [
+                {"id": "demo/demoNewton-page1",          "points": 1, "maxPoints": 5},
+                {"id": "demo/demoNewton-page2",        "points": 1, "maxPoints": 5}
+            ]
+        }
+    ],
+    "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+}

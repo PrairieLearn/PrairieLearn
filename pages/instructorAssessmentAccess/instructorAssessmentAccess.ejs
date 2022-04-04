@@ -4,6 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
@@ -12,42 +17,75 @@
         <summary class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Defined Access rules
         </summary>
-        
+
         <div class="table-responsive">
           <table class="table table-sm table-hover">
             <thead>
               <tr>
                 <th>Mode</th>
-                <th>Role</th>
                 <th>UIDs</th>
                 <th>Start date</th>
                 <th>End date</th>
+                <th>Active</th>
                 <th>Credit</th>
                 <th>Time limit</th>
                 <th>Password</th>
                 <th>CBTF exam</th>
+                <th>PrairieTest</th>
               </tr>
             </thead>
             <tbody>
               <% access_rules.forEach(function(access_rule) { %>
               <tr>
                 <td><%= access_rule.mode %></td>
-                <td><%= access_rule.role %></td>
-                <td><%= access_rule.uids %></td>
+                <td>
+                  <%
+                    // Only users with permission to view student data are allowed
+                    // to see the list of uids associated with an access rule. Note,
+                    // however, that any user with permission to view course code
+                    // (or with access to the course git repository) will be able to
+                    // see the list of uids, because these access rules are defined
+                    // in course code. This should be changed in future, to protect
+                    // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
+
+                    if ((access_rule.uids == '—') || authz_data.has_course_instance_permission_view) { %>
+                    <%= access_rule.uids %>
+                  <% } else { %>
+                    <a role="button" class="btn btn-xs btn-warning" tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body" data-placement="auto" title="Hidden UIDs" data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones.">Hidden</a>
+                  <% } %>
+                </td>
                 <td><%= access_rule.start_date %></td>
                 <td><%= access_rule.end_date %></td>
+                <td><%= access_rule.active ? 'Active' : 'Not Active' %></td>
                 <td><%= access_rule.credit %></td>
                 <td><%= access_rule.time_limit %></td>
                 <td><%= access_rule.password %></td>
                 <td><%- access_rule.exam %></td>
+                <td>
+                  <% if (access_rule.pt_exam_name) { %>
+                  <a href="<%= config.ptHost %>/pt/course/<%= access_rule.pt_course_id %>/staff/exam/<%= access_rule.pt_exam_id %>"><%= access_rule.pt_course_name %>: <%= access_rule.pt_exam_name %></a>
+                  <% } else if (access_rule.exam_uuid && !access_rule.ps_exam_id) { %>
+                  <% if (devMode) { %>
+                  <%= access_rule.exam_uuid %>
+                  <% } else { %> <%# devMode %>
+                  <span class="text-danger">Exam not found: <%= access_rule.exam_uuid %></span>
+                  <% } %> <%# devMode %>
+                  <% } else { %>
+                  &mdash;
+                  <% } %>
+                  <%- access_rule.pt_exam %>
+                </td>
               </tr>
               <% }); %>
             </tbody>
           </table>
         </div>
+        <div class="card-footer">
+          <small>Instructions on how to change the access rules can be found in the <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/" target="_blank">PrairieLearn documentation</a>. Note that changing time limit rules does not affect assessments in progress; to change the time limit for these exams please visit the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances">Students tab</a>.</small>
+        </div>
       </details>
       
-      <details class="card mb-4">
+      <details class="card mb-4" open>
         <summary class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Interpreted Access rules
         </summary>
@@ -56,35 +94,68 @@
           <table class="table table-sm table-hover">
             <thead>
               <tr>
-                <th>Population</th>
-                <th>Mode</th>
-                <th>Start date</th>
-                <th>End date</th>
+                <th colspan="3"></th>
+                <th>Starting the Assessment</th>
+                <th colspan="3">During the Assessment</th>
+                <th>After Assessment is Closed</th>
+              </tr>
+              <tr>
+                <th></th>
+                <th>Mode / Exam</th>
+                <th>When</th>
+                <th></th>
                 <th>Credit</th>
                 <th>Time limit</th>
                 <th>Password</th>
-                <th>CBTF Exam</th>
-                <th>After Assessment is Closed:</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               <% explained_sets.forEach(function(set) { %>
-              <tr><td colspan=9><em><%= set.set %></em></td></tr>
+              <tr><th colspan="7"><em><%= set.uids.join(', ') %></em></th></tr>
               <% set.rules.forEach(function(access_rule) { %>
               <tr>
                 <td></td>
-                <td><%= access_rule.mode %></td>
-                <td><%= access_rule.start_date %></td>
-                <td><%= access_rule.end_date %></td>
+                <td>
+                  <% if (access_rule.pt_exam_name) { %>
+                  PrairieTest: <%= access_rule.pt_exam_name %>
+                  <% } else if (access_rule.ps_exam_id) { %>
+                  CBTF: <%- access_rule.exam %>
+                  <% } else if (access_rule.exam_uuid) { %>
+                  Exam UUID: <%= access_rule.exam_uuid %>
+                  <% } else if (access_rule.mode_raw) { %>
+                  <%= access_rule.mode %> mode
+                  <% } else { %>
+                  Any mode
+                  <% } %>
+                </td>
+                <td>
+                  <% if (access_rule.start_date_raw && access_rule.end_date_raw) { %>
+                  Between <%= access_rule.start_date %> and <%= access_rule.end_date %>
+                  <% } else if (access_rule.start_date_raw) { %>
+                  From <%= access_rule.start_date %>
+                  <% } else if (access_rule.end_date_raw) { %>
+                  Until <%= access_rule.end_date %>
+                  <% } else if (access_rule.exam_uuid) { %>
+                  While exam is active
+                  <% } else if (access_rule.exam_uuid) { %>
+                  Any time
+                  <% } %>
+                </td>
+                <% if (access_rule.active) { %>
+                <td>Can start the assessment</td>
                 <td><%= access_rule.credit %></td>
                 <td><%= access_rule.time_limit %></td>
                 <td><%= access_rule.password %></td>
-                <td><%- access_rule.exam %></td>
+                <% } else { %>
+                <td>Cannot start assessment</td>
+                <td colspan="3">Cannot submit new answers</td>
+                <% } %>
                 <td><%= access_rule.show_closed_assessment ?
-                        'User can see the Assessment score and answers' :
+                        'Can see score and answers' :
                         access_rule.show_closed_assessment_score ?
-                        'User can only see the Assessment score, but not the answers' :
-                        'User cannot see the Assessment score or the answers'%></td>
+                        'Can see score, but not answers' :
+                        'Cannot see score or answers'%></td>
               </tr>
               <% }); %>
               <% }); %>

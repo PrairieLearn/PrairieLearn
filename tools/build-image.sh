@@ -1,22 +1,24 @@
 #!/bin/bash
 
+set -ex
+
 if [ "$#" -ne 1 ]; then
-  echo "USAGE: $0 environment_name" >& 2
-  echo "environment_name should correspond to directory environments/environment_name"
+  echo "USAGE: $0 image_name" >& 2
+  echo "image_name should correspond to directory images/image_name"
   exit 1
 fi
 
-if [ ! -d "environments/$1/" ]; then
-  echo "ERR: environments/$1 does not exist" >& 2
+if [ ! -d "images/$1/" ]; then
+  echo "ERR: images/$1 does not exist" >& 2
   exit 2
 fi
 
-if [ ! -f "environments/$1/Dockerfile" ]; then
-  echo "ERR: environments/$1/Dockerfile does not exist" >& 2
+if [ ! -f "images/$1/Dockerfile" ]; then
+  echo "ERR: images/$1/Dockerfile does not exist" >& 2
   exit 3
 fi
 
-cd environments/$1/
+cd images/$1/
 docker build . -t prairielearn/$1:latest
 
 echo "IMPORTANT: This build script should only be used to verify that your \

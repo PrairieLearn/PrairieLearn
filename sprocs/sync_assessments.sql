@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_assessments(
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
@@ -140,6 +136,7 @@ BEGIN
             multiple_instance = (valid_assessment.data->>'multiple_instance')::boolean,
             shuffle_questions = (valid_assessment.data->>'shuffle_questions')::boolean,
             max_points = (valid_assessment.data->>'max_points')::double precision,
+            max_bonus_points = (valid_assessment.data->>'max_bonus_points')::double precision,
             auto_close = (valid_assessment.data->>'auto_close')::boolean,
             text = valid_assessment.data->>'text',
             assessment_set_id = aggregates.assessment_set_id,
@@ -148,6 +145,7 @@ BEGIN
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
+            advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
@@ -167,13 +165,35 @@ BEGIN
 
         -- if it is a group work try to insert a group_config
         IF (valid_assessment.data->>'group_work')::boolean THEN
-            INSERT INTO group_configs
-                (course_instance_id,
-                assessment_id
+            INSERT INTO group_configs (
+                course_instance_id,
+                assessment_id,
+                maximum,
+                minimum,
+                student_authz_create,
+                student_authz_join,
+                student_authz_leave
             ) VALUES (
                 syncing_course_instance_id,
-                new_assessment_id
-            ) ON CONFLICT DO NOTHING;
+                new_assessment_id,
+                (valid_assessment.data->>'group_max_size')::bigint,
+                (valid_assessment.data->>'group_min_size')::bigint,
+                (valid_assessment.data->>'student_group_create')::boolean,
+                (valid_assessment.data->>'student_group_join')::boolean,
+                (valid_assessment.data->>'student_group_leave')::boolean
+            ) ON CONFLICT (assessment_id)
+            DO UPDATE
+            SET 
+                maximum = EXCLUDED.maximum,
+                minimum = EXCLUDED.minimum,
+                student_authz_create = EXCLUDED.student_authz_create,
+                student_authz_join = EXCLUDED.student_authz_join,
+                student_authz_leave = EXCLUDED.student_authz_leave,
+                deleted_at = NULL;
+        ELSE
+            UPDATE group_configs
+            SET deleted_at = now()
+            WHERE assessment_id = new_assessment_id;
         END IF;
 
         -- Now process all access rules for this assessment
@@ -192,13 +212,14 @@ BEGIN
                 start_date,
                 end_date,
                 show_closed_assessment,
-                show_closed_assessment_score)
+                show_closed_assessment_score,
+                active)
             (
                 SELECT
                     new_assessment_id,
                     (access_rule->>'number')::integer,
                     (access_rule->>'mode')::enum_mode,
-                    (access_rule->>'role')::enum_role,
+                    'Student'::enum_role,
                     (access_rule->>'credit')::integer,
                     jsonb_array_to_text_array(access_rule->'uids'),
                     (access_rule->>'time_limit_min')::integer,
@@ -208,7 +229,8 @@ BEGIN
                     input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     (access_rule->>'show_closed_assessment')::boolean,
-                    (access_rule->>'show_closed_assessment_score')::boolean
+                    (access_rule->>'show_closed_assessment_score')::boolean,
+                    (access_rule->>'active')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -229,7 +251,8 @@ BEGIN
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date,
                 show_closed_assessment = EXCLUDED.show_closed_assessment,
-                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score;
+                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score,
+                active = EXCLUDED.active;
         END LOOP;
 
         -- Delete excess access rules
@@ -247,21 +270,25 @@ BEGIN
                 title,
                 max_points,
                 number_choose,
-                best_questions
-            ) VALUES (
+                best_questions,
+                advance_score_perc
+            )
+            VALUES (
                 new_assessment_id,
                 (zone->>'number')::integer,
                 zone->>'title',
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
-                (zone->>'best_questions')::integer
+                (zone->>'best_questions')::integer,
+                (zone->>'advance_score_perc')::double precision
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
                 title = EXCLUDED.title,
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
-                best_questions = EXCLUDED.best_questions
+                best_questions = EXCLUDED.best_questions,
+                advance_score_perc = EXCLUDED.advance_score_perc
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
@@ -269,17 +296,20 @@ BEGIN
                 INSERT INTO alternative_groups (
                     number,
                     number_choose,
+                    advance_score_perc,
                     assessment_id,
                     zone_id
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
+                    (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
                     new_zone_id
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
-                    zone_id = EXCLUDED.zone_id
+                    zone_id = EXCLUDED.zone_id,
+                    advance_score_perc = EXCLUDED.advance_score_perc
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
@@ -291,11 +321,14 @@ BEGIN
                         points_list,
                         force_max_points,
                         tries_per_variant,
+                        grade_rate_minutes,
                         deleted_at,
                         assessment_id,
                         question_id,
                         alternative_group_id,
-                        number_in_alternative_group
+                        number_in_alternative_group,
+                        advance_score_perc,
+                        effective_advance_score_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         (assessment_question->>'max_points')::double precision,
@@ -303,11 +336,14 @@ BEGIN
                         jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
+                        (assessment_question->>'grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
                         (assessment_question->>'question_id')::bigint,
                         new_alternative_group_id,
-                        (assessment_question->>'number_in_alternative_group')::integer
+                        (assessment_question->>'number_in_alternative_group')::integer,
+                        (assessment_question->>'advance_score_perc')::double precision,
+                        (assessment_question->>'effective_advance_score_perc')::double precision
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -316,10 +352,13 @@ BEGIN
                         init_points = EXCLUDED.init_points,
                         force_max_points = EXCLUDED.force_max_points,
                         tries_per_variant = EXCLUDED.tries_per_variant,
+                        grade_rate_minutes = EXCLUDED.grade_rate_minutes,
                         deleted_at = EXCLUDED.deleted_at,
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
-                        question_id = EXCLUDED.question_id
+                        question_id = EXCLUDED.question_id,
+                        advance_score_perc = EXCLUDED.advance_score_perc,
+                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
                 END LOOP;
@@ -362,7 +401,7 @@ BEGIN
                 SELECT string_agg(convert_to(coalesce(r[2],
                     length(length(r[1])::text) || length(r[1])::text || r[1]),
                     'SQL_ASCII'),'\x00')
-                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r 
+                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
             ) ASC) AS order_by
         FROM assessments
         WHERE

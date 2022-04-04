@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS workspace_loads_current(double precision, double precision);
-
 CREATE FUNCTION
     workspace_loads_current(
         IN workspace_capacity_factor double precision,
@@ -56,8 +54,8 @@ BEGIN
 
     -- Longest running workspace in launching and running state
     SELECT
-        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE w.state = 'launching'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_updated_at)) FILTER (WHERE w.state = 'running'), 0)
+        COALESCE(max(DATE_PART('epoch', now() - state_updated_at)) FILTER (WHERE w.state = 'launching'), 0),
+        COALESCE(max(DATE_PART('epoch', now() - state_updated_at)) FILTER (WHERE w.state = 'running'), 0)
     INTO
         workspace_longest_launching_sec,
         workspace_longest_running_sec
@@ -91,11 +89,11 @@ BEGIN
 
     -- Longest running workspace host in various states
     SELECT
-        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'launching'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'ready'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'draining'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'unhealthy'), 0),
-        COALESCE(max(extract(epoch FROM now() - state_changed_at)) FILTER (WHERE wh.state = 'terminating'), 0)
+        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'launching'), 0),
+        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'ready'), 0),
+        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'draining'), 0),
+        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'unhealthy'), 0),
+        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'terminating'), 0)
     INTO
         workspace_hosts_longest_launching_sec,
         workspace_hosts_longest_ready_sec,
