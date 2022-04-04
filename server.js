@@ -12,7 +12,6 @@ const async = require('async');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
-const cookie = require('cookie');
 const passport = require('passport');
 const Bowser = require('bowser');
 const http = require('http');
