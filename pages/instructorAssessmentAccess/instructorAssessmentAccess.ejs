@@ -7,6 +7,7 @@
     <script>
       $(function () {
           $('[data-toggle="popover"]').popover({sanitize: false})
+          $('[data-toggle="tooltip"]').tooltip()
       });
     </script>
     <%- include('../partials/navbar'); %>
@@ -22,6 +23,7 @@
           <table class="table table-sm table-hover">
             <thead>
               <tr>
+                <th></th>
                 <th>Mode</th>
                 <th>UIDs</th>
                 <th>Start date</th>
@@ -37,6 +39,13 @@
             <tbody>
               <% access_rules.forEach(function(access_rule) { %>
               <tr>
+                <td>
+                  <% if (!access_rule.has_application) { %>
+                  <span data-toggle="tooltip" title="This rule does not affect assessment access for any user">
+                    <i class="fas fa-eye-slash text-danger"></i><span class="sr-only">Not used</span>
+                  </span>
+                  <% } %>
+                </td>
                 <td><%= access_rule.mode %></td>
                 <td>
                   <%
@@ -125,7 +134,13 @@
               </tr>
               <% set.rules.forEach(function(access_rule) { %>
               <tr>
-                <td></td>
+                <td>
+                  <% if (access_rule.valid_now_public) { %>
+                  <span data-toggle="tooltip" title="This rule is currently in place in public mode">
+                    <i class="far fa-calendar-check text-info"></i><span class="sr-only">Current</span>
+                  </span>
+                  <% } %>
+                </td>
                 <td>
                   <% if (access_rule.pt_exam_name) { %>
                   PrairieTest: <%= access_rule.pt_exam_name %>

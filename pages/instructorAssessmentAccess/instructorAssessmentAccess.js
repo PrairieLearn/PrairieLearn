@@ -19,6 +19,8 @@ let compare_date = function (old_date, new_date, old_is_null, new_is_null, both_
 let apply_rule = function (list, formal_rule) {
   let new_rule = Object.assign({}, formal_rule);
   let valid = true;
+  if (new_rule.mode_raw ?? 'Public' === 'Public') new_rule.valid_now_public = new_rule.valid_now;
+  if (new_rule.mode_raw ?? 'Exam' === 'Exam') new_rule.valid_now_exam = new_rule.valid_now;
   list.forEach((old_rule) => {
     if (!valid) return;
 
@@ -38,6 +40,13 @@ let apply_rule = function (list, formal_rule) {
       return;
     }
 
+    if (old_rule.valid_now_public) {
+      new_rule.valid_now_public = false;
+    }
+    if (old_rule.valid_now_exam && old_rule.exam_uuid === new_rule.exam_uuid) {
+      new_rule.valid_now_exam = false;
+    }
+
     // Simplification: if there are multiple rules with different
     // CBTF exam UUIDs, they are not considered a conflict, and may all
     // be valid simultaneously.
@@ -52,29 +61,28 @@ let apply_rule = function (list, formal_rule) {
       compare_date(new_rule.start_date_raw, old_rule.start_date_raw, -1, +1, 0) >= 0 &&
       compare_date(new_rule.start_date_raw, old_rule.end_date_raw, -1, -1, -1) <= 0
     ) {
-      new_rule.start_date_raw = old_rule.end_date_raw;
-      new_rule.start_date = old_rule.end_date;
+      new_rule.start_date_raw = old_rule.end_date_plus_one_raw;
+      new_rule.start_date = old_rule.end_date_plus_one;
     } else if (
       compare_date(new_rule.end_date_raw, old_rule.start_date_raw, +1, +1, +1) >= 0 &&
       compare_date(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) <= 0
     ) {
-      new_rule.end_date_raw = old_rule.start_date_raw;
-      new_rule.end_date = old_rule.start_date;
+      new_rule.end_date_raw = old_rule.start_date_minus_one_raw;
+      new_rule.end_date = old_rule.start_date_minus_one;
     } else if (
       compare_date(new_rule.start_date_raw, old_rule.start_date_raw, -1, +1, 0) < 0 &&
       compare_date(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) > 0
     ) {
       let rule_before = Object.assign({}, new_rule);
-      rule_before.end_date_raw = old_rule.start_date_raw;
-      rule_before.end_date = old_rule.start_date;
+      rule_before.end_date_raw = old_rule.start_date_minus_one_raw;
+      rule_before.end_date = old_rule.start_date_minus_one;
       apply_rule(list, rule_before);
 
-      new_rule.start_date_raw = old_rule.end_date_raw;
-      new_rule.start_date = old_rule.end_date;
+      new_rule.start_date_raw = old_rule.end_date_plus_one_raw;
+      new_rule.start_date = old_rule.end_date_plus_one;
     }
   });
   if (valid) {
-    new_rule.show_dates = new_rule.start_date_raw || new_rule.end_date_raw || !new_rule.exam_uuid;
     list.push(new_rule);
   }
 };
@@ -138,6 +146,12 @@ router.get(
     }
 
     res.locals.explained_sets = user_spec_rules;
+
+    res.locals.access_rules.forEach((formal) => {
+      formal.has_application = user_spec_rules.some((set) =>
+        set.rules.some((applied) => applied.id === formal.id)
+      );
+    });
 
     debug('render page');
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);

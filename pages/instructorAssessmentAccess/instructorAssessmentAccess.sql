@@ -1,5 +1,6 @@
 -- BLOCK assessment_access_rules
 SELECT
+    aar.id,
     CASE
         WHEN aar.mode IS NULL THEN '—'
         ELSE aar.mode::text
@@ -16,6 +17,14 @@ SELECT
         WHEN aar.end_date IS NULL THEN '—'
         ELSE format_date_full_compact(aar.end_date, ci.display_timezone)
     END AS end_date,
+    CASE
+        WHEN aar.start_date IS NULL THEN '—'
+        ELSE format_date_full_compact(aar.start_date - interval '1 sec', ci.display_timezone)
+    END AS start_date_minus_one,
+    CASE
+        WHEN aar.end_date IS NULL THEN '—'
+        ELSE format_date_full_compact(aar.end_date + interval '1 sec', ci.display_timezone)
+    END AS end_date_plus_one,
     CASE
         WHEN aar.credit IS NULL THEN '—'
         ELSE aar.credit::text || '%'
@@ -49,6 +58,9 @@ SELECT
     ) AS uids_names,
     aar.start_date AS start_date_raw,
     aar.end_date AS end_date_raw,
+    aar.start_date - interval '1 sec' AS start_date_minus_one_raw,
+    aar.end_date + interval '1 sec' AS end_date_plus_one_raw,
+    (aar.start_date IS NULL OR aar.start_date <= NOW()) AND (aar.end_date IS NULL OR aar.end_date >= NOW()) AS valid_now,
     aar.exam_uuid,
     e.exam_id AS ps_exam_id,
     pt_c.id AS pt_course_id,
