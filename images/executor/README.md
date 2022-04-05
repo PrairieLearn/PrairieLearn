@@ -26,6 +26,12 @@ To push the built image to the Docker and ECR registries, run:
 ./tools/executor/release.js
 ```
 
+Note that the scripts `build.js`, `pull.js`, and `release.js` can prepend `sudo` when invoking `docker` if you call these scripts with a `--sudo` flag:
+
+```sh
+./tools/executor/build.js --sudo
+```
+
 ## In-dev testing
 
 Build the image using the above instructions. Make note of the name of the resulting image; you'll need this image name momentarily.

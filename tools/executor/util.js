@@ -26,6 +26,28 @@ const execa = (file, args, options) => {
   });
 };
 
+// Helper for execaSudo wrapper. This supplies "sudo" as the leading command
+// if the '--sudo' argument was provided to the script. If 'sudo' was already
+// given as the command literally, change nothing. Return a pair with the
+// leading argument separated from the rest of the argument list.
+const prependSudo = ((execaCommand, execaArgs=[]) => {
+  const processArgs = process.argv.slice(2);
+  if (execaCommand !== 'sudo' && processArgs.includes('--sudo')) {
+    return ['sudo', [execaCommand].concat(execaArgs)];
+  }
+  else {
+    return [execaCommand, execaArgs];
+  }
+});
+
+// Another wrapper for modified version of execa defined in this file: prepend
+// sudo if the '--sudo' flag is passed to the calling script. This is useful
+// for invoking docker on some systems.
+const execaSudo = ((command, args=[], options={}) => {
+  [command, args] = prependSudo(command, args);
+  return execa(command, args, options);
+});
+
 const getImageTag = async () => {
   if (
     process.env.CI &&
@@ -66,7 +88,7 @@ const loginToEcr = async () => {
 
   const ecrRegistryUrl = await getEcrRegistryUrl();
 
-  await execa('docker', ['login', '--username', user, '--password-stdin', ecrRegistryUrl], {
+  await execaSudo('docker', ['login', '--username', user, '--password-stdin', ecrRegistryUrl], {
     input: password,
   });
 };
@@ -74,6 +96,7 @@ const loginToEcr = async () => {
 module.exports = {
   AWS,
   execa,
+  execaSudo,
   getImageName,
   getImageTag,
   loginToEcr,

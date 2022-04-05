@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 // @ts-check
-const { execa, getImageName, loginToEcr, getEcrRegistryUrl, getImageTag } = require('./util');
+const { execa, execaSudo, getImageName, loginToEcr, getEcrRegistryUrl, getImageTag } = require('./util');
 
 (async () => {
   const tag = await getImageTag();
   const imageName = getImageName(tag);
 
   console.log('Pushing image to Docker registry');
-  await execa('docker', ['push', imageName]);
-  await execa('docker', ['push', getImageName('latest')]);
+  await execaSudo('docker', ['push', imageName]);
+  await execaSudo('docker', ['push', getImageName('latest')]);
 
   const ecrRegistryUrl = await getEcrRegistryUrl();
   await loginToEcr();
@@ -18,8 +18,8 @@ const { execa, getImageName, loginToEcr, getEcrRegistryUrl, getImageTag } = requ
   // where we'll already be pinning to a specific version.
   console.log('Pushing image to ECR registry');
   const ecrImageName = `${ecrRegistryUrl}/${imageName}`;
-  await execa('docker', ['tag', imageName, ecrImageName]);
-  await execa('docker', ['push', ecrImageName]);
+  await execaSudo('docker', ['tag', imageName, ecrImageName]);
+  await execaSudo('docker', ['push', ecrImageName]);
 })().catch((e) => {
   console.error(e);
   process.exit(1);
