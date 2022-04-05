@@ -28,7 +28,8 @@ yum -y install \
     texlive-dvipng \
     git \
     graphviz \
-    graphviz-devel
+    graphviz-devel \
+    libjpeg-devel # Needed by the Pillow package
 
 yum clean all
 
@@ -56,19 +57,20 @@ arch=`uname -m`
 curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
-if [[ "${arch}" != "aarch64" ]]; then # R is not yet supported on ARM64.
+# R is not yet supported on ARM64. If we're on ARM64 or R package installation
+# is specifically disabled, we'll avoid installing anything R-related.
+if [[ "${arch}" != "aarch64"  ]] && [[ "${SKIP_R_PACKAGES}" != "yes" ]]; then
     echo "installing R..."
     conda install r-essentials
 
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
 
-    if [[ "${SKIP_R_PACKAGES}" != "yes" ]] ; then
-        echo "installing R packages..."
-        echo "set SKIP_R_PACKAGES=yes to skip this step"
-        Rscript /r-requirements.R
-    fi
+    echo "installing R packages..."
+    echo "set SKIP_R_PACKAGES=yes to skip this step"
+    Rscript /r-requirements.R
 else
+    echo "R package installation is disabled"
     sed '/rpy2/d' /python-requirements.txt > /py_req_no_r.txt # Remove rpy2 package.
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /py_req_no_r.txt
