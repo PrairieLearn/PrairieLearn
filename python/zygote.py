@@ -83,6 +83,7 @@ def worker_loop():
                 outf.write(json_outp)
                 outf.write("\n");
                 outf.flush()
+
                 # `sys.exit()` allows the process to gracefully shut down. however, that
                 # makes things much slower than necessary, because we can't reuse this
                 # worker until control returns to the parent, and one or more things we
@@ -210,25 +211,35 @@ with open(4, 'w', encoding='utf-8') as exitf:
 
             break
         else:
-            pid,status = os.waitpid(worker_pid, 0)
+            print(f'parent pgid = {os.getpgid(0)}', file=sys.stderr)
+            pid, status = os.waitpid(worker_pid, 0)
             worker_pid = 0
             if os.WIFEXITED(status):
                 if os.WEXITSTATUS(status) == 0:
                     # Everything is ok, the worker exited gracefully,
                     # just repeat
 
+                    exited = True
+
                     # Once this child exits, clean up after it if we
                     # were running as the `executor` user
                     if drop_privileges:
-                        # Kill all processes started by `executor`
-                        # Run this a few times to catch anything trying to get away by
-                        # repeated forking
-                        for i in range(10):
-                            os.system("pkill -u executor --signal SIGKILL")
+                        # Kill all processes started by `executor`.
+                        os.system("pkill -u executor --signal SIGKILL")
+
+                        # Check that all processes are gone. If they're not,
+                        # that probably means that someone is trying to escape
+                        # by repeatedly forking. In that case, we'll refuse to
+                        # write an exit confirmation to FD 4. This process will
+                        # be killed, and if we're running inside a Docker container,
+                        # the entire container should be killed too.
+                        import psutil
+                        if any(p.username() == "executor" for p in psutil.process_iter()):
+                            raise Exception('found remaining processes belonging to executor user')
 
                     # We'll need to write a confirmation message on file
                     # descriptor 4 so that PL knows that control was actually
-                    # returned to the zygote
+                    # returned to the zygote.
                     json.dump({ "exited": True }, exitf)
                     exitf.write('\n')
                     exitf.flush()
