@@ -10,11 +10,11 @@ const sqlLoader = require('../../../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
 
-router.get('/:submission_id', (req, res, next) => {
+router.get('/:unsafe_submission_id', (req, res, next) => {
   const params = {
     course_instance_id: res.locals.course_instance.id,
-    assessment_instance_id: null,
-    submission_id: req.params.submission_id,
+    unsafe_assessment_instance_id: null,
+    unsafe_submission_id: req.params.unsafe_submission_id,
   };
   sqldb.queryOneRow(sql.select_submissions, params, (err, result) => {
     if (ERR(err, next)) return;
