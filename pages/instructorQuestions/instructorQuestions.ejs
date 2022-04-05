@@ -83,7 +83,7 @@
       function assessmentsByCourseInstanceList(ci_id) {
           var data = $('#questionsTable').bootstrapTable('getData');
           var assessments = _.filter(_.flatten(_.map(data, row => row.assessments)), row => row && row.course_instance_id == ci_id);
-          return _.keyBy(_.map(assessments, row => row.label));
+          return _.assign(_.keyBy(_.map(assessments, row => row.label)), {'(None)': '(None)'});
       }
       
       function qidFormatter(qid, question) {
@@ -132,6 +132,7 @@
       }
 
       function badgeFilterSearch(search, value) {
+          if (search == '(none)') { return value == ''; }
           var values = $('<div>').html(value).find('.badge')
               .filter((i, elem) => $(elem).text().toUpperCase() == search.toUpperCase())
               .length;
@@ -246,6 +247,20 @@
                   data-filter-custom-search="badgeFilterSearch"
                   data-visible="<%= has_legacy_questions %>"
                   data-switchable="true">Version</th>
+              <th data-field="grading_method"
+                  data-sortable="true"
+                  data-class="align-middle text-nowrap"
+                  data-filter-control="select"
+                  data-filter-control-placeholder="(All Methods)"
+                  data-visible="false"
+                  data-switchable="true">Grading Method</th>
+              <th data-field="external_grading_image"
+                  data-sortable="true"
+                  data-class="align-middle text-nowrap"
+                  data-filter-control="select"
+                  data-filter-control-placeholder="(All Images)"
+                  data-visible="false"
+                  data-switchable="true">External Grading Image</th>
               <% (authz_data.course_instances || []).forEach(course_instance => { %>
               <th data-field="assessments_<%= course_instance.id %>"
                   data-class="align-middle text-nowrap"
