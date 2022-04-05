@@ -66,11 +66,9 @@ if [[ "${arch}" != "aarch64"  ]] && [[ "${SKIP_R_PACKAGES}" != "yes" ]]; then
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
 
-    if [[ "${SKIP_R_PACKAGES}" != "yes" ]] ; then
-        echo "installing R packages..."
-        echo "set SKIP_R_PACKAGES=yes to skip this step"
-        Rscript /r-requirements.R
-    fi
+    echo "installing R packages..."
+    echo "set SKIP_R_PACKAGES=yes to skip this step"
+    Rscript /r-requirements.R
 else
     echo "R package installation is disabled"
     sed '/rpy2/d' /python-requirements.txt > /py_req_no_r.txt # Remove rpy2 package.
