@@ -1,9 +1,8 @@
 -- BLOCK select_file
-SELECT f.storage_filename
-FROM
-    files AS f
+SELECT id, display_filename
+FROM files
 WHERE
-    f.id = $file_id
-    AND f.assessment_instance_id = $assessment_instance_id
-    AND f.display_filename = $display_filename
-    AND f.deleted_at IS NULL;
+    id = $unsafe_file_id
+    AND assessment_instance_id = $assessment_instance_id
+    AND display_filename = $unsafe_display_filename
+    AND deleted_at IS NULL;

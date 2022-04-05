@@ -39,6 +39,7 @@ nav:
   - 'What to tell students': 'whatToTellStudents.md'
   - 'FAQ': 'faq.md'
   - 'API': 'api.md'
+  - 'Running in production': 'running-in-production.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
   - 'Installing with local source': 'installingLocal.md'

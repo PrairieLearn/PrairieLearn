@@ -72,8 +72,7 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
-    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-    JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
+    LEFT JOIN users AS u ON (u.user_id = ai.user_id)
 WHERE
     a.id = $assessment_id
 ORDER BY
@@ -164,8 +163,7 @@ WITH all_submissions AS (
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
@@ -301,8 +299,7 @@ WITH all_submissions_with_files AS (
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-        JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
