@@ -340,6 +340,10 @@ module.exports.initExpress = function () {
     app.use(express.static(config.localRootFilesDir));
   }
 
+  // Note that this comes before routes that serve static files that might be
+  // subjest to CORS restrictions.
+  app.use(require('./middlewares/cors'));
+
   // To allow for more aggressive caching of static files served from public/,
   // we use an `assets/` path that includes a cachebuster in the path.
   // In requests for resources, the cachebuster will be a hash of the contents
@@ -413,7 +417,7 @@ module.exports.initExpress = function () {
 
   // More middlewares
   app.use(require('./middlewares/logResponse')); // defers to end of response
-  app.use(require('./middlewares/cors'));
+  app.use(require('./middlewares/disableCaching'));
   app.use(require('./middlewares/date'));
   app.use(require('./middlewares/effectiveRequestChanged'));
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));

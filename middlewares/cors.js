@@ -10,9 +10,6 @@ router.all('/*', function (req, res, next) {
     'X-Requested-With, Accept, X-Auth-UID, X-Auth-Name, X-Auth-Date, X-Auth-Signature, Content-Type'
   );
 
-  // disable all caching for all requests
-  res.header('Cache-Control', 'max-age=0, no-cache, no-store, must-revalidate');
-
   next();
 });
 
