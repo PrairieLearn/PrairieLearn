@@ -13,6 +13,13 @@ const SUBDOMAINS = [
 
 module.exports = function (req, res, next) {
   const canonicalHost = config.serverCanonicalHost;
+
+  // If this server isn't configured with a canonical host, this middleware
+  // can't do anything useful.
+  if (!canonicalHost) {
+    return next();
+  }
+
   const canonicalHostUrl = new URL(canonicalHost);
 
   // If the deepest subdomain matches a subdomain where we would actually serve
