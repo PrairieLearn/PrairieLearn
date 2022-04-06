@@ -1,0 +1,96 @@
+// @ts-check
+
+const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/];
+
+/**
+ * Specifies a list of subdomain patterns and the routes that pages served from
+ * that subdomain should be able to access.
+ */
+const SUBDOMAINS = [
+  {
+    pattern: /variant-\d+/,
+    allowedRoutes: [],
+  },
+];
+
+/**
+ * This middleware complements the `subdomainRedirect` middleware. If a
+ * request makes it past that middleware, we can check if the `Origin` header
+ * indicates that the request is coming from a subdomain. If it is, we'll
+ * validate that it's a request that should be able to be made from that
+ * particular subdomain. If it is not, we'll error.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+module.exports = function validateSubdomainRequest(req, res, next) {
+  const requestSubdomain = req.hostname.split('.')[0];
+
+  const requestOrigin = req.get('Origin');
+
+  console.log(req.originalUrl);
+  console.log(requestSubdomain);
+  console.log(requestOrigin);
+
+  const isToSubdomain = SUBDOMAINS.some((sub) => requestSubdomain.match(sub.pattern));
+
+  if (requestOrigin) {
+    // If the `Origin` header is present, that means we're probably crossing
+    // origins.
+    //
+    // TODO: what about the case where `Origin` is set but we're *not* crossing
+    // origins? Figure out what to do there. Do we need anything special?
+
+    const requestOriginHostname = new URL(requestOrigin).hostname;
+    const requestOriginSubdomain = requestOriginHostname.split('.')[0];
+    console.log('requestOriginHostname', requestOriginHostname);
+
+    // We might be crossing origins. Validate that the `Origin` header
+    // corresponds to the subdomain that the request is trying to access.
+    // If it's not, we'll error.
+    if (isToSubdomain) {
+      if (requestOriginSubdomain !== requestSubdomain) {
+        return res.status(403).send();
+      }
+
+      // If we fall through to here, this means that the request included an
+      // `Origin` header but didn't actually cross origins; that is, this is a
+      // non-CORS request to a subdomain. We'll validate that the given origin
+      // is allowed to access the resource for the current request.
+      // TODO: actually do that validation.
+    }
+
+    if (!isToSubdomain) {
+      // The current request is crossing origins from a subdomain to *not*
+      // a subdomain.
+      //
+      // This is allowed for a subset of routes, e.g. all static resources.
+      // We want those to be accessible from any subdomain. However, for other
+      // routes, they should not actually be accessible.
+      //
+      // TODO: what happens if someone puts an invalid subdomain that isn't
+      // recognized by our above regexes, like `foobar.us.prairielearn.com`?
+      // Should make sure we handle that case.
+      if (ALLOWED_FROM_ANY_SUBDOMAIN.some((pattern) => req.originalUrl.match(pattern))) {
+        return next();
+      } else {
+        return res.status(403).send();
+      }
+    }
+  } else {
+    // The `Origin` header is not present. This could be a same-origin request,
+    // or it could be a cross-origin request that didn't actually send an
+    // `Origin` header.
+
+    if (isToSubdomain) {
+      // The current request is to a subdomain. We'll validate that the
+      // request is allowed to access the resource for the current request.
+    } else {
+      // This request was not to a subdomain and is also not crossing origins.
+      // This means that the request is coming from and destined for the actual
+      // canonical host. We can safely continue.
+      return next();
+    }
+  }
+};

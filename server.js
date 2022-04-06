@@ -108,10 +108,11 @@ module.exports.initExpress = function () {
     next();
   });
 
-  // If we try to access a page from a subdomain like
-  // `variant-1234.ca.prairielearn.org` but that page isn't actually a variant
-  // page, redirect to the primary domain.
+  // Together, these two middlewares help to implement our client-side security
+  // feature that ensures that code executing on question pages can't interact
+  // with other parts of the site.
   app.use(require('./middlewares/subdomainRedirect'));
+  app.use(require('./middlewares/validateSubdomainRequest'));
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
