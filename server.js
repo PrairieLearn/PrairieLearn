@@ -108,6 +108,11 @@ module.exports.initExpress = function () {
     next();
   });
 
+  // If we try to access a page from a subdomain like
+  // `variant-1234.ca.prairielearn.org` but that page isn't actually a variant
+  // page, redirect to the primary domain.
+  app.use(require('./middlewares/subdomainRedirect'));
+
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
   // Special handling of file-upload routes so that we can parse multipart/form-data
