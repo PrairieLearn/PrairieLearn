@@ -13,25 +13,8 @@ const SUBDOMAINS = [
   },
 ];
 
-/**
- * This middleware complements the `subdomainRedirect` middleware. If a
- * request makes it past that middleware, we can check if the `Origin` header
- * indicates that the request is coming from a subdomain. If it is, we'll
- * validate that it's a request that should be able to be made from that
- * particular subdomain. If it is not, we'll error.
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-module.exports = function validateSubdomainRequest(req, res, next) {
-  const requestSubdomain = req.hostname.split('.')[0];
-
-  const requestOrigin = req.get('Origin');
-
-  console.log(req.originalUrl);
-  console.log(requestSubdomain);
-  console.log(requestOrigin);
+function allowAccess(requestHostname, requestOrigin, originalUrl) {
+  const requestSubdomain = requestHostname.split('.')[0];
 
   const matchedSubdomain = SUBDOMAINS.find((sub) => requestSubdomain.match(sub.pattern));
   const isToSubdomain = !!matchedSubdomain;
@@ -45,14 +28,13 @@ module.exports = function validateSubdomainRequest(req, res, next) {
 
     const requestOriginHostname = new URL(requestOrigin).hostname;
     const requestOriginSubdomain = requestOriginHostname.split('.')[0];
-    console.log('requestOriginHostname', requestOriginHostname);
 
     // We might be crossing origins. Validate that the `Origin` header
     // corresponds to the subdomain that the request is trying to access.
     // If it's not, we'll error.
     if (isToSubdomain) {
       if (requestOriginSubdomain !== requestSubdomain) {
-        return res.status(403).send();
+        return false;
       }
 
       // If we fall through to here, this means that the request included an
@@ -60,11 +42,7 @@ module.exports = function validateSubdomainRequest(req, res, next) {
       // non-CORS request to a subdomain. We'll validate that the given origin
       // is allowed to access the resource for the current request.
       // TODO: actually do that validation.
-      if (!matchedSubdomain.allowedRoutes.some((r) => req.originalUrl.match(r))) {
-        return res.status(403).send();
-      } else {
-        return next();
-      }
+      return matchedSubdomain.allowedRoutes.some((r) => originalUrl.match(r));
     }
 
     if (!isToSubdomain) {
@@ -78,11 +56,7 @@ module.exports = function validateSubdomainRequest(req, res, next) {
       // TODO: what happens if someone puts an invalid subdomain that isn't
       // recognized by our above regexes, like `foobar.us.prairielearn.com`?
       // Should make sure we handle that case.
-      if (!ALLOWED_FROM_ANY_SUBDOMAIN.some((pattern) => req.originalUrl.match(pattern))) {
-        return res.status(403).send();
-      } else {
-        return next();
-      }
+      return ALLOWED_FROM_ANY_SUBDOMAIN.some((pattern) => originalUrl.match(pattern));
     }
   } else {
     // The `Origin` header is not present. This could be a same-origin request,
@@ -92,16 +66,36 @@ module.exports = function validateSubdomainRequest(req, res, next) {
     if (isToSubdomain) {
       // The current request is to a subdomain. We'll validate that the
       // request is allowed to access the resource for the current request.
-      if (!matchedSubdomain.allowedRoutes.some((r) => req.originalUrl.match(r))) {
-        return res.status(403).send();
-      } else {
-        return next();
-      }
+      return matchedSubdomain.allowedRoutes.some((r) => originalUrl.match(r));
     } else {
       // This request was not to a subdomain and is also not crossing origins.
       // This means that the request is coming from and destined for the actual
       // canonical host. We can safely continue.
-      return next();
+      return true;
     }
   }
+}
+
+/**
+ * This middleware complements the `subdomainRedirect` middleware. If a
+ * request makes it past that middleware, we can check if the `Origin` header
+ * indicates that the request is coming from a subdomain. If it is, we'll
+ * validate that it's a request that should be able to be made from that
+ * particular subdomain. If it is not, we'll error.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
+module.exports.middleware = function validateSubdomainRequest(req, res, next) {
+  const requestHostname = req.hostname;
+  const requestOrigin = req.get('Origin');
+
+  if (allowAccess(requestHostname, requestOrigin, req.originalUrl)) {
+    next();
+  } else {
+    res.status(403).send('Forbidden');
+  }
 };
+
+module.exports.allowAccess = allowAccess;

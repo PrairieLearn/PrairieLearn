@@ -112,7 +112,7 @@ module.exports.initExpress = function () {
   // feature that ensures that code executing on question pages can't interact
   // with other parts of the site.
   app.use(require('./middlewares/subdomainRedirect'));
-  app.use(require('./middlewares/validateSubdomainRequest'));
+  app.use(require('./middlewares/validateSubdomainRequest').middleware);
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary

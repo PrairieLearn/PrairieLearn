@@ -59,3 +59,6 @@ require('./testGroupGenerateAndDelete');
 require('./testGroupStudent');
 require('./testGroupScoreAndSync');
 require('./permissions');
+
+// Middleware
+require('./middlewares/validateSubdomainRequest.test');
