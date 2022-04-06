@@ -9,7 +9,7 @@ const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/];
 const SUBDOMAINS = [
   {
     pattern: /variant-\d+/,
-    allowedRoutes: [],
+    allowedRoutes: [/^\/pl\/course\/\d+\/question\/\d+\/preview/],
   },
 ];
 
@@ -33,7 +33,8 @@ module.exports = function validateSubdomainRequest(req, res, next) {
   console.log(requestSubdomain);
   console.log(requestOrigin);
 
-  const isToSubdomain = SUBDOMAINS.some((sub) => requestSubdomain.match(sub.pattern));
+  const matchedSubdomain = SUBDOMAINS.find((sub) => requestSubdomain.match(sub.pattern));
+  const isToSubdomain = !!matchedSubdomain;
 
   if (requestOrigin) {
     // If the `Origin` header is present, that means we're probably crossing
@@ -59,6 +60,11 @@ module.exports = function validateSubdomainRequest(req, res, next) {
       // non-CORS request to a subdomain. We'll validate that the given origin
       // is allowed to access the resource for the current request.
       // TODO: actually do that validation.
+      if (!matchedSubdomain.allowedRoutes.some((r) => req.originalUrl.match(r))) {
+        return res.status(403).send();
+      } else {
+        return next();
+      }
     }
 
     if (!isToSubdomain) {
@@ -72,10 +78,10 @@ module.exports = function validateSubdomainRequest(req, res, next) {
       // TODO: what happens if someone puts an invalid subdomain that isn't
       // recognized by our above regexes, like `foobar.us.prairielearn.com`?
       // Should make sure we handle that case.
-      if (ALLOWED_FROM_ANY_SUBDOMAIN.some((pattern) => req.originalUrl.match(pattern))) {
-        return next();
-      } else {
+      if (!ALLOWED_FROM_ANY_SUBDOMAIN.some((pattern) => req.originalUrl.match(pattern))) {
         return res.status(403).send();
+      } else {
+        return next();
       }
     }
   } else {
@@ -86,6 +92,11 @@ module.exports = function validateSubdomainRequest(req, res, next) {
     if (isToSubdomain) {
       // The current request is to a subdomain. We'll validate that the
       // request is allowed to access the resource for the current request.
+      if (!matchedSubdomain.allowedRoutes.some((r) => req.originalUrl.match(r))) {
+        return res.status(403).send();
+      } else {
+        return next();
+      }
     } else {
       // This request was not to a subdomain and is also not crossing origins.
       // This means that the request is coming from and destined for the actual

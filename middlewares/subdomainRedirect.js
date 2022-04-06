@@ -17,7 +17,7 @@ module.exports = function (req, res, next) {
 
   // If the deepest subdomain matches a subdomain where we would actually serve
   // content from, validate that the route is something that we should actually
-  // serve from. If it doesn't redirect to the original URL but on our
+  // serve from. If it doesn't, redirect to the original URL but on our
   // "canonical" host.
   const requestSubdomain = req.hostname.split('.')[0];
   for (const sub of SUBDOMAINS) {
