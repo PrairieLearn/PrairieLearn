@@ -1,5 +1,8 @@
 // @ts-check
 
+/**
+ * Specifies all routes that should always be accessible from any subdomain.
+ */
 const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/];
 
 /**
@@ -8,8 +11,19 @@ const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/];
  */
 const SUBDOMAINS = [
   {
-    pattern: /variant-\d+/,
+    // Instructor question pages.
+    pattern: /q\d+/,
     allowedRoutes: [/^\/pl\/course\/\d+\/question\/\d+\/preview/],
+  },
+  {
+    // Instance question pages.
+    pattern: /iq\d+/,
+    allowedRoutes: [/^\/pl\/course\/\d+\/question\/\d+\/preview/],
+  },
+  {
+    // Workspace pages.
+    pattern: /w\d+/,
+    allowedRoutes: [],
   },
 ];
 

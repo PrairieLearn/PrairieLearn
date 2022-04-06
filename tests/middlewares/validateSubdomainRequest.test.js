@@ -8,8 +8,8 @@ describe('validateSubdomainRequest', () => {
   it('allows access to question page from subdomain', () => {
     assert.isTrue(
       allowAccess(
-        'variant-1.prairielearn.com',
-        'http://variant-1.prairielearn.com',
+        'q1.prairielearn.com',
+        'http://q1.prairielearn.com',
         '/pl/course/1/question/1/preview'
       )
     );
@@ -18,43 +18,37 @@ describe('validateSubdomainRequest', () => {
   it('denies access to question page on different subdomain', () => {
     assert.isFalse(
       allowAccess(
-        'variant-2.prairielearn.com',
-        'http://variant-1.prairielearn.com',
+        'q2.prairielearn.com',
+        'http://q1.prairielearn.com',
         '/pl/course/1/question/1/preview'
       )
     );
   });
 
   it('denies access to main domain from subdomain', () => {
-    assert.isFalse(allowAccess('prairielearn.com', 'http://variant-1.prairielearn.com', '/pl/'));
+    assert.isFalse(allowAccess('prairielearn.com', 'http://q1.prairielearn.com', '/pl/'));
   });
 
   it('allows access to global static asset routes from subdomain', () => {
     assert.isTrue(
       allowAccess(
         'prairielearn.com',
-        'http://variant-1.prairielearn.com',
+        'http://q1.prairielearn.com',
         '/cacheable_node_modules/abcd1234/foo/bar.js'
       )
     );
 
     assert.isTrue(
-      allowAccess(
-        'prairielearn.com',
-        'http://variant-1.prairielearn.com',
-        '/assets/abcd1234/bar.js'
-      )
+      allowAccess('prairielearn.com', 'http://q1.prairielearn.com', '/assets/abcd1234/bar.js')
     );
   });
 
   it('allows access to selected subdomain routes if Origin header not present', () => {
-    assert.isTrue(
-      allowAccess('variant-1.prairielearn.com', null, '/pl/course/1/question/1/preview')
-    );
+    assert.isTrue(allowAccess('q1.prairielearn.com', null, '/pl/course/1/question/1/preview'));
   });
 
   it('denies access to selected subdomain routes if Origin header not present', () => {
-    assert.isFalse(allowAccess('variant-2.prairielearn.com', null, '/pl/course/1/admin'));
+    assert.isFalse(allowAccess('q1.prairielearn.com', null, '/pl/course/1/admin'));
   });
 
   it('allows all requests to canonical host if Origin header missing', () => {
@@ -67,9 +61,15 @@ describe('validateSubdomainRequest', () => {
     );
   });
 
+  it('does not allow requests to unknown subdomains', () => {
+    assert.isFalse(
+      allowAccess('foobar.prairielearn.com', 'https://prairielearn.com', '/pl/course/1/admin')
+    );
+  });
+
   it('does not allow requests from unknown subdomains', () => {
     assert.isFalse(
-      allowAccess('prairielearn.com', 'https://unknown.prairielearn.com', '/pl/course/1/admin')
+      allowAccess('prairielearn.com', 'https://foobar.prairielearn.com', '/pl/course/1/admin')
     );
   });
 
@@ -116,7 +116,7 @@ describe('validateSubdomainRequest', () => {
   describe('middleware', () => {
     it('allows good request', () => {
       const req = makeFakeRequest(
-        'http://variant-1.prairielearn.com',
+        'http://q1.prairielearn.com',
         null,
         '/pl/course/1/question/1/preview'
       );
@@ -131,7 +131,7 @@ describe('validateSubdomainRequest', () => {
     });
 
     it('denies bad request', () => {
-      const req = makeFakeRequest('http://variant-1.prairielearn.com', null, '/pl/course/1/admin');
+      const req = makeFakeRequest('http://q1.prairielearn.com', null, '/pl/course/1/admin');
       const { res, statusSpy, sendSpy } = makeFakeResponse();
       const next = sinon.spy();
 
