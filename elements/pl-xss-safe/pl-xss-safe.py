@@ -2,7 +2,6 @@ import prairielearn as pl
 import lxml.html
 import chevron
 import os
-import json
 import base64
 
 SOURCE_FILE_NAME_DEFAULT = None
