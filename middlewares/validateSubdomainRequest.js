@@ -46,16 +46,21 @@ function allowAccess(requestHostname, requestOrigin, originalUrl) {
     }
 
     if (!isToSubdomain) {
-      // The current request is crossing origins from a subdomain to *not*
-      // a subdomain.
+      // The current request might be crossing origins from a subdomain to
+      // a non-subdomain, or it might be a request from and to a non-subdomain.
+
+      if (requestOriginHostname === requestHostname) {
+        // The request is from a non-subdomain to a non-subdomain.
+        // This is always fine.
+        return true;
+      }
+
+      // If we fall through to here, the current request is crossing origins
+      // from a subdomain to *not* a subdomain.
       //
       // This is allowed for a subset of routes, e.g. all static resources.
       // We want those to be accessible from any subdomain. However, for other
       // routes, they should not actually be accessible.
-      //
-      // TODO: what happens if someone puts an invalid subdomain that isn't
-      // recognized by our above regexes, like `foobar.us.prairielearn.com`?
-      // Should make sure we handle that case.
       return ALLOWED_FROM_ANY_SUBDOMAIN.some((pattern) => originalUrl.match(pattern));
     }
   } else {

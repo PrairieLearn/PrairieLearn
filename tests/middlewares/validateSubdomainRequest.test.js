@@ -61,6 +61,18 @@ describe('validateSubdomainRequest', () => {
     assert.isTrue(allowAccess('prairielearn.com', null, '/pl/course/1/question/1/preview'));
   });
 
+  it('allows requests that do not involve subdomains', () => {
+    assert.isTrue(
+      allowAccess('prairielearn.com', 'https://prairielearn.com', '/pl/course/1/admin')
+    );
+  });
+
+  it('does not allow requests from unknown subdomains', () => {
+    assert.isFalse(
+      allowAccess('prairielearn.com', 'https://unknown.prairielearn.com', '/pl/course/1/admin')
+    );
+  });
+
   /**
    * Constructs a fake Express request object for use in tests.
    *
