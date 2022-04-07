@@ -3,7 +3,7 @@
 /**
  * Specifies all routes that should always be accessible from any subdomain.
  */
-const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/];
+const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/, /^\/favicon.ico/];
 
 /**
  * Specifies a list of subdomain patterns and the routes that pages served from
@@ -12,17 +12,17 @@ const ALLOWED_FROM_ANY_SUBDOMAIN = [/^\/assets/, /^\/cacheable_node_modules/];
 const SUBDOMAINS = [
   {
     // Instructor question pages.
-    pattern: /q\d+/,
+    pattern: /^q\d+$/,
     allowedRoutes: [/^\/pl\/course\/\d+\/question\/\d+\/preview/],
   },
   {
     // Instance question pages.
-    pattern: /iq\d+/,
-    allowedRoutes: [/^\/pl\/course\/\d+\/question\/\d+\/preview/],
+    pattern: /^iq\d+$/,
+    allowedRoutes: [/^\/pl\/course_instance\/\d+\/instance_question\/\d+/],
   },
   {
     // Workspace pages.
-    pattern: /w\d+/,
+    pattern: /^w\d+$/,
     allowedRoutes: [],
   },
 ];
@@ -32,6 +32,10 @@ function allowAccess(requestHostname, requestOrigin, originalUrl) {
 
   const matchedSubdomain = SUBDOMAINS.find((sub) => requestSubdomain.match(sub.pattern));
   const isToSubdomain = !!matchedSubdomain;
+  const allowedRoutes = [
+    ...ALLOWED_FROM_ANY_SUBDOMAIN,
+    ...(matchedSubdomain ? matchedSubdomain.allowedRoutes : []),
+  ];
 
   if (requestOrigin) {
     // If the `Origin` header is present, that means we're probably crossing
@@ -56,7 +60,7 @@ function allowAccess(requestHostname, requestOrigin, originalUrl) {
       // non-CORS request to a subdomain. We'll validate that the given origin
       // is allowed to access the resource for the current request.
       // TODO: actually do that validation.
-      return matchedSubdomain.allowedRoutes.some((r) => originalUrl.match(r));
+      return allowedRoutes.some((r) => originalUrl.match(r));
     }
 
     if (!isToSubdomain) {
@@ -85,7 +89,7 @@ function allowAccess(requestHostname, requestOrigin, originalUrl) {
     if (isToSubdomain) {
       // The current request is to a subdomain. We'll validate that the
       // request is allowed to access the resource for the current request.
-      return matchedSubdomain.allowedRoutes.some((r) => originalUrl.match(r));
+      return allowedRoutes.some((r) => originalUrl.match(r));
     } else {
       // This request was not to a subdomain and is also not crossing origins.
       // This means that the request is coming from and destined for the actual
