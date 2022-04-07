@@ -51,11 +51,12 @@ SELECT
     aar.mode AS mode_raw,
     aar.uids AS uids_raw,
     -- Retrieve user names, but only if they are enrolled in the course
-    (SELECT jsonb_object_agg(aruid, CASE WHEN e.id IS NOT NULL THEN u.name END)
-     FROM UNNEST(aar.uids) aruid
-          LEFT JOIN users AS u ON (u.uid = aruid)
-          LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-    ) AS uids_names,
+    COALESCE(
+        (SELECT jsonb_object_agg(aruid, u.name)
+         FROM UNNEST(aar.uids) aruid
+              JOIN users AS u ON (u.uid = aruid)
+              JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+        ), '{}'::JSONB) AS uids_names,
     aar.start_date AS start_date_raw,
     aar.end_date AS end_date_raw,
     aar.start_date - interval '1 sec' AS start_date_minus_one_raw,
