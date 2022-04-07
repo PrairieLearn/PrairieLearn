@@ -46,7 +46,7 @@ router.get('/', function (req, res, next) {
 
       //if it is a group_work with no instance, jump to a confirm page.
       if (res.locals.assessment.group_work) {
-        groupAssessmentHelper.getConfigInfo(req, res, function () {
+        groupAssessmentHelper.getConfigInfo(res, function () {
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
       } else {
@@ -104,15 +104,30 @@ router.post('/', function (req, res, next) {
       }
     });
   } else if (req.body.__action === 'join_group') {
-    groupAssessmentHelper.joinGroup(req, res, function () {
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    const joinCode = req.body.join_code;
+    groupAssessmentHelper.joinGroup(joinCode, res, function (err, joinErr) {
+      if (ERR(err, next)) return;
+      if (joinErr) {
+        //display error
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      } else {
+        res.redirect(req.originalUrl);
+      }
     });
   } else if (req.body.__action === 'create_group') {
-    groupAssessmentHelper.createGroup(req, res, function () {
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    const groupName = req.body.groupName;
+    groupAssessmentHelper.createGroup(groupName, res, function (err, createErr) {
+      if (ERR(err, next)) return;
+      if (createErr) {
+        //display error
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      } else {
+        res.redirect(req.originalUrl);
+      }
     });
   } else if (req.body.__action === 'leave_group') {
-    groupAssessmentHelper.leaveGroup(req, res, function () {
+    groupAssessmentHelper.leaveGroup(req, res, function (err) {
+      if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
   } else {

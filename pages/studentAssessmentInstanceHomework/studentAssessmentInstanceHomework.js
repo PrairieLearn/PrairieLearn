@@ -62,14 +62,11 @@ router.get('/', function (req, res, next) {
           res.locals.assessment_text_templated = assessment_text_templated;
           debug('rendering EJS');
           if (res.locals.assessment.group_work) {
-            sqldb.query(sql.get_group_info, params, function (err, result) {
+            groupAssessmentHelper.getConfigInfo(res, function (err, notGroupMemberErr) {
               if (ERR(err, next)) return;
-              res.locals.group_info = result.rows;
-              if (result.rowCount === 0) {
+              if (notGroupMemberErr) {
                 return next(error.make(403, 'Not a group member', res.locals));
               }
-              res.locals.join_code =
-                res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
           } else {
@@ -104,7 +101,8 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'leave_group') {
     if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
-    groupAssessmentHelper.leaveGroup(req, res, function () {
+    groupAssessmentHelper.leaveGroup(req, res, function (err) {
+      if (ERR(err, next)) return;
       res.redirect(
         '/pl/course_instance/' +
           res.locals.course_instance.id +
