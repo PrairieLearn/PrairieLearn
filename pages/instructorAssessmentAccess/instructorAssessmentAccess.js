@@ -20,8 +20,8 @@ let compare_date = function (old_date, new_date, old_is_null, new_is_null, both_
 let apply_rule = function (list, formal_rule) {
   let new_rule = Object.assign({}, formal_rule);
   let valid = true;
-  if (new_rule.mode_raw ?? 'Public' === 'Public') new_rule.valid_now_public = new_rule.valid_now;
-  if (new_rule.mode_raw ?? 'Exam' === 'Exam') new_rule.valid_now_exam = new_rule.valid_now;
+  new_rule.valid_now_public = new_rule.valid_now && (new_rule.mode_raw ?? 'Public') === 'Public';
+  new_rule.valid_now_exam = new_rule.valid_now && (new_rule.mode_raw ?? 'Exam') === 'Exam';
   list.forEach((old_rule) => {
     if (!valid) return;
 
