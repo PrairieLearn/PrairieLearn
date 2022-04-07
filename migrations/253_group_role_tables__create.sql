@@ -14,17 +14,11 @@ CREATE UNIQUE INDEX group_roles_role_name_assessment_id_key ON group_roles (role
 
 -- Create relational table and associated indexes between roles and assessment questions
 CREATE TABLE IF NOT EXISTS assessment_question_role_permissions (
-    assessment_question_id BIGINT NOT NULL,
-    group_role_id BIGINT NOT NULL,
+    assessment_question_id BIGINT NOT NULL REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    group_role_id BIGINT NOT NULL REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE,
     can_view BOOLEAN,
     can_submit BOOLEAN,
-    PRIMARY KEY (assessment_question_id, group_role_id),
-    CONSTRAINT assessment_question_role_permissions_assessment_question_id_fkey
-        FOREIGN KEY (assessment_question_id)
-            REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT assessment_question_role_permissions_group_role_id_fkey
-        FOREIGN KEY (group_role_id)
-            REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE
+    PRIMARY KEY (assessment_question_id, group_role_id)
 );
 
 CREATE UNIQUE INDEX assessment_question_role_permissions_assessment_question_id_group_role_id_key ON assessment_question_role_permissions (assessment_question_id, group_role_id);
