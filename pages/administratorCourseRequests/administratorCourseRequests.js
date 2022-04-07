@@ -67,6 +67,10 @@ router.post('/', (req, res, next) => {
         repo_short_name: req.body.repository_short_name,
         github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
         course_request_id: id,
+        first_name: req.body.first_name,
+        last_name: req.body.last_name,
+        work_email: req.body.work_email,
+        institution: req.body.institution,
       };
 
       github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, job_id) => {

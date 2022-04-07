@@ -39,6 +39,10 @@ describe('html', () => {
   it('omits boolean values from template', () => {
     assert.equal(html`<p>${true}${false}</p>`.toString(), '<p></p>');
   });
+
+  it('omits nullish values from template', () => {
+    assert.equal(html`<p>${null}${undefined}</p>`.toString(), '<p></p>');
+  });
 });
 
 describe('escapeHtml', () => {

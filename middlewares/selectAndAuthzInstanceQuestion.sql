@@ -45,7 +45,11 @@ SELECT
     users_get_displayed_role(u.user_id, ci.id) AS instance_role,
     to_jsonb(g) AS instance_group,
     groups_uid_list(g.id) AS instance_group_uid_list,
-    to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
+    to_jsonb(iq) || to_jsonb(iqnag) || jsonb_build_object(
+        'assigned_grader_name', COALESCE(uag.name, uag.uid),
+        'last_grader_name', COALESCE(ulg.name, ulg.uid),
+        'modified_at_formatted', format_date_short(iq.modified_at, COALESCE(ci.display_timezone, c.display_timezone))
+    ) AS instance_question,
     jsonb_build_object(
         'id', iqi.id,
         'prev_instance_question', iqi.prev_instance_question,
@@ -78,11 +82,14 @@ FROM
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN users AS uag ON (uag.user_id = iq.assigned_grader)
+    LEFT JOIN users AS ulg ON (ulg.user_id = iq.last_grader)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
     JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
     CROSS JOIN file_list AS fl
 WHERE
     iq.id = $instance_question_id
     AND ci.id = $course_instance_id
+    AND ($assessment_id::BIGINT IS NULL OR a.id = $assessment_id)
     AND aai.authorized
     AND NOT iqi.sequence_locked;

@@ -194,6 +194,29 @@ module.exports.initExpress = function () {
     upload.single('file')
   );
 
+  /**
+   * Function to strip "sensitive" cookies from requests that will be proxied
+   * to workspace hosts.
+   */
+  function stripSensitiveCookies(proxyReq) {
+    const cookies = proxyReq.getHeader('cookie');
+    if (!cookies) return;
+
+    const items = cookies.split(';');
+    const filteredItems = items.filter((item) => {
+      const name = item.split('=')[0].trim();
+      return (
+        name !== 'pl_authn' &&
+        name !== 'pl_assessmentpw' &&
+        // The workspace authz cookies use a prefix plus the workspace ID, so
+        // we need to check for that prefix instead of an exact name match.
+        !name.startsWith('pl_authz_workspace_')
+      );
+    });
+
+    proxyReq.setHeader('cookie', filteredItems.join(';'));
+  }
+
   // proxy workspaces to remote machines
   let workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   const workspaceProxyOptions = {
@@ -248,6 +271,12 @@ module.exports.initExpress = function () {
         logger.error(`Error in router for url=${req.url}: ${err}`);
         return 'not-matched';
       }
+    },
+    onProxyReq: (proxyReq) => {
+      stripSensitiveCookies(proxyReq);
+    },
+    onProxyReqWs: (proxyReq) => {
+      stripSensitiveCookies(proxyReq);
     },
     onError: (err, req, res) => {
       logger.error(`Error proxying workspace request: ${err}`, {
@@ -791,16 +820,6 @@ module.exports.initExpress = function () {
     ]
   );
   app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
-    ]
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances',
     [
       function (req, res, next) {
@@ -833,6 +852,54 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_download',
     require('./pages/instructorFileDownload/instructorFileDownload')
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./middlewares/selectAndAuthzAssessmentQuestion'),
+      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/clientFilesQuestion/clientFilesQuestion'),
+    ]
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
+    ]
   );
 
   app.use(
@@ -1194,58 +1261,6 @@ module.exports.initExpress = function () {
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
   ]);
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded',
-    [
-      function (req, res, next) {
-        res.locals.assessment_question_id = req.params.assessment_question_id;
-        res.locals.prior_instance_question_id = req.query.instance_question;
-        next();
-      },
-      require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
-    ]
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      function (req, res, next) {
-        res.locals.assessment_question_id = req.params.assessment_question_id;
-        next();
-      },
-      require('./pages/instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading'),
-    ]
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
-    ]
-  );
-
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/clientFilesQuestion/clientFilesQuestion'),
-    ]
-  );
-
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
-    ]
-  );
 
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
