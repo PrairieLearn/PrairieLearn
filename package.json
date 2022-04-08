@@ -60,7 +60,7 @@
         "filesize": "^6.4.0",
         "folder-hash": "^4.0.2",
         "fs-extra": "^10.0.1",
-        "googleapis": "^85.0.0",
+        "googleapis": "^100.0.0",
         "he": "^1.2.0",
         "highlight.js": "^11.5.0",
         "http-proxy-middleware": "^1.0.6",
