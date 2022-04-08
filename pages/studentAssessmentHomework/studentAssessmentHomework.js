@@ -46,7 +46,7 @@ router.get('/', function (req, res, next) {
 
       //if it is a group_work with no instance, jump to a confirm page.
       if (res.locals.assessment.group_work) {
-        groupAssessmentHelper.getConfigInfo(res, function (err) {
+        groupAssessmentHelper.getGroupInfo(res, function (err) {
           if (ERR(err, next)) return;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });

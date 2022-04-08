@@ -124,7 +124,7 @@ router.get('/', function (req, res, next) {
           }
         });
         if (res.locals.assessment.group_work) {
-          groupAssessmentHelper.getConfigInfo(res, function (err, notGroupMemberErr) {
+          groupAssessmentHelper.getGroupInfo(res, function (err, notGroupMemberErr) {
             if (ERR(err, next)) return;
             if (notGroupMemberErr) {
               return next(error.make(403, 'Not a group member', res.locals));

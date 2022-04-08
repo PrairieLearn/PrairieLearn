@@ -18,7 +18,7 @@ router.get('/', function (req, res, next) {
   };
   if (res.locals.assessment.multiple_instance) {
     if (res.locals.assessment.group_work) {
-      groupAssessmentHelper.getConfigInfo(res, function (err) {
+      groupAssessmentHelper.getGroupInfo(res, function (err) {
         if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       });
@@ -30,7 +30,7 @@ router.get('/', function (req, res, next) {
       if (ERR(err, next)) return;
       if (result.rowCount === 0) {
         if (res.locals.assessment.group_work) {
-          groupAssessmentHelper.getConfigInfo(res, function (err) {
+          groupAssessmentHelper.getGroupInfo(res, function (err) {
             if (ERR(err, next)) return;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           });
@@ -43,7 +43,7 @@ router.get('/', function (req, res, next) {
     });
   }
   if (res.locals.assessment.group_work) {
-    groupAssessmentHelper.getConfigInfo(res, function (err) {
+    groupAssessmentHelper.getGroupInfo(res, function (err) {
       if (ERR(err, next)) return;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
