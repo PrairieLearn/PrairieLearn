@@ -177,7 +177,8 @@
         "ignore": [
             "public/*",
             "exampleCourse/*",
-            "testCourse/*"
+            "testCourse/*",
+            "s3rver/file-store/*"
         ],
         "ext": "js,json,sql"
     },
