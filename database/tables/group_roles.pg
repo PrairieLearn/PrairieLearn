@@ -4,8 +4,8 @@ columns
     can_assign_roles_during_assessment: boolean default false
     can_submit_assessment: boolean default true
     id: bigint not null default nextval('group_roles_id_seq'::regclass)
-    maximum: integer default 4
-    minimum: integer
+    maximum: integer
+    minimum: integer default 0
     role_name: text not null
 
 indexes
