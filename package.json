@@ -178,7 +178,7 @@
             "public/*",
             "exampleCourse/*",
             "testCourse/*",
-            "s3rver/file-store/*"
+            "s3rver/*"
         ],
         "ext": "js,json,sql"
     },
