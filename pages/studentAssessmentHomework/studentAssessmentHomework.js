@@ -127,7 +127,7 @@ router.post('/', function (req, res, next) {
       }
     });
   } else if (req.body.__action === 'leave_group') {
-    groupAssessmentHelper.leaveGroup(req, res, function (err) {
+    groupAssessmentHelper.leaveGroup(res, function (err) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });

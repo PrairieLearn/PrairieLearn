@@ -74,7 +74,7 @@ router.post('/', function (req, res, next) {
     );
   } else if (req.body.__action === 'leave_group') {
     if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
-    groupAssessmentHelper.leaveGroup(req, res, function (err) {
+    groupAssessmentHelper.leaveGroup(res, function (err) {
       if (ERR(err, next)) return;
       res.redirect(
         '/pl/course_instance/' +
