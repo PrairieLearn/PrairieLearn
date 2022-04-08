@@ -92,11 +92,6 @@ router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
     debug('GET /');
-    res.locals.assessment_settings = (
-      await sqldb.queryOneRowAsync(sql.assessment_settings, {
-        assessment_id: res.locals.assessment.id,
-      })
-    ).rows[0];
     res.locals.access_rules = (
       await sqldb.queryAsync(sql.assessment_access_rules, {
         assessment_id: res.locals.assessment.id,

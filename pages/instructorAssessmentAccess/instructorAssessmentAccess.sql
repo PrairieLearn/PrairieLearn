@@ -81,15 +81,3 @@ WHERE
     a.id = $assessment_id
 ORDER BY
     aar.number;
-
--- BLOCK assessment_settings
-SELECT
-    a.type AS type,
-    a.auto_close AS auto_close,
-    a.allow_real_time_grading AS allow_real_time_grading,
-    a.multiple_instance AS multiple_instance
-FROM
-    assessments AS a
-WHERE
-    a.id = $assessment_id
-LIMIT 1;

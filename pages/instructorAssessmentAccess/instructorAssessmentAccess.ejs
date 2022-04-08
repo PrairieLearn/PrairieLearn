@@ -199,15 +199,15 @@
             <tbody>
               <tr>
                 <th>Assessment Type</th>
-                <td><%= assessment_settings.type %></td>
+                <td><%= assessment.type %></td>
               </tr>
               <tr>
                 <th>Real-Time Grading</th>
-                <td><%= assessment_settings.allow_real_time_grading ? 'Enabled' : 'Disabled' %></td>
+                <td><%= assessment.allow_real_time_grading ? 'Enabled' : 'Disabled' %></td>
               </tr>
               <tr>
                 <th>Automatic Closing</th>
-                <td><%= assessment_settings.type == 'Exam' && assessment_settings.auto_close ?
+                <td><%= assessment.type == 'Exam' && assessment.auto_close ?
                         'Assessment will close after a period of inactivity' :
                         'Assessment will not close automatically' %></td>
               </tr>
