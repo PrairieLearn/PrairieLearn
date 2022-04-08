@@ -16,7 +16,7 @@
 
       <details open class="card mb-4">
         <summary class="card-header bg-primary text-white d-flex align-items-center">
-          <%= assessment_set.name %> <%= assessment.number %>: Defined Access rules
+          <%= assessment_set.name %> <%= assessment.number %>: Defined access rules
         </summary>
 
         <div class="table-responsive">
@@ -96,7 +96,7 @@
       
       <details class="card mb-4" open>
         <summary class="card-header bg-primary text-white d-flex align-items-center">
-          <%= assessment_set.name %> <%= assessment.number %>: Interpreted Access rules
+          <%= assessment_set.name %> <%= assessment.number %>: Interpreted access rules
         </summary>
         
         <div class="table-responsive">
@@ -136,7 +136,7 @@
               <tr>
                 <td>
                   <% if (access_rule.valid_now_public) { %>
-                  <span data-toggle="tooltip" title="This rule is currently in place in public mode">
+                  <span data-toggle="tooltip" title="This rule currently applies in public mode">
                     <i class="far fa-calendar-check text-info"></i><span class="sr-only">Current</span>
                   </span>
                   <% } %>
@@ -191,7 +191,7 @@
 
       <details open class="card mb-4">
         <summary class="card-header bg-primary text-white d-flex align-items-center">
-          <%= assessment_set.name %> <%= assessment.number %>: Other Access-related Settings
+          <%= assessment_set.name %> <%= assessment.number %>: Other access-related settings
         </summary>
 
         <div class="table-responsive">
