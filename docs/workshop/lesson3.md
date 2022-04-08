@@ -93,9 +93,7 @@ You can use `pl-overlay` to add the input boxes on top of the image.
 
 ## Homework 3
 
-Create new questions using some of the elements discussed today and add the url link to the
-[spreadsheet](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit#gid=1243482684).
-Use the tab for `Homework 3`. I will take a look at your question and provide feedback.
+Create new questions using some of the elements discussed today:
 
 `pl-matrix-component-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-component-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793641/preview)
 
@@ -105,7 +103,7 @@ Use the tab for `Homework 3`. I will take a look at your question and provide fe
 
 `pl-variable-output` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3637022/preview)
 
-`pl-python-variable` [documentation]() and [example](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element)
+`pl-python-variable` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element) and [example](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element)
 
 `pl-string-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-string-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793642/preview)
 

@@ -10,7 +10,7 @@ extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 
-pages:
+nav:
 - Main: 'index.md'
 - Getting Started:
   - 'Requesting your course space': 'requestCourse.md'
@@ -39,6 +39,7 @@ pages:
   - 'What to tell students': 'whatToTellStudents.md'
   - 'FAQ': 'faq.md'
   - 'API': 'api.md'
+  - 'Running in production': 'running-in-production.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
   - 'Installing with local source': 'installingLocal.md'
