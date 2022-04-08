@@ -224,11 +224,11 @@ BEGIN
                     can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment;
             END LOOP;
 
-            -- Delete excess group roles
-            DELETE FROM group_roles
-            WHERE
-                assessment_id = new_assessment_id
-                AND number > jsonb_array_length(valid_assessment.data->'groupRoles');
+            -- TODO: Delete excess group roles
+            -- DELETE FROM group_roles
+            -- WHERE
+            --     assessment_id = new_assessment_id
+            --     AND number > jsonb_array_length(valid_assessment.data->'groupRoles');
         ELSE
             UPDATE group_configs
             SET deleted_at = now()
@@ -402,22 +402,6 @@ BEGIN
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
                     IF (valid_assessment.data->>'group_work')::boolean THEN
-                        -- Create temporary tables for roles that can view the question
-                        DROP TABLE IF EXISTS roles_can_view;
-                        CREATE TEMPORARY TABLE roles_can_view (
-                            assessment_question_id BIGINT,
-                            group_role_id BIGINT,
-                            can_view BOOLEAN
-                        ) ON COMMIT DROP;
-
-                        -- Create temporary tables for roles that can submit the question
-                        DROP TABLE IF EXISTS roles_can_submit;
-                        CREATE TEMPORARY TABLE roles_can_submit (
-                            assessment_question_id BIGINT,
-                            group_role_id BIGINT,
-                            can_submit BOOLEAN
-                        ) ON COMMIT DROP;
-
                         -- Iterate over all group roles in assessment
                         FOR valid_group_role IN (
                             SELECT gr.id, gr.role_name 
