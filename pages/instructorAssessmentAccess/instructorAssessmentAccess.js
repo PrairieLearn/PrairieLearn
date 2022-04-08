@@ -109,35 +109,35 @@ router.get(
     let user_spec_rules = [];
 
     // Creates sets of unique user lists
-    res.locals.access_rules.forEach((formal) => {
-      if (formal.uids_raw) {
-        let uids = formal.uids_raw;
+    res.locals.access_rules.forEach((db_rule) => {
+      if (db_rule.uids_raw) {
+        let uids = db_rule.uids_raw;
         // Check if any existing user list has an intersection with current list.
         user_spec_rules.forEach((old) => {
           let inter = _.intersection(old.uids, uids);
           if (inter.length) {
-            user_spec_rules.push({ uids: inter, names: formal.uids_names, rules: [] });
+            user_spec_rules.push({ uids: inter, names: db_rule.uids_names, rules: [] });
             old.uids = _.difference(old.uids, inter);
             uids = _.difference(uids, inter);
           }
         });
-        if (uids) user_spec_rules.push({ uids, names: formal.uids_names, rules: [] });
+        if (uids) user_spec_rules.push({ uids, names: db_rule.uids_names, rules: [] });
       }
     });
     // Remove lists without UIDs remaining
     user_spec_rules = user_spec_rules.filter((set) => set.uids.length);
 
-    res.locals.access_rules.forEach((formal) => {
-      if (formal.uids_raw === null) {
-        applyRule(student_rules, formal);
+    res.locals.access_rules.forEach((db_rule) => {
+      if (db_rule.uids_raw === null) {
+        applyRule(student_rules, db_rule);
       }
 
       user_spec_rules.forEach((set) => {
         if (
-          formal.uids_raw === null ||
-          set.uids.filter((uid) => formal.uids_raw.includes(uid)).length
+          db_rule.uids_raw === null ||
+          set.uids.filter((uid) => db_rule.uids_raw.includes(uid)).length
         ) {
-          applyRule(set.rules, formal);
+          applyRule(set.rules, db_rule);
         }
       });
     });
@@ -160,9 +160,9 @@ router.get(
       res.locals.explained_sets.push({ other_uids: true, rules: student_rules });
     }
 
-    res.locals.access_rules.forEach((formal) => {
-      formal.has_application = res.locals.explained_sets.some((set) =>
-        set.rules.some((applied) => applied.id === formal.id)
+    res.locals.access_rules.forEach((db_rule) => {
+      db_rule.has_application = res.locals.explained_sets.some((set) =>
+        set.rules.some((applied) => applied.id === db_rule.id)
       );
     });
 
