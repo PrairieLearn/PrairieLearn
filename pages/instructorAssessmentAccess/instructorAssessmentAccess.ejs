@@ -14,10 +14,10 @@
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
-      <details open class="card mb-4">
-        <summary class="card-header bg-primary text-white d-flex align-items-center">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Defined access rules
-        </summary>
+        </div>
 
         <div class="table-responsive">
           <table class="table table-sm table-hover">
@@ -92,12 +92,12 @@
         <div class="card-footer">
           <small>Instructions on how to change the access rules can be found in the <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/" target="_blank">PrairieLearn documentation</a>. Note that changing time limit rules does not affect assessments in progress; to change the time limit for these exams please visit the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances">Students tab</a>.</small>
         </div>
-      </details>
+      </div>
       
-      <details class="card mb-4" open>
-        <summary class="card-header bg-primary text-white d-flex align-items-center">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Interpreted access rules
-        </summary>
+        </div>
         
         <div class="table-responsive">
           <table class="table table-sm table-hover">
@@ -187,12 +187,12 @@
             </tbody>
           </table>
         </div>
-      </details>
+      </div>
 
-      <details open class="card mb-4">
-        <summary class="card-header bg-primary text-white d-flex align-items-center">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <%= assessment_set.name %> <%= assessment.number %>: Other access-related settings
-        </summary>
+        </div>
 
         <div class="table-responsive">
           <table class="table table-sm table-hover two-column-description">
@@ -214,7 +214,7 @@
             </tbody>
           </table>
         </div>
-      </details>
+      </div>
     </div>
   </body>
 </html>
