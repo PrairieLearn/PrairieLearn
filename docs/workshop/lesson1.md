@@ -105,7 +105,3 @@ Create one or two questions using some of these basic elements:
 `pl-number-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3131525/preview)
 
 `pl-figure` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-figure-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/611923/preview)
-
-Copy the url link to your question in this spreadsheet:
-[https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit?usp=sharing](https://docs.google.com/spreadsheets/d/1XeY-0o0guRGSFEK2E-pCHhW5qiGyBUFm2uo7e6SuzNM/edit?usp=sharing).
-Use the tab for `Homework 1`. I will take a look at your question and provide feedback.

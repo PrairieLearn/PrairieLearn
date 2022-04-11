@@ -9,10 +9,13 @@ function escapeValue(value: unknown): string {
     return value.map((val) => escapeValue(val)).join('');
   } else if (typeof value === 'string' || typeof value === 'number') {
     return ejs.escapeXML(String(value));
+  } else if (value == null) {
+    // undefined or null -- render nothing
+    return '';
   } else if (typeof value === 'object') {
-    throw new Error('Cannot interpolate object in template');
+    throw new Error(`Cannot interpolate object in template: ${JSON.stringify(value)}`);
   } else {
-    // This is undefined, null, or a boolean - don't render anything here.
+    // This is boolean - don't render anything here.
     return '';
   }
 }

@@ -1,7 +1,7 @@
-<script>
+<script data-code="{{contents}}" data-language="{{language}}">
 (function() {
-    let code = {{{quoted_code}}};
-    let language = "{{language}}";
+    let code = $(document.currentScript).data("code");
+    let language = $(document.currentScript).data("language");
     // Uses the same JS library as the pl-file-editor for markdown
     // conversion and xss filter for compatibility and to avoid
     // confusion

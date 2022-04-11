@@ -116,7 +116,7 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('assessment_instances_update_points', params, (err, _result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
       });
@@ -129,7 +129,7 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('assessment_instances_update_score_perc', params, (err, _result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
       });
@@ -143,15 +143,21 @@ router.post('/', (req, res, next) => {
       null, // uid
       null, // assessment_instance_number
       null, // qid
+      req.body.modified_at,
       null, // score_perc
       req.body.points,
       null, // feedback
       null, // partial_scores
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('instance_questions_update_score', params, (err, _result) => {
+    sqlDb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+      if (result.rows[0].modified_at_conflict && res.locals.course.manual_grading_visible) {
+        return res.redirect(
+          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
+        );
+      }
+      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
       });
@@ -165,15 +171,21 @@ router.post('/', (req, res, next) => {
       null, // uid
       null, // assessment_instance_number
       null, // qid
+      req.body.modified_at,
       req.body.score_perc,
       null, // points
       null, // feedback
       null, // partial_scores
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('instance_questions_update_score', params, (err, _result) => {
+    sqlDb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, null, (err) => {
+      if (result.rows[0].modified_at_conflict && res.locals.course.manual_grading_visible) {
+        return res.redirect(
+          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
+        );
+      }
+      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
       });

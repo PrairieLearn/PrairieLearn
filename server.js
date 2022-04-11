@@ -1,6 +1,6 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-const tracing = require('./lib/tracing');
+const opentelemetry = require('@prairielearn/opentelemetry');
 
 const ERR = require('async-stacktrace');
 const util = require('util');
@@ -47,6 +47,7 @@ const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
 const assets = require('./lib/assets');
+const namedLocks = require('./lib/named-locks');
 
 process.on('warning', (e) => console.warn(e)); // eslint-disable-line no-console
 
@@ -193,6 +194,29 @@ module.exports.initExpress = function () {
     upload.single('file')
   );
 
+  /**
+   * Function to strip "sensitive" cookies from requests that will be proxied
+   * to workspace hosts.
+   */
+  function stripSensitiveCookies(proxyReq) {
+    const cookies = proxyReq.getHeader('cookie');
+    if (!cookies) return;
+
+    const items = cookies.split(';');
+    const filteredItems = items.filter((item) => {
+      const name = item.split('=')[0].trim();
+      return (
+        name !== 'pl_authn' &&
+        name !== 'pl_assessmentpw' &&
+        // The workspace authz cookies use a prefix plus the workspace ID, so
+        // we need to check for that prefix instead of an exact name match.
+        !name.startsWith('pl_authz_workspace_')
+      );
+    });
+
+    proxyReq.setHeader('cookie', filteredItems.join(';'));
+  }
+
   // proxy workspaces to remote machines
   let workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   const workspaceProxyOptions = {
@@ -247,6 +271,12 @@ module.exports.initExpress = function () {
         logger.error(`Error in router for url=${req.url}: ${err}`);
         return 'not-matched';
       }
+    },
+    onProxyReq: (proxyReq) => {
+      stripSensitiveCookies(proxyReq);
+    },
+    onProxyReqWs: (proxyReq) => {
+      stripSensitiveCookies(proxyReq);
     },
     onError: (err, req, res) => {
       logger.error(`Error proxying workspace request: ${err}`, {
@@ -790,16 +820,6 @@ module.exports.initExpress = function () {
     ]
   );
   app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
-    ]
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances',
     [
       function (req, res, next) {
@@ -832,6 +852,54 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_download',
     require('./pages/instructorFileDownload/instructorFileDownload')
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./middlewares/selectAndAuthzAssessmentQuestion'),
+      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/clientFilesQuestion/clientFilesQuestion'),
+    ]
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
+    ]
   );
 
   app.use(
@@ -1114,7 +1182,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
@@ -1193,42 +1261,7 @@ module.exports.initExpress = function () {
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
   ]);
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded',
-    [
-      function (req, res, next) {
-        res.locals.assessment_question_id = req.params.assessment_question_id;
-        res.locals.prior_instance_question_id = req.query.instance_question;
-        next();
-      },
-      require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
-    ]
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      function (req, res, next) {
-        res.locals.assessment_question_id = req.params.assessment_question_id;
-        next();
-      },
-      require('./pages/instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading'),
-    ]
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
-    ]
-  );
+
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
@@ -1286,7 +1319,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
-      require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
@@ -1501,7 +1534,7 @@ module.exports.initExpress = function () {
   // generatedFiles
   app.use('/pl/course/:course_id/question/:question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
   // legacy client file paths
@@ -1662,10 +1695,6 @@ if (config.startServer) {
           configFilename = argv['config'];
         }
 
-        // Before we start executing any real code, ensure that tracing has
-        // been configured correctly.
-        await tracing.waitForStart();
-
         // Load config values from AWS as early as possible so we can use them
         // to set values for e.g. the database connection
         await config.loadConfigAsync(configFilename);
@@ -1674,7 +1703,10 @@ if (config.startServer) {
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
-        await tracing.init(config);
+        await opentelemetry.init({
+          ...config,
+          serviceName: 'prairielearn',
+        });
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
@@ -1739,8 +1771,8 @@ if (config.startServer) {
           })
         );
       },
-      function (callback) {
-        var pgConfig = {
+      async function () {
+        const pgConfig = {
           user: config.postgresqlUser,
           database: config.postgresqlDatabase,
           host: config.postgresqlHost,
@@ -1748,19 +1780,21 @@ if (config.startServer) {
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
         };
-        logger.verbose(
-          'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
-        );
-        var idleErrorHandler = function (err) {
+        function idleErrorHandler(err) {
           logger.error('idle client error', err);
           // https://github.com/PrairieLearn/PrairieLearn/issues/2396
           process.exit(1);
-        };
-        sqldb.init(pgConfig, idleErrorHandler, function (err) {
-          if (ERR(err, callback)) return;
-          logger.verbose('Successfully connected to database');
-          callback(null);
-        });
+        }
+
+        logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+
+        await sqldb.initAsync(pgConfig, idleErrorHandler);
+
+        // Our named locks code maintains a separate pool of database connections.
+        // This ensures that we avoid deadlocks.
+        await namedLocks.init(pgConfig, idleErrorHandler);
+
+        logger.verbose('Successfully connected to database');
       },
       function (callback) {
         if (!config.runMigrations) return callback(null);
@@ -1796,6 +1830,7 @@ if (config.startServer) {
         });
       },
       function (callback) {
+        if (!config.initNewsItems) return callback(null);
         const notify_with_new_server = false;
         news_items.init(notify_with_new_server, function (err) {
           if (ERR(err, callback)) return;

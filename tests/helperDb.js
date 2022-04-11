@@ -7,6 +7,7 @@ const util = require('util');
 const sqldb = require('../prairielib/lib/sql-db');
 const migrations = require('../prairielib/lib/migrations');
 const sprocs = require('../sprocs');
+const namedLocks = require('../lib/named-locks');
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';
@@ -29,6 +30,10 @@ async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
   }
   await sqldb.initAsync(pgConfig, idleErrorHandler);
 
+  // We have to do this here so that `migrations.init` can successfully
+  // acquire a lock.
+  await namedLocks.init(pgConfig, idleErrorHandler);
+
   if (runMigrations) {
     // @ts-expect-error
     await util.promisify(migrations.init)(path.join(__dirname, '..', 'migrations'), 'prairielearn');
@@ -36,6 +41,8 @@ async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
 
   await sqldb.setRandomSearchSchemaAsync('test');
   await util.promisify(sprocs.init)();
+
+  await namedLocks.close();
   await sqldb.closeAsync();
 }
 
@@ -80,9 +87,14 @@ async function establishSql(dbName) {
     throw err;
   }
   await sqldb.initAsync(pgConfig, idleErrorHandler);
+
+  // Ideally this would happen only over in `helperServer`, but we need to use
+  // the same database details, so this is a convenient place to do it.
+  await namedLocks.init(pgConfig, idleErrorHandler);
 }
 
 async function closeSql() {
+  await namedLocks.close();
   await sqldb.closeAsync();
 }
 

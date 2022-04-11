@@ -11,7 +11,7 @@ start: start-support
 start-nodemon: start-support
 	@nodemon -L server.js
 start-workspace-host: start-support kill-running-workspaces
-	@node workspace_host/interface.js &
+	@node workspace_host/interface.js
 
 kill-running-workspaces:
 	@docker/kill_running_workspaces.sh
@@ -71,3 +71,6 @@ depcheck:
 	@echo WARNING: Note that many devDependencies will show up as unused. This is not
 	@echo WARNING: a problem.
 	@echo WARNING:
+
+changeset:
+	@changeset
