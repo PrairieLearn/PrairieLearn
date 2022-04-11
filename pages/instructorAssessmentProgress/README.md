@@ -10,6 +10,8 @@ This is an incomplete project to add a tab to the instructor console on PrairieL
 
 These metrics would allow instructors to see in real-time how well students are interacting with assessments. It would allow easier and faster detection of problems should there turn out to be a typo or error on an assessment impacting students' ability to solve a particular question. It would also provide a metric by which instructors could determine which questions were faster or more tedious to work through and compare this to student performance through grades on the same questions after the assessment is complete.
 
+The initial brainstorm can be found here: https://github.com/jbrightuniverse/PrairieLearn/blob/master/rfcs/010-live-assessment-moderation.md
+
 ## Work so far:
 
 The included files generate an additional page for the PL instructor console. This page currently renders a populated demo progress chart when an assessment is triggered by any student. The chart currently pulls the assessment start date from the student's log and displays it; this serves as a demo for how other components of the log may be used to generate the progress visualization. An example:
