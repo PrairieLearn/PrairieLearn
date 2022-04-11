@@ -49,6 +49,7 @@ require('./testSchemas');
 require('./testMarkdown');
 require('./testRedirects');
 require('./testIssues');
+require('./testSequentialQuestions');
 require('./testChunks');
 require('./testChunkAssessment');
 require('./testLocalLock');

@@ -89,6 +89,7 @@ def render(element_html, data):
         'max_lines': max_lines,
         'auto_resize': auto_resize,
         'preview': preview,
+        'read_only': 'false' if data['editable'] else 'true',
         'uuid': uuid,
         'focus': focus
     }

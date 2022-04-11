@@ -60,6 +60,10 @@ router.get(
       res.attachment(req.params.query + '.csv');
       res.send(await csvMaker.resultToCsvAsync(res.locals.result));
     } else {
+      const recentQueryRuns = await sqldb.queryAsync(sql.select_recent_query_runs, {
+        query_name: req.params.query,
+      });
+      res.locals.recent_query_runs = recentQueryRuns.rows;
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
   })
