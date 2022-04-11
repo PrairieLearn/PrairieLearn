@@ -67,6 +67,13 @@
 <% } %>
 <% if (authz_data.has_course_instance_permission_view) { %>
 <%- include('navTab', {
+    activeSubPage:  'instances',
+    urlSuffix:      '/assessment/'+assessment.id+'/progress',
+    iconClasses:    'fas fa-user-graduate',
+    tabLabel:       'Progress'}) %>
+<% } %>
+<% if (authz_data.has_course_instance_permission_view) { %>
+<%- include('navTab', {
     activeSubPage:  'uploads',
     urlSuffix:      '/assessment/'+assessment.id+'/uploads',
     iconClasses:    'fas fa-upload',
