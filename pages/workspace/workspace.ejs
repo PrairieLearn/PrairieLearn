@@ -180,7 +180,7 @@
         console.log(`joinWorkspace, msg = ${JSON.stringify(msg)}`);
         setState(msg.state);
       });
-      
+
       setInterval(() => {
         socket.emit('heartbeat', {workspace_id: <%= workspace_id %>}, (msg) => {
           console.log(`heartbeat, msg = ${JSON.stringify(msg)}`);

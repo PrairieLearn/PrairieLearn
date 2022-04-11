@@ -10,7 +10,7 @@
             "mode": "Public",
             "credit": 100,
             "startDate": "2021-01-01T00:00:01",
-            "endDate": "2021-12-31T23:59:59",
+            "endDate": "2025-12-31T23:59:59",
             "timeLimitMin": 50,
             "showClosedAssessment": false
         }

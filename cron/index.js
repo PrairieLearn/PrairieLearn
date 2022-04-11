@@ -3,8 +3,7 @@ const async = require('async');
 const _ = require('lodash');
 const debug = require('debug')('prairielearn:cron');
 const { v4: uuidv4 } = require('uuid');
-const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
-const { suppressTracing } = require('@opentelemetry/core');
+const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielearn/opentelemetry');
 
 const logger = require('../lib/logger');
 const config = require('../lib/config');

@@ -11,6 +11,7 @@ const databaseDescribe = require('../lib/databaseDescribe');
 
 const yargs = require('yargs')
     .usage('Usage: $0 <database name> [options]')
+    .demandCommand(1)
     .alias('o', 'output')
     .nargs('o', 1)
     .describe('o', 'Specify a directory to output files to')

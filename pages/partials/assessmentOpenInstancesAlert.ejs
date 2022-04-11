@@ -1,0 +1,10 @@
+<% if (num_open_instances > 0) { %>
+<div class="alert alert-warning" role="alert">
+  <% if (num_open_instances == 1) { %>
+  This assessment currently has one open instance.
+  <% } else { %>
+  This assessment currently has <%= num_open_instances %> open instances.
+  <% } %>
+  Please ensure all students have completed their assessments before grading. You may close all open instances on the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances">Students tab</a>.
+</div>
+<% } %>

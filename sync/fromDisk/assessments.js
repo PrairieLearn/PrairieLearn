@@ -71,6 +71,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     student_group_create: !!assessment.studentGroupCreate,
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
+    advance_score_perc: assessment.advanceScorePerc,
   };
 
   // It used to be the case that assessment access rules could be associated with a
@@ -106,6 +107,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       number_choose: zone.numberChoose,
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
+      advance_score_perc: zone.advanceScorePerc,
     };
   });
 
@@ -116,7 +118,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number }[]} */
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, advanceScorePerc: number }[]} */
       let alternatives;
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
@@ -137,6 +139,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               : _.has(question, 'triesPerVariant')
               ? question.triesPerVariant
               : 1,
+            advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
@@ -150,6 +153,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             points: question.points,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
+            advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
           },
         ];
@@ -186,6 +190,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       const alternativeGroupParams = {
         number: alternativeGroupNumber,
         number_choose: question.numberChoose,
+        advance_score_perc: question.advanceScorePerc,
       };
 
       alternativeGroupParams.questions = normalizedAlternatives.map(
@@ -202,6 +207,14 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             grade_rate_minutes: alternative.gradeRateMinutes,
             question_id: questionId,
             number_in_alternative_group: alternativeIndex + 1,
+            advance_score_perc: alternative.advanceScorePerc,
+            effective_advance_score_perc:
+              alternative.advanceScorePerc ??
+              question.advanceScorePerc ??
+              alternativeGroupParams.advance_score_perc ??
+              zone.advanceScorePerc ??
+              assessment.advanceScorePerc ??
+              0,
           };
         }
       );

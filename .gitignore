@@ -82,3 +82,9 @@ __pycache__/
 
 ## s3rver file store
 /s3rver
+
+## Turborepo caches
+.turbo
+
+## Compiled package files
+packages/*/dist

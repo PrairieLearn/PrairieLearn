@@ -189,7 +189,7 @@
                 (<a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">instructor view</a>,
                 <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instance_question/<%= row.instance_question_id %>/?variant_id=<%= row.variant_id %>">student view</a>,
                 <% if (course.manual_grading_visible) { %>
-                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/instance_question/<%= row.instance_question_id %>/manual_grading">manual grading</a>,
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/manual_grading/instance_question/<%= row.instance_question_id %>">manual grading</a>,
                 <% } %>
                 <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/assessment_instance/<%= row.assessment_instance_id %>">assessment details</a>)
                 <% } else if (!row.instance_question_id) { %>

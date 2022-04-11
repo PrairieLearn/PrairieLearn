@@ -554,6 +554,9 @@ module.exports = {
     err = checkProp('editable',              'boolean', ['render'],                           []);
     if (err) return err;
     // prettier-ignore
+    err = checkProp('manual_grading',        'boolean', ['render'],                           []);
+    if (err) return err;
+    // prettier-ignore
     err = checkProp('panel',                 'string',  ['render'],                           []);
     if (err) return err;
     // prettier-ignore
@@ -1130,7 +1133,8 @@ module.exports = {
         variant_seed: parseInt(variant.variant_seed, 36),
         options: _.get(variant, 'options', {}),
         raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
-        editable: !!locals.allowAnswerEditing,
+        editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
+        manual_grading: !!locals.manualGradingInterface,
         panel: panel,
       };
 
