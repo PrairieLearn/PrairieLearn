@@ -830,6 +830,16 @@ module.exports.initExpress = function () {
     ]
   );
   app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/progress', 
+    [
+        function(req, res, next) {
+          res.locals.navSubPage = 'progress'; 
+          next();
+        },
+        require('./pages/instructorAssessmentProgress/instructorAssessmentProgress'),
+    ]
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_edit',
     [
       function (req, res, next) {
