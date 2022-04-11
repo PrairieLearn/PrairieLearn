@@ -1,9 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean);
-DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean,boolean);
-DROP FUNCTION IF EXISTS assessment_points(bigint,integer);
-DROP FUNCTION IF EXISTS assessment_points(bigint,integer,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_grade(
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,
@@ -28,6 +23,7 @@ DECLARE
     total_points DOUBLE PRECISION;
     total_points_in_grading DOUBLE PRECISION;
     max_points DOUBLE PRECISION;
+    max_bonus_points DOUBLE PRECISION;
     current_score_perc DOUBLE PRECISION;
     max_possible_points DOUBLE PRECISION;
     max_possible_score_perc DOUBLE PRECISION;
@@ -75,27 +71,24 @@ BEGIN
     -- #########################################################################
     -- compute the total points
 
-    SELECT ai.max_points INTO max_points
-    FROM assessment_instances AS ai
-    WHERE ai.id = assessment_instance_id;
-
-    SELECT ai.score_perc INTO current_score_perc
+    SELECT ai.max_points, ai.max_bonus_points, ai.score_perc
+    INTO max_points, max_bonus_points, current_score_perc
     FROM assessment_instances AS ai
     WHERE ai.id = assessment_instance_id;
 
     -- #########################################################################
     -- awarded points and score_perc
 
-    -- compute the score in points, maxing out at max_points
-    points := least(total_points, max_points);
+    -- compute the score in points, maxing out at max_points + max_bonus_points
+    points := least(total_points, max_points + coalesce(max_bonus_points, 0));
 
     -- compute the score as a percentage, applying credit bonus/limits
     score_perc := points
         / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
     IF use_credit < 100 THEN
         score_perc := least(score_perc, use_credit);
-    ELSIF (use_credit > 100) AND (points = max_points) THEN
-        score_perc := use_credit;
+    ELSIF (use_credit > 100) AND (points >= max_points) THEN
+        score_perc := use_credit * score_perc / 100;
     END IF;
 
     IF NOT allow_decrease THEN

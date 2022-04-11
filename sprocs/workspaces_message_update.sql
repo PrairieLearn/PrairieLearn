@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     workspaces_message_update(
         workspace_id bigint,
         workspace_message text

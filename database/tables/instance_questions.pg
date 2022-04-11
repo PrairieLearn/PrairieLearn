@@ -1,6 +1,7 @@
 columns
     assessment_instance_id: bigint not null
     assessment_question_id: bigint not null
+    assigned_grader: bigint
     authn_user_id: bigint
     average_submission_score: double precision
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
@@ -12,6 +13,7 @@ columns
     id: bigint not null default nextval('instance_questions_id_seq'::regclass)
     incremental_submission_points_array: double precision[]
     incremental_submission_score_array: double precision[]
+    last_grader: bigint
     last_submission_score: double precision
     max_submission_score: double precision
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
@@ -23,6 +25,7 @@ columns
     points_in_grading: double precision default 0
     points_list: double precision[]
     points_list_original: double precision[]
+    requires_manual_grading: boolean not null default false
     score_perc: double precision default 0
     score_perc_in_grading: double precision default 0
     some_nonzero_submission: boolean
@@ -42,7 +45,9 @@ indexes
 foreign-key constraints
     instance_questions_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    instance_questions_assigned_grader_fkey: FOREIGN KEY (assigned_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    instance_questions_last_grader_fkey: FOREIGN KEY (last_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     files: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE SET NULL

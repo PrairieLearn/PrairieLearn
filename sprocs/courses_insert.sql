@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS courses_insert(text,text,text,text,bigint);
-DROP FUNCTION IF EXISTS courses_insert(text,text,text,text,text,bigint);
-DROP FUNCTION IF EXISTS courses_insert(bigint,text,text,text,text,text,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     courses_insert(
         IN institution_id bigint,
         IN short_name text,

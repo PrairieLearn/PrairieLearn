@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../../partials/head'); %>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js') %>"></script>
+    <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js') %>"></script>
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.css') %>" rel="stylesheet" />
+  </head>
+  <body>
+    <script>
+      const has_course_instance_permission_edit = <%= !!authz_data.has_course_instance_permission_edit %>;
+      $(function () {
+          var savedFilterValues = {};
+          window.bsTable = $('#grading-table').bootstrapTable({
+              classes: 'table table-sm table-bordered',
+              url: '<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= assessment_question.id %>/instances.json',
+              dataField: 'instance_questions',
+              escape: true,
+              uniqueId: 'id',
+              idField: 'id',
+              selectItemName: 'instance_question_id',
+              showButtonText: true,
+              showColumns: false,
+              showRefresh: true,
+              autoRefresh: true,
+              autoRefreshStatus: false,
+              autoRefreshInterval: 30,
+              buttonsOrder: ['refresh', 'autoRefresh', 'status'],
+              theadClasses: 'thead-light',
+              stickyHeader: true,
+              filterControl: true,
+              rowStyle: row => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
+              buttons: {
+                  status: {
+                      text: 'Tag for grading',
+                      icon: 'fa-tags',
+                      render: <%= authz_data.has_course_instance_permission_edit %>,
+                      html: gradingTagDropdown,
+                  },
+              },
+              onUncheck: updateGradingTagButton,
+              onUncheckAll: updateGradingTagButton,
+              onUncheckSome: updateGradingTagButton,
+              onCheck: updateGradingTagButton,
+              onCheckAll: updateGradingTagButton,
+              onCheckSome: updateGradingTagButton,
+              onRefresh: () => {
+                  // a bug in bootstrap-table causes the filters to lose value on refresh
+                  // (https://github.com/wenzhixin/bootstrap-table/issues/6030).
+                  // This code saves the value of all filters to be reloaded once filter controls are re-created.
+                  savedFilterValues = {};
+                  $('#grading-table .filter-control').find('input, select').each(function() {
+                      const field_name = $(this).parents('[data-field]:first').data('field');
+                      savedFilterValues[field_name] = $(this).val();
+                      $(this).tooltip('dispose');
+                  });
+              },
+              onCreatedControls: () => {
+                  $('#grading-table th[data-field="points"] .filter-control input').tooltip({
+                      title: 'hint: use <code>&lt;<%= Math.ceil(assessment_question.max_points / 2) %></code>, or <code>&gt;0</code>',
+                      html: true,
+                  });
+                  $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
+                      title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
+                      html: true,
+                  });
+              },
+              onSearch: () => {
+                  // This update is done with the search method because onCreatedControls
+                  // is called before the filter control selects are populated
+                  // (https://github.com/wenzhixin/bootstrap-table/issues/6072).
+                  if (savedFilterValues) {
+                      for (const [field, value] of Object.entries(savedFilterValues)) {
+                          $(`#grading-table th[data-field=${field}]`).find('input, select').val(value);
+                      }
+                      savedFilterValues = false;
+                  }
+              },
+              onPreBody: () => {
+                  $('#grading-table [data-toggle="popover"]').popover('dispose');
+                  $('#grading-table [data-toggle="tooltip"]').tooltip('dispose');
+              },
+              onPostBody: () => {
+                  updateGradingTagButton();
+                  $('#grading-table [data-toggle="popover"]').popover({
+                      sanitize: false,
+                      content: function() {
+                          let dataContent = $($(this).data('base-content'));
+                          dataContent.submit(ajaxSubmit).submit(e => $(this).popover('hide'));
+                          return dataContent;
+                      },
+                  });
+                  $('#grading-table [data-toggle=tooltip]').tooltip({ html: true });
+              },
+              columns: [[
+                  {
+                      checkbox: true,
+                  },
+                  {
+                      field: 'user_or_group_name',
+                      title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
+                      searchable: true,
+                      filterControl: 'input',
+                      searchFormatter: false,
+                      sortable: true,
+                      formatter: (value, row) => `<a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/${row.id}">${value}` +
+                          (row.open_issue_count ? ` <span class="badge badge-pill badge-danger">${row.open_issue_count}</span>` : '') + '</a>' +
+                          (row.assessment_open ? ` <span title="Assessment instance is still open" data-toggle="tooltip"><i class="fas fa-exclamation-triangle text-warning"></i></span>` : ''),
+                  },
+                  {
+                      field: 'uid',
+                      title: 'UID',
+                      searchable: true,
+                      filterControl: 'input',
+                      sortable: true,
+                      visible: <%= !assessment.group_work %>,
+                  },
+                  {
+                      field: 'requires_manual_grading',
+                      title: 'Grading status',
+                      filterControl: 'select',
+                      // filterDefault: 'true',
+                      searchFormatter: false,
+                      sortable: true,
+                      class: 'text-center',
+                      formatter: (value, row) => row.requires_manual_grading ? 'Requires grading' : 'Graded',
+                  },
+                  {
+                      field: 'assigned_grader',
+                      title: 'Assigned grader',
+                      filterControl: 'select',
+                      searchFormatter: false,
+                      formatter: (value, row) => row.assigned_grader ? row.assigned_grader_name : '&mdash;',
+                  },
+                  {
+                      field: 'points',
+                      title: 'Awarded points',
+                      class: 'text-center',
+                      filterControl: 'input',
+                      searchFormatter: false,
+                      sortable: true,
+                      formatter: pointsFormatter,
+                  },
+                  {
+                      field: 'score_perc',
+                      title: 'Percentage score',
+                      class: 'text-center align-middle text-nowrap',
+                      filterControl: 'input',
+                      searchFormatter: false,
+                      sortable: true,
+                      formatter: scorebarFormatter,
+                  },
+                  {
+                      field: 'last_grader',
+                      title: 'Graded by',
+                      filterControl: 'select',
+                      searchFormatter: false,
+                      formatter: (value, row) => row.last_grader ? row.last_grader_name : '&mdash;',
+                  },
+              ]],
+          });
+      });
+
+      function ajaxSubmit(e) {
+          e.preventDefault();
+          const submitter = e.submitter || e.originalEvent?.submitter;
+          if (submitter) {
+              // Obtain information from submit button that was used
+              $(e.target).find('input[name=batch_action_data]')
+                  .val(JSON.stringify($(submitter).data('batch-action') || {}));
+          }
+          $.post($(e.target).attr('action'), $(e.target).serialize(), function(data) {
+              if (data.conflict_grading_job_id) {
+                  $('#grading-conflict-modal').find('a.conflict-details-link').attr('href', data.conflict_details_url);
+                  $('#grading-conflict-modal').modal({});
+              }
+              $('#grading-table').bootstrapTable('refresh');
+          }, 'json').fail(function(data) {
+              // TODO Better user notification of update failure
+          });
+      }
+
+      function gradingTagDropdown() {
+          const course_staff = JSON.parse('<%- JSON.stringify(course_staff) %>') || [];
+          const dropdown = $('<div class="dropdown btn-group">');
+          const button = $('<button class="btn btn-secondary dropdown-toggle grading-tag-button" data-toggle="dropdown" name="status" disabled>').appendTo(dropdown);
+          button.text(' Tag for grading').prepend($('<i class="fas fa-tags">'));
+
+          const menu = $('<div class="dropdown-menu dropdown-menu-right">').appendTo(dropdown);
+          menu.append('<div class="dropdown-header">Assign for grading</div>');
+
+          course_staff.forEach((grader) => {
+              const item_grader = $('<button class="dropdown-item" type="submit">').appendTo(menu);
+              item_grader.attr('data-batch-action', JSON.stringify({
+                  requires_manual_grading: true,
+                  assigned_grader: grader.user_id,
+              }));
+              item_grader.text(` Assign to: ${grader.name || ''} (${grader.uid})`);
+              item_grader.prepend('<i class="fas fa-user-tag"></i>');
+          });
+
+          const item_no_grader = $('<button class="dropdown-item" type="submit">').appendTo(menu);
+          item_no_grader.attr('data-batch-action', JSON.stringify({
+              assigned_grader: null,
+          }));
+          item_no_grader.text(` Remove grader assignment`).prepend('<i class="fas fa-user-slash"></i>');
+
+          menu.append('<div class="dropdown-divider">');
+
+          const item_req_grade = $('<button class="dropdown-item" type="submit">').appendTo(menu);
+          item_req_grade.attr('data-batch-action', JSON.stringify({
+              requires_manual_grading: true,
+          }));
+          item_req_grade.text(` Tag as required grading`).prepend('<i class="fas fa-tag"></i>');
+
+          const item_graded = $('<button class="dropdown-item" type="submit">').appendTo(menu);
+          item_graded.attr('data-batch-action', JSON.stringify({
+              requires_manual_grading: false,
+          }));
+          item_graded.text(` Tag as graded`).prepend('<i class="fas fa-check-square"></i>');
+
+          return $('<div>').append(dropdown).html();
+      }
+
+      function updateGradingTagButton() {
+          $('.grading-tag-button').prop('disabled', !$('#grading-table').bootstrapTable('getSelections').length);
+      }
+
+      // Copied from partials/stringFormatter.ejs, simplifying for single value only.
+      function getStringFromFloat(v) {
+          vAsString = String(v);
+          vAsFixed = (Math.floor(v*100) / 100).toFixed(2);
+          if (vAsString.length <= vAsFixed.length) {
+              return vAsString;
+          } else {
+              return vAsFixed;
+          }
+      }
+
+      function pointsFormatter(points, row) {
+          let text = `${getStringFromFloat(row.points)} <small>/<span class="text-muted"><%= assessment_question.max_points %></span></small> `, button = '';
+          if (has_course_instance_permission_edit) {
+              button = `<button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
+                            id="editQuestionPoints${row.id}" tabindex="0"
+                            data-toggle="popover" data-container="body"
+                            data-html="true" data-placement="auto" title="Change question points"
+                            data-base-content="<%= include('../../partials/editQuestionPointsForm',
+                                                           {id: 'editQuestionPoints${row.id}',
+                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', points: '${row.points}', max_points: assessment_question.max_points, modified_at: '${row.modified_at}'}}); %>">
+                      <i class="fa fa-edit" aria-hidden="true"></i>
+                    </button>`;
+          }
+          return text + button;
+      }
+
+      function scorebarFormatter(score, row) {
+
+          let bar = '', button = '';
+          if (score != null) {
+              bar = '<div class="progress bg" style="min-width: 10em; max-width: 20em;">';
+              let left = '', right = '';
+              if (score >= 50) {
+                  left = `${Math.floor(score)}%`;
+              } else {
+                  right = `${Math.floor(score)}%`;
+              }
+              bar += `<div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">${left}</div>`;
+              bar += `<div class="progress-bar bg-danger" style="width: ${100 - Math.floor(Math.min(100, score))}%">${right}</div>`;
+              bar += '</div>';
+          }
+          if (has_course_instance_permission_edit) {
+              button = `<button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
+                            id="editQuestionScorePerc${row.id}" tabindex="0"
+                            data-toggle="popover" data-container="body"
+                            data-html="true" data-placement="auto" title="Change question percentage score"
+                            data-base-content="<%= include('../../partials/editQuestionScorePercForm',
+                                                           {id: 'editQuestionScorePerc${row.id}',
+                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', score_perc: '${row.score_perc}', modified_at: '${row.modified_at}'}}); %>">
+                      <i class="fa fa-edit" aria-hidden="true"></i>
+                    </button>`;
+          }
+          return `<div class="d-inline-block align-middle">${bar}</div> ${button}`;
+      }
+    </script>
+    <%- include('../../partials/navbar'); %>
+    <div class="modal" tabindex="-1" role="dialog" id="grading-conflict-modal">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Grading conflict detected</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>Another grader has already graded this submission.</p>
+          </div>
+          <div class="modal-footer">
+            <a class="btn btn-primary conflict-details-link" href="/">See details</a>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="content" class="container-fluid">
+      <%- include('../../partials/assessmentOpenInstancesAlert') %>
+      <a class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading">
+        <i class="fas fa-arrow-left"></i>
+        Back to <%= assessment_set.name %> <%= assessment.number %> Overview
+      </a>
+      <%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment.tid %> / Question <%= number_in_alternative_group %>.
+          <%= question.title %>
+        </div>
+        <form name="grading-form" method="POST" onsubmit="ajaxSubmit(event)">
+          <input type="hidden" name="__action" value="batch_action">
+          <input type="hidden" name="batch_action_data" value="">
+          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+          <table id="grading-table"></table>
+        </form>
+      </div>
+
+    </div>
+  </body>
+</html>

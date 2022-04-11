@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_ensure_open (
         variant_id bigint
     ) RETURNS void

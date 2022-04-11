@@ -6,21 +6,23 @@
  * @return {Object}     The sanitized object.
  */
 module.exports.sanitizeObject = function sanitizeObject(value) {
-    if (Array.isArray(value)) {
-        return value.map(sanitizeObject);
-    } else if (typeof value === 'string') {
-        return value.replace('\u0000', '\\u0000');
-    } else if (typeof value === 'object') {
-        const sanitized = Object.entries(value).map(([key, value]) => {
-            return [key, sanitizeObject(value)];
-        });
-        return sanitized.reduce((acc, [key, value]) => {
-            acc[key] = value;
-            return acc;
-        }, {});
-    } else {
-        return value;
-    }
+  if (value === null) {
+    return null;
+  } else if (Array.isArray(value)) {
+    return value.map(sanitizeObject);
+  } else if (typeof value === 'string') {
+    return value.replace('\u0000', '\\u0000');
+  } else if (typeof value === 'object') {
+    const sanitized = Object.entries(value).map(([key, value]) => {
+      return [key, sanitizeObject(value)];
+    });
+    return sanitized.reduce((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {});
+  } else {
+    return value;
+  }
 };
 
 /**
@@ -30,5 +32,5 @@ module.exports.sanitizeObject = function sanitizeObject(value) {
  * @return {string} A string literal ready to match
  */
 module.exports.escapeRegExp = function escapeRegExp(string) {
-    return string.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
+  return string.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
 };

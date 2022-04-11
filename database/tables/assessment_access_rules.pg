@@ -1,4 +1,5 @@
 columns
+    active: boolean not null default true
     assessment_id: bigint not null
     credit: integer
     end_date: timestamp with time zone
@@ -18,6 +19,7 @@ columns
 indexes
     assessment_access_rules_pkey: PRIMARY KEY (id) USING btree (id)
     assessment_access_rules_assessment_id_number_key: UNIQUE (assessment_id, number) USING btree (assessment_id, number)
+    assessment_access_rules_exam_uuid_idx: USING btree (exam_uuid)
     assessment_access_rules_start_date_key: USING btree (start_date)
 
 foreign-key constraints

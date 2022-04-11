@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS sync_assessment_sets(JSONB, bigint);
-DROP FUNCTION IF EXISTS sync_assessment_sets(boolean, jsonb, text[], bigint);
-DROP FUNCTION IF EXISTS sync_assessment_sets(boolean, boolean, jsonb, text[], bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_assessment_sets(
         IN valid_course_info boolean,
         IN delete_unused boolean,

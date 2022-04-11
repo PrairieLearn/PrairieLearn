@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_update_score(bigint,bigint,bigint,bigint,text,integer,text,double precision,double precision,jsonb,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_update_score(
         -- identify the assessment/assessment_instance
         IN arg_assessment_id bigint,          -- must provide assessment_id
@@ -12,13 +10,19 @@ CREATE OR REPLACE FUNCTION
         IN arg_uid_or_group text,           -- OR (uid/group, assessment_instance_number, qid)
         IN arg_assessment_instance_number integer,
         IN arg_qid text,
+        IN arg_modified_at timestamptz,     -- if modified_at is specified, update only if matches previous value
 
         -- specify what should be updated
         IN arg_score_perc double precision,
         IN arg_points double precision,
         IN arg_feedback jsonb,
-        IN arg_authn_user_id bigint
-    ) RETURNS void
+        IN arg_partial_scores jsonb,
+        IN arg_authn_user_id bigint,
+
+        -- resulting updates
+        OUT modified_at_conflict boolean,
+        OUT grading_job_id bigint
+    )
 AS $$
 DECLARE
     submission_id bigint;
@@ -26,17 +30,35 @@ DECLARE
     assessment_instance_id bigint;
     found_uid_or_group text;
     found_qid text;
+    current_modified_at timestamptz;
     max_points double precision;
     new_score_perc double precision;
     new_points double precision;
     new_score double precision;
     new_correct boolean;
+    current_partial_score jsonb;
 BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
 
-    SELECT        s.id,                iq.id,                  ai.id, aq.max_points, COALESCE(g.name, u.uid), q.qid
-    INTO submission_id, instance_question_id, assessment_instance_id,    max_points, found_uid_or_group, found_qid
+    SELECT
+        s.id,
+        iq.id,
+        ai.id,
+        aq.max_points,
+        COALESCE(g.name, u.uid),
+        q.qid,
+        s.partial_scores,
+        iq.modified_at
+    INTO
+        submission_id,
+        instance_question_id,
+        assessment_instance_id,
+        max_points,
+        found_uid_or_group,
+        found_qid,
+        current_partial_score,
+        current_modified_at
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -74,6 +96,20 @@ BEGIN
         RAISE EXCEPTION 'found submission with id=%, but question does not match %', arg_submission_id, arg_qid;
     END IF;
 
+    modified_at_conflict = arg_modified_at IS NOT NULL AND current_modified_at != arg_modified_at;
+
+    -- ##################################################################
+    -- check if partial_scores is an object
+
+    IF arg_partial_scores IS NOT NULL THEN
+        IF jsonb_typeof(arg_partial_scores) != 'object' THEN
+            RAISE EXCEPTION 'partial_scores is not an object';
+        END IF;
+        IF current_partial_score IS NOT NULL THEN
+            arg_partial_scores = current_partial_score || arg_partial_scores;
+        END IF;
+    END IF;
+
     -- ##################################################################
     -- compute the new score_perc/points
 
@@ -86,6 +122,13 @@ BEGIN
     ELSIF arg_points IS NOT NULL THEN
         new_points := arg_points;
         new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
+    ELSEIF arg_partial_scores IS NOT NULL THEN
+        SELECT SUM(COALESCE((val->'score')::DOUBLE PRECISION, 0) *
+                   COALESCE((val->'weight')::DOUBLE PRECISION, 1)) * 100 /
+               SUM(COALESCE((val->'weight')::DOUBLE PRECISION, 1))
+          INTO new_score_perc
+          FROM jsonb_each(arg_partial_scores) AS p(k, val);
+        new_points := new_score_perc / 100 * max_points;
     ELSE
         new_points := NULL;
         new_score_perc := NULL;
@@ -95,42 +138,51 @@ BEGIN
     new_correct := (new_score > 0.5);
 
     -- ##################################################################
-    -- if we were originally provided a submission_id or we have feedback,
-    -- create a grading job and update the submission
+    -- if we were originally provided a submission_id or we have feedback
+    -- or partial scores, create a grading job and update the submission
 
     IF submission_id IS NOT NULL
     AND (
         submission_id = arg_submission_id
+        OR new_score IS NOT NULL
         OR arg_feedback IS NOT NULL
+        OR arg_partial_scores IS NOT NULL
     ) THEN
         INSERT INTO grading_jobs
             (submission_id, auth_user_id,      graded_by, graded_at,
-            grading_method, correct,     score,     feedback)
+            grading_method, correct,     score,     feedback, partial_scores)
         VALUES
             (submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
-            'Manual',   new_correct, new_score, arg_feedback);
+            'Manual',   new_correct, new_score, arg_feedback, arg_partial_scores)
+        RETURNING id INTO grading_job_id;
 
-        UPDATE submissions AS s
-        SET
-            feedback = CASE
-                WHEN feedback IS NULL THEN arg_feedback
-                WHEN arg_feedback IS NULL THEN feedback
-                WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(arg_feedback) = 'object' THEN feedback || arg_feedback
-                ELSE arg_feedback
-            END,
-            graded_at = now(),
-            grading_method = 'External',
-            override_score = new_score,
-            score = COALESCE(new_score, score),
-            correct = COALESCE(new_correct, correct),
-            gradable = CASE WHEN new_score IS NULL THEN gradable ELSE TRUE END
-        WHERE s.id = submission_id;
+        IF NOT modified_at_conflict THEN
+            UPDATE submissions AS s
+            SET
+                feedback = CASE
+                    WHEN feedback IS NULL THEN arg_feedback
+                    WHEN arg_feedback IS NULL THEN feedback
+                    WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof(arg_feedback) = 'object' THEN feedback || arg_feedback
+                    ELSE arg_feedback
+                END,
+                partial_scores = CASE
+                    WHEN arg_partial_scores IS NULL THEN partial_scores
+                    ELSE arg_partial_scores
+                END,
+                graded_at = now(),
+                grading_method = 'External',
+                override_score = new_score,
+                score = COALESCE(new_score, score),
+                correct = COALESCE(new_correct, correct),
+                gradable = CASE WHEN new_score IS NULL THEN gradable ELSE TRUE END
+            WHERE s.id = submission_id;
+        END IF;
     END IF;
 
     -- ##################################################################
     -- do the score update of the instance_question, log it, and update the assessment_instance, if we have a new_score
 
-    IF new_score IS NOT NULL THEN
+    IF new_score IS NOT NULL AND NOT modified_at_conflict THEN
         UPDATE instance_questions AS iq
         SET
             points = new_points,
@@ -138,7 +190,10 @@ BEGIN
             score_perc = new_score_perc,
             score_perc_in_grading = 0,
             status = 'complete',
-            modified_at = now()
+            modified_at = now(),
+            highest_submission_score = new_score,
+            requires_manual_grading = FALSE,
+            last_grader = arg_authn_user_id
         WHERE iq.id = instance_question_id;
 
         INSERT INTO question_score_logs

@@ -1,0 +1,152 @@
+<pl-question-panel>
+    <p>
+        This question illustrates different use cases for the
+        <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-matching-element"><code>pl-matching</code></a>
+        element.
+        </p>
+</pl-question-panel>
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+        <p>
+            Example 1: Match each nation with its capital city. In this example, 
+            the options are implicitly created by each statement's <code>match</code> attribute.
+            Only distractor options need to be added manually. All statements and options
+            are displayed by default.
+        </p>
+        </pl-question-panel>
+        
+        <pl-matching answers-name="ex1">
+            <pl-statement match="Ottawa">Canada</pl-statement>
+            <pl-statement match="Washington, D.C.">United States</pl-statement>
+            <pl-statement match="Mexico City">Mexico</pl-statement>
+            <pl-statement match="Paris">France</pl-statement>
+            
+            <pl-option>Tijuana</pl-option>
+            <pl-option>Toronto</pl-option>
+            <pl-option>New York City</pl-option>
+        </pl-matching>
+    </div>
+</div>
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Example 2: Setting <code>counter-type="full-text"</code> will hide the column of options. The dropdown list
+                next to each statement will contain the inner text of each option, rather than a counter.
+            </p>
+        </pl-question-panel>
+            
+        <pl-matching answers-name="ex2" counter-type="full-text">
+            <pl-statement match="Matt"><pl-figure file-name="matt.png" width="140px" directory="clientFilesQuestion"></pl-figure></pl-statement>
+            <pl-statement match="Mariana"><pl-figure file-name="mariana.png" width="140px" directory="clientFilesQuestion"></pl-figure></pl-statement>
+        </pl-matching>
+    </div>
+</div>
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Example 3: <code>blank="false"</code> removes the blank first entry in the dropdown list, 
+                setting the default selection to the first option.
+            </p>
+        </pl-question-panel>
+            
+        <pl-matching answers-name="ex3" blank="false">
+            <pl-statement match="Ottawa">Canada</pl-statement>
+            <pl-statement match="Washington, D.C.">United States</pl-statement>
+            <pl-statement match="Mexico City">Mexico</pl-statement>
+            <pl-statement match="Paris">France</pl-statement>
+            
+            <pl-option>Tijuana</pl-option>
+            <pl-option>Toronto</pl-option>
+            <pl-option>New York City</pl-option>
+        </pl-matching>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Example 4: <code>number-statements</code> and <code>number-options</code>
+                determine how many statements and options are shown. Statements are sampled at random.
+                The options will always include each correct match for the sampled statements,
+                plus random distractors.
+            </p>
+        </pl-question-panel>
+            
+        <pl-matching answers-name="ex4" number-statements="3" number-options="5">
+            <pl-statement match="Ottawa">Canada</pl-statement>
+            <pl-statement match="Washington, D.C.">United States</pl-statement>
+            <pl-statement match="Mexico City">Mexico</pl-statement>
+            <pl-statement match="Paris">France</pl-statement>
+            
+            <pl-option>Tijuana</pl-option>
+            <pl-option>Toronto</pl-option>
+            <pl-option>New York City</pl-option>
+        </pl-matching>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Example 5: if <code>number-options</code> is smaller than the amount of options
+                required to match the sampled statements, None of the Above will be added.
+            </p>
+        </pl-question-panel>
+            
+        <pl-matching answers-name="ex5" number-statements="3" number-options="2">
+            <pl-statement match="Ottawa">Canada</pl-statement>
+            <pl-statement match="Washington, D.C.">United States</pl-statement>
+            <pl-statement match="Mexico City">Mexico</pl-statement>
+            <pl-statement match="Paris">France</pl-statement>
+            
+            <pl-option>Tijuana</pl-option>
+            <pl-option>Toronto</pl-option>
+            <pl-option>New York City</pl-option>
+        </pl-matching>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Example 6: the <code>counter-type</code> attribute indicates how options are identified. It can be set to <code>lower-alpha</code> (a, b, c, ...), <code>upper-alpha</code> (A, B, C, ...), or <code>decimal</code> (1, 2, 3).
+            </p>
+        </pl-question-panel>
+            
+        <pl-matching answers-name="ex6" counter-type="decimal" number-statements="3" number-options="3">
+            <pl-statement match="Ottawa">Canada</pl-statement>
+            <pl-statement match="Washington, D.C.">United States</pl-statement>
+            <pl-statement match="Mexico City">Mexico</pl-statement>
+            <pl-statement match="Paris">France</pl-statement>
+            
+            <pl-option>Tijuana</pl-option>
+            <pl-option>Toronto</pl-option>
+            <pl-option>New York City</pl-option>
+        </pl-matching>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Example 7: options can be added manually if they require more than simple text.
+                All PrairieLearn and HTML elements are supported in options and statements.
+            </p>
+        </pl-question-panel>
+            
+        <pl-matching answers-name="ex7">
+            <pl-statement match="Matt">Matt</pl-statement>
+            <pl-statement match="Mariana">Mariana</pl-statement>
+            
+            <pl-option name="Matt"><pl-figure file-name="matt.png" width="140px" directory="clientFilesQuestion"></pl-figure></pl-option>
+            <pl-option name="Mariana"><pl-figure file-name="mariana.png" width="140px" directory="clientFilesQuestion"></pl-figure></pl-option>
+        </pl-matching>
+    </div>
+</div>

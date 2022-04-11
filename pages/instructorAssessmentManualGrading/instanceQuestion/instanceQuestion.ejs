@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
+    <%- include('../../partials/mathjax'); %>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+    <script>
+      document.urlPrefix = '<%= urlPrefix %>';
+    </script>
+    <% if (question.type != 'Freeform') { %>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/require.js"></script>
+    <script src="/localscripts/question.js"></script>
+    <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <% } %>
+    <%- extraHeadersHtml %>
+  </head>
+  <body>
+    <%- include('../../partials/navbar'); %>
+    <div class="container-fluid">
+      <%- include('../../partials/questionSyncErrorsAndWarnings'); %>
+    </div>
+    <div id="content" class="container">
+      <% if (assessment_instance.open) { %>
+      <div class="alert alert-danger" role="alert">
+        This assessment instance is still open. Student may still be able to submit new answers.
+      </div>
+      <% } %>
+      <% if (conflict_grading_job) { %>
+      <div id="conflictGradingJobModal" class="modal fade">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-light">
+              <div class="modal-title">Grading conflict identified</div>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-danger" role="alert">
+                The submission you have just graded has already been graded by <%= instance_question.last_grader_name %>. Your score
+                and feedback have not been applied. Please review the feedback below and select how you would like to proceed.
+              </div>
+              <div class="row mb-2">
+                <div class="col-6">
+                  <div><strong>Existing score and feedback</strong></div>
+                  <div><%= instance_question.modified_at_formatted %>, by <%= instance_question.last_grader_name %></div>
+                </div>
+                <div class="col-6">
+                  <div><strong>Conflicting score and feedback</strong></div>
+                  <div><%= conflict_grading_job.grading_date_formatted %>, by <%= conflict_grading_job.grader_name %></div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-6">
+                  <%- include('../../partials/instructorGradingPanel',
+                              {disable: true, skip_text: 'Accept existing score'}); %>
+                </div>
+                <div class="col-6">
+                  <%- include('../../partials/instructorGradingPanel',
+                              {score_perc: conflict_grading_job.score_perc,
+                               points: conflict_grading_job.score * assessment_question.max_points,
+                               submission: conflict_grading_job}); %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <script>
+        $(function() {$('#conflictGradingJobModal').modal({})})
+      </script>
+      <% } %>
+      <div class="row">
+        <div class="col-lg-9 col-sm-12">
+          <%- include('../../partials/question', {question_context: 'manual_grading'}); %>
+        </div>
+
+        <div class="col-lg-3 col-sm-12">
+          <div class="card mb-4 border-success">
+            <div class="card-header bg-success">Grading Panel</div>
+            <div class="card-body">
+              <a role="button" class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>">
+                <i class="fas fa-arrow-left"></i>
+                Back to Question
+              </a>
+              <%- include('../../partials/instructorGradingPanel'); %>
+            </div>
+            <div class="card-footer small">
+              This box is not visible to students.
+            </div>
+          </div>
+
+          <%- include('../../partials/instructorInfoPanel', {question_context: 'manual_grading'}); %>
+        </div>
+      </div>
+
+    </div>
+    <!-- Needs to be located below element scripts -->
+    <script src="/localscripts/questionPageScripts.js"></script>
+  </body>
+</html>

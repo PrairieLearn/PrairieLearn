@@ -53,6 +53,10 @@ WHERE
 -- BLOCK select_instance_questions
 SELECT
     iq.*,
+    -- Convert modified_at to a text representation suitable for
+    -- PostgreSQL so it can be properly interpreted when a grade
+    -- update POST is received back.
+    CAST(iq.modified_at AS TEXT) AS modified_at,
     ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
     z.id AS zone_id,
     z.title AS zone_title,
@@ -80,18 +84,3 @@ WHERE
 WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;
-
--- BLOCK select_group_info
-SELECT
-    g.name, g.id AS group_id,
-    array_agg(u.uid) AS uid_list
-FROM
-    assessment_instances AS ai
-    JOIN groups AS g ON (g.id = ai.group_id)
-    LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-    LEFT JOIN users AS u ON (u.user_id = gu.user_id)
-WHERE 
-    ai.id = $assessment_instance_id
-    AND g.deleted_at IS NULL
-GROUP BY
-    g.id;

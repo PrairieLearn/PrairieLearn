@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_groups_delete_all(
         assessment_id bigint,
         authn_user_id bigint

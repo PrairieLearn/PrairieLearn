@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     submissions_lock (
         submission_id bigint
     ) RETURNS void

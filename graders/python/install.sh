@@ -12,8 +12,9 @@ yum install -y \
 
 echo "setting up conda..."
 cd /
-curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh
-bash Miniforge3-Linux-x86_64.sh -b -p /usr/local -f
+arch=`uname -m`
+curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh
+bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
 echo "installing Python packages..."
 python3 -m pip install --no-cache-dir -r /requirements.txt

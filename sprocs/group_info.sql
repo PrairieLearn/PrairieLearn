@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS group_info(bigint);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     group_info (
         IN assessment_id bigint
     ) RETURNS TABLE (

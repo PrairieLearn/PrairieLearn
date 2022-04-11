@@ -58,19 +58,23 @@
                             <% } %>
                         </td>
                     </tr>
-                    <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
                     <tr><th>Configuration</th>
                         <td>
-                            <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_view/<%= infoAssessmentPath %>">
-                                infoAssessment.json
-                            </a>
-                            <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_edit/<%= infoAssessmentPath %>">
-                                <i class="fa fa-edit"></i>
-                                <span>Edit</span>
-                            </a>
+                            <% if (authz_data.has_course_permission_view) { %>
+                                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_view/<%= infoAssessmentPath %>">
+                                    infoAssessment.json
+                                </a>
+                                <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
+                                    <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_edit/<%= infoAssessmentPath %>">
+                                        <i class="fa fa-edit"></i>
+                                        <span>Edit</span>
+                                    </a>
+                                <% } %>
+                            <% } else { %>
+                              infoAssessment.json
+                            <% } %>
                         </td>
                     </tr>
-                    <% } %>
                     <tr>
                       <th class="align-middle">Student Link</th>
                       <td class="form-inline align-middle">

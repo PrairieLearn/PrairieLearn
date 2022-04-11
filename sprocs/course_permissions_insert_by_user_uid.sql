@@ -1,13 +1,15 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     course_permissions_insert_by_user_uid(
-        course_id bigint,
-        uid text,
-        course_role enum_course_role,
-        authn_user_id bigint
-    ) returns void
+        IN course_id bigint,
+        IN uid text,
+        IN course_role enum_course_role,
+        IN authn_user_id bigint,
+        OUT user_id bigint
+    )
 AS $$
+-- prefer column references over variables, needed for ON CONFLICT
+#variable_conflict use_column
 DECLARE
-    user_id bigint;
     new_row course_permissions;
 BEGIN
     SELECT u.user_id INTO user_id
@@ -15,19 +17,21 @@ BEGIN
     WHERE u.uid = course_permissions_insert_by_user_uid.uid;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'no user with uid: %', uid;
+        INSERT INTO users AS u (uid)
+        VALUES (uid)
+        RETURNING u.user_id INTO user_id;
     END IF;
 
-    BEGIN
-        INSERT INTO course_permissions AS cp
-            (user_id, course_id, course_role)
-        VALUES
-            (user_id, course_id, course_role)
-        RETURNING
-            cp.* INTO new_row;
-    EXCEPTION
-        WHEN unique_violation THEN RAISE EXCEPTION 'user already in course, uid: %', uid;
-    END;
+    INSERT INTO course_permissions AS cp
+        (user_id, course_id, course_role)
+    VALUES
+        (user_id, course_id, course_role)
+    ON CONFLICT (user_id, course_id)
+    DO UPDATE
+    SET course_role = EXCLUDED.course_role
+    WHERE cp.course_role < EXCLUDED.course_role
+    RETURNING
+        cp.* INTO new_row;
 
     INSERT INTO audit_logs
         (authn_user_id, course_id, user_id, table_name,

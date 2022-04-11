@@ -2,12 +2,11 @@
     "controller": "pl-drawing.py",
     "dependencies": {
         "nodeModulesScripts": [
-           "fabric/dist/fabric.js"
+            "fabric/dist/fabric.js",
+            "lodash/lodash.js"
         ],
         "coreScripts": [
-            "sylvester.js",
-            "sha1.js",
-            "underscore.js"
+            "sylvester.js"
         ],
         "elementScripts": [
             "pl-drawing.js",

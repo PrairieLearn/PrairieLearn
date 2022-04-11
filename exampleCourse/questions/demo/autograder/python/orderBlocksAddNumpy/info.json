@@ -2,7 +2,7 @@
     "uuid": "356308B1-25E3-44EB-B455-83A4F21371BE",
     "title": "Element pl-order-blocks: Externally graded python code using numpy",
     "topic": "Autograder",
-    "tags": ["code", "v3"],
+    "tags": ["code"],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",

@@ -1,0 +1,12 @@
+columns
+    id: bigint not null default nextval('pt_enrollments_id_seq'::regclass)
+    user_id: bigint not null
+
+indexes
+    pt_enrollments_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    pt_enrollments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id)
+
+referenced by
+    pt_reservations: FOREIGN KEY (enrollment_id) REFERENCES pt_enrollments(id)

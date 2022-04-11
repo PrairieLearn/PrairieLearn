@@ -1,10 +1,9 @@
 ----------------------------------- ONLINE MEAN -----------------------------------
 -- https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
 
-DROP TYPE IF EXISTS mean_and_index CASCADE;
 CREATE TYPE mean_and_index AS (mean DOUBLE PRECISION, index DOUBLE PRECISION);
 
-CREATE OR REPLACE FUNCTION online_mean_sfunc (
+CREATE FUNCTION online_mean_sfunc (
         prev_mean_and_index mean_and_index,
         input DOUBLE PRECISION
     ) RETURNS mean_and_index AS $$
@@ -27,7 +26,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION online_mean_ffunc(
+CREATE FUNCTION online_mean_ffunc(
         mean_and_index mean_and_index
     ) RETURNS DOUBLE PRECISION AS $$
 BEGIN
@@ -35,7 +34,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-DROP AGGREGATE IF EXISTS online_mean (DOUBLE PRECISION) CASCADE;
 CREATE AGGREGATE online_mean (DOUBLE PRECISION) (
     STYPE = mean_and_index,
     SFUNC = online_mean_sfunc,
@@ -45,10 +43,9 @@ CREATE AGGREGATE online_mean (DOUBLE PRECISION) (
 -------------------------------- ONLINE VARIANCE --------------------------------
 -- https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
 
-DROP TYPE IF EXISTS mean_and_var_and_index CASCADE;
 CREATE TYPE mean_and_var_and_index AS (mean DOUBLE PRECISION, variance DOUBLE PRECISION, index DOUBLE PRECISION);
 
-CREATE OR REPLACE FUNCTION online_var_sfunc (
+CREATE FUNCTION online_var_sfunc (
         prev_state mean_and_var_and_index,
         input DOUBLE PRECISION
     ) RETURNS mean_and_var_and_index AS $$
@@ -75,7 +72,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION online_var_ffunc(
+CREATE FUNCTION online_var_ffunc(
         state mean_and_var_and_index
     ) RETURNS DOUBLE PRECISION AS $$
 BEGIN
@@ -83,7 +80,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-DROP AGGREGATE IF EXISTS online_var (DOUBLE PRECISION) CASCADE;
 CREATE AGGREGATE online_var (DOUBLE PRECISION) (
     STYPE = mean_and_var_and_index,
     SFUNC = online_var_sfunc,
@@ -93,7 +89,7 @@ CREATE AGGREGATE online_var (DOUBLE PRECISION) (
 ------------------------------ ONLINE ARRAY VARIANCE ------------------------------
 -- https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
 
-CREATE OR REPLACE FUNCTION array_var_sfunc (
+CREATE FUNCTION array_var_sfunc (
         prev_state mean_and_var_and_index[],
         input DOUBLE PRECISION[]
     ) RETURNS mean_and_var_and_index[] AS $$
@@ -118,7 +114,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION array_var_ffunc(
+CREATE FUNCTION array_var_ffunc(
         state mean_and_var_and_index[]
     ) RETURNS DOUBLE PRECISION[] AS $$
 DECLARE
@@ -136,7 +132,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-DROP AGGREGATE IF EXISTS array_var (DOUBLE PRECISION[]) CASCADE;
 CREATE AGGREGATE array_var (DOUBLE PRECISION[]) (
     STYPE = mean_and_var_and_index[],
     SFUNC = array_var_sfunc,

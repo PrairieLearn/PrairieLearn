@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessments_duration_stats (
         IN assessment_id bigint,
         OUT min interval,
@@ -37,7 +37,7 @@ BEGIN
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         a.id = assessments_duration_stats.assessment_id
-        AND role = 'Student';
+        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id);
 
     min := coalesce(min, interval '0');
     max := coalesce(max, interval '0');
@@ -63,6 +63,6 @@ BEGIN
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         a.id = assessments_duration_stats.assessment_id
-        AND role = 'Student';
+        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id);
 END;
 $$ LANGUAGE plpgsql STABLE;

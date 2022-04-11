@@ -1,9 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_points(bigint,integer,boolean);
-DROP FUNCTION IF EXISTS assessment_instances_points(bigint);
-DROP FUNCTION IF EXISTS zones_points(BIGINT);
-DROP FUNCTION IF EXISTS zones_max_points(BIGINT);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_points(
         assessment_instance_id BIGINT
     ) RETURNS TABLE (

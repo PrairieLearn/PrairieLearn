@@ -4,8 +4,8 @@ const cheerio = require('cheerio');
 const { step } = require('mocha-steps');
 
 const config = require('../lib/config');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
@@ -33,7 +33,7 @@ const fetchCheerio = async (url, options = {}) => {
   return response;
 };
 
-describe('Exam assessment response to `requireHonorCode`', function() {
+describe('Exam assessment response to `requireHonorCode`', function () {
   this.timeout(60000);
 
   const context = {};
@@ -46,7 +46,9 @@ describe('Exam assessment response to `requireHonorCode`', function() {
   after('shut down testing server', helperServer.after);
 
   step('get default exam info', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, {number: '1'});
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, {
+      number: '1',
+    });
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
@@ -62,7 +64,9 @@ describe('Exam assessment response to `requireHonorCode`', function() {
   });
 
   step('get `"requireHonorCode": false` exam info', async () => {
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, {number: '2'});
+    const results = await sqldb.queryOneRowAsync(sql.select_exam, {
+      number: '2',
+    });
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });

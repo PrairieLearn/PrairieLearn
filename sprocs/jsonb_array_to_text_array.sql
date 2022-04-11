@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS jsonb_array_to_text_array(jsonb);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     jsonb_array_to_text_array(
         IN jsonb_array jsonb
     ) RETURNS text[]

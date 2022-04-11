@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS users_randomly_generate(int, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_randomly_generate(
         count int,
         course_instance_id bigint DEFAULT NULL
@@ -51,8 +49,8 @@ BEGIN
         END;
 
         IF course_instance_id IS NOT NULL THEN
-            INSERT INTO enrollments (user_id, course_instance_id, role)
-                VALUES (new_user.user_id, course_instance_id, 'Student');
+            INSERT INTO enrollments (user_id, course_instance_id)
+                VALUES (new_user.user_id, course_instance_id);
         END IF;
 
         i := i+1;

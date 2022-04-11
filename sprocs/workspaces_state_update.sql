@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS workspaces_state_update(bigint, text);
-DROP FUNCTION IF EXISTS workspaces_state_update(bigint, enum_workspace_state, text);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     workspaces_state_update(
         workspace_id bigint,
         workspace_state enum_workspace_state,

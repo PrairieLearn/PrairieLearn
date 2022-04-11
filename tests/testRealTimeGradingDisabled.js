@@ -3,22 +3,22 @@ const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 
 const config = require('../lib/config');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
 
-describe('Exam assessment with real-time grading disabled', function() {
+describe('Exam assessment with real-time grading disabled', function () {
   this.timeout(60000);
 
   const context = {};
   context.siteUrl = `http://localhost:${config.serverPort}`;
   context.baseUrl = `${context.siteUrl}/pl`;
-  context.courseInstanceBaseUrl= `${context.baseUrl}/course_instance/1`;
+  context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
-  before('set up testing server', async function() {
+  before('set up testing server', async function () {
     await util.promisify(helperServer.before().bind(this))();
     const results = await sqldb.queryOneRowAsync(sql.select_exam8, []);
     context.assessmentId = results.rows[0].id;
@@ -40,7 +40,10 @@ describe('Exam assessment with real-time grading disabled', function() {
       __action: 'new_instance',
       __csrf_token: context.__csrf_token,
     };
-    const response = await helperClient.fetchCheerio(context.assessmentUrl, { method: 'POST', form });
+    const response = await helperClient.fetchCheerio(context.assessmentUrl, {
+      method: 'POST',
+      form,
+    });
     assert.isTrue(response.ok);
 
     // We should have been redirected to the assessment instance
@@ -73,7 +76,10 @@ describe('Exam assessment with real-time grading disabled', function() {
       __action: 'grade',
       __csrf_token: context.__csrf_token,
     };
-    const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, { method: 'POST', form });
+    const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+      method: 'POST',
+      form,
+    });
 
     assert.isFalse(response.ok);
     assert.equal(response.status, 403);

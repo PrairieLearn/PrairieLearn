@@ -1,5 +1,3 @@
 #!/bin/bash
 
-cd /PrairieLearn/prairielib
-npm ci
-npm test
+make -s -C /PrairieLearn/prairielib test

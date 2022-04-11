@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_insert(bigint,bigint,bigint,enum_mode,integer,timestamp with time zone);
-DROP FUNCTION IF EXISTS assessment_instances_insert(bigint,bigint,boolean,bigint,enum_mode,integer,timestamp with time zone);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_insert(
         IN assessment_id bigint,
         IN user_id bigint,
