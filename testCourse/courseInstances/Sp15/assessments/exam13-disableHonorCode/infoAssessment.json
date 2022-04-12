@@ -3,7 +3,7 @@
     "type": "Exam",
     "title": "Exam with honor code disabled",
     "set": "Exam",
-    "number": "12",
+    "number": "13",
     "requireHonorCode": false,
     "allowAccess": [
     	{

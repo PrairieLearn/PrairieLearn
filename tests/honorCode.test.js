@@ -38,7 +38,7 @@ describe('Exam assessment response to `requireHonorCode`', function () {
 
   it('visits landing page of assessment with disabled honor code', async () => {
     const results = await sqldb.queryOneRowAsync(sql.select_exam, {
-      number: '12',
+      number: '13',
     });
     const assessmentId = results.rows[0].id;
     const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
