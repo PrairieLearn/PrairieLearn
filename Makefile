@@ -27,9 +27,9 @@ start-s3rver:
 test: test-js test-python
 test-js: test-prairielearn test-prairielib test-grader-host test-packages
 test-prairielearn: start-support
-	@mocha --parallel --require tests/mocha-hooks.mjs "tests/**/*.test.{js,mjs}"
+	@mocha --parallel "tests/**/*.test.{js,mjs}"
 test-prairielearn-serial: start-support
-	@mocha --require tests/mocha-hooks.mjs "tests/**/*.test.{js,mjs}"
+	@mocha "tests/**/*.test.{js,mjs}"
 test-prairielib:
 	@jest prairielib/
 test-grader-host:
