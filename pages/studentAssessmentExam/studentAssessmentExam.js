@@ -32,7 +32,7 @@ router.get('/', function (req, res, next) {
       });
     } else {
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }    
+    }
   } else {
     sqldb.query(sql.select_single_assessment_instance, params, function (err, result) {
       if (ERR(err, next)) return;
