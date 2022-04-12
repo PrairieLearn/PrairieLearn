@@ -97,7 +97,7 @@
         "rehype-stringify": "^8.0.0",
         "remark-gfm": "^1.0.0",
         "remark-math": "^4.0.0",
-        "remark-parse": "^9.0.0",
+        "remark-parse": "^10.0.1",
         "remark-rehype": "^8.1.0",
         "request-promise-native": "^1.0.9",
         "requirejs": "^2.3.5",
