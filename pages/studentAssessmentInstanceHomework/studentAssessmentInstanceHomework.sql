@@ -21,7 +21,11 @@ SELECT
     (z.max_points IS NOT NULL) AS zone_has_max_points,
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
-    (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count
+    (SELECT count(*) FROM files AS f WHERE f.instance_question_id = iq.id AND f.deleted_at IS NULL) AS file_count,
+    qo.sequence_locked AS sequence_locked,
+    (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
+    (lag(qo.question_number) OVER w) AS prev_title,
+    (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

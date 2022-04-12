@@ -27,6 +27,10 @@ select_course_requests AS (
                 'user_name', u.name,
                 'user_id', u.uid,
                 'github_user', r.github_user,
+                'first_name', r.first_name,
+                'last_name', r.last_name,
+                'work_email', r.work_email,
+                'institution', r.institution,
                 'status', r.approved_status,
                 'approved_by_name', ua.name,
                 'jobs', coalesce(j.jobs, '{}'::jsonb)

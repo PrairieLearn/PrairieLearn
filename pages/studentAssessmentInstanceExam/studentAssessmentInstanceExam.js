@@ -58,9 +58,11 @@ router.post('/', function (req, res, next) {
         })
       );
     }
+    const requireOpen = true;
     assessment.gradeAssessmentInstance(
       res.locals.assessment_instance.id,
       res.locals.authn_user.user_id,
+      requireOpen,
       closeExam,
       overrideGradeRate,
       function (err) {

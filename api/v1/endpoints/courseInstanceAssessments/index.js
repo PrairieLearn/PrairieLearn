@@ -13,7 +13,7 @@ const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
 router.get('/', (req, res, next) => {
   const params = {
     course_instance_id: res.locals.course_instance.id,
-    assessment_id: null,
+    unsafe_assessment_id: null,
   };
   sqldb.queryOneRow(sql.select_assessments, params, (err, result) => {
     if (ERR(err, next)) return;
@@ -21,10 +21,10 @@ router.get('/', (req, res, next) => {
   });
 });
 
-router.get('/:assessment_id', (req, res, next) => {
+router.get('/:unsafe_assessment_id', (req, res, next) => {
   const params = {
     course_instance_id: res.locals.course_instance.id,
-    assessment_id: req.params.assessment_id,
+    unsafe_assessment_id: req.params.unsafe_assessment_id,
   };
   sqldb.queryOneRow(sql.select_assessments, params, (err, result) => {
     if (ERR(err, next)) return;
@@ -39,11 +39,11 @@ router.get('/:assessment_id', (req, res, next) => {
   });
 });
 
-router.get('/:assessment_id/assessment_instances', (req, res, next) => {
+router.get('/:unsafe_assessment_id/assessment_instances', (req, res, next) => {
   const params = {
     course_instance_id: res.locals.course_instance.id,
-    assessment_id: req.params.assessment_id,
-    assessment_instance_id: null,
+    unsafe_assessment_id: req.params.unsafe_assessment_id,
+    unsafe_assessment_instance_id: null,
   };
   sqldb.queryOneRow(sql.select_assessment_instances, params, (err, result) => {
     if (ERR(err, next)) return;
@@ -51,10 +51,10 @@ router.get('/:assessment_id/assessment_instances', (req, res, next) => {
   });
 });
 
-router.get('/:assessment_id/assessment_access_rules', (req, res, next) => {
+router.get('/:unsafe_assessment_id/assessment_access_rules', (req, res, next) => {
   const params = {
     course_instance_id: res.locals.course_instance.id,
-    assessment_id: req.params.assessment_id,
+    unsafe_assessment_id: req.params.unsafe_assessment_id,
   };
   sqldb.queryOneRow(sql.select_assessment_access_rules, params, (err, result) => {
     if (ERR(err, next)) return;

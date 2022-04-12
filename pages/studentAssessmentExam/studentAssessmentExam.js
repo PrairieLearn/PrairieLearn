@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
+const { checkPasswordOrRedirect } = require('../../middlewares/studentAssessmentAccess');
 var error = require('../../prairielib/lib/error');
 var assessment = require('../../lib/assessment');
 var sqldb = require('../../prairielib/lib/sql-db');
@@ -17,6 +18,13 @@ router.get('/', function (req, res, next) {
     user_id: res.locals.user.user_id,
   };
   if (res.locals.assessment.multiple_instance) {
+    // The user has landed on this page to create a new assessment instance.
+    //
+    // Before allowing the user to create a new assessment instance, we need
+    // to check if the current access rules require a password. If they do,
+    // we'll ensure that the password has already been entered before allowing
+    // students to create and start a new assessment instance.
+    if (!checkPasswordOrRedirect(req, res)) return;
     if (res.locals.assessment.group_work) {
       groupAssessmentHelper.getGroupInfo(res, function (err) {
         if (ERR(err, next)) return;
@@ -24,11 +32,16 @@ router.get('/', function (req, res, next) {
       });
     } else {
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
+    }    
   } else {
     sqldb.query(sql.select_single_assessment_instance, params, function (err, result) {
       if (ERR(err, next)) return;
       if (result.rowCount === 0) {
+        // Before allowing the user to create a new assessment instance, we need
+        // to check if the current access rules require a password. If they do,
+        // we'll ensure that the password has already been entered before allowing
+        // students to create and start a new assessment instance.
+        if (!checkPasswordOrRedirect(req, res)) return;
         if (res.locals.assessment.group_work) {
           groupAssessmentHelper.getGroupInfo(res, function (err) {
             if (ERR(err, next)) return;
@@ -63,6 +76,12 @@ router.post('/', function (req, res, next) {
   // permission required to create an assessment for the effective user.
 
   if (req.body.__action === 'new_instance') {
+    // Before allowing the user to create a new assessment instance, we need
+    // to check if the current access rules require a password. If they do,
+    // we'll ensure that the password has already been entered before allowing
+    // students to create and start a new assessment instance.
+    if (!checkPasswordOrRedirect(req, res)) return;
+
     assessment.makeAssessmentInstance(
       res.locals.assessment.id,
       res.locals.user.user_id,

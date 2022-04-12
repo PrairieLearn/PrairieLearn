@@ -6,6 +6,7 @@ const path = require('path');
 const delay = require('delay');
 const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const opentelemetry = require('@prairielearn/opentelemetry');
 
 const config = require('../lib/config');
 const load = require('../lib/load');
@@ -18,7 +19,6 @@ const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
 const workers = require('../lib/workers');
-const tracing = require('../lib/tracing');
 const externalGrader = require('../lib/externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
 
@@ -48,18 +48,15 @@ module.exports = {
         [
           async () => {
             // We (currently) don't ever want tracing to run during tests.
-            await tracing.init({ openTelemetryEnabled: false });
+            await opentelemetry.init({ openTelemetryEnabled: false });
           },
           async () => {
             await aws.init();
           },
-          function (callback) {
+          async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls
-            helperDb.before.call(that, function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await helperDb.before.call(that);
           },
           util.callbackify(async () => {
             debug('before(): create tmp dir for config.filesRoot');
@@ -220,12 +217,9 @@ module.exports = {
           localCache.close();
           callback(null);
         },
-        function (callback) {
+        async () => {
           debug('after(): finish DB');
-          helperDb.after.call(that, function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await helperDb.after.call(that);
         },
       ],
       function (err) {
