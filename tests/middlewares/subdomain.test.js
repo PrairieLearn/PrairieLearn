@@ -2,7 +2,8 @@
 const assert = require('chai').assert;
 const sinon = require('sinon');
 
-const { allowAccess, middleware } = require('../../middlewares/validateSubdomainRequest');
+const config = require('../../lib/config');
+const { allowAccess, validateSubdomainRequest } = require('../../middlewares/subdomain');
 
 describe('validateSubdomainRequest', () => {
   it('allows access to question page from subdomain', () => {
@@ -116,30 +117,35 @@ describe('validateSubdomainRequest', () => {
   describe('middleware', () => {
     it('allows good request', () => {
       const req = makeFakeRequest(
-        'http://q1.prairielearn.com',
-        null,
+        'q1.prairielearn.com',
+        'https://q1.prairielearn.com',
         '/pl/course/1/question/1/preview'
       );
       const { res, statusSpy, sendSpy } = makeFakeResponse();
       const next = sinon.spy();
 
-      middleware(req, res, next);
+      validateSubdomainRequest(req, res, next);
 
-      assert.isTrue(next.called);
-      assert.isFalse(statusSpy.calledWith(403));
-      assert.isFalse(sendSpy.called);
+      assert.isTrue(next.calledOnce);
+      assert.isUndefined(next.args[0][0]);
     });
 
     it('denies bad request', () => {
-      const req = makeFakeRequest('http://q1.prairielearn.com', null, '/pl/course/1/admin');
+      const req = makeFakeRequest(
+        'q1.prairielearn.com',
+        'https://q1.prairielearn.com',
+        '/pl/course/1/admin'
+      );
       const { res, statusSpy, sendSpy } = makeFakeResponse();
       const next = sinon.spy();
 
-      middleware(req, res, next);
+      validateSubdomainRequest(req, res, next);
 
-      assert.isFalse(next.called);
-      assert.isTrue(statusSpy.calledWith(403));
-      assert.isTrue(sendSpy.called);
+      assert.isTrue(next.calledOnce);
+      const args = next.args[0];
+      assert.lengthOf(args, 1);
+      assert.instanceOf(args[0], Error);
+      assert.equal(args[0].status, 403);
     });
   });
 });

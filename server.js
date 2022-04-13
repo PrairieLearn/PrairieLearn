@@ -111,8 +111,8 @@ module.exports.initExpress = function () {
   // Together, these two middlewares help to implement our client-side security
   // feature that ensures that code executing on question pages can't interact
   // with other parts of the site.
-  app.use(require('./middlewares/subdomainRedirect'));
-  app.use(require('./middlewares/validateSubdomainRequest').middleware);
+  app.use(require('./middlewares/subdomain').subdomainRedirect);
+  app.use(require('./middlewares/subdomain').validateSubdomainRequest);
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
@@ -325,7 +325,7 @@ module.exports.initExpress = function () {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
-    require('./lib/subdomain').assertWorkspaceSubdomainOrRedirect,
+    require('./middlewares/subdomain').assertWorkspaceSubdomainOrRedirect,
     workspaceAuthRouter,
     workspaceProxy,
   ]);
@@ -537,7 +537,7 @@ module.exports.initExpress = function () {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
-    require('./lib/subdomain').assertWorkspaceSubdomainOrRedirect,
+    require('./middlewares/subdomain').assertWorkspaceSubdomainOrRedirect,
     require('./middlewares/authzWorkspace'),
     require('./pages/workspace/workspace'),
   ]);
@@ -961,7 +961,7 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/shared/floatFormatters'),
-    require('./lib/subdomain').assertQuestionSubdomainOrRedirect,
+    require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
@@ -1280,7 +1280,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
-    require('./lib/subdomain').assertInstanceQuestionSubdomainOrRedirect,
+    require('./middlewares/subdomain').assertInstanceQuestionSubdomainOrRedirect,
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
@@ -1402,7 +1402,7 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/shared/floatFormatters'),
-    require('./lib/subdomain').assertQuestionSubdomainOrRedirect,
+    require('./middlewares/subdomain').assertQuestionSubdomainOrRedirect,
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
   app.use('/pl/course/:course_id/question/:question_id/statistics', [
