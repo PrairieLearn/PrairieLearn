@@ -1318,6 +1318,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
+      logger.error(err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',

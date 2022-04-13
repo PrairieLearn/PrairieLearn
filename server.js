@@ -321,9 +321,11 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
+      // needed for workspaceAuthRouter
       res.locals.workspace_id = req.params.workspace_id;
       next();
-    }, // needed for workspaceAuthRouter
+    },
+    require('./lib/subdomain').assertWorkspaceSubdomainOrRedirect,
     workspaceAuthRouter,
     workspaceProxy,
   ]);
@@ -535,6 +537,7 @@ module.exports.initExpress = function () {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
+    require('./lib/subdomain').assertWorkspaceSubdomainOrRedirect,
     require('./middlewares/authzWorkspace'),
     require('./pages/workspace/workspace'),
   ]);
@@ -958,6 +961,7 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/shared/floatFormatters'),
+    require('./lib/subdomain').assertQuestionSubdomainOrRedirect,
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics', [
@@ -1276,6 +1280,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
+    require('./lib/subdomain').assertInstanceQuestionSubdomainOrRedirect,
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
@@ -1397,6 +1402,7 @@ module.exports.initExpress = function () {
       next();
     },
     require('./pages/shared/floatFormatters'),
+    require('./lib/subdomain').assertQuestionSubdomainOrRedirect,
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
   app.use('/pl/course/:course_id/question/:question_id/statistics', [

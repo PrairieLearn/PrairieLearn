@@ -27,7 +27,7 @@ const SUBDOMAINS = [
   {
     // Workspace pages.
     pattern: /^w\d+$/,
-    allowedRoutes: [],
+    allowedRoutes: [/^\/pl\/workspace\/\d+/],
   },
 ];
 

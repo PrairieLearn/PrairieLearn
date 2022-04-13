@@ -1,9 +1,10 @@
+// @ts-check
 const config = require('../lib/config');
 
 const SUBDOMAINS = [
   {
     // Instructor question pages.
-    pattern: /q\d+/,
+    pattern: /^q\d+$/,
     routes: [
       /^\/pl\/course\/\d+\/question\/\d+\/preview/,
       /^\/pl\/course_instance\/\d+\/instructor\/question\/\d+\/preview/,
@@ -11,13 +12,13 @@ const SUBDOMAINS = [
   },
   {
     // Instance question pages.
-    pattern: /iq\d+/,
-    routes: [],
+    pattern: /^iq\d+$/,
+    routes: [/^\/pl\/course_instance\/\d+\/instance_question\/\d+/],
   },
   {
     // Workspace pages.
     pattern: /^w\d+$/,
-    allowedRoutes: [],
+    routes: [/^\/pl\/workspace\/\d+/],
   },
 ];
 
