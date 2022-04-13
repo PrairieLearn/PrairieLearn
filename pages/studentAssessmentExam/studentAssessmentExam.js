@@ -93,7 +93,6 @@ router.post('/', function (req, res, next) {
     groupAssessmentHelper.joinGroup(req.body.join_code, res, function (err, joinErr) {
       if (ERR(err, next)) return;
       if (joinErr) {
-        //display error
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       } else {
         res.redirect(req.originalUrl);
@@ -103,7 +102,6 @@ router.post('/', function (req, res, next) {
     groupAssessmentHelper.createGroup(req.body.groupName, res, function (err, createErr) {
       if (ERR(err, next)) return;
       if (createErr) {
-        //display error
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       } else {
         res.redirect(req.originalUrl);
