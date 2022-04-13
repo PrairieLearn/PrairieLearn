@@ -89,7 +89,7 @@ BEGIN
     INTO assessment_instance_id;
 
     -- ######################################################################
-    -- A null assessment_instance_id means we triggered ON CONFLICT and DO NOTHING
+    -- A null assessment_instance_id means we triggered ON CONFLICT
     -- one of teammates already created an instance, no need to create again
     IF assessment_instance_id IS NULL THEN
         RETURN;
