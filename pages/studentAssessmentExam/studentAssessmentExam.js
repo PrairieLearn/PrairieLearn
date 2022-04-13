@@ -55,12 +55,6 @@ router.get('/', function (req, res, next) {
       }
     });
   }
-  if (res.locals.assessment.group_work) {
-    groupAssessmentHelper.getGroupInfo(res, function (err) {
-      if (ERR(err, next)) return;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
-  }
 });
 
 router.post('/', function (req, res, next) {
