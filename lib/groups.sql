@@ -52,24 +52,6 @@ WHERE
     AND g.deleted_at IS NULL
     AND gc.deleted_at IS NULL;
 
-
---
--- BLOCK get_group_info1
-SELECT
-    gu.group_id, g.name, g.join_code, u.uid, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
-FROM
-    assessment_instances ai
-    JOIN group_configs AS gc ON ai.assessment_id = gc.assessment_id
-    JOIN groups AS g ON g.group_config_id = gc.id
-    JOIN group_users AS gu ON gu.group_id = g.id
-    JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
-    JOIN users AS u ON u.user_id = gu2.user_id
-WHERE
-    ai.id = $assessment_instance_id
-    AND gu.user_id = $user_id
-    AND g.deleted_at IS NULL
-    AND gc.deleted_at IS NULL;
-
 -- BLOCK leave_group
 WITH log AS (
     DELETE FROM
