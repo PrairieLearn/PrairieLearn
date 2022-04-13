@@ -119,8 +119,7 @@ router.post('/', function (req, res, next) {
       }
     });
   } else if (req.body.__action === 'join_group') {
-    const joinCode = req.body.join_code;
-    groupAssessmentHelper.joinGroup(joinCode, res, function (err, joinErr) {
+    groupAssessmentHelper.joinGroup(req.body.join_code, res, function (err, joinErr) {
       if (ERR(err, next)) return;
       if (joinErr) {
         //display error
@@ -130,8 +129,7 @@ router.post('/', function (req, res, next) {
       }
     });
   } else if (req.body.__action === 'create_group') {
-    const groupName = req.body.groupName;
-    groupAssessmentHelper.createGroup(groupName, res, function (err, createErr) {
+    groupAssessmentHelper.createGroup(req.body.groupName, res, function (err, createErr) {
       if (ERR(err, next)) return;
       if (createErr) {
         //display error
