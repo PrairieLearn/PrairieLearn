@@ -618,7 +618,7 @@ function verifyEdit(
     elemList = locals.$('script');
     for (let i = 0; i < elemList.length; i++) {
       let elem = elemList[i];
-      if (typeof elem != undefined && Object.prototype.hasOwnProperty.call(elem, 'children')) {
+      if (typeof elem !== 'undefined' && Object.prototype.hasOwnProperty.call(elem, 'children')) {
         if (elem.children.length > 0) {
           if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
             let match = elem.children[0].data.match(
@@ -649,7 +649,7 @@ function verifyEdit(
     elemList = locals.$('script');
     for (let i = 0; i < elemList.length; i++) {
       let elem = elemList[i];
-      if (typeof elem != undefined && Object.prototype.hasOwnProperty.call(elem, 'children')) {
+      if (typeof elem !== 'undefined' && Object.prototype.hasOwnProperty.call(elem, 'children')) {
         if (elem.children.length > 0) {
           if (Object.prototype.hasOwnProperty.call(elem.children[0], 'data')) {
             let match = elem.children[0].data.match(

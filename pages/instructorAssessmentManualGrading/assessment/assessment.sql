@@ -9,21 +9,22 @@ WITH instance_questions_with_submission AS (
         JSONB_AGG(DISTINCT jsonb_build_object('user_id', agu.user_id, 'name', agu.name, 'uid', agu.uid)) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader IS NOT NULL) AS assigned_graders,
         JSONB_AGG(DISTINCT jsonb_build_object('user_id', lgu.user_id, 'name', lgu.name, 'uid', lgu.uid)) FILTER (WHERE iq.last_grader IS NOT NULL) AS actual_graders
     FROM
-        instance_questions iq
+        assessment_questions aq
+        JOIN instance_questions iq ON (iq.assessment_question_id = aq.id)
         LEFT JOIN users agu ON (agu.user_id = iq.assigned_grader)
         LEFT JOIN users lgu ON (lgu.user_id = iq.last_grader)
-    WHERE EXISTS(SELECT 1
-                 FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
-                 WHERE v.instance_question_id = iq.id)
+    WHERE aq.assessment_id = $assessment_id
+          AND EXISTS(SELECT 1
+                     FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
+                     WHERE v.instance_question_id = iq.id)
     GROUP BY iq.assessment_question_id
 ),
 open_instances AS (
     SELECT
-        ai.assessment_id,
         COUNT(1) num_open_instances
     FROM assessment_instances ai
-    WHERE ai.open
-    GROUP BY ai.assessment_id
+    WHERE ai.assessment_id = $assessment_id
+          AND ai.open
 )
 SELECT
     aq.*,
@@ -45,7 +46,7 @@ FROM
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
     LEFT JOIN instance_questions_with_submission iqs ON (iqs.assessment_question_id = aq.id)
-    LEFT JOIN open_instances oi ON (oi.assessment_id = aq.assessment_id)
+    LEFT JOIN open_instances oi ON (TRUE)
 WHERE
     aq.assessment_id = $assessment_id
     AND aq.deleted_at IS NULL
