@@ -54,8 +54,11 @@ A more advanced pass would be to update the rest of the pages and middlewares to
 ### Passport
 
 req.user object for a logged in user
+
 req.isAuthenticate() returns a boolean
+
 req.logOut() destroys the session
+
 req.logIn() - used by strategies, not called directly
 
 Uses sessions, req.session.passport.user
@@ -74,4 +77,5 @@ We could store more ready information in the session directly so we wouldn't hav
 
 It's not clear if using req.user is a complexity of passport and passport strategies that benefits us or not.
 
-We could, for example, write into something in req.session directly as a part of the auth strategy and not use the passport abstraction.
+We could, for example, write into something in req.session directly as a part of the auth strategy and not use the passport abstraction. However, the fact we would be using multiple passport-strategies means using the passport model would make things
+consistent.
