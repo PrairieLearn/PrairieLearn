@@ -43,6 +43,7 @@ router.get('/:unsafe_assessment_instance_id/instance_questions', (req, res, next
 router.get('/:unsafe_assessment_instance_id/submissions', (req, res, next) => {
   const params = {
     course_instance_id: res.locals.course_instance.id,
+    unsafe_assessment_id: null,
     unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
     unsafe_submission_id: null,
   };

@@ -62,4 +62,17 @@ router.get('/:unsafe_assessment_id/assessment_access_rules', (req, res, next) =>
   });
 });
 
+router.get('/:unsafe_assessment_id/submissions', (req, res, next) => {
+  const params = {
+    course_instance_id: res.locals.course_instance.id,
+    unsafe_assessment_id: req.params.unsafe_assessment_id,
+    unsafe_assessment_instance_id: null,
+    unsafe_submission_id: null,
+  };
+  sqldb.queryOneRow(sql.select_submissions, params, (err, result) => {
+    if (ERR(err, next)) return;
+    res.status(200).send(result.rows[0].item);
+  });
+});
+
 module.exports = router;

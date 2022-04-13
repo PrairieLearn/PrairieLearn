@@ -148,7 +148,7 @@ describe('API', function () {
       locals.assessment_id = assessment.assessment_id;
     });
 
-    step('GET to API for single assesment succeeds', async function () {
+    step('GET to API for single assessment succeeds', async function () {
       locals.apiAssessmentUrl =
         locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}`;
 
@@ -206,12 +206,12 @@ describe('API', function () {
       assert.equal(json.max_points, helperExam.assessmentMaxPoints);
     });
 
-    step('GET to API for assessment submissions succeeds', async function () {
-      locals.apiSubmissionsUrl =
+    step('GET to API for assessment instance submissions succeeds', async function () {
+      locals.apiAssessmentInstanceSubmissionsUrl =
         locals.apiCourseInstanceUrl +
         `/assessment_instances/${locals.assessment_instance_id}/submissions`;
 
-      const res = await fetch(locals.apiSubmissionsUrl, {
+      const res = await fetch(locals.apiAssessmentInstanceSubmissionsUrl, {
         headers: {
           'Private-Token': locals.api_token,
         },
@@ -291,6 +291,22 @@ describe('API', function () {
 
       const json = await res.json();
       assert.lengthOf(json, 1);
+    });
+
+    step('GET to API for assessment submissions succeeds', async function () {
+      locals.apiAssessmentSubmissionsUrl =
+        locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}/submissions`;
+
+      const res = await fetch(locals.apiAssessmentSubmissionsUrl, {
+        headers: {
+          'Private-Token': locals.api_token,
+        },
+      });
+      assert.equal(res.status, 200);
+
+      const json = await res.json();
+      assert.lengthOf(json, 1);
+      assert.equal(json[0].instance_question_points, assessmentPoints);
     });
 
     step('GET to API for course instance access rules succeeds', async function () {

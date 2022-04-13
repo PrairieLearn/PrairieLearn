@@ -257,6 +257,7 @@ WITH object_data AS (
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
         ci.id = $course_instance_id
+        AND ($unsafe_assessment_id::bigint IS NULL OR a.id = $unsafe_assessment_id)
         AND ($unsafe_assessment_instance_id::bigint IS NULL OR ai.id = $unsafe_assessment_instance_id)
         AND ($unsafe_submission_id::bigint IS NULL OR s.id = $unsafe_submission_id)
 )

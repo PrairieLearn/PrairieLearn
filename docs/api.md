@@ -79,6 +79,11 @@ In the endpoint list below, path components starting with a colon like
   - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_access_rules`
   - All assessment access rules for a given assessment.
 
+- **Assessment submissions list:**
+
+  - `/pl/api/v1/course_instances/:course_instance_id/assessment/:assessment_id/submissions`
+  - All submissions for a given assessment.
+
 - **One assessment instance:**
 
   - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id`
@@ -89,7 +94,7 @@ In the endpoint list below, path components starting with a colon like
   - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/instance_questions`
   - All instance questions for a given assessment instance.
 
-- **Submissions list:**
+- **Instance submissions list:**
 
   - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions`
   - All submissions for a given assessment instance.
