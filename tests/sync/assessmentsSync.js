@@ -316,6 +316,43 @@ describe('Assessment syncing', () => {
     assert.isEmpty(uids, 'uids should be empty');
   });
 
+  it('syncs group roles correctly', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupRoles = [
+      {
+        name: 'Manager',
+        minimum: 1,
+        maximum: 1,
+        canAssignRolesAtStart: true,
+        canAssignRolesDuringAssessment: true,
+      },
+      {
+        name: 'Contributor',
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
+      groupAssessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedRoles = await util.dumpTable('group_roles');
+    assert(syncedRoles.length === 2);
+
+    const foundManager = syncedRoles.find((role) => role.role_name === 'Manager');
+    assert(foundManager !== undefined);
+    assert(foundManager.minimum === 1);
+    assert(foundManager.maximum === 1);
+    assert(foundManager.can_assign_roles_at_start);
+    assert(foundManager.can_assign_roles_during_assessment);
+
+    const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert(foundContributor !== undefined);
+    assert(foundContributor.minimum === 0);
+    assert(!foundContributor.can_assign_roles_at_start);
+    assert(!foundContributor.can_assign_roles_during_assessment);
+  });
+
   it('handles assessment sets that are not present in infoCourse.json', async () => {
     // Missing tags should be created
     const courseData = util.getCourseData();

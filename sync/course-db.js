@@ -1233,20 +1233,20 @@ async function validateAssessment(assessment, questions) {
 
   const validRoleNames = new Set();
   (assessment.groupRoles || []).forEach((role) => {
-    validRoleNames.add(role.name)
+    validRoleNames.add(role.name);
   });
 
   (assessment.zones || []).forEach((zone) => {
     (zone.questions || []).forEach((zoneQuestion) => {
       (zoneQuestion.canView || []).forEach((roleName) => {
-        if (!(validRoleNames.has(roleName))) {
+        if (!validRoleNames.has(roleName)) {
           errors.push(
             `A zone question's "canView" permission contains the non-existent group role name "${roleName}".`
           );
         }
       });
       (zoneQuestion.canSubmit || []).forEach((roleName) => {
-        if (!(validRoleNames.has(roleName))) {
+        if (!validRoleNames.has(roleName)) {
           errors.push(
             `A zone question's "canSubmit" permission contains the non-existent group role name "${roleName}".`
           );
