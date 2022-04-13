@@ -130,7 +130,7 @@ describe('subdomain middleware', () => {
         'https://q1.prairielearn.com',
         '/pl/course/1/question/1/preview'
       );
-      const { res, statusSpy, sendSpy } = makeFakeResponse();
+      const { res } = makeFakeResponse();
       const next = sinon.spy();
 
       validateSubdomainRequest(req, res, next);
@@ -145,7 +145,7 @@ describe('subdomain middleware', () => {
         'https://q1.prairielearn.com',
         '/pl/course/1/admin'
       );
-      const { res, statusSpy, sendSpy } = makeFakeResponse();
+      const { res } = makeFakeResponse();
       const next = sinon.spy();
 
       validateSubdomainRequest(req, res, next);
