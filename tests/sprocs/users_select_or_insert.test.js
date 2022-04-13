@@ -3,10 +3,10 @@ var assert = require('chai').assert;
 var debug = require('debug')('prairielearn:testSproc-users_select_or_insert');
 var _ = require('lodash');
 
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
+var sqldb = require('../../prairielib/lib/sql-db');
+var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
-var helperDb = require('./helperDb');
+var helperDb = require('../helperDb');
 
 var get_user_params = (user_id, callback) => {
   var search = `select user_id, uid, name, uin, institution_id FROM users WHERE user_id = $1;`;

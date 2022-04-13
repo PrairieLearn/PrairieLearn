@@ -27,13 +27,13 @@ start-s3rver:
 test: test-js test-python
 test-js: test-prairielearn test-prairielib test-grader-host test-packages
 test-prairielearn: start-support
-	@nyc --reporter=lcov mocha --full-trace tests/index.js
+	@mocha --parallel "tests/**/*.test.{js,mjs}"
+test-prairielearn-serial: start-support
+	@mocha "tests/**/*.test.{js,mjs}"
 test-prairielib:
 	@jest prairielib/
 test-grader-host:
 	@jest grader_host/
-test-nocoverage: start-support
-	@mocha tests/index.js
 test-packages:
 	@turbo run test
 test-python:

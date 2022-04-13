@@ -1,6 +1,7 @@
 const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
+const tmp = require('tmp-promise');
 
 const config = require('../lib/config');
 const chunks = require('../lib/chunks');
@@ -21,17 +22,27 @@ describe('Generate chunks and use them for a student homework', function () {
   context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
   context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
 
+  /** @type {tmp.DirectoryResult} */
+  let tempChunksDir;
+  let originalChunksConsumerDirectory = config.chunksConsumerDirectory;
+
   before('set up testing server', async () => {
+    tempChunksDir = await tmp.dir({ unsafeCleanup: true });
+
     config.chunksConsumer = true;
+    config.chunksConsumerDirectory = tempChunksDir.path;
 
     await util.promisify(helperServer.before().bind(this))();
     const results = await sqldb.queryOneRowAsync(sql.select_hw1, []);
     context.assessmentId = results.rows[0].id;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
+
   after('shut down testing server', async () => {
     await util.promisify(helperServer.after.bind(this))();
+    await tempChunksDir.cleanup();
     config.chunksConsumer = false;
+    config.chunksConsumerDirectory = originalChunksConsumerDirectory;
   });
 
   step('generate course chunks', async () => {

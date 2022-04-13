@@ -1,10 +1,10 @@
 var ERR = require('async-stacktrace');
 var assert = require('chai').assert;
 
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
+var sqldb = require('../../prairielib/lib/sql-db');
+var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
-var helperDb = require('./helperDb');
+var helperDb = require('../helperDb');
 
 var caa_reservation_tests = function (
   assessment_id,
