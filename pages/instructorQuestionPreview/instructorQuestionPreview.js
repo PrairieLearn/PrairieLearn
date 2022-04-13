@@ -4,6 +4,7 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 const error = require('../../prairielib/lib/error');
+const config = require('../../lib/config');
 const question = require('../../lib/question');
 const sqldb = require('../../prairielib/lib/sql-db');
 const path = require('path');
@@ -146,6 +147,26 @@ router.post('/', function (req, res, next) {
 });
 
 router.get('/', function (req, res, next) {
+  // Validate the subdomain.
+  const canonicalHost = config.serverCanonicalHost;
+  const canonicalHostUrl = new URL(canonicalHost);
+  const requestHostname = req.hostname;
+  const requestSubdomain = requestHostname.split('.')[0];
+  const desiredSubdomain = `q${res.locals.question.id}`;
+
+  console.log('req', req);
+  console.log('req.hostname', req.hostname);
+  console.log('requestSubdomain', requestSubdomain);
+  console.log('desiredSubdomain', desiredSubdomain);
+
+  if (requestSubdomain !== desiredSubdomain) {
+    canonicalHostUrl.hostname = `${desiredSubdomain}.${canonicalHostUrl.hostname}`;
+    const redirectUrl = new URL(req.originalUrl, canonicalHostUrl);
+    redirectUrl.protocol = req.protocol;
+    res.redirect(redirectUrl);
+    return;
+  }
+
   var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
   debug(`variant_seed ${variant_seed}`);
   async.series(

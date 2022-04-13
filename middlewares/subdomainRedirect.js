@@ -2,12 +2,22 @@ const config = require('../lib/config');
 
 const SUBDOMAINS = [
   {
-    pattern: /variant-\d+/,
-    routes: [/^\/pl\/course\/\d+\/question\/\d+\/preview/],
+    // Instructor question pages.
+    pattern: /q\d+/,
+    routes: [
+      /^\/pl\/course\/\d+\/question\/\d+\/preview/,
+      /^\/pl\/course_instance\/\d+\/instructor\/question\/\d+\/preview/,
+    ],
   },
   {
-    pattern: /workspace-\d+/,
+    // Instance question pages.
+    pattern: /iq\d+/,
     routes: [],
+  },
+  {
+    // Workspace pages.
+    pattern: /^w\d+$/,
+    allowedRoutes: [],
   },
 ];
 
@@ -38,6 +48,7 @@ module.exports = function (req, res, next) {
       // If we fall through to here, we need to redirect to the canonical domain.
       const redirectUrl = new URL(req.originalUrl, canonicalHostUrl);
       redirectUrl.protocol = req.protocol;
+      console.log('redirecting to', redirectUrl.toString());
       return res.redirect(302, redirectUrl.toString());
     }
   }

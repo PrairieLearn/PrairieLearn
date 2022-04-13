@@ -1,4 +1,5 @@
 // @ts-check
+const error = require('../prairielib/lib/error');
 
 /**
  * Specifies all routes that should always be accessible from any subdomain.
@@ -13,7 +14,10 @@ const SUBDOMAINS = [
   {
     // Instructor question pages.
     pattern: /^q\d+$/,
-    allowedRoutes: [/^\/pl\/course\/\d+\/question\/\d+\/preview/],
+    allowedRoutes: [
+      /^\/pl\/course\/\d+\/question\/\d+\/preview/,
+      /^\/pl\/course_instance\/\d+\/instructor\/question\/\d+\/preview/,
+    ],
   },
   {
     // Instance question pages.
@@ -117,7 +121,7 @@ module.exports.middleware = function validateSubdomainRequest(req, res, next) {
   if (allowAccess(requestHostname, requestOrigin, req.originalUrl)) {
     next();
   } else {
-    res.status(403).send('Forbidden');
+    next(error.make(403, 'Forbidden'));
   }
 };
 
