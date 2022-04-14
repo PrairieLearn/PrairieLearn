@@ -128,8 +128,13 @@ export interface OpenTelemetryConfig {
  */
 export async function init(config: OpenTelemetryConfig) {
   if (!config.openTelemetryEnabled) {
-    // Just disable all of the OTEL instrumentations to avoid any unnecessary overhead.
-    instrumentations.forEach((i) => i.disable());
+    // If not enabled, do nothing. We used to disable the instrumentations, but
+    // per maintainers, that can actually be problematic. See the comments on
+    // https://github.com/open-telemetry/opentelemetry-js-contrib/issues/970
+    // The Express instrumentation also logs a benign error, which can be
+    // confusing to users. There's a fix in progress if we want to switch back
+    // to disabling instrumentations in the future:
+    // https://github.com/open-telemetry/opentelemetry-js-contrib/pull/972
     return;
   }
 

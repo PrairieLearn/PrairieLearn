@@ -101,10 +101,10 @@ async function testDuplicate(entityName) {
 }
 
 describe('Tag/topic syncing', () => {
-  // Uncomment whenever you change relevant sprocs or migrations
-  // before('remove the template database', helperDb.dropTemplate);
-  beforeEach('set up testing database', helperDb.before);
-  afterEach('tear down testing database', helperDb.after);
+  before('set up testing database', helperDb.before);
+  after('tear down testing database', helperDb.after);
+
+  beforeEach('reset testing database', helperDb.resetDatabase);
 
   it('adds a new tag', async () => {
     await testAdd('tags');
