@@ -55,7 +55,7 @@ describe('local locks', function () {
       });
     });
 
-    /* queues up 10 callers then runs them all in order */
+    // This test queues up 10 callers then runs them all in order.
     it('should work with many callers', async function () {
       this.timeout(10000);
       const lock = new LocalLock();
