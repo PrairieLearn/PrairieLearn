@@ -15,8 +15,13 @@ useradd -u 1001 -g 1001 -m -d /home/prairielearner -s /bin/bash prairielearner
 # install needed apps
 apt-get install xfce4-terminal firefox build-essential geany emacs-gtk vim-gtk nano gedit less -y
 
-# install vscode
-wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -O /vscode.deb
+# install vscode depending on what architecture we're building on
+arch=$(uname -m)
+if [ "$arch" == 'x86_64' ]; then
+    wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64" -O /vscode.deb
+else
+    wget "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-arm64" -O /vscode.deb
+fi
 apt-get install /vscode.deb -y
 rm /vscode.deb
 
