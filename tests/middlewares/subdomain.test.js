@@ -10,6 +10,19 @@ const {
 } = require('../../middlewares/subdomain');
 
 describe('subdomain middleware', () => {
+  let originalServerCanonicalHost = config.serverCanonicalHost;
+  let originalServeUntrustedContentFromSubdomains = config.serveUntrustedContentFromSubdomains;
+
+  before(() => {
+    config.serverCanonicalHost = 'https://us.prairielearn.com';
+    config.serveUntrustedContentFromSubdomains = true;
+  });
+
+  after(() => {
+    config.serverCanonicalHost = originalServerCanonicalHost;
+    config.serveUntrustedContentFromSubdomains = originalServeUntrustedContentFromSubdomains;
+  });
+
   describe('allowAccess', () => {
     it('allows access to question page from subdomain', () => {
       assert.isTrue(
@@ -159,16 +172,6 @@ describe('subdomain middleware', () => {
   });
 
   describe('assertSubdomainOrRedirect middleware', () => {
-    let originalServerCanonicalHost = config.serverCanonicalHost;
-
-    before(() => {
-      config.serverCanonicalHost = 'https://us.prairielearn.com';
-    });
-
-    after(() => {
-      config.serverCanonicalHost = originalServerCanonicalHost;
-    });
-
     it('redirects to expected domain', () => {
       const middleware = assertSubdomainOrRedirect(() => 'q321');
 
