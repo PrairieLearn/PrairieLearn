@@ -18,7 +18,8 @@ Add the following to your `config.json`, substituting `my-prairielearn` with the
 ```json
 {
   "serverCanonicalHost": "https://my-prairielearn.ngrok.io",
-  "trustProxy": true
+  "trustProxy": true,
+  "serveUntrustedContentFromSubdomains": true
 }
 ```
 

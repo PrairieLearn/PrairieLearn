@@ -33,6 +33,17 @@ const SUBDOMAINS = [
 ];
 
 /**
+ * Returns whether or not the server is configured to serve untrusted content
+ * from subdomains. `serverCanonicalHost` and `serveUntrustedContentFromSubdomains`
+ * must both be set and truthy for this to return true.
+ *
+ * @returns {boolean}
+ */
+function shouldUseSubdomains() {
+  return !!config.serverCanonicalHost && !!config.serveUntrustedContentFromSubdomains;
+}
+
+/**
  *
  * @param {string} requestHostname
  * @param {string} requestOrigin
@@ -123,6 +134,11 @@ function allowAccess(requestHostname, requestOrigin, originalUrl) {
  * @param {import('express').NextFunction} next
  */
 function validateSubdomainRequest(req, res, next) {
+  if (!shouldUseSubdomains()) {
+    next();
+    return;
+  }
+
   const requestHostname = req.hostname;
   const requestOrigin = req.get('Origin');
 
@@ -140,15 +156,12 @@ function validateSubdomainRequest(req, res, next) {
  * @param {import('express').NextFunction} next
  */
 function subdomainRedirect(req, res, next) {
-  const canonicalHost = config.serverCanonicalHost;
-
-  // If this server isn't configured with a canonical host, this middleware
-  // can't do anything useful.
-  if (!canonicalHost) {
+  if (!shouldUseSubdomains()) {
     next();
     return;
   }
 
+  const canonicalHost = config.serverCanonicalHost;
   const canonicalHostUrl = new URL(canonicalHost);
 
   // If the deepest subdomain matches a subdomain where we would actually serve
@@ -184,10 +197,7 @@ function subdomainRedirect(req, res, next) {
  */
 function assertSubdomainOrRedirect(getExpectedSubdomain) {
   return function (req, res, next) {
-    if (!config.serverCanonicalHost) {
-      // This server doesn't have the necessary configuration to handle serving
-      // content from subdomains. This will be the case with localhost and for
-      // installations that haven't set up the necessary pieces.
+    if (!shouldUseSubdomains()) {
       next();
       return;
     }
