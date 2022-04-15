@@ -111,6 +111,8 @@ instrumentations.forEach((i) => {
   i.enable();
 });
 
+let tracerProvider: NodeTracerProvider;
+
 export interface OpenTelemetryConfig {
   openTelemetryEnabled: boolean;
   openTelemetryExporter?: 'console' | 'honeycomb';
@@ -209,11 +211,16 @@ export async function init(config: OpenTelemetryConfig) {
   tracerProvider.register();
 
   instrumentations.forEach((i) => i.setTracerProvider(tracerProvider));
+}
 
-  // When the process starts shutting down, terminate OTEL stuff.
-  process.on('SIGTERM', () => {
-    tracerProvider.shutdown().catch((error) => console.error('Error terminating tracing', error));
-  });
+/**
+ * Gracefully shuts down the OpenTelemetry instrumentation. Should be called
+ * when a `SIGTERM` signal is handled.
+ */
+export async function shutdown(): Promise<void> {
+  if (tracerProvider) {
+    await tracerProvider.shutdown();
+  }
 }
 
 export { trace, context, SpanStatusCode } from '@opentelemetry/api';

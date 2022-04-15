@@ -1608,6 +1608,7 @@ module.exports.initExpress = function () {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 
+/** @type {import('http').Server | import('https').Server} */
 var server;
 
 module.exports.startServer = async () => {
@@ -1938,6 +1939,15 @@ if (config.startServer) {
           logger.info('exit option passed, quitting...');
           process.exit(0);
         }
+
+        process.on('SIGTERM', () => {
+          opentelemetry
+            .shutdown()
+            .catch((err) => logger.error('Error shutting down OpenTelemetry', err))
+            .finally(() => {
+              process.exit(0);
+            });
+        });
       }
     }
   );
