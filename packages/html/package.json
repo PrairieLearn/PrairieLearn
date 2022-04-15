@@ -2,9 +2,19 @@
   "name": "@prairielearn/html",
   "version": "1.0.2",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"   
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsup-node build src/index.ts --format cjs,esm --dts --clean --sourcemap",
+    "dev": "yarn build --watch",
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
@@ -14,6 +24,7 @@
     "@types/ejs": "^3.1.0",
     "mocha": "^9.2.2",
     "ts-node": "^10.7.0",
+    "tsup": "^5.12.5",
     "typescript": "^4.6.3"
   }
 }

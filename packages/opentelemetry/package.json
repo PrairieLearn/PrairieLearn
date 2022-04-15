@@ -2,9 +2,19 @@
   "name": "@prairielearn/opentelemetry",
   "version": "1.1.0",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./dist/index.d.ts"   
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsup-node build src/index.ts --format cjs,esm --dts --clean --sourcemap",
+    "dev": "yarn build --watch"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.5.5",
@@ -26,6 +36,7 @@
     "@opentelemetry/semantic-conventions": "^1.0.1"
   },
   "devDependencies": {
+    "tsup": "^5.12.5",
     "typescript": "^4.5.5"
   }
 }
