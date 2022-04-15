@@ -1010,8 +1010,8 @@ function saveAndSync(fileEdit, locals, callback) {
         ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
         endGitHash = hash;
         if (fileEdit.needToSync || config.chunksGenerator) {
-          /* If we're using chunks, then always sync on edit.  We need the sync data
-                       to force-generate new chunks. */
+          // If we're using chunks, then always sync on edit. We need the sync
+          // data to force-generate new chunks.
           _syncFromDisk();
         } else {
           _reloadQuestionServers();

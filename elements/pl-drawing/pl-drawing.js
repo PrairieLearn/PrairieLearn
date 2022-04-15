@@ -140,7 +140,7 @@ window.PLDrawingApi = {
     let parseElemOptions = function (elem) {
       let opts = JSON.parse(elem.getAttribute('opts'));
 
-      /* Parse any numerical options from string to floating point */
+      // Parse any numerical options from string to floating point
       for (let key in opts) {
         let parsed = Number(opts[key]);
         if (!isNaN(parsed)) {
@@ -150,7 +150,7 @@ window.PLDrawingApi = {
       return opts;
     };
 
-    /* Set all button icons */
+    // Set all button icons
     let drawing_btns = $(root_elem).find('button');
     const image_base_url = elem_options['client_files'];
     const element_base_url = elem_options['element_client_files'];
@@ -180,7 +180,7 @@ window.PLDrawingApi = {
       }
     });
 
-    /* Render at a higher resolution if requested */
+    // Render at a higher resolution if requested
     const renderScale = elem_options['render_scale'];
     canvas_elem.width = canvas_width * renderScale;
     canvas_elem.height = canvas_height * renderScale;
@@ -193,7 +193,7 @@ window.PLDrawingApi = {
     }
     canvas.selection = false; // disable group selection
 
-    /* Re-scale the html elements */
+    // Re-scale the html elements
     canvas.viewportTransform[0] = renderScale;
     canvas.viewportTransform[3] = renderScale;
     canvas_elem.parentElement.style.width = canvas_width + 'px';
@@ -235,7 +235,7 @@ window.PLDrawingApi = {
         obj.top = Math.min(obj.top, canvas_height - rect.height + obj.top - rect.top);
         obj.left = Math.min(obj.left, canvas_width - rect.width + obj.left - rect.left);
       }
-      /* snap the element to the grid if enabled */
+      // snap the element to the grid if enabled
       if (elem_options.snap_to_grid) {
         obj.top = Math.round(obj.top / elem_options.grid_size) * elem_options.grid_size;
         obj.left = Math.round(obj.left / elem_options.grid_size) * elem_options.grid_size;
@@ -251,7 +251,7 @@ window.PLDrawingApi = {
       }
     });
 
-    /* Restore existing answer if it exists */
+    // Restore existing answer if it exists
     const submittedAnswer = new PLDrawingAnswerState(html_input);
     if (existing_answer_submission != null) {
       submittedAnswer._set(existing_answer_submission);
@@ -277,7 +277,7 @@ class PLDrawingAnswerState {
   }
 
   _updateAnswerInput() {
-    /* Correctly escape double back-slashes... (\\) */
+    // Correctly escape double back-slashes... (\\)
     let temp = JSON.stringify(_.values(this._answerData)).replace('\\\\', '\\\\\\\\');
     this._htmlInput.val(temp);
   }
@@ -387,7 +387,7 @@ class PLDrawingAnswerState {
   }
 }
 
-/* Set up built-in buttons */
+// Set up built-in buttons
 (() => {
   class DrawingDeleteButton extends PLDrawingBaseElement {
     static get_button_icon() {
