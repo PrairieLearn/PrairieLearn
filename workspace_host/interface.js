@@ -90,7 +90,8 @@ app.get(
     }
 
     if (!containers || !db_status) {
-      /* We should have both docker and postgres access in order to consider ourselves healthy */
+      // We must have both Docker and database access in order to consider
+      // ourselves healthy.
       res.status(500);
     } else {
       res.status(200);
@@ -128,9 +129,9 @@ app.post(
 let server;
 let workspace_server_settings = {};
 
-/* Globals for detecting file changes */
+// Globals for detecting file changes
 let update_queue = {}; // key: path of file on local, value: action ('update' or 'remove').
-let workspacePrefix; /* Jobs directory */
+let workspacePrefix; // Jobs directory
 let watcher;
 
 async.series(
@@ -143,7 +144,7 @@ async.series(
         workspace_server_settings.hostname = config.hostname;
         workspace_server_settings.server_to_container_hostname = config.hostname;
       } else {
-        /* Otherwise, use the defaults in the config file */
+        // Otherwise, use the defaults in the config file
         config.instanceId = config.workspaceDevHostInstanceId;
         workspace_server_settings.instance_id = config.workspaceDevHostInstanceId;
         workspace_server_settings.hostname = config.workspaceDevHostHostname;
@@ -158,7 +159,7 @@ async.series(
       });
     },
     async () => {
-      /* Always grab the port from the config */
+      // Always grab the port from the config
       workspace_server_settings.port = config.workspaceHostPort;
       logger.verbose(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
     },
@@ -213,7 +214,7 @@ async.series(
       callback(null);
     },
     async () => {
-      /* Set up file watching with chokidar */
+      // Set up file watching with chokidar
       workspacePrefix = config.workspaceJobsDirectory;
       if (!config.workspaceHostWatchJobFiles) {
         return;
@@ -291,7 +292,7 @@ async.series(
       setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
     },
     async () => {
-      /* Set up a periodic hard push of all containers to S3 */
+      // Set up a periodic hard push of all containers to S3
       async function pushAllContainersTimeout() {
         await pushAllRunningContainersToS3();
         setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
@@ -299,7 +300,7 @@ async.series(
       setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
     },
     async () => {
-      /* Set up a periodic pruning of running containers */
+      // Set up a periodic pruning of running containers
       async function pruneContainersTimeout() {
         await pruneStoppedContainers();
         await pruneRunawayContainers();
@@ -325,15 +326,15 @@ async.series(
       });
     },
     async () => {
-      /* If we have any running workspaces we're probably recovering from a crash
-           and we should sync files to S3 */
+      // If we have any running workspaces, we're probably recovering from a
+      // crash and we should sync files to S3
       const result = await sqldb.queryAsync(sql.recover_crash_workspaces, {
         instance_id: workspace_server_settings.instance_id,
       });
       await async.eachSeries(result.rows, async (ws) => {
         if (ws.state === 'launching') {
-          /* We don't know what state the container is in, kill it and let the user
-                   retry initializing it */
+          // We don't know what state the container is in, kill it and let the
+          // user retry initializing it.
           await workspaceHelper.updateState(ws.id, 'stopped', 'Status unknown');
           await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
             workspace_id: ws.id,
@@ -369,15 +370,13 @@ async.series(
   }
 );
 
-/* Periodic hard-push of files to S3 */
-
 /**
  * Push all of the contents of a container's home directory to S3.
  * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
  */
 async function pushContainerContentsToS3(workspace) {
   if (workspace.homedir_location !== 'S3') {
-    /* Nothing to do if we're not on S3 */
+    // Nothing to do if we're not on S3
     return;
   }
 
@@ -392,7 +391,7 @@ async function pushContainerContentsToS3(workspace) {
       settings.workspace_sync_ignore
     );
   } catch (err) {
-    /* Ignore any errors that may occur when the directory doesn't exist */
+    // Ignore any errors that may occur when the directory doesn't exist
     logger.error(`Error uploading directory: ${err}`);
   }
 }
@@ -419,11 +418,10 @@ async function pushAllRunningContainersToS3() {
   });
 }
 
-/* Prune stopped and runaway containers */
-
 /**
- * Remove any recently stopped containers.  These are identified by having a non-null launch_uuid
- * and launch_port, but are marked as stopped by the main PrairieLearn instance.
+ * Remove any recently stopped containers. These are identified by having a
+ * non-null launch_uuid and launch_port, but are marked as stopped by the main
+ * PrairieLearn instance.
  */
 async function pruneStoppedContainers() {
   const instance_id = workspace_server_settings.instance_id;
@@ -433,10 +431,10 @@ async function pruneStoppedContainers() {
   await async.each(recently_stopped.rows, async (ws) => {
     let container;
     try {
-      /* Try to grab the container, but don't care if it doesn't exist */
+      // Try to grab the container, but don't care if it doesn't exist
       container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
     } catch (_err) {
-      /* No container */
+      // No container
       await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
         workspace_id: ws.id,
         instance_id: workspace_server_settings.instance_id,
@@ -467,13 +465,14 @@ async function pruneRunawayContainers() {
   try {
     running_workspaces = await docker.listContainers({ all: true });
   } catch (err) {
-    /* Nothing to do */
+    // Nothing to do
     return;
   }
 
   await async.each(running_workspaces, async (container_info) => {
     if (container_info.Names.length !== 1) return;
-    const name = container_info.Names[0].substring(1); /* Remove the preceding forward slash */
+    // Remove the preceding forward slash
+    const name = container_info.Names[0].substring(1);
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     await dockerAttemptKillAndRemove(container_info.Id);
   });
@@ -504,13 +503,13 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
  * container object.
  */
 async function dockerAttemptKillAndRemove(input) {
-  /* Use these awful try-catch blocks because we actually do want to try each */
+  // Use these awful try-catch blocks because we actually do want to try each
   let container;
   if (typeof input === 'string') {
     try {
       container = await docker.getContainer(input);
     } catch (_err) {
-      /* Docker failed to get the container, oh well. */
+      // Docker failed to get the container, oh well.
       return;
     }
   } else {
@@ -559,8 +558,8 @@ async function markSelfUnhealthyAsync(reason) {
     await sqldb.queryAsync(sql.mark_host_unhealthy, params);
     logger.warn(`Marked self as unhealthy: ${reason}`);
   } catch (err) {
-    /* This could error if we don't even have a DB connection, in that case we should let the main server
-           mark us as unhealthy. */
+    // This could error if we don't even have a DB connection. In that case, we
+    // should let the main server mark us as unhealthy.
     logger.error(`Could not mark self as unhealthy: ${err}`);
   }
 }
@@ -593,7 +592,7 @@ async function _getWorkspaceAsync(workspace_id) {
  */
 const _allocateContainerPortLock = new LocalLock();
 async function _allocateContainerPort(workspace) {
-  /* Check if a port is considered free in the database */
+  // Check if a port is considered free in the database
   async function check_port_db(port) {
     const params = {
       instance_id: workspace_server_settings.instance_id,
@@ -602,7 +601,7 @@ async function _allocateContainerPort(workspace) {
     const result = await sqldb.queryOneRowAsync(sql.get_is_port_occupied, params);
     return !result.rows[0].port_used;
   }
-  /* Spin up a server to check if a port is free */
+  // Spin up a server to check if a port is free
   async function check_port_server(port) {
     return new Promise((res) => {
       var server = net.createServer();
@@ -621,13 +620,13 @@ async function _allocateContainerPort(workspace) {
   await _allocateContainerPortLock.lockAsync();
   let port;
   let done = false;
-  /* Max attempts <= 0 means unlimited attempts, > 0 mean a finite number of attempts */
+  // Max attempts <= 0 means unlimited attempts, > 0 mean a finite number of attempts.
   const max_attempts =
     config.workspaceHostMaxPortAllocationAttempts > 0
       ? config.workspaceHostMaxPortAllocationAttempts
       : Infinity;
   for (let i = 0; !done && i < max_attempts; i++) {
-    /* Generate a random port from the ranges specified in config */
+    // Generate a random port from the ranges specified in config.
     port =
       config.workspaceHostMinPortRange +
       Math.floor(
@@ -659,10 +658,12 @@ function _checkServer(workspace, callback) {
       `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
       function (err, res, _body) {
         if (err) {
-          /* do nothing, because errors are expected while the container is launching */
+          // Do nothing, because errors are expected while the container is launching.
         }
         if (res && res.statusCode) {
-          /* We might get all sorts of strange status codes from the server, this is okay since it still means the server is running and we're getting responses. */
+          // We might get all sorts of strange status codes from the server.
+          // This is okay since it still means the server is running and we're
+          // getting responses.
           callback(null, workspace);
         } else {
           const endTime = new Date().getTime();
@@ -1077,8 +1078,10 @@ function _createContainer(workspace, callback) {
   const localName = workspace.local_name;
   const remoteName = workspace.remote_name;
   let jobDirectory;
-  let workspacePath; /* Where docker will see the jobs (host path outside docker container) */
-  let workspaceJobPath; /* Where we are putting the job files relative to the server (/jobs inside docker container) */
+  // Where docker will see the jobs (host path outside docker container).
+  let workspacePath;
+  // Where we are putting the job files relative to the server (`/jobs` inside Docker container).
+  let workspaceJobPath;
 
   if (workspace.homedir_location === 'S3') {
     jobDirectory = config.workspaceJobsDirectory;
@@ -1145,7 +1148,7 @@ function _createContainer(workspace, callback) {
         debug(`Creating directory ${workspaceJobPath}`);
         fs.mkdir(workspaceJobPath, { recursive: true }, (err) => {
           if (err && err.code !== 'EEXIST') {
-            /* Ignore the directory if it already exists */
+            // Ignore the directory if it already exists.
             ERR(err, callback);
             return;
           }
@@ -1262,10 +1265,11 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     `Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`
   );
   try {
-    // only errors at this level will set host to unhealthy
+    // Only errors at this level will set host to unhealthy.
 
-    /* We only need to worry about the initial zip or syncing files if we're running on S3.
-           Filesystem-backed workspaces can get away with no initial syncing steps. */
+    // We only need to worry about the initial zip or syncing files if we're
+    // running on S3. Filesystem-backed workspaces can get away with no initial
+    // syncing steps.
     if (homedir_location === 'S3') {
       try {
         if (useInitialZip) {
@@ -1276,12 +1280,13 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
           await _getInitialFilesAsync(workspace);
         }
       } catch (err) {
+        // Don't set host to unhealthy, we've probably bungled something up with S3.
         workspaceHelper.updateState(
           workspace_id,
           'stopped',
           'Error loading workspace files.  Click "Reboot" to try again.'
         );
-        return; /* Don't set host to unhealthy, we've probably bungled something up with S3. */
+        return;
       }
     }
 
@@ -1365,7 +1370,7 @@ function resetSequence(workspace_id, res) {
 }
 
 function gradeSequence(workspace_id, res) {
-  /* Define this outside so we can still use it in case of errors */
+  // Define this outside so we can still use it in case of errors
   let zipPath;
   async.waterfall(
     [
@@ -1407,7 +1412,7 @@ function gradeSequence(workspace_id, res) {
         return locals;
       },
       (locals, callback) => {
-        /* Write the zip archive to disk */
+        // Write the zip archive to disk
         const archive = locals.archive;
         let output = fs.createWriteStream(locals.zipPath);
         output.on('close', () => {

@@ -1654,7 +1654,7 @@ class Point extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
     let obj = new fabric.Circle(options);
 
-    /* Disable all of the fabric resizing and rotating buttons for this element */
+    // Disable all of the fabric resizing and rotating buttons for this element
     obj.setControlVisible('bl', false);
     obj.setControlVisible('tl', false);
     obj.setControlVisible('br', false);
@@ -1665,18 +1665,19 @@ class Point extends PLDrawingBaseElement {
     obj.setControlVisible('mr', false);
     obj.setControlVisible('mtr', false);
 
-    /* Generate a numeric ID for this element if it does not have one yet.  Each element
-           is identified by a unique ID, this is important for answer submissions. */
+    // Generate a numeric ID for this element if it does not have one yet.
+    // Each element is identified by a unique ID, this is important for answer
+    // submissions.
     if (!('id' in obj)) {
       obj.id = window.PLDrawingApi.generateID();
     }
     canvas.add(obj);
 
-    /* Selectable is automatically set to true if it is spawned with a button.
-           If the object is not selectable (i.e. it is static and part of the background),
-           then we do not need to register it with the submitted answer. */
+    // Selectable is automatically set to true if it is spawned with a button.
+    // If the object is not selectable (i.e. it is static and part of the background),
+    // then we do not need to register it with the submitted answer.
     if (options.selectable) {
-      /* Register the object with the submitted answer state */
+      // Register the object with the submitted answer state
       submittedAnswer.registerAnswerObject(options, obj);
     }
 
@@ -1692,7 +1693,7 @@ class Point extends PLDrawingBaseElement {
 Afterwards, all elements must be explicitly registered with the `pl-drawing` element before they can be used. This can be achieved with the following code snippet:
 
 ```javascript
-/* This should exactly match the folder in elementExtensions/ */
+// This should exactly match the folder in `elementExtensions/`
 const my_extension_name = 'extension';
 const my_extensions = {
   'pl-point': Point,

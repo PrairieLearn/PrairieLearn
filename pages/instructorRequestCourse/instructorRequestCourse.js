@@ -75,8 +75,7 @@ router.post('/', function (req, res, next) {
           const course_owners = result.rows;
 
           if (course_owners.length > 0) {
-            /* If the course already exists, display an error message containing the owners */
-
+            // If the course already exists, display an error message containing the owners.
             let error_message = `<p>The requested course (${short_name}) already exists.  Please contact the owner(s) of that course to request access to it.</p>`;
             let formatted_owners = [];
             course_owners.forEach((c) => {
@@ -98,8 +97,7 @@ router.post('/', function (req, res, next) {
             res.locals.error_message = error_message;
             next();
           } else {
-            /* Otherwise, insert the course request and send a Slack message */
-
+            // Otherwise, insert the course request and send a Slack message.
             const sql_params = [
               res.locals.authn_user.user_id,
               short_name,
@@ -116,7 +114,7 @@ router.post('/', function (req, res, next) {
               const creq_id = result.rows[0].course_request_id;
 
               if (auto_created) {
-                /* Automatically fill in institution id and display timezone from the user's other courses */
+                // Automatically fill in institution ID and display timezone from the user's other courses.
                 sqldb.queryOneRow(
                   sql.get_existing_owner_course_settings,
                   { user_id: res.locals.authn_user.user_id },
@@ -142,7 +140,8 @@ router.post('/', function (req, res, next) {
                         return;
                       }
 
-                      /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
+                      // Ignore the callback, we don't actually care if the
+                      // message gets sent before we render the page
                       opsbot.sendCourseRequestMessage(
                         `*Automatically creating course*\n` +
                           `Course repo: ${repo_short_name}\n` +
@@ -158,13 +157,13 @@ router.post('/', function (req, res, next) {
                         }
                       );
 
-                      /* Redirect on success so that refreshing doesn't create another request */
+                      // Redirect on success so that refreshing doesn't create another request
                       res.redirect(req.originalUrl);
                     });
                   }
                 );
               } else {
-                /* Not automatically created */
+                // Not automatically created
                 opsbot.sendCourseRequestMessage(
                   `*Incoming course request*\n` +
                     `Course rubric: ${short_name}\n` +
