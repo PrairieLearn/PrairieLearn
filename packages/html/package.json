@@ -1,11 +1,11 @@
 {
   "name": "@prairielearn/html",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --require ts-node/register src/index.test.ts"
+    "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
     "ejs": "^3.1.6"

@@ -27,7 +27,8 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 config.startServer = false;
-config.serverPort = 3007;
+// Pick a unique port based on the Mocha worker ID.
+config.serverPort = 3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10);
 const server = require('../server');
 
 const logger = require('./dummyLogger');

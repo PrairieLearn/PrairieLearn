@@ -5,8 +5,10 @@ const fs = require('fs-extra');
 const path = require('path');
 const async = require('async');
 const ncp = require('ncp');
-const config = require('../lib/config');
 const cheerio = require('cheerio');
+const tmp = require('tmp');
+
+const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -23,8 +25,10 @@ let page, elemList;
 const courseDirExampleCourse = path.join(__dirname, '..', 'exampleCourse');
 
 // Uses course within tests/testFileEditor
-const baseDir = path.join(__dirname, 'testFileEditor');
-const courseTemplateDir = path.join(baseDir, 'courseTemplate');
+const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
+
+// Set up temporary writeable directories for course content
+const baseDir = tmp.dirSync().name;
 const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
 const courseDevDir = path.join(baseDir, 'courseDev');

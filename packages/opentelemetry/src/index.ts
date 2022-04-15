@@ -111,6 +111,8 @@ instrumentations.forEach((i) => {
   i.enable();
 });
 
+let tracerProvider: NodeTracerProvider;
+
 export interface OpenTelemetryConfig {
   openTelemetryEnabled: boolean;
   openTelemetryExporter?: 'console' | 'honeycomb';
@@ -128,8 +130,13 @@ export interface OpenTelemetryConfig {
  */
 export async function init(config: OpenTelemetryConfig) {
   if (!config.openTelemetryEnabled) {
-    // Just disable all of the OTEL instrumentations to avoid any unnecessary overhead.
-    instrumentations.forEach((i) => i.disable());
+    // If not enabled, do nothing. We used to disable the instrumentations, but
+    // per maintainers, that can actually be problematic. See the comments on
+    // https://github.com/open-telemetry/opentelemetry-js-contrib/issues/970
+    // The Express instrumentation also logs a benign error, which can be
+    // confusing to users. There's a fix in progress if we want to switch back
+    // to disabling instrumentations in the future:
+    // https://github.com/open-telemetry/opentelemetry-js-contrib/pull/972
     return;
   }
 
@@ -204,11 +211,16 @@ export async function init(config: OpenTelemetryConfig) {
   tracerProvider.register();
 
   instrumentations.forEach((i) => i.setTracerProvider(tracerProvider));
+}
 
-  // When the process starts shutting down, terminate OTEL stuff.
-  process.on('SIGTERM', () => {
-    tracerProvider.shutdown().catch((error) => console.error('Error terminating tracing', error));
-  });
+/**
+ * Gracefully shuts down the OpenTelemetry instrumentation. Should be called
+ * when a `SIGTERM` signal is handled.
+ */
+export async function shutdown(): Promise<void> {
+  if (tracerProvider) {
+    await tracerProvider.shutdown();
+  }
 }
 
 export { trace, context, SpanStatusCode } from '@opentelemetry/api';
