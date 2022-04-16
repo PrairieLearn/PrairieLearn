@@ -473,17 +473,26 @@ describe('Assessment syncing', () => {
     // Check group roles
     const syncedRoles = await util.dumpTable('group_roles');
     assert.equal(syncedRoles.length, 2);
-    assert.notEqual(
-      syncedRoles.find((role) => role.role_name === 'Recorder'),
-      undefined
+    const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
+    const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert.notEqual(foundRecorder, undefined);
+    assert.notEqual(foundContributor, undefined);
+
+    // Check permissions
+    const syncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    assert.equal(
+      syncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundRecorder.id))
+        .length,
+      2
     );
-    assert.notEqual(
-      syncedRoles.find((role) => role.role_name === 'Contributor'),
-      undefined
+    assert.equal(
+      syncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundContributor.id))
+        .length,
+      2
     );
 
     // Remove group roles and re-sync
-    groupAssessment.groupRoles = [{ name: 'Recorder' }, { name: 'Contributor' }];
+    groupAssessment.groupRoles = [{ name: 'Recorder' }];
     groupAssessment.zones[groupAssessment.zones.length - 1].questions = [
       {
         id: util.QUESTION_ID,
@@ -507,6 +516,19 @@ describe('Assessment syncing', () => {
       undefined
     );
     assert.isUndefined(newSyncedRoles.find((role) => role.role_name === 'Contributor'));
+
+    const newSyncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    assert.equal(
+      newSyncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundRecorder.id))
+        .length,
+      2
+    );
+    assert.equal(
+      newSyncedPermissions.filter(
+        (p) => parseInt(p.group_role_id) === parseInt(foundContributor.id)
+      ).length,
+      0
+    );
   });
 
   it('handles role permissions with nonexistent group roles', async () => {
