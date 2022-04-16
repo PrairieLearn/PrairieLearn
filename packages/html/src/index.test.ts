@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { escapeHtml, html, renderEjs } from './index';
+import { escapeHtml, html } from './index';
 
 describe('html', () => {
   it('escapes string value', () => {
@@ -52,18 +52,5 @@ describe('escapeHtml', () => {
 
   it('works when nested inside html tag', () => {
     assert.equal(html`a${escapeHtml(html`<p></p>`)}b`.toString(), 'a&lt;p&gt;&lt;/p&gt;b');
-  });
-});
-
-describe('renderEjs', () => {
-  it('renders EJS template without data', () => {
-    assert.equal(renderEjs(__filename, '<p>Hello</p>', {}).toString(), '<p>Hello</p>');
-  });
-
-  it('renders EJS template with data', () => {
-    assert.equal(
-      renderEjs(__filename, '<p>Hello <%= name %></p>', { name: 'Divya' }).toString(),
-      '<p>Hello Divya</p>'
-    );
   });
 });

@@ -26,6 +26,7 @@
     "@opentelemetry/semantic-conventions": "^1.0.1"
   },
   "devDependencies": {
+    "@prairielearn/tsconfig": "*",
     "typescript": "^4.5.5"
   }
 }
