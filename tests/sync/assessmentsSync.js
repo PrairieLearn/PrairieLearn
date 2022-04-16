@@ -340,18 +340,91 @@ describe('Assessment syncing', () => {
     assert(syncedRoles.length === 2);
 
     const foundManager = syncedRoles.find((role) => role.role_name === 'Manager');
-    assert(foundManager !== undefined);
-    assert(foundManager.minimum === 1);
-    assert(foundManager.maximum === 1);
-    assert(foundManager.can_assign_roles_at_start);
-    assert(foundManager.can_assign_roles_during_assessment);
+    assert.notEqual(foundManager, undefined);
+    assert.equal(foundManager.minimum, 1);
+    assert.equal(foundManager.maximum, 1);
+    assert.isTrue(foundManager.can_assign_roles_at_start);
+    assert.isTrue(foundManager.can_assign_roles_during_assessment);
 
     const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
-    assert(foundContributor !== undefined);
-    assert(foundContributor.minimum === 0);
-    assert(!foundContributor.can_assign_roles_at_start);
-    assert(!foundContributor.can_assign_roles_during_assessment);
+    assert.notEqual(foundContributor !== undefined);
+    assert.equal(foundContributor.minimum, 0);
+    assert.equal(foundContributor.maximum, null);
+    assert.isFalse(foundContributor.can_assign_roles_at_start);
+    assert.isFalse(foundContributor.can_assign_roles_during_assessment);
   });
+
+  it('syncs group roles and valid question-role permissions correctly', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupRoles = [
+      { name: 'Recorder' },
+      { name: 'Contributor' },
+    ];
+    groupAssessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Contributor'],
+          canSubmit: ['Recorder']
+        },
+        {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: 5,
+          canView: ['Recorder'],
+          canSubmit: ['Recorder']
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
+      groupAssessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('groupAssessment');
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID
+    );
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
+    );
+
+    // Check group roles
+    const syncedRoles = await util.dumpTable('group_roles');
+    assert(syncedRoles.length === 2);
+    
+    const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
+    const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert.notEqual(foundRecorder, undefined);
+    assert.notEqual(foundContributor, undefined);
+
+    // Check question role permissions
+    const syncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    const firstQuestionRecorderPermission = syncedPermissions.find((p) => p.assessment_question_id == firstAssessmentQuestion.id && p.group_role_id == foundRecorder.id);
+    assert(firstQuestionRecorderPermission.can_view && firstQuestionRecorderPermission.can_submit, 'recorder should have permission to view and submit first question');
+
+    const firstQuestionContributorPermission = syncedPermissions.find((p) => p.assessment_question_id == firstAssessmentQuestion.id && p.group_role_id == foundContributor.id);
+    assert(firstQuestionContributorPermission.can_view && !firstQuestionContributorPermission.can_submit, 'contributor should only have permission to view first question');
+
+    const secondQuestionRecorderPermission = syncedPermissions.find((p) => p.assessment_question_id == secondAssessmentQuestion.id && p.group_role_id == foundRecorder.id);
+    assert(secondQuestionRecorderPermission.can_view && secondQuestionRecorderPermission.can_submit, 'recorder should have permission to view and submit second question');
+
+    const secondQuestionContributorPermission = syncedPermissions.find((p) => p.assessment_question_id == secondAssessmentQuestion.id && p.group_role_id == foundContributor.id);
+    assert(!secondQuestionContributorPermission.can_view && !secondQuestionContributorPermission.can_submit, 'contributor should not be able to view or submit second question');
+  });
+
+  it('removes group roles and role permissions correctly upon re-sync', async () => {
+    // TODO
+  });
+
+  it('handles role permissions with nonexistent group roles', async () => {
+    // TODO
+  });
+
+
 
   it('handles assessment sets that are not present in infoCourse.json', async () => {
     // Missing tags should be created
