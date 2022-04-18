@@ -99,12 +99,12 @@ router.post('/', function (req, res, next) {
       }
     });
   } else if (req.body.__action === 'create_group') {
-    groupAssessmentHelper.createGroup(req.body.groupName, res, function (err, createErr) {
+    groupAssessmentHelper.createGroup(req.body.groupName, res, function (err, succeeded) {
       if (ERR(err, next)) return;
-      if (createErr) {
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      } else {
+      if (succeeded) {
         res.redirect(req.originalUrl);
+      } else {
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       }
     });
   } else if (req.body.__action === 'leave_group') {

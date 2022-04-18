@@ -119,23 +119,21 @@ router.post('/', function (req, res, next) {
       }
     });
   } else if (req.body.__action === 'join_group') {
-    groupAssessmentHelper.joinGroup(req.body.join_code, res, function (err, joinErr) {
-      if (ERR(err, next)) return;
-      if (joinErr) {
-        //display error
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      } else {
+    groupAssessmentHelper.joinGroup(req.body.join_code, res, function (err, succeeded) {
+      if (ERR(err, next)) return err;
+      if (succeeded) {
         res.redirect(req.originalUrl);
+      } else {
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       }
     });
   } else if (req.body.__action === 'create_group') {
-    groupAssessmentHelper.createGroup(req.body.groupName, res, function (err, createErr) {
+    groupAssessmentHelper.createGroup(req.body.groupName, res, function (err, succeeded) {
       if (ERR(err, next)) return;
-      if (createErr) {
-        //display error
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      } else {
+      if (succeeded) {
         res.redirect(req.originalUrl);
+      } else {
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       }
     });
   } else if (req.body.__action === 'leave_group') {
