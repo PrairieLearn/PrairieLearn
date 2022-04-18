@@ -31,6 +31,7 @@ describe('html', () => {
 
   it('errors when interpolating object', () => {
     assert.throws(
+      // @ts-expect-error
       () => html`<p>${{ foo: 'bar' }}</p>`.toString(),
       'Cannot interpolate object in template'
     );

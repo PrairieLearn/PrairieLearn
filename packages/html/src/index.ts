@@ -54,7 +54,9 @@ export class HtmlSafeString {
   }
 }
 
-export function html(strings: TemplateStringsArray, ...values: any[]): HtmlSafeString {
+export type HtmlValue = string | number | boolean | HtmlSafeString | undefined | null | HtmlValue[];
+
+export function html(strings: TemplateStringsArray, ...values: HtmlValue[]): HtmlSafeString {
   return new HtmlSafeString(strings, values);
 }
 
