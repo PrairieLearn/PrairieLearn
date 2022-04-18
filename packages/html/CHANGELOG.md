@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 2.1.0
+
+### Minor Changes
+
+- c23684a26: Type constraints for interpolated values
+
 ## 2.0.0
 
 ### Major Changes
