@@ -26,10 +26,35 @@ router.get('/', function (req, res, next) {
     // students to create and start a new assessment instance.
     if (!checkPasswordOrRedirect(req, res)) return;
     if (res.locals.assessment.group_work) {
-      groupAssessmentHelper.getGroupInfo(res, function (err) {
-        if (ERR(err, next)) return;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      });
+      groupAssessmentHelper.getGroupInfo(
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+        function (
+          err,
+          groupMember,
+          permissions,
+          minsize,
+          maxsize,
+          groupsize,
+          needsize,
+          group_info,
+          join_code,
+          start,
+          used_join_code
+        ) {
+          if (ERR(err, next)) return;
+          res.locals.permissions = permissions;
+          res.locals.minsize = minsize;
+          res.locals.maxsize = maxsize;
+          res.locals.groupsize = groupsize;
+          res.locals.needsize = needsize;
+          res.locals.group_info = group_info;
+          res.locals.join_code = join_code;
+          res.locals.start = start;
+          res.locals.used_join_code = used_join_code;
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        }
+      );
     } else {
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
@@ -43,10 +68,35 @@ router.get('/', function (req, res, next) {
         // students to create and start a new assessment instance.
         if (!checkPasswordOrRedirect(req, res)) return;
         if (res.locals.assessment.group_work) {
-          groupAssessmentHelper.getGroupInfo(res, function (err) {
-            if (ERR(err, next)) return;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          });
+          groupAssessmentHelper.getGroupInfo(
+            res.locals.assessment.id,
+            res.locals.user.user_id,
+            function (
+              err,
+              groupMember,
+              permissions,
+              minsize,
+              maxsize,
+              groupsize,
+              needsize,
+              group_info,
+              join_code,
+              start,
+              used_join_code
+            ) {
+              if (ERR(err, next)) return;
+              res.locals.permissions = permissions;
+              res.locals.minsize = minsize;
+              res.locals.maxsize = maxsize;
+              res.locals.groupsize = groupsize;
+              res.locals.needsize = needsize;
+              res.locals.group_info = group_info;
+              res.locals.join_code = join_code;
+              res.locals.start = start;
+              res.locals.used_join_code = used_join_code;
+              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            }
+          );
         } else {
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
@@ -90,28 +140,54 @@ router.post('/', function (req, res, next) {
       }
     );
   } else if (req.body.__action === 'join_group') {
-    groupAssessmentHelper.joinGroup(req.body.join_code, res, function (err, joinErr) {
-      if (ERR(err, next)) return;
-      if (joinErr) {
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      } else {
-        res.redirect(req.originalUrl);
+    groupAssessmentHelper.joinGroup(
+      req.body.join_code,
+      res.locals.assessment.id,
+      res.locals.user.user_id,
+      res.locals.authn_user.user_id,
+      function (err, succeeded, permissions) {
+        if (ERR(err, next)) return err;
+        if (succeeded) {
+          res.redirect(req.originalUrl);
+        } else {
+          res.locals.permissions = permissions;
+          res.locals.groupsize = 0;
+          res.locals.used_join_code = req.body.join_code;
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        }
       }
-    });
+    );
   } else if (req.body.__action === 'create_group') {
-    groupAssessmentHelper.createGroup(req.body.groupName, res, function (err, succeeded) {
-      if (ERR(err, next)) return;
-      if (succeeded) {
-        res.redirect(req.originalUrl);
-      } else {
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    groupAssessmentHelper.createGroup(
+      req.body.groupName,
+      res.locals.assessment.id,
+      res.locals.user.user_id,
+      res.locals.authn_user.user_id,
+      function (err, succeeded, uniqueGroupName, invalidGroupName, permissions) {
+        if (ERR(err, next)) return;
+        if (succeeded) {
+          res.redirect(req.originalUrl);
+        } else {
+          res.locals.uniqueGroupName = uniqueGroupName;
+          if (invalidGroupName) {
+            res.locals.invalidGroupName = true;
+          }
+          res.locals.permissions = permissions;
+          res.locals.groupsize = 0;
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        }
       }
-    });
+    );
   } else if (req.body.__action === 'leave_group') {
-    groupAssessmentHelper.leaveGroup(res, function (err) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
+    groupAssessmentHelper.leaveGroup(
+      res.locals.assessment.id,
+      res.locals.user.user_id,
+      res.locals.authn_user.user_id,
+      function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      }
+    );
   } else {
     return next(
       error.make(400, 'unknown __action', {

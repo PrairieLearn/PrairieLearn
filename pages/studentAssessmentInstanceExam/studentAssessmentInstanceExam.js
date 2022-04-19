@@ -76,15 +76,20 @@ router.post('/', function (req, res, next) {
     );
   } else if (req.body.__action === 'leave_group') {
     if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
-    groupAssessmentHelper.leaveGroup(res, function (err) {
-      if (ERR(err, next)) return;
-      res.redirect(
-        '/pl/course_instance/' +
-          res.locals.course_instance.id +
-          '/assessment/' +
-          res.locals.assessment.id
-      );
-    });
+    groupAssessmentHelper.leaveGroup(
+      res.locals.assessment.id,
+      res.locals.user.user_id,
+      res.locals.authn_user.user_id,
+      function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(
+          '/pl/course_instance/' +
+            res.locals.course_instance.id +
+            '/assessment/' +
+            res.locals.assessment.id
+        );
+      }
+    );
   } else {
     next(
       error.make(400, 'unknown __action', {
@@ -126,13 +131,39 @@ router.get('/', function (req, res, next) {
           }
         });
         if (res.locals.assessment.group_work) {
-          groupAssessmentHelper.getGroupInfo(res, function (err, notGroupMemberErr) {
-            if (ERR(err, next)) return;
-            if (notGroupMemberErr) {
-              return next(error.make(403, 'Not a group member', res.locals));
+          groupAssessmentHelper.getGroupInfo(
+            res.locals.assessment.id,
+            res.locals.user.user_id,
+            function (
+              err,
+              groupMember,
+              permissions,
+              minsize,
+              maxsize,
+              groupsize,
+              needsize,
+              group_info,
+              join_code,
+              start,
+              used_join_code
+            ) {
+              if (ERR(err, next)) return;
+              res.locals.permissions = permissions;
+              res.locals.minsize = minsize;
+              res.locals.maxsize = maxsize;
+              res.locals.groupsize = groupsize;
+              res.locals.needsize = needsize;
+              res.locals.group_info = group_info;
+              if (!groupMember) {
+                return next(error.make(403, 'Not a group member', res.locals));
+              } else {
+                res.locals.join_code = join_code;
+                res.locals.start = start;
+                res.locals.used_join_code = used_join_code;
+              }
+              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             }
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          });
+          );
         } else {
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
