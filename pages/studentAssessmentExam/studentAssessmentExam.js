@@ -168,9 +168,10 @@ router.post('/', function (req, res, next) {
         if (succeeded) {
           res.redirect(req.originalUrl);
         } else {
-          res.locals.uniqueGroupName = uniqueGroupName;
           if (invalidGroupName) {
             res.locals.invalidGroupName = true;
+          } else {
+            res.locals.uniqueGroupName = uniqueGroupName;
           }
           res.locals.permissions = permissions;
           res.locals.groupsize = 0;
