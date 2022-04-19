@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --require ts-node/register src/index.test.ts"
+    "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
     "ejs": "^3.1.6"
