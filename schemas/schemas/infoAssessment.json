@@ -376,7 +376,7 @@
                     "minimum": 0
                 },
                 "canSubmit": {
-                    "description": "A list of group role names matching those in groupRoles that can submit the question. Only necessary for group assessments.",
+                    "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
                     "type": "array",
                     "items": {
                         "type": "string"
