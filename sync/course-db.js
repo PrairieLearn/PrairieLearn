@@ -1227,10 +1227,6 @@ async function validateAssessment(assessment, questions) {
     );
   }
 
-  // Questions:
-  // 1. Should we put this in the same loop as above when iterating through the zoneQuestions above?
-  // 2. How should we identify what question contains the error if we can't use IDs?
-
   const validRoleNames = new Set();
   (assessment.groupRoles || []).forEach((role) => {
     validRoleNames.add(role.name);
