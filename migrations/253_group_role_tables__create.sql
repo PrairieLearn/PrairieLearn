@@ -1,4 +1,5 @@
--- Create table and index for group roles
+-- Create table and index for group roles. Includes permissions that
+-- apply to the assessment instance as a whole.
 CREATE TABLE IF NOT EXISTS group_roles (
     id BIGSERIAL PRIMARY KEY,
     role_name TEXT NOT NULL,
