@@ -447,7 +447,7 @@ def grade(element_html, data):
             elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type == 'lcs':
-            edit_distance = lcs_partial_credit(submission, depends_graph, group_belonging, group_depends)
+            edit_distance = lcs_partial_credit(submission, depends_graph, group_belonging)
             final_score = max(0, float(true_answer_length - edit_distance) / true_answer_length)
 
         if final_score < 1:
