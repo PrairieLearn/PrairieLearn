@@ -283,8 +283,8 @@ module.exports.initExpress = function () {
         err,
         url: req.url,
       });
-      /* Check to make sure we weren't already in the middle of sending a response
-               before replying with an error 500 */
+      // Check to make sure we weren't already in the middle of sending a
+      // response before replying with an error 500
       if (res && !res.headersSent) {
         if (res.status && res.send) {
           res.status(500).send('Error proxying workspace request');
@@ -1608,6 +1608,7 @@ module.exports.initExpress = function () {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 
+/** @type {import('http').Server | import('https').Server} */
 var server;
 
 module.exports.startServer = async () => {
@@ -1938,6 +1939,15 @@ if (config.startServer) {
           logger.info('exit option passed, quitting...');
           process.exit(0);
         }
+
+        process.on('SIGTERM', () => {
+          opentelemetry
+            .shutdown()
+            .catch((err) => logger.error('Error shutting down OpenTelemetry', err))
+            .finally(() => {
+              process.exit(0);
+            });
+        });
       }
     }
   );

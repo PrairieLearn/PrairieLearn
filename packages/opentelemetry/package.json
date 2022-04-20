@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/opentelemetry",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -26,6 +26,7 @@
     "@opentelemetry/semantic-conventions": "^1.0.1"
   },
   "devDependencies": {
+    "@prairielearn/tsconfig": "*",
     "typescript": "^4.5.5"
   }
 }

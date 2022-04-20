@@ -1,7 +1,7 @@
 FROM ubuntu:20.04
 
 COPY pre-install.sh /pre-install.sh
-RUN /bin/sh /pre-install.sh
+RUN /bin/bash /pre-install.sh
 COPY code.desktop /usr/share/applications/code.desktop
 
 COPY pl-gosu-helper.sh /pl-gosu-helper.sh
@@ -11,7 +11,7 @@ COPY local /opt/defaults/local
 COPY server /opt/server
 
 COPY post-install.sh /post-install.sh
-RUN /bin/sh /post-install.sh
+RUN /bin/bash /post-install.sh
 
 USER 1001
 ENV PL_USER prairielearner
