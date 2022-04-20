@@ -1,6 +1,6 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-const tracing = require('./lib/tracing');
+const opentelemetry = require('@prairielearn/opentelemetry');
 
 const ERR = require('async-stacktrace');
 const util = require('util');
@@ -283,8 +283,8 @@ module.exports.initExpress = function () {
         err,
         url: req.url,
       });
-      /* Check to make sure we weren't already in the middle of sending a response
-               before replying with an error 500 */
+      // Check to make sure we weren't already in the middle of sending a
+      // response before replying with an error 500
       if (res && !res.headersSent) {
         if (res.status && res.send) {
           res.status(500).send('Error proxying workspace request');
@@ -1608,6 +1608,7 @@ module.exports.initExpress = function () {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 
+/** @type {import('http').Server | import('https').Server} */
 var server;
 
 module.exports.startServer = async () => {
@@ -1630,6 +1631,25 @@ module.exports.startServer = async () => {
   } else {
     throw new Error('unknown serverType: ' + config.serverType);
   }
+
+  // Wait for the server to either start successfully or error out.
+  await new Promise((resolve, reject) => {
+    let done = false;
+
+    server.on('error', (err) => {
+      if (!done) {
+        done = true;
+        reject(err);
+      }
+    });
+
+    server.on('listening', () => {
+      if (!done) {
+        done = true;
+        resolve();
+      }
+    });
+  });
 
   return server;
 };
@@ -1676,10 +1696,6 @@ if (config.startServer) {
           configFilename = argv['config'];
         }
 
-        // Before we start executing any real code, ensure that tracing has
-        // been configured correctly.
-        await tracing.waitForStart();
-
         // Load config values from AWS as early as possible so we can use them
         // to set values for e.g. the database connection
         await config.loadConfigAsync(configFilename);
@@ -1688,7 +1704,10 @@ if (config.startServer) {
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
-        await tracing.init(config);
+        await opentelemetry.init({
+          ...config,
+          serviceName: 'prairielearn',
+        });
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
@@ -1920,6 +1939,15 @@ if (config.startServer) {
           logger.info('exit option passed, quitting...');
           process.exit(0);
         }
+
+        process.on('SIGTERM', () => {
+          opentelemetry
+            .shutdown()
+            .catch((err) => logger.error('Error shutting down OpenTelemetry', err))
+            .finally(() => {
+              process.exit(0);
+            });
+        });
       }
     }
   );

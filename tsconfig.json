@@ -4,7 +4,8 @@
     "esModuleInterop": true,
     "noEmit": true,
     // Allow spreading Maps/Sets into arrays
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "allowSyntheticDefaultImports": true,
   },
   // We don't actually use any TypeScript; we just use it to validate our
   // standard JavaScript with JSDoc comments.
@@ -12,6 +13,6 @@
   "include": [
     "tests/**/*",
     "sync/**/*",
-    "lib/**/*"
-  ]
+    "lib/**/*",
+  ],
 }

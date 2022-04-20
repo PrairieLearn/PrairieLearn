@@ -47,20 +47,20 @@ function setup_connection() {
     wsProtocols: ['binary'],
   });
 
-  /* Set parameters that can be changed on an active connection */
+  // Set parameters that can be changed on an active connection
   rfb.viewOnly = false;
   rfb.scaleViewport = false;
   rfb.resizeSession = true;
 
   rfb.addEventListener('disconnect', () => {
-    /* If we couldn't connect, try again after some time */
+    // If we couldn't connect, try again after some time
     spinner.spin();
     setTimeout(setup_connection, poll_ms);
   });
   rfb.addEventListener('connect', () => {
     spinner.stop();
 
-    /* Dismiss the modal when clicking on the screen */
+    // Dismiss the modal when clicking on the screen
     screen.querySelector('canvas').addEventListener('click', () => {
       clipboard_button.classList.remove('active');
       clipboard_modal.classList.add('hidden');
@@ -70,28 +70,28 @@ function setup_connection() {
     clipboard_textarea.value = ev.detail.text;
   });
   clipboard_textarea.onchange = (ev) => {
-    /* Note we are directly setting onchange instead of adding a listener
-           each possible connection because we only want one global listener */
+    // Note we are directly setting onchange instead of adding a listener
+    // each possible connection because we only want one global listener.
     rfb.clipboardPasteFrom(clipboard_textarea.value);
   };
 }
 
 (async () => {
-  /* Setup the button handlers */
+  // Setup the button handlers
   clipboard_button.addEventListener('click', () => {
     if (clipboard_button.classList.contains('active')) {
-      /* Toggle OFF */
+      // Toggle OFF
       clipboard_button.classList.remove('active');
       clipboard_modal.classList.add('hidden');
     } else {
-      /* Toggle ON */
+      // Toggle ON
       clipboard_button.classList.add('active');
       clipboard_modal.classList.remove('hidden');
     }
   });
 
   while (true) {
-    /* Send our resolution to the server so it can spin up an Xorg instance */
+    // Send our resolution to the server so it can spin up an Xorg instance
     try {
       await set_resolution();
       break;
@@ -100,6 +100,6 @@ function setup_connection() {
     }
   }
 
-  /* Now, we can try to connect via VNC */
+  // Now, we can try to connect via VNC
   setup_connection();
 })();

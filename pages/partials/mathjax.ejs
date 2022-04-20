@@ -26,7 +26,7 @@
      loader: {
          load: ['input/tex', outputComponent]
      },
-     /* Register a callback to be run when MathJax is loaded, use MathJax.config.onReady() */
+     // Register a callback to be run when MathJax is loaded, use MathJax.config.onReady().
      readyQueue: [],
      onReady: (cb) => { MathJax.config.readyQueue.push(cb); },
      startup: {
