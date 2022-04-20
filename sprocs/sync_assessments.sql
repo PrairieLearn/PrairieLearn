@@ -13,10 +13,6 @@ DECLARE
     valid_assessment record;
     group_role JSONB;
     valid_group_role record;
-    -- group_role_name text;
-    -- role_name_can_view text;
-    -- role_name_can_submit text;
-    permission record;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -228,16 +224,12 @@ BEGIN
                 new_group_role_names := array_append(new_group_role_names, new_group_role_name);
             END LOOP;
 
+            -- Delete excess group roles
             DELETE FROM group_roles
             WHERE
                 assessment_id = new_assessment_id
                 AND role_name NOT IN (SELECT unnest(new_group_role_names));
 
-            -- TODO: Delete excess group roles
-            -- DELETE FROM group_roles
-            -- WHERE
-            --     assessment_id = new_assessment_id
-            --     AND number > jsonb_array_length(valid_assessment.data->'groupRoles');
         ELSE
             UPDATE group_configs
             SET deleted_at = now()
