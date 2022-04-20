@@ -1228,7 +1228,7 @@ async function validateAssessment(assessment, questions) {
   }
 
   const validRoleNames = new Set();
-  (assessment.groupRoles || []).forEach((role) => {
+  assessment.groupRoles?.forEach((role) => {
     validRoleNames.add(role.name);
   });
 
