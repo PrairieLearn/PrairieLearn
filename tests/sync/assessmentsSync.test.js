@@ -491,7 +491,7 @@ describe('Assessment syncing', () => {
       2
     );
 
-    // Remove group roles and re-sync
+    // Remove the "Contributor" group role and re-sync
     groupAssessment.groupRoles = [{ name: 'Recorder' }];
     groupAssessment.zones[groupAssessment.zones.length - 1].questions = [
       {
