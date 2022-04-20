@@ -385,7 +385,7 @@
                     "default": []
                 },
                 "canView": {
-                    "description": "A list of group role names matching those in groupRoles that can view the question. Only necessary for group assessments.",
+                    "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
                     "type": "array",
                     "items": {
                         "type": "string"
