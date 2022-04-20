@@ -1,50 +1,55 @@
-<% if (authz_data.has_course_permission_view) { %>
-    <div class="card mb-4 border-success">
-      <div class="card-header bg-success">Grading Panel</div>
-      <div class="card-body">
-        <% if (typeof submission_updated !== 'undefined' && submission_updated === true) { %>
-            <blockquote style="color: red">Submission updated</blockquote>
-        <% } %>
-        <a class="btn btn-primary mb-2" href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/assessment_question/<%= instance_question.assessment_question_id %>/manual_grading">
-          <i class="fas fa-arrow-left"></i>
-          Back to Question
-        </a>
-
-        <form name="instance_question-manual-grade-update-form" method="POST">
-            <input type="hidden" name="__action" value="add_manual_grade">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
-            <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
-            <div class="form-group">
-              <label for="submissionScore">Score:</label>
-              <div class="input-group">
-                Points: <input type="number" style="margin:2px;" min="0" max="<%= max_points %>" step="any" class="form-control" id="submissionScorePoints" name="submission_score_points" value="<%= instance_question.points %>" aria-describedby="scoreHelpBlock"
-                  oninput="document.getElementById('submissionScorePercent').value = this.value / <%= max_points %> * 100;"
-                />
-                <span class="input-group-addon">/ <%= max_points %></span>
-              </div>
-
-              <div class="input-group">
-                Percent: <input type="number" style="margin:2px;" min="0" max="100" step="any" class="form-control" id="submissionScorePercent" name="submission_score_percent" value="<%= score_perc %>" aria-describedby="scoreHelpBlock"
-                  oninput="document.getElementById('submissionScorePoints').value = this.value / 100 * <%= max_points %>;"
-                />
-                <span class="input-group-addon">%</span>
-              </div>
-              <small id="scoreHelpBlock" class="form-text text-muted">
-                This score will override the most recent submission score.
-              </small>
-            </div>
-            <div class="form-group">
-              <label for="submission-feedback">Feedback:</label>
-              <textarea name="submission_note" class="form-control" id="submission-feedback"><% if (submission.feedback) {%><%= submission.feedback.manual %><% } %></textarea>
-            </div>
-            <div class="text-right">
-              <button type="submit" class="btn btn-primary">Submit and Next</button>
-            </div>
-        </form>
-      </div>
-      <div class="card-footer small">
-          This box is not visible to students.
-      </div>
+<% if (authz_data.has_course_instance_permission_view) { %>
+<form name="instance_question-manual-grade-update-form" method="POST">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+  <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
+  <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
+  <input type="hidden" name="modified_at" value="<%= instance_question.modified_at %>">
+  <div class="form-group">
+    <label>Score:</label>
+    <div class="input-group">
+      <input type="number" min="0" max="<%= assessment_question.max_points %>" step="any" class="form-control"
+             name="submission_score_points" value="<%= locals.points ?? instance_question.points %>" aria-describedby="scoreHelpBlock"
+             <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
+             oninput="$(this).parents('form').find('[name=submission_score_percent]').val(this.value * 100 / <%= assessment_question.max_points %>);"
+             />
+      <span class="input-group-append input-group-text">/ <%= assessment_question.max_points %></span>
     </div>
+    <div class="input-group">
+      <input type="number" min="0" max="100" step="any" class="form-control"
+             name="submission_score_percent" value="<%= locals.score_perc ?? instance_question.score_perc %>" aria-describedby="scoreHelpBlock"
+             <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
+             oninput="$(this).parents('form').find('[name=submission_score_points]').val(this.value * <%= assessment_question.max_points %> / 100);"
+             />
+      <span class="input-group-append input-group-text">%</span>
+    </div>
+  </div>
+  <div class="form-group">
+    <label>Feedback:</label>
+    <textarea name="submission_note" class="form-control"
+              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>readonly<% } %>
+              id="submission-feedback"><%= submission.feedback?.manual %></textarea>
+  </div>
+  <div class="text-right">
+    <% if (!locals.disable && authz_data.has_course_instance_permission_edit) { %>
+    <button type="submit" class="btn btn-primary" name="__action" value="add_manual_grade">Submit</button>
+    <% } %>
+    <div class="btn-group">
+      <a role="button" class="btn btn-secondary"
+         href="<%= urlPrefix %>/assessment/<%= assessment_instance.assessment_id %>/manual_grading/assessment_question/<%= instance_question.assessment_question_id %>/next_ungraded?prior_instance_question_id=<%= instance_question.id %>">
+        <%= locals.skip_text || ((!locals.disable && authz_data.has_course_instance_permission_edit) ? 'Skip' : 'Next') %>
+      </a>
+      <% if (!locals.disable && authz_data.has_course_instance_permission_edit) { %>
+      <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        <span class="sr-only">Change assigned grader</span>
+      </button>
+      <div class="dropdown-menu dropdown-menu-right">
+        <% (locals.graders || []).forEach(grader => { %>
+        <button type="submit" class="dropdown-item" name="__action" value="reassign_<%= grader.user_id %>">Assign to: <%= grader.name %> (<%= grader.uid %>)</button>
+        <% }); %>
+        <button type="submit" class="dropdown-item" name="__action" value="reassign_nobody">Remove grader assignment</button>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</form>
 <% } %>

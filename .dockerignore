@@ -6,9 +6,11 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
+!.mocharc.js
 !.prettierignore
 !.prettierrc.json
 !tsconfig.json
+!turbo.json
 !pyrightconfig.json
 !admin_queries/
 !api/
@@ -28,6 +30,7 @@
 !package.json
 !yarn.lock
 !pages/
+!packages/
 !prairielib/
 !public/
 !question-servers/

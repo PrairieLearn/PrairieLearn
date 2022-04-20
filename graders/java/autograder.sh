@@ -35,7 +35,9 @@ fi
 TEST_COMPILE_OUT=$(javac $TEST_FILES 2>&1)
 if [ "$?" -ne 0 ] ; then
     echo "$TEST_COMPILE_OUT"
-    exception "Error compiling test files. This typically means your class does not match the specified signature."
+    exception "Error compiling test files. This typically means your class does not match the signature of the test classes.
+Make sure all classes, properties, methods, and other elements in your class match the specified signature.
+In particular, ensure method parameters, thrown exceptions, visibility modifiers, property types, and other definitions are correct."
 fi
 
 RESULTS_TEMP_DIR=$(mktemp -d -p /grade/results)
@@ -55,5 +57,8 @@ EOF
 if [ -f $RESULTS_TEMP_FILE ] ; then
     mv $RESULTS_TEMP_FILE $RESULTS_FILE
 else
-    exception "No grading results could be retrieved. This usually means your program crashed before results could be saved."
+    exception "No grading results could be retrieved.
+This usually means your program crashed before results could be saved.
+The most common cause is a call to System.exit(),
+though this may be a result of stack overflow, excessive memory allocation, or similar problems."
 fi

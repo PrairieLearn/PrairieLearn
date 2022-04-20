@@ -1,11 +1,17 @@
 export PATH := node_modules/.bin/:$(PATH)
 
+build:
+	@turbo run build
+
+dev:
+	@turbo run dev
+
 start: start-support
 	@node server.js
 start-nodemon: start-support
 	@nodemon -L server.js
 start-workspace-host: start-support kill-running-workspaces
-	@node workspace_host/interface.js &
+	@node workspace_host/interface.js
 
 kill-running-workspaces:
 	@docker/kill_running_workspaces.sh
@@ -19,15 +25,17 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-prairielib test-grader-host
+test-js: test-prairielearn test-prairielib test-grader-host test-packages
 test-prairielearn: start-support
-	@nyc --reporter=lcov mocha --full-trace tests/index.js
+	@mocha --parallel "tests/**/*.test.{js,mjs}"
+test-prairielearn-serial: start-support
+	@mocha "tests/**/*.test.{js,mjs}"
 test-prairielib:
 	@jest prairielib/
 test-grader-host:
 	@jest grader_host/
-test-nocoverage: start-support
-	@mocha tests/index.js
+test-packages:
+	@turbo run test
 test-python:
 # `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
 # pytest uses to discover tests, but it isn't actually a test file itself. We
@@ -65,3 +73,6 @@ depcheck:
 	@echo WARNING: Note that many devDependencies will show up as unused. This is not
 	@echo WARNING: a problem.
 	@echo WARNING:
+
+changeset:
+	@changeset

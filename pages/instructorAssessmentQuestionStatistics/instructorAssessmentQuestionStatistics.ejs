@@ -118,6 +118,7 @@
                 <th class="text-center">Discrimination</th>
                 <th class="text-center">Attempts</th>
                 <th class="text-center">Quintiles</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -147,6 +148,11 @@
                 <% } else { %>
                 <td class="text-center"></td>
                 <% } %>
+                <td class="align-middle text-nowrap" style="width: 1em;">
+                  <% if (authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
+                  <a class="btn btn-xs btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= row.id %>">Manual grading</a>
+                  <% } %>
+              </td>
               </tr>
               <% }); %>
             </tbody>

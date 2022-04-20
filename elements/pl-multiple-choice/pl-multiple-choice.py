@@ -228,7 +228,7 @@ def render(element_html, data):
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
                 'display_score_badge': display_score and submitted_key == answer['key'],
-                'display_feedback': submitted_key == answer['key'] and feedback is not None,
+                'display_feedback': submitted_key == answer['key'] and feedback,
                 'feedback': feedback
             }
             if answer_html['display_score_badge']:
@@ -290,7 +290,7 @@ def render(element_html, data):
                         html_params['incorrect'] = True
                 except Exception:
                     raise ValueError('invalid score' + score)
-            html_params['display_feedback'] = feedback is not None
+            html_params['display_feedback'] = bool(feedback)
             html_params['feedback'] = feedback
 
         with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
