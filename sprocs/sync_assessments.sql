@@ -13,9 +13,9 @@ DECLARE
     valid_assessment record;
     group_role JSONB;
     valid_group_role record;
-    group_role_name text;
-    role_name_can_view text;
-    role_name_can_submit text;
+    -- group_role_name text;
+    -- role_name_can_view text;
+    -- role_name_can_submit text;
     permission record;
     access_rule JSONB;
     zone JSONB;
@@ -29,6 +29,8 @@ DECLARE
     new_assessment_question_id bigint;
     new_assessment_question_ids bigint[];
     bad_assessments text;
+    new_group_role_names text[];
+    new_group_role_name text;
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -221,8 +223,15 @@ BEGIN
                     minimum = EXCLUDED.minimum,
                     maximum = EXCLUDED.maximum,
                     can_assign_roles_at_start = EXCLUDED.can_assign_roles_at_start,
-                    can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment;
+                    can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment
+                RETURNING group_roles.role_name INTO new_group_role_name;
+                new_group_role_names := array_append(new_group_role_names, new_group_role_name);
             END LOOP;
+
+            DELETE FROM group_roles
+            WHERE
+                assessment_id = new_assessment_id
+                AND role_name NOT IN (SELECT unnest(new_group_role_names));
 
             -- TODO: Delete excess group roles
             -- DELETE FROM group_roles
