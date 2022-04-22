@@ -15,7 +15,7 @@ window.PLOrderBlocks = function (uuid, options) {
     for (var i = 0; i < answerObjs.length; i++) {
       if (!$(answerObjs[i]).hasClass('info-fixed')) {
         var answerText = answerObjs[i].getAttribute('string');
-        var blockUuid = answerObjs[i].getAttribute('uuid');
+        var answerUuid = answerObjs[i].getAttribute('uuid');
         var answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));
@@ -25,7 +25,7 @@ window.PLOrderBlocks = function (uuid, options) {
         var answer = {
           inner_html: answerText,
           indent: answerIndent,
-          uuid: blockUuid,
+          uuid: answerUuid,
         };
         studentAnswers.push(answer);
       }
