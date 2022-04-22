@@ -9,7 +9,7 @@ window.PLOrderBlocks = function (uuid, options) {
   let optionsElementId = '#order-blocks-options-' + uuid;
   let dropzoneElementId = '#order-blocks-dropzone-' + uuid;
 
-  function setAnswer(event) {
+  function setAnswer() {
     var answerObjs = $(dropzoneElementId).children();
     var studentAnswers = [];
     for (var i = 0; i < answerObjs.length; i++) {
@@ -62,8 +62,8 @@ window.PLOrderBlocks = function (uuid, options) {
     cancel: '.info',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
-    create: function (event) {
-      setAnswer(event);
+    create: function () {
+      setAnswer();
     },
     sort: function (event, ui) {
       // update the location of the placeholder as the item is dragged
@@ -75,7 +75,7 @@ window.PLOrderBlocks = function (uuid, options) {
       // when the user stops interacting with the list
       let leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
-      setAnswer(event);
+      setAnswer();
     },
   });
 
