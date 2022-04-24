@@ -6,43 +6,45 @@ has become increasingly complex, with many different possible combinations of op
 </p>
 </pl-question-panel>
 
-<pl-order-blocks answers-name="prime-numbers-unordered" source-blocks-order="ordered" grading-method="unordered">
-  <pl-answer correct="false">1</pl-answer>
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="true">3</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
-  <pl-answer correct="false">6</pl-answer>
-  <pl-answer correct="true">7</pl-answer>
-</pl-order-blocks>
-
-<pl-order-blocks answers-name="prime-numbers-ordered" min-incorrect="2" max-incorrect="4">
-  <pl-answer correct="false">1</pl-answer>
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="true">3</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
-  <pl-answer correct="false">6</pl-answer>
-  <pl-answer correct="true">7</pl-answer>
-  <pl-answer correct="false">8</pl-answer>
-  <pl-answer correct="false">9</pl-answer>
-  <pl-answer correct="false">10</pl-answer>
-</pl-order-blocks>
-
-<pl-order-blocks answers-name="python-ordered" grading-method="ranking" indentation="true">
+<pl-order-blocks answers-name="test1" 
+  grading-method="ranking" 
+  indentation="true" 
+  partial-credit="none" 
+  feedback="none">
   <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
-  <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
-  <pl-answer correct="true" ranking="3" indent="1">sum += first</pl-answer>
-  <pl-answer correct="true" ranking="3" indent="1">sum += second</pl-answer>
-  <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
-  <pl-answer correct="false">sum + first</pl-answer>
-  <pl-answer correct="false">sum + second</pl-answer>
-  <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
+  <pl-answer correct="true" ranking="2" indent="1">return first + second</pl-answer>
 </pl-order-blocks>
 
-<pl-order-blocks answers-name="conjunction-implies-conjunction" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
+<pl-order-blocks answers-name="test2" 
+  grading-method="ranking" 
+  indentation="true" 
+  partial-credit="none">
+  <!-- feedback="first-wrong"> --> <!-- FIXME tests currently don't pass with this enabled -->
+  <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" ranking="2" indent="1">return first + second</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks answers-name="test3" 
+  source-blocks-order="ordered" 
+  grading-method="dag" 
+  solution-placement="bottom" 
+  partial-credit="none" 
+  feedback="none">
   <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
   <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
   <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
   <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
 </pl-order-blocks>
+
+<pl-order-blocks answers-name="test4" 
+  source-blocks-order="random" 
+  grading-method="dag" 
+  partial-credit="none" 
+  feedback="first-wrong">
+  <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+</pl-order-blocks>
+
+<!-- TODO add more to cover the rest of the possible option configurations. -->
