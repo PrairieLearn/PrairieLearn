@@ -48,41 +48,52 @@ module.exports = function (callback) {
           images,
           config.parallelInitPulls,
           (image, callback) => {
-            ((callback) => {
-              var ourAuth = {};
-              logger.info(
-                `Pulling latest version of "${image}" image from ${
-                  config.cacheImageRegistry || 'default registry'
-                }`
-              );
-              var repository = new dockerUtil.DockerName(image);
-              if (config.cacheImageRegistry) {
-                repository.registry = config.cacheImageRegistry;
-                ourAuth = dockerAuth;
+            let callbackCalled = false;
+            var ourAuth = {};
+            logger.info(
+              `Pulling latest version of "${image}" image from ${
+                config.cacheImageRegistry || 'default registry'
+              }`
+            );
+            var repository = new dockerUtil.DockerName(image);
+            if (config.cacheImageRegistry) {
+              repository.registry = config.cacheImageRegistry;
+              ourAuth = dockerAuth;
+            }
+            const params = {
+              fromImage: repository.getRegistryRepo(),
+              tag: repository.getTag() || 'latest',
+            };
+
+            docker.createImage(ourAuth, params, (err, stream) => {
+              if (err) {
+                // Just log the error, don't pass it to callback() because
+                // we want to keep going.
+                logger.error(`Error pulling "${image}" (createImage)`, err);
+                if (!callbackCalled) {
+                  callbackCalled = true;
+                  callback(null);
+                }
+                return;
               }
-              const params = {
-                fromImage: repository.getRegistryRepo(),
-                tag: repository.getTag() || 'latest',
-              };
 
-              docker.createImage(ourAuth, params, (err, stream) => {
-                if (ERR(err, callback)) return;
-
-                docker.modem.followProgress(
-                  stream,
-                  (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                  },
-                  (output) => {
-                    logger.info('docker output:', output);
+              docker.modem.followProgress(
+                stream,
+                (err) => {
+                  if (err) {
+                    // Just log the error, don't pass it to callback() because
+                    // we want to keep going.
+                    logger.error(`Error pulling "${image}" (followProgress)`, err);
                   }
-                );
-              });
-            })((err) => {
-              // if an error occurs during image pull, log it but keep going
-              if (err) logger.error(`Error pulling "${image}"`, err);
-              callback(null);
+                  if (!callbackCalled) {
+                    callbackCalled = true;
+                    callback(null);
+                  }
+                },
+                (output) => {
+                  logger.info('docker output:', output);
+                }
+              );
             });
           },
           (err) => {
