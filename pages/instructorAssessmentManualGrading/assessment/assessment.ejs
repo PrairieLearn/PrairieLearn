@@ -23,7 +23,7 @@
                 <th></th>
                 <th>QID</th>
                 <th>Points</th>
-                <th>Submissions to grade</th>
+                <th colspan="2">Submissions to grade</th>
                 <th>Grading assigned to</th>
                 <th>Graded by</th>
                 <th></th>
@@ -50,6 +50,14 @@
                 <td class="text-center">
                   <%= question.num_instance_questions_to_grade ?? 0 %> /
                   <%= question.num_instance_questions ?? 0 %>
+                </td>
+                <td>
+                  <% if (question.num_instance_questions) { %>
+                  <% const progress = Math.floor(100 * (1 - (question.num_instance_questions_to_grade || 0) / question.num_instance_questions)); %>
+                  <div class="progress border" style="min-width: 4em; max-width: 10em;">
+                    <div class="progress-bar" style="width: <%= progress %>%"></div>
+                  </div>
+                  <% } %>
                 </td>
                 <td>
                   <% if (question.num_instance_questions_assigned > 0) { %>
