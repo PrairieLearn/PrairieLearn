@@ -271,13 +271,22 @@ function initDocker(info, callback) {
               `Error pulling "${image}" image; attempting to fall back to cached version`
             );
             logger.warn('createImage error:', err);
+            globalLogger.warn(
+              `Error pulling "${image}" image; attempting to fall back to cached version`
+            );
+            globalLogger.warn('createImage error:', err);
             return ERR(err, callback);
           }
 
           docker.modem.followProgress(
             stream,
             (err) => {
-              if (ERR(err, callback)) return;
+              if (err) {
+                globalLogger.warn('Error pulling "${image}" image:', err);
+                ERR(err, callback);
+                return;
+              }
+              globalLogger.info('Successfully pulled "${image}" image');
               callback(null);
             },
             (output) => {
