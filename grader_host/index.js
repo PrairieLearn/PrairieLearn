@@ -271,10 +271,10 @@ function initDocker(info, callback) {
               `Error pulling "${image}" image; attempting to fall back to cached version`
             );
             logger.warn('createImage error:', err);
-            globalLogger.warn(
+            globalLogger.error(
               `Error pulling "${image}" image; attempting to fall back to cached version`
             );
-            globalLogger.warn('createImage error:', err);
+            globalLogger.error('createImage error:', err);
             return ERR(err, callback);
           }
 
@@ -282,7 +282,7 @@ function initDocker(info, callback) {
             stream,
             (err) => {
               if (err) {
-                globalLogger.warn('Error pulling "${image}" image:', err);
+                globalLogger.error('Error pulling "${image}" image:', err);
                 ERR(err, callback);
                 return;
               }
