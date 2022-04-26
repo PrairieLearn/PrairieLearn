@@ -8,6 +8,7 @@ const AWS = require('aws-sdk');
 const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
+const _ = require('lodash');
 const sqldb = require('../prairielib/lib/sql-db');
 const sanitizeObject = require('../prairielib/lib/util').sanitizeObject;
 
@@ -265,35 +266,46 @@ function initDocker(info, callback) {
           tag: repository.getTag() || 'latest',
         };
         logger.info(`Pulling image: ${JSON.stringify(params)}`);
-        docker.createImage(dockerAuth, params, (err, stream) => {
-          if (err) {
-            logger.warn(
-              `Error pulling "${image}" image; attempting to fall back to cached version`
-            );
-            logger.warn('createImage error:', err);
-            globalLogger.error(
-              `Error pulling "${image}" image; attempting to fall back to cached version`
-            );
-            globalLogger.error('createImage error:', err);
-            return ERR(err, callback);
-          }
-
-          docker.modem.followProgress(
-            stream,
-            (err) => {
-              if (err) {
-                globalLogger.error('Error pulling "${image}" image:', err);
-                ERR(err, callback);
-                return;
-              }
-              globalLogger.info('Successfully pulled "${image}" image');
-              callback(null);
-            },
-            (output) => {
-              logger.info('docker output:', output);
+        docker.createImage(
+          dockerAuth,
+          params,
+          // In very specific (but not known by us) circumstances, `docker-modem`
+          // will invoke the callback once for a successful response from the
+          // Docker daemon and then immediately invoke it a second time with an
+          // `ECONNRESET` error. Using `_.once` here ensures that we only ever
+          // execute this callback once, even if it's called multiple times.
+          // See the following issue for more context:
+          // https://github.com/PrairieLearn/PrairieLearn/issues/5669
+          _.once((err, stream) => {
+            if (err) {
+              logger.warn(
+                `Error pulling "${image}" image; attempting to fall back to cached version`
+              );
+              logger.warn('createImage error:', err);
+              globalLogger.error(
+                `Error pulling "${image}" image; attempting to fall back to cached version`
+              );
+              globalLogger.error('createImage error:', err);
+              return ERR(err, callback);
             }
-          );
-        });
+
+            docker.modem.followProgress(
+              stream,
+              (err) => {
+                if (err) {
+                  globalLogger.error('Error pulling "${image}" image:', err);
+                  ERR(err, callback);
+                  return;
+                }
+                globalLogger.info('Successfully pulled "${image}" image');
+                callback(null);
+              },
+              (output) => {
+                logger.info('docker output:', output);
+              }
+            );
+          })
+        );
       },
     ],
     (err) => {
