@@ -10,7 +10,11 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const config = require('./config').config;
 
 module.exports = function (callback) {
-  const docker = new Docker();
+  const docker = new Docker({
+    // Try increasing/decreasing these to see if it stops the double pull
+    timeout: 7000, // defaults to process.env.DOCKER_CLIENT_TIMEOUT
+    connectionTimeout: 7000,
+  });
   var dockerAuth = {};
 
   async.waterfall(
