@@ -254,7 +254,7 @@ function initDocker(info, callback) {
           callback(null);
         }
       },
-      (callback) => {
+      async () => {
         logger.info(`Pulling latest version of "${image}" image`);
         var repository = new dockerUtil.DockerName(image);
         if (config.cacheImageRegistry) {
@@ -265,29 +265,20 @@ function initDocker(info, callback) {
           tag: repository.getTag() || 'latest',
         };
         logger.info(`Pulling image: ${JSON.stringify(params)}`);
-        docker.createImage(dockerAuth, params, (err, stream) => {
-          if (err) {
-            logger.warn(
-              `Error pulling "${image}" image; attempting to fall back to cached version`
-            );
-            logger.warn('createImage error:', err);
-            globalLogger.error(
-              `Error pulling "${image}" image; attempting to fall back to cached version`
-            );
-            globalLogger.error('createImage error:', err);
-            return ERR(err, callback);
-          }
 
+        const stream = await docker.createImage(dockerAuth, params);
+
+        return new Promise((resolve, reject) => {
           docker.modem.followProgress(
             stream,
             (err) => {
               if (err) {
                 globalLogger.error('Error pulling "${image}" image:', err);
-                ERR(err, callback);
-                return;
+                reject(err);
+              } else {
+                globalLogger.info('Successfully pulled "${image}" image');
+                resolve();
               }
-              globalLogger.info('Successfully pulled "${image}" image');
-              callback(null);
             },
             (output) => {
               logger.info('docker output:', output);
