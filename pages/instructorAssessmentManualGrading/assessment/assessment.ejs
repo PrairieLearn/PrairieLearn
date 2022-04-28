@@ -55,7 +55,8 @@
                   <% if (question.num_instance_questions) { %>
                   <% const progress = Math.floor(100 * (1 - (question.num_instance_questions_to_grade || 0) / question.num_instance_questions)); %>
                   <div class="progress border" style="min-width: 4em; max-width: 10em;">
-                    <div class="progress-bar" style="width: <%= progress %>%"></div>
+                    <div class="progress-bar bg-light" style="width: <%= progress %>%"></div>
+                    <div class="progress-bar bg-danger" style="width: <%= 100 - progress %>%"></div>
                   </div>
                   <% } %>
                 </td>
