@@ -31,6 +31,7 @@ WHERE
 SELECT
   s.id,
   s.grading_requested_at,
+  to_jsonb(s.*) AS submission,
   to_jsonb(v.*) AS variant,
   to_jsonb(q.*) AS question,
   to_jsonb(c.*) AS course

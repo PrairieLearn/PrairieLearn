@@ -3,6 +3,7 @@ const util = require('util');
 
 const config = require('../lib/config');
 const question = require('../lib/question');
+const freeform = require('../question-servers/freeform');
 const workers = require('../lib/workers');
 const sprocs = require('../sprocs');
 const sqldb = require('../prairielib/lib/sql-db');
@@ -11,6 +12,9 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 async function confirm(message) {
+  // TODO: don't run in prod with this early return
+  return;
+
   const { result } = await prompts({
     type: 'confirm',
     name: 'result',
@@ -66,6 +70,7 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
 
     if (nextSubmission.grading_requested_at == null) {
       console.log(`Submitting new grading job for submission ${nextSubmission.id}...`);
+      console.log(nextSubmission);
 
       await new Promise((resolve) => {
         question.gradeVariant(
@@ -119,6 +124,7 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
   await sqldb.initAsync(pgConfig, idleErrorHandler);
   await sqldb.setRandomSearchSchemaAsync('regrade');
   await util.promisify(sprocs.init)();
+  await util.promisify(freeform.init)();
   workers.init();
 
   const assessmentQuestionInfo = (
