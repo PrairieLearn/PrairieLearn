@@ -1,10 +1,14 @@
 const prompts = require('prompts');
 const util = require('util');
+const http = require('http');
 
 const config = require('../lib/config');
 const question = require('../lib/question');
-const freeform = require('../question-servers/freeform');
 const workers = require('../lib/workers');
+const externalGrader = require('../lib/externalGrader');
+const socketServer = require('../lib/socket-server');
+const externalGradingSocket = require('../lib/externalGradingSocket');
+const freeform = require('../question-servers/freeform');
 const sprocs = require('../sprocs');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
@@ -126,6 +130,11 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
   await sqldb.setRandomSearchSchemaAsync('regrade');
   await util.promisify(sprocs.init)();
   await util.promisify(freeform.init)();
+  await util.promisify(externalGrader.init)();
+  // Create a dummy http server that we can pass to `socket.io`.
+  const server = http.createServer();
+  await util.promisify(socketServer.init)(server);
+  await util.promisify(externalGradingSocket.init)();
   workers.init();
 
   const assessmentQuestionInfo = (
@@ -151,6 +160,8 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
 
   await sqldb.closeAsync();
   await util.promisify(workers.finish)();
+  await util.promisify(socketServer.close)();
+  server.close();
 })().catch((err) => {
   console.error(err);
   process.exit(1);
