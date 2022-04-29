@@ -803,7 +803,7 @@ module.exports = {
           }
 
           assert.equal(locals.job_sequence.status, 'Success');
-          assert.length(issues.rows, 0);
+          assert.lengthOf(issues.rows, 0);
         });
       });
     });
