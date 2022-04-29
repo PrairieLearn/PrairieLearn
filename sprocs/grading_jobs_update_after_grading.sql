@@ -14,7 +14,7 @@ CREATE FUNCTION
         new_partial_scores jsonb,
         new_score double precision,
         new_v2_score double precision
-    ) RETURNS void
+    ) RETURNS grading_job grading_jobs
 AS $$
 <<main>>
 DECLARE
