@@ -16,9 +16,6 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 async function confirm(message) {
-  // TODO: don't run in prod with this early return
-  return;
-
   const { result } = await prompts({
     type: 'confirm',
     name: 'result',
