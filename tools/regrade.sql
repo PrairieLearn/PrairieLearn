@@ -8,6 +8,17 @@ FROM
   JOIN assessments AS a ON (a.id = aq.assessment_id)
 WHERE aq.id = $assessment_question_id;
 
+-- BLOCK select_assessment_instance_info
+SELECT
+  u.name,
+  u.uid,
+  a.title AS assessment_title
+FROM
+  users AS u
+  JOIN assessment_instances AS ai ON (ai.user_id = u.user_id)
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+WHERE ai.id = $assessment_instance_id;
+
 -- BLOCK reset_grading
 WITH updated_instance_questions AS (
   UPDATE instance_questions AS iq
@@ -32,7 +43,9 @@ WITH updated_instance_questions AS (
     incremental_submission_score_array = NULL,
     incremental_submission_points_array = NULL,
     used_for_grade = NULL
-  WHERE iq.assessment_question_id = $assessment_question_id
+  WHERE
+    iq.assessment_question_id = $assessment_question_id
+    AND ($assessment_instance_id::bigint IS NULL OR iq.assessment_instance_id = $assessment_instance_id)
 )
 UPDATE submissions AS s
 SET
@@ -50,7 +63,8 @@ FROM
 WHERE
   -- TODO: should we filter to only open variants?
   s.variant_id = v.id
-  AND iq.assessment_question_id = $assessment_question_id;
+  AND iq.assessment_question_id = $assessment_question_id
+  AND ($assessment_instance_id::bigint IS NULL OR iq.assessment_instance_id = $assessment_instance_id);
 
 -- BLOCK select_next_submission_to_grade
 SELECT
@@ -70,7 +84,8 @@ FROM
 WHERE
   -- TODO: should we filter to only open variants?
   iq.assessment_question_id = $assessment_question_id
+  AND ($assessment_instance_id::bigint IS NULL OR iq.assessment_instance_id = $assessment_instance_id)
   AND iq.open
   AND s.graded_at IS NULL
-ORDER BY s.id ASC
+ORDER BY iq.id ASC, s.id ASC
 LIMIT 1;

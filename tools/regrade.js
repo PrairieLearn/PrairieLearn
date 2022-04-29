@@ -34,19 +34,20 @@ async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function resetAssessmentQuestionSubmissions(assessmentQuestionId) {
+async function resetAssessmentQuestionSubmissions(assessmentQuestionId, assessmentInstanceId) {
   await confirm(
     `Proceed with resetting all submissions for assessment question ${assessmentQuestionId}?`
   );
 
   await sqldb.queryAsync(sql.reset_grading, {
     assessment_question_id: assessmentQuestionId,
+    assessment_instance_id: assessmentInstanceId,
   });
 
   console.log('Success!');
 }
 
-async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
+async function regradeAssessmentQuestionSubmissions(assessmentQuestionId, assessmentInstanceId) {
   await confirm(
     `Proceed with regrading all submissions for assessment question ${assessmentQuestionId}?`
   );
@@ -58,6 +59,7 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
     const nextSubmission = (
       await sqldb.queryZeroOrOneRowAsync(sql.select_next_submission_to_grade, {
         assessment_question_id: assessmentQuestionId,
+        assessment_instance_id: assessmentInstanceId,
       })
     ).rows[0];
 
@@ -112,6 +114,8 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
     throw new Error('Missing assessment question ID');
   }
 
+  const assessmentInstanceId = process.argv[4];
+
   await config.loadConfigAsync('config.json');
 
   const pgConfig = {
@@ -140,20 +144,33 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
   const assessmentQuestionInfo = (
     await sqldb.queryOneRowAsync(sql.select_assessment_question_info, {
       assessment_question_id: assessmentQuestionId,
+      assessment_instance_id: assessmentInstanceId,
     })
   ).rows[0];
 
   console.log(`Question QID: ${assessmentQuestionInfo.question_qid}`);
   console.log(`Assessment: ${assessmentQuestionInfo.assessment_title}`);
 
+  if (assessmentInstanceId) {
+    const assessmentInstanceInfo = (
+      await sqldb.queryOneRowAsync(sql.select_assessment_instance_info, {
+        assessment_instance_id: assessmentInstanceId,
+      })
+    ).rows[0];
+    console.log(
+      `Assessment instance user: ${assessmentInstanceInfo.name} (${assessmentInstanceInfo.uid})`
+    );
+    console.log(`Assessment instance assessment: ${assessmentInstanceInfo.assessment_title}`);
+  }
+
   switch (action) {
     case 'reset': {
-      await resetAssessmentQuestionSubmissions(assessmentQuestionId);
+      await resetAssessmentQuestionSubmissions(assessmentQuestionId, assessmentInstanceId);
       break;
     }
 
     case 'regrade': {
-      await regradeAssessmentQuestionSubmissions(assessmentQuestionId);
+      await regradeAssessmentQuestionSubmissions(assessmentQuestionId, assessmentInstanceId);
       break;
     }
   }
