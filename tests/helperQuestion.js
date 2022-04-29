@@ -787,23 +787,23 @@ module.exports = {
           setTimeout(checkComplete, 10);
         });
         it('should be successful and produce no issues', async function () {
+          const issues = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
+
           // To aid in debugging, if the job failed, we'll fetch the logs from
-          // all child jobs and print them out.
+          // all child jobs and print them out. We'll also log any issues. We
+          // do this before making assertions to ensure that they're printed.
           if (locals.job_sequence.status !== 'Success') {
             console.log(locals.job_sequence);
             const params = { job_sequence_id: locals.job_sequence_id };
             const result = await sqldb.queryAsync(sql.select_jobs, params);
             console.log(result.rows);
           }
-          assert.equal(locals.job_sequence.status, 'Success');
-
-          const issues = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
-          if (issues.rowCount > 0) {
-            throw new Error(
-              `found ${issues.rowCount} issues (expected zero issues):\n` +
-                JSON.stringify(issues.rows, null, '    ')
-            );
+          if (issues.rows.length > 0) {
+            console.log(issues.rows);
           }
+
+          assert.equal(locals.job_sequence.status, 'Success');
+          assert.length(issues.rows, 0);
         });
       });
     });
