@@ -3,6 +3,7 @@ const util = require('util');
 const http = require('http');
 
 const config = require('../lib/config');
+const awsHelper = require('../lib/aws');
 const question = require('../lib/question');
 const workers = require('../lib/workers');
 const externalGrader = require('../lib/externalGrader');
@@ -114,6 +115,8 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId, assess
   const assessmentInstanceId = process.argv[4];
 
   await config.loadConfigAsync('config.json');
+  await awsHelper.init();
+  await awsHelper.loadConfigSecrets();
 
   const pgConfig = {
     user: config.postgresqlUser,
