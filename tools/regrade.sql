@@ -9,6 +9,31 @@ FROM
 WHERE aq.id = $assessment_question_id;
 
 -- BLOCK reset_grading
+WITH updated_instance_questions AS (
+  UPDATE instance_questions AS iq
+  SET
+    -- TODO: if we ever try to use this for homeworks, we might have to do
+    -- something with the `variants_points_list` column.
+    open = TRUE,
+    points = 0,
+    score_perc = 0,
+    number_attempts = 0,
+    points_list_original = array_fill(iq.points_list_original[1], ARRAY[100]),
+    points_list = array_fill(iq.points_list_original[1], ARRAY[100]),
+    some_submission = NULL,
+    some_perfect_submission = NULL,
+    some_nonzero_submission = NULL,
+    highest_submission_score = NULL,
+    first_submission_score = NULL,
+    last_submission_score = NULL,
+    max_submission_score = NULL,
+    average_submission_score = NULL,
+    submission_score_array = NULL,
+    incremental_submission_score_array = NULL,
+    incremental_submission_points_array = NULL,
+    used_for_grade = NULL
+  WHERE iq.assessment_question_id = $assessment_question_id
+)
 UPDATE submissions AS s
 SET
   -- TODO: are we missing anything here?
@@ -45,6 +70,7 @@ FROM
 WHERE
   -- TODO: should we filter to only open variants?
   iq.assessment_question_id = $assessment_question_id
+  AND iq.open
   AND s.graded_at IS NULL
 ORDER BY s.id ASC
 LIMIT 1;

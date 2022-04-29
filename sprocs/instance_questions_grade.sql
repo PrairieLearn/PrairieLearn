@@ -34,6 +34,7 @@ BEGIN
     INTO new_values
     FROM instance_questions_points(instance_question_id, submission_score);
 
+
     UPDATE instance_questions AS iq
     SET
         open = new_values.open,

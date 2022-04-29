@@ -1,24 +1,34 @@
 CREATE FUNCTION
     variants_select_submission_for_grading (
         IN variant_id bigint,
-        IN check_submission_id bigint DEFAULT NULL
+        IN check_submission_id bigint DEFAULT NULL,
+        IN allow_old_submission boolean DEFAULT FALSE
     ) RETURNS TABLE (submission submissions)
 AS $$
 BEGIN
     PERFORM variants_lock(variant_id);
 
-    -- start with the most recent submission
-    SELECT s.*
-    INTO submission
-    FROM submissions AS s
-    WHERE s.variant_id = variants_select_submission_for_grading.variant_id
-    ORDER BY s.date DESC, s.id DESC
-    LIMIT 1;
+    IF NOT allow_old_submission THEN
+        -- start with the most recent submission
+        SELECT s.*
+        INTO submission
+        FROM submissions AS s
+        WHERE s.variant_id = variants_select_submission_for_grading.variant_id
+        ORDER BY s.date DESC, s.id DESC
+        LIMIT 1;
 
-    IF NOT FOUND THEN RETURN; END IF; -- no submissions
+        IF NOT FOUND THEN RETURN; END IF; -- no submissions
 
-    IF check_submission_id IS NOT NULL and check_submission_id != submission.id THEN
-        RAISE EXCEPTION 'check_submission_id mismatch: % vs %', check_submission_id, submission.id;
+        IF check_submission_id IS NOT NULL and check_submission_id != submission.id THEN
+            RAISE EXCEPTION 'check_submission_id mismatch: % vs %', check_submission_id, submission.id;
+        END IF;
+    ELSE
+        SELECT s.*
+        INTO submission
+        FROM submissions AS s
+        WHERE s.id = check_submission_id;
+
+        IF NOT FOUND THEN RETURN; END IF; -- no submissions
     END IF;
 
     -- mark submission as regradable

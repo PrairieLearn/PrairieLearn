@@ -78,8 +78,9 @@ async function regradeAssessmentQuestionSubmissions(assessmentQuestionId) {
           nextSubmission.id,
           nextSubmission.question,
           nextSubmission.course,
-          null, // TODO: authn_user_id - do we need this?
+          1, // TODO: authn_user_id - do we need this? YES WE DO.
           true, // overrideGradeRateCheck
+          true, // allowOldSubmission
           (err) => {
             if (err) {
               console.error(`Error grading submission ${nextSubmission.id}`, err, nextSubmission);
