@@ -1,20 +1,21 @@
 CREATE FUNCTION
     grading_jobs_update_after_grading(
-        grading_job_id bigint,
-        received_time timestamptz,
-        start_time timestamptz,
-        finish_time timestamptz,
-        new_submitted_answer jsonb, -- NULL => no change
-        new_format_errors jsonb,
-        new_gradable boolean,
-        new_broken boolean,
-        new_params jsonb, -- NULL => no change
-        new_true_answer jsonb, -- NULL => no change
-        new_feedback jsonb,
-        new_partial_scores jsonb,
-        new_score double precision,
-        new_v2_score double precision
-    ) RETURNS grading_job grading_jobs
+        IN grading_job_id bigint,
+        IN received_time timestamptz,
+        IN start_time timestamptz,
+        IN finish_time timestamptz,
+        IN new_submitted_answer jsonb, -- NULL => no change
+        IN new_format_errors jsonb,
+        IN new_gradable boolean,
+        IN new_broken boolean,
+        IN new_params jsonb, -- NULL => no change
+        IN new_true_answer jsonb, -- NULL => no change
+        IN new_feedback jsonb,
+        IN new_partial_scores jsonb,
+        IN new_score double precision,
+        IN new_v2_score double precision,
+        OUT grading_job grading_jobs
+    )
 AS $$
 <<main>>
 DECLARE
