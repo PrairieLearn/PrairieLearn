@@ -9,7 +9,7 @@
   "dependencies": {
     "@grpc/grpc-js": "^1.5.5",
     "@opentelemetry/api": "^1.0.4",
-    "@opentelemetry/core": "^1.0.1",
+    "@opentelemetry/core": "^1.2.0",
     "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
     "@opentelemetry/instrumentation-aws-sdk": "^0.5.0",
     "@opentelemetry/instrumentation-connect": "^0.27.1",
