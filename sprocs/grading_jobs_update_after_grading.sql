@@ -19,7 +19,6 @@ CREATE FUNCTION
 AS $$
 <<main>>
 DECLARE
-    grading_job grading_jobs%rowtype;
     credit integer;
     submission_id bigint;
     submission_date timestamptz;
