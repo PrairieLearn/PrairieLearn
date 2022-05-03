@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Set a default for PGDATA if it's not already set
-PGDATA=${PGDATA:=/var/postgres}
+export PGDATA=${PGDATA:=/var/postgres}
 
 if [[ -z "$1" ]]; then
     ACTION=start
