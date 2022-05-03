@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set a default for PGDATA if it's not already set
+PGDATA=${PGDATA:=/var/postgres}
+
 if [[ -z "$1" ]]; then
     ACTION=start
 else
@@ -13,9 +16,14 @@ if [[ "$ACTION" == "start" ]]; then
     fi
 fi
 
+# meet postgresql requirement that the folder must be owned by user postgres
+if [[ "$ACTION" == "init" ]]; then
+    chown -f postgres:postgres $PGDATA
+fi
+
 # Only locally start postgres if we weren't given a PG_HOST environment variable
 if [[ -z "$PG_HOST" ]]; then
-  su postgres -c "pg_ctl --silent --pgdata=/var/postgres --log=/var/postgres/postgresql.log $ACTION"
+  su postgres -c "pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}"
 fi
 
 if [[ "$ACTION" == "start" ]]; then
