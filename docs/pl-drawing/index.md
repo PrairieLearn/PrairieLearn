@@ -137,6 +137,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `angle`        | float  | 0       | Angle of rotation around the start point of the line. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                      |
 | `x2`           | float  | -       | `x` position for the end point for the line, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
 | `y2`           | float  | -       | `y` position for the end point for the line, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
+| `opacity`      | float  | 1       | Set the opacity of the line                                                                                                                                                                                                                         |
 | `stroke-color` | string | black   | Set the color of the line ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )                                                                                   |
 | `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                        |
 | `dashed-size`  | float  | \_      | Creates a dashed line with equally spaced `dashed-size`px fills.                                                                                                                                                                                    |
@@ -179,9 +180,12 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `radius`       | float  | 20      | Radius of the circle.                                                                                                                                                            |
 | `start-angle`  | float  | 0       | Start angle of the arc. Angles are measured from the horizontal axis and are positive clockwise.                                                                                 |
 | `end-angle`    | float  | 90      | End angle of the arc. Angles are measured from the horizontal axis and are positive clockwise. Arcs are formed from `start-angle` to `end-angle` going on clockwise orientation. |
+| `opacity`      | float  | 1       | Set the opacity of the arc.                                                                                                                                                      |
 | `stroke-color` | string | black   | Set the stroke color of the line ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).        |
 | `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                     |
 | `dashed-size`  | float  | \_      | Creates a dashed line with equally spaced `dashed-size`px fills.                                                                                                                 |
+
+
 
 #### Example implementations
 
@@ -212,6 +216,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `label`   | string | -       | Text to label the point.                                                                                                                                                 |
 | `offsetx` | float  | 5       | Horizontal distance of `label` from the point.                                                                                                                           |
 | `offsety` | float  | 5       | Vertical distance of `label` from the point.                                                                                                                             |
+| `opacity` | float  | 1       | Set the opacity of the point.                                                                                                                                            |
 | `color`   | string | black   | Set the fill color of the point ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 
 #### Example implementations
@@ -244,6 +249,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `y2`           | float  | 20      | `y` position for vertex 2, i.e., the vertical distance from the top border of the canvas.                                                                                   |
 | `x3`           | float  | 20      | `x` position for vertex 3, i.e., the horizontal distance from the left border of the canvas.                                                                                |
 | `y3`           | float  | 20      | `y` position for vertex 3, i.e., the vertical distance from the top border of the canvas.                                                                                   |
+| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                                 |
 | `color`        | string | red1    | Set the fill color of the triangle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-color` | string | black   | Set the stroke color of the triangle.                                                                                                                                       |
 | `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                                |
@@ -278,6 +284,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `height`       | float  | 20      | Height of the rectangle.                                                                                                                                                     |
 | `width`        | float  | 20      | Width of the rectangle.                                                                                                                                                      |
 | `angle`        | float  | 0       | Angle of rotation around the center of the rectangle. Angles are measured from the horizontal axis and are positive clockwise.                                               |
+| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                                  |
 | `color`        | string | green1  | Set the fill color of the rectangle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-color` | string | black   | Set the stroke color of the rectangle.                                                                                                                                       |
 | `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                                 |
@@ -310,6 +317,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `x1`           | float  | 20      | `x` position for the center of the circle, i.e., the horizontal distance from the left border of the canvas.                                                              |
 | `y1`           | float  | 20      | `y` position for the center of the circle, i.e., the vertical distance from the top border of the canvas.                                                                 |
 | `radius`       | float  | 20      | Radius of the circle.                                                                                                                                                     |
+| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                               |
 | `color`        | string | gray1   | Set the fill color of the circle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-color` | string | black   | Set the stroke color of the circle.                                                                                                                                       |
 | `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                              |
@@ -342,6 +350,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | Attribute      | Type   | Default | Description                                                                                                                                                               |
 | -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `plist`        | string | ''      | List of the vertices that form the polygon.                                                                                                                               |
+| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                               |
 | `color`        | string | gray1   | Set the fill color of the circle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 | `stroke-color` | string | black   | Set the stroke color of the circle.                                                                                                                                       |
 | `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                              |
