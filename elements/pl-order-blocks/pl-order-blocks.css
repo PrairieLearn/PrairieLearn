@@ -22,7 +22,6 @@ ul.pl-order-blocks-connected-sortable li:hover{
 
 li.ui-state-highlight { 
   /*This styling applies to the placeholder answer tile that appears when the user is dragging */
-  /* height: 3em !important;  */
   border: none !important;
   list-style-type: none;
   background-color: #90a4ae !important;
