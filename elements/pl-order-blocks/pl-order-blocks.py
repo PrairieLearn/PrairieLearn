@@ -58,7 +58,8 @@ def prepare(element_html, data):
                         'solution-placement', 'max-incorrect',
                         'min-incorrect', 'weight',
                         'inline', 'max-indent',
-                        'feedback', 'partial-credit']
+                        'feedback', 'partial-credit', 
+                        'code', 'code-language']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
@@ -180,6 +181,8 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
+    code = pl.get_boolean_attrib(element, 'code', False)
+    code_language = pl.get_string_attrib(element, 'code-language', '')
 
     if data['panel'] == 'question':
         mcq_options = []
@@ -236,7 +239,9 @@ def render(element_html, data):
             'help_text': help_text,
             'inline': 'inline' if inline_layout is True else None,
             'max_indent': max_indent,
-            'uuid': uuid
+            'uuid': uuid, 
+            'code': code, 
+            'code_language': code_language
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -264,7 +269,9 @@ def render(element_html, data):
             'submission': True,
             'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': student_submission,
-            'feedback': feedback
+            'feedback': feedback, 
+            'code': code, 
+            'code_language': code_language
         }
 
         if score is not None:
@@ -314,7 +321,9 @@ def render(element_html, data):
                 'true_answer': True,
                 'question_solution': question_solution,
                 'grading_mode': grading_mode,
-                'indentation_message': indentation_message
+                'indentation_message': indentation_message, 
+                'code': code, 
+                'code_language': code_language
             }
             with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params)

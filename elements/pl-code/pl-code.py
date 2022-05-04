@@ -184,7 +184,7 @@ def render(element_html, data):
 
     formatter_opts = {
         'style': 'friendly',
-        'cssclass': 'mb-2 rounded',
+        'cssclass': 'rounded',
         'prestyles': 'padding: 0.5rem; margin-bottom: 0px',
         'noclasses': True
     }
