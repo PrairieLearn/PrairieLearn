@@ -185,8 +185,6 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                     |
 | `dashed-size`  | float  | \_      | Creates a dashed line with equally spaced `dashed-size`px fills.                                                                                                                 |
 
-
-
 #### Example implementations
 
 - [element/drawingGallery]: Image gallery with drawing objects
