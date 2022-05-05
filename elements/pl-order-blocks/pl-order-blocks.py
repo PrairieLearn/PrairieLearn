@@ -115,7 +115,7 @@ def prepare(element_html, data):
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
 
         if code:
-            inner_html = '<pl-code' + ('language="' + code_language + '"' if code_language else '') + '>' + inner_html + '</pl-code>'
+            inner_html = '<pl-code' + (' language="' + code_language + '"' if code_language else '') + '>' + inner_html + '</pl-code>'
 
         answer_data_dict = {'inner_html': inner_html,
                             'indent': answer_indent,
