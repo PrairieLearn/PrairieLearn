@@ -21,12 +21,7 @@ $(function() {
             </ul>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
-                    {{#code}}
-                    <li class="shadow" uuid="{{uuid}}" style="list-style-type:none;" string="{{inner_html}}"><pl-code language="{{code_language}}">{{{inner_html}}}</pl-code></li>
-                    {{/code}}
-                    {{^code}}
-                    <li class="list-group-item shadow" uuid="{{uuid}}" string="{{inner_html}}">{{{inner_html}}}</li>
-                    {{/code}}
+                    <li class="{{block_formatting}} shadow" uuid="{{uuid}}" string="{{inner_html}}">{{{inner_html}}}</li>
                 {{/options}}
             </ul>
         </div>
@@ -40,12 +35,7 @@ $(function() {
             </ul>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
-                    {{#code}}
-                    <li class="shadow" uuid="{{uuid}}" style="list-style-type:none;" string="{{inner_html}}" style='margin-left: {{indent}}px;><pl-code language="{{code_language}}">{{{inner_html}}}</pl-code></li>
-                    {{/code}}
-                    {{^code}}
-                    <li class="list-group-item shadow" uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;>{{{inner_html}}}</li>
-                    {{/code}}
+                    <li uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;' class="{{block_formatting}} shadow">{{{inner_html}}}</li>
                 {{/submission_dict}}
             </ul>
         </div>
@@ -72,12 +62,7 @@ $(function() {
         </ul>
         <ul class="list-group submission_table">
             {{#student_submission}}
-                {{#code}}
-                <li uuid="{{uuid}}" style="list-style-type:none;" string="{{inner_html}}" style='margin-left: {{indent}}px;><pl-code language="{{code_language}}">{{{inner_html}}}</pl-code></li>
-                {{/code}}
-                {{^code}}
-                <li class="list-group-item" uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;>{{{inner_html}}}</li>
-                {{/code}}            
+            	<li class="{{block_formatting}}" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
             {{/student_submission}}
         </ul>
         {{{feedback}}}
@@ -100,12 +85,7 @@ $(function() {
         </ul>
         <ul class="list-group answer_table">
         {{#question_solution}}
-            {{#code}}
-            <li uuid="{{uuid}}" style="list-style-type:none;" string="{{inner_html}}" style='margin-left: {{indent}}px;><pl-code language="{{code_language}}">{{{inner_html}}}</pl-code></li>
-            {{/code}}
-            {{^code}}
-            <li class="list-group-item" uuid="{{uuid}}" string="{{inner_html}}" style='margin-left: {{indent}}px;>{{{inner_html}}}</li>
-            {{/code}}  
+            <li class="{{block_formatting}}" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
         {{/question_solution}}
         </ul>
     </div>

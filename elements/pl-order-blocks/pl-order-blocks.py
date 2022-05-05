@@ -46,6 +46,9 @@ def get_graph_info(html_tags):
     depends = depends.strip().split(',') if depends else []
     return tag, depends
 
+def add_code_tags(inner_html, language): 
+    return '<pl-code language="' + language + '">' + inner_html + '</pl-code>'
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -66,6 +69,9 @@ def prepare(element_html, data):
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
+
+    code = pl.get_boolean_attrib(element, 'code', False)
+    code_language = pl.get_string_attrib(element, 'code-language', '')
 
     if grading_method in ['dag', 'ranking']:
         partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'lcs')
@@ -111,6 +117,8 @@ def prepare(element_html, data):
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
 
+        if code: 
+            inner_html = add_code_tags(inner_html, code_language)
         answer_data_dict = {'inner_html': inner_html,
                             'indent': answer_indent,
                             'ranking': ranking,
@@ -182,7 +190,8 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
     code = pl.get_boolean_attrib(element, 'code', False)
-    code_language = pl.get_string_attrib(element, 'code-language', '')
+
+    block_formatting = 'pl-order-blocks-code' if code else 'list-group-item'
 
     if data['panel'] == 'question':
         mcq_options = []
@@ -240,8 +249,7 @@ def render(element_html, data):
             'inline': 'inline' if inline_layout is True else None,
             'max_indent': max_indent,
             'uuid': uuid, 
-            'code': code, 
-            'code_language': code_language
+            'block_formatting': block_formatting
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -270,8 +278,7 @@ def render(element_html, data):
             'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': student_submission,
             'feedback': feedback, 
-            'code': code, 
-            'code_language': code_language
+            'block_formatting': block_formatting
         }
 
         if score is not None:
@@ -322,8 +329,7 @@ def render(element_html, data):
                 'question_solution': question_solution,
                 'grading_mode': grading_mode,
                 'indentation_message': indentation_message, 
-                'code': code, 
-                'code_language': code_language
+                'block_formatting': block_formatting
             }
             with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params)

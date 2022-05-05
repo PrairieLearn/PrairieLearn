@@ -13,6 +13,9 @@ div.pl-order-blocks-bottom {
   margin-bottom: 20px;
 }
 
+li.pl-order-blocks-code {
+  list-style-type: none;
+}
 
 ul.pl-order-blocks-connected-sortable li:hover{
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
