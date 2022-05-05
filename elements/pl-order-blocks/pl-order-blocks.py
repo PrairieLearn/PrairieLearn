@@ -46,6 +46,7 @@ def get_graph_info(html_tags):
     depends = depends.strip().split(',') if depends else []
     return tag, depends
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
@@ -57,7 +58,7 @@ def prepare(element_html, data):
                         'solution-placement', 'max-incorrect',
                         'min-incorrect', 'weight',
                         'inline', 'max-indent',
-                        'feedback', 'partial-credit', 
+                        'feedback', 'partial-credit',
                         'code', 'code-language']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
@@ -113,7 +114,7 @@ def prepare(element_html, data):
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
 
-        if code: 
+        if code:
             inner_html = '<pl-code' + ('language="' + code_language + '"' if code_language else '') + '>' + inner_html + '</pl-code>'
 
         answer_data_dict = {'inner_html': inner_html,
@@ -245,7 +246,7 @@ def render(element_html, data):
             'help_text': help_text,
             'inline': 'inline' if inline_layout is True else None,
             'max_indent': max_indent,
-            'uuid': uuid, 
+            'uuid': uuid,
             'block_formatting': block_formatting
         }
 
@@ -274,7 +275,7 @@ def render(element_html, data):
             'submission': True,
             'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': student_submission,
-            'feedback': feedback, 
+            'feedback': feedback,
             'block_formatting': block_formatting
         }
 
@@ -325,7 +326,7 @@ def render(element_html, data):
                 'true_answer': True,
                 'question_solution': question_solution,
                 'grading_mode': grading_mode,
-                'indentation_message': indentation_message, 
+                'indentation_message': indentation_message,
                 'block_formatting': block_formatting
             }
             with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
