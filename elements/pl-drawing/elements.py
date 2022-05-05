@@ -934,6 +934,7 @@ class Point(BaseElement):
             'offsety': pl.get_float_attrib(el, 'offsety', 5),
             'originX': 'center',
             'originY': 'center',
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'fill': color,
             'selectable': drawing_defaults['selectable'],
             'evented': drawing_defaults['selectable']
@@ -953,7 +954,7 @@ class Point(BaseElement):
         return True
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'label', 'offsetx', 'offsety', 'color']
+        return ['x1', 'y1', 'radius', 'label', 'offsetx', 'offsety', 'opacity', 'color']
 
 
 class Coordinates(BaseElement):
@@ -1092,6 +1093,7 @@ class Rectangle(BaseElement):
             'angle': pl.get_float_attrib(el, 'angle', drawing_defaults['angle']),
             'originX': 'center',
             'originY': 'center',
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'fill': color,
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
@@ -1101,7 +1103,7 @@ class Rectangle(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'height', 'width', 'angle', 'color', 'stroke-color', 'stroke-width', 'selectable']
+        return ['x1', 'y1', 'height', 'width', 'angle', 'opacity', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Triangle(BaseElement):
@@ -1113,6 +1115,7 @@ class Triangle(BaseElement):
             'p2': {'x': pl.get_float_attrib(el, 'x2', 60), 'y': pl.get_float_attrib(el, 'y2', 40)},
             'p3': {'x': pl.get_float_attrib(el, 'x3', 40), 'y': pl.get_float_attrib(el, 'y3', 20)},
             'fill': color,
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'strokeUniform': True,
@@ -1123,7 +1126,7 @@ class Triangle(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color', 'stroke-color', 'stroke-width', 'selectable']
+        return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color', 'opacity', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Circle(BaseElement):
@@ -1139,6 +1142,7 @@ class Circle(BaseElement):
             'offsety': pl.get_float_attrib(el, 'offsety', 5),
             'originX': 'center',
             'originY': 'center',
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'stroke': stroke_color,
             'fill': color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
@@ -1149,7 +1153,7 @@ class Circle(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'color', 'stroke-color', 'stroke-width', 'label', 'offsetx', 'offsety', 'selectable']
+        return ['x1', 'y1', 'radius', 'opacity', 'color', 'stroke-color', 'stroke-width', 'label', 'offsetx', 'offsety', 'selectable']
 
 
 class Polygon(BaseElement):
@@ -1159,6 +1163,7 @@ class Polygon(BaseElement):
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
             'pointlist': pointlist,
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'fill': color,
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', 1),
@@ -1168,7 +1173,7 @@ class Polygon(BaseElement):
         }
 
     def get_attributes():
-        return ['plist', 'color', 'stroke-color', 'stroke-width', 'selectable']
+        return ['plist', 'opacity', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Spring(BaseElement):
@@ -1228,6 +1233,7 @@ class Line(BaseElement):
             'y2': y2,
             'originX': 'center',
             'originY': 'center',
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'strokeDashArray': dashed_array,
@@ -1236,7 +1242,7 @@ class Line(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'width', 'angle', 'x2', 'y2', 'stroke-color', 'stroke-width', 'dashed-size']
+        return ['x1', 'y1', 'width', 'angle', 'x2', 'y2', 'opacity', 'stroke-color', 'stroke-width', 'dashed-size']
 
 
 class Arc(BaseElement):
@@ -1254,6 +1260,7 @@ class Arc(BaseElement):
             'radius': pl.get_float_attrib(el, 'radius', drawing_defaults['radius']),
             'startAngle': theta1,
             'endAngle': theta2,
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'strokeDashArray': dashed_array,
@@ -1265,7 +1272,7 @@ class Arc(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'stroke-color', 'stroke-width', 'dashed-size']
+        return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'opacity', 'stroke-color', 'stroke-width', 'dashed-size']
 
 
 class Text(BaseElement):
