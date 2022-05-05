@@ -46,10 +46,6 @@ def get_graph_info(html_tags):
     depends = depends.strip().split(',') if depends else []
     return tag, depends
 
-def add_code_tags(inner_html, language): 
-    return '<pl-code language="' + language + '">' + inner_html + '</pl-code>'
-
-
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
@@ -71,7 +67,7 @@ def prepare(element_html, data):
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
 
     code = pl.get_boolean_attrib(element, 'code', False)
-    code_language = pl.get_string_attrib(element, 'code-language', '')
+    code_language = pl.get_string_attrib(element, 'code-language', None)
 
     if grading_method in ['dag', 'ranking']:
         partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'lcs')
@@ -118,7 +114,8 @@ def prepare(element_html, data):
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
 
         if code: 
-            inner_html = add_code_tags(inner_html, code_language)
+            inner_html = '<pl-code' + ('language="' + code_language + '"' if code_language else '') + '>' + inner_html + '</pl-code>'
+
         answer_data_dict = {'inner_html': inner_html,
                             'indent': answer_indent,
                             'ranking': ranking,
