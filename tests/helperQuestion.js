@@ -776,8 +776,8 @@ module.exports = {
             var params = { job_sequence_id: locals.job_sequence_id };
             sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
               if (ERR(err, callback)) return;
-              locals.job_sequence_status = result.rows[0].status;
-              if (locals.job_sequence_status === 'Running') {
+              locals.job_sequence = result.rows[0];
+              if (locals.job_sequence.status === 'Running') {
                 setTimeout(checkComplete, 10);
               } else {
                 callback(null);
@@ -786,23 +786,24 @@ module.exports = {
           };
           setTimeout(checkComplete, 10);
         });
-        it('should be successful', function () {
-          assert.equal(locals.job_sequence_status, 'Success');
-        });
-        it('should produce no issues', function (callback) {
-          sqldb.query(sql.select_issues_for_last_variant, [], (err, result) => {
-            if (ERR(err, callback)) return;
-            if (result.rowCount > 0) {
-              callback(
-                new Error(
-                  `found ${result.rowCount} issues (expected zero issues):\n` +
-                    JSON.stringify(result.rows, null, '    ')
-                )
-              );
-              return;
-            }
-            callback(null);
-          });
+        it('should be successful and produce no issues', async function () {
+          const issues = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
+
+          // To aid in debugging, if the job failed, we'll fetch the logs from
+          // all child jobs and print them out. We'll also log any issues. We
+          // do this before making assertions to ensure that they're printed.
+          if (locals.job_sequence.status !== 'Success') {
+            console.log(locals.job_sequence);
+            const params = { job_sequence_id: locals.job_sequence_id };
+            const result = await sqldb.queryAsync(sql.select_jobs, params);
+            console.log(result.rows);
+          }
+          if (issues.rows.length > 0) {
+            console.log(issues.rows);
+          }
+
+          assert.equal(locals.job_sequence.status, 'Success');
+          assert.lengthOf(issues.rows, 0);
         });
       });
     });
