@@ -59,7 +59,7 @@ window.PLOrderBlocks = function (uuid, options) {
   let sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: 'li:not(.info-fixed)',
-    cancel: '.info',
+    cancel: '.info,.pl-symbolic-input',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create: function (event) {
