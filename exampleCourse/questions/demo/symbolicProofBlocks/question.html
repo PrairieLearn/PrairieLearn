@@ -1,4 +1,4 @@
-<pl-question-panel>
+<!-- <pl-question-panel>
   <p> You can use Proof Blocks by using a <code>pl-order-blocks</code> element
     with <code>grading-method="dag"</code>. Use the <code>depends</code>
     attribute on each line is to denote which lines of the proof must appear
@@ -59,25 +59,32 @@
   <pl-answer correct="true" tag="6" depends="g1,g2">This completes the proof.</pl-answer>
 </pl-order-blocks>
 
-<hr> 
+<hr>
 
 <pl-question-panel>
   <p>Drag and drop <strong style="color:red;">all</strong> of the blocks below to create a proof by induction of the following statement.
     </p>
   <p style="color:red;">
       $$\forall n \in \mathbb{N}, \sum_{j=0}^n \frac{1}{j(j+1)} = \frac{n}{n+1}.$$
-  </p></pl-question-panel>
+  </p></pl-question-panel> -->
 
-
-<pl-order-blocks solution-placement="bottom" feedback="first-wrong" answers-name="divides" source-blocks-order="random" indentation="false" grading-method="dag">
+<pl-order-blocks solution-placement="bottom" feedback="first-wrong" answers-name="divides" source-blocks-order="ordered" indentation="false" grading-method="dag">
 <pl-answer correct="true" tag="1" depends="">Proof by induction on $n$.</pl-answer>
-<pl-answer correct="true" tag="2" depends="1">Inductive Predicate: $P(n):$  $ \sum_{j=0}^n \frac{1}{j(j+1)} =$ <pl-symbolic-input answers-name="x" variables="n" ></pl-symbolic-input>
+<pl-answer correct="true" tag="2" depends="1">Inductive Predicate: $P(n):$  $ \sum_{j=0}^n \frac{1}{j(j+1)} =$ <pl-symbolic-input answers-name="closed_form" variables="n" ></pl-symbolic-input>
   <!-- \frac{n}{n+1}$ --> .</pl-answer>
-<pl-answer correct="true" tag="3" depends="2">Base case: We need to show $P(1)$. At $n=1$, $\sum_{j=0}^n \frac{1}{j(j+1)} = \frac{1}{1(1+1)} =$<pl-symbolic-input answers-name="x" variables="n" ></pl-symbolic-input> <!--\frac{1}{2}$-->. Also $\frac{n}{n+1} = $<pl-symbolic-input answers-name="x" variables="n" ></pl-symbolic-input> <!--\frac{1}{2}$-->. So the two sides of the equation are equal and $P(1)$ holds.</pl-answer>
-<pl-answer correct="true" tag="4" depends="2">Inductive Hypothesis: Suppose that $P(n):$ $ \sum_{j=0}^n \frac{1}{j(j+1)} = \frac{n}{n+1}$ holds for $n=1,2,...,k$ for some integer $k \geq 1$.</pl-answer>
-<pl-answer correct="true" tag="5" depends="4">Inductive Step: we need to show that $P(k+1):$ $ \sum_{j=0}^{k+1} \frac{1}{j(j+1)} = $<pl-symbolic-input answers-name="x" variables="k"></pl-symbolic-input> <!--\frac{k+1}{k+2}$--> is true .</pl-answer>
-<pl-answer correct="true" tag="6" depends="5">Consider $\sum_{j=0}^{k+1} \frac{1}{j(j+1)}$. </pl-answer>
-<pl-answer correct="true" tag="7" depends="6">By removing the top term of the summation and then applying the inductive hypothesis, we get. $\sum_{j=0}^{k+1} \frac{1}{j(j+1)} = \frac{1}{(k+1)(k+2)} + \sum_{j=0}^{k} \frac{1}{j(j+1)} = \frac{1}{(k+1)(k+2)} + \frac{k}{k+1}$</pl-answer>
-<pl-answer correct="true" tag="8" depends="7">Adding the two fractions together: $\frac{1}{(k+1)(k+2)} + \frac{k}{k+1} = \frac{1 + k(k+2)}{(k+1)(k+2)} = \frac{k^2 + 2k + 1}{(k+1)(k+2)} = \frac{(k+1)^2}{(k+1)(k+2)} = \frac{k+1}{k+2}$</pl-answer>
-<pl-answer correct="true" tag="9" depends="8">So $\sum_{j=0}^{k+1}$ <pl-symbolic-input answers-name="x" variables="j"></pl-symbolic-input> <!--\frac{1}{j(j+1)}--> = $\frac{k+1}{k+2}$, which is what we needed to show.</pl-answer>
+<pl-answer correct="true" tag="3" depends="2">Base case: We need to show $P(1)$. At $n=1$, $\sum_{j=0}^n \frac{1}{j(j+1)} = \frac{1}{1(1+1)} =$<pl-symbolic-input answers-name="base_left" variables="n" ></pl-symbolic-input> <!--\frac{1}{2}$-->. Also $\frac{n}{n+1} = $<pl-symbolic-input answers-name="base_right" variables="n" ></pl-symbolic-input> <!--\frac{1}{2}$-->. So the two sides of the equation are equal and $P(1)$ holds.</pl-answer>
+<!-- <pl-answer correct="true" tag="4" depends="2">Inductive Hypothesis: Suppose that $P(n):$ $ \sum_{j=0}^n \frac{1}{j(j+1)} = \frac{n}{n+1}$ holds for $n=1,2,...,k$ for some integer $k \geq 1$.</pl-answer> -->
+
+<!-- <pl-answer correct="true" tag="5" depends="4">Inductive Step: we need to show that $P(k+1):$ $ \sum_{j=0}^{k+1} \frac{1}{j(j+1)} = $<pl-symbolic-input answers-name="x" variables="k"></pl-symbolic-input>  -->
+  <!--\frac{k+1}{k+2}$-->
+  <!-- is true . </pl-answer> -->
+<!-- <pl-answer correct="true" tag="5" depends="4">Inductive Step: we need to show that $P(k+1):$ $ \sum_{j=0}^{k+1} \frac{1}{j(j+1)} = $\frac{k+1}{k+2}$ is true .</pl-answer> -->
+<!-- <pl-answer correct="true" tag="6" depends="5">Consider $\sum_{j=0}^{k+1} \frac{1}{j(j+1)}$. </pl-answer> -->
+<!-- <pl-answer correct="true" tag="7" depends="6">By removing the top term of the summation and then applying the inductive hypothesis, we get. $\sum_{j=0}^{k+1} \frac{1}{j(j+1)} = \frac{1}{(k+1)(k+2)} + \sum_{j=0}^{k} \frac{1}{j(j+1)} = \frac{1}{(k+1)(k+2)} + \frac{k}{k+1}$</pl-answer> -->
+<!-- <pl-answer correct="true" tag="8" depends="7">Adding the two fractions together: $\frac{1}{(k+1)(k+2)} + \frac{k}{k+1} = \frac{1 + k(k+2)}{(k+1)(k+2)} = \frac{k^2 + 2k + 1}{(k+1)(k+2)} = \frac{(k+1)^2}{(k+1)(k+2)} = \frac{k+1}{k+2}$</pl-answer> -->
+<!-- <pl-answer correct="true" tag="9" depends="8">So $\sum_{j=0}^{k+1}$ <pl-symbolic-input answers-name="x" variables="j"></pl-symbolic-input>  -->
+  <!--\frac{1}{j(j+1)}-->
+  <!-- = $\frac{k+1}{k+2}$, which is what we needed to show.</pl-answer> -->
+<!-- <pl-answer correct="true" tag="9" depends="8">So $\sum_{j=0}^{k+1} \frac{1}{j(j+1)} = \frac{k+1}{k+2}$, which is what we needed to show.</pl-answer> -->
+
 </pl-order-blocks>
