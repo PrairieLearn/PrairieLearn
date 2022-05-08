@@ -168,8 +168,8 @@ async.series(
         database: config.postgresqlDatabase,
         host: config.postgresqlHost,
         password: config.postgresqlPassword,
-        max: 100,
-        idleTimeoutMillis: 30000,
+        max: config.postgresqlPoolSize,
+        idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
       logger.verbose(
         `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`
