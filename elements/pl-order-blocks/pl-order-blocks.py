@@ -59,16 +59,13 @@ def prepare(element_html, data):
                         'min-incorrect', 'weight',
                         'inline', 'max-indent',
                         'feedback', 'partial-credit',
-                        'code', 'code-language']
+                        'format', 'code-language']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
     check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     feedback_type = pl.get_string_attrib(element, 'feedback', FEEDBACK_DEFAULT)
-
-    code = pl.get_boolean_attrib(element, 'code', False)
-    code_language = pl.get_string_attrib(element, 'code-language', None)
 
     if grading_method in ['dag', 'ranking']:
         partial_credit_type = pl.get_string_attrib(element, 'partial-credit', 'lcs')
@@ -84,6 +81,11 @@ def prepare(element_html, data):
     if (grading_method not in ['dag', 'ranking'] and feedback_type != 'none') or \
        (grading_method in ['dag', 'ranking'] and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
+
+    format = pl.get_string_attrib(element, 'format', 'default')
+    code_language = pl.get_string_attrib(element, 'code-language', None)
+    if format != 'code' and code_language is not None:
+        raise Exception('code-language attribute may only be used with format="code"')
 
     correct_answers = []
     incorrect_answers = []
@@ -114,7 +116,7 @@ def prepare(element_html, data):
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
 
-        if code:
+        if format == 'code':
             inner_html = '<pl-code' + (' language="' + code_language + '"' if code_language else '') + '>' + inner_html + '</pl-code>'
 
         answer_data_dict = {'inner_html': inner_html,
@@ -187,9 +189,9 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
-    code = pl.get_boolean_attrib(element, 'code', False)
+    format = pl.get_string_attrib(element, 'format', 'default')
 
-    block_formatting = 'pl-order-blocks-code' if code else 'list-group-item'
+    block_formatting = 'pl-order-blocks-code' if format == 'code' else 'list-group-item'
 
     if data['panel'] == 'question':
         mcq_options = []
