@@ -20,6 +20,7 @@ const qidsTestCourse = [
   'downloadFile',
   'positionTimeGraph',
   'prairieDrawFigure',
+  'orderBlocks',
 ];
 
 describe('Auto-test questions in testCourse', function () {
