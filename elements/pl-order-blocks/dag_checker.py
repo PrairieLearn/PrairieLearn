@@ -4,18 +4,6 @@ import itertools
 from copy import deepcopy
 
 
-def validate_grouping(graph, group_belonging):
-    for node in graph:
-        group_tag = group_belonging.get(node)
-        if group_tag is None:
-            if sum(group_belonging.get(dependency) is not None for (dependency, _) in graph.in_edges(node)) != 0:
-                return False
-        else:
-            if not all(group_belonging.get(dependency) == group_tag for (dependency, _) in graph.in_edges(node)):
-                return False
-    return True
-
-
 def check_topological_sorting(submission, graph):
     """
     :param submission: candidate for topological sorting
@@ -29,35 +17,6 @@ def check_topological_sorting(submission, graph):
         seen.add(node)
     return len(submission)
 
-
-def check_grouping(submission, group_belonging):
-    """
-    :param submission: candidate solution
-    :param group_belonging: group that each block belongs to
-    :return: index of first element breaking condition that members of the same group must be
-    adjacent, or length of list if they all meet the condition
-    """
-    group_sizes = Counter(group_belonging.values())
-    cur_group = None
-    cur_group_size = 0
-    for i, node in enumerate(submission):
-        group_id = group_belonging.get(node)
-        if group_id is not None and cur_group is None:
-            cur_group = group_id
-            cur_group_size = 1
-        elif group_id is None and cur_group is not None:
-            return i
-        elif group_id is not None and cur_group is not None:
-            if group_id == cur_group:
-                cur_group_size += 1
-                if cur_group_size == group_sizes[cur_group]:
-                    cur_group = None
-                    cur_group_size = 0
-            else:
-                return i
-    return len(submission)
-
-
 def dag_to_nx(depends_graph):
     """Convert input graph format into NetworkX object to utilize their algorithms."""
     graph = nx.DiGraph()
@@ -68,29 +27,7 @@ def dag_to_nx(depends_graph):
             graph.add_edge(node2, node)
     return graph
 
-
-def add_edges_for_groups(graph, group_belonging):
-    groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values()) if group is not None}
-    if not validate_grouping(graph, group_belonging):
-        raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
-
-    # if a group G depends on a node N, all blocks in the group G should depend on Node N
-    for group_tag in groups:
-        for dependency, _ in graph.in_edges(group_tag):
-            for node in groups[group_tag]:
-                graph.add_edge(dependency, node)
-
-    # if a node N depends on a group G, node N should depend on all blocks in G
-    for node in graph.nodes():
-        for dependency, _ in deepcopy(graph.in_edges(node)):
-            if dependency in groups:
-                graph.add_edges_from([(tag, node) for tag in groups[dependency]])
-
-    for group_tag in groups:
-        graph.remove_node(group_tag)
-
-
-def grade_dag(submission, depends_graph, group_belonging):
+def grade_dag(submission, depends_graph):
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
@@ -101,15 +38,13 @@ def grade_dag(submission, depends_graph, group_belonging):
     and the length of any correct solution
     """
     graph = dag_to_nx(depends_graph)
-    add_edges_for_groups(graph, group_belonging)
 
     if not nx.is_directed_acyclic_graph(graph):
         raise Exception('Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.')
 
     top_sort_correctness = check_topological_sorting(submission, graph)
-    grouping_correctness = check_grouping(submission, group_belonging)
 
-    return (top_sort_correctness if top_sort_correctness < grouping_correctness else grouping_correctness), graph.number_of_nodes()
+    return top_sort_correctness, graph.number_of_nodes()
 
 
 def is_vertex_cover(G, vertex_cover):
@@ -141,7 +76,6 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     :return: edit distance from the student submission to some correct solution
     """
     graph = dag_to_nx(depends_graph)
-    add_edges_for_groups(graph, group_belonging)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
@@ -162,16 +96,6 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
 
         seen.add(node1)
 
-    # if two nodes are in the same `pl-block-group`, but don't occur next to one another in the
-    # submission, add them and all nodes in between to the problematic subgraph
-    for i in range(len(submission)):
-        for j in range(i + 2, len(submission)):
-            node1, node2 = submission[i], submission[j]
-            if group_belonging.get(node1) is None or group_belonging.get(node1) != group_belonging.get(node2):
-                continue
-            if not all([group_belonging[x] == group_belonging[node1] for x in submission[i:j + 1]]):
-                problematic_subgraph.add_nodes_from(submission[i:j + 1])
-
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
     else:
@@ -179,14 +103,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
         for i in range(1, problematic_subgraph.number_of_nodes() - 1):
             for subset in itertools.combinations(problematic_subgraph, i):
                 # make sure deleting subset will resolve blocks out of order
-                if not is_vertex_cover(problematic_subgraph, subset):
-                    continue
-
-                # make sure deleting subset will resolve a separated pl-block-group
-                edited_submission = [x for x in submission if x not in subset]
-                edited_group_belonging = {key: group_belonging.get(key) for key in edited_submission}
-                if len(edited_submission) == check_grouping(edited_submission, edited_group_belonging):
-                    mvc_size = len(subset)
+                if is_vertex_cover(problematic_subgraph, subset):
                     break
 
             if mvc_size < problematic_subgraph.number_of_nodes() - 1:
