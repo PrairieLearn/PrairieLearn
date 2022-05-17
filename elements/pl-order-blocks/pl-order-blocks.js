@@ -61,7 +61,7 @@ window.PLOrderBlocks = function (uuid, options) {
     items: 'li:not(.info-fixed)',
     cancel:
       /* default */ 'input,textarea,button,select,option' +
-      /* PL-specific */ ',.pl-symbolic-input,.pl-string-input,.pl-integer-input,.pl-number-input',
+      /* Also allow links */ ',a',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create: function () {
