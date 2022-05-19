@@ -157,12 +157,14 @@
                     <option value="" <% if (!link.assessment_id) { %>selected<% } %>>
                       -- None
                     </option>
+                    <% if (assessments) { %>
                     <% assessments.forEach(function(a) { %>
                     <option value="<%= a.assessment_id %>"
                             <% if (link.assessment_id == a.assessment_id) { %>selected<% } %>
                             ><%= a.label %>: <%= a.title %> (<%= a.tid %>)
                     </option>
                     <% }); %>
+                    <% } %>
                   </select>
                 </form>
               </td>
