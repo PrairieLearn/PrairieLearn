@@ -15,49 +15,7 @@
           <p class="lead text-center">
             <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
           </p>
-          <% if (groupsize == 0) { %>
-            <% if (!permissions.student_authz_join && !permissions.student_authz_create) { %>
-              <p class="text-center">
-                This is a group homework. Please wait for the instructor to assign groups.
-             </p>
-            <% } else { %>
-          <p class="text-center">
-             This is a group assessment.
-          </p>
-          <% if (typeof used_join_code !== 'undefined') { %>
-            <div class="alert alert-danger" role="alert">
-              Failed to join the group with join code <span class="badge badge-secondary"><%= used_join_code %></span>. It is already full or does not exist. Please try to join another one.
-            </div>
-          <% } %>
-          <% if (typeof invalidGroupName !== 'undefined') { %>
-            <div class="alert alert-danger" role="alert">
-              The group name is invalid. Alpha and numeric characters only. ([0-9] [a-z] [A-Z]), with maximum length of 30 characters.
-            </div>
-          <% } %>
-          <% if (typeof uniqueGroupName !== 'undefined') { %>
-            <div class="alert alert-danger" role="alert">
-              Failed to create the group. It is already taken. Please try another one.
-            </div>
-          <% } %>
-          <%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
-          <% } %>
-          <% } else {%>
-            <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
-            <% if (start) { %>
-            <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
-              <input type="hidden" name="__action" value="new_instance">
-              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-              <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
-            </form>
-            <% } else { %>
-            <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
-              <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
-            </form>
-            <p class="text-center">
-              * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
-           </p>
-           <% } %>
-        <% } %>
+          <%- include('../partials/studentGroupControls.ejs', {groupsize: groupsize}); %>
         </div>
       </div>
     </div>
