@@ -316,6 +316,339 @@ describe('Assessment syncing', () => {
     assert.isEmpty(uids, 'uids should be empty');
   });
 
+  it('syncs group roles correctly', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupRoles = [
+      {
+        name: 'Manager',
+        minimum: 1,
+        maximum: 1,
+        canAssignRolesAtStart: true,
+        canAssignRolesDuringAssessment: true,
+      },
+      {
+        name: 'Contributor',
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
+      groupAssessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedRoles = await util.dumpTable('group_roles');
+    assert.equal(syncedRoles.length, 2);
+
+    const foundManager = syncedRoles.find((role) => role.role_name === 'Manager');
+    assert.notEqual(foundManager, undefined);
+    assert.equal(foundManager.minimum, 1);
+    assert.equal(foundManager.maximum, 1);
+    assert.isTrue(foundManager.can_assign_roles_at_start);
+    assert.isTrue(foundManager.can_assign_roles_during_assessment);
+
+    const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert.notEqual(foundContributor !== undefined);
+    assert.equal(foundContributor.minimum, 0);
+    assert.equal(foundContributor.maximum, null);
+    assert.isFalse(foundContributor.can_assign_roles_at_start);
+    assert.isFalse(foundContributor.can_assign_roles_during_assessment);
+  });
+
+  it('syncs group roles and valid question-level permissions correctly', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupRoles = [{ name: 'Recorder' }, { name: 'Contributor' }];
+    groupAssessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Contributor'],
+          canSubmit: ['Recorder'],
+        },
+        {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: 5,
+          canView: ['Recorder'],
+          canSubmit: ['Recorder'],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
+      groupAssessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('groupAssessment');
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID
+    );
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
+    );
+
+    // Check group roles
+    const syncedRoles = await util.dumpTable('group_roles');
+    assert(syncedRoles.length === 2);
+
+    const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
+    const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert.notEqual(foundRecorder, undefined);
+    assert.notEqual(foundContributor, undefined);
+
+    // Check question role permissions
+    const syncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+
+    const getPermission = (foundRole, assessmentQuestion) =>
+      syncedPermissions.find(
+        (p) =>
+          parseInt(p.assessment_question_id) === parseInt(assessmentQuestion.id) &&
+          parseInt(p.group_role_id) === parseInt(foundRole.id)
+      );
+    const firstQuestionRecorderPermission = getPermission(foundRecorder, firstAssessmentQuestion);
+    assert.notEqual(firstQuestionRecorderPermission, undefined);
+    assert(
+      firstQuestionRecorderPermission.can_view && firstQuestionRecorderPermission.can_submit,
+      'recorder should have permission to view and submit first question'
+    );
+
+    const firstQuestionContributorPermission = getPermission(
+      foundContributor,
+      firstAssessmentQuestion
+    );
+    assert.notEqual(firstQuestionContributorPermission, undefined);
+    assert(
+      firstQuestionContributorPermission.can_view && !firstQuestionContributorPermission.can_submit,
+      'contributor should only have permission to view first question'
+    );
+
+    const secondQuestionRecorderPermission = getPermission(foundRecorder, secondAssessmentQuestion);
+    assert.notEqual(secondQuestionRecorderPermission, undefined);
+    assert(
+      secondQuestionRecorderPermission.can_view && secondQuestionRecorderPermission.can_submit,
+      'recorder should have permission to view and submit second question'
+    );
+
+    const secondQuestionContributorPermission = getPermission(
+      foundContributor,
+      secondAssessmentQuestion
+    );
+    assert.notEqual(secondQuestionContributorPermission);
+    assert(
+      !secondQuestionContributorPermission.can_view &&
+        !secondQuestionContributorPermission.can_submit,
+      'contributor should not be able to view or submit second question'
+    );
+  });
+
+  it('removes group roles and role permissions correctly upon re-sync', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupRoles = [{ name: 'Recorder' }, { name: 'Contributor' }];
+    groupAssessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Contributor'],
+          canSubmit: ['Recorder'],
+        },
+        {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Contributor'],
+          canSubmit: ['Recorder', 'Contributor'],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
+      groupAssessment;
+
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // Check group roles
+    const syncedRoles = await util.dumpTable('group_roles');
+    assert.equal(syncedRoles.length, 2);
+    const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
+    const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert.notEqual(foundRecorder, undefined);
+    assert.notEqual(foundContributor, undefined);
+
+    // Check permissions
+    const syncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    assert.equal(
+      syncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundRecorder.id))
+        .length,
+      2
+    );
+    assert.equal(
+      syncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundContributor.id))
+        .length,
+      2
+    );
+
+    // Remove the "Contributor" group role and re-sync
+    groupAssessment.groupRoles = [{ name: 'Recorder' }];
+    groupAssessment.zones[groupAssessment.zones.length - 1].questions = [
+      {
+        id: util.QUESTION_ID,
+        points: 5,
+        canView: ['Recorder'],
+        canSubmit: ['Recorder'],
+      },
+      {
+        id: util.ALTERNATIVE_QUESTION_ID,
+        points: 5,
+        canView: ['Recorder'],
+        canSubmit: ['Recorder'],
+      },
+    ];
+
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const newSyncedRoles = await util.dumpTable('group_roles');
+    assert.equal(newSyncedRoles.length, 1);
+    assert.notEqual(
+      newSyncedRoles.find((role) => role.role_name === 'Recorder'),
+      undefined
+    );
+    assert.isUndefined(newSyncedRoles.find((role) => role.role_name === 'Contributor'));
+
+    const newSyncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    assert.equal(
+      newSyncedPermissions.filter((p) => parseInt(p.group_role_id) === parseInt(foundRecorder.id))
+        .length,
+      2
+    );
+    assert.equal(
+      newSyncedPermissions.filter(
+        (p) => parseInt(p.group_role_id) === parseInt(foundContributor.id)
+      ).length,
+      0
+    );
+  });
+
+  it('handles role permissions with nonexistent group roles', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupRoles = [{ name: 'Recorder' }, { name: 'Contributor' }];
+    groupAssessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Invalid'],
+          canSubmit: ['Recorder'],
+        },
+        {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Contributor'],
+          canSubmit: ['Recorder', 'Contributor'],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessmentFail'] =
+      groupAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('groupAssessmentFail');
+
+    assert.match(
+      syncedAssessment.sync_errors,
+      /A zone question's "canView" permission contains the non-existent group role name "Invalid"./
+    );
+  });
+
+  it('removes deleted question-level permissions correctly', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupRoles = [{ name: 'Recorder' }, { name: 'Contributor' }];
+    groupAssessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Contributor'],
+          canSubmit: ['Recorder'],
+        },
+        {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Contributor'],
+          canSubmit: ['Recorder', 'Contributor'],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
+      groupAssessment;
+
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+    const syncedRoles = await util.dumpTable('group_roles');
+
+    // Ensure both roles are present
+    assert.equal(syncedRoles.length, 2);
+    const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
+    const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert.notEqual(foundRecorder, undefined);
+    assert.notEqual(foundContributor, undefined);
+
+    // Modify question-level permissions
+    groupAssessment.zones[groupAssessment.zones.length - 1].questions = [
+      {
+        id: util.QUESTION_ID,
+        points: 5,
+        canView: ['Recorder'],
+        canSubmit: ['Recorder'],
+      },
+      {
+        id: util.ALTERNATIVE_QUESTION_ID,
+        points: 5,
+        canView: ['Recorder', 'Contributor'],
+        canSubmit: ['Recorder'],
+      },
+    ];
+
+    // Overwrite and ensure that both roles are still present
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const newSyncedRoles = await util.dumpTable('group_roles');
+    assert.equal(newSyncedRoles.length, 2);
+
+    const syncedData = await getSyncedAssessmentData('groupAssessment');
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID
+    );
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
+    );
+
+    const newSyncedPermissions = await util.dumpTable('assessment_question_role_permissions');
+    // Contributor can no longer view QUESTION_ID
+    const firstQuestionContributorPermission = newSyncedPermissions.find(
+      (p) =>
+        parseInt(p.assessment_question_id) === parseInt(firstAssessmentQuestion.id) &&
+        parseInt(p.group_role_id) === parseInt(foundContributor.id)
+    );
+    assert.isFalse(firstQuestionContributorPermission.can_view);
+    assert.isFalse(firstQuestionContributorPermission.can_submit);
+
+    // Contributor can view ALTERNATIVE_QUESTION_ID, but not submit
+    const secondQuestionContributorPermission = newSyncedPermissions.find(
+      (p) =>
+        parseInt(p.assessment_question_id) === parseInt(secondAssessmentQuestion.id) &&
+        parseInt(p.group_role_id) === parseInt(foundContributor.id)
+    );
+    assert.isTrue(secondQuestionContributorPermission.can_view);
+    assert.isFalse(secondQuestionContributorPermission.can_submit);
+  });
+
   it('handles assessment sets that are not present in infoCourse.json', async () => {
     // Missing tags should be created
     const courseData = util.getCourseData();
