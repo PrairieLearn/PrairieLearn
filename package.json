@@ -75,7 +75,7 @@
         "lru-cache": "^6.0.0",
         "mathjax": "^3.2.1",
         "mersenne": "0.0.4",
-        "moment": "^2.29.2",
+        "moment": "^2.29.3",
         "multer": "^1.4.4",
         "mustache": "^4.2.0",
         "ncp": "^2.0.0",
