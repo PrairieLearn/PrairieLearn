@@ -12,7 +12,7 @@
         "@octokit/rest": "^18.12.0",
         "@prairielearn/html": "^2.0.0",
         "@prairielearn/opentelemetry": "^1.0.0",
-        "ace-builds": "^1.4.14",
+        "ace-builds": "^1.5.0",
         "ajv": "^7.1.1",
         "ansi_up": "^5.1.0",
         "archiver": "^5.3.0",
