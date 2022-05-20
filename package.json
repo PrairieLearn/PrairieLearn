@@ -143,7 +143,7 @@
         "colors": "^1.4.0",
         "coveralls": "^3.1.1",
         "depcheck": "^1.4.3",
-        "eslint": "^8.12.0",
+        "eslint": "^8.15.0",
         "eslint-config-prettier": "^8.5.0",
         "eslint-plugin-import": "^2.26.0",
         "fast-glob": "^3.2.11",
