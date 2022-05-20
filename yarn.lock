@@ -1405,10 +1405,10 @@
     "@types/node" "*"
     "@types/ssh2" "*"
 
-"@types/dockerode@^3.3.0":
-  version "3.3.0"
-  resolved "https://registry.yarnpkg.com/@types/dockerode/-/dockerode-3.3.0.tgz#d6afcc1de31e211ee900da3a48ef4f1a496cf05a"
-  integrity sha512-3Mc0b2gnypJB8Gwmr+8UVPkwjpf4kg1gVxw8lAI4Y/EzpK50LixU1wBSPN9D+xqiw2Ubb02JO8oM0xpwzvi2mg==
+"@types/dockerode@^3.3.9":
+  version "3.3.9"
+  resolved "https://registry.yarnpkg.com/@types/dockerode/-/dockerode-3.3.9.tgz#8c6e519fd4d0d86717b2c6a864904f4e6aa8af40"
+  integrity sha512-SYRN5FF/qmwpxUT6snJP5D8k0wgoUKOGVs625XvpRJOOUi6s//UYI4F0tbyE3OmzpI70Fo1+aqpzX27zCrInww==
   dependencies:
     "@types/docker-modem" "*"
     "@types/node" "*"
