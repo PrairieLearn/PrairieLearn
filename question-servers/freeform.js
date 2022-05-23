@@ -1190,7 +1190,7 @@ module.exports = {
     module.exports.getContext(question, course, (err, context) => {
       if (ERR(err, callback)) return;
 
-      codeCallers.getPythonCaller(context.ERR, (err, pc) => {
+      codeCallers.getPythonCaller(context.course_dir_host, (err, pc) => {
         if (ERR(err, callback)) return;
         async.series(
           [
