@@ -6,6 +6,7 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
+!.mocharc.js
 !.prettierignore
 !.prettierrc.json
 !tsconfig.json

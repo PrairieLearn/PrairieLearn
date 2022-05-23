@@ -54,8 +54,8 @@ async.series(
         database: config.postgresqlDatabase,
         user: config.postgresqlUser,
         password: config.postgresqlPassword,
-        max: 2,
-        idleTimeoutMillis: 30000,
+        max: config.postgresqlPoolSize,
+        idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
       globalLogger.info(
         'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
@@ -254,7 +254,7 @@ function initDocker(info, callback) {
           callback(null);
         }
       },
-      (callback) => {
+      async () => {
         logger.info(`Pulling latest version of "${image}" image`);
         var repository = new dockerUtil.DockerName(image);
         if (config.cacheImageRegistry) {
@@ -265,20 +265,20 @@ function initDocker(info, callback) {
           tag: repository.getTag() || 'latest',
         };
         logger.info(`Pulling image: ${JSON.stringify(params)}`);
-        docker.createImage(dockerAuth, params, (err, stream) => {
-          if (err) {
-            logger.warn(
-              `Error pulling "${image}" image; attempting to fall back to cached version`
-            );
-            logger.warn('createImage error:', err);
-            return ERR(err, callback);
-          }
 
+        const stream = await docker.createImage(dockerAuth, params);
+
+        return new Promise((resolve, reject) => {
           docker.modem.followProgress(
             stream,
             (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
+              if (err) {
+                globalLogger.error('Error pulling "${image}" image:', err);
+                reject(err);
+              } else {
+                globalLogger.info('Successfully pulled "${image}" image');
+                resolve();
+              }
             },
             (output) => {
               logger.info('docker output:', output);

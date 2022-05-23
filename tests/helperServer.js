@@ -6,6 +6,7 @@ const path = require('path');
 const delay = require('delay');
 const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const opentelemetry = require('@prairielearn/opentelemetry');
 
 const config = require('../lib/config');
 const load = require('../lib/load');
@@ -18,7 +19,6 @@ const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
 const codeCallers = require('../lib/code-callers');
-const tracing = require('../lib/tracing');
 const externalGrader = require('../lib/externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
 
@@ -27,7 +27,8 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 config.startServer = false;
-config.serverPort = 3007;
+// Pick a unique port based on the Mocha worker ID.
+config.serverPort = 3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10);
 const server = require('../server');
 
 const logger = require('./dummyLogger');
@@ -48,7 +49,7 @@ module.exports = {
         [
           async () => {
             // We (currently) don't ever want tracing to run during tests.
-            await tracing.init({ openTelemetryEnabled: false });
+            await opentelemetry.init({ openTelemetryEnabled: false });
           },
           async () => {
             await aws.init();
