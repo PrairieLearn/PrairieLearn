@@ -1,14 +1,16 @@
--- BLOCK get_variant_by_iq
-SELECT *
-FROM variants
-WHERE instance_question_id = $iqId
-LIMIT 1;
+-- BLOCK get_assessment
+SELECT
+    a.*
+FROM
+    assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+WHERE
+    a.course_instance_id = 1
+    AND aset.abbreviation = 'HW'
+    AND a.number = '9';
 
--- BLOCK get_grading_jobs_by_iq
+-- BLOCK get_instance_question
 SELECT *
-FROM 
-    grading_jobs AS gj
-    JOIN submissions AS s ON (gj.submission_id = s.id)
-    JOIN variants AS v ON (s.variant_id = v.id)
-    JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
-WHERE instance_question_id = $iqId;
+FROM instance_questions
+WHERE id = $iqId;
+
