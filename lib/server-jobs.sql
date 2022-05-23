@@ -142,8 +142,7 @@ SELECT
 FROM
     jobs AS j
 WHERE
-    j.status = 'Running'
-    AND j.id NOT IN (SELECT UNNEST($job_ids::bigint[]));
+    j.status = 'Running';
 
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
