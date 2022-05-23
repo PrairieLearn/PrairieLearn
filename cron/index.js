@@ -49,7 +49,8 @@ module.exports = {
       {
         name: 'errorAbandonedJobs',
         module: require('./errorAbandonedJobs'),
-        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
+        // intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
+        intervalSec: 0.0001,
       },
       {
         name: 'sendExternalGraderStats',
@@ -311,7 +312,8 @@ module.exports = {
     } else if (job.intervalSec === 'daily') {
       interval_secs = 12 * 60 * 60;
     } else {
-      return callback(new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`));
+      interval_secs = job.intervalSec;
+      // return callback(new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`));
     }
     const params = {
       name: job.name,

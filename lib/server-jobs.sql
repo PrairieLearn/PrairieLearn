@@ -66,6 +66,8 @@ WITH updated_jobs AS (
         exit_signal = $exit_signal
     WHERE
         j.id = $job_id
+        -- Ensure we can't finish the same job multiple times.
+        AND status = 'Running'::enum_job_status
     RETURNING
         j.*
 ),
@@ -132,13 +134,14 @@ WHERE
     js.id = j.job_sequence_id
     AND j.update_job_sequence;
 
--- BLOCK select_running_jobs
+-- BLOCK select_running_jobs_excluding_ids
 SELECT
     j.*
 FROM
     jobs AS j
 WHERE
-    j.status = 'Running';
+    j.status = 'Running'
+    AND j.id NOT IN (SELECT UNNEST($job_ids::bigint[]));
 
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
