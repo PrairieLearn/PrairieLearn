@@ -91,7 +91,7 @@ describe('Manual Grading', function () {
   let manualGradingIQUrl;
   let manualGradingNextUngradedUrl;
   let $manualGradingPage;
-  let score_percent;
+  let score_percent, score_points;
   let feedback_note;
 
   before('set up testing server', helperServer.before());
@@ -323,6 +323,7 @@ describe('Manual Grading', function () {
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
       const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
       score_percent = 30;
+      score_points = (score_percent * 6) / 100;
       feedback_note = 'Test feedback note';
 
       await fetch(manualGradingIQUrl, {
@@ -345,10 +346,7 @@ describe('Manual Grading', function () {
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
       const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
       assert.equal(form.find('input[name=submission_score_percent]').val(), score_percent);
-      assert.equal(
-        form.find('input[name=submission_score_points]').val(),
-        (score_percent * 6) / 100
-      );
+      assert.equal(form.find('input[name=submission_score_points]').val(), score_points);
       assert.equal(form.find('textarea').text(), feedback_note);
     });
     it('manual grading page for assessment question should list updated score and status', async () => {
@@ -366,7 +364,7 @@ describe('Manual Grading', function () {
       assert.equal(instanceList[0].last_grader, mockStaff[2].user_id);
       assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
       assert.equal(instanceList[0].score_perc, score_percent);
-      assert.equal(instanceList[0].points, (score_percent * 6) / 100);
+      assert.equal(instanceList[0].points, score_points);
     });
     it('manual grading page for assessment should NOT show graded instance for grading', async () => {
       setUser(mockStaff[0]);
@@ -388,6 +386,23 @@ describe('Manual Grading', function () {
       nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
       assert.equal(nextUngraded.status, 302);
       assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+    });
+    it('student view should have the new score', async () => {
+      iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
+      const questionsPage = await (await fetch(iqUrl)).text();
+      const $questionsPage = cheerio.load(questionsPage);
+
+      assert.equal(
+        getLatestSubmissionStatus($questionsPage),
+        `partially correct: ${score_percent}%`
+      );
+      assert.equal(
+        $questionsPage('#question-score-panel tr:contains("Awarded points") .badge')
+          .first()
+          .text()
+          .trim(),
+        `${score_points}/6`
+      );
     });
   });
 });
