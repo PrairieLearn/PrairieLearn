@@ -89,6 +89,7 @@ describe('Manual Grading', function () {
   let manualGradingAssessmentUrl;
   let manualGradingAssessmentQuestionUrl;
   let manualGradingIQUrl;
+  let manualGradingNextUngradedUrl;
   let $manualGradingPage;
 
   before('set up testing server', helperServer.before());
@@ -116,7 +117,7 @@ describe('Manual Grading', function () {
           'course_instance_permissions_insert',
           ciStaffParams
         );
-        assert.equal(courseStaffResult.rowCount, 1);
+        assert.equal(ciStaffResult.rowCount, 1);
       })
     );
   });
@@ -254,7 +255,7 @@ describe('Manual Grading', function () {
         .find('input[name=__csrf_token]')
         .val();
 
-      const taggingResult = await fetch(manualGradingAssessmentQuestionUrl, {
+      await fetch(manualGradingAssessmentQuestionUrl, {
         method: 'POST',
         headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
@@ -304,7 +305,7 @@ describe('Manual Grading', function () {
     });
     it('next ungraded button should point to existing instance for assigned grader', async () => {
       setUser(mockStaff[0]);
-      nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
+      const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
       assert.equal(nextUngraded.status, 302);
       assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
     });
