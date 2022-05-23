@@ -211,7 +211,6 @@ with open(4, 'w', encoding='utf-8') as exitf:
 
             break
         else:
-            print(f'parent pgid = {os.getpgid(0)}', file=sys.stderr)
             pid, status = os.waitpid(worker_pid, 0)
             worker_pid = 0
             if os.WIFEXITED(status):
