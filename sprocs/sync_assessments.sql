@@ -11,6 +11,8 @@ DECLARE
     missing_src_tids TEXT;
     mismatched_uuid_tids TEXT;
     valid_assessment record;
+    group_role JSONB;
+    valid_group_role record;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -23,6 +25,8 @@ DECLARE
     new_assessment_question_id bigint;
     new_assessment_question_ids bigint[];
     bad_assessments text;
+    new_group_role_names text[];
+    new_group_role_name text;
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -190,6 +194,42 @@ BEGIN
                 student_authz_join = EXCLUDED.student_authz_join,
                 student_authz_leave = EXCLUDED.student_authz_leave,
                 deleted_at = NULL;
+
+            -- Insert all group roles
+            FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
+                INSERT INTO group_roles (
+                    role_name,
+                    assessment_id,
+                    minimum,
+                    maximum,
+                    can_assign_roles_at_start,
+                    can_assign_roles_during_assessment
+                ) VALUES (
+                    (group_role->>'role_name'),
+                    new_assessment_id,
+                    -- Insert default values where necessary
+                    CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
+                    (group_role->>'maximum')::integer,
+                    CASE WHEN group_role ? 'can_assign_roles_at_start' THEN (group_role->>'can_assign_roles_at_start')::boolean ELSE FALSE END,
+                    CASE WHEN group_role ? 'can_assign_roles_during_assessment' THEN (group_role->>'can_assign_roles_during_assessment')::boolean ELSE FALSE END
+                ) ON CONFLICT (role_name, assessment_id)
+                DO UPDATE
+                SET
+                    role_name = EXCLUDED.role_name,
+                    minimum = EXCLUDED.minimum,
+                    maximum = EXCLUDED.maximum,
+                    can_assign_roles_at_start = EXCLUDED.can_assign_roles_at_start,
+                    can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment
+                RETURNING group_roles.role_name INTO new_group_role_name;
+                new_group_role_names := array_append(new_group_role_names, new_group_role_name);
+            END LOOP;
+
+            -- Delete excess group roles
+            DELETE FROM group_roles
+            WHERE
+                assessment_id = new_assessment_id
+                AND role_name NOT IN (SELECT unnest(new_group_role_names));
+
         ELSE
             UPDATE group_configs
             SET deleted_at = now()
@@ -361,6 +401,47 @@ BEGIN
                         effective_advance_score_perc = EXCLUDED.effective_advance_score_perc
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
+
+                    IF (valid_assessment.data->>'group_work')::boolean THEN
+                        -- Iterate over all group roles in assessment
+                        FOR valid_group_role IN (
+                            SELECT gr.id, gr.role_name 
+                            FROM group_roles as gr
+                            WHERE gr.assessment_id = new_assessment_id
+                        ) LOOP
+                            -- Insert roles that can view
+                            INSERT INTO assessment_question_role_permissions (
+                                assessment_question_id,
+                                group_role_id,
+                                can_view
+                            ) VALUES (
+                                new_assessment_question_id,
+                                valid_group_role.id,
+                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view')))
+                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            DO UPDATE
+                            SET
+                                assessment_question_id = EXCLUDED.assessment_question_id,
+                                group_role_id = EXCLUDED.group_role_id,
+                                can_view = EXCLUDED.can_view;
+
+                            -- Insert roles that can submit
+                            INSERT INTO assessment_question_role_permissions (
+                                assessment_question_id,
+                                group_role_id,
+                                can_submit
+                            ) VALUES (
+                                new_assessment_question_id,
+                                valid_group_role.id,
+                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
+                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            DO UPDATE
+                            SET
+                                assessment_question_id = EXCLUDED.assessment_question_id,
+                                group_role_id = EXCLUDED.group_role_id,
+                                can_submit = EXCLUDED.can_submit;
+                        END LOOP;
+                    END IF;
                 END LOOP;
             END LOOP;
             zone_index := zone_index + 1;
