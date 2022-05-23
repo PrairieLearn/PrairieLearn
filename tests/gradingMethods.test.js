@@ -216,6 +216,18 @@ describe('Grading method(s)', function () {
               $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
                 'href'
               );
+
+            // open page to produce variant because we want to get the correct answer
+            await fetch(iqUrl);
+            // get variant params
+            iqId = parseInstanceQuestionId(iqUrl);
+            const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+
+            gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save');
+            assert.equal(gradeRes.status, 200);
+
+            questionsPage = await gradeRes.text();
+            $questionsPage = cheerio.load(questionsPage);
           }
         );
         it('should NOT result in any grading jobs', async () => {
@@ -240,6 +252,18 @@ describe('Grading method(s)', function () {
               $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
                 'href'
               );
+
+            // open page to produce variant because we want to get the correct answer
+            await fetch(iqUrl);
+            // get variant params
+            iqId = parseInstanceQuestionId(iqUrl);
+            const variant = (await sqlDb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+
+            gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save');
+            assert.equal(gradeRes.status, 200);
+
+            questionsPage = await gradeRes.text();
+            $questionsPage = cheerio.load(questionsPage);
           }
         );
         it('should be possible to submit a save action to "Manual" type question', async () => {
