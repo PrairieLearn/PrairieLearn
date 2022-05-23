@@ -59,7 +59,9 @@ window.PLOrderBlocks = function (uuid, options) {
   let sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: 'li:not(.info-fixed)',
-    cancel: /* default */ 'input,textarea,button,select,option' + /* Also allow links */ ',a',
+    // We add `a` to the default list of tags to account for help
+    // popover triggers.
+    cancel: 'input,textarea,button,select,option,a',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create: function () {
