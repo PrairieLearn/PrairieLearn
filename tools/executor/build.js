@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // @ts-check
-const { execa, execaSudo, getImageTag, getImageName } = require('./util');
+const { execaSudo, getImageTag, getImageName } = require('./util');
 
 (async () => {
   const tag = await getImageTag();
