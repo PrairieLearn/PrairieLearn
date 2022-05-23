@@ -1182,16 +1182,15 @@ function _createContainer(workspace, callback) {
                 ],
               },
               Binds: [`${workspacePath}:${containerPath}`],
-              // Copied directly from externalGraderLocal.js
-              Memory: 1 << 30, // 1 GiB
-              MemorySwap: 1 << 30, // same as Memory, so no access to swap
-              KernelMemory: 1 << 29, // 512 MiB
-              DiskQuota: 1 << 30, // 1 GiB
+              Memory: config.workspaceDockerMemory,
+              MemorySwap: config.workspaceDockerMemorySwap,
+              KernelMemory: config.workspaceDockerKernelMemory,
+              DiskQuota: config.workspaceDockerDiskQuota,
+              CpuPeriod: config.workspaceDockerCpuPeriod,
+              CpuQuota: config.workspaceDockerCpuQuota,
+              PidsLimit: config.workspaceDockerPidsLimit,
               IpcMode: 'private',
               NetworkMode: networkMode,
-              CpuPeriod: 100000, // microseconds
-              CpuQuota: 90000, // portion of the CpuPeriod for this container
-              PidsLimit: 1024,
             },
             Cmd: args, // FIXME: proper arg parsing
             name: localName,
