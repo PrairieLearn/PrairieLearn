@@ -91,6 +91,8 @@ describe('Manual Grading', function () {
   let manualGradingIQUrl;
   let manualGradingNextUngradedUrl;
   let $manualGradingPage;
+  let score_percent;
+  let feedback_note;
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
@@ -310,7 +312,75 @@ describe('Manual Grading', function () {
       assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
     });
     it('next ungraded button should point to general page for non-assigned graders', async () => {
+      setUser(mockStaff[1]);
+      const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
+      assert.equal(nextUngraded.status, 302);
+      assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+    });
+    it('submit a grade', async () => {
+      setUser(mockStaff[2]);
+      const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+      const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+      const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+      score_percent = 30;
+      feedback_note = 'Test feedback note';
+
+      await fetch(manualGradingIQUrl, {
+        method: 'POST',
+        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          __action: 'add_manual_grade',
+          __csrf_token: form.find('input[name=__csrf_token]').val(),
+          assessment_id: form.find('input[name=assessment_id]').val(),
+          assessment_question_id: form.find('input[name=assessment_question_id]').val(),
+          modified_at: form.find('input[name=modified_at]').val(),
+          submission_score_percent: score_percent,
+          submission_note: feedback_note,
+        }).toString(),
+      });
+    });
+    it('manual grading page for instance question should list updated score and feedback', async () => {
       setUser(defaultUser);
+      const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+      const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+      const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+      assert.equal(form.find('input[name=submission_score_percent]').val(), score_percent);
+      assert.equal(
+        form.find('input[name=submission_score_points]').val(),
+        (score_percent * 6) / 100
+      );
+      assert.equal(form.find('textarea').text(), feedback_note);
+    });
+    it('manual grading page for assessment question should list updated score and status', async () => {
+      setUser(defaultUser);
+      const manualGradingAQData = await (
+        await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
+      ).text();
+      const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
+      assert(instanceList);
+      assert.lengthOf(instanceList, 1);
+      assert.equal(instanceList[0].id, iqId);
+      assert.isNotOk(instanceList[0].requires_manual_grading);
+      assert.equal(instanceList[0].assigned_grader, mockStaff[0].user_id);
+      assert.equal(instanceList[0].assigned_grader_name, mockStaff[0].authName);
+      assert.equal(instanceList[0].last_grader, mockStaff[2].user_id);
+      assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
+      assert.equal(instanceList[0].score_perc, score_percent);
+      assert.equal(instanceList[0].points, (score_percent * 6) / 100);
+    });
+    it('manual grading page for assessment should NOT show graded instance for grading', async () => {
+      setUser(mockStaff[0]);
+      const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
+      $manualGradingPage = cheerio.load(manualGradingPage);
+      const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+      assert.equal(row.length, 1);
+      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+      assert.equal(count, '0/1');
+      const nextButton = row.find('.btn:contains("next submission")');
+      assert.equal(nextButton.length, 0);
+    });
+    it('next ungraded button should point to general page after grading', async () => {
+      setUser(mockStaff[0]);
       let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
       assert.equal(nextUngraded.status, 302);
       assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
