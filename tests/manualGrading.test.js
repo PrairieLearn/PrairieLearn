@@ -39,6 +39,13 @@ const mockStudents = [
   { authUid: 'student4', authName: 'Student User 4', authUin: '00000004' },
 ];
 
+const mockStaff = [
+  { authUid: 'staff1', authName: 'Staff User 1', authUin: 'STAFF001' },
+  { authUid: 'staff2', authName: 'Staff User 2', authUin: 'STAFF002' },
+  { authUid: 'staff3', authName: 'Staff User 3', authUin: 'STAFF003' },
+  { authUid: 'staff4', authName: 'Staff User 4', authUin: 'STAFF004' },
+];
+
 const assessmentTitle = 'Homework for Internal, External, Manual grading methods';
 const manualGradingQuestionTitle = 'Manual Grading: Fibonacci function, file upload';
 
@@ -94,12 +101,33 @@ describe('Manual Grading', function () {
     instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessments[0].id}/instances`;
   });
 
+  before('add staff users', async () => {
+    await Promise.all(
+      mockStaff.map(async (staff) => {
+        const courseStaffParams = [1, staff.authUid, 'None', 1];
+        const courseStaffResult = await sqlDb.callAsync(
+          'course_permissions_insert_by_user_uid',
+          courseStaffParams
+        );
+        assert.equal(courseStaffResult.rowCount, 1);
+        staff.user_id = courseStaffResult.rows[0].user_id;
+        const ciStaffParams = [1, staff.user_id, 1, 'Student Data Editor', 1];
+        const ciStaffResult = await sqlDb.callAsync(
+          'course_instance_permissions_insert',
+          ciStaffParams
+        );
+        assert.equal(courseStaffResult.rowCount, 1);
+      })
+    );
+  });
+
   after('reset default user', () => setUser(defaultUser));
 
   describe('Submit and grade a manually graded question', () => {
     it('load page as student', async () => {
       iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
       iqId = parseInstanceQuestionId(iqUrl);
+      manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
 
       const instance_questions = (await sqlDb.queryAsync(sql.get_instance_question, { iqId })).rows;
       assert.lengthOf(instance_questions, 1);
@@ -132,8 +160,11 @@ describe('Manual Grading', function () {
       assert.equal(row.length, 1);
       const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
       assert.equal(count, '1/1');
+      const nextButton = row.find('.btn:contains("next submission")');
+      assert.equal(nextButton.length, 1);
       manualGradingAssessmentQuestionUrl =
         siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
+      manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
     });
     it('manual grading page for assessment question should warn about an open instance', async () => {
       setUser(defaultUser);
@@ -151,8 +182,11 @@ describe('Manual Grading', function () {
       assert(instanceList);
       assert.lengthOf(instanceList, 1);
       assert.equal(instanceList[0].id, iqId);
-      assert.equal(instanceList[0].requires_manual_grading, true);
-      manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
+      assert.isOk(instanceList[0].requires_manual_grading);
+      assert.isNotOk(instanceList[0].assigned_grader);
+      assert.isNotOk(instanceList[0].assigned_grader_name);
+      assert.isNotOk(instanceList[0].last_grader);
+      assert.isNotOk(instanceList[0].last_grader_name);
     });
     it('manual grading page for instance question should warn about an open instance', async () => {
       setUser(defaultUser);
@@ -197,6 +231,92 @@ describe('Manual Grading', function () {
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
       const row = $manualGradingIQPage('div.alert:contains("is still open")');
       assert.equal(row.length, 0);
+    });
+    it('next ungraded button should point to existing instance for all graders', async () => {
+      setUser(defaultUser);
+      let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
+      assert.equal(nextUngraded.status, 302);
+      assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+      setUser(mockStaff[0]);
+      nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
+      assert.equal(nextUngraded.status, 302);
+      assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+      setUser(mockStaff[1]);
+      nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
+      assert.equal(nextUngraded.status, 302);
+      assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+    });
+    it('tag question to specific grader', async () => {
+      setUser(defaultUser);
+      const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
+      const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
+      const token = $manualGradingAQPage('form[name=grading-form]')
+        .find('input[name=__csrf_token]')
+        .val();
+
+      const taggingResult = await fetch(manualGradingAssessmentQuestionUrl, {
+        method: 'POST',
+        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          __action: 'batch_action',
+          __csrf_token: token,
+          batch_action_data: JSON.stringify({ assigned_grader: mockStaff[0].user_id }),
+          instance_question_id: iqId,
+        }).toString(),
+      });
+    });
+    it('manual grading page for assessment question should list tagged grader', async () => {
+      setUser(defaultUser);
+      const manualGradingAQData = await (
+        await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
+      ).text();
+      const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
+      assert(instanceList);
+      assert.lengthOf(instanceList, 1);
+      assert.equal(instanceList[0].id, iqId);
+      assert.isOk(instanceList[0].requires_manual_grading);
+      assert.equal(instanceList[0].assigned_grader, mockStaff[0].user_id);
+      assert.equal(instanceList[0].assigned_grader_name, mockStaff[0].authName);
+      assert.isNotOk(instanceList[0].last_grader);
+      assert.isNotOk(instanceList[0].last_grader_name);
+    });
+    it('manual grading page should show next ungraded button for assigned grader', async () => {
+      setUser(mockStaff[0]);
+      const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
+      $manualGradingPage = cheerio.load(manualGradingPage);
+      const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+      assert.equal(row.length, 1);
+      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+      assert.equal(count, '1/1');
+      const nextButton = row.find('.btn:contains("next submission")');
+      assert.equal(nextButton.length, 1);
+    });
+    it('manual grading page should NOT show next ungraded button for non-assigned grader', async () => {
+      setUser(mockStaff[1]);
+      const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
+      $manualGradingPage = cheerio.load(manualGradingPage);
+      const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+      assert.equal(row.length, 1);
+      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+      assert.equal(count, '1/1');
+      const nextButton = row.find('.btn:contains("next submission")');
+      assert.equal(nextButton.length, 0);
+    });
+    it('next ungraded button should point to existing instance for assigned grader', async () => {
+      setUser(mockStaff[0]);
+      nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
+      assert.equal(nextUngraded.status, 302);
+      assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
+    });
+    it('next ungraded button should point to general page for non-assigned graders', async () => {
+      setUser(defaultUser);
+      let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
+      assert.equal(nextUngraded.status, 302);
+      assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
+      setUser(mockStaff[1]);
+      nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
+      assert.equal(nextUngraded.status, 302);
+      assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
     });
   });
 });
