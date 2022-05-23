@@ -214,13 +214,8 @@ describe('Grading method(s)', function () {
             $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
               'href'
             );
-
-          // open page to produce variant because we want to get the correct answer
-          await fetch(iqUrl);
-          // get variant params
-          iqId = parseInstanceQuestionId(iqUrl);
         });
-        it('should NOT be possible to submit a grade action to "Manual" type question', async () => {
+        it('should be possible to submit a grade action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
             { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
           ]);
@@ -250,11 +245,6 @@ describe('Grading method(s)', function () {
             $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
               'href'
             );
-
-          // open page to produce variant because we want to get the correct answer
-          await fetch(iqUrl);
-          // get variant params
-          iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should be possible to submit a save action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
