@@ -75,6 +75,8 @@ The following **Conditional** elements are available:
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
 - [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
+- [`pl-hide-in-manual-grading`](#pl-hide-in-manual-grading-element): Hides content in the manual grading page.
+- [`pl-manual-grading-only`](#pl-manual-grading-only-element): Shows content only in manual grading.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
@@ -1872,6 +1874,66 @@ element contents only in a specific panel.
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
+---
+
+### `pl-hide-in-manual-grading` element
+
+Hide the contents so that it is **not** displayed to graders in the manual grading page.
+
+#### Sample element
+
+```html
+<pl-hide-in-manual-grading>
+  This text will be shown to students, but not to graders.
+</pl-hide-in-manual-grading>
+```
+
+#### Details
+
+This element is typically used to abbreviate the question description and allow graders to focus on the actual answers during grading. It is the reverse of [the `pl-manual-grading-only` element](#pl-manual-grading-only-element), which explicitly shows content only during grading.
+
+#### Example implementations
+
+- [demo/manualGrade/codeUpload]
+
+#### See also
+
+- [`pl-manual-grading-only` to show content only during manual grading.](#pl-manual-grading-only-element)
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
+
+### `pl-manual-grading-only` element
+
+Hide the contents so that it is **only** displayed to graders in the manual grading page.
+
+#### Sample element
+
+```html
+<pl-manual-grading-only>
+  This text will be shown to graders, but not to students.
+</pl-manual-grading-only>
+```
+
+#### Details
+
+This element is typically used to provide graders with additional information that may not be presented to students. Examples may include grading instructions, sample answers, acceptable values for individual results, random parameters used in the question generation, or pre-computed values calculated in explicit `parse` functions. It is the reverse of [the `pl-hide-in-manual-grading` element](#pl-hide-in-manual-grading-element), which explicitly hides content during grading.
+
+#### Example implementations
+
+- [demo/manualGrade/codeUpload]
+
+#### See also
+
+- [`pl-hide-in-manual-grading` to hide content during manual grading.](#pl-hide-in-manual-grading-element)
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 ---
 
