@@ -1,3 +1,4 @@
+// @ts-check
 const { assert } = require('chai');
 const cheerio = require('cheerio');
 const fs = require('fs-extra');
@@ -5,7 +6,7 @@ const path = require('path');
 const { step } = require('mocha-steps');
 
 const config = require('../lib/config');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqlDb = require('../prairielib/lib/sql-db');
@@ -41,6 +42,10 @@ const mockStaff = [
 const assessmentTitle = 'Homework for Internal, External, Manual grading methods';
 const manualGradingQuestionTitle = 'Manual Grading: Fibonacci function, file upload';
 
+/**
+ * @param {object} user student or instructor user to load page by
+ * @returns string Returns "Homework for Internal, External, Manual grading methods" page text
+ */
 const loadHomeworkPage = async (user) => {
   setUser(user);
   const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
@@ -53,12 +58,22 @@ const loadHomeworkPage = async (user) => {
   return res.text();
 };
 
+/**
+ * @param {object} user student or instructor user to load page by
+ * @returns string student URL for manual grading question
+ */
 const loadHomeworkQuestionUrl = async (user) => {
   const hm1Body = await loadHomeworkPage(user);
   const $hm1Body = cheerio.load(hm1Body);
   return siteUrl + $hm1Body(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
 };
 
+/**
+ * Gets the score text for the first submission panel on the page.
+ *
+ * @param {cheerio.Root} $
+ * @returns {string}
+ */
 const getLatestSubmissionStatus = ($) => {
   return $('.card[id^="submission"] .card-header .badge').first().text();
 };
@@ -351,7 +366,7 @@ describe('Manual Grading', function () {
           assessment_id: form.find('input[name=assessment_id]').val(),
           assessment_question_id: form.find('input[name=assessment_question_id]').val(),
           modified_at: form.find('input[name=modified_at]').val(),
-          submission_score_percent: score_percent,
+          submission_score_percent: score_percent.toString(),
           submission_note: feedback_note,
         }).toString(),
       });
