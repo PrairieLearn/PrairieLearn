@@ -82,7 +82,7 @@ Let's walk through a typical request to view a question that requires a function
 
 ## Operating in production
 
-When new versions of PrairieLearn are deployed, it's important to ensure that the appropriate executor image for the version being deployed is present on the machine. This ensures that PrairieLearn is able to serve traffic immediately instead of waiting for the new version to be pulled. If PrairieLearn is deployed with a `.git` directory present, the `./tools/script/pull.js` script can be used to log in to ECR and pull the appropriate version.
+When new versions of PrairieLearn are deployed, it's important to ensure that the appropriate executor image for the version being deployed is present on the machine. This ensures that PrairieLearn is able to serve traffic immediately instead of waiting for the new version to be pulled. The image will be published as `prairielearn/executor:GIT_HASH`, where `GIT_HASH` is the SHA-1 hash of the Git commit that's being deployed.
 
 PrairieLearn will automatically determine the correct version of the executor image to use at runtime. However, in an emergency, it's possible to configure PrairieLearn to use a specific image and tag. Set the `workerExecutorImageRepository` and/or the `workerExecutionrImageTag` config options appropriately. Then, ensure the image is present on the machine. Finally, deploy the updated config and restart the server; new requests will be executed in the specified container version.
 
