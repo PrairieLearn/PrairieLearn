@@ -2,6 +2,7 @@ const { assert } = require('chai');
 const cheerio = require('cheerio');
 const fs = require('fs-extra');
 const path = require('path');
+const { step } = require('mocha-steps');
 
 const config = require('../lib/config');
 const fetch = require('node-fetch');
@@ -20,16 +21,7 @@ const defaultUser = {
 };
 
 const fibonacciSolution = fs.readFileSync(
-  path.resolve(
-    __dirname,
-    '..',
-    'testCourse',
-    'questions',
-    'externalGrade',
-    'codeUpload',
-    'tests',
-    'ans.py'
-  )
+  path.resolve(__dirname, '../testCourse/questions/externalGrade/codeUpload/tests/ans.py')
 );
 
 const mockStudents = [
@@ -49,10 +41,6 @@ const mockStaff = [
 const assessmentTitle = 'Homework for Internal, External, Manual grading methods';
 const manualGradingQuestionTitle = 'Manual Grading: Fibonacci function, file upload';
 
-/**
- * @param {object} student or instructor user to load page by
- * @returns string Returns "Homework for Internal, External, Manual grading methods" page text
- */
 const loadHomeworkPage = async (user) => {
   setUser(user);
   const studentCourseInstanceUrl = baseUrl + '/course_instance/1';
@@ -71,15 +59,9 @@ const loadHomeworkQuestionUrl = async (user) => {
   return siteUrl + $hm1Body(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
 };
 
-/**
- * Gets the score text for the first submission panel on the page.
- *
- * @param {import('cheerio')} $
- * @returns {string}
- */
-function getLatestSubmissionStatus($) {
+const getLatestSubmissionStatus = ($) => {
   return $('.card[id^="submission"] .card-header .badge').first().text();
-}
+};
 
 describe('Manual Grading', function () {
   this.timeout(80000);
@@ -127,7 +109,7 @@ describe('Manual Grading', function () {
   after('reset default user', () => setUser(defaultUser));
 
   describe('Submit and grade a manually graded question', () => {
-    it('load page as student', async () => {
+    step('load page as student', async () => {
       iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
       iqId = parseInstanceQuestionId(iqUrl);
       manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
@@ -136,7 +118,8 @@ describe('Manual Grading', function () {
       assert.lengthOf(instance_questions, 1);
       assert.equal(instance_questions[0].requires_manual_grading, false);
     });
-    it('submit an answer to the question', async () => {
+
+    step('submit an answer to the question', async () => {
       const gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
         { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
       ]);
@@ -146,19 +129,22 @@ describe('Manual Grading', function () {
       assert.equal(gradeRes.status, 200);
       assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
     });
-    it('should tag question as requiring grading', async () => {
+
+    step('should tag question as requiring grading', async () => {
       const instanceQuestions = (await sqlDb.queryAsync(sql.get_instance_question, { iqId })).rows;
       assert.lengthOf(instanceQuestions, 1);
       assert.equal(instanceQuestions[0].requires_manual_grading, true);
     });
-    it('manual grading page should warn about an open instance', async () => {
+
+    step('manual grading page should warn about an open instance', async () => {
       setUser(defaultUser);
       const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
       $manualGradingPage = cheerio.load(manualGradingPage);
       const row = $manualGradingPage('div.alert:contains("has one open instance")');
       assert.equal(row.length, 1);
     });
-    it('manual grading page should list one question requiring grading', async () => {
+
+    step('manual grading page should list one question requiring grading', async () => {
       const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
       assert.equal(row.length, 1);
       const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
@@ -169,14 +155,19 @@ describe('Manual Grading', function () {
         siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
       manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
     });
-    it('manual grading page for assessment question should warn about an open instance', async () => {
-      setUser(defaultUser);
-      const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
-      const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-      const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
-      assert.equal(row.length, 1);
-    });
-    it('manual grading page for assessment question should list one instance', async () => {
+
+    step(
+      'manual grading page for assessment question should warn about an open instance',
+      async () => {
+        setUser(defaultUser);
+        const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
+        const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
+        const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
+        assert.equal(row.length, 1);
+      }
+    );
+
+    step('manual grading page for assessment question should list one instance', async () => {
       setUser(defaultUser);
       const manualGradingAQData = await (
         await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
@@ -191,14 +182,19 @@ describe('Manual Grading', function () {
       assert.isNotOk(instanceList[0].last_grader);
       assert.isNotOk(instanceList[0].last_grader_name);
     });
-    it('manual grading page for instance question should warn about an open instance', async () => {
-      setUser(defaultUser);
-      const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-      const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-      const row = $manualGradingIQPage('div.alert:contains("is still open")');
-      assert.equal(row.length, 1);
-    });
-    it('close assessment', async () => {
+
+    step(
+      'manual grading page for instance question should warn about an open instance',
+      async () => {
+        setUser(defaultUser);
+        const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+        const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+        const row = $manualGradingIQPage('div.alert:contains("is still open")');
+        assert.equal(row.length, 1);
+      }
+    );
+
+    step('close assessment', async () => {
       setUser(defaultUser);
       const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
       const $instancesBody = cheerio.load(instancesBody);
@@ -214,28 +210,38 @@ describe('Manual Grading', function () {
         }).toString(),
       });
     });
-    it('manual grading page should NOT warn about an open instance', async () => {
+
+    step('manual grading page should NOT warn about an open instance', async () => {
       setUser(defaultUser);
       const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
       $manualGradingPage = cheerio.load(manualGradingPage);
       const row = $manualGradingPage('div.alert:contains("has one open instance")');
       assert.equal(row.length, 0);
     });
-    it('manual grading page for assessment question should NOT warn about an open instance', async () => {
-      setUser(defaultUser);
-      const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
-      const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-      const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
-      assert.equal(row.length, 0);
-    });
-    it('manual grading page for instance question should NOT warn about an open instance', async () => {
-      setUser(defaultUser);
-      const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-      const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-      const row = $manualGradingIQPage('div.alert:contains("is still open")');
-      assert.equal(row.length, 0);
-    });
-    it('next ungraded button should point to existing instance for all graders', async () => {
+
+    step(
+      'manual grading page for assessment question should NOT warn about an open instance',
+      async () => {
+        setUser(defaultUser);
+        const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
+        const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
+        const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
+        assert.equal(row.length, 0);
+      }
+    );
+
+    step(
+      'manual grading page for instance question should NOT warn about an open instance',
+      async () => {
+        setUser(defaultUser);
+        const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+        const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+        const row = $manualGradingIQPage('div.alert:contains("is still open")');
+        assert.equal(row.length, 0);
+      }
+    );
+
+    step('next ungraded button should point to existing instance for all graders', async () => {
       setUser(defaultUser);
       let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
       assert.equal(nextUngraded.status, 302);
@@ -249,7 +255,8 @@ describe('Manual Grading', function () {
       assert.equal(nextUngraded.status, 302);
       assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
     });
-    it('tag question to specific grader', async () => {
+
+    step('tag question to specific grader', async () => {
       setUser(defaultUser);
       const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
       const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
@@ -268,7 +275,8 @@ describe('Manual Grading', function () {
         }).toString(),
       });
     });
-    it('manual grading page for assessment question should list tagged grader', async () => {
+
+    step('manual grading page for assessment question should list tagged grader', async () => {
       setUser(defaultUser);
       const manualGradingAQData = await (
         await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
@@ -283,7 +291,8 @@ describe('Manual Grading', function () {
       assert.isNotOk(instanceList[0].last_grader);
       assert.isNotOk(instanceList[0].last_grader_name);
     });
-    it('manual grading page should show next ungraded button for assigned grader', async () => {
+
+    step('manual grading page should show next ungraded button for assigned grader', async () => {
       setUser(mockStaff[0]);
       const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
       $manualGradingPage = cheerio.load(manualGradingPage);
@@ -294,30 +303,37 @@ describe('Manual Grading', function () {
       const nextButton = row.find('.btn:contains("next submission")');
       assert.equal(nextButton.length, 1);
     });
-    it('manual grading page should NOT show next ungraded button for non-assigned grader', async () => {
-      setUser(mockStaff[1]);
-      const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
-      $manualGradingPage = cheerio.load(manualGradingPage);
-      const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
-      assert.equal(row.length, 1);
-      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
-      assert.equal(count, '1/1');
-      const nextButton = row.find('.btn:contains("next submission")');
-      assert.equal(nextButton.length, 0);
-    });
-    it('next ungraded button should point to existing instance for assigned grader', async () => {
+
+    step(
+      'manual grading page should NOT show next ungraded button for non-assigned grader',
+      async () => {
+        setUser(mockStaff[1]);
+        const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
+        $manualGradingPage = cheerio.load(manualGradingPage);
+        const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+        assert.equal(row.length, 1);
+        const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+        assert.equal(count, '1/1');
+        const nextButton = row.find('.btn:contains("next submission")');
+        assert.equal(nextButton.length, 0);
+      }
+    );
+
+    step('next ungraded button should point to existing instance for assigned grader', async () => {
       setUser(mockStaff[0]);
       const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
       assert.equal(nextUngraded.status, 302);
       assert.equal(nextUngraded.headers.get('location'), manualGradingIQUrl);
     });
-    it('next ungraded button should point to general page for non-assigned graders', async () => {
+
+    step('next ungraded button should point to general page for non-assigned graders', async () => {
       setUser(mockStaff[1]);
       const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
       assert.equal(nextUngraded.status, 302);
       assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
     });
-    it('submit a grade', async () => {
+
+    step('submit a grade', async () => {
       setUser(mockStaff[2]);
       const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
@@ -340,44 +356,57 @@ describe('Manual Grading', function () {
         }).toString(),
       });
     });
-    it('manual grading page for instance question should list updated score and feedback', async () => {
-      setUser(defaultUser);
-      const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-      const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-      const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
-      assert.equal(form.find('input[name=submission_score_percent]').val(), score_percent);
-      assert.equal(form.find('input[name=submission_score_points]').val(), score_points);
-      assert.equal(form.find('textarea').text(), feedback_note);
-    });
-    it('manual grading page for assessment question should list updated score and status', async () => {
-      setUser(defaultUser);
-      const manualGradingAQData = await (
-        await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
-      ).text();
-      const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
-      assert(instanceList);
-      assert.lengthOf(instanceList, 1);
-      assert.equal(instanceList[0].id, iqId);
-      assert.isNotOk(instanceList[0].requires_manual_grading);
-      assert.equal(instanceList[0].assigned_grader, mockStaff[0].user_id);
-      assert.equal(instanceList[0].assigned_grader_name, mockStaff[0].authName);
-      assert.equal(instanceList[0].last_grader, mockStaff[2].user_id);
-      assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
-      assert.equal(instanceList[0].score_perc, score_percent);
-      assert.equal(instanceList[0].points, score_points);
-    });
-    it('manual grading page for assessment should NOT show graded instance for grading', async () => {
-      setUser(mockStaff[0]);
-      const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
-      $manualGradingPage = cheerio.load(manualGradingPage);
-      const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
-      assert.equal(row.length, 1);
-      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
-      assert.equal(count, '0/1');
-      const nextButton = row.find('.btn:contains("next submission")');
-      assert.equal(nextButton.length, 0);
-    });
-    it('next ungraded button should point to general page after grading', async () => {
+
+    step(
+      'manual grading page for instance question should list updated score and feedback',
+      async () => {
+        setUser(defaultUser);
+        const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+        const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+        const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+        assert.equal(form.find('input[name=submission_score_percent]').val(), score_percent);
+        assert.equal(form.find('input[name=submission_score_points]').val(), score_points);
+        assert.equal(form.find('textarea').text(), feedback_note);
+      }
+    );
+
+    step(
+      'manual grading page for assessment question should list updated score and status',
+      async () => {
+        setUser(defaultUser);
+        const manualGradingAQData = await (
+          await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
+        ).text();
+        const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
+        assert(instanceList);
+        assert.lengthOf(instanceList, 1);
+        assert.equal(instanceList[0].id, iqId);
+        assert.isNotOk(instanceList[0].requires_manual_grading);
+        assert.equal(instanceList[0].assigned_grader, mockStaff[0].user_id);
+        assert.equal(instanceList[0].assigned_grader_name, mockStaff[0].authName);
+        assert.equal(instanceList[0].last_grader, mockStaff[2].user_id);
+        assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
+        assert.equal(instanceList[0].score_perc, score_percent);
+        assert.equal(instanceList[0].points, score_points);
+      }
+    );
+
+    step(
+      'manual grading page for assessment should NOT show graded instance for grading',
+      async () => {
+        setUser(mockStaff[0]);
+        const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
+        $manualGradingPage = cheerio.load(manualGradingPage);
+        const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+        assert.equal(row.length, 1);
+        const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+        assert.equal(count, '0/1');
+        const nextButton = row.find('.btn:contains("next submission")');
+        assert.equal(nextButton.length, 0);
+      }
+    );
+
+    step('next ungraded button should point to general page after grading', async () => {
       setUser(mockStaff[0]);
       let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
       assert.equal(nextUngraded.status, 302);
@@ -387,7 +416,8 @@ describe('Manual Grading', function () {
       assert.equal(nextUngraded.status, 302);
       assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
     });
-    it('student view should have the new score', async () => {
+
+    step('student view should have the new score', async () => {
       iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
       const questionsPage = await (await fetch(iqUrl)).text();
       const $questionsPage = cheerio.load(questionsPage);
