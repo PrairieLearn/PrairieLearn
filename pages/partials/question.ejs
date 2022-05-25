@@ -172,6 +172,16 @@
   </div>
   <% } %>
 
+  <%# Feedback section %>
+  <% if (course.manual_grading_visible && locals?.submission?.manual_feedback_html) { %>
+  <div class="card mb-4 grading-block border-danger">
+    <div class="card-header bg-danger text-white">Grader feedback</div>
+    <div class="card-body feedback-body">
+      <%- submission?.manual_feedback_html %>
+    </div>
+  </div>
+  <% } %>
+
   <%# Submissions section %>
   <% if (showSubmissions) { %>
 

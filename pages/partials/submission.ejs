@@ -13,7 +13,14 @@
       </div>
       <small>Submitted at <%- submission.formatted_date %></small>
     </div>
-    <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
+    <%# Only show feedback button if manual grading flag is enabled, there is feedback,
+        and it is not the latest submission (which is shown prominently beforehand) %>
+    <% if (course.manual_grading_visible && submission.manual_feedback_html && submissionCount != submissionIdx) { %>
+    <button type="button" class="btn btn-outline-danger btn-sm mr-2" data-submission-id="<%= submission.id %>" data-submission-modal="#submissionFeedbackModal-<%= submission.id %>">
+      <i class="fa fa-marker"></i>
+    </button>
+    <% } %>
+    <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>" data-submission-modal="#submissionInfoModal-<%= submission.id %>">
       <i class="fa fa-info-circle fa-fw"></i>
     </button>
     <button type="button" class="expand-icon-container btn btn-outline-secondary btn-sm">
@@ -27,6 +34,7 @@
     </div>
   </div>
 
+  <%- include('submissionFeedbackModal', {submission, submissionIdx}); %>
   <%- include('submissionInfoModal', {submission: submission}); %>
 </div>
 
@@ -34,7 +42,7 @@
 $(function() {
   $('button[data-submission-id="<%= submission.id %>"]').on('click', function(e) {
     // Prevent this click from also expanding the submission
-    $('#submissionInfoModal-<%= submission.id %>').modal('show');
+    $($(this).data('submission-modal')).modal('show');
     e.stopPropagation();
   });
 });
