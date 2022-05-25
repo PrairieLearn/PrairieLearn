@@ -20,11 +20,12 @@ window.PLRTE = function (uuid, options) {
   let inputElement = $('#rte-input-' + uuid);
   let quill = new Quill('#rte-' + uuid, options);
   let renderer = null;
-  if (options.format === 'markdown')
+  if (options.format === 'markdown') {
     renderer = new showdown.Converter({
       literalMidWordUnderscores: true,
       literalMidWordAsterisks: true,
     });
+  }
 
   if (options.markdownShortcuts) new QuillMarkdown(quill, {});
 

@@ -51,6 +51,7 @@ def prepare(element_html, data):
     if output_format not in ('html', 'markdown'):
         raise Exception(f'Invalid output format "{output_format}". Must be either "html" or "markdown".')
 
+
 def render(element_html, data):
 
     element = lxml.html.fragment_fromstring(element_html)
