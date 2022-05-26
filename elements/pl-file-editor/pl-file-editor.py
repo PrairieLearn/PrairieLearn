@@ -10,6 +10,7 @@ from text_unidecode import unidecode
 EDITOR_CONFIG_FUNCTION_DEFAULT = None
 ACE_MODE_DEFAULT = None
 ACE_THEME_DEFAULT = None
+FONT_SIZE_DEFAULT = None
 SOURCE_FILE_NAME_DEFAULT = None
 MIN_LINES_DEFAULT = None
 MAX_LINES_DEFAULT = None
@@ -33,7 +34,7 @@ def add_format_error(data, error_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize', 'preview', 'focus', 'directory', 'normalize-to-ascii']
+    optional_attribs = ['ace-mode', 'ace-theme', 'font-size', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize', 'preview', 'focus', 'directory', 'normalize-to-ascii']
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
 
@@ -59,6 +60,7 @@ def render(element_html, data):
     editor_config_function = pl.get_string_attrib(element, 'editor-config-function', EDITOR_CONFIG_FUNCTION_DEFAULT)
     ace_mode = pl.get_string_attrib(element, 'ace-mode', ACE_MODE_DEFAULT)
     ace_theme = pl.get_string_attrib(element, 'ace-theme', ACE_THEME_DEFAULT)
+    font_size = pl.get_float_attrib(element, 'font-size', FONT_SIZE_DEFAULT)
     uuid = pl.get_uuid()
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
@@ -84,6 +86,7 @@ def render(element_html, data):
         'file_name': file_name,
         'ace_mode': ace_mode,
         'ace_theme': ace_theme,
+        'font_size': font_size,
         'editor_config_function': editor_config_function,
         'min_lines': min_lines,
         'max_lines': max_lines,
