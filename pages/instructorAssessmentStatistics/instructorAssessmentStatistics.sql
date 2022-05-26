@@ -7,10 +7,10 @@ SELECT
     format_interval(ads.min) AS min,
     format_interval(ads.max) AS max,
     format_interval(ads.mean) AS mean,
-    EXTRACT(EPOCH FROM ads.median) / 60 AS median_mins,
-    EXTRACT(EPOCH FROM ads.min) / 60  AS min_mins,
-    EXTRACT(EPOCH FROM ads.max) / 60  AS max_mins,
-    EXTRACT(EPOCH FROM ads.mean) / 60  AS mean_mins,
+    DATE_PART('epoch', ads.median) / 60 AS median_mins,
+    DATE_PART('epoch', ads.min) / 60  AS min_mins,
+    DATE_PART('epoch', ads.max) / 60  AS max_mins,
+    DATE_PART('epoch', ads.mean) / 60  AS mean_mins,
     threshold_seconds,
     threshold_labels,
     hist
@@ -52,7 +52,7 @@ ORDER BY
 -- BLOCK user_scores
 SELECT
     ai.score_perc,
-    EXTRACT(EPOCH FROM ai.duration) AS duration_secs
+    DATE_PART('epoch', ai.duration) AS duration_secs
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)

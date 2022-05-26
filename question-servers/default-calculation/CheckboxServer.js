@@ -1,3 +1,3 @@
-define(['CBQServer'], function(CBQServer) {
-    return new CBQServer();
+define(['CBQServer'], function (CBQServer) {
+  return new CBQServer();
 });

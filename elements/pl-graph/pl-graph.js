@@ -1,6 +1,6 @@
 /* eslint-disable */
-(function(){
-  window.PLGraphRender = function(options) {
+(function () {
+  window.PLGraphRender = function (options) {
     var elementId = '#pl-graph-' + options.uuid;
     var container = document.querySelector(elementId);
 
@@ -8,19 +8,19 @@
       workerURL: options.workerURL,
     });
 
-    viz.renderSVGElement(options.data, { engine: options.engine })
-      .then(function(element) {
+    viz
+      .renderSVGElement(options.data, { engine: options.engine })
+      .then(function (element) {
         container.innerHTML = '';
         container.appendChild(element);
       })
-      .catch(function(error) {
+      .catch(function (error) {
         // Show the error to the user
         container.innerHTML = '<span style="color: red">' + error + '</span>';
-        container.innerHTML += '<pre><code>' + options.data + '</code></pre>'
+        container.innerHTML += '<pre><code>' + options.data + '</code></pre>';
 
         // Possibly display the error
         console.error(error);
       });
-  }
-})()
-
+  };
+})();

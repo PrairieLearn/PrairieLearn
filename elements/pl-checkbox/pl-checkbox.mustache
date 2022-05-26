@@ -22,6 +22,12 @@
             {{^hide_letter_keys}}<div class="pl-checkbox-key-label">({{key}})</div>{{/hide_letter_keys}}
             <div class="ml-1 mr-1">{{{html}}}</div>
         </label>
+
+        {{#display_feedback}}
+        <div class="pl-checkbox-feedback">
+            {{{feedback}}}
+        </div>
+        {{/display_feedback}}
             
         {{#display_score_badge}}
             {{#correct}}
@@ -85,16 +91,22 @@
     
 {{#answers}}
     <li {{#inline}}class="list-inline-item"{{/inline}}>
-    {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}
-
-    {{#display_score_badge}}
-        {{#correct}}
-            <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
-        {{/correct}}
-        {{#incorrect}}
-            <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
-        {{/incorrect}}
-    {{/display_score_badge}}
+        <div class="d-inline-flex align-items-center">
+        <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
+        {{#display_feedback}}
+            <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">
+                {{{feedback}}}
+            </div>
+        {{/display_feedback}}
+        {{#display_score_badge}}
+            {{#correct}}
+                <span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>
+            {{/correct}}
+            {{#incorrect}}
+                <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>
+            {{/incorrect}}
+        {{/display_score_badge}}
+        </div>
     </li>
 {{/answers}}
 

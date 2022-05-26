@@ -1,0 +1,37 @@
+<pl-question-panel>
+
+  <div class="card my-2">
+    <div class="card-body">
+
+      <p>Open the workspace below and complete the IPython notebook. </p>
+      <p>
+        <pl-workspace></pl-workspace>
+      </p>
+      <p>The cells that will be graded are marked with the tag <code>#grade</code>. Do not delete
+        that line and/or cell, or the autograder will not be able to find your solution.
+        Once you complete each one of the <code>#grade</code> cells, you can click
+        "Save & Grade" to see if you got the correct solution. </p>
+
+    </div>
+  </div>
+  <p>To get points for this question, you will need to define the following variables inside the notebook:</p>
+  <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
+
+
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes-->
+  <p></p>
+  <div class="alert alert-info p-2" role="alert">
+      <small>Note: this is an example of a question including JupyterLab for a collaborative learning activity.
+        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/groupWork/jupyter/__docs/docs.md" target="_blank">here</a>.</small>
+        <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>

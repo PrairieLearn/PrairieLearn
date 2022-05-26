@@ -1,0 +1,39 @@
+{
+    "uuid": "75be4222-e9d1-11eb-9a03-0242ac130003",
+    "type": "Exam",
+    "title": "Exam with active acccess restriction",
+    "set": "Exam",
+    "number": "3",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "endDate": "2030-01-01T00:00:00",
+            "active": false,
+            "comment": "This access rule allows students to see the exam on the Assessments page before it starts. Students cannot begin the exam at this time."
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "timeLimitMin": 50,
+            "startDate": "2030-01-01T00:00:01",
+            "endDate": "2030-01-01T23:59:59",
+            "showClosedAssessment": false
+        },
+        {
+            "mode": "Public",
+            "active": false,
+            "startDate": "2030-01-04T00:00:01",
+            "comment": "This access rule allows students to view their exams two days after all exams finish. Note that students who did not write the exam cannot view it."
+        }
+    ],
+    "zones": [
+        {
+            "title": "Math Questions",
+            "questions": [
+                {"id": "demo/calculation",              "points": [10, 9, 8, 7, 6]},
+                {"id": "demo/randomMultipleChoice",     "points": [25, 24, 23, 22, 21]},
+                {"id": "demo/randomCheckbox",           "points": [25, 24, 23, 22, 21]}
+            ]
+        }
+    ]
+}

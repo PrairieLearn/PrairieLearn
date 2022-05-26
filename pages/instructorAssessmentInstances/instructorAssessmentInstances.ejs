@@ -257,7 +257,8 @@
                   data-sortable="true"
                   data-class="text-center align-middle"
                   data-formatter="scorebarFormatter"
-                  data-switchable="true">Score</th>
+                  data-switchable="true"
+                  data-search-formatter="false">Score</th>
               <th data-field="date_formatted"
                   data-sortable="true"
                   data-sort-name="date"
@@ -277,7 +278,8 @@
                   data-sort-name="time_remaining_sec"
                   data-formatter="timeRemainingLimitFormatter"
                   data-class="text-center align-middle text-nowrap"
-                  data-switchable="true">Remaining
+                  data-switchable="true"
+                  data-search-formatter="false">Remaining
                 <button class="btn btn-xs" type="button" title="Show remaining time help" data-toggle="modal" data-target="#time-remaining-help">
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
                 </button></th>
@@ -287,12 +289,14 @@
                   data-sort-name="total_time_sec"
                   data-formatter="timeRemainingLimitFormatter"
                   data-class="text-center align-middle"
-                  data-switchable="true">Total Time Limit</th>
+                  data-switchable="true"
+                  data-search-formatter="false">Total Time Limit</th>
               <th data-field="action_button"
                   data-sortable="false"
                   data-formatter="actionButtonFormatter"
                   data-class="text-center align-middle"
-                  data-switchable="false"></th>
+                  data-switchable="false"
+                  data-search-formatter="false"></th>
             </tr>
           </thead>
         </table>

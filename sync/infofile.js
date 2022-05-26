@@ -15,8 +15,8 @@
  * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasUuid = function(infoFile) {
-    return !!infoFile.uuid;
+module.exports.hasUuid = function (infoFile) {
+  return !!infoFile.uuid;
 };
 
 /**
@@ -24,8 +24,8 @@ module.exports.hasUuid = function(infoFile) {
  * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasErrors = function(infoFile) {
-    return !!(infoFile.errors && infoFile.errors.length > 0);
+module.exports.hasErrors = function (infoFile) {
+  return !!(infoFile.errors && infoFile.errors.length > 0);
 };
 
 /**
@@ -33,8 +33,8 @@ module.exports.hasErrors = function(infoFile) {
  * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasWarnings = function(infoFile) {
-    return !!(infoFile.warnings && infoFile.warnings.length > 0);
+module.exports.hasWarnings = function (infoFile) {
+  return !!(infoFile.warnings && infoFile.warnings.length > 0);
 };
 
 /**
@@ -42,26 +42,26 @@ module.exports.hasWarnings = function(infoFile) {
  * @param {InfoFile<T>} infoFile
  * @returns {boolean}
  */
-module.exports.hasErrorsOrWarnings = function(infoFile) {
-    return module.exports.hasErrors(infoFile) || module.exports.hasWarnings(infoFile);
+module.exports.hasErrorsOrWarnings = function (infoFile) {
+  return module.exports.hasErrors(infoFile) || module.exports.hasWarnings(infoFile);
 };
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  */
-module.exports.stringifyErrors = function(infoFile) {
-    if (!this.hasErrors(infoFile)) return '';
-    return infoFile.errors.join('\n');
+module.exports.stringifyErrors = function (infoFile) {
+  if (!this.hasErrors(infoFile)) return '';
+  return infoFile.errors.join('\n');
 };
 
 /**
  * @template T
  * @param {InfoFile<T>} infoFile
  */
-module.exports.stringifyWarnings = function(infoFile) {
-    if (!this.hasWarnings(infoFile)) return '';
-    return infoFile.warnings.join('\n');
+module.exports.stringifyWarnings = function (infoFile) {
+  if (!this.hasWarnings(infoFile)) return '';
+  return infoFile.warnings.join('\n');
 };
 
 /**
@@ -69,11 +69,11 @@ module.exports.stringifyWarnings = function(infoFile) {
  * @param {InfoFile<T>} infoFile
  * @param {string} error
  */
-module.exports.addError = function(infoFile, error) {
-    if (!this.hasErrors(infoFile)) {
-        infoFile.errors = [];
-    }
-    infoFile.errors.push(error);
+module.exports.addError = function (infoFile, error) {
+  if (!this.hasErrors(infoFile)) {
+    infoFile.errors = [];
+  }
+  infoFile.errors.push(error);
 };
 
 /**
@@ -81,11 +81,11 @@ module.exports.addError = function(infoFile, error) {
  * @param {InfoFile<T>} infoFile
  * @param {string[]} errors
  */
-module.exports.addErrors = function(infoFile, errors) {
-    if (!this.hasErrors(infoFile)) {
-        infoFile.errors = [];
-    }
-    infoFile.errors = infoFile.errors.concat(errors);
+module.exports.addErrors = function (infoFile, errors) {
+  if (!this.hasErrors(infoFile)) {
+    infoFile.errors = [];
+  }
+  infoFile.errors = infoFile.errors.concat(errors);
 };
 
 /**
@@ -93,11 +93,11 @@ module.exports.addErrors = function(infoFile, errors) {
  * @param {InfoFile<T>} infoFile
  * @param {string} warning
  */
-module.exports.addWarning = function(infoFile, warning) {
-    if (!this.hasWarnings(infoFile)) {
-        infoFile.warnings = [];
-    }
-    infoFile.warnings.push(warning);
+module.exports.addWarning = function (infoFile, warning) {
+  if (!this.hasWarnings(infoFile)) {
+    infoFile.warnings = [];
+  }
+  infoFile.warnings.push(warning);
 };
 
 /**
@@ -105,11 +105,11 @@ module.exports.addWarning = function(infoFile, warning) {
  * @param {InfoFile<T>} infoFile
  * @param {string[]} warnings
  */
-module.exports.addWarnings = function(infoFile, warnings) {
-    if (!this.hasWarnings(infoFile)) {
-        infoFile.warnings = [];
-    }
-    infoFile.warnings = infoFile.warnings.concat(warnings);
+module.exports.addWarnings = function (infoFile, warnings) {
+  if (!this.hasWarnings(infoFile)) {
+    infoFile.warnings = [];
+  }
+  infoFile.warnings = infoFile.warnings.concat(warnings);
 };
 
 /**
@@ -117,8 +117,8 @@ module.exports.addWarnings = function(infoFile, warnings) {
  * @param {string} error
  * @returns {InfoFile<T>}
  */
-module.exports.makeError = function(error) {
-    return { errors: [error] };
+module.exports.makeError = function (error) {
+  return { errors: [error] };
 };
 
 /**
@@ -126,6 +126,6 @@ module.exports.makeError = function(error) {
  * @param {string} warning
  * @returns {InfoFile<T>}
  */
-module.exports.makeWarning = function(warning) {
-    return { warnings: [warning] };
+module.exports.makeWarning = function (warning) {
+  return { warnings: [warning] };
 };

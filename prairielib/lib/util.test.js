@@ -14,7 +14,7 @@ describe('sanitizeObject', () => {
 
   test('null byte in top-level string', () => {
     const input = { test: 'test\u0000ing' };
-    const expected = { test: 'test\\u0000ing'};
+    const expected = { test: 'test\\u0000ing' };
     check(input, expected);
   });
 

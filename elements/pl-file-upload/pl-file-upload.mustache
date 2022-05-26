@@ -11,6 +11,7 @@ $(function() {
 
 <div id="file-upload-{{uuid}}">
   <input type="hidden" name="{{name}}">
+  {{#editable}}
   <div class="upload-dropzone">
     <div class="dz-message">
       Drop files here or click to upload.
@@ -20,6 +21,7 @@ $(function() {
       <small>The combined size limit of all uploaded files is 5MB.</small>
     </div>
   </div>
+  {{/editable}}
   <div class="messages">
   </div>
   <div class="file-upload-status" style="margin-top: 1ex;">

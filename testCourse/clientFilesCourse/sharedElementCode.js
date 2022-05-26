@@ -1,3 +1,3 @@
-$(function() {
-    console.log('I was loaded successfully!');
+$(function () {
+  console.log('I was loaded successfully!');
 });

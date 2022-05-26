@@ -1,0 +1,31 @@
+{
+    "uuid": "7AD9015B-1609-4CD6-BB6E-9FEB28B7D0CA",
+    "type": "Homework",
+    "title": "Group activity template using Jupyter notebooks",
+    "set": "GroupActivity",
+    "number": "2",
+    "comment": "this is a group activity, with minimum size of 1 and maximum size of 5, where students can self-assign to groups.",
+    "groupWork": true,
+    "groupMinSize": 1,
+    "groupMaxSize": 5,
+    "studentGroupCreate": true,
+    "studentGroupJoin": true,
+    "studentGroupLeave": true,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+      {
+        "title": " How Markov chains work?",
+        "questions": [
+            {"id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Intro","points": 1},
+            {"id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Gambler","points": 1},
+            {"id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-PageRank","points": 1}
+        ]
+      }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is a group assignment where students will share the same questions and grades. In this configuration, students can create their own groups, with minimum size of 1 and maximum size of 5 (we set minimum of 1 so that anyone can try this assessment on their own, since the assessment can be not started unless the minimum size is reached). PrairieLearn also provides an option were instructors pre-assign students to teams. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/groupWork/jupyter/__docs/docs.md>here</a>. "
+}

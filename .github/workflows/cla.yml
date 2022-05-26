@@ -28,3 +28,8 @@ jobs:
           create-file-commit-message: Create signatures.json
           signed-commit-message: '$contributorName signed the CLA in https://github.com/PrairieLearn/PrairieLearn/pull/$pullRequestNo'
           custom-notsigned-prcomment: 'Thanks for your contribution! Like many open source projects, we ask that you sign our [Contributor License Agreement](https://github.com/PrairieLearn/cla/blob/main/CLA.md) before we can accept your contribution. You can sign the CLA by posting a comment with the below format:<br/>'
+          # We're willing to accept the risk of someone editing or deleting
+          # their comment after merging a PR. With locking enabled, it becomes
+          # impossible to link to the PR or add any additional comments that
+          # might be helpful to leave as breadcrumbs.
+          lock-pullrequest-aftermerge: false

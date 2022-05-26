@@ -2,7 +2,8 @@
     "controller": "pl-rich-text-editor.py",
     "dependencies": {
         "nodeModulesScripts": [
-            "quill/dist/quill.min.js"
+            "quill/dist/quill.min.js",
+            "he/he.js"
         ],
         "nodeModulesStyles": [
             "quill/dist/quill.snow.css",

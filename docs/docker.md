@@ -1,4 +1,3 @@
-
 # Docker
 
 ## Building the container
@@ -90,8 +89,9 @@ To run PrairieLearn with `docker-compose`, run `docker-compose up pl`. This will
 The server will be available on port `3000`.
 
 The equivalent `docker run` command to perform all these actions would be:
+
 ```sh
-docker build -t prairielearn/prairielearn:local . 
+docker build -t prairielearn/prairielearn:local .
 docker run -it --rm \
       -p 3000:3000 \
       - ./testCourse:/course \

@@ -35,7 +35,7 @@ def render(element_html, data):
             try:
                 contents = base64.b64decode(b64contents).decode()
             except UnicodeDecodeError:
-                contents = 'Unable to decode file.'
+                contents = 'Content preview is not available for this type of file.'
             files.append({
                 'name': file['name'],
                 'contents': contents,

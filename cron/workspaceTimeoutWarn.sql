@@ -1,7 +1,7 @@
 -- BLOCK select_almost_launched_timeout_workspaces
 SELECT
     w.id,
-    EXTRACT(epoch from (w.launched_at + make_interval(secs => $launched_timeout_sec) - now()))::int AS time_to_timeout_sec
+    DATE_PART('epoch', (w.launched_at + make_interval(secs => $launched_timeout_sec) - now()))::int AS time_to_timeout_sec
 FROM workspaces AS w
 WHERE
     w.state = 'running'::enum_workspace_state

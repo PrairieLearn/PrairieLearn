@@ -228,7 +228,7 @@ def render(element_html, data):
                 'checked': (submitted_key == answer['key']),
                 'html': answer['html'],
                 'display_score_badge': display_score and submitted_key == answer['key'],
-                'display_feedback': submitted_key == answer['key'] and feedback is not None,
+                'display_feedback': submitted_key == answer['key'] and feedback,
                 'feedback': feedback
             }
             if answer_html['display_score_badge']:
@@ -290,7 +290,7 @@ def render(element_html, data):
                         html_params['incorrect'] = True
                 except Exception:
                     raise ValueError('invalid score' + score)
-            html_params['display_feedback'] = feedback is not None
+            html_params['display_feedback'] = bool(feedback)
             html_params['feedback'] = feedback
 
         with open('pl-multiple-choice.mustache', 'r', encoding='utf-8') as f:
@@ -345,9 +345,10 @@ def grade(element_html, data):
     if (submitted_key is not None and submitted_key == correct_key):
         score = 1
 
+    feedback = None
     for option in data['params'][name]:
         if option['key'] == submitted_key:
-            feedback = option['feedback']
+            feedback = option.get('feedback', None)
 
     data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
 
@@ -375,7 +376,7 @@ def test(element_html, data):
             data['raw_submitted_answers'][name] = random_key
             for option in data['params'][name]:
                 if option['key'] == random_key:
-                    feedback = option['feedback']
+                    feedback = option.get('feedback', None)
             data['partial_scores'][name] = {'score': 0, 'weight': weight, 'feedback': feedback}
         else:
             # actually an invalid submission

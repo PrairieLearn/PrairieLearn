@@ -33,5 +33,19 @@ BEGIN
     IF FOUND THEN
         mode := 'Exam';
     END IF;
+
+    -- Do we have an active PT reservation? If so, force mode to 'Exam'
+    PERFORM 1
+    FROM
+        pt_reservations AS r
+        JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
+    WHERE
+        e.user_id = ip_to_mode.authn_user_id
+        AND (date BETWEEN r.access_start AND r.access_end);
+
+    IF FOUND THEN
+        mode := 'Exam';
+    END IF;
+
 END;
 $$ LANGUAGE plpgsql VOLATILE;

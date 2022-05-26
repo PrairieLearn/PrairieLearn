@@ -25,7 +25,7 @@ RUN apt-get update && \
     gosu \
     fonts-dejavu \
     # Things for our sanity in the instructor terminal:
-    less htop vim nano silversearcher-ag zip unzip git cmake curl wget && \
+    less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 && \
     # Test:
     gosu nobody true && \
     # Cleanup:
