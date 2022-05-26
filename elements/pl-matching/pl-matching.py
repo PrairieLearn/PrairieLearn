@@ -150,13 +150,15 @@ def prepare(element_html, data):
         more_needed = number_options - len(needed_options)
         if more_needed >= len(distractors):
             # Add all distractors.
-            needed_options.extend(distractors)
+            needed_options = options
             # Add NOTA if that's still not enough.
             if more_needed > len(distractors):
                 nota = True
         else:
             # Add a sample of the distractors.
-            needed_options.extend(random.sample(distractors, more_needed))
+            distractor_sample = random.sample(distractors, more_needed)
+            needed_options_keys = needed_options_keys.union(set(o['name'] for o in distractor_sample))
+            needed_options = [o for o in options if o['name'] in needed_options_keys]
         options = needed_options
         if not fixed_options_order:
             random.shuffle(options)
