@@ -94,6 +94,10 @@ describe('Manual Grading', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
+  before('ensure course has manual grading visible', async () => {
+    await sqlDb.queryAsync(sql.enable_manual_grading, {});
+  });
+
   before('build assessment manual grading page URL', async () => {
     const assessments = (await sqlDb.queryAsync(sql.get_assessment, {})).rows;
     assert.lengthOf(assessments, 1);
@@ -448,6 +452,7 @@ describe('Manual Grading', function () {
           .trim(),
         `${score_points}/6`
       );
+      assert.equal($questionsPage('.feedback-body').first().text().trim(), feedback_note);
     });
   });
 });
