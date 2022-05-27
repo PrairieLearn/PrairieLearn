@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 
 const async = require('async');
 const ERR = require('async-stacktrace');
@@ -23,8 +24,11 @@ const yargs = require('yargs')
   .array('ignore-columns')
   .help('h')
   .alias('h', 'help')
-  .example('$0 postgres')
-  .example('$0 userdb -o db_description --ignore-tables a b --ignore-columns a.col1 a.col2')
+  .example('$0 postgres', 'Describe the "postgres" database')
+  .example(
+    '$0 userdb -o db_description --ignore-tables a b --ignore-columns a.col1 a.col2',
+    'Describe the "userdb" database; ignore specific tables and columns'
+  )
   .strict();
 
 if (yargs.argv._.length !== 1) {
