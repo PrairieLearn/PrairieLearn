@@ -9,13 +9,13 @@ window.PLOrderBlocks = function (uuid, options) {
   let optionsElementId = '#order-blocks-options-' + uuid;
   let dropzoneElementId = '#order-blocks-dropzone-' + uuid;
 
-  function setAnswer(event) {
+  function setAnswer() {
     var answerObjs = $(dropzoneElementId).children();
     var studentAnswers = [];
     for (var i = 0; i < answerObjs.length; i++) {
       if (!$(answerObjs[i]).hasClass('info-fixed')) {
         var answerText = answerObjs[i].getAttribute('string');
-        var uuid = answerObjs[i].getAttribute('uuid');
+        var answerUuid = answerObjs[i].getAttribute('uuid');
         var answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));
@@ -25,13 +25,13 @@ window.PLOrderBlocks = function (uuid, options) {
         var answer = {
           inner_html: answerText,
           indent: answerIndent,
-          uuid: uuid,
+          uuid: answerUuid,
         };
         studentAnswers.push(answer);
       }
     }
 
-    var textfieldName = '#' + event.target.getAttribute('name') + '-input';
+    var textfieldName = '#' + uuid + '-input';
     $(textfieldName).val(JSON.stringify(studentAnswers));
   }
 
@@ -62,8 +62,8 @@ window.PLOrderBlocks = function (uuid, options) {
     cancel: '.info',
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
-    create: function (event) {
-      setAnswer(event);
+    create: function () {
+      setAnswer();
     },
     sort: function (event, ui) {
       // update the location of the placeholder as the item is dragged
@@ -75,7 +75,7 @@ window.PLOrderBlocks = function (uuid, options) {
       // when the user stops interacting with the list
       let leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
-      setAnswer(event);
+      setAnswer();
     },
   });
 

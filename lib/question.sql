@@ -123,7 +123,7 @@ FROM
     LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
     JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
-    JOIN next_iq ON (next_iq.current_id = iq.id)
+    LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
 WHERE
     s.id = $submission_id
     AND gj.id = (

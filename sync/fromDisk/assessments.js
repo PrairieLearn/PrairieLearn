@@ -119,7 +119,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, advanceScorePerc: number, questionParams: Object  }[]} */
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number, questionParams: Object }[]} */
       let alternatives;
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
@@ -144,7 +144,16 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
+<<<<<<< HEAD
             question_params: alternative.questionParams || {},
+=======
+            canView: alternative?.canView ?? question?.canView ?? null,
+            canSubmit: _.has(alternative, 'canSubmit')
+              ? alternative.canSubmit
+              : _.has(question, 'canSubmit')
+              ? question.canSubmit
+              : null,
+>>>>>>> master
           };
         });
       } else if (_(question).has('id')) {
@@ -157,7 +166,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
+<<<<<<< HEAD
             questionParams: question.questionParams || {},
+=======
+            canView: question.canView,
+            canSubmit: question.canSubmit,
+>>>>>>> master
           },
         ];
       }
@@ -211,7 +225,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             grade_rate_minutes: alternative.gradeRateMinutes,
             question_id: questionId,
             number_in_alternative_group: alternativeIndex + 1,
+<<<<<<< HEAD
             question_params: alternative.questionParams || {},
+=======
+            can_view: alternative.canView,
+            can_submit: alternative.canSubmit,
+>>>>>>> master
             advance_score_perc: alternative.advanceScorePerc,
             effective_advance_score_perc:
               alternative.advanceScorePerc ??
@@ -226,6 +245,16 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
       return alternativeGroupParams;
     });
+  });
+
+  assessmentParams.groupRoles = (assessment.groupRoles ?? []).map((role) => {
+    return {
+      role_name: role.name,
+      minimum: role.minimum,
+      maximum: role.maximum,
+      can_assign_roles_at_start: role.canAssignRolesAtStart,
+      can_assign_roles_during_assessment: role.canAssignRolesDuringAssessment,
+    };
   });
 
   // Needed when deleting unused alternative groups

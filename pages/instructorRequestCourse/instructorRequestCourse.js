@@ -26,6 +26,10 @@ router.post('/', function (req, res, next) {
   const short_name = req.body['cr-shortname'].toUpperCase() || '';
   const title = req.body['cr-title'] || '';
   const github_user = req.body['cr-ghuser'] || null;
+  const first_name = req.body['cr-firstname'] || '';
+  const last_name = req.body['cr-lastname'] || '';
+  const work_email = req.body['cr-email'] || '';
+  const institution = req.body['cr-institution'] || '';
 
   if (!short_name.match(/[A-Z]+ [A-Z0-9]+/)) {
     res.locals.error_message =
@@ -34,6 +38,22 @@ router.post('/', function (req, res, next) {
   }
   if (title.length < 1) {
     res.locals.error_message = 'The course title should not be empty.';
+    return next();
+  }
+  if (first_name.length < 1) {
+    res.locals.error_message = 'The first name should not be empty.';
+    return next();
+  }
+  if (last_name.length < 1) {
+    res.locals.error_message = 'The last name should not be empty.';
+    return next();
+  }
+  if (work_email.length < 1) {
+    res.locals.error_message = 'The work email should not be empty.';
+    return next();
+  }
+  if (institution.length < 1) {
+    res.locals.error_message = 'The institution should not be empty.';
     return next();
   }
 
@@ -55,8 +75,7 @@ router.post('/', function (req, res, next) {
           const course_owners = result.rows;
 
           if (course_owners.length > 0) {
-            /* If the course already exists, display an error message containing the owners */
-
+            // If the course already exists, display an error message containing the owners.
             let error_message = `<p>The requested course (${short_name}) already exists.  Please contact the owner(s) of that course to request access to it.</p>`;
             let formatted_owners = [];
             course_owners.forEach((c) => {
@@ -78,16 +97,24 @@ router.post('/', function (req, res, next) {
             res.locals.error_message = error_message;
             next();
           } else {
-            /* Otherwise, insert the course request and send a Slack message */
-
-            const sql_params = [res.locals.authn_user.user_id, short_name, title, github_user];
+            // Otherwise, insert the course request and send a Slack message.
+            const sql_params = [
+              res.locals.authn_user.user_id,
+              short_name,
+              title,
+              github_user,
+              first_name,
+              last_name,
+              work_email,
+              institution,
+            ];
             sqldb.call('course_requests_insert', sql_params, (err, result) => {
               if (ERR(err, next)) return;
               const auto_created = result.rows[0].auto_created;
               const creq_id = result.rows[0].course_request_id;
 
               if (auto_created) {
-                /* Automatically fill in institution id and display timezone from the user's other courses */
+                // Automatically fill in institution ID and display timezone from the user's other courses.
                 sqldb.queryOneRow(
                   sql.get_existing_owner_course_settings,
                   { user_id: res.locals.authn_user.user_id },
@@ -113,13 +140,15 @@ router.post('/', function (req, res, next) {
                         return;
                       }
 
-                      /* Ignore the callback, we don't actually care if the message gets sent before we render the page */
+                      // Ignore the callback, we don't actually care if the
+                      // message gets sent before we render the page
                       opsbot.sendCourseRequestMessage(
                         `*Automatically creating course*\n` +
                           `Course repo: ${repo_short_name}\n` +
                           `Course rubric: ${short_name}\n` +
                           `Course title: ${title}\n` +
-                          `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                          `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+                          `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                           `GitHub username: ${github_user || 'not provided'}`,
                         (err) => {
                           ERR(err, () => {
@@ -128,18 +157,19 @@ router.post('/', function (req, res, next) {
                         }
                       );
 
-                      /* Redirect on success so that refreshing doesn't create another request */
+                      // Redirect on success so that refreshing doesn't create another request
                       res.redirect(req.originalUrl);
                     });
                   }
                 );
               } else {
-                /* Not automatically created */
+                // Not automatically created
                 opsbot.sendCourseRequestMessage(
                   `*Incoming course request*\n` +
                     `Course rubric: ${short_name}\n` +
                     `Course title: ${title}\n` +
-                    `Requested by: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
+                    `Requested by: ${first_name} ${last_name} (${work_email})\n` +
+                    `Logged in as: ${res.locals.authn_user.name} (${res.locals.authn_user.uid})\n` +
                     `GitHub username: ${github_user || 'not provided'}`,
                   (err) => {
                     ERR(err, () => {

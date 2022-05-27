@@ -15,6 +15,7 @@ SELECT
         WHEN ai.open AND ai.date_limit IS NOT NULL
             THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open (no time limit)'
+        WHEN ai.open = FALSE AND ai.grading_needed THEN 'Closed (pending grading)'
         ELSE 'Closed'
     END AS time_remaining,
     CASE

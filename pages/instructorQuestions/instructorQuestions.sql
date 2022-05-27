@@ -16,6 +16,8 @@ SELECT
     q.title,
     q.sync_errors,
     q.sync_warnings,
+    q.grading_method,
+    q.external_grading_image,
     case when q.type = 'Freeform' then 'v3' else 'v2 (' || q.type || ')' end AS display_type,
     coalesce(issue_count.open_issue_count, 0) AS open_issue_count,
     row_to_json(top) AS topic,

@@ -5,6 +5,7 @@ CREATE FUNCTION
         IN format_errors jsonb,
         IN gradable boolean,
         IN broken boolean,
+        IN new_true_answer jsonb,
         IN regradable boolean,
         IN credit integer,
         IN mode enum_mode,
@@ -20,8 +21,15 @@ DECLARE
     last_access timestamptz;
     delta interval;
     new_status enum_instance_question_status;
+    new_requires_manual_grading boolean;
 BEGIN
     PERFORM variants_lock(variant_id);
+
+    -- ######################################################################
+    -- update the variant's `correct_answer`, which is permitted to change
+    -- during the `parse` phase (which occurs before this submission is
+    -- inserted).
+    UPDATE variants SET true_answer = new_true_answer WHERE id = variant_id;
 
     -- ######################################################################
     -- get the variant
@@ -31,12 +39,20 @@ BEGIN
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id = %', variant_id; END IF;
     
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT              iq.id,                  ai.id
-    INTO instance_question_id, assessment_instance_id
+    SELECT
+        iq.id,
+        ai.id,
+        iq.requires_manual_grading OR q.grading_method = 'Manual'
+    INTO
+        instance_question_id,
+        assessment_instance_id,
+        new_requires_manual_grading
     FROM
         variants AS v
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        LEFT JOIN questions AS q ON (q.id = aq.question_id)
     WHERE v.id = variant_id;
 
     -- ######################################################################
@@ -106,7 +122,8 @@ BEGIN
             status = new_status,
             duration = duration + delta,
             first_duration = coalesce(first_duration, delta),
-            modified_at = now()
+            modified_at = now(),
+            requires_manual_grading = new_requires_manual_grading
         WHERE id = instance_question_id;
 
         UPDATE assessment_instances AS ai
