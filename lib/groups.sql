@@ -28,9 +28,19 @@ create_log AS (
     SELECT $authn_user_id, $user_id, cg.id, 'create' FROM create_group AS cg
 ),
 join_group AS (
+    WITH group_role AS (
+        SELECT
+            gr.*
+        FROM
+            group_roles AS gr
+        WHERE
+            gr.assessment_id = $assessment_id
+            AND gr.can_assign_roles_at_start
+        LIMIT 1
+    )
     INSERT INTO group_users
-        (user_id, group_id)
-    SELECT $user_id, cg.id FROM create_group AS cg
+        (user_id, group_role_id, group_id)
+    SELECT $user_id, gr.id, cg.id FROM create_group AS cg, group_role AS gr
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
