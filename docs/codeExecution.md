@@ -51,6 +51,7 @@ So far, this discussion has been pretty abstract. But what about all the actual 
 A _code caller_ serves as an abstraction on top of the different execution modes above and hides the implementation details of exactly how code is executed. There are currently two different types of code callers, referred to here by the filenames of their implementations.
 
 - `lib/code-caller-docker` handles executing code inside of Docker containers, as required by the `container` execution mode.
+  - This execution mode is only supported on Linux, as it relies on Docker's ability to forward bind mounts, which is not implemented on macOS.
 - `lib/code-caller-python` handles executing Python processes directly, as required by the `native` execution mode.
 
 The primary external interface of these callers is the `call()` function, which takes five arguments:
