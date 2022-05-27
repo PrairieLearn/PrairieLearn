@@ -60,7 +60,7 @@ def render(element_html, data):
     editor_config_function = pl.get_string_attrib(element, 'editor-config-function', EDITOR_CONFIG_FUNCTION_DEFAULT)
     ace_mode = pl.get_string_attrib(element, 'ace-mode', ACE_MODE_DEFAULT)
     ace_theme = pl.get_string_attrib(element, 'ace-theme', ACE_THEME_DEFAULT)
-    font_size = pl.get_float_attrib(element, 'font-size', FONT_SIZE_DEFAULT)
+    font_size = pl.get_string_attrib(element, 'font-size', FONT_SIZE_DEFAULT)
     uuid = pl.get_uuid()
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
