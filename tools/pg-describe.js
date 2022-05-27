@@ -3,7 +3,7 @@
 
 const async = require('async');
 const ERR = require('async-stacktrace');
-const colors = require('colors');
+const chalk = require('chalk').default;
 const fs = require('fs-extra');
 const _ = require('lodash');
 const path = require('path');
@@ -69,13 +69,13 @@ databaseDescribe.describe(options, (err, description) => {
 
 function printDescription(description) {
   _.forEach(_.sortBy(_.keys(description.tables)), (tableName) => {
-    process.stdout.write(formatText(`[table] ${tableName}\n`, colors.bold));
+    process.stdout.write(formatText(`[table] ${tableName}\n`, chalk.bold));
     process.stdout.write(description.tables[tableName]);
     process.stdout.write('\n\n');
   });
 
   _.forEach(_.sortBy(_.keys(description.enums)), (enumName) => {
-    process.stdout.write(formatText(`[enum] ${enumName}\n`, colors.bold));
+    process.stdout.write(formatText(`[enum] ${enumName}\n`, chalk.bold));
     process.stdout.write(description.enums[enumName]);
     process.stdout.write('\n\n');
   });
