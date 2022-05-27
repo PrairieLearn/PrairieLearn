@@ -17,7 +17,7 @@ const yargs = require('yargs')
   )
   .example(
     '$0 --db postgres --db old_restore',
-    'Diffs the database "postgres" with the database "old_restore'
+    'Diffs the database "postgres" with the database "old_restore"'
   )
   .strict();
 
