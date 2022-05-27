@@ -144,16 +144,13 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
-<<<<<<< HEAD
-            question_params: alternative.questionParams || {},
-=======
             canView: alternative?.canView ?? question?.canView ?? null,
             canSubmit: _.has(alternative, 'canSubmit')
               ? alternative.canSubmit
               : _.has(question, 'canSubmit')
               ? question.canSubmit
               : null,
->>>>>>> master
+            question_params: alternative.questionParams || {},
           };
         });
       } else if (_(question).has('id')) {
@@ -166,12 +163,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
-<<<<<<< HEAD
-            questionParams: question.questionParams || {},
-=======
             canView: question.canView,
             canSubmit: question.canSubmit,
->>>>>>> master
+            questionParams: question.questionParams || {},
           },
         ];
       }
@@ -225,12 +219,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             grade_rate_minutes: alternative.gradeRateMinutes,
             question_id: questionId,
             number_in_alternative_group: alternativeIndex + 1,
-<<<<<<< HEAD
-            question_params: alternative.questionParams || {},
-=======
             can_view: alternative.canView,
             can_submit: alternative.canSubmit,
->>>>>>> master
+            question_params: alternative.questionParams || {},
             advance_score_perc: alternative.advanceScorePerc,
             effective_advance_score_perc:
               alternative.advanceScorePerc ??
