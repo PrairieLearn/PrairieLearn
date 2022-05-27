@@ -8,7 +8,7 @@ const util = require('util');
 const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv').default;
-const betterAjvErrors = require('better-ajv-errors');
+const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 
