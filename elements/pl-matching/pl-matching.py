@@ -149,7 +149,7 @@ def prepare(element_html, data):
         # Add distractor options; and None of the Above if needed.
         more_needed = number_options - len(needed_options)
         if more_needed >= len(distractors):
-            # Add all distractors.
+            # Use all options, both correct and distractors.
             needed_options = options
             # Add NOTA if that's still not enough.
             if more_needed > len(distractors):
