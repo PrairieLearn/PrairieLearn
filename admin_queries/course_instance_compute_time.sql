@@ -58,7 +58,7 @@ total_grading_job_durations AS (
     SELECT
         course_instance_id,
         COUNT(DISTINCT grading_job_id) AS grading_job_count,
-        extract(EPOCH FROM SUM(duration)) AS total_duration_hours
+        extract(EPOCH FROM SUM(duration)) / 3600.0 AS total_duration_hours
     FROM
         grading_job_durations
     GROUP BY
