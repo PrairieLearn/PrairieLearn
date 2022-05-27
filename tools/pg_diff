@@ -29,9 +29,9 @@ if (args.db && !_.isArray(args.db) && args.dir && !_.isArray(args.dir)) {
   } else {
     databaseDiff.diffDirectoryAndDatabase(args.dir, args.db, options, handleResults);
   }
-} else if (args.db && _.isArray(args.db) && args.db.length == 2 && !args.dir) {
+} else if (args.db && _.isArray(args.db) && args.db.length === 2 && !args.dir) {
   databaseDiff.diffDatabases(args.db[0], args.db[1], options, handleResults);
-} else if (args.dir && _.isArray(args.dir) && args.dir.length == 2 && !args.db) {
+} else if (args.dir && _.isArray(args.dir) && args.dir.length === 2 && !args.db) {
   databaseDiff.diffDirectories(args.dir[0], args.dir[1], options, handleResults);
 } else {
   yargs.showHelp();

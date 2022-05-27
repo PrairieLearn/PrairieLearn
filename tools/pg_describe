@@ -27,7 +27,7 @@ const yargs = require('yargs')
   .example('$0 userdb -o db_description --ignore-tables a b --ignore-columns a.col1 a.col2')
   .strict();
 
-if (yargs.argv._.length != 1) {
+if (yargs.argv._.length !== 1) {
   yargs.showHelp();
   process.exit(1);
 }
