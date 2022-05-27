@@ -1,8 +1,9 @@
 #!/usr/bin/env node
+// @ts-check
 
 const async = require('async');
 const ERR = require('async-stacktrace');
-const chalk = require('chalk').default;
+const colors = require('colors');
 const fs = require('fs-extra');
 const _ = require('lodash');
 const path = require('path');
@@ -23,8 +24,11 @@ const yargs = require('yargs')
   .array('ignore-columns')
   .help('h')
   .alias('h', 'help')
-  .example('$0 postgres')
-  .example('$0 userdb -o db_description --ignore-tables a b --ignore-columns a.col1 a.col2')
+  .example('$0 postgres', 'Describe the "postgres" database')
+  .example(
+    '$0 userdb -o db_description --ignore-tables a b --ignore-columns a.col1 a.col2',
+    'Describe the "userdb" database; ignore specific tables and columns'
+  )
   .strict();
 
 if (yargs.argv._.length !== 1) {
@@ -65,13 +69,13 @@ databaseDescribe.describe(options, (err, description) => {
 
 function printDescription(description) {
   _.forEach(_.sortBy(_.keys(description.tables)), (tableName) => {
-    process.stdout.write(formatText(`[table] ${tableName}\n`, chalk.bold));
+    process.stdout.write(formatText(`[table] ${tableName}\n`, colors.bold));
     process.stdout.write(description.tables[tableName]);
     process.stdout.write('\n\n');
   });
 
   _.forEach(_.sortBy(_.keys(description.enums)), (enumName) => {
-    process.stdout.write(formatText(`[enum] ${enumName}\n`, chalk.bold));
+    process.stdout.write(formatText(`[enum] ${enumName}\n`, colors.bold));
     process.stdout.write(description.enums[enumName]);
     process.stdout.write('\n\n');
   });
