@@ -3,7 +3,7 @@
     "type": "Homework",
     "title": "Homework to test partial credit",
     "set": "Homework",
-    "unit": "grading",
+    "module": "grading",
     "number": "3",
     "constantQuestionValue": true,
     "allowAccess": [

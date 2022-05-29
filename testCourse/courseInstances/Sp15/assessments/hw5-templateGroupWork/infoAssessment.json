@@ -3,7 +3,7 @@
     "type": "Homework",
     "title": "Group Activity Template",
     "set": "Homework",
-    "unit": "groups",
+    "module": "groups",
     "number": "5",
     "groupWork": true,
     "groupMaxSize": 3,
