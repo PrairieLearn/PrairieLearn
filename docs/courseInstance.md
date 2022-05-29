@@ -78,7 +78,9 @@ By default, all assessments in a course instance are grouped by `"Set"`. Setting
 by module on the student assessments overview page.
 
 ```json
-    "groupBy": "Module"
+{
+  "groupBy": "Module"
+}
 ```
 
 For more information about assessment modules, see [Course configuration](course.md#assessment-modules).

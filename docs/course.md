@@ -260,7 +260,7 @@ Properties for assessmentModules are as follows.
 | `name`    | Brief name for the module. Shorter is better.    |
 | `heading` | Longer title for the module, displayed to users. |
 
-The sorting method for the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may sort assessments by `"Module"`, and some others may sort assessments by `"Set"`.  See [Course Instance](courseInstance.md#assessment-page-organization) for more details.
+The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`.  See [Course Instance](courseInstance.md#assessment-page-organization) for more details.
 
 ## Topics
 
