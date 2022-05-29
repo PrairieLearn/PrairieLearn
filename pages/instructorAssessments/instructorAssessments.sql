@@ -42,7 +42,6 @@ SELECT
     aset.name,
     aset.color,
     (aset.abbreviation || a.number) as label,
-    au.name AS assessment_unit_name,
     (
         LAG (CASE WHEN $assessments_group_by = 'Set' THEN aset.id ELSE au.id END)
         OVER (
@@ -60,14 +59,14 @@ FROM
     LEFT JOIN LATERAL assessments_duration_stats(a.id) AS dstats ON TRUE
     LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
     LEFT JOIN issue_count AS ic ON (ic.assessment_id = a.id)
-    LEFT JOIN assessment_units AS au ON (au.id = a.assessment_unit_id)
+    LEFT JOIN assessment_modules AS au ON (au.id = a.assessment_module_id)
 WHERE
     ci.id = $course_instance_id
     AND a.deleted_at IS NULL
     AND aa.authorized
 ORDER BY
-    (CASE WHEN $assessments_group_by = 'Unit' THEN au.number END), 
-    (CASE WHEN $assessments_group_by = 'Unit' THEN au.id END),
+    (CASE WHEN $assessments_group_by = 'Module' THEN au.number END), 
+    (CASE WHEN $assessments_group_by = 'Module' THEN au.id END),
     aset.number, a.order_by, a.id;
 
 -- BLOCK course_instance_files
