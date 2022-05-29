@@ -12,7 +12,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
   "type": "Exam",
   "title": "Coordinates and Vectors",
   "set": "Quiz",
-  "unit": "Linear algebra review",
+  "module": "Linear algebra review",
   "number": "2",
   "allowAccess": [],
   "zones": [],
@@ -34,13 +34,15 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 
 You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets).
 
-## Assessment units
+## Assessment modules
 
-Instructors may optionally group their assessments by course units, corresponding to course topics or individual parts of the course. This allows students to see all assessments corresponding to a particular unit, which can help them plan their study and practice habits.
+Instructors may optionally group their assessments by course modules, corresponding to course topics, sections or chapters of the course. 
+This allows students to see all assessments corresponding to a particular module together, which can be useful for courses that use many different types of 
+assessment sets (e.g, homework, exams, practice exams, worksheets, etc).
 
-By default, every assessment is assigned to the "Default" unit. Instructors may assign an assessment to a specific unit by setting its `unit` property.
+By default, every assessment is assigned to the "Default" module. Instructors may assign an assessment to a specific module by setting its `module` property.
 
-For more information about assessment units, see [Course configuration](course.md#assessment-units).
+For more information about assessment modules, see [Course configuration](course.md#assessment-modules).
 
 ## Assessment types
 

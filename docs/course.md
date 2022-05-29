@@ -69,7 +69,7 @@ This file specifies basic information about the course:
       "color": "red1"
     }
   ],
-  "assessmentUnits": [
+  "assessmentModules": [
     {
       "name": "vectors-coords",
       "heading": "Vectors and coordinates"
@@ -224,15 +224,15 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
 }
 ```
 
-## Assessment units
+## Assessment modules
 
-Each assessment in the course belongs to a _unit_ defined in `infoCourse.json`. Units should be thought of as a unit of instruction, or in PrairieLearn terms, a collection of assessments related to one another, but not necessarily of the same type. This means you can have a unit with two homeworks, one lab, and one exam, for example.
+Each assessment in the course belongs to a _module_ defined in `infoCourse.json`. Modules can represent course topics, chapters or sections, or in PrairieLearn terms, a collection of assessments related to one another, but not necessarily of the same type. This means you can have a module with two homeworks, one lab, and one exam, for example.
 
-Units are optional and do not affect any behavior by default. Setting the `infoCourse.json` property `"groupBy"` to `"Unit"` (instead of the default `"Set"`) will cause assessments to be grouped together by unit on the student assessments overview page. The order that they are defined in will be the order that they display in, top-down, to students. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
+Modules are optional and do not affect any behavior by default. The order in which the modules are defined in `infoCourse.json` will be the order in which they are displayed in the student page. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
 
 ```json
 {
-  "assessmentUnits": [
+  "assessmentModules": [
     {
       "name": "intro",
       "heading": "Unit 1: Introduction to XC 101"
@@ -244,26 +244,23 @@ Units are optional and do not affect any behavior by default. Setting the `infoC
     {
       "name": "math",
       "heading": "Unit 3: Math"
-    },
-    {
-      "name": "fun",
-      "heading": "Unit 4: Extras for fun"
     }
-  ],
-  "groupBy": "Unit"
+  ]
 }
 ```
 
 The above configuration can result in the following view for students:
 
-![Assessments grouped by unit on the student assessments overview.](assessment-units.png)
+![Assessments grouped by module on the student assessments overview.](assessment-units.png)
 
-Properties for assessmentUnits are as follows.
+Properties for assessmentModules are as follows.
 
-| Property  | Description                                    |
-| --------- | ---------------------------------------------- |
-| `name`    | One word to identify the unit, lowercase.      |
-| `heading` | Longer title for the unit, displayed to users. |
+| Property  | Description                                      |
+| --------- | ------------------------------------------------ |
+| `name`    | Brief name for the module. Shorter is better.    |
+| `heading` | Longer title for the module, displayed to users. |
+
+The sorting method for the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may sort assessments by `"Module"`, and some others may sort assessments by `"Set"`.  See [Course Instance](courseInstance.md#assessment-page-organization) for more details.
 
 ## Topics
 
