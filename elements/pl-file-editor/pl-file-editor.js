@@ -32,6 +32,10 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setTheme('ace/theme/chrome');
   }
 
+  if (options.fontSize) {
+    this.editor.setFontSize(options.fontSize);
+  }
+
   if (options.minLines) {
     this.editor.setOption('minLines', options.minLines);
   }
