@@ -84,11 +84,11 @@
                 }
             }
         },
-        "assessmentUnits": {
-            "description": "The units of instruction covered in a course.",
+        "assessmentModules": {
+            "description": "Course modules.",
             "type": "array",
             "items": {
-                "description": "A unit of instruction.",
+                "description": "A single course module description.",
                 "type": "object",
                 "required": [
                     "name",
@@ -96,11 +96,11 @@
                 ],
                 "properties": {
                     "name": {
-                        "description": "Shorthand name for a unit",
+                        "description": "Short name for a module (preferably 1 to 3 words), e.g., 'Introduction'.",
                         "type": "string"
                     },
                     "heading": {
-                        "description": "Full name of unit (visible to students)",
+                        "description": "Full name of the module (visible to students)",
                         "type": "string"
                     }
                 }

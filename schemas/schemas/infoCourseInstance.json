@@ -100,7 +100,7 @@
             "default": "Set",
             "enum": [
                 "Set",
-                "Unit"
+                "Module"
             ]
         }
     }
