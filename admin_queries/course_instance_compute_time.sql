@@ -18,7 +18,7 @@ workspace_durations AS (
         AND w.created_at BETWEEN $start_date AND $end_date
     GROUP BY
         ci.id
-)
+),
 grading_job_durations AS (
     SELECT
         ci.id AS course_instance_id,
@@ -73,6 +73,7 @@ FROM
     FULL JOIN grading_job_durations AS gjd ON (gjd.course_instance_id = wd.course_instance_id)
     JOIN course_instances AS ci ON (ci.id = coalesce(wd.course_instance_id, gjd.course_instance_id))
     JOIN pl_courses AS c ON (c.id = ci.course_id)
+    JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
     coalesce(wd.duration_hours, 0) + coalesce(gjd.duration_hours, 0) >= $minimum_compute_hours
 ORDER BY
