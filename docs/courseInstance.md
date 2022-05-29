@@ -73,8 +73,8 @@ The course instance `allowAccess` rules determine who can access the course inst
 
 ## Assessment page organization
 
-Instructors can group assessments by course modules (topics, sections or chapters in a course) or by assessment sets (homework, exam, etc). 
-By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupBy"` to `"Module"` will group assessments together 
+Instructors can group assessments by course modules (topics, sections or chapters in a course) or by assessment sets (homework, exam, etc).
+By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupBy"` to `"Module"` will group assessments together
 by module on the student assessments overview page.
 
 ```json
