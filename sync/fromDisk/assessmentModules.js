@@ -2,14 +2,14 @@
 const sqldb = require('../../prairielib/lib/sql-db');
 const infofile = require('../infofile');
 
-const perf = require('../performance')('assessmentUnits');
+const perf = require('../performance')('assessmentModules');
 
 /**
  * @param {any} courseId
  * @param {import('../course-db').CourseData} courseData
  */
 module.exports.sync = async function (courseId, courseData) {
-  // We can only safely remove unused assessment units if both `infoCourse.json`
+  // We can only safely remove unused assessment modules if both `infoCourse.json`
   // and all `infoAssessment.json` files are valid.
   const isInfoCourseValid = !infofile.hasErrors(courseData.course);
   const areAllInfoAssessmentsValid = Object.values(courseData.courseInstances).every((ci) => {
@@ -18,33 +18,33 @@ module.exports.sync = async function (courseId, courseData) {
   const deleteUnused = isInfoCourseValid && areAllInfoAssessmentsValid;
 
   /** @type {string[]} */
-  let courseAssessmentUnits = [];
+  let courseAssessmentModules = [];
   if (!infofile.hasErrors(courseData.course)) {
-    courseAssessmentUnits = courseData.course.data.assessmentUnits.map((u) =>
+    courseAssessmentModules = courseData.course.data.assessmentModules.map((u) =>
       JSON.stringify([u.name, u.heading])
     );
   }
 
   /** @type Set<string> */
-  const knownAssessmentUnitNames = new Set();
+  const knownAssessmentModuleNames = new Set();
   Object.values(courseData.courseInstances).forEach((ci) => {
     Object.values(ci.assessments).forEach((a) => {
-      if (!infofile.hasErrors(a) && a.data.unit !== undefined) {
-        knownAssessmentUnitNames.add(a.data.unit);
+      if (!infofile.hasErrors(a) && a.data.module !== undefined) {
+        knownAssessmentModuleNames.add(a.data.module);
       }
     });
   });
-  const assessmentUnitNames = [...knownAssessmentUnitNames];
+  const assessmentModuleNames = [...knownAssessmentModuleNames];
 
   const params = [
     isInfoCourseValid,
     deleteUnused,
-    courseAssessmentUnits,
-    assessmentUnitNames,
+    courseAssessmentModules,
+    assessmentModuleNames,
     courseId,
   ];
 
-  perf.start('sproc:sync_assessment_units');
-  await sqldb.callOneRowAsync('sync_assessment_units', params);
-  perf.end('sproc:sync_assessment_units');
+  perf.start('sproc:sync_assessment_modules');
+  await sqldb.callOneRowAsync('sync_assessment_modules', params);
+  perf.end('sproc:sync_assessment_modules');
 };

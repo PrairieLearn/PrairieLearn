@@ -214,7 +214,7 @@ const FILE_UUID_REGEX =
  */
 
 /**
- * @typedef AssessmentUnit
+ * @typedef AssessmentModule
  * @property {string} name
  * @property {string} heading
  */
@@ -231,7 +231,7 @@ const FILE_UUID_REGEX =
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
- * @property {AssessmentUnit[]} assessmentUnits
+ * @property {AssessmentModule[]} assessmentModules
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
@@ -256,7 +256,7 @@ const FILE_UUID_REGEX =
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
- * @property {"Set" | "Unit"} groupBy
+ * @property {"Set" | "Module"} groupBy
  */
 
 /**
@@ -321,7 +321,7 @@ const FILE_UUID_REGEX =
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
- * @property {string} unit
+ * @property {string} module
  * @property {string} number
  * @property {boolean} allowIssueReporting
  * @property {boolean} allowRealTimeGrading
@@ -787,7 +787,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name', null);
-  const assessmentUnits = getFieldWithoutDuplicates('assessmentUnits', 'name', null);
+  const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name', null);
 
   const exampleCourse =
     info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
@@ -801,7 +801,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
     title: info.title,
     timezone: info.timezone,
     assessmentSets,
-    assessmentUnits,
+    assessmentModules,
     tags,
     topics,
     exampleCourse,
