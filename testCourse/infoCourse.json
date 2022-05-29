@@ -7,11 +7,11 @@
     },
     "assessmentSets": [],
     "assessmentModules": [
-        {"name": "pl", "heading": "Module 1: Intro to PrairieLearn"},
-        {"name": "cbtf", "heading": "Module 2: Examination with proctors"},
-        {"name": "grading", "heading": "Module 3: Alternate grading techniques"},
-        {"name": "groups", "heading": "Module 4: Working with partners"},
-        {"name": "misc", "heading": "Module 5: Miscellaneous assessments"}
+        {"name": "Module1", "heading": "Module 1"},
+        {"name": "Module2", "heading": "Module 2"},
+        {"name": "Module3", "heading": "Module 3"},
+        {"name": "Module4", "heading": "Module 4"},
+        {"name": "Module5", "heading": "Module 5"}
     ],
     "topics": [
         {"name": "Algebra", "color": "red3", "description": "Basic algebra."},

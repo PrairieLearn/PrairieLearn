@@ -3,7 +3,6 @@
     "type": "Exam",
     "title": "Exam with password diamond",
     "set": "Exam",
-    "module": "grading",
     "number": "6",
     "allowAccess": [
         {

@@ -1,9 +1,10 @@
 {
     "uuid": "2c5be1cc-8a8b-4fca-9bc6-c909a1f1b860",
     "type": "Homework",
-    "title": "Homework to test per-zone grading",
-    "set": "Homework",
-    "number": "4",
+    "title": "Quiz 1",
+    "set": "Quiz",
+    "module": "Module1",
+    "number": "1",
     "allowAccess": [
         {
             "mode": "Public",

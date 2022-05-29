@@ -1,0 +1,13 @@
+{
+    "uuid": "31a69dd9-81a1-4b17-b578-2098d20fb58a",
+    "shortName": "Su22",
+    "longName": "Summer 2022 - sort by module",
+    "groupBy": "Module",   
+    "allowAccess": [
+        {
+            "institution": "Any",
+            "startDate": "1800-01-19T00:00:01",
+            "endDate": "2400-05-13T23:59:59"
+        }
+    ]
+}

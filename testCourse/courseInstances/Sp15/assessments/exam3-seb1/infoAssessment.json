@@ -3,7 +3,6 @@
     "type": "Exam",
     "title": "Exam for Safe Exam Browser",
     "set": "Exam",
-    "module": "cbtf",
     "number": "3",
     "allowAccess": [
     	{

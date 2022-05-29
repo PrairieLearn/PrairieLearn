@@ -3,7 +3,6 @@
     "type": "Exam",
     "title": "Verify Exam Mode Lacks 'Waiting for a Proctor'",
     "set": "Exam",
-    "module": "grading",
     "number": "7",
     "allowAccess": [
         {

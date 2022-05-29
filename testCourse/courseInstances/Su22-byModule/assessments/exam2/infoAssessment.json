@@ -1,8 +1,9 @@
 {
-    "uuid": "4491f76f-f637-43be-8e2d-a60b292e3673",
+    "uuid": "4591f76f-f637-43be-8e2d-a60b292e3674",
     "type": "Exam",
-    "title": "Miscellaneous exam",
+    "title": "Exam 2",
     "set": "Exam",
+    "module": "Module2",
     "number": "2",
     "allowAccess": [
         {

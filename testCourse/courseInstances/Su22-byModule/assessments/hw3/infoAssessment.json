@@ -1,9 +1,10 @@
 {
-    "uuid": "b6468c04-f28c-465a-9108-077ed53e2148",
+    "uuid": "b7468c04-f28c-465a-9108-077ed53e2148",
     "type": "Homework",
-    "title": "Miscellaneous homework",
+    "title": "Homework 3",
     "set": "Homework",
-    "number": "2",
+    "module": "Module3",
+    "number": "3",
     "allowAccess": [
         {
             "mode": "Public",
