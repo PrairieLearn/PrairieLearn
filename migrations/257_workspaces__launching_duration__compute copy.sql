@@ -2,7 +2,7 @@ WITH
 workspace_log_intervals AS (
     SELECT
         wl.workspace_id,
-        CASE WHEN (lag(wl.state) OVER win) = 'launching' AND wl.state = 'running' THEN wl.date - (lag(wl.date) OVER win) ELSE make_interval(secs => 0) END AS duration
+        CASE WHEN (lag(wl.state) OVER win) = 'launching' THEN wl.date - (lag(wl.date) OVER win) ELSE make_interval(secs => 0) END AS duration
     FROM
         workspace_logs AS wl
     WHERE
