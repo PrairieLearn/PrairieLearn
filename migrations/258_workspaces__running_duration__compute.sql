@@ -20,6 +20,6 @@ workspace_durations AS (
         wli.workspace_id
 )
 UPDATE workspaces AS w
-SET launching_duration = wd.duration
+SET running_duration = wd.duration
 FROM workspace_durations AS wd
 WHERE w.id = wd.workspace_id;
