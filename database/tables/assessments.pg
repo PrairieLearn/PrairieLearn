@@ -3,7 +3,7 @@ columns
     allow_issue_reporting: boolean default true
     allow_real_time_grading: boolean default true
     assessment_set_id: bigint
-    assessment_unit_id: bigint
+    assessment_module_id: bigint
     auto_close: boolean default true
     config: jsonb
     constant_question_value: boolean default false
@@ -38,7 +38,7 @@ indexes
 
 foreign-key constraints
     assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL
-    assessments_assessment_unit_id_fkey: FOREIGN KEY (assessment_unit_id) REFERENCES assessment_units(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessments_assessment_module_id_fkey: FOREIGN KEY (assessment_module_id) REFERENCES assessment_modules(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessments_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
 
