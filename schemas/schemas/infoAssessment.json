@@ -137,8 +137,8 @@
             "type": "number",
             "minimum": 0
         },
-        "unit": {
-            "description": "Unit of instruction, as defined in infoCourse.json, that this assessment belongs to.",
+        "module": {
+            "description": "Module that this assessment belongs to, as defined in infoCourse.json.",
             "type": "string"
         }
     },
