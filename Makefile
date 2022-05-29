@@ -1,10 +1,10 @@
 export PATH := node_modules/.bin/:$(PATH)
 
 build:
-	@turbo run build
+	@yarn turbo run build
 
 dev:
-	@turbo run dev
+	@yarn turbo run dev
 
 start: start-support
 	@node server.js
