@@ -5,8 +5,10 @@ workspace_log_intervals AS (
         CASE WHEN (lag(wl.state) OVER win) = 'launching' AND wl.state = 'running' THEN wl.date - (lag(wl.date) OVER win) ELSE make_interval(secs => 0) END AS duration
     FROM
         workspace_logs AS wl
+    WHERE
+        wl.state IS NOT NULL
     WINDOW
-        win AS (PARTITION BY wl.workspace_id ORDER BY wl.date)
+        win AS (PARTITION BY wl.workspace_id ORDER BY wl.date, wl.id)
 ),
 workspace_durations AS (
     SELECT
