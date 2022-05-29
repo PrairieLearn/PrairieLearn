@@ -248,7 +248,7 @@ When issue reporting is allowed, students see a button labeled "Report an error 
 
 Course staff see any reported issues show up on the "Issues" tab.
 
-![Issue report](assessment-report4.png)
+![Issue report](assessment-report3.png)
 
 ## Access control
 

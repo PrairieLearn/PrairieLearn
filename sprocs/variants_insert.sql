@@ -42,7 +42,7 @@ BEGIN
         -- the database and use that instead.
         existing_variant := instance_questions_select_variant(instance_question_id, require_open);
         IF existing_variant IS NOT NULL THEN
-            SELECT variants_select(existing_variant->'id', real_question_id, instance_question_id)
+            SELECT variants_select((existing_variant->>'id')::bigint, real_question_id, instance_question_id)
             INTO variant;
             RETURN;
         END IF;

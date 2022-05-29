@@ -8,7 +8,7 @@ const util = require('util');
 const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv').default;
-const betterAjvErrors = require('better-ajv-errors');
+const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 
@@ -302,6 +302,8 @@ const FILE_UUID_REGEX =
  * @property {number} triesPerVariant
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**
@@ -313,6 +315,15 @@ const FILE_UUID_REGEX =
  * @property {ZoneQuestion[]} questions
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ */
+
+/**
+ * @typedef {Object} GroupRole
+ * @property {string} name
+ * @property {number} minimum
+ * @property {number} maximum
+ * @property {boolean} canAssignRolesAtStart
+ * @property {boolean} canAssignRolesDuringAssessment
  */
 
 /**
@@ -340,6 +351,7 @@ const FILE_UUID_REGEX =
  * @property {boolean} studentGroupCreate
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
+ * @property {GroupRole[]} groupRoles
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
@@ -1196,6 +1208,30 @@ async function validateAssessment(assessment, questions) {
       `The following questions do not exist in this course: ${[...missingQids].join(', ')}`
     );
   }
+
+  const validRoleNames = new Set();
+  assessment.groupRoles?.forEach((role) => {
+    validRoleNames.add(role.name);
+  });
+
+  (assessment.zones || []).forEach((zone) => {
+    (zone.questions || []).forEach((zoneQuestion) => {
+      (zoneQuestion.canView || []).forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `A zone question's "canView" permission contains the non-existent group role name "${roleName}".`
+          );
+        }
+      });
+      (zoneQuestion.canSubmit || []).forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `A zone question's "canSubmit" permission contains the non-existent group role name "${roleName}".`
+          );
+        }
+      });
+    });
+  });
 
   return { warnings, errors };
 }

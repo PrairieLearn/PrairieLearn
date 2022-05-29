@@ -56,7 +56,7 @@ router.post('/', (req, res, next) => {
     sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
       if (ERR(err, next)) return;
 
-      /* Create the course in the background */
+      // Create the course in the background
       if (ERR(err, next)) return;
       const repo_options = {
         short_name: req.body.short_name,

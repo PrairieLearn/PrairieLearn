@@ -21,7 +21,7 @@ WITH object_data AS (
     WHERE
         ci.id = $course_instance_id
         AND a.deleted_at IS NULL
-        AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
+        AND ($unsafe_assessment_id::bigint IS NULL OR a.id = $unsafe_assessment_id)
 )
 SELECT
     coalesce(jsonb_agg(
@@ -72,8 +72,8 @@ WITH object_data AS (
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
         ci.id = $course_instance_id
-        AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
-        AND ($assessment_instance_id::bigint IS NULL OR ai.id = $assessment_instance_id)
+        AND ($unsafe_assessment_id::bigint IS NULL OR a.id = $unsafe_assessment_id)
+        AND ($unsafe_assessment_instance_id::bigint IS NULL OR ai.id = $unsafe_assessment_instance_id)
 )
 SELECT
     coalesce(jsonb_agg(
@@ -112,7 +112,7 @@ WITH object_data AS (
         JOIN assessment_access_rules AS aar ON (aar.assessment_id = a.id)
     WHERE
         ci.id = $course_instance_id
-        AND a.id = $assessment_id
+        AND a.id = $unsafe_assessment_id
 )
 SELECT
     coalesce(jsonb_agg(
@@ -191,8 +191,11 @@ WITH object_data AS (
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     WHERE
-        ai.id = $assessment_instance_id
+        ai.id = $unsafe_assessment_instance_id
+        AND ci.id = $course_instance_id
 )
 SELECT
     coalesce(jsonb_agg(
@@ -254,8 +257,8 @@ WITH object_data AS (
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
         ci.id = $course_instance_id
-        AND ($assessment_instance_id::bigint IS NULL OR ai.id = $assessment_instance_id)
-        AND ($submission_id::bigint IS NULL OR s.id = $submission_id)
+        AND ($unsafe_assessment_instance_id::bigint IS NULL OR ai.id = $unsafe_assessment_instance_id)
+        AND ($unsafe_submission_id::bigint IS NULL OR s.id = $unsafe_submission_id)
 )
 SELECT
     coalesce(jsonb_agg(
@@ -264,3 +267,13 @@ SELECT
     ), '[]'::jsonb) AS item
 FROM
     object_data;
+
+-- BLOCK select_assessment_instance
+SELECT ai.id AS assessment_instance_id
+FROM
+    assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+    ai.id = $unsafe_assessment_instance_id
+    AND ci.id = $course_instance_id;

@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill,he, MathJax */
+/* global Quill,he, MathJax, QuillMarkdown, showdown */
 
 window.PLRTE = function (uuid, options) {
   if (!options.modules) options.modules = {};
@@ -19,14 +19,27 @@ window.PLRTE = function (uuid, options) {
 
   let inputElement = $('#rte-input-' + uuid);
   let quill = new Quill('#rte-' + uuid, options);
+  let renderer = null;
+  if (options.format === 'markdown') {
+    renderer = new showdown.Converter({
+      literalMidWordUnderscores: true,
+      literalMidWordAsterisks: true,
+    });
+  }
+
+  if (options.markdownShortcuts) new QuillMarkdown(quill, {});
 
   let contents = atob(inputElement.val());
+  if (contents && renderer) contents = renderer.makeHtml(contents);
+
   quill.setContents(quill.clipboard.convert(contents));
 
   quill.on('text-change', function (_delta, _oldDelta, _source) {
+    let contents = quill.root.innerHTML;
+    if (contents && renderer) contents = renderer.makeMarkdown(contents);
     inputElement.val(
       btoa(
-        he.encode(quill.root.innerHTML, {
+        he.encode(contents, {
           allowUnsafeSymbols: true, // HTML tags should be kept
           useNamedReferences: true,
         })

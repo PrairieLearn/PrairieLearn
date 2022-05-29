@@ -3,6 +3,7 @@
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="instance_question_id" value="<%= instance_question.id %>">
   <input type="hidden" name="assessment_instance_id" value="<%= instance_question.assessment_instance_id %>">
+  <input type="hidden" name="modified_at" value="<%= instance_question.modified_at %>">
   <div class="form-group">
     <div class="input-group">
       <input type="text" class="form-control" name="score_perc" value="<%= instance_question.score_perc %>">
@@ -11,7 +12,7 @@
   </div>
   <p><small>This will also recalculate the total points and total score at 100% credit. This change will be overwritten if the question is answered again by the student. 
     <% if (course.manual_grading_visible) { %>
-      You may also update the score <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/manual_grading">via the manual grading menu</a>.
+      You may also update the score <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>">via the manual grading page</a>.
     <% } %>
   </small></p>
   <div class="text-right">

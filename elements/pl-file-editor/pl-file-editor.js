@@ -19,6 +19,7 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.setTheme('ace/theme/chrome');
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
+  this.editor.setReadOnly(options.readOnly);
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
 
   if (options.aceMode) {
@@ -29,6 +30,10 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setTheme(options.aceTheme);
   } else {
     this.editor.setTheme('ace/theme/chrome');
+  }
+
+  if (options.fontSize) {
+    this.editor.setFontSize(options.fontSize);
   }
 
   if (options.minLines) {
