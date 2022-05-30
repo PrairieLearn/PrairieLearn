@@ -54,7 +54,7 @@
         "express-async-handler": "^1.2.0",
         "fabric": "^4.6.0",
         "file-type": "^16.5.3",
-        "filesize": "^6.4.0",
+        "filesize": "^9.0.0",
         "folder-hash": "^4.0.2",
         "fs-extra": "^10.1.0",
         "googleapis": "^100.0.0",
