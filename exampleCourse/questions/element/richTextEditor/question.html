@@ -73,5 +73,34 @@
       <li>&nbsp;</li>
     </ul>
   </pl-rich-text-editor>
+    
+  <hr>
+
+  <pl-question-panel>
+    <p>
+      The element also supports markdown format by
+      setting <code>format="markdown"</code>. This option will cause
+      the final result to be saved in markdown, and also allows the
+      source file name or content to be interpreted in this
+      format. The student experience will not typically be
+      significantly affected.
+    </p>
+    
+    <p>
+      What are the steps necessary to create a peanut butter and jam sandwich?
+    </p>
+  </pl-question-panel>
+  
+  <pl-rich-text-editor file-name="pbj.md" format="markdown"
+                       quill-theme="bubble">
+* Open the bread package;
+* [continue]
+  </pl-rich-text-editor>
   
 </pl-hide-in-panel>
+
+<pl-submission-panel>
+  <hr>
+  <p>The file previews below are typically not needed, but are listed below to demonstrate the output format of the answers above.</p>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>
