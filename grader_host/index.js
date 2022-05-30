@@ -54,8 +54,8 @@ async.series(
         database: config.postgresqlDatabase,
         user: config.postgresqlUser,
         password: config.postgresqlPassword,
-        max: 2,
-        idleTimeoutMillis: 30000,
+        max: config.postgresqlPoolSize,
+        idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
       globalLogger.info(
         'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
