@@ -7,7 +7,7 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.5.5",
+    "@grpc/grpc-js": "^1.6.7",
     "@opentelemetry/api": "^1.1.0",
     "@opentelemetry/core": "^1.0.1",
     "@opentelemetry/exporter-otlp-grpc": "^0.26.0",

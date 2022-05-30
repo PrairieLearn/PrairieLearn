@@ -8,7 +8,7 @@
     },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^5.15.4",
-        "@grpc/grpc-js": "^1.6.2",
+        "@grpc/grpc-js": "^1.6.7",
         "@octokit/rest": "^18.12.0",
         "@prairielearn/html": "^2.0.0",
         "@prairielearn/opentelemetry": "^1.0.0",
