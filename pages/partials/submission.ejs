@@ -1,26 +1,19 @@
 <!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
 <div class="card mb-4 pastsubmission-block" data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
-  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submissionIdx != submissionCount) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
+  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
     <div class="mr-auto">
       <div>
         <span class="mr-2">
           Submitted answer
           <% if (submissionCount > 1) { %>
-          <%= submissionIdx %>
+          <%= submission.submission_number %>
           <% } %>
         </span>
         <span><%- include('submissionStatus', {submission: submission}); %></span>
       </div>
       <small>Submitted at <%- submission.formatted_date %></small>
     </div>
-    <%# Only show feedback button if manual grading flag is enabled, there is feedback,
-        and it is not the latest submission (which is shown prominently beforehand) %>
-    <% if (course.manual_grading_visible && submission.manual_feedback_html && submissionCount != submissionIdx) { %>
-    <button type="button" class="btn btn-outline-danger btn-sm mr-2" data-submission-id="<%= submission.id %>" data-submission-modal="#submissionFeedbackModal-<%= submission.id %>">
-      <i class="fa fa-marker"></i>
-    </button>
-    <% } %>
-    <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>" data-submission-modal="#submissionInfoModal-<%= submission.id %>">
+    <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
       <i class="fa fa-info-circle fa-fw"></i>
     </button>
     <button type="button" class="expand-icon-container btn btn-outline-secondary btn-sm">
@@ -28,13 +21,12 @@
     </button>
   </div>
 
-  <div class="collapse <% if (submissionIdx == submissionCount) { %>show<% } %>" id="submission-<%= submission.id %>-body">
+  <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-<%= submission.id %>-body">
     <div class="card-body submission-body" >
       <%- submissionHtml %>
     </div>
   </div>
 
-  <%- include('submissionFeedbackModal', {submission, submissionIdx}); %>
   <%- include('submissionInfoModal', {submission: submission}); %>
 </div>
 
@@ -42,7 +34,7 @@
 $(function() {
   $('button[data-submission-id="<%= submission.id %>"]').on('click', function(e) {
     // Prevent this click from also expanding the submission
-    $($(this).data('submission-modal')).modal('show');
+    $('#submissionInfoModal-<%= submission.id %>').modal('show');
     e.stopPropagation();
   });
 });

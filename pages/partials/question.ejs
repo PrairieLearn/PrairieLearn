@@ -173,11 +173,34 @@
   <% } %>
 
   <%# Feedback section %>
-  <% if (course.manual_grading_visible && locals?.submission?.manual_feedback_html) { %>
+  <% if (course.manual_grading_visible && locals.manual_feedback_list) { %>
   <div class="card mb-4 grading-block border-danger">
     <div class="card-header bg-danger text-white">Grader feedback</div>
     <div class="card-body feedback-body">
-      <%- submission?.manual_feedback_html %>
+      <% if (locals.manual_feedback_list[0].submission.id === locals.submission.id) { %>
+      <%- locals.manual_feedback_list[0].feedback_html %>
+      <% } %>
+      <% if (locals.manual_feedback_list.length > 1 || locals.manual_feedback_list[0].submission.id !== locals.submission.id) { %>
+      <div class="mb-4 d-flex justify-content-center">
+        <button class="show-hide-btn expand-icon-container btn btn-outline-secondary btn-sm collapsed" type="button" data-toggle="collapse" data-target="#more-feedback-collapser" aria-expanded="false" aria-controls="more-feedback-collapser">
+          Show/hide feedback for older submissions
+          <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
+        </button>
+      </div>
+
+      <ul id="more-feedback-collapser" class="collapse list-group">
+        <% locals.manual_feedback_list.forEach(function(feedback) { %>
+        <% if (feedback.submission.id !== locals.submission.id) { %>
+        <li class="list-group-item">
+          <h5>Submitted answer <%= feedback.submission.submission_number %></h5>
+          <%- feedback.feedback_html %>
+        </li>
+        <% } %>
+        <% }); %>
+      </ul>
+
+    <% } %>
+
     </div>
   </div>
   <% } %>
@@ -189,10 +212,8 @@
     <% const MAX_TOP_RECENTS = 3; %>
 
     <%# Show the top submissions %>
-    <% submissions.forEach(function(submission, idx) { %>
-      <% if (submissions.length - idx > submissions.length - MAX_TOP_RECENTS) { %>
-      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
-      <% } %>
+    <% submissions.slice(0, MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
+      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx]}); %>
     <% }); %>
 
     <%# Optionally show the older submissions %>
@@ -206,13 +227,9 @@
       </div>
 
       <div id="more-submissions-collapser" class="collapse">
-
-        <% submissions.forEach(function(submission, idx) { %>
-          <% if (submissions.length - idx <= submissions.length - MAX_TOP_RECENTS) { %>
-          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
-          <% } %>
+        <% submissions.slice(MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
+          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx]}); %>
         <% }); %>
-
       </div>
 
     <% } %>
