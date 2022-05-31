@@ -108,7 +108,11 @@ try {
   questionTimeoutMilliseconds = 10000;
 }
 
-let pc = new PythonCaller({ dropPrivileges: true, questionTimeoutMilliseconds });
+let pc = new PythonCaller({
+  dropPrivileges: true,
+  questionTimeoutMilliseconds,
+  errorLogger: console.error,
+});
 pc.ensureChild();
 
 // Safety check: if we receive more input while handling another request,
