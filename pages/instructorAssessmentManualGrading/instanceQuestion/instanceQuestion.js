@@ -29,8 +29,23 @@ router.get(
       ).rows[0];
     }
 
-    res.locals.manualGradingInterface = true;
-    await util.promisify(question.getAndRenderVariant)(null, null, res.locals);
+    // Even though getAndRenderVariant will select variants for the instance question, if the
+    // question has multiple variants, by default getAndRenderVariant may select a variant without
+    // submissions or even create a new one. We don't want that behaviour, so we select the last
+    // submission and pass it along to getAndRenderVariant explicitly.
+    const params = { instance_question_id: res.locals.instance_question.id };
+    const variant_with_submission = (
+      await sqlDb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
+    ).rows[0];
+
+    if (variant_with_submission) {
+      res.locals.manualGradingInterface = true;
+      await util.promisify(question.getAndRenderVariant)(
+        variant_with_submission.variant_id,
+        null,
+        res.locals
+      );
+    }
 
     // If student never loaded question or never submitted anything (submission is null)
     if (!res.locals.submission) {
