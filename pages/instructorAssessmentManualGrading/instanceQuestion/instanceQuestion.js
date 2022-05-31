@@ -35,15 +35,17 @@ router.get(
     // submission and pass it along to getAndRenderVariant explicitly.
     const params = { instance_question_id: res.locals.instance_question.id };
     const variant_with_submission = (
-      await sqlDb.queryOneRowAsync(sql.select_variant_with_last_submission, params)
+      await sqlDb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
     ).rows[0];
 
-    res.locals.manualGradingInterface = true;
-    await util.promisify(question.getAndRenderVariant)(
-      variant_with_submission.variant_id,
-      null,
-      res.locals
-    );
+    if (variant_with_submission) {
+      res.locals.manualGradingInterface = true;
+      await util.promisify(question.getAndRenderVariant)(
+        variant_with_submission.variant_id,
+        null,
+        res.locals
+      );
+    }
 
     // If student never loaded question or never submitted anything (submission is null)
     if (!res.locals.submission) {
