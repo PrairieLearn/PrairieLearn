@@ -32,7 +32,7 @@
           <%= submission.submission_number %>
           <% } %>
         </span>
-        <span><%- include('submissionStatus', {submission: submission}); %></span>
+        <span class="submission-status"><%- include('submissionStatus', {submission: submission}); %></span>
       </div>
       <small>Submitted at <%- submission.formatted_date %></small>
     </div>

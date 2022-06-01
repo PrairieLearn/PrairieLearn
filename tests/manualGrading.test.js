@@ -75,7 +75,7 @@ const loadHomeworkQuestionUrl = async (user) => {
  * @returns {string}
  */
 const getLatestSubmissionStatus = ($) => {
-  return $('.card[id^="submission"] .card-header .badge').first().text();
+  return $('.submission-status .badge').first().text();
 };
 
 describe('Manual Grading', function () {
