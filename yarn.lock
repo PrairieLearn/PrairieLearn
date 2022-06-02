@@ -1070,12 +1070,12 @@
     "@types/pg" "8.6.1"
     "@types/pg-pool" "2.0.3"
 
-"@opentelemetry/instrumentation-redis@^0.28.0":
-  version "0.28.0"
-  resolved "https://registry.yarnpkg.com/@opentelemetry/instrumentation-redis/-/instrumentation-redis-0.28.0.tgz#7b3442de507827fe92f7a2afdad087fa654feb81"
-  integrity sha512-HC3jPWxpUlmYPfoEmCLLUKFlL4HA/6qugL1fVvIEtLxm7i6sX3x9nalFfboLr47QqBbaTN2CBzrA5p0b0flHlg==
+"@opentelemetry/instrumentation-redis@^0.31.0":
+  version "0.31.0"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/instrumentation-redis/-/instrumentation-redis-0.31.0.tgz#9d2ff378201ca0710ad1605ef5750706c74404af"
+  integrity sha512-c1nrWEl7eITOZVnLwqAyAzZ7Fc1ZbJ+N0J55XaggstYgbcG7XiPywfXY76CC7a10D/K3aCq3b2MRar30Cm6eyg==
   dependencies:
-    "@opentelemetry/instrumentation" "^0.27.0"
+    "@opentelemetry/instrumentation" "^0.28.0"
     "@opentelemetry/semantic-conventions" "^1.0.0"
     "@types/redis" "2.8.31"
 
