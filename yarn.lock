@@ -1011,14 +1011,14 @@
     "@opentelemetry/sdk-metrics-base" "0.26.0"
     "@opentelemetry/sdk-trace-base" "1.0.0"
 
-"@opentelemetry/instrumentation-aws-sdk@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@opentelemetry/instrumentation-aws-sdk/-/instrumentation-aws-sdk-0.5.0.tgz#b97999d6b48ed2a33c854d8107dd69f9e3828cca"
-  integrity sha512-nx+I/W2cFQDBnBtrbJBlv1zj3rJgVKCJyqqQShIgRjUd31dXlZv9uCWI1spdt4I6Uy8tzZQGaPbZr8GMWjSykg==
+"@opentelemetry/instrumentation-aws-sdk@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/instrumentation-aws-sdk/-/instrumentation-aws-sdk-0.7.0.tgz#23fa0fe8c63395b753367df712d406c3d3690e20"
+  integrity sha512-+4ibii4BvdPrIW9MOuj1wnTDkYHpX04gepPNfYcBseC9I5ZOAdz1a2Kj41FpweIlrlz0CPtbuLP2EFCyqb9EaQ==
   dependencies:
     "@opentelemetry/core" "^1.0.0"
-    "@opentelemetry/instrumentation" "^0.27.0"
-    "@opentelemetry/propagation-utils" "^0.26.0"
+    "@opentelemetry/instrumentation" "^0.28.0"
+    "@opentelemetry/propagation-utils" "^0.28.0"
     "@opentelemetry/semantic-conventions" "^1.0.0"
 
 "@opentelemetry/instrumentation-connect@^0.27.1":
@@ -1099,10 +1099,10 @@
     semver "^7.3.2"
     shimmer "^1.2.1"
 
-"@opentelemetry/propagation-utils@^0.26.0":
-  version "0.26.0"
-  resolved "https://registry.yarnpkg.com/@opentelemetry/propagation-utils/-/propagation-utils-0.26.0.tgz#80604b3854c7df95dcdf84f19f868f359d76e41c"
-  integrity sha512-ce/Cm3OSY4I49hgCF9K7VLPYhfGSxvjZsKkvl4I5AyJ7oBz/4w51OGzoJWGC+ew8I/6x61BZ8xd64dqPBucMjQ==
+"@opentelemetry/propagation-utils@^0.28.0":
+  version "0.28.0"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/propagation-utils/-/propagation-utils-0.28.0.tgz#035e8311db46b712d55c0ef5fee79042f0f9d8e6"
+  integrity sha512-IsBUTz110RB75Xg6dejSD8JSyiXll81zTu/2dph5VdPMSgMOGQTYhtv0Mv1BydJh4dZpR+Z9WHTiHdkp1IQOCw==
 
 "@opentelemetry/propagator-b3@1.0.1":
   version "1.0.1"
